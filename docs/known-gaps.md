@@ -75,19 +75,23 @@ JSON and plain output. The suite covers 75 log CLI argv cases, bounded tails,
 mtime ties, numeric validation, strict base64, redaction, context/tool/protocol
 events, payload rendering and 128 KiB decompressed-payload boundaries.
 `stream`, upstream-follow, live sources and terminal views remain unfinished.
-Policy loading fails explicitly when a policy file exists and no explicit
-runtime-log directory is provided. Existing root permission repair is also
-unsupported. Binary-text classification uses common Unicode ranges and drops
-the retained U+10400 Deseret tool-output fixture. Timestamp format coverage,
+Native policy loading and directory resolution now match tested release paths,
+schema errors and fallback behavior, including 712 wrapped corpus inputs.
+Binary-text classification uses exact Unicode 17 Alphabetic/Number data;
+the retained U+10400 Deseret fixture now matches. Existing root permission
+repair is still unsupported. Timestamp format coverage,
 remaining projection combinations and non-host platforms remain unverified.
-Evidence: `docs/evidence/log-tests.txt` and `docs/evidence/log-link.txt`.
+Evidence: `docs/evidence/log-tests.txt`, `docs/evidence/log-link.txt` and
+`docs/evidence/policy-unicode-tests.txt`. General policy application beyond
+log-directory selection is unfinished; parser resource/recursion behavior
+beyond the tested 128-level limit remains unverified.
 
 Three frozen-release log fixtures expose a quoted credential beside Unicode
 whitespace. Modex masks the complete value and preserves the original spacing;
 a fourth fixture differs only in retained spacing. Proposed handling: retain
 complete masking and whitespace preservation, with compatibility approval
 still pending. These are four `UNAPPROVED_SAFE_DIFFERENCE` observations, not
-parity passes. The actual outputs and two implementation failures are retained
+parity passes. The actual outputs and two resolved regression cases are retained
 in `docs/evidence/log-mismatches.json`; reproduce with
 `python3 tests/capture_log_mismatches.py`.
 

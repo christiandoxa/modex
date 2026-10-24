@@ -14,6 +14,7 @@ from .log_payload_render import payload_lines
 from .log_redaction import redact_log_text
 from .log_transcript import transcript_event as project_transcript
 from .paths import ensure_app_root, shared_root
+from .runtime_policy import runtime_log_dir
 from .session_time import timestamp_key
 from .text import cli_width, text_width, wrap_text
 
@@ -107,12 +108,7 @@ def log_last(json: Bool) raises -> String:
             break
 
     var runtime = List[String]()
-    var runtime_dir = getenv("PRODEX_RUNTIME_LOG_DIR", "")
-    # shortcut: policy loading is incomplete; reject policy-backed homes until TOML resolution is implemented.
-    if not runtime_dir and exists(root + "/policy.toml"):
-        raise Error("runtime log policy loading is not implemented")
-    if not runtime_dir:
-        runtime_dir = getenv("TMPDIR", "/tmp")
+    var runtime_dir = runtime_log_dir(root)
     try:
         collect_files(runtime_dir, runtime, ".log", False)
     except:

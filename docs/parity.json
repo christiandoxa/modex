@@ -566,7 +566,7 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/log_cli.mojo; src/modex/log_payload.mojo; src/modex/log_payload_render.mojo; src/modex/log_redaction.mojo; src/modex/log_text.mojo; src/modex/log_transcript.mojo; src/modex/logs.mojo; src/main.mojo; src/modex/json.mojo; src/modex/zstd.mojo",
+      "implementation": "src/modex/log_cli.mojo; src/modex/log_payload.mojo; src/modex/log_payload_render.mojo; src/modex/log_redaction.mojo; src/modex/log_text.mojo; src/modex/log_transcript.mojo; src/modex/logs.mojo; src/main.mojo; src/modex/json.mojo; src/modex/zstd.mojo; src/modex/runtime_policy.mojo; src/modex/toml.mojo; src/modex/unicode_properties.mojo",
       "tests": [
         "tests/test_log_cli.py",
         "tests/test_log_payload.py",
@@ -576,12 +576,20 @@
         "tests/test_log_text.py",
         "tests/test_log_transcript.py",
         "tests/test_logs.py",
-        "tests/capture_log_mismatches.py"
+        "tests/capture_log_mismatches.py",
+        "tests/test_log_policy.py",
+        "tests/test_policy_corpus.py",
+        "tests/test_toml.mojo",
+        "tests/test_toml.py",
+        "tests/test_unicode_properties.py"
       ],
       "evidence": [
         "docs/evidence/log-tests.txt",
         "docs/evidence/log-link.txt",
-        "docs/evidence/log-mismatches.json"
+        "docs/evidence/log-mismatches.json",
+        "docs/evidence/policy-unicode-tests.txt",
+        "docs/evidence/policy-unicode-link.txt",
+        "docs/evidence/policy-corpus.json"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -594,7 +602,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Detached last snapshots are connected and covered by actual oracle comparisons. Full LOG fails on policy-backed directories, incomplete Unicode binary-text classification (retained Deseret case), root permission repair, unapproved redaction differences and unimplemented live/stream/upstream-follow/TUI paths. Remaining timestamp and projection combinations are unverified."
+        "Detached last snapshots include native TOML policy/schema validation and log-directory precedence, exact Unicode17 alphanumeric classification, complete scalar checks, and actual oracle comparisons over 712 wrapped policy inputs. Retained Deseret and policy-directory failures now match. Full LOG still fails on root permission repair, unapproved redaction differences, and unimplemented live/stream/upstream-follow/TUI paths. Remaining timestamps/projection cases, parser resource boundaries and other platforms are unverified."
       ]
     },
     {
@@ -1435,12 +1443,20 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": null,
-      "tests": [],
-      "evidence": [],
-      "status": "NOT_STARTED",
+      "implementation": "src/modex/runtime_policy.mojo; src/modex/toml.mojo; src/modex/logs.mojo (log-directory policy only)",
+      "tests": [
+        "tests/test_log_policy.py",
+        "tests/test_policy_corpus.py",
+        "tests/test_toml.mojo",
+        "tests/test_toml.py"
+      ],
+      "evidence": [
+        "docs/evidence/policy-unicode-tests.txt",
+        "docs/evidence/policy-corpus.json"
+      ],
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -1448,7 +1464,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Native TOML/schema validation and runtime log-directory env/policy/TMPDIR precedence are connected. General runtime/profile/secret configuration application and precedence outside detached logs remain unfinished. Parser resource/depth boundary equivalence and other platforms remain unverified."
       ]
     },
     {

@@ -1,0 +1,13 @@
+UnicodeData.txt is unmodified Unicode 17.0.0 data from:
+https://www.unicode.org/Public/17.0.0/ucd/UnicodeData.txt
+SHA-256: 2e1efc1dcb59c575eedf5ccae60f95229f706ee6d031835247d843c11d96470c
+Copyright 2025 Unicode, Inc.; see LICENSES/Unicode-3.0.txt at the repository root.
+
+The static Mojo alphanumeric interval table is derived from this file's
+General_Category N rows and DerivedCoreProperties.txt's Alphabetic property.
+It was replaced after review: an initial temporary Python extraction was
+removed, and the retained table was re-derived from the pinned files with
+`mojo run -I src -D ASSERT=all tests/unicode_properties_derive.mojo`. The native
+helper asserts a complete scalar census, merged sorted intervals, and production
+lookup equality for every code point; it is test-only and is not part of the
+product build or runtime.

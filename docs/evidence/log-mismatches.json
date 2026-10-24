@@ -63,7 +63,7 @@
       "proposal": "Keep complete credential masking and preserve Unicode whitespace; compatibility approval remains pending."
     },
     {
-      "status": "FAIL",
+      "status": "MATCHING_OUTPUT",
       "input": {
         "type": "response_item",
         "payload": {
@@ -78,11 +78,17 @@
           "text": "𐐀𐐀𐐀𐐀𐐀𐐀𐐀𐐀"
         }
       ],
-      "modex_events": [],
-      "reason": "Binary-text classification lacks complete Unicode alphanumeric data."
+      "modex_events": [
+        {
+          "timestamp": "2026-10-24 01:02:04.000 +00:00",
+          "source": "tool-output",
+          "text": "𐐀𐐀𐐀𐐀𐐀𐐀𐐀𐐀"
+        }
+      ],
+      "reason": "The retained Deseret regression now matches with complete Unicode 17 alphanumeric data."
     },
     {
-      "status": "FAIL",
+      "status": "MATCHING_OUTPUT",
       "input": "version = 1\n[runtime]\nlog_dir = \"logs\"\n",
       "baseline": {
         "exit_code": 0,
@@ -90,11 +96,11 @@
         "stderr": ""
       },
       "modex": {
-        "exit_code": 1,
-        "stdout": "",
-        "stderr": "Error: runtime log policy loading is not implemented\n"
+        "exit_code": 0,
+        "stdout": "{\"cached_input_tokens\":0,\"event\":\"token_usage\",\"fields\":{\"cached_input_tokens\":0,\"input_tokens\":1,\"output_tokens\":2,\"profile\":\"unknown\",\"reasoning_tokens\":0,\"source\":\"unknown\",\"transport\":\"unknown\"},\"input_tokens\":1,\"output_tokens\":2,\"profile\":\"unknown\",\"reasoning_tokens\":0,\"request\":null,\"source\":\"unknown\",\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"transport\":\"unknown\"}\n",
+        "stderr": ""
       },
-      "reason": "Policy-backed runtime log directory resolution is unfinished."
+      "reason": "The retained relative-policy log-directory regression now matches through native TOML loading."
     }
   ]
 }

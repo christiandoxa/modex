@@ -1,0 +1,9 @@
+{
+  "corpus": "tests/fixtures/toml11/files-toml-1.1.0",
+  "manifest_sha256": "7e46fe1a0a7b9cec5c81855b8246af8700195876be444e5946bcf655fe75e121",
+  "oracle_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+  "policy_cases": 712,
+  "mismatches": 0,
+  "configured_log_directory_selected": 226,
+  "temporary_log_directory_selected": 486
+}

@@ -17,11 +17,12 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard/text/log drivers, and 93
-Python black-box/runtime tests PASS, including 500 deterministic generated
-JSON values plus malformed UTF-8/syntax/boundary vectors and numeric/local
-session time comparisons, including future recurring rules through 2100,
-transition-second boundaries, and explicit/invalid POSIX TZ strings),
+Validation: `rtk make test` (5 Mojo unit programs, test-only
+JSON/Zstandard/text/log/TOML drivers, and 105 Python tests PASS). This includes
+712 policy-oracle comparisons, 500 deterministic generated JSON values,
+malformed UTF-8/syntax/boundary vectors and numeric/local session times,
+future recurring rules through 2100, transition-second boundaries and
+explicit/invalid POSIX TZ strings. Additional capability validation:
 `python3 tests/probe_capabilities.py` (3 positive programs PASS,
 4 expected public-API gaps reproduced). `python3 tests/session_mismatches.py`
 retains 3 FAIL cases and 3 unapproved differences for baseline panics.
@@ -51,15 +52,33 @@ last duplicate value. No external implementation dependency was added.
 Evidence: `docs/evidence/log-tests.txt`, `docs/evidence/log-link.txt` and the
 eight `tests/test_log*.py` modules.
 
-This remains an incomplete log contract. Policy-backed directories are
-rejected unless `PRODEX_RUNTIME_LOG_DIR` supplies the location; live stream,
-upstream-follow and terminal views remain unimplemented. Binary-text
-classification currently uses common Unicode ranges and loses a Deseret
-tool-output event. Existing insecure application roots still fail instead of
+Policy-backed log directories now load through a native TOML 1.1 parser.
+The loader validates all baseline policy section types, proxy settings and
+secret-backend dependencies before resolving the log directory; invalid policy
+falls back silently as in the release. Tests cover path/env precedence, empty
+overrides, whitespace preservation, signed/unsigned integer boundaries,
+negative zero and year-zero dates. Malformed string-continuation carriage
+returns and truncated datetimes fall back without crashing. The parser passes
+218 typed-value fixtures and 494 invalid
+fixtures from a pinned independent TOML 1.1 corpus. An additional 712 wrapped
+policy files match actual release output and directory selection: 226 use the
+configured directory and 486 use TMPDIR. Evidence:
+`docs/evidence/policy-unicode-tests.txt` and `docs/evidence/policy-corpus.json`.
+
+Binary-text classification now uses exact Unicode 17 Alphabetic/Number data:
+844 merged intervals covering 149,106 scalars. Native and independent checks
+cover all 1,112,064 valid Unicode scalars, and production tests retain Deseret
+and property-edge tool output. The table is static Mojo data, re-derived by a
+test-only native audit; no build/runtime generator is used. The earlier
+Deseret and policy-directory failures now have matching observations in
+`docs/evidence/log-mismatches.json`.
+
+This remains an incomplete log contract. Live stream, upstream-follow and
+terminal views remain unimplemented. Existing insecure application roots still fail instead of
 receiving baseline permission repair. Timestamp layouts and remaining log
 combinations need further verification. Three Unicode-whitespace inputs expose
 credentials in the release while Modex masks them; a fourth preserves spacing
-differently. These four unapproved safe differences and two concrete failures
+differently. These four unapproved safe differences and two matching regressions
 are retained by `python3 tests/capture_log_mismatches.py` in
 `docs/evidence/log-mismatches.json`; none is parity PASS.
 
@@ -148,9 +167,11 @@ also cover correction overflow. The fixtures are synthetic; this host has no
 installed `right/` leap-zone directory. Evidence:
 `docs/evidence/leap-timezone-tests.txt` and `tests/test_timezone_files.py`.
 
-Next work: replace common-range log binary-text classification with complete
-Unicode alphanumeric data, implement native TOML policy loading and runtime
-log-directory resolution, then complete log live views and remaining commands.
+Next work: complete log live views and remaining commands, broaden timestamp
+and projection coverage, and verify policy recursion/resource boundaries.
+The parser has an explicit 128-level value-nesting limit; equivalence to the
+release beyond the tested corpus remains unverified. General policy/config
+application outside log-directory selection is still unfinished.
 Stateful paths still fail explicitly. Future recurring timezone rules and
 POSIX TZ strings are implemented; their earlier evidence is
 `docs/evidence/recurring-time-tests.txt`.

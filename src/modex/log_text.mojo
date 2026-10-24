@@ -2,6 +2,7 @@
 
 from .log_redaction import redact_log_text
 from .text import is_whitespace
+from .unicode_properties import is_alphanumeric
 
 
 comptime SAFE_TEXT_MAX_BYTES = 65_536
@@ -241,13 +242,6 @@ def binary_like(text: String, line: Bool) -> Bool:
 
 def common_punctuation(code: Int) -> Bool:
     return code == 46 or code == 44 or code == 58 or code == 59 or code == 33 or code == 63 or code == 45 or code == 95 or code == 47 or code == 92 or code == 40 or code == 41 or code == 91 or code == 93 or code == 123 or code == 125 or code == 60 or code == 62 or code == 34 or code == 39 or code == 64 or code == 35 or code == 36 or code == 37 or code == 94 or code == 38 or code == 42 or code == 43 or code == 61 or code == 124 or code == 126 or code == 96
-
-
-def is_alphanumeric(code: Int) -> Bool:
-    if 48 <= code <= 57 or 65 <= code <= 90 or 97 <= code <= 122:
-        return True
-    # shortcut: common Unicode letter and number blocks only; update when Mojo stdlib exposes Unicode categories.
-    return 0x00C0 <= code <= 0x02FF or 0x0370 <= code <= 0x052F or 0x0531 <= code <= 0x0588 or 0x05D0 <= code <= 0x05EA or 0x0620 <= code <= 0x06FF or 0x0710 <= code <= 0x08FF or 0x0900 <= code <= 0x1FFF or 0x2C00 <= code <= 0x2DFF or 0x3040 <= code <= 0x30FF or 0x3100 <= code <= 0x312F or 0x3130 <= code <= 0x318F or 0x31A0 <= code <= 0x31BF or 0x3400 <= code <= 0x4DBF or 0x4E00 <= code <= 0x9FFF or 0xA000 <= code <= 0xA4CF or 0xAC00 <= code <= 0xD7AF or 0xF900 <= code <= 0xFAFF or 0xFF10 <= code <= 0xFF19 or 0xFF21 <= code <= 0xFF3A or 0xFF41 <= code <= 0xFF5A
 
 
 def is_tool_name_byte(code: Int) -> Bool:

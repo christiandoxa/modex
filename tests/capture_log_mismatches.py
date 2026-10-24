@@ -54,22 +54,22 @@ def main():
     payload = {"type": "function_call_output", "output": "\U00010400" * 8}
     baseline = transcript_snapshot("response_item", payload, ORACLE)
     modex = transcript_snapshot("response_item", payload, MODEX)
-    assert baseline and not modex
-    cases.append({"status": "FAIL", "input": {"type": "response_item", "payload": payload},
+    assert baseline and modex == baseline
+    cases.append({"status": "MATCHING_OUTPUT", "input": {"type": "response_item", "payload": payload},
                   "baseline_events": baseline, "modex_events": modex,
-                  "reason": "Binary-text classification lacks complete Unicode alphanumeric data."})
+                  "reason": "The retained Deseret regression now matches with complete Unicode 17 alphanumeric data."})
     baseline = policy_snapshot(ORACLE)
     modex = policy_snapshot(MODEX)
     assert baseline[0] == 0 and b'"input_tokens":1' in baseline[1]
-    assert modex == (1, b"", b"Error: runtime log policy loading is not implemented\n")
-    cases.append({"status": "FAIL", "input": 'version = 1\n[runtime]\nlog_dir = "logs"\n',
+    assert modex == baseline
+    cases.append({"status": "MATCHING_OUTPUT", "input": 'version = 1\n[runtime]\nlog_dir = "logs"\n',
                   "baseline": observe(baseline), "modex": observe(modex),
-                  "reason": "Policy-backed runtime log directory resolution is unfinished."})
+                  "reason": "The retained relative-policy log-directory regression now matches through native TOML loading."})
     report = {"baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
               "oracle_sha256": test_cli.ORACLE_SHA256, "cases": cases}
     path = ROOT / "docs/evidence/log-mismatches.json"
     path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
-    print("Retained 2 FAIL cases and 4 unapproved safe differences:", path)
+    print("Retained 2 matching regressions and 4 unapproved safe differences:", path)
 
 
 if __name__ == "__main__":

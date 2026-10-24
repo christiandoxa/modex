@@ -38,6 +38,10 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/log_transcript_driver.mojo -o build/tests/log_transcript_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/log_payload_driver.mojo -o build/tests/log_payload_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/log_payload_render_driver.mojo -o build/tests/log_payload_render_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/unicode_properties_driver.mojo -o build/tests/unicode_properties_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_toml.mojo -o build/tests/test_toml
+	build/tests/test_toml
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/toml_driver.mojo -o build/tests/toml_driver
 
 test: build unit
 	python3 -m unittest discover -s tests -p 'test_*.py' -v

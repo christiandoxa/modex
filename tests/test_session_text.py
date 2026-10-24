@@ -86,9 +86,55 @@ class SessionTextTests(unittest.TestCase):
                 baseline, modex = compare_text(arguments, columns="160", change=change)
                 self.assertEqual(modex, baseline)
 
+    def test_unicode_titles_ids_and_cell_boundaries(self):
+        titles = ("R\u00e9sum\u00e9", "Cafe\u0301", "\u754c\u9762", "\u306f\u3058\u3081\u3066",
+                  "\u30ab\u30bf\u30ab\u30ca", "\ud55c\uad6d\uc5b4", "\u041f\u0440\u0438\u0432\u0435\u0442",
+                  "\u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac", "\u0301" * 6, "A\u00a0B", "A\u3000B")
+        for title in titles:
+            def change(root):
+                original = next((root / "home/.codex").rglob("*.jsonl"))
+                metadata = json.loads(original.read_text().splitlines()[0])
+                metadata["payload"]["id"] = title * 5
+                metadata["payload"]["thread_name"] = title * 8
+                original.write_text(json.dumps(metadata) + "\n")
+            for columns in ("22", "60", "110", "160"):
+                with self.subTest(title=title, columns=columns):
+                    baseline, modex = compare_text(["session", "list"], columns=columns, change=change)
+                    self.assertEqual(modex, baseline)
+
+    def test_unicode_range_edges(self):
+        codes = (0xA0, 0xAD, 0xFF, 0x100, 0x2FF, 0x300, 0x34F, 0x36F,
+                 0x370, 0x482, 0x483, 0x489, 0x48A, 0x52F, 0x1E00, 0x1FFF,
+                 0x3000, 0x3029, 0x302A, 0x302F, 0x3030, 0x303E, 0x303F,
+                 0x3041, 0x3096, 0x3099, 0x309A, 0x309B, 0x30FF, 0x31F0,
+                 0x31FF, 0x3400, 0x4DBF, 0x4E00, 0x9FFF, 0xAC00, 0xD7A3,
+                 0xF900, 0xFAFF, 0xFF01, 0xFF60, 0xFFE0, 0xFFE6,
+                 0x20000, 0x2FFFD, 0x30000, 0x3FFFD)
+        for code in codes:
+            def change(root):
+                original = next((root / "home/.codex").rglob("*.jsonl"))
+                metadata = json.loads(original.read_text().splitlines()[0])
+                value = "Prefix" + chr(code) * 12 + "Suffix"
+                metadata["payload"]["id"] = value
+                metadata["payload"]["thread_name"] = value
+                original.write_text(json.dumps(metadata) + "\n")
+            with self.subTest(code=hex(code)):
+                baseline, modex = compare_text(["session", "list"], change=change)
+                self.assertEqual(modex, baseline)
+
+    def test_unicode_path_wrapping(self):
+        for text in ("caf\u00e9", "\u754c\u9762", "\u306f\u3058\u3081\u3066", "\ud55c\uad6d\uc5b4",
+                     "Cafe\u0301", "\u0301", "A\u00a0B", "A\u3000B", "A\tB",
+                     "line\r\nnext", "line\n\nnext\n"):
+            arguments = ["session", "current", "--cwd", "/missing/" + text * 20]
+            for columns in ("1", "8", "12", "20", "40", "60", "110"):
+                with self.subTest(text=text, columns=columns):
+                    baseline, modex = compare_text(arguments, columns=columns)
+                    self.assertEqual(modex, baseline)
+
     def test_unimplemented_cell_widths_fail_explicitly(self):
         # Development checks for known gaps; these do not establish baseline parity.
-        for title in ("Unicode title \u754c", "Control\tcharacter"):
+        for title in ("Emoji title \U0001f600", "Control\tcharacter"):
             with self.subTest(title=title), tempfile.TemporaryDirectory(prefix="modex-text-gap-") as directory:
                 root = Path(directory)
                 fixture(root)
@@ -100,7 +146,7 @@ class SessionTextTests(unittest.TestCase):
                                         capture_output=True, timeout=10, check=False)
                 self.assertEqual(result.returncode, 1)
                 self.assertEqual(result.stdout, b"")
-                self.assertIn(b"Unicode or control characters is not implemented", result.stderr)
+                self.assertIn(b"Unicode or control character is not implemented", result.stderr)
 
     def test_interactive_view_remains_explicitly_unimplemented(self):
         with tempfile.TemporaryDirectory(prefix="modex-text-tty-") as directory:

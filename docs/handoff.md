@@ -15,7 +15,7 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `make test` (3 Mojo unit programs, a test-only JSON driver, and 26
+Validation: `make test` (3 Mojo unit programs, a test-only JSON driver, and 29
 Python black-box/runtime tests PASS, including 500 deterministic generated
 JSON values plus malformed UTF-8/syntax/boundary vectors and numeric/local
 session time comparisons, including future recurring rules through 2100,
@@ -45,18 +45,25 @@ table columns, truncation and full-ID details, optional cells, multiple rows,
 list/current filters, empty panels, long-token wrapping, widths 1 through 300,
 and valid/invalid `PRODEX_TERM_COLUMNS` overrides. `COLUMNS` is ignored as in
 the release. Tests compare raw bytes in identical disposable homes.
-Scope: printable ASCII only; Unicode/control cells, terminal dimensions and
-the interactive view remain unimplemented. Evidence:
+The initial slice covers printable ASCII; terminal dimensions and the
+interactive view remain unimplemented. Evidence:
 `docs/evidence/session-text-tests.txt`. The text mismatch reproducer now records
 matching output separately from the remaining startup side-effect differences.
+
+Plain rendering now measures display cells and preserves UTF-8 for supported
+Latin, Greek, Cyrillic, CJK, kana and Hangul ranges, combining accents and soft
+hyphens. The suite compares 239 raw-output scenarios, including Unicode range
+edges, truncation, padding, full IDs and Unicode/paragraph path wrapping.
+Other scripts, emoji sequences and remaining control cells still fail
+explicitly. Evidence: `docs/evidence/session-unicode-tests.txt`.
 
 The active release staging/smoke path imports the JavaScript gateway SDK.
 Its module-import compatibility is BLOCKED by the Mojo-only/no-adapter policy,
 not removed from scope. `docs/packaging-audit.json` preserves conflicting
 source/publishing/README evidence.
 
-Next work: trace hidden/default/precedence flag contracts, implement Unicode
-display widths and the terminal view, and evaluate official stdlib mechanisms
+Next work: trace hidden/default/precedence flag contracts, complete remaining
+Unicode display widths and the terminal view, and evaluate official stdlib mechanisms
 for state loading and recovery. Current stateful, compressed and leap-second
 paths fail explicitly. Future recurring timezone rules and POSIX TZ strings are
 implemented; their current evidence is `docs/evidence/recurring-time-tests.txt`.

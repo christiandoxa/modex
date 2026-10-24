@@ -7,7 +7,7 @@ from .json import JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_jso
 from .local_time import format_local_epoch
 from .paths import app_root, comparable_path, shared_root
 from .session_time import integer_timestamp, timestamp_key
-from .text import ascii_width, cli_width, pad_cell, section_header, status_panel, trim_text
+from .text import cli_width, pad_cell, section_header, status_panel, text_width, trim_text
 
 comptime SESSION_LINE_LIMIT = 64 * 1024 * 1024
 
@@ -305,7 +305,7 @@ def inspect_sessions(options: SessionOptions) raises -> String:
             report.directory if report.directory else String("-"),
             report.path,
         ], widths)
-        if ascii_width(report.id) > widths[0]:
+        if text_width(report.id) > widths[0]:
             output += "\n  id: " + report.id
     return output^
 

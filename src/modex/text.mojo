@@ -54,51 +54,122 @@ def cli_width() raises -> Int:
     return Int(width) if width else 110
 
 
-def ascii_width(value: String) raises -> Int:
-    # shortcut: only printable ASCII cell widths are implemented; add Unicode metrics before rendering other text.
-    for byte in value.as_bytes():
-        if byte < 32 or byte > 126:
-            raise Error("session text rendering for Unicode or control characters is not implemented")
-    return value.byte_length()
+def character_width(code: Int) raises -> Int:
+    # Unicode 16.0 EastAsianWidth.txt defines the wide ranges used here.
+    if (code == 0xAD or 0x300 <= code <= 0x36F or 0x483 <= code <= 0x489
+        or 0x302A <= code <= 0x302F or code == 0x3099 or code == 0x309A):
+        return 0
+    if (0x20 <= code <= 0x7E or 0xA0 <= code <= 0x2FF
+        or 0x370 <= code <= 0x482 or 0x48A <= code <= 0x52F
+        or 0x1E00 <= code <= 0x1FFF):
+        return 1
+    if code == 0x303F:
+        return 1
+    if (0x3000 <= code <= 0x3029 or 0x3030 <= code <= 0x303E
+        or 0x3041 <= code <= 0x3096 or 0x309B <= code <= 0x30FF
+        or 0x31F0 <= code <= 0x31FF or 0x3400 <= code <= 0x4DBF
+        or 0x4E00 <= code <= 0x9FFF or 0xAC00 <= code <= 0xD7A3
+        or 0xF900 <= code <= 0xFAFF or 0xFF01 <= code <= 0xFF60
+        or 0xFFE0 <= code <= 0xFFE6 or 0x20000 <= code <= 0x2FFFD
+        or 0x30000 <= code <= 0x3FFFD):
+        return 2
+    # shortcut: other scripts, emoji sequences and controls need their remaining width rules before rendering.
+    raise Error("session text rendering for this Unicode or control character is not implemented")
+
+
+def text_width(value: String) raises -> Int:
+    var width = 0
+    for character in value.codepoints():
+        width += character_width(Int(character))
+    return width
 
 
 def fit_cell(value: String, width: Int) raises -> String:
-    if ascii_width(value) <= width:
+    if width == 0:
+        return ""
+    if text_width(value) <= width:
         return value
     if width <= 3:
         return String(".") * width
-    return String(value[byte=:width - 3]) + "..."
+    var output = String()
+    var used = 0
+    for character in value.codepoints():
+        var cells = character_width(Int(character))
+        if used + cells > width - 3:
+            break
+        output += chr(Int(character))
+        used += cells
+    return output + "..."
 
 
 def pad_cell(value: String, width: Int) raises -> String:
     var fitted = fit_cell(value, width)
-    return fitted + String(" ") * (width - fitted.byte_length())
+    return fitted + String(" ") * (width - text_width(fitted))
 
 
 def section_header(title: String, width: Int) raises -> String:
     var prefix = String("[ ") + title + " ] "
-    if width <= ascii_width(prefix):
+    var visible = text_width(prefix)
+    if width <= visible:
         return fit_cell(prefix, width)
-    return prefix + String("=") * (width - prefix.byte_length())
+    return prefix + String("=") * (width - visible)
 
 
 def wrap_text(value: String, width: Int) raises -> List[String]:
-    if ascii_width(value) == 0:
-        return [String("")]
+    var paragraphs = value.split("\n")
+    var lines = List[String]()
+    for index in range(len(paragraphs)):
+        if index == len(paragraphs) - 1 and index > 0 and not paragraphs[index]:
+            break
+        lines.extend(wrap_paragraph(String(paragraphs[index]), width))
+    return lines^
+
+
+def wrap_paragraph(value: String, width: Int) raises -> List[String]:
+    var words = List[String]()
+    var word = String()
+    for character in value.codepoints():
+        if is_whitespace(Int(character)):
+            if word:
+                words.append(word^)
+                word = ""
+        else:
+            word += chr(Int(character))
+    if word:
+        words.append(word^)
+    var maximum = max(1, width)
+    var pieces = List[String]()
+    for word in words:
+        var piece = String()
+        var cells = 0
+        for character in word.codepoints():
+            var next_cells = character_width(Int(character))
+            if piece and cells > 0 and cells + next_cells > maximum:
+                pieces.append(piece^)
+                piece = ""
+                cells = 0
+            piece += chr(Int(character))
+            cells += next_cells
+            if cells >= maximum:
+                pieces.append(piece^)
+                piece = ""
+                cells = 0
+        if piece:
+            pieces.append(piece^)
     var lines = List[String]()
     var line = String()
-    for word in value.split(" "):
-        var offset = 0
-        while offset < word.byte_length():
-            var end = min(offset + width, word.byte_length())
-            var piece = String(word[byte=offset:end])
-            if line and line.byte_length() + 1 + piece.byte_length() > width:
-                lines.append(line^)
-                line = ""
-            if line:
-                line += " "
-            line += piece
-            offset = end
+    var used = 0
+    for piece in pieces:
+        var cells = text_width(piece)
+        if line and used + 1 + cells > maximum:
+            lines.append(line^)
+            line = ""
+            used = 0
+        if line:
+            line += " "
+            used += 1
+        line += piece
+        used += cells
     if line or not lines:
         lines.append(line^)
     return lines^

@@ -9,15 +9,24 @@ metadata precedence, timestamp ordering, Unicode whitespace and query behavior,
 parent filtering, limits, exact JSON formatting, ID/resume command output, and
 symlink exclusion. The product rejects existing state rather than reading
 without the required lock/recovery. Compressed rollouts, leap-second timezone
-files, Unicode/control-character text output, interactive terminal output, profile bindings,
+files, remaining Unicode/control text output, interactive terminal output,
+profile bindings,
 and startup lifecycle/housekeeping effects remain unfinished.
 
 Detached plain text output matches 71 printable-ASCII scenarios, including
 tables, empty panels, wrapping, width overrides and exact trailing whitespace.
 `PRODEX_TERM_COLUMNS` and the 110-column fallback are implemented; `/dev/tty`
-dimension discovery is not. Widths above `Int.MAX` fail explicitly. Unicode
-and control-character cells also fail explicitly until their display-width
-rules are implemented. See `docs/evidence/session-text-tests.txt`.
+dimension discovery is not. Widths above `Int.MAX` fail explicitly.
+See `docs/evidence/session-text-tests.txt`.
+
+The renderer also supports tested Latin, Greek, Cyrillic, CJK, kana and Hangul
+ranges plus combining accents and soft hyphens. It measures cells rather than
+UTF-8 bytes and preserves codepoint boundaries. Wide ranges follow the
+[Unicode 16 width data](https://www.unicode.org/Public/16.0.0/ucd/EastAsianWidth.txt);
+zero-width behavior is checked against the release. The 239 current raw-output
+scenarios cover these ranges, but other scripts, emoji sequences and remaining
+control cells still fail explicitly. Full Unicode rendering remains unfinished.
+Evidence: `docs/evidence/session-unicode-tests.txt`.
 
 Session help and argument-error output match 39 frozen-release cases. Broader
 CLI behavior, including suggestions, short-flag clusters and complex argument

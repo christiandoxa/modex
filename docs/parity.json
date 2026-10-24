@@ -596,7 +596,8 @@
         "tests/session_mismatches.py",
         "tests/test_local_time.mojo",
         "tests/test_json_fuzz.py",
-        "tests/test_session_cli.py"
+        "tests/test_session_cli.py",
+        "tests/test_session_text.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -604,7 +605,8 @@
         "docs/evidence/time-json-tests.txt",
         "docs/evidence/recurring-time-tests.txt",
         "docs/evidence/baseline/session-cli.json",
-        "docs/evidence/session-cli-tests.txt"
+        "docs/evidence/session-cli-tests.txt",
+        "docs/evidence/session-text-tests.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -617,7 +619,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons pass for plain sessions with no existing state, including tested numeric/fallback local timestamps, future timezone recurrences and POSIX TZ strings. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, leap-second timezone files and unapproved safe handling of baseline panic."
+        "Machine-output comparisons and 71 detached printable-ASCII text scenarios pass for plain sessions with no existing state. Full contract fails: state locking/recovery, startup effects, Unicode/control display widths, interactive terminal rendering and dimensions, compressed rollouts, leap-second timezone files and unapproved safe handling of baseline panic."
       ]
     },
     {
@@ -649,7 +651,8 @@
         "tests/session_mismatches.py",
         "tests/test_local_time.mojo",
         "tests/test_json_fuzz.py",
-        "tests/test_session_cli.py"
+        "tests/test_session_cli.py",
+        "tests/test_session_text.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -657,7 +660,8 @@
         "docs/evidence/time-json-tests.txt",
         "docs/evidence/recurring-time-tests.txt",
         "docs/evidence/baseline/session-cli.json",
-        "docs/evidence/session-cli-tests.txt"
+        "docs/evidence/session-cli-tests.txt",
+        "docs/evidence/session-text-tests.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -670,7 +674,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons pass for plain sessions with no existing state, including tested numeric/fallback local timestamps, future timezone recurrences and POSIX TZ strings. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, leap-second timezone files and unapproved safe handling of baseline panic."
+        "Machine-output comparisons and 71 detached printable-ASCII text scenarios pass for plain sessions with no existing state. Full contract fails: state locking/recovery, startup effects, Unicode/control display widths, interactive terminal rendering and dimensions, compressed rollouts, leap-second timezone files and unapproved safe handling of baseline panic."
       ]
     },
     {

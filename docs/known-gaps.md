@@ -9,8 +9,15 @@ metadata precedence, timestamp ordering, Unicode whitespace and query behavior,
 parent filtering, limits, exact JSON formatting, ID/resume command output, and
 symlink exclusion. The product rejects existing state rather than reading
 without the required lock/recovery. Compressed rollouts, leap-second timezone
-files, text/terminal output, profile bindings,
+files, Unicode/control-character text output, interactive terminal output, profile bindings,
 and startup lifecycle/housekeeping effects remain unfinished.
+
+Detached plain text output matches 71 printable-ASCII scenarios, including
+tables, empty panels, wrapping, width overrides and exact trailing whitespace.
+`PRODEX_TERM_COLUMNS` and the 110-column fallback are implemented; `/dev/tty`
+dimension discovery is not. Widths above `Int.MAX` fail explicitly. Unicode
+and control-character cells also fail explicitly until their display-width
+rules are implemented. See `docs/evidence/session-text-tests.txt`.
 
 Session help and argument-error output match 39 frozen-release cases. Broader
 CLI behavior, including suggestions, short-flag clusters and complex argument

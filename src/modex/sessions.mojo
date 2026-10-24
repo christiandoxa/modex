@@ -1,13 +1,13 @@
 from std.collections import List, Optional, Span
 from std.io import FileHandle, RawFileDescriptor
-from std.os import getuid, listdir, lstat, makedirs, stat
+from std.os import getuid, isatty, listdir, lstat, makedirs, stat
 from std.os.path import exists
 
 from .json import JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json
 from .local_time import format_local_epoch
 from .paths import app_root, comparable_path, shared_root
 from .session_time import integer_timestamp, timestamp_key
-from .text import trim_text
+from .text import ascii_width, cli_width, pad_cell, section_header, status_panel, trim_text
 
 comptime SESSION_LINE_LIMIT = 64 * 1024 * 1024
 
@@ -280,4 +280,40 @@ def inspect_sessions(options: SessionOptions) raises -> String:
                 output += "modex run "
             output += reports[index].id + "\n"
         return output^
-    raise Error("session terminal and text rendering are not implemented")
+    if isatty(1):
+        raise Error("session terminal rendering is not implemented")
+    var width = cli_width()
+    if count == 0:
+        var message = String("No sessions found")
+        if options.current:
+            message += " for " + options.directory
+        return status_panel("Sessions", message, width)
+    var available = max(width - 8, 5)
+    var fifth = available // 5
+    var widths: List[Int] = [min(fifth, 26), min(fifth, 22), min(fifth, 24)]
+    var remaining = available - widths[0] - widths[1] - widths[2]
+    widths.append(remaining // 2)
+    widths.append(remaining - remaining // 2)
+    var header = session_row(["ID", "UPDATED", "THREAD", "CWD", "PATH"], widths)
+    output = section_header("Sessions", width) + "\n" + header + "\n" + String("-") * header.byte_length()
+    for index in range(count):
+        ref report = reports[index]
+        output += "\n" + session_row([
+            report.id,
+            report.updated_at if report.updated_at else String("-"),
+            report.thread_name if report.thread_name else String("-"),
+            report.directory if report.directory else String("-"),
+            report.path,
+        ], widths)
+        if ascii_width(report.id) > widths[0]:
+            output += "\n  id: " + report.id
+    return output^
+
+
+def session_row(fields: List[String], widths: List[Int]) raises -> String:
+    var output = String()
+    for index in range(len(fields)):
+        if index:
+            output += "  "
+        output += pad_cell(fields[index], widths[index])
+    return output^

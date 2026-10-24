@@ -4,7 +4,7 @@ from modex.cli import parse_session_options, unsigned_value
 from modex.json import JsonDocument
 from modex.session_time import integer_timestamp, timestamp_key
 from modex.sessions import SessionReport, starts_session
-from modex.text import trim_text
+from modex.text import fit_cell, pad_cell, section_header, trim_text, wrap_text
 
 
 def main() raises:
@@ -20,6 +20,12 @@ def main() raises:
     assert_equal(unsigned_value("18446744073709551615"), UInt64.MAX)
     assert_equal(trim_text(chr(0x2000) + " title " + chr(0xA0)), "title")
     assert_equal(trim_text("\x1cname\x1c"), "\x1cname\x1c")
+    assert_equal(fit_cell("abc", 0), "")
+    assert_equal(fit_cell("abcd", 3), "...")
+    assert_equal(fit_cell("abcdef", 5), "ab...")
+    assert_equal(pad_cell("abc", 5), "abc  ")
+    assert_equal(section_header("Sessions", 14), "[ Sessions ] =")
+    assert_equal(wrap_text("abc abcdef abc", 4), ["abc", "abcd", "ef", "abc"])
     var metadata = JsonDocument("{\"type\":\"session_meta\",\"timestamp\":\"2026-10-24T00:00:00Z\",\"payload\":{\"id\":\"session-a\",\"timestamp\":\"2026-10-24T00:00:00Z\",\"cwd\":\"/workspace\",\"originator\":\"test\",\"cli_version\":\"0.162.0\",\"title\":\"  Test title  \"}}")
     assert_true(starts_session(metadata))
     var report = SessionReport("filename", "", "", "", "", "", "/fixture.jsonl", 0)

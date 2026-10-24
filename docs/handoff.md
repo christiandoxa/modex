@@ -15,7 +15,7 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `make test` (3 Mojo unit programs, a test-only JSON driver, and 20
+Validation: `make test` (3 Mojo unit programs, a test-only JSON driver, and 26
 Python black-box/runtime tests PASS, including 500 deterministic generated
 JSON values plus malformed UTF-8/syntax/boundary vectors and numeric/local
 session time comparisons, including future recurring rules through 2100,
@@ -40,14 +40,24 @@ Evidence: `docs/evidence/baseline/session-cli.json` and
 `docs/evidence/session-cli-tests.txt`. Suggestions, short-flag clusters,
 complex argument combinations and valid resume execution remain unfinished.
 
+Detached plain session text output now matches 71 official-release scenarios:
+table columns, truncation and full-ID details, optional cells, multiple rows,
+list/current filters, empty panels, long-token wrapping, widths 1 through 300,
+and valid/invalid `PRODEX_TERM_COLUMNS` overrides. `COLUMNS` is ignored as in
+the release. Tests compare raw bytes in identical disposable homes.
+Scope: printable ASCII only; Unicode/control cells, terminal dimensions and
+the interactive view remain unimplemented. Evidence:
+`docs/evidence/session-text-tests.txt`. The text mismatch reproducer now records
+matching output separately from the remaining startup side-effect differences.
+
 The active release staging/smoke path imports the JavaScript gateway SDK.
 Its module-import compatibility is BLOCKED by the Mojo-only/no-adapter policy,
 not removed from scope. `docs/packaging-audit.json` preserves conflicting
 source/publishing/README evidence.
 
-Next work: trace hidden/default/precedence flag contracts, close argument and
-text-rendering gaps, and evaluate official stdlib mechanisms for lock/recovery
-and protected file handling. Current stateful, compressed and leap-second
+Next work: trace hidden/default/precedence flag contracts, implement Unicode
+display widths and the terminal view, and evaluate official stdlib mechanisms
+for state loading and recovery. Current stateful, compressed and leap-second
 paths fail explicitly. Future recurring timezone rules and POSIX TZ strings are
 implemented; their current evidence is `docs/evidence/recurring-time-tests.txt`.
 Startup effects still differ. Details and the baseline

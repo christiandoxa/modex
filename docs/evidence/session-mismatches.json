@@ -31,6 +31,7 @@
           ]
         }
       },
+      "output_matches": false,
       "status": "UNAPPROVED_SAFE_DIFFERENCE"
     },
     {
@@ -62,6 +63,7 @@
           ]
         }
       },
+      "output_matches": true,
       "status": "FAIL"
     },
     {
@@ -91,6 +93,7 @@
           "new_paths": []
         }
       },
+      "output_matches": false,
       "status": "FAIL"
     },
     {
@@ -113,14 +116,15 @@
           ]
         },
         "modex": {
-          "exit_code": 1,
-          "stdout": "",
-          "stderr": "Error: session terminal and text rendering are not implemented\n",
+          "exit_code": 0,
+          "stdout": "[ Sessions ] =================================================================================================\nID                    UPDATED               THREAD                CWD                    PATH                 \n--------------------------------------------------------------------------------------------------------------\n019a1234-5678-712...  2026-10-24T01:00:00Z  Session fixture       /tmp/modex-session...  /tmp/modex-session...\n  id: 019a1234-5678-7123-8123-0123456789ab",
+          "stderr": "",
           "new_paths": [
             "home/.prodex"
           ]
         }
       },
+      "output_matches": true,
       "status": "FAIL"
     }
   ]

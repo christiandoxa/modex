@@ -3,24 +3,7 @@ from std.pathlib import cwd
 
 from .paths import absolute_path
 from .sessions import SessionOptions
-
-
-def unsigned_value(text: String) raises -> UInt64:
-    var bytes = text.as_bytes()
-    var position = 1 if text.startswith("+") else 0
-    if position == len(bytes):
-        raise Error("cannot parse integer from empty string")
-    var result = UInt64(0)
-    while position < len(bytes):
-        var byte = bytes[position]
-        if byte < 48 or byte > 57:
-            raise Error("invalid digit found in string")
-        var digit = UInt64(byte - 48)
-        if result > (UInt64.MAX - digit) // 10:
-            raise Error("number too large to fit in target type")
-        result = result * 10 + digit
-        position += 1
-    return result
+from .text import unsigned_value
 
 
 def session_help(command: String, executable: String = "modex") -> String:

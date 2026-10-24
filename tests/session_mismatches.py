@@ -39,13 +39,18 @@ def main():
                     "stderr": result.stderr.decode("utf-8", "replace").replace(str(root), "<FIXTURE_ROOT>"),
                     "new_paths": sorted(after - before),
                 }
+            output_fields = ("exit_code", "stdout", "stderr")
+            output_matches = all(observations["baseline"][field] == observations["modex"][field]
+                                 for field in output_fields)
             records.append({"case": case, "arguments": arguments, "observations": observations,
+                            "output_matches": output_matches,
                             "status": "UNAPPROVED_SAFE_DIFFERENCE" if case == "nonobject-followup" else "FAIL"})
     output = ROOT / "docs/evidence/session-mismatches.json"
     output.write_text(json.dumps({"schema_version": 1, "reproduce": "python3 tests/session_mismatches.py",
                                  "cases": records}, indent=2) + "\n")
     for record in records:
-        print(f"{record['case']}: {record['status']}")
+        suffix = " (output matches; side effects differ)" if record["output_matches"] else ""
+        print(f"{record['case']}: {record['status']}{suffix}")
 
 
 if __name__ == "__main__":

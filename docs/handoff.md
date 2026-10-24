@@ -17,7 +17,7 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard drivers, and 41
+Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard drivers, and 45
 Python black-box/runtime tests PASS, including 500 deterministic generated
 JSON values plus malformed UTF-8/syntax/boundary vectors and numeric/local
 session time comparisons, including future recurring rules through 2100,
@@ -88,11 +88,21 @@ Its module-import compatibility is BLOCKED by the Mojo-only/no-adapter policy,
 not removed from scope. `docs/packaging-audit.json` preserves conflicting
 source/publishing/README evidence.
 
-Next work: trace hidden/default/precedence flag contracts, complete remaining
-Unicode display widths and the terminal view, and evaluate official stdlib mechanisms
-for state loading and recovery. Current stateful and leap-second
-paths fail explicitly. Future recurring timezone rules and POSIX TZ strings are
-implemented; their current evidence is `docs/evidence/recurring-time-tests.txt`.
+TZif v1-v3 leap-second tables now participate in timezone transition lookup
+without changing the POSIX seconds displayed in session timestamps. There are
+324 official-release comparisons covering positive/negative/mixed corrections,
+exact transition seconds, 64-bit times, file-mtime fallback, future rules,
+invalid records, indicator pairs and inconsistent footers. Invalid files and
+unsupported TZif v4 fall back to UTC as in the frozen reader. Native tests
+also cover correction overflow. The fixtures are synthetic; this host has no
+installed `right/` leap-zone directory. Evidence:
+`docs/evidence/leap-timezone-tests.txt` and `tests/test_timezone_files.py`.
+
+Next work: complete remaining Unicode display widths and the terminal view,
+and evaluate official stdlib mechanisms for state loading and recovery.
+Stateful paths still fail explicitly. Future recurring timezone rules and
+POSIX TZ strings are implemented; their earlier evidence is
+`docs/evidence/recurring-time-tests.txt`.
 Startup effects still differ. Details and the baseline
 panic are in `docs/known-gaps.md`; no session contract is PASS.
 

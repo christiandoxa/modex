@@ -1,0 +1,75 @@
+mkdir -p build
+mojo build -O3 --target-cpu=x86-64-v3 -I src src/main.mojo -o build/modex
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mkdir -p build/tests
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_json.mojo -o build/tests/test_json
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_json
+JSON unit checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_sessions.mojo -o build/tests/test_sessions
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_sessions
+session metadata, filters, timestamps, text and argument checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_local_time.mojo -o build/tests/test_local_time
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_local_time
+TZif parsing, signed epochs, Gregorian calendar and local-time checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/json_driver.mojo -o build/tests/json_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_zstd.mojo -o build/tests/test_zstd
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_zstd
+Zstandard bits, default entropy tables and checksum checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/zstd_driver.mojo -o build/tests/zstd_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+test_unimplemented_command_fails_without_echoing_arguments (test_cli.CliTests.test_unimplemented_command_fails_without_echoing_arguments) ... ok
+test_version_identity_mapping_and_no_mutations (test_cli.CliTests.test_version_identity_mapping_and_no_mutations) ... ok
+test_compressed_metadata_filters_and_output (test_compressed_sessions.CompressedSessionTests.test_compressed_metadata_filters_and_output) ... ok
+test_decoded_line_limit (test_compressed_sessions.CompressedSessionTests.test_decoded_line_limit) ... ok
+test_lines_cross_frames_and_blocks (test_compressed_sessions.CompressedSessionTests.test_lines_cross_frames_and_blocks) ... ok
+test_malformed_release_diagnostics (test_compressed_sessions.CompressedSessionTests.test_malformed_release_diagnostics) ... ok
+test_noncanonical_differences_are_retained (test_compressed_sessions.CompressedSessionTests.test_noncanonical_differences_are_retained) ... ok
+test_escaped_keys_duplicate_keys_and_boundary_values (test_json_fuzz.JsonDifferentialTests.test_escaped_keys_duplicate_keys_and_boundary_values) ... ok
+test_generated_values_round_trip_through_mojo_tree (test_json_fuzz.JsonDifferentialTests.test_generated_values_round_trip_through_mojo_tree) ... ok
+test_invalid_syntax_utf8_and_number_overflow_are_rejected (test_json_fuzz.JsonDifferentialTests.test_invalid_syntax_utf8_and_number_overflow_are_rejected) ... ok
+test_version_with_only_platform_and_official_mojo_runtime_libraries (test_runtime.CleanRuntimeTests.test_version_with_only_platform_and_official_mojo_runtime_libraries) ... ok
+test_generated_argument_sequences (test_session_cli.SessionCliTests.test_generated_argument_sequences) ... ok
+test_release_help_and_argument_diagnostics (test_session_cli.SessionCliTests.test_release_help_and_argument_diagnostics) ... ok
+test_empty_panels_and_wrapping (test_session_text.SessionTextTests.test_empty_panels_and_wrapping) ... ok
+test_interactive_view_remains_explicitly_unimplemented (test_session_text.SessionTextTests.test_interactive_view_remains_explicitly_unimplemented) ... ok
+test_optional_cells_multiple_rows_and_current (test_session_text.SessionTextTests.test_optional_cells_multiple_rows_and_current) ... ok
+test_table_columns_truncation_and_full_ids (test_session_text.SessionTextTests.test_table_columns_truncation_and_full_ids) ... ok
+test_unicode_path_wrapping (test_session_text.SessionTextTests.test_unicode_path_wrapping) ... ok
+test_unicode_range_edges (test_session_text.SessionTextTests.test_unicode_range_edges) ... ok
+test_unicode_titles_ids_and_cell_boundaries (test_session_text.SessionTextTests.test_unicode_titles_ids_and_cell_boundaries) ... ok
+test_unimplemented_cell_widths_fail_explicitly (test_session_text.SessionTextTests.test_unimplemented_cell_widths_fail_explicitly) ... ok
+test_width_override_grammar_and_fallback (test_session_text.SessionTextTests.test_width_override_grammar_and_fallback) ... ok
+test_archived_children_and_newest_first_ordering (test_sessions.SessionOutputTests.test_archived_children_and_newest_first_ordering) ... ok
+test_filters_limits_and_machine_output_modes (test_sessions.SessionOutputTests.test_filters_limits_and_machine_output_modes) ... ok
+test_future_recurring_timezone_rules (test_sessions.SessionOutputTests.test_future_recurring_timezone_rules) ... ok
+test_future_timezone_transition_seconds (test_sessions.SessionOutputTests.test_future_timezone_transition_seconds) ... ok
+test_json_file_and_metadata_precedence (test_sessions.SessionOutputTests.test_json_file_and_metadata_precedence) ... ok
+test_malformed_records_and_symlinks (test_sessions.SessionOutputTests.test_malformed_records_and_symlinks) ... ok
+test_nonobject_followup_records_do_not_crash_modex (test_sessions.SessionOutputTests.test_nonobject_followup_records_do_not_crash_modex) ... ok
+test_numeric_timestamps_and_fallback_file_times (test_sessions.SessionOutputTests.test_numeric_timestamps_and_fallback_file_times) ... ok
+test_numeric_timezones_and_daylight_transitions (test_sessions.SessionOutputTests.test_numeric_timezones_and_daylight_transitions) ... ok
+test_populated_json (test_sessions.SessionOutputTests.test_populated_json) ... ok
+test_posix_timezone_strings (test_sessions.SessionOutputTests.test_posix_timezone_strings) ... ok
+test_unicode_prefix_on_first_metadata_record_is_not_accepted (test_sessions.SessionOutputTests.test_unicode_prefix_on_first_metadata_record_is_not_accepted) ... ok
+test_unicode_whitespace_and_blank_string_fallbacks (test_sessions.SessionOutputTests.test_unicode_whitespace_and_blank_string_fallbacks) ... ok
+test_64bit_transitions_and_future_rules (test_timezone_files.TimezoneFileTests.test_64bit_transitions_and_future_rules) ... ok
+test_indicator_pairs_follow_release (test_timezone_files.TimezoneFileTests.test_indicator_pairs_follow_release) ... ok
+test_invalid_leap_files_fall_back_to_utc (test_timezone_files.TimezoneFileTests.test_invalid_leap_files_fall_back_to_utc) ... ok
+test_positive_negative_and_mixed_leap_transitions (test_timezone_files.TimezoneFileTests.test_positive_negative_and_mixed_leap_transitions) ... ok
+test_concatenation_skippable_frames_and_block_flushes (test_zstd.ZstdTests.test_concatenation_skippable_frames_and_block_flushes) ... ok
+test_explicit_huffman_and_sequence_modes (test_zstd.ZstdTests.test_explicit_huffman_and_sequence_modes) ... ok
+test_generated_payloads_and_mutated_entropy (test_zstd.ZstdTests.test_generated_payloads_and_mutated_entropy) ... ok
+test_levels_strategies_and_checksums (test_zstd.ZstdTests.test_levels_strategies_and_checksums) ... ok
+test_raw_rle_and_small_frames (test_zstd.ZstdTests.test_raw_rle_and_small_frames) ... ok
+test_truncation_and_malformed_frames (test_zstd.ZstdTests.test_truncation_and_malformed_frames) ... ok
+
+----------------------------------------------------------------------
+Ran 45 tests in 53.445s
+
+OK

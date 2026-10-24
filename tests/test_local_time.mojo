@@ -72,6 +72,41 @@ def main() raises:
     var synthetic = TimeZone(minimal)
     assert_equal(synthetic.at(0).offset, 0)
     assert_equal(synthetic.at(0).name, "UTC")
+    var leap_data = List[UInt8]()
+    for index in range(44):
+        leap_data.append(minimal[index])
+    leap_data[31] = 1
+    leap_data[35] = 1
+    leap_data[39] = 2
+    leap_data[43] = 8
+    leap_data.extend([UInt8(0), 0, 0, 102, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 14, 16, 1, 4,
+        83, 84, 68, 0, 68, 83, 84, 0, 0, 0, 0, 100, 0, 0, 0, 1])
+    var positive_leap = TimeZone(leap_data)
+    assert_equal(positive_leap.at(100).offset, 0)
+    assert_equal(positive_leap.at(101).offset, 3600)
+    for index in range(73, 77):
+        leap_data[index] = 255
+    var negative_leap = TimeZone(leap_data)
+    assert_equal(negative_leap.at(102).offset, 0)
+    assert_equal(negative_leap.at(103).offset, 3600)
+    leap_data[73] = 0
+    leap_data[74] = 0
+    leap_data[75] = 0
+    for correction in [0, 2]:
+        leap_data[76] = UInt8(correction)
+        var invalid_rejected = False
+        try:
+            var invalid = TimeZone(leap_data)
+        except:
+            invalid_rejected = True
+        assert_true(invalid_rejected)
+    var overflow_rejected = False
+    try:
+        var overflow = positive_leap.at(Int.MAX)
+    except:
+        overflow_rejected = True
+    assert_true(overflow_rejected)
     for change in range(5):
         var bytes = minimal.copy()
         if change == 0:

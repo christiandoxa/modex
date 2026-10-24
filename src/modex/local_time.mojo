@@ -23,10 +23,15 @@ def signed_be(bytes: List[UInt8], position: Int, width: Int) raises -> Int:
     return Int(value)
 
 
-@fieldwise_init
 struct ZoneType(Copyable):
     var offset: Int
     var name: String
+    var daylight: Bool
+
+    def __init__(out self, offset: Int, var name: String, daylight: Bool = False):
+        self.offset = offset
+        self.name = name^
+        self.daylight = daylight
 
 
 def is_leap_year(year: Int) -> Bool:
@@ -103,7 +108,7 @@ struct PosixZone(Copyable):
             var offset = self.standard.offset + 3600
             if parser.peek() != -1 and parser.peek() != 44:
                 offset = -parser.clock(24)
-            self.daylight = ZoneType(offset, daylight_name^)
+            self.daylight = ZoneType(offset, daylight_name^, True)
             parser.expect(44)
             self.start = parser.rule()
             parser.expect(44)
@@ -231,19 +236,23 @@ struct TimeZone:
     var transitions: List[Int]
     var transition_types: List[Int]
     var types: List[ZoneType]
+    var leap_times: List[Int]
+    var leap_corrections: List[Int]
     var future: Optional[PosixZone]
 
     def __init__(out self, bytes: List[UInt8]) raises:
         self.transitions = List[Int]()
         self.transition_types = List[Int]()
         self.types = List[ZoneType]()
+        self.leap_times = List[Int]()
+        self.leap_corrections = List[Int]()
         self.future = None
         var header = 0
         var width = 4
         var counts = zone_header(bytes, 0)
         var size = block_size(counts, width)
         var version = bytes[4]
-        if version == 50 or version == 51 or version == 52:
+        if version == 50 or version == 51:
             header = 44 + size
             counts = zone_header(bytes, header)
             if bytes[header + 4] != version:
@@ -256,8 +265,6 @@ struct TimeZone:
         var end = start + size
         if end > len(bytes):
             raise Error("truncated time-zone block")
-        if counts[2] != 0:
-            raise Error("leap-second time-zone data is not implemented")
         var time_count = counts[3]
         var type_count = counts[4]
         var char_count = counts[5]
@@ -276,7 +283,7 @@ struct TimeZone:
             if name_end == names + char_count:
                 raise Error("unterminated time-zone designation")
             var name = String(from_utf8=Span(bytes)[names + name_index:name_end])
-            self.types.append(ZoneType(offset, name^))
+            self.types.append(ZoneType(offset, name^, daylight == 1))
         for index in range(time_count):
             var timestamp = signed_be(bytes, start + index * width, width)
             var type_index = Int(bytes[indexes + index])
@@ -284,14 +291,26 @@ struct TimeZone:
                 raise Error("invalid time-zone transition")
             self.transitions.append(timestamp)
             self.transition_types.append(type_index)
-        var indicators = names + char_count
-        for index in range(counts[1]):
-            if bytes[indicators + index] > 1:
-                raise Error("invalid standard/wall time-zone indicator")
-        for index in range(counts[0]):
-            var indicator = bytes[indicators + counts[1] + index]
-            if indicator > 1 or (indicator == 1 and (counts[1] == 0 or bytes[indicators + index] != 1)):
-                raise Error("invalid UT/local time-zone indicator")
+        var leaps = names + char_count
+        for index in range(counts[2]):
+            var occurrence = signed_be(bytes, leaps + index * (width + 4), width)
+            var correction = signed_be(bytes, leaps + index * (width + 4) + width, 4)
+            if index == 0:
+                if occurrence < 0 or abs(correction) != 1:
+                    raise Error("invalid time-zone leap second")
+            elif (occurrence <= self.leap_times[index - 1]
+                or occurrence - self.leap_times[index - 1] < 28 * 86400 - 1
+                or abs(correction - self.leap_corrections[index - 1]) != 1):
+                raise Error("invalid time-zone leap second")
+            self.leap_times.append(occurrence)
+            self.leap_corrections.append(correction)
+        var indicators = leaps + counts[2] * (width + 4)
+        # The frozen reader only rejects the (wall, UT) indicator combination.
+        for index in range(type_count):
+            var standard = Int(bytes[indicators + index]) if counts[1] else 0
+            var universal = Int(bytes[indicators + counts[1] + index]) if counts[0] else 0
+            if standard == 0 and universal == 1:
+                raise Error("invalid time-zone indicator pair")
         if width == 8:
             var footer = String(from_utf8=Span(bytes)[end:])
             if not footer.startswith("\n") or not footer.endswith("\n"):
@@ -301,16 +320,40 @@ struct TimeZone:
             var rule = String(footer[byte=1:footer.byte_length() - 1])
             if rule:
                 self.future = PosixZone(rule, extended=version >= 51)
+                if self.transitions:
+                    var last = self.transitions[len(self.transitions) - 1]
+                    var correction = 0
+                    for index in range(len(self.leap_times)):
+                        if self.leap_times[index] >= last:
+                            break
+                        correction = self.leap_corrections[index]
+                    if (last == Int.MIN or (correction > 0 and last < Int.MIN + correction)
+                        or (correction < 0 and last > Int.MAX + correction)):
+                        raise Error("time-zone footer transition exceeds supported range")
+                    var expected = self.future.value().at(last - correction)
+                    ref actual = self.types[self.transition_types[len(self.transitions) - 1]]
+                    if expected.offset != actual.offset or expected.name != actual.name or expected.daylight != actual.daylight:
+                        raise Error("time-zone footer does not match the last transition")
 
     def at(self, epoch: Int) raises -> ZoneType:
-        if self.future and (not self.transitions or epoch >= self.transitions[len(self.transitions) - 1]):
+        # TZif transitions include leap seconds; session timestamps do not.
+        var lookup = epoch
+        if self.transitions:
+            for index in range(len(self.leap_times)):
+                if lookup < self.leap_times[index]:
+                    break
+                var correction = self.leap_corrections[index]
+                if (correction > 0 and epoch > Int.MAX - correction) or (correction < 0 and epoch < Int.MIN - correction):
+                    raise Error("time-zone leap correction exceeds supported range")
+                lookup = epoch + correction
+        if self.future and (not self.transitions or lookup >= self.transitions[len(self.transitions) - 1]):
             return self.future.value().at(epoch)
         var selected = 0
         var low = 0
         var high = len(self.transitions)
         while low < high:
             var middle = low + (high - low) // 2
-            if self.transitions[middle] <= epoch:
+            if self.transitions[middle] <= lookup:
                 low = middle + 1
             else:
                 high = middle
@@ -382,9 +425,12 @@ def format_local_epoch(epoch: Int) raises -> String:
                 pass
         # The release's local-time backend falls back to UTC for invalid TZ values.
         return calendar_time(epoch, ZoneType(0, "UTC"))
-    with open(path, "r") as file:
-        var bytes = file.read_bytes(1024 * 1024 + 1)
-        if len(bytes) > 1024 * 1024:
-            raise Error("time-zone data exceeds safe size limit")
-        var zone = TimeZone(bytes)
-        return calendar_time(epoch, zone.at(epoch))
+    try:
+        with open(path, "r") as file:
+            var bytes = file.read_bytes(1024 * 1024 + 1)
+            if len(bytes) > 1024 * 1024:
+                raise Error("time-zone data exceeds safe size limit")
+            var zone = TimeZone(bytes)
+            return calendar_time(epoch, zone.at(epoch))
+    except:
+        return calendar_time(epoch, ZoneType(0, "UTC"))

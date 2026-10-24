@@ -597,6 +597,7 @@
         "tests/test_sessions.py",
         "tests/session_mismatches.py",
         "tests/test_local_time.mojo",
+        "tests/test_timezone_files.py",
         "tests/test_json_fuzz.py",
         "tests/test_session_cli.py",
         "tests/test_session_text.py",
@@ -609,6 +610,7 @@
         "docs/evidence/session-mismatches.json",
         "docs/evidence/time-json-tests.txt",
         "docs/evidence/recurring-time-tests.txt",
+        "docs/evidence/leap-timezone-tests.txt",
         "docs/evidence/baseline/session-cli.json",
         "docs/evidence/session-cli-tests.txt",
         "docs/evidence/session-arguments-tests.txt",
@@ -628,7 +630,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons, dictionary-free compressed rollout cases and 239 detached text scenarios pass with no existing state. Full contract fails: state locking/recovery, startup effects, remaining scripts/emoji/control display widths, interactive terminal rendering and dimensions, leap-second timezone files, baseline panic handling and unapproved noncanonical compressed-frame differences."
+        "Machine-output comparisons, 324 synthetic leap-zone cases, dictionary-free compressed rollout cases and 239 detached text scenarios pass with no existing state. Full contract fails: state locking/recovery, startup effects, remaining scripts/emoji/control display widths, interactive terminal rendering and dimensions, remaining unverified timezone file cases, baseline panic handling and unapproved noncanonical compressed-frame differences."
       ]
     },
     {
@@ -659,6 +661,7 @@
         "tests/test_sessions.py",
         "tests/session_mismatches.py",
         "tests/test_local_time.mojo",
+        "tests/test_timezone_files.py",
         "tests/test_json_fuzz.py",
         "tests/test_session_cli.py",
         "tests/test_session_text.py",
@@ -671,6 +674,7 @@
         "docs/evidence/session-mismatches.json",
         "docs/evidence/time-json-tests.txt",
         "docs/evidence/recurring-time-tests.txt",
+        "docs/evidence/leap-timezone-tests.txt",
         "docs/evidence/baseline/session-cli.json",
         "docs/evidence/session-cli-tests.txt",
         "docs/evidence/session-arguments-tests.txt",
@@ -690,7 +694,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons, dictionary-free compressed rollout cases and 239 detached text scenarios pass with no existing state. Full contract fails: state locking/recovery, startup effects, remaining scripts/emoji/control display widths, interactive terminal rendering and dimensions, leap-second timezone files, baseline panic handling and unapproved noncanonical compressed-frame differences."
+        "Machine-output comparisons, 324 synthetic leap-zone cases, dictionary-free compressed rollout cases and 239 detached text scenarios pass with no existing state. Full contract fails: state locking/recovery, startup effects, remaining scripts/emoji/control display widths, interactive terminal rendering and dimensions, remaining unverified timezone file cases, baseline panic handling and unapproved noncanonical compressed-frame differences."
       ]
     },
     {

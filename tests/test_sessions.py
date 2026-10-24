@@ -35,7 +35,7 @@ def normalize_output(data, root, arguments, *, modex=False):
     return data
 
 
-def compare_outputs(arguments, change=None, *, timezone="UTC"):
+def compare_outputs(arguments, change=None, *, timezone="UTC", timezone_data=None):
     with tempfile.TemporaryDirectory(prefix="modex-session-pair-") as directory:
         parent = Path(directory)
         observations = []
@@ -45,7 +45,12 @@ def compare_outputs(arguments, change=None, *, timezone="UTC"):
             fixture(root)
             if change:
                 change(root)
-            result = subprocess.run(sandbox_command(binary, root, arguments, timezone=timezone),
+            zone_name = timezone
+            if timezone_data is not None:
+                zone_file = root / "fixture.tzif"
+                zone_file.write_bytes(timezone_data)
+                zone_name = ":" + str(zone_file)
+            result = subprocess.run(sandbox_command(binary, root, arguments, timezone=zone_name),
                                     capture_output=True, timeout=10, check=False)
             if result.returncode != 0:
                 raise AssertionError(f"{name} exited {result.returncode}: {result.stderr!r}")

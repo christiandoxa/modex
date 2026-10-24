@@ -8,10 +8,9 @@ Session machine-output tests cover populated and archived plain JSON/JSONL,
 metadata precedence, timestamp ordering, Unicode whitespace and query behavior,
 parent filtering, limits, exact JSON formatting, ID/resume command output, and
 symlink exclusion. The product rejects existing state rather than reading
-without the required lock/recovery. Leap-second timezone
-files, remaining Unicode/control text output, interactive terminal output,
-profile bindings,
-and startup lifecycle/housekeeping effects remain unfinished.
+without the required lock/recovery. Remaining Unicode/control text output,
+interactive terminal output, profile bindings and startup lifecycle/housekeeping
+effects remain unfinished.
 
 Detached plain text output matches 71 printable-ASCII scenarios, including
 tables, empty panels, wrapping, width overrides and exact trailing whitespace.
@@ -70,7 +69,15 @@ invalid values fall back to UTC as observed in the official artifact. Sources:
 [POSIX TZ grammar](https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap08.html)
 and [glibc timezone documentation](https://sourceware.org/glibc/manual/latest/html_node/Proleptic-TZ.html).
 The current differential suite checks dates through 2100 and exact transition
-seconds in six named zones. Leap-second TZif files remain unimplemented.
+seconds in six named zones.
+
+Leap-second TZif v1-v3 files now pass 324 additional release comparisons using
+synthetic fixtures. They cover positive/negative corrections, exact transition
+seconds, 64-bit timestamps, file-mtime fallback and future rules. Invalid
+records, inconsistent footers and unsupported v4 files fall back to UTC. The
+frozen reader's permissive indicator handling is reproduced. Other timezone
+file edge cases remain unverified, and this host has no installed `right/`
+leap-zone directory. Evidence: `docs/evidence/leap-timezone-tests.txt`.
 
 `python3 tests/session_mismatches.py` records both executables' output, exit
 status and new files. The output-focused tests explicitly exclude those

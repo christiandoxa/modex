@@ -17,7 +17,7 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard/text drivers, and 59
+Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard/text/log drivers, and 93
 Python black-box/runtime tests PASS, including 500 deterministic generated
 JSON values plus malformed UTF-8/syntax/boundary vectors and numeric/local
 session time comparisons, including future recurring rules through 2100,
@@ -37,6 +37,31 @@ trailing arguments after help flags and custom executable names in Usage.
 Their release comparisons check isolated homes and no created paths.
 Other command help routes remain unfinished. Evidence:
 `docs/evidence/unicode-width-tests.txt` and `tests/test_root_help.py`.
+
+Detached `log last` now selects transcript, upstream-payload and token-usage
+snapshots through native Mojo. The connected path covers context/message/tool/
+protocol/status projections, credential redaction, bounded file tails,
+millisecond session ordering and runtime path ties, strict base64 and numeric
+fields, binary labels and bounded in-memory Zstandard payload decoding.
+Plain snapshots render metadata, source labels, wrapped payloads and throughput;
+JSON preserves envelope order and null request IDs. Log help and diagnostics
+have 75 frozen-release argv comparisons, including short-help clusters and
+error precedence. Shared JSON serialization sorts object keys and retains the
+last duplicate value. No external implementation dependency was added.
+Evidence: `docs/evidence/log-tests.txt`, `docs/evidence/log-link.txt` and the
+eight `tests/test_log*.py` modules.
+
+This remains an incomplete log contract. Policy-backed directories are
+rejected unless `PRODEX_RUNTIME_LOG_DIR` supplies the location; live stream,
+upstream-follow and terminal views remain unimplemented. Binary-text
+classification currently uses common Unicode ranges and loses a Deseret
+tool-output event. Existing insecure application roots still fail instead of
+receiving baseline permission repair. Timestamp layouts and remaining log
+combinations need further verification. Three Unicode-whitespace inputs expose
+credentials in the release while Modex masks them; a fourth preserves spacing
+differently. These four unapproved safe differences and two concrete failures
+are retained by `python3 tests/capture_log_mismatches.py` in
+`docs/evidence/log-mismatches.json`; none is parity PASS.
 
 Session help and argument diagnostics now match 271 captured official-release
 cases and 152 seeded generated comparisons. Coverage includes suggestions,
@@ -123,9 +148,9 @@ also cover correction overflow. The fixtures are synthetic; this host has no
 installed `right/` leap-zone directory. Evidence:
 `docs/evidence/leap-timezone-tests.txt` and `tests/test_timezone_files.py`.
 
-Next work: finish detached `log last` event selection, redaction and policy
-path resolution with oracle regressions, then complete remaining sequence
-edge cases and the terminal view. Log work is not in this memory checkpoint.
+Next work: replace common-range log binary-text classification with complete
+Unicode alphanumeric data, implement native TOML policy loading and runtime
+log-directory resolution, then complete log live views and remaining commands.
 Stateful paths still fail explicitly. Future recurring timezone rules and
 POSIX TZ strings are implemented; their earlier evidence is
 `docs/evidence/recurring-time-tests.txt`.

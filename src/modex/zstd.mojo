@@ -51,7 +51,9 @@ def match_length(code: Int, mut bits: ReverseBits) raises -> Int:
 
 
 struct ZstdReader(Movable):
-    var file: FileHandle
+    var file: Optional[FileHandle]
+    var source: List[UInt8]
+    var source_position: Int
     var active: Bool
     var seen_frame: Bool
     var known_size: Bool
@@ -75,7 +77,9 @@ struct ZstdReader(Movable):
     var incomplete_pending: Bool
 
     def __init__(out self, var file: FileHandle):
-        self.file = file^
+        self.file = Optional(file^)
+        self.source = []
+        self.source_position = 0
         self.active = False
         self.seen_frame = False
         self.known_size = False
@@ -98,16 +102,54 @@ struct ZstdReader(Movable):
         self.buffered_position = 0
         self.incomplete_pending = False
 
-    def take(self, count: Int) raises -> List[UInt8]:
+    def __init__(out self, data: List[UInt8]):
+        self.file = Optional[FileHandle]()
+        self.source = []
+        for byte in data:
+            self.source.append(byte)
+        self.source_position = 0
+        self.active = False
+        self.seen_frame = False
+        self.known_size = False
+        self.expected_size = 0
+        self.checksum = False
+        self.window = 0
+        self.block_limit = 0
+        self.history = []
+        self.produced = 0
+        self.hash = Xxh64()
+        self.huffman = HuffmanTable(0, [])
+        self.tables = []
+        self.repeats = []
+        self.raw_remaining = 0
+        self.raw_value = -1
+        self.raw_last = False
+        self.raw_partial = False
+        self.pending_finish = False
+        self.buffered = []
+        self.buffered_position = 0
+        self.incomplete_pending = False
+
+    def read_input(mut self, count: Int) raises -> List[UInt8]:
+        if self.file:
+            return self.file.value().read_bytes(count)
+        var end = min(self.source_position + count, len(self.source))
+        var result = List[UInt8]()
+        for index in range(self.source_position, end):
+            result.append(self.source[index])
+        self.source_position = end
+        return result^
+
+    def take(mut self, count: Int) raises -> List[UInt8]:
         var result = List[UInt8](capacity=count)
         while len(result) < count:
-            var block = self.file.read_bytes(count - len(result))
+            var block = self.read_input(count - len(result))
             if not block:
                 raise Error("incomplete frame")
             result.extend(block^)
         return result^
 
-    def little(self, count: Int) raises -> UInt64:
+    def little(mut self, count: Int) raises -> UInt64:
         var bytes = self.take(count)
         var result = UInt64(0)
         for index in range(count):
@@ -116,7 +158,7 @@ struct ZstdReader(Movable):
 
     def start_frame(mut self) raises -> Bool:
         while True:
-            var magic_bytes = self.file.read_bytes(4)
+            var magic_bytes = self.read_input(4)
             if not magic_bytes:
                 if not self.seen_frame:
                     raise Error("incomplete frame")
@@ -314,7 +356,7 @@ struct ZstdReader(Movable):
         var output = List[UInt8](capacity=count)
         self.raw_partial = False
         if self.raw_value < 0:
-            var raw = self.file.read_bytes(count)
+            var raw = self.read_input(count)
             if not raw:
                 raise Error("incomplete frame")
             self.raw_partial = len(raw) < count

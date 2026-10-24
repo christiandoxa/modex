@@ -70,6 +70,27 @@ Root `--help`, `-h`, bare `help`, ignored help-flag tails and custom executable
 Usage now match isolated release checks. Remaining help routes and command
 execution are unfinished. Evidence: `docs/evidence/unicode-width-tests.txt`.
 
+Detached `log last` is connected for transcript/upstream/token snapshots with
+JSON and plain output. The suite covers 75 log CLI argv cases, bounded tails,
+mtime ties, numeric validation, strict base64, redaction, context/tool/protocol
+events, payload rendering and 128 KiB decompressed-payload boundaries.
+`stream`, upstream-follow, live sources and terminal views remain unfinished.
+Policy loading fails explicitly when a policy file exists and no explicit
+runtime-log directory is provided. Existing root permission repair is also
+unsupported. Binary-text classification uses common Unicode ranges and drops
+the retained U+10400 Deseret tool-output fixture. Timestamp format coverage,
+remaining projection combinations and non-host platforms remain unverified.
+Evidence: `docs/evidence/log-tests.txt` and `docs/evidence/log-link.txt`.
+
+Three frozen-release log fixtures expose a quoted credential beside Unicode
+whitespace. Modex masks the complete value and preserves the original spacing;
+a fourth fixture differs only in retained spacing. Proposed handling: retain
+complete masking and whitespace preservation, with compatibility approval
+still pending. These are four `UNAPPROVED_SAFE_DIFFERENCE` observations, not
+parity passes. The actual outputs and two implementation failures are retained
+in `docs/evidence/log-mismatches.json`; reproduce with
+`python3 tests/capture_log_mismatches.py`.
+
 Numeric and file-modification timestamps now match the release in UTC,
 Asia/Jakarta, America/New_York and Europe/London for the tested dates, including
 daylight offsets, negative epochs, expanded years and Chrono's range limits.

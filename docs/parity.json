@@ -80,12 +80,13 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/cli.mojo; src/modex/root_help.mojo; src/main.mojo (root and session help and diagnostics)",
+      "implementation": "src/modex/cli.mojo; src/modex/root_help.mojo; src/modex/log_cli.mojo; src/main.mojo (root/session/log help and diagnostics)",
       "tests": [
         "tests/capture_cli.py",
         "tests/capture_session_cli.py",
         "tests/test_session_cli.py",
-        "tests/test_root_help.py"
+        "tests/test_root_help.py",
+        "tests/test_log_cli.py"
       ],
       "evidence": [
         "docs/cli-inventory.json",
@@ -93,7 +94,8 @@
         "docs/evidence/baseline/session-cli.json",
         "docs/evidence/session-cli-tests.txt",
         "docs/evidence/session-arguments-tests.txt",
-        "docs/evidence/unicode-width-tests.txt"
+        "docs/evidence/unicode-width-tests.txt",
+        "docs/evidence/log-tests.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -106,7 +108,8 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "35 oracle help routes captured. Session help and diagnostics match 271 captured official-release cases and 152 seeded generated comparisons, including suggestions, short-flag clusters, literal boundaries, help routing and ordered conflicts. Other commands, remaining combinations and valid resume execution remain unfinished or unverified. Root --help/-h/bare help and custom Usage executable are covered by tests/test_root_help.py; command help remains partial and unknown help routes/other commands remain unfinished or unverified."
+        "35 oracle help routes captured. Session help and diagnostics match 271 captured official-release cases and 152 seeded generated comparisons, including suggestions, short-flag clusters, literal boundaries, help routing and ordered conflicts. Other commands, remaining combinations and valid resume execution remain unfinished or unverified. Root --help/-h/bare help and custom Usage executable are covered by tests/test_root_help.py; command help remains partial and unknown help routes/other commands remain unfinished or unverified.",
+        "Log help/diagnostics have 75 actual oracle argv comparisons, including short clusters and error precedence; remaining command routes and combinations are incomplete."
       ]
     },
     {
@@ -133,12 +136,19 @@
       "prerequisites": [
         "managed upstream CLI"
       ],
-      "implementation": null,
-      "tests": [],
-      "evidence": [],
-      "status": "NOT_STARTED",
+      "implementation": "src/main.mojo (version/help/session/log routes only)",
+      "tests": [
+        "tests/test_cli.py",
+        "tests/test_root_help.py",
+        "tests/test_session_cli.py",
+        "tests/test_log_cli.py"
+      ],
+      "evidence": [
+        "docs/evidence/log-tests.txt"
+      ],
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -146,7 +156,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Remaining command execution, bare/upstream passthrough, non-UTF8 argv and integration dispatch are unfinished."
       ]
     },
     {
@@ -539,13 +550,13 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/log_command_tui.rs",
         "symbol": "handle_log",
-        "trace_verified": false
+        "trace_verified": true
       },
       "required_behavior": "Redacted stream/last/upstream output, JSON envelopes, session/runtime event selection and terminal rendering.",
       "input": "mode and json",
       "output": "log stream/snapshot",
       "failure_modes": "filesystem/framing failures",
-      "side_effects": "read-only log access",
+      "side_effects": "Application-root startup creation/permission repair, followed by read-only log access.",
       "platforms": [
         "x86_64-unknown-linux-gnu",
         "aarch64-unknown-linux-gnu",
@@ -555,12 +566,26 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": null,
-      "tests": [],
-      "evidence": [],
-      "status": "NOT_STARTED",
+      "implementation": "src/modex/log_cli.mojo; src/modex/log_payload.mojo; src/modex/log_payload_render.mojo; src/modex/log_redaction.mojo; src/modex/log_text.mojo; src/modex/log_transcript.mojo; src/modex/logs.mojo; src/main.mojo; src/modex/json.mojo; src/modex/zstd.mojo",
+      "tests": [
+        "tests/test_log_cli.py",
+        "tests/test_log_payload.py",
+        "tests/test_log_payload_render.py",
+        "tests/test_log_redaction.py",
+        "tests/test_log_runtime.py",
+        "tests/test_log_text.py",
+        "tests/test_log_transcript.py",
+        "tests/test_logs.py",
+        "tests/capture_log_mismatches.py"
+      ],
+      "evidence": [
+        "docs/evidence/log-tests.txt",
+        "docs/evidence/log-link.txt",
+        "docs/evidence/log-mismatches.json"
+      ],
+      "status": "FAIL",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "FAIL",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -568,7 +593,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Detached last snapshots are connected and covered by actual oracle comparisons. Full LOG fails on policy-backed directories, incomplete Unicode binary-text classification (retained Deseret case), root permission repair, unapproved redaction differences and unimplemented live/stream/upstream-follow/TUI paths. Remaining timestamp and projection combinations are unverified."
       ]
     },
     {
@@ -2195,12 +2221,19 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": null,
-      "tests": [],
-      "evidence": [],
-      "status": "NOT_STARTED",
+      "implementation": "src/modex/log_redaction.mojo; src/modex/log_text.mojo (detached logs only)",
+      "tests": [
+        "tests/test_log_redaction.py",
+        "tests/test_log_text.py",
+        "tests/capture_log_mismatches.py"
+      ],
+      "evidence": [
+        "docs/evidence/log-tests.txt",
+        "docs/evidence/log-mismatches.json"
+      ],
+      "status": "FAIL",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "FAIL",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -2208,7 +2241,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Detached log text redaction only; JSON/argv/environment/other diagnostics remain unfinished. Three baseline Unicode-whitespace fixtures expose quoted credentials while Modex masks them; a fourth preserves whitespace differently. All four remain UNAPPROVED_SAFE_DIFFERENCE, not parity."
       ]
     },
     {

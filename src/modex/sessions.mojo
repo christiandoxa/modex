@@ -1,12 +1,12 @@
 from std.collections import List, Optional, Span
 from std.io import FileHandle, RawFileDescriptor
-from std.os import getuid, isatty, listdir, lstat, makedirs, stat
+from std.os import isatty, listdir, lstat, stat
 from std.os.path import exists
 from std.pathlib import cwd
 
 from .json import JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json
 from .local_time import format_local_epoch
-from .paths import absolute_path, app_root, comparable_path, shared_root
+from .paths import absolute_path, comparable_path, ensure_app_root, shared_root
 from .session_time import integer_timestamp, timestamp_key
 from .text import cli_width, pad_cell, section_header, status_panel, text_width, trim_text
 from .zstd import ZstdReader
@@ -275,13 +275,7 @@ def read_session(path: String) raises -> Optional[SessionReport]:
 def inspect_sessions(var options: SessionOptions) raises -> String:
     if options.current:
         options.directory = absolute_path(options.directory.value()) if options.directory else String(cwd())
-    var root = app_root()
-    if exists(root):
-        var info = lstat(root)
-        if (info.st_mode & 0o170000) != 0o040000 or info.st_uid != getuid() or (info.st_mode & 0o077) != 0:
-            raise Error("secure application-directory permission repair is not implemented")
-    else:
-        makedirs(root, mode=0o700, exist_ok=True)
+    var root = ensure_app_root()
     # shortcut: state/journal recovery is unavailable; reject these homes until locking and durable writes are proven.
     for name in listdir(root):
         if name.startswith("state.json") or name == "profile-lifecycle-journal" or name == "profile-import-auth-journal":

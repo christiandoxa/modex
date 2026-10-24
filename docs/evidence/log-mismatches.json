@@ -1,0 +1,100 @@
+{
+  "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "oracle_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+  "cases": [
+    {
+      "status": "UNAPPROVED_SAFE_DIFFERENCE",
+      "input": "api_key = \"synthetic-secret-value\"",
+      "baseline": {
+        "exit_code": 0,
+        "stdout": "{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"user\",\"text\":\"api_key = \\\"synthetic-secret-value\\\"\"}\n",
+        "stderr": ""
+      },
+      "modex": {
+        "exit_code": 0,
+        "stdout": "{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"user\",\"text\":\"api_key = \\\"<redacted>\\\"\"}\n",
+        "stderr": ""
+      },
+      "proposal": "Keep complete credential masking and preserve Unicode whitespace; compatibility approval remains pending."
+    },
+    {
+      "status": "UNAPPROVED_SAFE_DIFFERENCE",
+      "input": "api_key= \"synthetic-secret-value\"",
+      "baseline": {
+        "exit_code": 0,
+        "stdout": "{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"user\",\"text\":\"api_key=<redacted>\\\"synthetic-secret-value\\\"\"}\n",
+        "stderr": ""
+      },
+      "modex": {
+        "exit_code": 0,
+        "stdout": "{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"user\",\"text\":\"api_key= \\\"<redacted>\\\"\"}\n",
+        "stderr": ""
+      },
+      "proposal": "Keep complete credential masking and preserve Unicode whitespace; compatibility approval remains pending."
+    },
+    {
+      "status": "UNAPPROVED_SAFE_DIFFERENCE",
+      "input": "password= \"synthetic-secret-value\"",
+      "baseline": {
+        "exit_code": 0,
+        "stdout": "{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"user\",\"text\":\"password=<redacted>\\\"synthetic-secret-value\\\"\"}\n",
+        "stderr": ""
+      },
+      "modex": {
+        "exit_code": 0,
+        "stdout": "{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"user\",\"text\":\"password= \\\"<redacted>\\\"\"}\n",
+        "stderr": ""
+      },
+      "proposal": "Keep complete credential masking and preserve Unicode whitespace; compatibility approval remains pending."
+    },
+    {
+      "status": "UNAPPROVED_SAFE_DIFFERENCE",
+      "input": "password= synthetic-secret-value",
+      "baseline": {
+        "exit_code": 0,
+        "stdout": "{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"user\",\"text\":\"password=<redacted>\"}\n",
+        "stderr": ""
+      },
+      "modex": {
+        "exit_code": 0,
+        "stdout": "{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"user\",\"text\":\"password= <redacted>\"}\n",
+        "stderr": ""
+      },
+      "proposal": "Keep complete credential masking and preserve Unicode whitespace; compatibility approval remains pending."
+    },
+    {
+      "status": "FAIL",
+      "input": {
+        "type": "response_item",
+        "payload": {
+          "type": "function_call_output",
+          "output": "𐐀𐐀𐐀𐐀𐐀𐐀𐐀𐐀"
+        }
+      },
+      "baseline_events": [
+        {
+          "timestamp": "2026-10-24 01:02:04.000 +00:00",
+          "source": "tool-output",
+          "text": "𐐀𐐀𐐀𐐀𐐀𐐀𐐀𐐀"
+        }
+      ],
+      "modex_events": [],
+      "reason": "Binary-text classification lacks complete Unicode alphanumeric data."
+    },
+    {
+      "status": "FAIL",
+      "input": "version = 1\n[runtime]\nlog_dir = \"logs\"\n",
+      "baseline": {
+        "exit_code": 0,
+        "stdout": "{\"cached_input_tokens\":0,\"event\":\"token_usage\",\"fields\":{\"cached_input_tokens\":0,\"input_tokens\":1,\"output_tokens\":2,\"profile\":\"unknown\",\"reasoning_tokens\":0,\"source\":\"unknown\",\"transport\":\"unknown\"},\"input_tokens\":1,\"output_tokens\":2,\"profile\":\"unknown\",\"reasoning_tokens\":0,\"request\":null,\"source\":\"unknown\",\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"transport\":\"unknown\"}\n",
+        "stderr": ""
+      },
+      "modex": {
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "Error: runtime log policy loading is not implemented\n"
+      },
+      "reason": "Policy-backed runtime log directory resolution is unfinished."
+    }
+  ]
+}

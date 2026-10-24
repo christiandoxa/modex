@@ -206,6 +206,58 @@ struct JsonDocument:
         return index
 
 
+def serialize_number(text: String) -> String:
+    if text.find(".") < 0 and text.find("e") < 0 and text.find("E") < 0:
+        if text.startswith("-"):
+            var digits = String(text[byte=1:])
+            if text != "-0" and (digits.byte_length() < 19 or (digits.byte_length() == 19 and digits <= "9223372036854775808")):
+                return text
+        elif text.byte_length() < 20 or (text.byte_length() == 20 and text <= "18446744073709551615"):
+            return text
+    try:
+        return String(atof(text))
+    except:
+        return text
+
+
+def serialize_json(document: JsonDocument, node: Int, indent: Int = -1, depth: Int = 0) -> String:
+    ref value = document.nodes[node]
+    if value.kind == JSON_STRING:
+        return quote_json(value.text)
+    if value.kind == JSON_NUMBER:
+        return serialize_number(value.text)
+    if value.kind != JSON_ARRAY and value.kind != JSON_OBJECT:
+        return value.text
+    var fields = List[Tuple[String, Int]]()
+    if value.kind == JSON_OBJECT:
+        for index in range(len(value.children)):
+            fields.append((value.names[index], value.children[index]))
+        sort(Span(fields), lambda (left: Tuple[String, Int], right: Tuple[String, Int]) -> Bool:
+             left[0] < right[0] or (left[0] == right[0] and left[1] < right[1]))
+    var children = List[Int]()
+    var names = List[String]()
+    if value.kind == JSON_ARRAY:
+        children = value.children.copy()
+    else:
+        for index in range(len(fields)):
+            if index + 1 < len(fields) and fields[index][0] == fields[index + 1][0]:
+                continue
+            names.append(fields[index][0])
+            children.append(fields[index][1])
+    var output = "[" if value.kind == JSON_ARRAY else "{"
+    for index in range(len(children)):
+        if index:
+            output += ","
+        if indent >= 0:
+            output += "\n" + String(" ") * (indent * (depth + 1))
+        if value.kind == JSON_OBJECT:
+            output += quote_json(names[index]) + (": " if indent >= 0 else ":")
+        output += serialize_json(document, children[index], indent, depth + 1)
+    if children and indent >= 0:
+        output += "\n" + String(" ") * (indent * depth)
+    return output + ("]" if value.kind == JSON_ARRAY else "}")
+
+
 def quote_json(text: StringSlice) -> String:
     var result = String("\"")
     comptime HEX = StaticString("0123456789abcdef")

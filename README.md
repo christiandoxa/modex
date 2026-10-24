@@ -2,8 +2,9 @@
 
 Modex is a new Mojo implementation targeting the behavior of Prodex 0.439.0
 (`433aad44bb249d5c25a231a6b06c2fa522a39a1f`). It is under development and does
-not yet provide feature parity. Version output and development session
-inspection are connected to the production CLI. Session inspection reads plain
+not yet provide feature parity. Version output, development session inspection
+and detached `log last` snapshots are connected to the production CLI.
+Session inspection reads plain
 and Zstandard rollouts and prints JSON or plain tables with supported Unicode.
 Session state recovery, the interactive terminal view, resume, and baseline
 startup side effects remain incomplete. Known output differences are tracked
@@ -20,6 +21,7 @@ mojo --version  # Mojo 1.2.0 (2016d0cd)
 make build
 build/modex --version
 build/modex session list --json
+build/modex log last --json
 make test
 ```
 

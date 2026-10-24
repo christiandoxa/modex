@@ -26,5 +26,6 @@
 - Never count incomplete inventory or successful assertions as full parity.
   Record unfinished work and reproducible mismatches in `docs/handoff.md`.
 - Use GPT-6 Luna subagents in parallel for independent implementation,
-  validation, and review tasks. Keep file ownership disjoint; integrate and
-  verify the combined result before committing or pushing.
+  validation, and review tasks. Assign workers concrete code and test changes.
+  Keep file ownership disjoint; integrate and verify the combined result
+  before committing or pushing.

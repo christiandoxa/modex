@@ -17,8 +17,8 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `rtk make test` (5 Mojo unit programs, test-only
-JSON/Zstandard/text/log/TOML drivers, and 105 Python tests PASS). This includes
+Validation: `rtk make test` (6 Mojo unit programs, test-only
+JSON/Zstandard/text/log/TOML drivers, and 107 Python tests PASS). This includes
 712 policy-oracle comparisons, 500 deterministic generated JSON values,
 malformed UTF-8/syntax/boundary vectors and numeric/local session times,
 future recurring rules through 2100, transition-second boundaries and
@@ -50,7 +50,7 @@ have 75 frozen-release argv comparisons, including short-help clusters and
 error precedence. Shared JSON serialization sorts object keys and retains the
 last duplicate value. No external implementation dependency was added.
 Evidence: `docs/evidence/log-tests.txt`, `docs/evidence/log-link.txt` and the
-eight `tests/test_log*.py` modules.
+the log test modules.
 
 Policy-backed log directories now load through a native TOML 1.1 parser.
 The loader validates all baseline policy section types, proxy settings and
@@ -73,9 +73,18 @@ test-only native audit; no build/runtime generator is used. The earlier
 Deseret and policy-directory failures now have matching observations in
 `docs/evidence/log-mismatches.json`.
 
+Log timestamp parsing and rendering now has 732 exact official-release
+comparisons across runtime/transcript events and JSON/plain snapshots. The
+native formatter covers RFC3339 and custom offset forms, signed and expanded
+years, variable fields, Unicode whitespace, fractional milliseconds, invalid
+input preservation, UTC date-range boundaries and DST changes. Historical
+subminute offsets round as in the release, including leap-second normalization.
+Evidence: `docs/evidence/log-timestamps-tests.txt` and
+`docs/evidence/log-timestamps-link.txt`.
+
 This remains an incomplete log contract. Live stream, upstream-follow and
 terminal views remain unimplemented. Existing insecure application roots still fail instead of
-receiving baseline permission repair. Timestamp layouts and remaining log
+receiving baseline permission repair. Remaining event selection and projection
 combinations need further verification. Three Unicode-whitespace inputs expose
 credentials in the release while Modex masks them; a fourth preserves spacing
 differently. These four unapproved safe differences and two matching regressions
@@ -167,8 +176,8 @@ also cover correction overflow. The fixtures are synthetic; this host has no
 installed `right/` leap-zone directory. Evidence:
 `docs/evidence/leap-timezone-tests.txt` and `tests/test_timezone_files.py`.
 
-Next work: complete log live views and remaining commands, broaden timestamp
-and projection coverage, and verify policy recursion/resource boundaries.
+Next work: complete log live views and remaining commands, broaden event
+selection/projection coverage, and verify policy recursion/resource boundaries.
 The parser has an explicit 128-level value-nesting limit; equivalence to the
 release beyond the tested corpus remains unverified. General policy/config
 application outside log-directory selection is still unfinished.

@@ -79,8 +79,11 @@ Native policy loading and directory resolution now match tested release paths,
 schema errors and fallback behavior, including 712 wrapped corpus inputs.
 Binary-text classification uses exact Unicode 17 Alphabetic/Number data;
 the retained U+10400 Deseret fixture now matches. Existing root permission
-repair is still unsupported. Timestamp format coverage,
-remaining projection combinations and non-host platforms remain unverified.
+repair is still unsupported. Log timestamps now have 732 exact release
+comparisons covering custom/RFC formats, Unicode whitespace, signed years,
+fractional and leap seconds, range boundaries, DST and historical offset
+rounding. Unexercised timestamp/projection combinations and non-host platforms
+remain unverified. Evidence: `docs/evidence/log-timestamps-tests.txt`.
 Evidence: `docs/evidence/log-tests.txt`, `docs/evidence/log-link.txt` and
 `docs/evidence/policy-unicode-tests.txt`. General policy application beyond
 log-directory selection is unfinished; parser resource/recursion behavior

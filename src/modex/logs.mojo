@@ -8,14 +8,13 @@ from std.os import getenv, lstat, listdir, stat
 from std.os.path import exists
 
 from .json import JSON_BOOL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json
-from .local_time import format_local_epoch
 from .log_payload import readable_upstream_payload
 from .log_payload_render import payload_lines
 from .log_redaction import redact_log_text
+from .log_time import local_log_timestamp as local_timestamp
 from .log_transcript import transcript_event as project_transcript
 from .paths import ensure_app_root, shared_root
 from .runtime_policy import runtime_log_dir
-from .session_time import timestamp_key
 from .text import cli_width, text_width, wrap_text
 
 comptime SESSION_TAIL_BYTES = 2 * 1024 * 1024
@@ -432,30 +431,6 @@ def base64_value(character: Int) -> Int:
 
 def timestamp_wins(current: String, incoming: String) -> Bool:
     return incoming >= current
-
-
-def local_timestamp(value: String) -> String:
-    var epoch = timestamp_key(value)
-    if not epoch:
-        return value
-    var local: String
-    try:
-        local = format_local_epoch(epoch.value())
-    except:
-        return value
-    var offset = local.rfind(" ")
-    if offset < 0:
-        return local^
-    var millis = String("000")
-    var dot = value.find(".")
-    if dot >= 0:
-        var end = dot + 1
-        while end < value.byte_length() and value.as_bytes()[end] >= 48 and value.as_bytes()[end] <= 57:
-            end += 1
-        millis = String(value[byte=dot + 1:min(dot + 4, end)])
-        while millis.byte_length() < 3:
-            millis += "0"
-    return String(local[byte=0:offset]) + "." + millis + String(local[byte=offset:])
 
 
 def default_field(value: String, fallback: String) -> String:

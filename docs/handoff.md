@@ -17,14 +17,14 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard drivers, and 45
+Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard/text drivers, and 55
 Python black-box/runtime tests PASS, including 500 deterministic generated
 JSON values plus malformed UTF-8/syntax/boundary vectors and numeric/local
 session time comparisons, including future recurring rules through 2100,
 transition-second boundaries, and explicit/invalid POSIX TZ strings),
 `python3 tests/probe_capabilities.py` (3 positive programs PASS,
 4 expected public-API gaps reproduced). `python3 tests/session_mismatches.py`
-retains 3 FAIL cases and one unapproved safe difference for a baseline panic.
+retains 3 FAIL cases and 3 unapproved differences for baseline panics.
 Actual compiler diagnostics and commands are in `docs/evidence/capabilities/`.
 
 The frozen help inventory now contains 35 routes and 326 option mentions,
@@ -32,6 +32,11 @@ including four hidden commands and both Super exposure/short aliases. Capture
 command: `python3 tests/capture_cli.py`; all help routes exit 0 with empty stderr
 and no state mutations. Help mentions still require source validation for
 registered flags, hidden flags, defaults, precedence and passthrough.
+Root `--help`, `-h` and bare `help` are now connected, including ignored
+trailing arguments after help flags and custom executable names in Usage.
+Their release comparisons check isolated homes and no created paths.
+Other command help routes remain unfinished. Evidence:
+`docs/evidence/unicode-width-tests.txt` and `tests/test_root_help.py`.
 
 Session help and argument diagnostics now match 271 captured official-release
 cases and 152 seeded generated comparisons. Coverage includes suggestions,
@@ -58,12 +63,23 @@ interactive view remain unimplemented. Evidence:
 `docs/evidence/session-text-tests.txt`. The text mismatch reproducer now records
 matching output separately from the remaining startup side-effect differences.
 
-Plain rendering now measures display cells and preserves UTF-8 for supported
-Latin, Greek, Cyrillic, CJK, kana and Hangul ranges, combining accents and soft
-hyphens. The suite compares 239 raw-output scenarios, including Unicode range
-edges, truncation, padding, full IDs and Unicode/paragraph path wrapping.
-Other scripts, emoji sequences and remaining control cells still fail
-explicitly. Evidence: `docs/evidence/session-unicode-tests.txt`.
+Plain rendering now uses Unicode 17 character and string-width rules,
+including other scripts, emoji presentation/modifiers/ZWJ sequences, script
+ligatures and control cells. Independent data checks cover all 1,112,064
+Unicode scalars and the auxiliary property tables. Production comparisons
+cover 3,026 official emoji sequences, 960 seeded mixed-script strings,
+property-range boundaries, truncation, padding, full IDs and path wrapping.
+The release's scalar cuts and scalar wrapping are preserved even when they
+split an emoji sequence; cell measurement uses combined string widths.
+ASCII width checks avoid allocation. Non-ASCII width checks still buffer
+scalars, so memory at maximum-size display fields remains unverified.
+Evidence: `docs/evidence/unicode-width-tests.txt`; the earlier 239 scenarios
+are retained in `docs/evidence/session-unicode-tests.txt`.
+
+The release panics with exit 101 when U+17D8 (a three-cell Khmer glyph) reaches
+its scalar truncation or wrapping planner, which rejects widths above two.
+Modex renders these inputs. Exact inputs and both observations are retained
+by `tests/session_mismatches.py` as two unapproved differences, not parity.
 
 Session inspection now decodes dictionary-free Zstandard rollouts in native
 Mojo, including raw/RLE/compressed blocks, FSE/Huffman tables and reuse,
@@ -98,19 +114,25 @@ also cover correction overflow. The fixtures are synthetic; this host has no
 installed `right/` leap-zone directory. Evidence:
 `docs/evidence/leap-timezone-tests.txt` and `tests/test_timezone_files.py`.
 
-Next work: complete remaining Unicode display widths and the terminal view,
-and evaluate official stdlib mechanisms for state loading and recovery.
+Next work: bound non-ASCII width memory, complete remaining sequence edge
+cases and the terminal view, and implement independent remaining commands.
 Stateful paths still fail explicitly. Future recurring timezone rules and
 POSIX TZ strings are implemented; their earlier evidence is
 `docs/evidence/recurring-time-tests.txt`.
 Startup effects still differ. Details and the baseline
 panic are in `docs/known-gaps.md`; no session contract is PASS.
 
-Mojo's public process API has no stdio-redirection, process-group, or
-environment-isolation options. Its networking package currently exposes only
-internal building blocks. The official stdlib source at the pinned release
-must be checked before interpreting missing public APIs as impossible native
-implementations. No dependency exception has been introduced.
+The pinned stdlib's public and bundled internal source has now been inspected
+for file/process/terminal prerequisites. It supplies basic pipes and direct
+child management, but no spawn file-actions/attributes, separate child
+environment, terminal raw mode/size, permission repair, durable sync or atomic
+rename wrapper. The private fcntl ABI experiment is excluded from product
+evidence and does not establish baseline-compatible locking. Details:
+`docs/evidence/stdlib-internals-audit.md`. No dependency exception was added.
+
+Use GPT-6 Luna agents in parallel for independent implementation, validation
+and review; file ownership must stay disjoint. This user preference is also
+recorded in `AGENTS.md`.
 
 Native Windows and Intel macOS are not supported by the pinned compiler's
 documented platform contract. Linux glibc and CPU minimums are stricter than

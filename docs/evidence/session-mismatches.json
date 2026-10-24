@@ -126,6 +126,70 @@
       },
       "output_matches": true,
       "status": "FAIL"
+    },
+    {
+      "case": "three-cell-truncation",
+      "arguments": [
+        "session",
+        "list"
+      ],
+      "observations": {
+        "baseline": {
+          "exit_code": 101,
+          "stdout": "",
+          "stderr": "\nthread 'main' (2) panicked at crates/prodex-terminal-ui/src/text.rs:89:10:\ncompiled-in Mojo display-width prefix policy failed: InvalidInput\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+          "new_paths": [
+            "home/.prodex",
+            "home/.prodex/profile-lifecycle.json.lock",
+            "home/.prodex/runtime-housekeeping.last-run",
+            "home/.prodex/runtime-housekeeping.lock",
+            "home/.prodex/update-check.lock"
+          ]
+        },
+        "modex": {
+          "exit_code": 0,
+          "stdout": "[ Sessions ] =================================================================================================\nID                    UPDATED               THREAD                CWD                    PATH                 \n--------------------------------------------------------------------------------------------------------------\n019a1234-5678-712...  2026-10-24T00:00:00Z  \u17d8\u17d8\u17d8\u17d8\u17d8...    /tmp/modex-session...  /tmp/modex-session...\n  id: 019a1234-5678-7123-8123-0123456789ab",
+          "stderr": "",
+          "new_paths": [
+            "home/.prodex"
+          ]
+        }
+      },
+      "output_matches": false,
+      "status": "UNAPPROVED_SAFE_DIFFERENCE"
+    },
+    {
+      "case": "three-cell-wrapping",
+      "arguments": [
+        "session",
+        "current",
+        "--cwd",
+        "/missing/\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8"
+      ],
+      "observations": {
+        "baseline": {
+          "exit_code": 101,
+          "stdout": "",
+          "stderr": "\nthread 'main' (2) panicked at crates/prodex-terminal-ui/src/text.rs:105:10:\ncompiled-in Mojo text-wrap plan failed: InvalidInput\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+          "new_paths": [
+            "home/.prodex",
+            "home/.prodex/profile-lifecycle.json.lock",
+            "home/.prodex/runtime-housekeeping.last-run",
+            "home/.prodex/runtime-housekeeping.lock",
+            "home/.prodex/update-check.lock"
+          ]
+        },
+        "modex": {
+          "exit_code": 0,
+          "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found for\n           /missing/\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\n           \u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8\u17d8",
+          "stderr": "",
+          "new_paths": [
+            "home/.prodex"
+          ]
+        }
+      },
+      "output_matches": false,
+      "status": "UNAPPROVED_SAFE_DIFFERENCE"
     }
   ]
 }

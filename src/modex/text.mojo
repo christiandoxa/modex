@@ -3,6 +3,8 @@
 from std.collections import List
 from std.os import getenv
 
+from .unicode_width import character_width, text_width
+
 
 def unsigned_value(text: String) raises -> UInt64:
     var bytes = text.as_bytes()
@@ -54,36 +56,6 @@ def cli_width() raises -> Int:
     return Int(width) if width else 110
 
 
-def character_width(code: Int) raises -> Int:
-    # Unicode 16.0 EastAsianWidth.txt defines the wide ranges used here.
-    if (code == 0xAD or 0x300 <= code <= 0x36F or 0x483 <= code <= 0x489
-        or 0x302A <= code <= 0x302F or code == 0x3099 or code == 0x309A):
-        return 0
-    if (0x20 <= code <= 0x7E or 0xA0 <= code <= 0x2FF
-        or 0x370 <= code <= 0x482 or 0x48A <= code <= 0x52F
-        or 0x1E00 <= code <= 0x1FFF):
-        return 1
-    if code == 0x303F:
-        return 1
-    if (0x3000 <= code <= 0x3029 or 0x3030 <= code <= 0x303E
-        or 0x3041 <= code <= 0x3096 or 0x309B <= code <= 0x30FF
-        or 0x31F0 <= code <= 0x31FF or 0x3400 <= code <= 0x4DBF
-        or 0x4E00 <= code <= 0x9FFF or 0xAC00 <= code <= 0xD7A3
-        or 0xF900 <= code <= 0xFAFF or 0xFF01 <= code <= 0xFF60
-        or 0xFFE0 <= code <= 0xFFE6 or 0x20000 <= code <= 0x2FFFD
-        or 0x30000 <= code <= 0x3FFFD):
-        return 2
-    # shortcut: other scripts, emoji sequences and controls need their remaining width rules before rendering.
-    raise Error("session text rendering for this Unicode or control character is not implemented")
-
-
-def text_width(value: String) raises -> Int:
-    var width = 0
-    for character in value.codepoints():
-        width += character_width(Int(character))
-    return width
-
-
 def fit_cell(value: String, width: Int) raises -> String:
     if width == 0:
         return ""
@@ -104,7 +76,7 @@ def fit_cell(value: String, width: Int) raises -> String:
 
 def pad_cell(value: String, width: Int) raises -> String:
     var fitted = fit_cell(value, width)
-    return fitted + String(" ") * (width - text_width(fitted))
+    return fitted + String(" ") * max(0, width - text_width(fitted))
 
 
 def section_header(title: String, width: Int) raises -> String:
@@ -160,7 +132,9 @@ def wrap_paragraph(value: String, width: Int) raises -> List[String]:
     var line = String()
     var used = 0
     for piece in pieces:
-        var cells = text_width(piece)
+        var cells = 0
+        for character in piece.codepoints():
+            cells += character_width(Int(character))
         if line and used + 1 + cells > maximum:
             lines.append(line^)
             line = ""

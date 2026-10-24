@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import random
 import shutil
 import subprocess
 import tempfile
@@ -11,6 +12,7 @@ import unittest
 from session_oracle import fixture, sandbox_command
 import test_cli
 from test_cli import MODEX, ORACLE
+from test_unicode_width import emoji_sequence_cases, properties
 
 
 def compare_text(arguments, *, columns=None, change=None):
@@ -39,6 +41,25 @@ class SessionTextTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         test_cli.CliTests.setUpClass()
+
+    def assert_title_batch(self, values):
+        def change(root):
+            original = next((root / "home/.codex").rglob("*.jsonl"))
+            metadata = json.loads(original.read_text().splitlines()[0])
+            original.unlink()
+            for index, value in enumerate(values):
+                metadata["payload"]["id"] = f"glyph-{index:05}"
+                metadata["payload"]["thread_name"] = value
+                (original.parent / f"glyph-{index:05}.jsonl").write_text(json.dumps(metadata) + "\n")
+        baseline, modex = compare_text(["session", "list"], change=change)
+        expected = baseline.split(b"\nglyph-")
+        actual = modex.split(b"\nglyph-")
+        self.assertEqual(len(expected), len(values) + 1)
+        self.assertEqual(len(actual), len(expected))
+        self.assertEqual(actual[0], expected[0])
+        for index, value in enumerate(values, 1):
+            with self.subTest(value=value):
+                self.assertEqual(actual[index], expected[index])
 
     def test_table_columns_truncation_and_full_ids(self):
         for columns in (None, "1", "2", "3", "4", "12", "13", "14", "22", "36",
@@ -125,28 +146,70 @@ class SessionTextTests(unittest.TestCase):
     def test_unicode_path_wrapping(self):
         for text in ("caf\u00e9", "\u754c\u9762", "\u306f\u3058\u3081\u3066", "\ud55c\uad6d\uc5b4",
                      "Cafe\u0301", "\u0301", "A\u00a0B", "A\u3000B", "A\tB",
-                     "line\r\nnext", "line\n\nnext\n"):
+                     "line\r\nnext", "line\n\nnext\n", "\u0644\u0627", "\u05d0\u200d\u05dc",
+                     "\u2d4f\u2d7f\u2d3e", "\U0001f600", "\U0001f469\u200d\U0001f4bb",
+                     "\U0001f44d\U0001f3fd", "1\ufe0f\u20e3"):
             arguments = ["session", "current", "--cwd", "/missing/" + text * 20]
             for columns in ("1", "8", "12", "20", "40", "60", "110"):
                 with self.subTest(text=text, columns=columns):
                     baseline, modex = compare_text(arguments, columns=columns)
                     self.assertEqual(modex, baseline)
 
-    def test_unimplemented_cell_widths_fail_explicitly(self):
-        # Development checks for known gaps; these do not establish baseline parity.
-        for title in ("Emoji title \U0001f600", "Control\tcharacter"):
-            with self.subTest(title=title), tempfile.TemporaryDirectory(prefix="modex-text-gap-") as directory:
-                root = Path(directory)
-                fixture(root)
+    def test_unicode_scalar_property_boundaries(self):
+        east_asian = properties("EastAsianWidth.txt")
+        core = properties("DerivedCoreProperties.txt")
+        grapheme = properties("GraphemeBreakProperty.txt")
+        codes = set(range(0xA0)) | {0x115F, 0x17A4, 0x17D8, 0x2D7F, 0xA8FA, 0x11A3A}
+        for values in (east_asian["W"] | east_asian["F"], core["Default_Ignorable_Code_Point"],
+                       core["Grapheme_Extend"], grapheme["V"] | grapheme["T"], grapheme["Prepend"]):
+            for code in values:
+                if code - 1 not in values:
+                    codes.update((code - 1, code))
+                if code + 1 not in values:
+                    codes.update((code, code + 1))
+        values = ["P" + chr(code) * 6 + "Q" for code in sorted(codes)
+                  if 0 <= code <= 0x10FFFF and not 0xD800 <= code <= 0xDFFF]
+        self.assert_title_batch(values)
+
+    def test_emoji_script_ligatures_and_control_cells(self):
+        values = ("\U0001f600", "\U0001f600\ufe0e", "\u2764\ufe0f", "\u2764\ufe0e",
+                  "\U0001f44d\U0001f3fd", "\U0001f469\u200d\U0001f4bb", "\U0001f469\u200d\u2764\ufe0f\u200d\U0001f469",
+                  "\U0001f1fa\U0001f1f8", "1\ufe0f\u20e3", "1\u20e3", "\u261d\U0001f3fb",
+                  "\u0644\u0627", "\u0644\u065f\u065e\u0623", "\u0644\u200c\u0627",
+                  "\u05d0\u200d\u05dc", "\u1a15\u1a17\u200d\u1a10", "\u17d2\u1780",
+                  "\ua4f9\ua4fc", "\U00010c32\u200d\U00010c03", "\u2d4f\u2d7f\u2d3e",
+                  "\U00016d67\U00016d67", "\U00016d63\U00016d67\U00016d67",
+                  "\U00016d63", "\U00016d6a", "\u0644\ufff9\u0627", "\u2d4f\u2d7f\u2d3e\u2d7f\u2d4f",
+                  "\u2018\ufe01", "\u2019\ufe00", "\u201c\ufe02", "\u115f\u1161\u11a8",
+                  "\u0939\u093f\u0928\u094d\u0926\u0940", "\u0e44\u0e17\u0e22", "\u1acf", "\U0001faea",
+                  "A\0B", "A\tB", "A\r\nB", "A\x1fB", "A\x7fB", "A\x85B", "A\x1b[31mB")
+        for value in values:
+            def change(root):
                 original = next((root / "home/.codex").rglob("*.jsonl"))
                 metadata = json.loads(original.read_text().splitlines()[0])
-                metadata["payload"]["thread_name"] = title
+                metadata["payload"]["id"] = value * 5
+                metadata["payload"]["thread_name"] = value * 8
                 original.write_text(json.dumps(metadata) + "\n")
-                result = subprocess.run(sandbox_command(MODEX, root, ["session", "list"]),
-                                        capture_output=True, timeout=10, check=False)
-                self.assertEqual(result.returncode, 1)
-                self.assertEqual(result.stdout, b"")
-                self.assertIn(b"Unicode or control character is not implemented", result.stderr)
+            for columns in ("22", "60", "110", "160"):
+                with self.subTest(value=value, columns=columns):
+                    baseline, modex = compare_text(["session", "list"], columns=columns, change=change)
+                    self.assertEqual(modex, baseline)
+
+    def test_generated_unicode_width_sequences(self):
+        generator = random.Random(43917)
+        pools = ("\u0644\u0627\u0622\u065f\u034f\u200c\u200d\ufff9", "\u05d0\u05dc\u200d\u034f",
+                 "\u1a15\u1a17\u1a10\u200d\u034f", "\u2d4f\u2d3e\u2d7f\u200d\u034f",
+                 "\U00016d63\U00016d67\U00016d68\U00016d69\U00016d6a\u200d\u034f",
+                 "\ua4f8\ua4fc\ua4fd\u200d\u034f", "\u17d2\u1780\u1783\u17a4\u200d\u034f",
+                 "\U0001f600\U0001f469\U0001f3fb\U0001f1e6\u200d\ufe0e\ufe0f\u20e3\u2764A1")
+        values = ["P" + "".join(generator.choices(pool, k=generator.randint(1, 7))) + "Q"
+                  for pool in pools for _ in range(120)]
+        self.assert_title_batch(values)
+
+    def test_official_emoji_sequences_match_oracle(self):
+        cases = emoji_sequence_cases()
+        self.assertTrue(all(width + 2 <= 20 for _, width in cases))
+        self.assert_title_batch(["P" + sequence + "Q" for sequence, _ in cases])
 
     def test_interactive_view_remains_explicitly_unimplemented(self):
         with tempfile.TemporaryDirectory(prefix="modex-text-tty-") as directory:

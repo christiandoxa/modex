@@ -13,7 +13,8 @@ def main():
     records = []
     with tempfile.TemporaryDirectory(prefix="modex-session-mismatch-") as directory:
         parent = Path(directory)
-        for case in ("nonobject-followup", "startup-effects", "state-load", "text-output"):
+        for case in ("nonobject-followup", "startup-effects", "state-load", "text-output",
+                     "three-cell-truncation", "three-cell-wrapping"):
             observations = {}
             for label, binary in (("baseline", ORACLE), ("modex", MODEX)):
                 root = parent / f"{case}-{label}"
@@ -26,8 +27,14 @@ def main():
                     state = root / "home/.prodex"
                     state.mkdir(mode=0o700)
                     (state / "state.json").write_text('{"schema_version":1,"profiles":{}}\n')
+                if case == "three-cell-truncation":
+                    metadata = json.loads(original.read_text().splitlines()[0])
+                    metadata["payload"]["thread_name"] = "\u17d8" * 12
+                    original.write_text(json.dumps(metadata) + "\n")
                 arguments = ["session", "list"]
-                if case != "text-output":
+                if case == "three-cell-wrapping":
+                    arguments = ["session", "current", "--cwd", "/missing/" + "\u17d8" * 40]
+                elif case not in ("text-output", "three-cell-truncation"):
                     arguments.append("--json")
                 before = {str(path.relative_to(root)) for path in root.rglob("*")}
                 result = subprocess.run(sandbox_command(binary, root, arguments),
@@ -44,7 +51,7 @@ def main():
                                  for field in output_fields)
             records.append({"case": case, "arguments": arguments, "observations": observations,
                             "output_matches": output_matches,
-                            "status": "UNAPPROVED_SAFE_DIFFERENCE" if case == "nonobject-followup" else "FAIL"})
+                            "status": "UNAPPROVED_SAFE_DIFFERENCE" if case == "nonobject-followup" or case.startswith("three-cell-") else "FAIL"})
     output = ROOT / "docs/evidence/session-mismatches.json"
     output.write_text(json.dumps({"schema_version": 1, "reproduce": "python3 tests/session_mismatches.py",
                                  "cases": records}, indent=2) + "\n")

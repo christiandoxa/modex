@@ -80,18 +80,20 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/cli.mojo; src/main.mojo (session help and diagnostics only)",
+      "implementation": "src/modex/cli.mojo; src/modex/root_help.mojo; src/main.mojo (root and session help and diagnostics)",
       "tests": [
         "tests/capture_cli.py",
         "tests/capture_session_cli.py",
-        "tests/test_session_cli.py"
+        "tests/test_session_cli.py",
+        "tests/test_root_help.py"
       ],
       "evidence": [
         "docs/cli-inventory.json",
         "docs/evidence/baseline/help/",
         "docs/evidence/baseline/session-cli.json",
         "docs/evidence/session-cli-tests.txt",
-        "docs/evidence/session-arguments-tests.txt"
+        "docs/evidence/session-arguments-tests.txt",
+        "docs/evidence/unicode-width-tests.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -104,7 +106,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "35 oracle help routes captured. Session help and diagnostics match 271 captured official-release cases and 152 seeded generated comparisons, including suggestions, short-flag clusters, literal boundaries, help routing and ordered conflicts. Other commands, remaining combinations and valid resume execution remain unfinished or unverified."
+        "35 oracle help routes captured. Session help and diagnostics match 271 captured official-release cases and 152 seeded generated comparisons, including suggestions, short-flag clusters, literal boundaries, help routing and ordered conflicts. Other commands, remaining combinations and valid resume execution remain unfinished or unverified. Root --help/-h/bare help and custom Usage executable are covered by tests/test_root_help.py; command help remains partial and unknown help routes/other commands remain unfinished or unverified."
       ]
     },
     {
@@ -591,7 +593,7 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/sessions.mojo; src/modex/cli.mojo; src/modex/json.mojo; src/modex/zstd.mojo; src/modex/zstd_entropy.mojo; src/modex/xxhash.mojo",
+      "implementation": "src/modex/sessions.mojo; src/modex/cli.mojo; src/modex/json.mojo; src/modex/zstd.mojo; src/modex/zstd_entropy.mojo; src/modex/xxhash.mojo; src/modex/unicode_width.mojo",
       "tests": [
         "tests/test_sessions.mojo",
         "tests/test_sessions.py",
@@ -603,7 +605,9 @@
         "tests/test_session_text.py",
         "tests/test_zstd.mojo",
         "tests/test_zstd.py",
-        "tests/test_compressed_sessions.py"
+        "tests/test_compressed_sessions.py",
+        "tests/test_unicode_width.py",
+        "tests/text_driver.mojo"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -617,7 +621,8 @@
         "docs/evidence/session-text-tests.txt",
         "docs/evidence/session-unicode-tests.txt",
         "docs/evidence/zstd-tests.txt",
-        "docs/evidence/baseline/session-zstd-errors.json"
+        "docs/evidence/baseline/session-zstd-errors.json",
+        "docs/evidence/unicode-width-tests.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -630,7 +635,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons, 324 synthetic leap-zone cases, dictionary-free compressed rollout cases and 239 detached text scenarios pass with no existing state. Full contract fails: state locking/recovery, startup effects, remaining scripts/emoji/control display widths, interactive terminal rendering and dimensions, remaining unverified timezone file cases, baseline panic handling and unapproved noncanonical compressed-frame differences."
+        "Machine-output comparisons, 324 synthetic leap-zone cases, dictionary-free compressed rollout cases, 239 detached text scenarios, every Unicode scalar against Unicode 17 UCD, and 3,026 actual release emoji rows plus 960 generated mixed sequences are covered. Unverified sequence cases remain. The baseline three-cell Khmer truncation and wrapping cases panic while Modex returns safe output; these are retained UNAPPROVED_SAFE_DIFFERENCE mismatches, not parity passes. Full contracts still fail on state locking/recovery, startup effects, incomplete terminal rendering and dimensions, remaining timezone file cases, baseline panic behavior, and unapproved noncanonical compressed-frame differences."
       ]
     },
     {
@@ -655,7 +660,7 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/sessions.mojo; src/modex/cli.mojo; src/modex/json.mojo; src/modex/zstd.mojo; src/modex/zstd_entropy.mojo; src/modex/xxhash.mojo",
+      "implementation": "src/modex/sessions.mojo; src/modex/cli.mojo; src/modex/json.mojo; src/modex/zstd.mojo; src/modex/zstd_entropy.mojo; src/modex/xxhash.mojo; src/modex/unicode_width.mojo",
       "tests": [
         "tests/test_sessions.mojo",
         "tests/test_sessions.py",
@@ -667,7 +672,9 @@
         "tests/test_session_text.py",
         "tests/test_zstd.mojo",
         "tests/test_zstd.py",
-        "tests/test_compressed_sessions.py"
+        "tests/test_compressed_sessions.py",
+        "tests/test_unicode_width.py",
+        "tests/text_driver.mojo"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -681,7 +688,8 @@
         "docs/evidence/session-text-tests.txt",
         "docs/evidence/session-unicode-tests.txt",
         "docs/evidence/zstd-tests.txt",
-        "docs/evidence/baseline/session-zstd-errors.json"
+        "docs/evidence/baseline/session-zstd-errors.json",
+        "docs/evidence/unicode-width-tests.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -694,7 +702,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons, 324 synthetic leap-zone cases, dictionary-free compressed rollout cases and 239 detached text scenarios pass with no existing state. Full contract fails: state locking/recovery, startup effects, remaining scripts/emoji/control display widths, interactive terminal rendering and dimensions, remaining unverified timezone file cases, baseline panic handling and unapproved noncanonical compressed-frame differences."
+        "Machine-output comparisons, 324 synthetic leap-zone cases, dictionary-free compressed rollout cases, 239 detached text scenarios, every Unicode scalar against Unicode 17 UCD, and 3,026 actual release emoji rows plus 960 generated mixed sequences are covered. Unverified sequence cases remain. The baseline three-cell Khmer truncation and wrapping cases panic while Modex returns safe output; these are retained UNAPPROVED_SAFE_DIFFERENCE mismatches, not parity passes. Full contracts still fail on state locking/recovery, startup effects, incomplete terminal rendering and dimensions, remaining timezone file cases, baseline panic behavior, and unapproved noncanonical compressed-frame differences."
       ]
     },
     {

@@ -2,6 +2,7 @@ from std.collections import List
 from std.sys import argv, exit, stderr
 
 from modex.cli import parse_session_options, session_help
+from modex.root_help import root_help
 from modex.sessions import inspect_sessions
 
 
@@ -16,6 +17,10 @@ def main():
         args = rewritten^
     if len(args) >= 2 and (args[1] == "--version" or args[1] == "-V"):
         print("modex 0.1.0-dev")
+        return
+    if len(args) >= 2 and (args[1] == "--help" or args[1] == "-h" or (args[1] == "help" and len(args) == 2)):
+        var executable_parts = args[0].split("/")
+        print(root_help(String(executable_parts[len(executable_parts) - 1])), end="")
         return
     if len(args) >= 2 and args[1] == "session":
         try:

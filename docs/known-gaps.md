@@ -8,7 +8,7 @@ Session machine-output tests cover populated and archived plain JSON/JSONL,
 metadata precedence, timestamp ordering, Unicode whitespace and query behavior,
 parent filtering, limits, exact JSON formatting, ID/resume command output, and
 symlink exclusion. The product rejects existing state rather than reading
-without the required lock/recovery. Remaining Unicode/control text output,
+without the required lock/recovery. Remaining unverified Unicode combinations,
 interactive terminal output, profile bindings and startup lifecycle/housekeeping
 effects remain unfinished.
 
@@ -18,14 +18,20 @@ tables, empty panels, wrapping, width overrides and exact trailing whitespace.
 dimension discovery is not. Widths above `Int.MAX` fail explicitly.
 See `docs/evidence/session-text-tests.txt`.
 
-The renderer also supports tested Latin, Greek, Cyrillic, CJK, kana and Hangul
-ranges plus combining accents and soft hyphens. It measures cells rather than
-UTF-8 bytes and preserves codepoint boundaries. Wide ranges follow the
-[Unicode 16 width data](https://www.unicode.org/Public/16.0.0/ucd/EastAsianWidth.txt);
-zero-width behavior is checked against the release. The 239 current raw-output
-scenarios cover these ranges, but other scripts, emoji sequences and remaining
-control cells still fail explicitly. Full Unicode rendering remains unfinished.
-Evidence: `docs/evidence/session-unicode-tests.txt`.
+The renderer now uses [Unicode 17 width data](https://www.unicode.org/Public/17.0.0/ucd/EastAsianWidth.txt)
+and the frozen width rules. Tests check all 1,112,064 Unicode scalars and the
+auxiliary property tables, plus actual production output for 3,026 official
+emoji sequences, 960 generated mixed-script strings, property boundaries and
+wrapped paths. Scalar clipping and wrapping match the release, including cuts
+inside emoji. Other sequence combinations remain unverified. Non-ASCII width
+measurement buffers scalars; maximum-size display-field memory has not been
+tested. Evidence: `docs/evidence/unicode-width-tests.txt`.
+
+The release's scalar planners reject U+17D8's three-cell width and panic when
+truncating or wrapping it. Modex renders these cases. Proposed handling:
+retain rendering and resolve the compatibility difference separately. Both
+exact reproductions are in `docs/evidence/session-mismatches.json`, marked
+`UNAPPROVED_SAFE_DIFFERENCE`; they are not parity PASS cases.
 
 Dictionary-free compressed rollouts now pass native decoder interoperability
 and production-command comparisons. Coverage includes entropy table reuse,
@@ -55,6 +61,9 @@ not establish complete CLI coverage. Other commands and remaining combinations
 are unverified. Valid session resume execution still fails explicitly as
 unimplemented. Valid-command startup mutations are outside these output
 claims. Evidence: `docs/evidence/session-arguments-tests.txt`.
+Root `--help`, `-h`, bare `help`, ignored help-flag tails and custom executable
+Usage now match isolated release checks. Remaining help routes and command
+execution are unfinished. Evidence: `docs/evidence/unicode-width-tests.txt`.
 
 Numeric and file-modification timestamps now match the release in UTC,
 Asia/Jakarta, America/New_York and Europe/London for the tested dates, including
@@ -94,6 +103,9 @@ behavior and separately fix the baseline; neither action has been assumed.
 Platform and foundation gaps are in `docs/capabilities.json`. No TLS,
 cryptography, native Windows, Intel macOS, process-tree, locking, or clean
 distribution claim is implied by the current Linux probes.
+The stronger bundled-source audit is in
+`docs/evidence/stdlib-internals-audit.md`; its limited positive stdout-capture
+probe does not establish redirected process supervision or raw terminal I/O.
 
 The baseline release's npm smoke path actively stages and imports a JavaScript
 gateway SDK, despite the checked-in package being private and the exact version

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "audited_at": "2026-10-24",
+  "findings": [
+    {
+      "id": "JAVASCRIPT-SDK",
+      "status": "BLOCKED",
+      "contract": "The release staging/smoke path includes @christiandoxa/prodex-gateway-sdk with JavaScript imports, TypeScript declarations, ProdexGatewayClient and ProdexGatewayError.",
+      "evidence": [
+        "scripts/npm/stage.mjs::stageGatewaySdkPackage (lines 82-91) copies index.mjs/index.d.ts and writes a publishable manifest.",
+        "scripts/npm/stage.mjs::stagePackages (line 102) always stages that SDK.",
+        "scripts/npm/common.mjs::gatewaySdkPackageManifest (lines 129-150) has public publish configuration and no private flag.",
+        "scripts/ci/npm-package-smoke.mjs (lines 113-174) asserts staging, publish dry-run inclusion, installation, import and providers() behavior.",
+        ".github/workflows/standalone-release.yml (line 980) runs that smoke against the official Linux release artifact."
+      ],
+      "contradicting_or_limiting_evidence": [
+        "npm/prodex-gateway-sdk/package.json has private:true, unlike the generated staging manifest.",
+        "A read-only registry lookup of https://registry.npmjs.org/@christiandoxa%2fprodex-gateway-sdk/0.439.0 returned HTTP 404 with version not found on the audit date.",
+        "README.md documents SDK admin/SCIM/billing endpoints, but the active gateway dispatch is a lean runtime proxy. Package behavior alone does not prove those server endpoints are active."
+      ],
+      "conflict": "Native JavaScript module import and TypeScript module declarations cannot be supplied as a Mojo-only product under the ban on JavaScript implementation and runtime/native adapters. HTTP protocol interoperability alone does not satisfy module-import semantics.",
+      "resolution": "Retain the SDK packaging obligation. Do not add a JavaScript shim or silently remove the contract. A scope/policy decision is needed before claiming complete parity."
+    },
+    {
+      "id": "RUST-LIBRARY",
+      "status": "IN_PROGRESS",
+      "evidence": [
+        "src/lib.rs publicly re-exports prodex_app; crates/prodex-app/src/lib.rs exports main_entry and gated benchmark support.",
+        "README.md says Cargo installations are not a supported user channel, but source visibility alone does not prove that library API obligations can be discarded."
+      ],
+      "resolution": "Trace actual release/package consumers and supported API promises. Keep the existing PUBLIC-API inventory entry open."
+    },
+    {
+      "id": "CONTROL-PLANE-RESIDUE",
+      "status": "SOURCE_EVIDENCE_ONLY",
+      "evidence": [
+        "The frozen src/bin/prodex_control_plane directory contains only http_plan/tests/security.rs; it has no binary main entry point.",
+        "The active parser/dispatch has no control-plane command; gateway dispatch enters app_commands/gateway.rs::handle_gateway."
+      ],
+      "resolution": "Do not invent an active control-plane executable from this directory name. Keep SDK endpoint activity unresolved until the gateway production route graph and official artifact are exercised."
+    }
+  ]
+}

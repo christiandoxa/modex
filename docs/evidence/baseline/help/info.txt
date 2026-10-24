@@ -1,0 +1,8 @@
+Summarize Prodex version, profiles, runtime policy, logs, and secret backend.
+
+Usage: prodex info [OPTIONS]
+
+Options:
+      --json    Emit machine-readable JSON
+      --tokens  Include token usage totals parsed from recent runtime logs
+  -h, --help    Print help

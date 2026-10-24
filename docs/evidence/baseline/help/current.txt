@@ -1,0 +1,6 @@
+Show the active profile and its CODEX_HOME details.
+
+Usage: prodex current
+
+Options:
+  -h, --help  Print help

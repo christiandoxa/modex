@@ -10,7 +10,7 @@ mapping. A clean filesystem/network namespace contains only Modex and the
 platform/official Mojo runtime libraries; version output works without Python,
 Node, Rust, or Prodex. Native JSON decoding and development `session list` /
 `session current` machine-output paths are connected to the production binary.
-The inventory contains 59 coarse contracts and 354
+The inventory contains 60 coarse contracts and 360
 platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
@@ -24,7 +24,18 @@ session time comparisons across five TZ settings),
 retains 3 FAIL cases and one unapproved safe difference for a baseline panic.
 Actual compiler diagnostics and commands are in `docs/evidence/capabilities/`.
 
-Next work: expand the frozen CLI/flag inventory, close argument and
+The frozen help inventory now contains 35 routes and 326 option mentions,
+including four hidden commands and both Super exposure/short aliases. Capture
+command: `python3 tests/capture_cli.py`; all help routes exit 0 with empty stderr
+and no state mutations. Help mentions still require source validation for
+registered flags, hidden flags, defaults, precedence and passthrough.
+
+The active release staging/smoke path imports the JavaScript gateway SDK.
+Its module-import compatibility is BLOCKED by the Mojo-only/no-adapter policy,
+not removed from scope. `docs/packaging-audit.json` preserves conflicting
+source/publishing/README evidence.
+
+Next work: trace hidden/default/precedence flag contracts, close argument and
 text-rendering gaps, and evaluate official stdlib mechanisms for lock/recovery
 and protected file handling. Current stateful, compressed, leap-second and
 future recurring-timezone paths fail explicitly. Startup effects still differ. Details and the baseline

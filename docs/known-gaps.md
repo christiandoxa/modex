@@ -36,3 +36,10 @@ behavior and separately fix the baseline; neither action has been assumed.
 Platform and foundation gaps are in `docs/capabilities.json`. No TLS,
 cryptography, native Windows, Intel macOS, process-tree, locking, or clean
 distribution claim is implied by the current Linux probes.
+
+The baseline release's npm smoke path actively stages and imports a JavaScript
+gateway SDK, despite the checked-in package being private and the exact version
+currently missing from npm. Native JavaScript import compatibility conflicts
+with the Mojo-only/no-adapter policy. That obligation remains BLOCKED; see
+`docs/packaging-audit.json`. Its historical admin endpoint documentation does
+not by itself establish active gateway server routes.

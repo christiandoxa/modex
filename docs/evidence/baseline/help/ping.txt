@@ -1,0 +1,10 @@
+Send lightweight prompt checks through ready profiles.
+
+Usage: prodex ping <COMMAND>
+
+Commands:
+  openai  Send a minimal application request through the OpenAI/Codex runtime path.
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help

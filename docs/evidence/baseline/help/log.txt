@@ -1,0 +1,27 @@
+Follow redacted Prodex runtime logs.
+
+Usage: prodex log [OPTIONS] [MODE]
+
+Arguments:
+  [MODE]
+          Log view. Omit for the live stream
+
+          Possible values:
+          - stream:   Follow redacted runtime logs
+          - last:     Print the latest matching runtime-log line and exit
+          - upstream: Follow only upstream request/response log events
+          
+          [default: stream]
+
+Options:
+      --json
+          Emit one JSON object per line
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Examples:
+  prodex log
+  prodex log last
+  prodex log upstream
+  prodex log --json

@@ -7,6 +7,10 @@
     {
       "date": "2026-10-24",
       "change": "Initial command-dispatch, nested command and domain inventory from the frozen source and official release manifest; no exclusions. Remaining production call paths, flags, platform behaviors and library/package surfaces require finer enumeration."
+    },
+    {
+      "date": "2026-10-24",
+      "change": "Captured all 35 help routes from the checksum-verified official Linux artifact without stderr or state mutations; corrected handler source paths from the frozen symbol graph; added JAVASCRIPT-SDK after tracing mandatory release staging and SDK import smoke. The denominator expands from 59 contracts/354 platform obligations to 60/360; no contracts removed."
     }
   ],
   "contracts": [
@@ -76,8 +80,13 @@
       ],
       "prerequisites": [],
       "implementation": null,
-      "tests": [],
-      "evidence": [],
+      "tests": [
+        "tests/capture_cli.py"
+      ],
+      "evidence": [
+        "docs/cli-inventory.json",
+        "docs/evidence/baseline/help/"
+      ],
       "status": "NOT_STARTED",
       "platform_status": {
         "x86_64-unknown-linux-gnu": "NOT_STARTED",
@@ -88,7 +97,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "35 oracle help routes captured. Product help/argument rendering and broader parsing contracts are still unimplemented."
       ]
     },
     {
@@ -251,7 +261,7 @@
       "id": "PROFILE-IMPORT-CURRENT",
       "domain": "profiles",
       "baseline": {
-        "path": "crates/prodex-app/src/profile_commands/manage.rs",
+        "path": "crates/prodex-app/src/profile_commands/import_export/import.rs",
         "symbol": "handle_import_current_profile",
         "trace_verified": false
       },
@@ -441,7 +451,7 @@
       "id": "INFO",
       "domain": "diagnostics",
       "baseline": {
-        "path": "crates/prodex-app/src/reports/info.rs",
+        "path": "crates/prodex-app/src/app_commands/info_handler.rs",
         "symbol": "handle_info",
         "trace_verified": false
       },
@@ -695,8 +705,8 @@
       "id": "DOCTOR",
       "domain": "diagnostics",
       "baseline": {
-        "path": "crates/prodex-app/src/command_dispatch.rs",
-        "symbol": "execute_command -> handle_doctor",
+        "path": "crates/prodex-app/src/app_commands/doctor.rs",
+        "symbol": "handle_doctor",
         "trace_verified": false
       },
       "required_behavior": "Report local/quota/runtime/install state, redacted bundles, policy suggestions and explicit repairs.",
@@ -735,8 +745,8 @@
       "id": "LOGIN",
       "domain": "authentication",
       "baseline": {
-        "path": "crates/prodex-app/src/command_dispatch.rs",
-        "symbol": "execute_command -> handle_codex_login",
+        "path": "crates/prodex-app/src/profile_commands/login.rs",
+        "symbol": "handle_codex_login",
         "trace_verified": false
       },
       "required_behavior": "Provider login with profile-local credentials and workspace identity defaults.",
@@ -775,8 +785,8 @@
       "id": "LOGOUT",
       "domain": "authentication",
       "baseline": {
-        "path": "crates/prodex-app/src/command_dispatch.rs",
-        "symbol": "execute_command -> handle_codex_logout",
+        "path": "crates/prodex-app/src/profile_commands/logout.rs",
+        "symbol": "handle_codex_logout",
         "trace_verified": false
       },
       "required_behavior": "Log out selected/active profile through supported provider behavior.",
@@ -815,8 +825,8 @@
       "id": "UPDATE",
       "domain": "distribution",
       "baseline": {
-        "path": "crates/prodex-app/src/command_dispatch.rs",
-        "symbol": "execute_command -> handle_prodex_update",
+        "path": "crates/prodex-app/src/app_commands/prodex_update.rs",
+        "symbol": "handle_prodex_update",
         "trace_verified": false
       },
       "required_behavior": "Resolve and verify a release and atomically install the matching Modex artifact.",
@@ -855,8 +865,8 @@
       "id": "QUOTA",
       "domain": "quota",
       "baseline": {
-        "path": "crates/prodex-cli/src/lib.rs",
-        "symbol": "parse_cli_command_from; execute_command -> handle_quota",
+        "path": "crates/prodex-app/src/app_commands/quota.rs",
+        "symbol": "handle_quota; parse_cli_command_from (crates/prodex-cli/src/lib.rs)",
         "trace_verified": false
       },
       "required_behavior": "Default detailed pool view; filtered/single/raw/once/watch quota and baseline errors.",
@@ -895,8 +905,8 @@
       "id": "REDEEM",
       "domain": "quota",
       "baseline": {
-        "path": "crates/prodex-cli/src/profile.rs",
-        "symbol": "RedeemArgs; execute_command -> handle_redeem",
+        "path": "crates/prodex-app/src/app_commands/redeem.rs",
+        "symbol": "handle_redeem",
         "trace_verified": false
       },
       "required_behavior": "Redeem one OpenAI reset credit with near-reset confirmation and proxy controls.",
@@ -935,8 +945,8 @@
       "id": "PING-OPENAI",
       "domain": "providers",
       "baseline": {
-        "path": "crates/prodex-cli/src/ping.rs",
-        "symbol": "PingCommands::Openai",
+        "path": "crates/prodex-app/src/app_commands/ping.rs",
+        "symbol": "handle_ping",
         "trace_verified": false
       },
       "required_behavior": "Minimal requests through the real eligible OpenAI runtime path with stable JSON results.",
@@ -1135,8 +1145,8 @@
       "id": "RUNTIME-BROKER",
       "domain": "runtime",
       "baseline": {
-        "path": "crates/prodex-app/src/command_dispatch.rs",
-        "symbol": "execute_command -> handle_runtime_broker",
+        "path": "crates/prodex-app/src/app_commands/broker.rs",
+        "symbol": "handle_runtime_broker",
         "trace_verified": false
       },
       "required_behavior": "Hidden broker command with runtime ownership, shared coordination and shutdown.",
@@ -1213,8 +1223,8 @@
       "id": "SUB-AGENT",
       "domain": "integration",
       "baseline": {
-        "path": "crates/prodex-cli/src/runtime_args.rs",
-        "symbol": "SubAgentExecArgs; execute_command -> handle_sub_agent_exec",
+        "path": "crates/prodex-app/src/runtime_tools/sub_agents.rs",
+        "symbol": "handle_sub_agent_exec",
         "trace_verified": false
       },
       "required_behavior": "Hidden delegated execution from secret-free config and exact task file.",
@@ -2191,8 +2201,8 @@
       "id": "PROCESS-LIFECYCLE",
       "domain": "platform",
       "baseline": {
-        "path": "crates/prodex-app/src/child_process.rs",
-        "symbol": "child process production paths",
+        "path": "crates/prodex-app/src/app_commands/child_process_control.rs",
+        "symbol": "configure_child_process_group, terminate_child_process_tree",
         "trace_verified": false
       },
       "required_behavior": "Isolated argv/env/stdio, process groups, signals, timeouts, cancellation and descendant cleanup.",
@@ -2341,6 +2351,48 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "JAVASCRIPT-SDK",
+      "domain": "packaging",
+      "baseline": {
+        "path": "scripts/npm/stage.mjs; scripts/npm/common.mjs; scripts/ci/npm-package-smoke.mjs; .github/workflows/standalone-release.yml; npm/prodex-gateway-sdk/index.mjs; npm/prodex-gateway-sdk/index.d.ts",
+        "symbol": "stageGatewaySdkPackage, gatewaySdkPackageManifest, ProdexGatewayClient, ProdexGatewayError",
+        "trace_verified": true
+      },
+      "required_behavior": "Retain the actively staged/imported SDK package surface, JavaScript module import/error/client behavior, declared TypeScript types and client HTTP protocol contracts; resolve its Mojo-only conflict without silently dropping it.",
+      "input": "JavaScript imports, client options and method arguments",
+      "output": "client results, stream results and error objects",
+      "failure_modes": "timeout, malformed response, HTTP failures and size limits",
+      "side_effects": "client HTTP interactions",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "JavaScript runtime as a client API consumer; not an authorized Modex implementation helper"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [
+        "docs/packaging-audit.json"
+      ],
+      "status": "BLOCKED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "BLOCKED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Native JavaScript module imports conflict with Mojo-only/no-runtime-adapter policy. HTTP compatibility is not equivalent to an importable module. Exact package-version publishing and documented server endpoint activity have contradictory evidence."
       ]
     }
   ]

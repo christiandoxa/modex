@@ -1,0 +1,10 @@
+Run codex logout for the selected or active profile.
+
+Usage: prodex logout [OPTIONS] [NAME]
+
+Arguments:
+  [NAME]  Profile name. If omitted, prodex uses the active profile
+
+Options:
+  -p, --profile <NAME>  Profile name. If omitted, prodex uses the active profile
+  -h, --help            Print help

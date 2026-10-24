@@ -1,0 +1,84 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+
+Artifact: build/modex
+Flags: mojo build -O3 --target-cpu=x86-64-v3 -I src
+readelf -d (NEEDED/RUNPATH)
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+
+ldd
+	linux-vdso.so.1 (0x00007369ffca1000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007369ffa24000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007369ff600000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007369ff91a000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007369ff200000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007369ff90a000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007369fe600000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007369ff8dc000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007369ffca3000)
+
+sha256sum
+82a3ca2f5a291d7f8f1eee4d92720eb2b2f32547d73e6b20046cc1039c449a9e  build/modex
+
+
+Artifact: build/tests/test_process_spawn
+Flags: mojo build -O3 --target-cpu=x86-64-v3 -I src
+readelf -d (NEEDED/RUNPATH)
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+
+ldd
+	linux-vdso.so.1 (0x00007d880cb33000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007d880c9d0000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007d880c600000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007d880c8c6000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007d880c200000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007d880c8b6000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007d880b600000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007d880c888000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007d880cb35000)
+
+sha256sum
+915597cf5c0478e3398908043175143793097a921d91dcd006c5d93f821fb007  build/tests/test_process_spawn
+
+
+Artifact: build/tests/process_child
+Flags: mojo build -O3 --target-cpu=x86-64-v3 -I src
+readelf -d (NEEDED/RUNPATH)
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+
+ldd
+	linux-vdso.so.1 (0x0000783601d90000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x0000783601c33000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x0000783601a00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x0000783601915000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x0000783601600000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x0000783601905000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x0000783600a00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007836018d7000)
+	/lib64/ld-linux-x86-64.so.2 (0x0000783601d92000)
+
+sha256sum
+9d3b62090ab3dfe9c3326ef9bfd8a1cd108738a2c7997dee0c9be9792f02048f  build/tests/process_child
+
+
+Only platform and official Mojo support runtime dependencies were found.
+The process module imports official CStringSpan/PID types and the existing
+posix_spawnp wrapper; it declares no native ABI function or layout. Owned
+strings stay fixed while argv/envp spans live through the synchronous call.
+The API requires an absolute executable path and does not mutate parent
+environment, working directory or descriptors. The returned standard Process
+waits on destruction; callers still lack bounded I/O, group and descendant
+supervision. This module remains outside CLI dispatch.
+
+The synthetic parent/child ran with only their binaries, fixture files,
+platform and official Mojo runtime libraries mounted, without Python, Node,
+Rust, Prodex or another implementation helper inside the test namespace.
+No dependency implementation, product subprocess helper, download or code
+generator was added. The absolute toolchain RUNPATH remains a distribution gap.
+All non-host release targets remain unverified or blocked as recorded.

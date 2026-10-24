@@ -80,13 +80,14 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/cli.mojo; src/modex/root_help.mojo; src/modex/log_cli.mojo; src/main.mojo (root/session/log help and diagnostics)",
+      "implementation": "src/modex/cli.mojo; src/modex/root_help.mojo; src/modex/log_cli.mojo; src/modex/inspection_cli.mojo; src/main.mojo (root/session/log/current/info/status help and diagnostics)",
       "tests": [
         "tests/capture_cli.py",
         "tests/capture_session_cli.py",
         "tests/test_session_cli.py",
         "tests/test_root_help.py",
-        "tests/test_log_cli.py"
+        "tests/test_log_cli.py",
+        "tests/test_inspection_cli.py"
       ],
       "evidence": [
         "docs/cli-inventory.json",
@@ -95,7 +96,8 @@
         "docs/evidence/session-cli-tests.txt",
         "docs/evidence/session-arguments-tests.txt",
         "docs/evidence/unicode-width-tests.txt",
-        "docs/evidence/log-tests.txt"
+        "docs/evidence/log-tests.txt",
+        "docs/evidence/inspection-policy-tests.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -109,7 +111,7 @@
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
         "35 oracle help routes captured. Session help and diagnostics match 271 captured official-release cases and 152 seeded generated comparisons, including suggestions, short-flag clusters, literal boundaries, help routing and ordered conflicts. Other commands, remaining combinations and valid resume execution remain unfinished or unverified. Root --help/-h/bare help and custom Usage executable are covered by tests/test_root_help.py; command help remains partial and unknown help routes/other commands remain unfinished or unverified.",
-        "Log help/diagnostics have 75 actual oracle argv comparisons, including short clusters and error precedence; remaining command routes and combinations are incomplete."
+        "Log help/diagnostics have 75 actual oracle argv comparisons. Current/info/status help and diagnostics now have fixed and 384 seeded ordering comparisons, including integer bounds, repeated flags, literal boundaries and help short-circuit behavior. Their runtime backends and remaining command routes/combinations are incomplete."
       ]
     },
     {
@@ -582,6 +584,7 @@
         "tests/test_log_follow_paths.mojo",
         "tests/test_log_operational.mojo",
         "tests/test_log_operational.py",
+        "tests/test_policy_limits.py",
         "tests/test_json_float.mojo",
         "tests/test_json_float_oracle.py",
         "tests/test_log_stream.py",
@@ -616,7 +619,9 @@
         "docs/evidence/log-stream-mismatch.json",
         "docs/evidence/log-foundations-tests.txt",
         "docs/evidence/log-foundations-link.txt",
-        "docs/evidence/log-live-mismatch.json"
+        "docs/evidence/log-live-mismatch.json",
+        "docs/evidence/inspection-policy-tests.txt",
+        "docs/evidence/inspection-policy-link.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -1475,11 +1480,13 @@
         "tests/test_log_policy.py",
         "tests/test_policy_corpus.py",
         "tests/test_toml.mojo",
-        "tests/test_toml.py"
+        "tests/test_toml.py",
+        "tests/test_policy_limits.py"
       ],
       "evidence": [
         "docs/evidence/policy-unicode-tests.txt",
-        "docs/evidence/policy-corpus.json"
+        "docs/evidence/policy-corpus.json",
+        "docs/evidence/inspection-policy-tests.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -1492,7 +1499,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Native TOML/schema validation and runtime log-directory env/policy/TMPDIR precedence are connected. General runtime/profile/secret configuration application and precedence outside detached logs remain unfinished. Parser resource/depth boundary equivalence and other platforms remain unverified."
+        "Native TOML/schema validation and runtime log-directory env/policy/TMPDIR precedence are connected. Independent 80-level value and 80-segment key-path limits now match the frozen parser; 45 additional production cases cover boundaries and semantic depth up to 80-by-80 tables. General runtime/profile/secret configuration application and precedence outside detached logs remain unfinished. Other parser resource boundaries and platforms remain unverified."
       ]
     },
     {

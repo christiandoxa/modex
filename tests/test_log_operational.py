@@ -153,6 +153,63 @@ def operational_corpus():
         ("quota_blocked", {"quota_band": "-", "five_hour_remaining": "-", "weekly_remaining": "", "reason": " "}),
         ("quota_blocked", {"weekly_remaining": "7" * 33}),
         ("upstream_start", {"url": "https://example.test/" + "a" * 193}),
+        # Endpoint normalization cases traced against the frozen runtime URL parser.
+        ("upstream_start", {"url": "https://user:password@example.test:443/a"}),
+        ("upstream_start", {"url": "https://user@example.test/a"}),
+        ("upstream_start", {"url": "https://[2001:db8::1]:8443/a/../b"}),
+        ("upstream_start", {"url": "https://[::1]/a"}),
+        ("upstream_start", {"url": "https://[::ffff:192.0.2.1]/a"}),
+        ("upstream_start", {"url": "https://[::ffff:18446744073709551616.0.0.1]/a"}),
+        ("upstream_start", {"url": "https://[192.0.2.1::]/a"}),
+        ("upstream_start", {"url": "https://./a"}),
+        ("upstream_start", {"url": "https://[1:2:3:4:5:6:192.0.2.1]/a"}),
+        ("upstream_start", {"url": "https://[not-ipv6]/a"}),
+        ("upstream_start", {"url": "https://[::ffff:192.00.2.1]/a"}),
+        ("upstream_start", {"url": "https://[::ffff:192.0.2.256]/a"}),
+        ("upstream_start", {"url": "https://[::ffff:192.0.2]/a"}),
+        ("upstream_start", {"url": "https://[1::2::3]/a"}),
+        ("upstream_start", {"url": "https://[:1:2:3:4:5:6:7:8]/a"}),
+        ("upstream_start", {"url": "https://[1:2:3:4:5:6:7:8:]/a"}),
+        ("upstream_start", {"url": "https://[2001:db8::1/a"}),
+        ("upstream_start", {"url": "https://example.test:/a"}),
+        ("upstream_start", {"url": "http://999999999999999999999999/a"}),
+        ("upstream_start", {"url": "http://127.0.0.1:80/a"}),
+        ("upstream_start", {"url": "http://127.1/a"}),
+        ("upstream_start", {"url": "http://1.2.65535/a"}),
+        ("upstream_start", {"url": "http://1.16777215/a"}),
+        ("upstream_start", {"url": "http://1.2.65536/a"}),
+        ("upstream_start", {"url": "http://1.2.3.256/a"}),
+        ("upstream_start", {"url": "http://0177.0.0.1/a"}),
+        ("upstream_start", {"url": "http://0x7f000001/a"}),
+        ("upstream_start", {"url": "http://0000000000000000000000000000000011/a"}),
+        ("upstream_start", {"url": "http://127.0.0.1./a"}),
+        ("upstream_start", {"url": "http://256.1.1.1/a"}),
+        ("upstream_start", {"url": "http://example.test.123/a"}),
+        ("upstream_start", {"url": "http://09/a"}),
+        ("upstream_start", {"url": "http://0x100000000/a"}),
+        ("upstream_start", {"url": "http://example.test.0xg/a"}),
+        ("upstream_start", {"url": "ftp://256.1.1.1/a"}),
+        ("upstream_start", {"url": "ws://256.1.1.1/a"}),
+        ("upstream_start", {"url": "wss://0x100000000/a"}),
+        ("upstream_start", {"url": "file://256.1.1.1/a"}),
+        ("upstream_start", {"url": "file://256.1.1.1?next=/path"}),
+        ("upstream_start", {"url": "file://localhost?secret=x#fragment"}),
+        ("upstream_start", {"url": "custom://0x100000000/a"}),
+        ("upstream_start", {"url": "https://example.test:65536/a"}),
+        ("upstream_start", {"url": "https://example.test:00080/a"}),
+        ("upstream_start", {"url": "file:///tmp/a/../b?secret=x#fragment"}),
+        ("upstream_start", {"url": "file://localhost/tmp/a"}),
+        ("upstream_start", {"url": "file:relative/path?secret=x#frag"}),
+        ("upstream_start", {"url": "mailto:user@example.test?subject=secret#frag"}),
+        ("upstream_start", {"url": "data:text/plain,secret?x#frag"}),
+        ("upstream_start", {"url": "custom://host/a/../b?secret=x"}),
+        ("upstream_start", {"url": "https://example.test/a\\\\b/../c?x#f"}),
+        ("upstream_start", {"url": "https://example.test/%zz/%2F/%2e%2e/x"}),
+        ("upstream_start", {"url": "https://example.test/a//b/../../c"}),
+        ("upstream_start", {"url": "https://example.test/a?x=/secret#f"}),
+        ("upstream_start", {"url": "https://example.test/a#f?secret=x"}),
+        ("upstream_start", {"url": "https://example.test/雪/💡"}),
+        ("upstream_start", {"url": "https://user:synthetic-endpoint-secret@example.test/a?token=synthetic-query-secret"}),
     ]:
         lines.append(record(name, fields, sequence))
         sequence += 1
@@ -243,6 +300,8 @@ class OperationalLogProjectionTests(unittest.TestCase):
                     (mismatch_dir / f"{mode}-modex.stderr").write_bytes(actual["stderr"])
                 self.assertEqual(actual, expected)
                 self.assertNotIn(b"synthetic-secret", actual["stdout"])
+                self.assertNotIn(b"synthetic-endpoint-secret", actual["stdout"])
+                self.assertNotIn(b"synthetic-query-secret", actual["stdout"])
 
 
 if __name__ == "__main__":

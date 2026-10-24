@@ -13,6 +13,19 @@ in this toolchain version, not claims about future Mojo releases.
   environment from `_get_environ()` to `posix_spawnp`. The pinned
   `std/sys/_libc.mojo` wrapper passes null spawn attributes and file actions;
   `Process.run` has no separate environment or stdio-redirection arguments.
+- The existing internal `posix_spawnp` wrapper does accept an explicit `envp`.
+  `src/modex/process_spawn.mojo` now uses it with an absolute executable path,
+  stable owned argv/environment strings and the official `Process` owner.
+  Native checks verify long/empty/Unicode arguments, environment replacement,
+  an omitted parent sentinel, unchanged parent environment, invalid inputs and
+  exit status. The standalone parent and synthetic Mojo child also run in an
+  isolated filesystem with only platform/official Mojo runtime libraries.
+  Evidence: `docs/evidence/inspection-policy-tests.txt`. This closes the limited
+  explicit-environment capability gap; it does not provide redirected I/O,
+  deadlines, process groups or descendant cleanup.
+- The same bundled module supplies `dup`/`dup2`. Temporarily redirecting the
+  parent's descriptors would affect concurrent parent I/O; no such global
+  redirection is included in Modex. Spawn file-actions remain unavailable.
 - `std/os/process.mojo` provides `Pipe` read/write, `ProcessStatus`, direct-child
   `kill`/`interrupt`/`hangup`, `poll`, and `wait`. `probes/process.mojo` was
   previously compiled and run successfully for pipe bytes, direct argv spawn,

@@ -130,8 +130,10 @@ rounding. Unexercised timestamp/projection combinations and non-host platforms
 remain unverified. Evidence: `docs/evidence/log-timestamps-tests.txt`.
 Evidence: `docs/evidence/log-tests.txt`, `docs/evidence/log-link.txt` and
 `docs/evidence/policy-unicode-tests.txt`. General policy application beyond
-log-directory selection is unfinished; parser resource/recursion behavior
-beyond the tested 128-level limit remains unverified.
+log-directory selection is unfinished. The frozen parser's independent limits
+of 80 active array/inline-table levels and 80 segments per local key path now
+match production comparisons, including semantic table trees up to 80-by-80
+levels. Other resource boundaries remain unverified.
 
 Three frozen-release log fixtures expose a quoted credential beside Unicode
 whitespace. Modex masks the complete value and preserves the original spacing;

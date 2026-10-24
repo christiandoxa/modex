@@ -50,6 +50,10 @@ def main() raises:
     assert_equal(len(nested_arrays.nodes[groups].children), 2)
     var implicit = TOMLDocument("[deep.nested.table]\nvalue=1\n[root]\nvalue=2\n")
     assert_equal(implicit.nodes[implicit.get(implicit.root, "root")].kind, TOML_TABLE)
+    var boundary_array = TOMLDocument("x=" + String("[") * 80 + "1" + String("]") * 80)
+    assert_equal(boundary_array.nodes[boundary_array.get(boundary_array.root, "x")].kind, TOML_ARRAY)
+    var boundary_key = TOMLDocument(String("a.") * 79 + "a=1")
+    assert_true(boundary_key.get(boundary_key.root, "a") >= 0)
     var invalid: List[String] = [
         "x=1\nx=2", "[a]\nx=1\n[a]\ny=2", "x = 01", "x = \"unterminated",
         "x = 18446744073709551616", "x = -9223372036854775809", "x = 0x10000000000000000",
@@ -67,6 +71,8 @@ def main() raises:
         "a = {x=1}\na.y=2", "a.b=1\n[a]", "a=[1]\n[[a]]",
         "a=[{x=1}]\na.x=2", "a=[{x=1}]\n[a.child]", "x=1\rvalue=2"
     ]
+    invalid.append("x=" + String("[") * 81 + "1" + String("]") * 81)
+    invalid.append(String("a.") * 80 + "a=1")
     for source in invalid:
         var failed = False
         try:

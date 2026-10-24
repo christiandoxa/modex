@@ -2,6 +2,7 @@ from std.collections import List
 from std.sys import argv, exit, stderr
 
 from modex.cli import parse_session_options, session_help
+from modex.inspection_cli import inspection_help, inspection_help_requested, inspection_usage
 from modex.log_cli import log_help, log_short_help, parse_log_arguments
 from modex.logs import log_last
 from modex.log_upstream_follow import follow_upstream
@@ -14,6 +15,14 @@ def main():
     var args = List[String]()
     for arg in argv():
         args.append(String(arg))
+    if len(args) >= 3 and args[1] == "help" and (args[2] == "current" or args[2] == "info" or args[2] == "status"):
+        var parts = args[0].split("/")
+        var executable = String(parts[len(parts) - 1])
+        if len(args) > 3:
+            print("error: unrecognized subcommand '" + args[3] + "'\n\nUsage: " + inspection_usage(args[2], executable) + "\n\nFor more information, try '--help'.\n", file=stderr, end="")
+            exit(2)
+        print(inspection_help(args[2], executable), end="")
+        return
     if len(args) >= 3 and args[1] == "help" and args[2] == "session":
         var rewritten: List[String] = [args[0], "session", "help"]
         for index in range(3, len(args)):
@@ -35,6 +44,16 @@ def main():
         var executable_parts = args[0].split("/")
         print(root_help(String(executable_parts[len(executable_parts) - 1])), end="")
         return
+    if len(args) >= 2 and (args[1] == "current" or args[1] == "info" or args[1] == "status"):
+        var parts = args[0].split("/")
+        var executable = String(parts[len(parts) - 1])
+        try:
+            if inspection_help_requested(args, executable):
+                print(inspection_help(args[1], executable), end="")
+                return
+        except error:
+            print(error, file=stderr, end="")
+            exit(2)
     if len(args) >= 2 and args[1] == "log":
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])

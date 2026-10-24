@@ -14,6 +14,7 @@ comptime TOML_TABLE = 6
 comptime TOML_LOCAL_DATE = 7
 comptime TOML_LOCAL_TIME = 8
 comptime TOML_LOCAL_DATETIME = 9
+comptime TOML_MAX_NESTING = 80
 
 
 @fieldwise_init
@@ -126,6 +127,8 @@ struct TOMLDocument:
             self.position += 1
             self._space()
             keys.append(self._key())
+            if len(keys) > TOML_MAX_NESTING:
+                raise Error("TOML nesting limit exceeded")
             self._space()
         return keys^
 
@@ -237,8 +240,7 @@ struct TOMLDocument:
         self._put(target, keys[len(keys) - 1], value)
 
     def _value(mut self, depth: Int) raises -> Int:
-        # shortcut: nesting stops at 128 levels; raise only for real policy data that needs more.
-        if depth > 128:
+        if depth > TOML_MAX_NESTING:
             raise Error("TOML nesting limit exceeded")
         var b = self._peek()
         if b == 34 or b == 39:

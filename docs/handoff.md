@@ -17,11 +17,10 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `rtk make test` (13 Mojo unit programs, test-only
-JSON/Zstandard/text/log/TOML/SHA-256/HTTP drivers, and 149 Python methods PASS;
-no skips). Later HTTP hardening and expanded recording-mode cases have separate
-focused reruns in `docs/evidence/log-foundations-tests.txt`, for 155 distinct
-Python methods verified in total. This includes
+Validation: `rtk make test` (14 Mojo unit programs, test-only
+JSON/Zstandard/text/log/TOML/SHA-256/HTTP drivers, and 159 Python methods PASS;
+no skips). Final endpoint-edge and absolute-executable-path changes have
+focused reruns in `docs/evidence/inspection-policy-tests.txt`. This includes
 712 policy-oracle comparisons, 500 deterministic generated JSON values,
 malformed UTF-8/syntax/boundary vectors and numeric/local session times,
 future recurring rules through 2100, transition-second boundaries and
@@ -39,7 +38,11 @@ registered flags, hidden flags, defaults, precedence and passthrough.
 Root `--help`, `-h` and bare `help` are now connected, including ignored
 trailing arguments after help flags and custom executable names in Usage.
 Their release comparisons check isolated homes and no created paths.
-Other command help routes remain unfinished. Evidence:
+Current/info/status help and diagnostics now match fixed and 384 seeded
+argument-order comparisons, with no filesystem mutations. Status interval
+validation retains the frozen 1..=60 range and error precedence. Their runtime
+backends still fail explicitly as unimplemented; other command help routes
+remain unfinished. Evidence: `docs/evidence/inspection-policy-tests.txt`,
 `docs/evidence/unicode-width-tests.txt` and `tests/test_root_help.py`.
 
 Detached `log last` now selects transcript, upstream-payload and token-usage
@@ -246,8 +249,13 @@ reads before connecting live broker/direct-source acquisition. Preserve the
 candidate-version-probe conflict. Continue independent command/config slices,
 URL/parser/failure coverage and policy recursion/resource verification while
 those capabilities remain unavailable; terminal views also remain unfinished.
-The parser has an explicit 128-level value-nesting limit; equivalence to the
-release beyond the tested corpus remains unverified. General policy/config
+An independent next slice is native incremental SSE framing and provider-event
+decoding, with frozen protocol fixtures and malformed/fragmented-input checks.
+The parser now preserves the frozen independent limits: 80 active
+array/inline-table levels and 80 segments per local key path. Forty-five
+additional policy comparisons cover exact boundaries, large keys/strings,
+malformed tails and admitted semantic table trees up to 80-by-80 levels.
+Other resource boundaries remain unverified. General policy/config
 application outside log-directory selection is still unfinished.
 Stateful paths still fail explicitly. Future recurring timezone rules and
 POSIX TZ strings are implemented; their earlier evidence is
@@ -257,11 +265,25 @@ panic are in `docs/known-gaps.md`; no session contract is PASS.
 
 The pinned stdlib's public and bundled internal source has now been inspected
 for file/process/terminal prerequisites. It supplies basic pipes and direct
-child management, but no spawn file-actions/attributes, separate child
-environment, terminal raw mode/size, permission repair, durable sync or atomic
-rename wrapper. The private fcntl ABI experiment is excluded from product
+child management. The bundled posix_spawnp wrapper now proves complete explicit
+child environments without changing the parent's environment. The new native
+module requires an absolute executable path, owns string storage through the
+spawn call and returns the official Process owner. Native/isolated-runtime
+checks cover long, empty and Unicode arguments, omitted inherited variables,
+NUL/malformed inputs and exact nonzero exit status. It is not connected to the
+CLI; spawn file-actions/attributes, redirected I/O, deadlines and descendant
+cleanup remain unfinished. Terminal raw mode/size, permission repair, durable
+sync and atomic rename wrappers remain unavailable. The private fcntl ABI experiment is excluded from product
 evidence and does not establish baseline-compatible locking. Details:
 `docs/evidence/stdlib-internals-audit.md`. No dependency exception was added.
+
+Endpoint rendering now handles tested special-scheme IPv4 radix/abbreviated
+forms, IPv6 literals and embedded IPv4 tails, empty explicit ports, relative
+file paths and dot segments after empty path segments. Query/userinfo secret
+omission remains covered. The WHATWG-derived address validators are native
+Mojo; complete domain/IDNA and URL-parser equivalence remain unverified.
+Evidence: `docs/evidence/inspection-policy-tests.txt` and
+`docs/evidence/inspection-policy-link.txt`.
 
 Use GPT-6 Luna agents in parallel for independent implementation, validation
 and review; file ownership must stay disjoint. This user preference is also

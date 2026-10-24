@@ -40,7 +40,7 @@
         "kill/wait direct child"
       ],
       "not_proven": [
-        "separate child environment",
+        "separate child environment through the public Process.run API",
         "stdio redirection",
         "process groups",
         "descendant cleanup",
@@ -63,6 +63,23 @@
         "stable public networking API"
       ],
       "assessment": "The pinned official stdlib contains internal POSIX socket bindings. They are not stable public APIs. This probe introduces no bindings and imports no third-party library. Production use requires explicit ownership/error/cancellation review and interoperability evidence."
+    },
+    {
+      "id": "PROCESS-ENV-INTERNAL",
+      "status": "PROVEN_LOCAL_INTERNAL_API",
+      "source": "src/modex/process_spawn.mojo; probes/process_spawn.mojo",
+      "tests": ["tests/test_process_spawn.mojo", "tests/process_child.mojo", "tests/test_process_runtime.py"],
+      "evidence": ["docs/evidence/inspection-policy-tests.txt", "docs/evidence/inspection-policy-link.txt"],
+      "proven": [
+        "absolute executable path and exact argv through the bundled posix_spawnp wrapper",
+        "complete child environment replacement without changing the parent environment",
+        "stable owned storage for borrowed argv/envp C-string spans",
+        "long, empty and Unicode argv; long environment values; exit status 7",
+        "NUL/malformed environment and relative executable path rejection",
+        "standalone Mojo parent/child in an isolated filesystem without implementation helpers"
+      ],
+      "not_proven": ["CLI integration", "redirected stdin/stdout/stderr", "bounded capture and deadlines", "process groups", "descendant cleanup", "non-host targets"],
+      "assessment": "Only official stdlib wrappers and types are used. The API requires an absolute executable path; it does not search PATH or mutate global environment/stdio. The high-level Process.run still lacks an environment override."
     },
     {
       "id": "LOOPBACK-HTTP-NATIVE",

@@ -181,7 +181,7 @@ def safe_endpoint(value: String) -> String:
     var scheme = String(value[byte=:colon]).lower()
     var rest = String(value[byte=colon + 1:])
     var path: String
-    if scheme == "http" or scheme == "https":
+    if scheme == "http" or scheme == "https" or scheme == "ftp" or scheme == "ws" or scheme == "wss":
         var special = rest.replace("\\", "/")
         var start = 0
         while start < special.byte_length() and special.as_bytes()[start] == 47:
@@ -201,10 +201,18 @@ def safe_endpoint(value: String) -> String:
     elif rest.startswith("//"):
         if scheme == "file":
             var authority = String(rest[byte=2:])
-            var authority_end = authority.find("/")
-            if authority_end < 0:
+            var authority_end = authority.byte_length()
+            for delimiter in ["/", "?", "#"]:
+                var found = authority.find(delimiter)
+                if found >= 0 and found < authority_end:
+                    authority_end = found
+            if authority_end == authority.byte_length():
+                if not valid_file_authority(authority):
+                    return "upstream"
                 return "/" if authority else "upstream"
-            path = String(authority[byte=authority_end:])
+            if authority_end > 0 and not valid_file_authority(String(authority[byte=:authority_end])):
+                return "upstream"
+            path = String(authority[byte=authority_end:]) if authority.as_bytes()[authority_end] == 47 else "/"
         else:
             var authority = String(rest[byte=2:])
             var authority_end = authority.find("/")
@@ -219,6 +227,8 @@ def safe_endpoint(value: String) -> String:
             path = String(authority[byte=authority_end:])
     else:
         path = rest
+        if scheme == "file" and not path.startswith("/"):
+            path = "/" + path
     var end = path.find("?")
     var fragment_end = path.find("#")
     if end < 0 or (fragment_end >= 0 and fragment_end < end): end = fragment_end
@@ -249,6 +259,8 @@ def valid_url_authority(authority: String) -> Bool:
         var close = host_port.find("]")
         if close <= 1:
             return False
+        if not valid_ipv6_literal(String(host_port[byte=1:close])):
+            return False
         if close + 1 < host_port.byte_length():
             if host_port.as_bytes()[close + 1] != 58:
                 return False
@@ -261,10 +273,15 @@ def valid_url_authority(authority: String) -> Bool:
             if separator == 0:
                 return False
             port_start = separator + 1
+    if not host_port.startswith("["):
+        var host_end = port_start - 1 if port_start >= 0 else host_port.byte_length()
+        var host = String(host_port[byte=:host_end])
+        if host_ends_in_number(host) and not valid_ipv4_host(host):
+            return False
     if port_start < 0:
         return True
     if port_start >= host_port.byte_length():
-        return False
+        return True
     var port = 0
     for index in range(port_start, host_port.byte_length()):
         var byte = Int(host_port.as_bytes()[index])
@@ -274,6 +291,152 @@ def valid_url_authority(authority: String) -> Bool:
         if port > 65535:
             return False
     return True
+
+
+def valid_file_authority(authority: String) -> Bool:
+    if not authority:
+        return True
+    if not valid_url_authority(authority):
+        return False
+    if authority.startswith("["):
+        var close = authority.find("]")
+        return close + 1 == authority.byte_length() or (close + 2 == authority.byte_length() and authority.as_bytes()[close + 1] == 58)
+    var separator = authority.find(":")
+    return separator < 0 or separator == authority.byte_length() - 1
+
+
+def host_ends_in_number(host: String) -> Bool:
+    var parts = host.split(".")
+    if len(parts) and not parts[len(parts) - 1]:
+        _ = parts.pop()
+    if not len(parts):
+        return False
+    var last = String(parts[len(parts) - 1])
+    var decimal = last.byte_length() > 0
+    for byte in last.as_bytes():
+        if byte < 48 or byte > 57:
+            decimal = False
+            break
+    return decimal or is_ipv4_number(last)
+
+
+def is_ipv4_number(part: String) -> Bool:
+    if not part:
+        return False
+    var base = 10
+    var start = 0
+    if part.byte_length() >= 2 and part.as_bytes()[0] == 48 and (part.as_bytes()[1] == 120 or part.as_bytes()[1] == 88):
+        base = 16
+        start = 2
+    elif part.byte_length() >= 2 and part.as_bytes()[0] == 48:
+        base = 8
+        start = 1
+    for index in range(start, part.byte_length()):
+        var byte = Int(part.as_bytes()[index])
+        var digit = byte - 48 if 48 <= byte <= 57 else (byte - 65 + 10 if 65 <= byte <= 70 else (byte - 97 + 10 if 97 <= byte <= 102 else 99))
+        if digit >= base:
+            return False
+    return True
+
+
+def parse_ipv4_number(part: String) -> UInt64:
+    if not part:
+        return UInt64.MAX
+    var base = UInt64(10)
+    var start = 0
+    if part.byte_length() >= 2 and part.as_bytes()[0] == 48 and (part.as_bytes()[1] == 120 or part.as_bytes()[1] == 88):
+        base = 16
+        start = 2
+    elif part.byte_length() >= 2 and part.as_bytes()[0] == 48:
+        base = 8
+        start = 1
+    var value = UInt64(0)
+    for index in range(start, part.byte_length()):
+        var byte = Int(part.as_bytes()[index])
+        var digit = byte - 48 if 48 <= byte <= 57 else (byte - 65 + 10 if 65 <= byte <= 70 else (byte - 97 + 10 if 97 <= byte <= 102 else 99))
+        if UInt64(digit) >= base or value > (UInt64(4294967295) - UInt64(digit)) // base:
+            return UInt64.MAX
+        value = value * base + UInt64(digit)
+    return value
+
+
+def valid_ipv4_host(host: String) -> Bool:
+    var parts = host.split(".")
+    if len(parts) and not parts[len(parts) - 1] and len(parts) > 1:
+        _ = parts.pop()
+    if not len(parts) or len(parts) > 4:
+        return False
+    var last = UInt64(0)
+    for index in range(len(parts)):
+        var value = parse_ipv4_number(String(parts[index]))
+        if value == UInt64.MAX or (index < len(parts) - 1 and value > 255):
+            return False
+        last = value
+    var last_limit = UInt64(1)
+    for _ in range(5 - len(parts)):
+        last_limit *= 256
+    return last < last_limit
+
+
+def valid_ipv4_tail(host: String) -> Bool:
+    var parts = host.split(".")
+    if len(parts) != 4:
+        return False
+    for part in parts:
+        if not part or part.byte_length() > 3 or (part.byte_length() > 1 and part.as_bytes()[0] == 48):
+            return False
+        var value = UInt64(0)
+        for byte in part.as_bytes():
+            if byte < 48 or byte > 57:
+                return False
+            value = value * 10 + UInt64(byte - 48)
+        if value > 255:
+            return False
+    return True
+
+
+def valid_ipv6_piece(part: String) -> Bool:
+    if not part or part.byte_length() > 4:
+        return False
+    for byte in part.as_bytes():
+        var value = Int(byte)
+        if not ((48 <= value <= 57) or (65 <= value <= 70) or (97 <= value <= 102)):
+            return False
+    return True
+
+
+def valid_ipv6_literal(host: String) -> Bool:
+    var compressed_at = host.find("::")
+    var compressed = compressed_at >= 0
+    if compressed and String(host[byte=compressed_at + 2:]).find("::") >= 0:
+        return False
+    var ipv4 = host.find(".") >= 0
+    if ipv4 and host.endswith(":"):
+        return False
+    var left = String(host[byte=:compressed_at]) if compressed else host
+    var right = String(host[byte=compressed_at + 2:]) if compressed else String()
+    var parts = List[String]()
+    if left:
+        for part in left.split(":"):
+            if not part:
+                return False
+            parts.append(String(part))
+    if compressed and right:
+        for part in right.split(":"):
+            if not part:
+                return False
+            parts.append(String(part))
+    if ipv4:
+        if not len(parts) or not valid_ipv4_tail(String(parts[len(parts) - 1])):
+            return False
+        _ = parts.pop()
+        if len(parts) > 6:
+            return False
+    for part in parts:
+        if not valid_ipv6_piece(String(part)):
+            return False
+    var groups = len(parts) + (2 if ipv4 else 0)
+    return groups < 8 if compressed else groups == 8
 
 
 def valid_scheme(value: String, colon: Int) -> Bool:
@@ -297,7 +460,7 @@ def normalize_url_path(path: String) -> String:
         if is_single_dot_segment(String(part)):
             if index == len(parts) - 1: kept.append(String())
         elif is_double_dot_segment(String(part)):
-            if len(kept) and kept[len(kept) - 1] != "":
+            if len(kept) and (not absolute or len(kept) > 1):
                 _ = kept.pop()
             if index == len(parts) - 1: kept.append(String())
         else:

@@ -17,6 +17,8 @@ probes: check-toolchain
 	MODEX_PROBE_SENTINEL=isolated-probe build/probes/platform $(CURDIR)/build/probes/platform-files
 	$(MOJO) build $(MOJO_FLAGS) probes/process.mojo -o build/probes/process
 	build/probes/process
+	$(MOJO) build $(MOJO_FLAGS) -I src probes/process_spawn.mojo -o build/probes/process_spawn
+	build/probes/process_spawn
 	$(MOJO) build $(MOJO_FLAGS) probes/socket.mojo -o build/probes/socket
 	build/probes/socket
 
@@ -61,6 +63,9 @@ unit: check-toolchain
 	build/tests/test_log_transcript_events
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_log_sources.mojo -o build/tests/test_log_sources
 	build/tests/test_log_sources
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/process_child.mojo -o build/tests/process_child
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_process_spawn.mojo -o build/tests/test_process_spawn
+	build/tests/test_process_spawn $(CURDIR)/build/tests/process_child
 
 test: build unit
 	python3 -m unittest discover -s tests -p 'test_*.py' -v

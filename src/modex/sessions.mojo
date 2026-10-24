@@ -2,10 +2,11 @@ from std.collections import List, Optional, Span
 from std.io import FileHandle, RawFileDescriptor
 from std.os import getuid, isatty, listdir, lstat, makedirs, stat
 from std.os.path import exists
+from std.pathlib import cwd
 
 from .json import JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json
 from .local_time import format_local_epoch
-from .paths import app_root, comparable_path, shared_root
+from .paths import absolute_path, app_root, comparable_path, shared_root
 from .session_time import integer_timestamp, timestamp_key
 from .text import cli_width, pad_cell, section_header, status_panel, text_width, trim_text
 from .zstd import ZstdReader
@@ -20,7 +21,7 @@ struct SessionOptions(Copyable):
     var profile: Optional[String]
     var query: String
     var limit: Optional[UInt64]
-    var directory: String
+    var directory: Optional[String]
     var parent_only: Bool
 
 
@@ -82,7 +83,7 @@ struct SessionReport(Copyable):
             return False
         if options.profile:
             return False
-        if options.current and (not self.directory or comparable_path(self.directory) != comparable_path(options.directory)):
+        if options.current and (not self.directory or comparable_path(self.directory) != comparable_path(options.directory.value())):
             return False
         var query = trim_text(options.query).lower()
         if query:
@@ -271,7 +272,9 @@ def read_session(path: String) raises -> Optional[SessionReport]:
     return report^
 
 
-def inspect_sessions(options: SessionOptions) raises -> String:
+def inspect_sessions(var options: SessionOptions) raises -> String:
+    if options.current:
+        options.directory = absolute_path(options.directory.value()) if options.directory else String(cwd())
     var root = app_root()
     if exists(root):
         var info = lstat(root)
@@ -319,7 +322,7 @@ def inspect_sessions(options: SessionOptions) raises -> String:
     if count == 0:
         var message = String("No sessions found")
         if options.current:
-            message += " for " + options.directory
+            message += " for " + options.directory.value()
         return status_panel("Sessions", message, width)
     var available = max(width - 8, 5)
     var fifth = available // 5

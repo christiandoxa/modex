@@ -452,6 +452,2833 @@
       "stdout": "",
       "stderr": "error: unrecognized subcommand 'nonsense'\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
       "new_paths": []
+    },
+    {
+      "arguments": [
+        "help",
+        "session"
+      ],
+      "exit_code": 0,
+      "stdout": "Inspect shared Codex session metadata.\n\nUsage: prodex session <COMMAND>\n\nCommands:\n  list     List shared Codex sessions\n  current  List shared Codex sessions started from the current directory\n  resume   Resume a shared Codex session by unique partial or full id\n  help     Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help  Print help\n\nExamples:\n  prodex session list\n  prodex session list --json\n  prodex session list --id-only\n  prodex session list --resume-command\n  prodex session list --parent-only\n  prodex session list --profile main --query triage\n  prodex session current\n  prodex session current --resume-command\n  prodex session current --limit 20\n  prodex session resume 1234abcd\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "help",
+        "session",
+        "list"
+      ],
+      "exit_code": 0,
+      "stdout": "List shared Codex sessions\n\nUsage: prodex session list [OPTIONS]\n\nOptions:\n      --json               Emit machine-readable JSON\n      --id-only            Print only full session ids, one per line\n      --resume-command     Print a resume command for each matching session\n      --profile <NAME>     Show only sessions attached to this profile binding\n      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text\n      --limit <N>          Limit the number of sessions shown after sorting newest first\n      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility\n      --parent-only        Show only resumable parent sessions\n  -h, --help               Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "help",
+        "session",
+        "current"
+      ],
+      "exit_code": 0,
+      "stdout": "List shared Codex sessions started from the current directory\n\nUsage: prodex session current [OPTIONS]\n\nOptions:\n      --json               Emit machine-readable JSON\n      --id-only            Print only full session ids, one per line\n      --resume-command     Print a resume command for each matching session\n      --profile <NAME>     Show only sessions attached to this profile binding\n      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text\n      --limit <N>          Limit the number of sessions shown after sorting newest first\n      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility\n      --parent-only        Show only resumable parent sessions\n  -h, --help               Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "help",
+        "session",
+        "resume"
+      ],
+      "exit_code": 0,
+      "stdout": "Resume a shared Codex session by unique partial or full id\n\nUsage: prodex session resume <ID>\n\nArguments:\n  <ID>  Unique full or partial shared Codex session id\n\nOptions:\n  -h, --help  Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "help",
+        "session",
+        "help"
+      ],
+      "exit_code": 0,
+      "stdout": "Print this message or the help of the given subcommand(s)\n\nUsage: prodex session help [COMMAND]...\n\nArguments:\n  [COMMAND]...  Print help for the subcommand(s)\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "help",
+        "session",
+        "list",
+        "extra"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand 'extra'\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "listr"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand 'listr'\n\n  tip: a similar subcommand exists: 'list'\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "currnt"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand 'currnt'\n\n  tip: a similar subcommand exists: 'current'\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resum"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand 'resum'\n\n  tip: a similar subcommand exists: 'resume'\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "hel"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand 'hel'\n\n  tip: a similar subcommand exists: 'help'\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "rest"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand 'rest'\n\n  tip: a similar subcommand exists: 'resume'\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "-"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand '-'\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list=extra"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand 'list=extra'\n\n  tip: a similar subcommand exists: 'list'\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "--json",
+        "list"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--json' found\n\n  tip: 'list --json' exists\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "--profil",
+        "current"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--profil' found\n\n  tip: 'current --profile' exists\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "--halp",
+        "list"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--halp' found\n\n  tip: a similar argument exists: '--help'\n\nUsage: prodex session --help <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume",
+        "--halp"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--halp' found\n\n  tip: a similar argument exists: '--help'\n\nUsage: prodex session resume --help <ID>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume",
+        "--foo=bar"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--foo' found\n\n  tip: to pass '--foo' as a value, use '-- --foo'\n\nUsage: prodex session resume <ID>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "--"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "Inspect shared Codex session metadata.\n\nUsage: prodex session <COMMAND>\n\nCommands:\n  list     List shared Codex sessions\n  current  List shared Codex sessions started from the current directory\n  resume   Resume a shared Codex session by unique partial or full id\n  help     Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help  Print help\n\nExamples:\n  prodex session list\n  prodex session list --json\n  prodex session list --id-only\n  prodex session list --resume-command\n  prodex session list --parent-only\n  prodex session list --profile main --query triage\n  prodex session current\n  prodex session current --resume-command\n  prodex session current --limit 20\n  prodex session resume 1234abcd\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "--",
+        "list"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument 'list' found\n\n  tip: subcommand 'list' exists; to use it, remove the '--' before it\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--json' found\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "-x"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "-hh"
+      ],
+      "exit_code": 0,
+      "stdout": "Inspect shared Codex session metadata.\n\nUsage: prodex session <COMMAND>\n\nCommands:\n  list     List shared Codex sessions\n  current  List shared Codex sessions started from the current directory\n  resume   Resume a shared Codex session by unique partial or full id\n  help     Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help  Print help\n\nExamples:\n  prodex session list\n  prodex session list --json\n  prodex session list --id-only\n  prodex session list --resume-command\n  prodex session list --parent-only\n  prodex session list --profile main --query triage\n  prodex session current\n  prodex session current --resume-command\n  prodex session current --limit 20\n  prodex session resume 1234abcd\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "--help=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--help' found; no more were expected\n\nUsage: prodex session --help <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--json' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--"
+      ],
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.last-run",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--"
+      ],
+      "exit_code": 0,
+      "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.last-run",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "help",
+        "help"
+      ],
+      "exit_code": 0,
+      "stdout": "Print this message or the help of the given subcommand(s)\n\nUsage: prodex session help [COMMAND]...\n\nArguments:\n  [COMMAND]...  Print help for the subcommand(s)\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "help",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand '--help'\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "help",
+        "list",
+        "extra"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand 'extra'\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "help",
+        "list",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand '--help'\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "help",
+        "nonsense"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand 'nonsense'\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "help",
+        "current",
+        "list"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand 'list'\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session list --help\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "-h=bad"
+      ],
+      "exit_code": 0,
+      "stdout": "List shared Codex sessions\n\nUsage: prodex session list [OPTIONS]\n\nOptions:\n      --json               Emit machine-readable JSON\n      --id-only            Print only full session ids, one per line\n      --resume-command     Print a resume command for each matching session\n      --profile <NAME>     Show only sessions attached to this profile binding\n      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text\n      --limit <N>          Limit the number of sessions shown after sorting newest first\n      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility\n      --parent-only        Show only resumable parent sessions\n  -h, --help               Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "-hh"
+      ],
+      "exit_code": 0,
+      "stdout": "List shared Codex sessions\n\nUsage: prodex session list [OPTIONS]\n\nOptions:\n      --json               Emit machine-readable JSON\n      --id-only            Print only full session ids, one per line\n      --resume-command     Print a resume command for each matching session\n      --profile <NAME>     Show only sessions attached to this profile binding\n      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text\n      --limit <N>          Limit the number of sessions shown after sorting newest first\n      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility\n      --parent-only        Show only resumable parent sessions\n  -h, --help               Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "-hx"
+      ],
+      "exit_code": 0,
+      "stdout": "List shared Codex sessions\n\nUsage: prodex session list [OPTIONS]\n\nOptions:\n      --json               Emit machine-readable JSON\n      --id-only            Print only full session ids, one per line\n      --resume-command     Print a resume command for each matching session\n      --profile <NAME>     Show only sessions attached to this profile binding\n      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text\n      --limit <N>          Limit the number of sessions shown after sorting newest first\n      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility\n      --parent-only        Show only resumable parent sessions\n  -h, --help               Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "-xh"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "-"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--version"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--version' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\n  tip: to pass '--unknown' as a value, use '-- --unknown'\n\nUsage: prodex session resume <ID>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume",
+        "-x"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\n  tip: to pass '-x' as a value, use '-- -x'\n\nUsage: prodex session resume <ID>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume",
+        "extra",
+        "extra"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument 'extra' found\n\nUsage: prodex session resume <ID>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume",
+        "extra",
+        "--help"
+      ],
+      "exit_code": 0,
+      "stdout": "Resume a shared Codex session by unique partial or full id\n\nUsage: prodex session resume <ID>\n\nArguments:\n  <ID>  Unique full or partial shared Codex session id\n\nOptions:\n  -h, --help  Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume",
+        "--help",
+        "extra"
+      ],
+      "exit_code": 0,
+      "stdout": "Resume a shared Codex session by unique partial or full id\n\nUsage: prodex session resume <ID>\n\nArguments:\n  <ID>  Unique full or partial shared Codex session id\n\nOptions:\n  -h, --help  Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume",
+        "-hh"
+      ],
+      "exit_code": 0,
+      "stdout": "Resume a shared Codex session by unique partial or full id\n\nUsage: prodex session resume <ID>\n\nArguments:\n  <ID>  Unique full or partial shared Codex session id\n\nOptions:\n  -h, --help  Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session resume --help <ID>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume",
+        "extra",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\n  tip: to pass '--unknown' as a value, use '-- --unknown'\n\nUsage: prodex session resume <ID>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--jso"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--jso' found\n\n  tip: a similar argument exists: '--json'\n\nUsage: prodex session list --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--jsn"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--jsn' found\n\n  tip: a similar argument exists: '--json'\n\nUsage: prodex session list --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--JSON"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--JSON' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--id"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--id' found\n\n  tip: a similar argument exists: '--id-only'\n\nUsage: prodex session list --id-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--id_only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--id_only' found\n\n  tip: a similar argument exists: '--id-only'\n\nUsage: prodex session list --id-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--resume"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--resume' found\n\n  tip: a similar argument exists: '--resume-command'\n\nUsage: prodex session list --resume-command\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--resume-comman"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--resume-comman' found\n\n  tip: a similar argument exists: '--resume-command'\n\nUsage: prodex session list --resume-command\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profil"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--profil' found\n\n  tip: a similar argument exists: '--profile'\n\nUsage: prodex session list --profile <NAME>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--queryy"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--queryy' found\n\n  tip: a similar argument exists: '--query'\n\nUsage: prodex session list --query <TEXT>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limi"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--limi' found\n\n  tip: a similar argument exists: '--limit'\n\nUsage: prodex session list --limit <N>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--include-subagent"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--include-subagent' found\n\n  tip: a similar argument exists: '--include-subagents'\n\nUsage: prodex session list --include-subagents\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--parent"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--parent' found\n\n  tip: a similar argument exists: '--parent-only'\n\nUsage: prodex session list --parent-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--cwdx"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--cwdx' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--halp"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--halp' found\n\n  tip: a similar argument exists: '--help'\n\nUsage: prodex session list --help\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value '' for '--json' found; no more were expected\n\nUsage: prodex session list --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--json=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--json' found; no more were expected\n\nUsage: prodex session list <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session list --help <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--id-only="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value '' for '--id-only' found; no more were expected\n\nUsage: prodex session list --id-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--id-only",
+        "--id-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--id-only' cannot be used multiple times\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--id-only",
+        "--id-only=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--id-only' found; no more were expected\n\nUsage: prodex session list <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--id-only",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session list --help <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--resume-command="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value '' for '--resume-command' found; no more were expected\n\nUsage: prodex session list --resume-command\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--resume-command",
+        "--resume-command"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--resume-command' cannot be used multiple times\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--resume-command",
+        "--resume-command=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--resume-command' found; no more were expected\n\nUsage: prodex session list <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--resume-command",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session list --help <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--include-subagents="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value '' for '--include-subagents' found; no more were expected\n\nUsage: prodex session list --include-subagents\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--include-subagents",
+        "--include-subagents"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--include-subagents' cannot be used multiple times\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--include-subagents",
+        "--include-subagents=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--include-subagents' found; no more were expected\n\nUsage: prodex session list <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--include-subagents",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session list --help <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--parent-only="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value '' for '--parent-only' found; no more were expected\n\nUsage: prodex session list --parent-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--parent-only",
+        "--parent-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--parent-only' cannot be used multiple times\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--parent-only",
+        "--parent-only=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--parent-only' found; no more were expected\n\nUsage: prodex session list <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--parent-only",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session list --help <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "-"
+      ],
+      "exit_code": 0,
+      "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.last-run",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "--"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--profile <NAME>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "-x"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "-hh"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--profile <NAME>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--profile <NAME>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "+"
+      ],
+      "exit_code": 0,
+      "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile=",
+        "--json"
+      ],
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile=a",
+        "--profile=b",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--profile <NAME>' cannot be used multiple times\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query",
+        "-"
+      ],
+      "exit_code": 0,
+      "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.last-run",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query",
+        "--"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--query <TEXT>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query",
+        "-x"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query",
+        "-hh"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--query <TEXT>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query",
+        "+"
+      ],
+      "exit_code": 0,
+      "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.last-run",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query=a",
+        "--query=b",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--query <TEXT>' cannot be used multiple times\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "-"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '-' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "--"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--limit <N>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "-x"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "-hh"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--limit <N>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--limit <N>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "+"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '+' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit=",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '' for '--limit <N>': cannot parse integer from empty string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit=a",
+        "--limit=b",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value 'a' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--id-only",
+        "--resume-command"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with:\n  --id-only\n  --resume-command\n\nUsage: prodex session list --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--resume-command",
+        "--id-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with:\n  --resume-command\n  --id-only\n\nUsage: prodex session list --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--id-only",
+        "--json",
+        "--resume-command"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--id-only' cannot be used with:\n  --json\n  --resume-command\n\nUsage: prodex session list --id-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--id-only",
+        "--resume-command",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--id-only' cannot be used with:\n  --resume-command\n  --json\n\nUsage: prodex session list --id-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--resume-command",
+        "--json",
+        "--id-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--resume-command' cannot be used with:\n  --json\n  --id-only\n\nUsage: prodex session list --resume-command\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--resume-command",
+        "--id-only",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--resume-command' cannot be used with:\n  --id-only\n  --json\n\nUsage: prodex session list --resume-command\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--id-only",
+        "--parent-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with '--id-only'\n\nUsage: prodex session list --json --parent-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--parent-only",
+        "--include-subagents",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--parent-only' cannot be used with '--include-subagents'\n\nUsage: prodex session list --parent-only --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--id-only",
+        "--profile",
+        "main"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with '--id-only'\n\nUsage: prodex session list --json --profile <NAME>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query",
+        "value",
+        "--json",
+        "--resume-command"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with '--resume-command'\n\nUsage: prodex session list --query <TEXT> --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--parent-only",
+        "--id-only",
+        "--include-subagents"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with '--id-only'\n\nUsage: prodex session list --json --parent-only --include-subagents\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--parent-only",
+        "--include-subagents",
+        "--id-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with '--id-only'\n\nUsage: prodex session list --json --parent-only --include-subagents\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session list --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "extra=foo"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument 'extra=foo' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "a",
+        "--limi"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--limi' found\n\n  tip: a similar argument exists: '--limit'\n\nUsage: prodex session list --profile <NAME> --limit <N>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "1",
+        "--limit",
+        "bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--limit <N>' cannot be used multiple times\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "a",
+        "--profile"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--profile <NAME>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query",
+        "--json=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--json' found; no more were expected\n\nUsage: prodex session list --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session list --help\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query",
+        "--profil"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--profil' found\n\n  tip: a similar argument exists: '--profile'\n\nUsage: prodex session list --profile <NAME>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--query",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session list --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--",
+        "--query=value"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--query=value' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--parent-only",
+        "-xh"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "--",
+        "--cwd=."
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--cwd=.' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "--",
+        "-h"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-h' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--jso"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--jso' found\n\n  tip: a similar argument exists: '--json'\n\nUsage: prodex session current --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--jsn"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--jsn' found\n\n  tip: a similar argument exists: '--json'\n\nUsage: prodex session current --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--JSON"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--JSON' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--id"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--id' found\n\n  tip: a similar argument exists: '--id-only'\n\nUsage: prodex session current --id-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--id_only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--id_only' found\n\n  tip: a similar argument exists: '--id-only'\n\nUsage: prodex session current --id-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--resume"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--resume' found\n\n  tip: a similar argument exists: '--resume-command'\n\nUsage: prodex session current --resume-command\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--resume-comman"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--resume-comman' found\n\n  tip: a similar argument exists: '--resume-command'\n\nUsage: prodex session current --resume-command\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profil"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--profil' found\n\n  tip: a similar argument exists: '--profile'\n\nUsage: prodex session current --profile <NAME>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--queryy"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--queryy' found\n\n  tip: a similar argument exists: '--query'\n\nUsage: prodex session current --query <TEXT>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--limi"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--limi' found\n\n  tip: a similar argument exists: '--limit'\n\nUsage: prodex session current --limit <N>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--include-subagent"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--include-subagent' found\n\n  tip: a similar argument exists: '--include-subagents'\n\nUsage: prodex session current --include-subagents\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--parent"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--parent' found\n\n  tip: a similar argument exists: '--parent-only'\n\nUsage: prodex session current --parent-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--cwdx"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--cwdx' found\n\n  tip: a similar argument exists: '--cwd'\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--halp"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--halp' found\n\n  tip: a similar argument exists: '--help'\n\nUsage: prodex session current --help\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value '' for '--json' found; no more were expected\n\nUsage: prodex session current --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "--json=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--json' found; no more were expected\n\nUsage: prodex session current <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--cwd <PATH>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session current --help <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--cwd <PATH>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--id-only="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value '' for '--id-only' found; no more were expected\n\nUsage: prodex session current --id-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--id-only",
+        "--id-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--id-only' cannot be used multiple times\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--id-only",
+        "--id-only=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--id-only' found; no more were expected\n\nUsage: prodex session current <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--cwd <PATH>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--id-only",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session current --help <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--cwd <PATH>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--resume-command="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value '' for '--resume-command' found; no more were expected\n\nUsage: prodex session current --resume-command\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--resume-command",
+        "--resume-command"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--resume-command' cannot be used multiple times\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--resume-command",
+        "--resume-command=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--resume-command' found; no more were expected\n\nUsage: prodex session current <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--cwd <PATH>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--resume-command",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session current --help <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--cwd <PATH>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--include-subagents="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value '' for '--include-subagents' found; no more were expected\n\nUsage: prodex session current --include-subagents\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--include-subagents",
+        "--include-subagents"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--include-subagents' cannot be used multiple times\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--include-subagents",
+        "--include-subagents=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--include-subagents' found; no more were expected\n\nUsage: prodex session current <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--cwd <PATH>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--include-subagents",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session current --help <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--cwd <PATH>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--parent-only="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value '' for '--parent-only' found; no more were expected\n\nUsage: prodex session current --parent-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--parent-only",
+        "--parent-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--parent-only' cannot be used multiple times\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--parent-only",
+        "--parent-only=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--parent-only' found; no more were expected\n\nUsage: prodex session current <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--cwd <PATH>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--parent-only",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session current --help <--json|--id-only|--resume-command|--profile <NAME>|--query <TEXT>|--limit <N>|--cwd <PATH>|--include-subagents|--parent-only>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile",
+        "-"
+      ],
+      "exit_code": 0,
+      "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found for <FIXTURE_ROOT>/workspace",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.last-run",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile",
+        "--"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--profile <NAME>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile",
+        "-x"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile",
+        "-hh"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--profile <NAME>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--profile <NAME>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile",
+        "+"
+      ],
+      "exit_code": 0,
+      "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found for <FIXTURE_ROOT>/workspace",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.last-run",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile=",
+        "--json"
+      ],
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile=a",
+        "--profile=b",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--profile <NAME>' cannot be used multiple times\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query",
+        "-"
+      ],
+      "exit_code": 0,
+      "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found for <FIXTURE_ROOT>/workspace",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.last-run",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query",
+        "--"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--query <TEXT>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query",
+        "-x"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query",
+        "-hh"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--query <TEXT>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--query <TEXT>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query",
+        "+"
+      ],
+      "exit_code": 0,
+      "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found for <FIXTURE_ROOT>/workspace",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.last-run",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query=",
+        "--json"
+      ],
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.last-run",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query=a",
+        "--query=b",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--query <TEXT>' cannot be used multiple times\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--limit",
+        "-"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '-' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--limit",
+        "--"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--limit <N>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--limit",
+        "-x"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--limit",
+        "-hh"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--limit <N>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--limit",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--limit",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--limit <N>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--limit",
+        "+"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '+' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--limit=",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '' for '--limit <N>': cannot parse integer from empty string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--limit=a",
+        "--limit=b",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value 'a' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--cwd",
+        "-"
+      ],
+      "exit_code": 0,
+      "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found for <FIXTURE_ROOT>/workspace/-",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.last-run",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--cwd",
+        "--"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--cwd <PATH>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--cwd",
+        "-x"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--cwd",
+        "-hh"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--cwd <PATH>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--cwd",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--cwd",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--cwd <PATH>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--cwd",
+        "+"
+      ],
+      "exit_code": 0,
+      "stdout": "[ Sessions ] =================================================================================================\nStatus:    No sessions found for <FIXTURE_ROOT>/workspace/+",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--cwd=",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--cwd <PATH>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--cwd=a",
+        "--cwd=b",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--cwd <PATH>' cannot be used multiple times\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "--id-only",
+        "--resume-command"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with:\n  --id-only\n  --resume-command\n\nUsage: prodex session current --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "--resume-command",
+        "--id-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with:\n  --resume-command\n  --id-only\n\nUsage: prodex session current --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--id-only",
+        "--json",
+        "--resume-command"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--id-only' cannot be used with:\n  --json\n  --resume-command\n\nUsage: prodex session current --id-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--id-only",
+        "--resume-command",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--id-only' cannot be used with:\n  --resume-command\n  --json\n\nUsage: prodex session current --id-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--resume-command",
+        "--json",
+        "--id-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--resume-command' cannot be used with:\n  --json\n  --id-only\n\nUsage: prodex session current --resume-command\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--resume-command",
+        "--id-only",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--resume-command' cannot be used with:\n  --id-only\n  --json\n\nUsage: prodex session current --resume-command\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "--id-only",
+        "--parent-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with '--id-only'\n\nUsage: prodex session current --json --parent-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--parent-only",
+        "--include-subagents",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--parent-only' cannot be used with '--include-subagents'\n\nUsage: prodex session current --parent-only --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "--id-only",
+        "--profile",
+        "main"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with '--id-only'\n\nUsage: prodex session current --json --profile <NAME>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query",
+        "value",
+        "--json",
+        "--resume-command"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with '--resume-command'\n\nUsage: prodex session current --query <TEXT> --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "--parent-only",
+        "--id-only",
+        "--include-subagents"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with '--id-only'\n\nUsage: prodex session current --json --parent-only --include-subagents\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "--parent-only",
+        "--include-subagents",
+        "--id-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with '--id-only'\n\nUsage: prodex session current --json --parent-only --include-subagents\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session current --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "extra=foo"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument 'extra=foo' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile",
+        "a",
+        "--limi"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--limi' found\n\n  tip: a similar argument exists: '--limit'\n\nUsage: prodex session current --profile <NAME> --limit <N>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--limit",
+        "1",
+        "--limit",
+        "bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--limit <N>' cannot be used multiple times\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile",
+        "a",
+        "--profile"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--profile <NAME>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query",
+        "--json=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--json' found; no more were expected\n\nUsage: prodex session current --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query",
+        "--help=bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'bad' for '--help' found; no more were expected\n\nUsage: prodex session current --help\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--query",
+        "--profil"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--profil' found\n\n  tip: a similar argument exists: '--profile'\n\nUsage: prodex session current --profile <NAME>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "--query",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session current --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--",
+        "--query=value"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--query=value' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--parent-only",
+        "-xh"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-x' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile",
+        "--",
+        "--cwd=."
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--cwd=.' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--profile",
+        "--",
+        "-h"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-h' found\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit=+"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '+' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit= 1"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value ' 1' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit=1 "
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '1 ' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit=1_0"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '1_0' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit=0xff"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '0xff' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit=\u0661"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '\u0661' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit=prodex session"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value 'prodex session' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
     }
   ]
 }

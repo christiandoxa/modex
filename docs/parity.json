@@ -89,7 +89,8 @@
         "docs/cli-inventory.json",
         "docs/evidence/baseline/help/",
         "docs/evidence/baseline/session-cli.json",
-        "docs/evidence/session-cli-tests.txt"
+        "docs/evidence/session-cli-tests.txt",
+        "docs/evidence/session-arguments-tests.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -102,7 +103,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "35 oracle help routes captured. Session help and diagnostics match 39 official-release cases. Other commands, suggestions, short-flag clusters and complex argument combinations remain unfinished or unverified."
+        "35 oracle help routes captured. Session help and diagnostics match 271 captured official-release cases and 152 seeded generated comparisons, including suggestions, short-flag clusters, literal boundaries, help routing and ordered conflicts. Other commands, remaining combinations and valid resume execution remain unfinished or unverified."
       ]
     },
     {
@@ -609,6 +610,7 @@
         "docs/evidence/recurring-time-tests.txt",
         "docs/evidence/baseline/session-cli.json",
         "docs/evidence/session-cli-tests.txt",
+        "docs/evidence/session-arguments-tests.txt",
         "docs/evidence/session-text-tests.txt",
         "docs/evidence/session-unicode-tests.txt",
         "docs/evidence/zstd-tests.txt",
@@ -670,6 +672,7 @@
         "docs/evidence/recurring-time-tests.txt",
         "docs/evidence/baseline/session-cli.json",
         "docs/evidence/session-cli-tests.txt",
+        "docs/evidence/session-arguments-tests.txt",
         "docs/evidence/session-text-tests.txt",
         "docs/evidence/session-unicode-tests.txt",
         "docs/evidence/zstd-tests.txt",

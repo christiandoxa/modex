@@ -15,7 +15,7 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard drivers, and 40
+Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard drivers, and 41
 Python black-box/runtime tests PASS, including 500 deterministic generated
 JSON values plus malformed UTF-8/syntax/boundary vectors and numeric/local
 session time comparisons, including future recurring rules through 2100,
@@ -31,14 +31,20 @@ command: `python3 tests/capture_cli.py`; all help routes exit 0 with empty stder
 and no state mutations. Help mentions still require source validation for
 registered flags, hidden flags, defaults, precedence and passthrough.
 
-Session help and argument diagnostics now match 39 captured official-release
-cases, including missing/invalid/overflow values, duplicate/conflicting flags,
-help precedence, stdout/stderr, exit codes and absence of state mutations on
-help/error paths. Reproduce with `python3 tests/capture_session_cli.py` and
+Session help and argument diagnostics now match 271 captured official-release
+cases and 152 seeded generated comparisons. Coverage includes suggestions,
+short-flag clusters, literal `--` boundaries, nested/root help routing,
+ordered multi-flag conflicts, missing/duplicate/value-error precedence,
+stdout/stderr and exit codes. Captured help/error paths also check that no
+paths are created. Valid-command startup mutations remain outside the output
+claims. Suggestion scoring follows the frozen clap_builder 4.6.7/strsim 0.11.1
+Jaro behavior, implemented independently in Mojo. Parsing preserves a raw cwd;
+execution resolves it, so help/error paths do not need cwd discovery.
+Reproduce with `python3 tests/capture_session_cli.py` and
 `python3 -m unittest discover -s tests -p test_session_cli.py`.
 Evidence: `docs/evidence/baseline/session-cli.json` and
-`docs/evidence/session-cli-tests.txt`. Suggestions, short-flag clusters,
-complex argument combinations and valid resume execution remain unfinished.
+`docs/evidence/session-arguments-tests.txt`. Other commands and remaining CLI
+combinations are unverified; valid resume execution remains unfinished.
 
 Detached plain session text output now matches 71 official-release scenarios:
 table columns, truncation and full-ID details, optional cells, multiple rows,

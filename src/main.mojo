@@ -9,6 +9,11 @@ def main():
     var args = List[String]()
     for arg in argv():
         args.append(String(arg))
+    if len(args) >= 3 and args[1] == "help" and args[2] == "session":
+        var rewritten: List[String] = [args[0], "session", "help"]
+        for index in range(3, len(args)):
+            rewritten.append(args[index])
+        args = rewritten^
     if len(args) == 2 and (args[1] == "--version" or args[1] == "-V"):
         print("modex 0.1.0-dev")
         return
@@ -23,13 +28,13 @@ def main():
                 print("Error: session resume is not implemented", file=stderr)
                 exit(1)
             try:
-                var output = inspect_sessions(options)
+                var output = inspect_sessions(options^)
                 print(output, end="")
             except error:
                 print("Error:", error, file=stderr)
                 exit(1)
         except error:
-            print(error, end="" if len(args) == 2 else "\n", file=stderr)
+            print(error, end="", file=stderr)
             exit(2)
         return
     print(

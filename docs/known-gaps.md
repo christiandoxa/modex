@@ -49,10 +49,13 @@ The release also accepts an empty frame whose declared decoded size is
 difference is retained beside the Huffman case, with the exact input bytes;
 keeping size/window validation is proposed and remains unapproved.
 
-Session help and argument-error output match 39 frozen-release cases. Broader
-CLI behavior, including suggestions, short-flag clusters and complex argument
-combinations, remains unverified. Valid session resume execution still fails
-explicitly as unimplemented. Evidence: `docs/evidence/session-cli-tests.txt`.
+Session help and argument-error output match 271 captured frozen-release
+cases and 152 seeded generated comparisons, including suggestions, short-flag
+clusters, literal boundaries, help routing and ordered conflicts. This does
+not establish complete CLI coverage. Other commands and remaining combinations
+are unverified. Valid session resume execution still fails explicitly as
+unimplemented. Valid-command startup mutations are outside these output
+claims. Evidence: `docs/evidence/session-arguments-tests.txt`.
 
 Numeric and file-modification timestamps now match the release in UTC,
 Asia/Jakarta, America/New_York and Europe/London for the tested dates, including

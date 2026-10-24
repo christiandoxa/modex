@@ -8,7 +8,7 @@ def unsigned_value(text: String) raises -> UInt64:
     var bytes = text.as_bytes()
     var position = 1 if text.startswith("+") else 0
     if position == len(bytes):
-        raise Error("cannot parse integer from empty string")
+        raise Error("invalid digit found in string" if position else "cannot parse integer from empty string")
     var result = UInt64(0)
     while position < len(bytes):
         var byte = bytes[position]

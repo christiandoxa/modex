@@ -1,6 +1,6 @@
 from std.testing import assert_equal, assert_false, assert_true
 
-from modex.cli import parse_session_options, unsigned_value
+from modex.cli import jaro_similarity, parse_session_options, unsigned_value
 from modex.json import JsonDocument
 from modex.session_time import integer_timestamp, timestamp_key
 from modex.sessions import SessionReport, starts_session
@@ -52,6 +52,16 @@ def main() raises:
     assert_equal(options.output, "json")
     assert_equal(options.limit.value(), UInt64(0))
     assert_true(options.parent_only)
+    var resumed = parse_session_options(["modex", "session", "resume", "--", "--help"])
+    assert_equal(resumed.output, "resume")
+    assert_equal(resumed.query, "--help")
+    var current = parse_session_options(["modex", "session", "current", "--json"])
+    assert_false(current.directory)
+    var relative = parse_session_options(["modex", "session", "current", "--cwd=relative", "--json"])
+    assert_equal(relative.directory.value(), "relative")
+    assert_true(0.94444 < jaro_similarity("abcXYZ", "bcaXYZ") < 0.94445)
+    assert_equal(jaro_similarity("same", "same"), Float64(1))
+    assert_equal(jaro_similarity("", "other"), Float64(0))
     var rejected = False
     try:
         var invalid = parse_session_options(["modex", "session", "list", "--json", "--id-only"])

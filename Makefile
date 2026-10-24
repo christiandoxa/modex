@@ -26,6 +26,9 @@ unit: check-toolchain
 	build/tests/test_json
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_sessions.mojo -o build/tests/test_sessions
 	build/tests/test_sessions
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_local_time.mojo -o build/tests/test_local_time
+	build/tests/test_local_time
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/json_driver.mojo -o build/tests/json_driver
 
 test: build unit
 	python3 -m unittest discover -s tests -p 'test_*.py' -v

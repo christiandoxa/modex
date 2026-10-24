@@ -10,7 +10,8 @@
     "src/modex/paths.mojo",
     "src/modex/session_time.mojo",
     "src/modex/sessions.mojo",
-    "src/modex/text.mojo"
+    "src/modex/text.mojo",
+    "src/modex/local_time.mojo"
   ],
   "production_imports": [
     "std.collections",
@@ -55,5 +56,5 @@
   "release_artifact_status": "No release artifact; development build only",
   "clean_runtime_evidence": "tests/test_runtime.py binds only the executable, resolved platform and official Mojo runtime libraries into an empty filesystem/network namespace. No Python/Node/Rust/Prodex executable or library is mounted. Scope: version output on local Linux only.",
   "distribution_gap": "The development executable has an absolute toolchain RUNPATH. Relocatable packaging and official-runtime redistribution/licensing require separate verification.",
-  "platform_specific_implementation": "Linux session file validation reads /proc/self/fd metadata through std.os.stat, comparing descriptor device/inode with before/after lstat. No new native binding; Linux only, and not a cross-platform claim."
+  "platform_specific_implementation": "Linux session file validation reads /proc/self/fd metadata through std.os.stat, comparing descriptor device/inode with before/after lstat. No new native binding; Linux only, and not a cross-platform claim. Numeric session time rendering reads OS TZif files from TZ, /etc/localtime or /usr/share/zoneinfo, without adding an application library."
 }

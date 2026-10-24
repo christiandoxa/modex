@@ -1,0 +1,40 @@
+mkdir -p build
+mojo build -O3 --target-cpu=x86-64-v3 -I src src/main.mojo -o build/modex
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mkdir -p build/tests
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_json.mojo -o build/tests/test_json
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_json
+JSON unit checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_sessions.mojo -o build/tests/test_sessions
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_sessions
+session metadata, filters, timestamps, text and argument checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_local_time.mojo -o build/tests/test_local_time
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_local_time
+TZif parsing, signed epochs, Gregorian calendar and local-time checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/json_driver.mojo -o build/tests/json_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+test_unimplemented_command_fails_without_echoing_arguments (test_cli.CliTests.test_unimplemented_command_fails_without_echoing_arguments) ... ok
+test_version_identity_mapping_and_no_mutations (test_cli.CliTests.test_version_identity_mapping_and_no_mutations) ... ok
+test_escaped_keys_duplicate_keys_and_boundary_values (test_json_fuzz.JsonDifferentialTests.test_escaped_keys_duplicate_keys_and_boundary_values) ... ok
+test_generated_values_round_trip_through_mojo_tree (test_json_fuzz.JsonDifferentialTests.test_generated_values_round_trip_through_mojo_tree) ... ok
+test_invalid_syntax_utf8_and_number_overflow_are_rejected (test_json_fuzz.JsonDifferentialTests.test_invalid_syntax_utf8_and_number_overflow_are_rejected) ... ok
+test_version_with_only_platform_and_official_mojo_runtime_libraries (test_runtime.CleanRuntimeTests.test_version_with_only_platform_and_official_mojo_runtime_libraries) ... ok
+test_archived_children_and_newest_first_ordering (test_sessions.SessionOutputTests.test_archived_children_and_newest_first_ordering) ... ok
+test_filters_limits_and_machine_output_modes (test_sessions.SessionOutputTests.test_filters_limits_and_machine_output_modes) ... ok
+test_json_file_and_metadata_precedence (test_sessions.SessionOutputTests.test_json_file_and_metadata_precedence) ... ok
+test_malformed_records_and_symlinks (test_sessions.SessionOutputTests.test_malformed_records_and_symlinks) ... ok
+test_nonobject_followup_records_do_not_crash_modex (test_sessions.SessionOutputTests.test_nonobject_followup_records_do_not_crash_modex) ... ok
+test_numeric_timestamps_and_fallback_file_times (test_sessions.SessionOutputTests.test_numeric_timestamps_and_fallback_file_times) ... ok
+test_numeric_timezones_and_daylight_transitions (test_sessions.SessionOutputTests.test_numeric_timezones_and_daylight_transitions) ... ok
+test_populated_json (test_sessions.SessionOutputTests.test_populated_json) ... ok
+test_unicode_prefix_on_first_metadata_record_is_not_accepted (test_sessions.SessionOutputTests.test_unicode_prefix_on_first_metadata_record_is_not_accepted) ... ok
+test_unicode_whitespace_and_blank_string_fallbacks (test_sessions.SessionOutputTests.test_unicode_whitespace_and_blank_string_fallbacks) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 2.292s
+
+OK

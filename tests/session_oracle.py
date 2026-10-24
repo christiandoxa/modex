@@ -32,7 +32,7 @@ def fixture(root):
     return work
 
 
-def sandbox_command(binary, root, arguments):
+def sandbox_command(binary, root, arguments, *, timezone="UTC"):
     linked = subprocess.run(["ldd", str(binary)], capture_output=True, text=True,
                             timeout=10, check=True)
     libraries = set()
@@ -44,11 +44,11 @@ def sandbox_command(binary, root, arguments):
                "--clearenv", "--tmpfs", "/", "--proc", "/proc", "--dev", "/dev",
                "--tmpfs", "/tmp", "--bind", str(root), str(root),
                "--ro-bind", str(binary), "/app", "--setenv", "HOME", str(root / "home"),
-               "--setenv", "PATH", "", "--setenv", "TERM", "dumb", "--setenv", "TZ", "UTC",
+               "--setenv", "PATH", "", "--setenv", "TERM", "dumb", "--setenv", "TZ", timezone,
                "--setenv", "NO_COLOR", "1", "--chdir", str(root / "workspace")]
     for library in sorted(libraries):
         command.extend(["--ro-bind", library, library])
-    zoneinfo = Path("/usr/share/zoneinfo/UTC")
+    zoneinfo = Path("/usr/share/zoneinfo")
     if zoneinfo.exists():
         command.extend(["--ro-bind", str(zoneinfo), str(zoneinfo)])
     command.extend(["--", "/app", *arguments])

@@ -1,6 +1,7 @@
 """Output-focused differential checks; full side-effect parity is tracked separately."""
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -32,7 +33,7 @@ def normalize_output(data, root, arguments, *, modex=False):
     return data
 
 
-def compare_outputs(arguments, change=None):
+def compare_outputs(arguments, change=None, *, timezone="UTC"):
     with tempfile.TemporaryDirectory(prefix="modex-session-pair-") as directory:
         parent = Path(directory)
         observations = []
@@ -42,7 +43,7 @@ def compare_outputs(arguments, change=None):
             fixture(root)
             if change:
                 change(root)
-            result = subprocess.run(sandbox_command(binary, root, arguments),
+            result = subprocess.run(sandbox_command(binary, root, arguments, timezone=timezone),
                                     capture_output=True, timeout=10, check=False)
             if result.returncode != 0:
                 raise AssertionError(f"{name} exited {result.returncode}: {result.stderr!r}")
@@ -57,8 +58,8 @@ class SessionOutputTests(unittest.TestCase):
     def setUpClass(cls):
         test_cli.CliTests.setUpClass()
 
-    def assert_outputs(self, arguments, change=None):
-        baseline, modex = compare_outputs(arguments, change)
+    def assert_outputs(self, arguments, change=None, *, timezone="UTC"):
+        baseline, modex = compare_outputs(arguments, change, timezone=timezone)
         self.assertEqual(modex, baseline)
         return baseline
 
@@ -146,6 +147,32 @@ class SessionOutputTests(unittest.TestCase):
                                     capture_output=True, timeout=10, check=False)
             self.assertEqual(result.returncode, 0)
             self.assertEqual(json.loads(result.stdout)[0]["id"], SESSION_ID)
+
+    def test_numeric_timestamps_and_fallback_file_times(self):
+        for epoch in (0, -1, 951782400, 1792800000, 253402300800,
+                      -8334601228800, 8210266876799, -9223372036854775808, 9223372036854775807):
+            def change(root):
+                original = next((root / "home/.codex").rglob("*.jsonl"))
+                original.write_text(original.read_text() + json.dumps({"type": "event_msg", "updated_at": epoch}) + "\n")
+            with self.subTest(epoch=epoch):
+                self.assert_outputs(["session", "list", "--json"], change)
+        def fallback(root):
+            original = next((root / "home/.codex").rglob("*.jsonl"))
+            metadata = json.loads(original.read_text().splitlines()[0])
+            metadata["timestamp"] = ""
+            metadata["payload"]["timestamp"] = ""
+            original.write_text(json.dumps(metadata) + "\n")
+            os.utime(original, (1792800000, 1792800000))
+        self.assert_outputs(["session", "list", "--json"], fallback)
+
+    def test_numeric_timezones_and_daylight_transitions(self):
+        for timezone in ("Asia/Jakarta", "America/New_York", "Europe/London", "UTC0", "GMT0"):
+            for epoch in (1767225600, 1782864000, 1792800000):
+                def change(root):
+                    original = next((root / "home/.codex").rglob("*.jsonl"))
+                    original.write_text(original.read_text() + json.dumps({"updated_at": epoch}) + "\n")
+                with self.subTest(timezone=timezone, epoch=epoch):
+                    self.assert_outputs(["session", "list", "--json"], change, timezone=timezone)
 
 
 if __name__ == "__main__":

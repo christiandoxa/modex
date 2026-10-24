@@ -4,6 +4,7 @@ from std.os import getuid, listdir, lstat, makedirs, stat
 from std.os.path import exists
 
 from .json import JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json
+from .local_time import format_local_epoch
 from .paths import app_root, comparable_path, shared_root
 from .session_time import integer_timestamp, timestamp_key
 from .text import trim_text
@@ -65,7 +66,9 @@ struct SessionReport(Copyable):
                 if index >= 0 and document.nodes[index].kind == JSON_NUMBER:
                     var epoch = integer_timestamp(document.nodes[index].text)
                     if epoch:
-                        raise Error("numeric session timestamp rendering is not implemented")
+                        self.sort_key = epoch.value()
+                        self.updated_at = format_local_epoch(epoch.value())
+                        break
         var parent = first_string(document, ["payload.source.subagent.thread_spawn.parent_thread_id", "source.subagent.thread_spawn.parent_thread_id", "payload.parent_thread_id", "parent_thread_id"])
         if parent:
             self.parent = parent^
@@ -205,7 +208,7 @@ def read_session(path: String) raises -> Optional[SessionReport]:
                     raise
             if parsed:
                 if not report.updated_at:
-                    raise Error("session modification-time rendering is not implemented")
+                    report.updated_at = format_local_epoch(report.sort_key)
                 return report^
             for line in text.split("\n"):
                 if not apply_line(report, String(line), started):
@@ -231,7 +234,7 @@ def read_session(path: String) raises -> Optional[SessionReport]:
     if not started:
         return None
     if not report.updated_at:
-        raise Error("session modification-time rendering is not implemented")
+        report.updated_at = format_local_epoch(report.sort_key)
     return report^
 
 

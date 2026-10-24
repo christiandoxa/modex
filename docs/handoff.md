@@ -15,16 +15,19 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `make test` (2 Mojo unit programs and 11 Python black-box/runtime
-tests PASS), `python3 tests/probe_capabilities.py` (3 positive programs PASS,
+Validation: `make test` (3 Mojo unit programs, a test-only JSON driver, and 16
+Python black-box/runtime tests PASS, including 500 deterministic generated
+JSON values plus malformed UTF-8/syntax/boundary vectors and numeric/local
+session time comparisons across five TZ settings),
+`python3 tests/probe_capabilities.py` (3 positive programs PASS,
 4 expected public-API gaps reproduced). `python3 tests/session_mismatches.py`
 retains 3 FAIL cases and one unapproved safe difference for a baseline panic.
 Actual compiler diagnostics and commands are in `docs/evidence/capabilities/`.
 
-Next work: close session argument and text-rendering gaps, expand adversarial
-JSON checks, and evaluate official stdlib mechanisms for lock/recovery and
-protected file handling. Current stateful, compressed, and local numeric-time
-paths fail explicitly. Startup effects still differ. Details and the baseline
+Next work: expand the frozen CLI/flag inventory, close argument and
+text-rendering gaps, and evaluate official stdlib mechanisms for lock/recovery
+and protected file handling. Current stateful, compressed, leap-second and
+future recurring-timezone paths fail explicitly. Startup effects still differ. Details and the baseline
 panic are in `docs/known-gaps.md`; no session contract is PASS.
 
 Mojo's public process API has no stdio-redirection, process-group, or

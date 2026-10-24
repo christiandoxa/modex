@@ -579,11 +579,14 @@
       "tests": [
         "tests/test_sessions.mojo",
         "tests/test_sessions.py",
-        "tests/session_mismatches.py"
+        "tests/session_mismatches.py",
+        "tests/test_local_time.mojo",
+        "tests/test_json_fuzz.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
-        "docs/evidence/session-mismatches.json"
+        "docs/evidence/session-mismatches.json",
+        "docs/evidence/time-json-tests.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -596,7 +599,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons pass for plain sessions with no existing state. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, numeric/fallback time formatting and unapproved safe handling of baseline panic."
+        "Machine-output comparisons pass for plain sessions with no existing state, including tested numeric/fallback local timestamps. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, future recurring timezone rules and unapproved safe handling of baseline panic."
       ]
     },
     {
@@ -625,11 +628,14 @@
       "tests": [
         "tests/test_sessions.mojo",
         "tests/test_sessions.py",
-        "tests/session_mismatches.py"
+        "tests/session_mismatches.py",
+        "tests/test_local_time.mojo",
+        "tests/test_json_fuzz.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
-        "docs/evidence/session-mismatches.json"
+        "docs/evidence/session-mismatches.json",
+        "docs/evidence/time-json-tests.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -642,7 +648,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons pass for plain sessions with no existing state. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, numeric/fallback time formatting and unapproved safe handling of baseline panic."
+        "Machine-output comparisons pass for plain sessions with no existing state, including tested numeric/fallback local timestamps. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, future recurring timezone rules and unapproved safe handling of baseline panic."
       ]
     },
     {

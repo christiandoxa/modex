@@ -49,15 +49,17 @@ class CliTests(unittest.TestCase):
 
     def test_version_identity_mapping_and_no_mutations(self):
         for flag in ("--version", "-V"):
-            with self.subTest(flag=flag):
-                baseline, baseline_mutations = isolated_run(ORACLE, [flag])
-                modex, modex_mutations = isolated_run(MODEX, [flag])
-                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
-                                 (0, b"prodex 0.439.0\n", b""))
-                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
-                                 (0, b"modex 0.1.0-dev\n", b""))
-                self.assertEqual(baseline_mutations, [])
-                self.assertEqual(modex_mutations, baseline_mutations)
+            for tail in ([], ["extra"], ["session", "list"], ["--unknown"], ["--help"], ["--"]):
+                arguments = [flag, *tail]
+                with self.subTest(arguments=arguments):
+                    baseline, baseline_mutations = isolated_run(ORACLE, arguments)
+                    modex, modex_mutations = isolated_run(MODEX, arguments)
+                    self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                     (0, b"prodex 0.439.0\n", b""))
+                    self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                     (0, b"modex 0.1.0-dev\n", b""))
+                    self.assertEqual(baseline_mutations, [])
+                    self.assertEqual(modex_mutations, baseline_mutations)
 
     def test_unimplemented_command_fails_without_echoing_arguments(self):
         # This checks honest development behavior, not baseline command parity.

@@ -1,0 +1,10 @@
+mkdir -p build
+mojo build -O3 --target-cpu=x86-64-v3 -I src src/main.mojo -o build/modex
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+test_unimplemented_command_fails_without_echoing_arguments (test_cli.CliTests.test_unimplemented_command_fails_without_echoing_arguments) ... ok
+test_version_identity_mapping_and_no_mutations (test_cli.CliTests.test_version_identity_mapping_and_no_mutations) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.207s
+
+OK

@@ -22,10 +22,10 @@
         "symbol": "Cli",
         "trace_verified": true
       },
-      "required_behavior": "--version and -V return the product version on stdout with exit 0.",
+      "required_behavior": "Exact leading --version and -V flags return the product version on stdout with exit 0, ignoring trailing arguments.",
       "input": "version flag",
       "output": "product name and development version",
-      "failure_modes": "malformed extra arguments",
+      "failure_modes": "Trailing arguments do not invalidate an exact leading version flag. Version-looking tokens and flags in other positions follow normal command dispatch.",
       "side_effects": "none",
       "platforms": [
         "x86_64-unknown-linux-gnu",
@@ -42,7 +42,8 @@
         "tests/test_runtime.py::CleanRuntimeTests.test_version_with_only_platform_and_official_mojo_runtime_libraries"
       ],
       "evidence": [
-        "docs/evidence/bootstrap-tests.txt"
+        "docs/evidence/bootstrap-tests.txt",
+        "docs/evidence/version-arguments-tests.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {

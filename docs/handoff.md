@@ -4,9 +4,11 @@ The destination repository began empty. The frozen tag and official Linux
 release checksum have been verified. Reference source and the oracle are kept
 outside the Modex source and build graph, under `~/.cache/modex/`.
 
-The current bootstrap implements product version output. It passes isolated
-official-release differential checks with the narrow documented identity
-mapping. A clean filesystem/network namespace contains only Modex and the
+The current bootstrap implements product version output, including ignored
+trailing arguments after exact leading `--version` and `-V` flags. Twelve
+isolated official-release cases pass with no state mutations and the narrow
+documented identity mapping. Evidence: `docs/evidence/version-arguments-tests.txt`.
+A clean filesystem/network namespace contains only Modex and the
 platform/official Mojo runtime libraries; version output works without Python,
 Node, Rust, or Prodex. Native JSON decoding and development `session list` /
 `session current` machine-output paths are connected to the production binary.

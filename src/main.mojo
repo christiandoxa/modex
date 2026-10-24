@@ -14,7 +14,7 @@ def main():
         for index in range(3, len(args)):
             rewritten.append(args[index])
         args = rewritten^
-    if len(args) == 2 and (args[1] == "--version" or args[1] == "-V"):
+    if len(args) >= 2 and (args[1] == "--version" or args[1] == "-V"):
         print("modex 0.1.0-dev")
         return
     if len(args) >= 2 and args[1] == "session":

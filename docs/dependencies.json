@@ -3,10 +3,24 @@
   "policy": "Only official Mojo 1.2.0 standard library application dependencies. No third-party libraries, new native bindings, product subprocess helpers, code generation or Python runtime.",
   "implementation_dependencies": [],
   "production_sources": [
-    "src/main.mojo"
+    "src/main.mojo",
+    "src/modex/__init__.mojo",
+    "src/modex/cli.mojo",
+    "src/modex/json.mojo",
+    "src/modex/paths.mojo",
+    "src/modex/session_time.mojo",
+    "src/modex/sessions.mojo",
+    "src/modex/text.mojo"
   ],
   "production_imports": [
-    "std.sys"
+    "std.collections",
+    "std.io",
+    "std.math",
+    "std.os",
+    "std.os.path",
+    "std.pathlib",
+    "std.sys",
+    "local modex modules"
   ],
   "include_paths": [
     "src",
@@ -40,5 +54,6 @@
   "installer_status": "NOT_STARTED",
   "release_artifact_status": "No release artifact; development build only",
   "clean_runtime_evidence": "tests/test_runtime.py binds only the executable, resolved platform and official Mojo runtime libraries into an empty filesystem/network namespace. No Python/Node/Rust/Prodex executable or library is mounted. Scope: version output on local Linux only.",
-  "distribution_gap": "The development executable has an absolute toolchain RUNPATH. Relocatable packaging and official-runtime redistribution/licensing require separate verification."
+  "distribution_gap": "The development executable has an absolute toolchain RUNPATH. Relocatable packaging and official-runtime redistribution/licensing require separate verification.",
+  "platform_specific_implementation": "Linux session file validation reads /proc/self/fd metadata through std.os.stat, comparing descriptor device/inode with before/after lstat. No new native binding; Linux only, and not a cross-platform claim."
 }

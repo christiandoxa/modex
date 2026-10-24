@@ -2,7 +2,7 @@ MOJO ?= mojo
 MOJO_VERSION := Mojo 1.2.0 (2016d0cd)
 MOJO_FLAGS := -O3 --target-cpu=x86-64-v3
 
-.PHONY: build check-toolchain probes test
+.PHONY: build check-toolchain probes test unit
 
 check-toolchain:
 	@test "$$($(MOJO) --version)" = "$(MOJO_VERSION)" || { echo 'Pinned toolchain required: $(MOJO_VERSION)' >&2; exit 1; }
@@ -20,5 +20,12 @@ probes: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) probes/socket.mojo -o build/probes/socket
 	build/probes/socket
 
-test: build
+unit: check-toolchain
+	mkdir -p build/tests
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json.mojo -o build/tests/test_json
+	build/tests/test_json
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_sessions.mojo -o build/tests/test_sessions
+	build/tests/test_sessions
+
+test: build unit
 	python3 -m unittest discover -s tests -p 'test_*.py' -v

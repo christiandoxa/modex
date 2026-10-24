@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "reproduce": "python3 tests/session_mismatches.py",
+  "cases": [
+    {
+      "case": "nonobject-followup",
+      "arguments": [
+        "session",
+        "list",
+        "--json"
+      ],
+      "observations": {
+        "baseline": {
+          "exit_code": 101,
+          "stdout": "",
+          "stderr": "\nthread 'main' (2) panicked at crates/prodex-session-store/src/report.rs:168:10:\nMojo session-report update planner returned invalid output: InvalidInput\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+          "new_paths": [
+            "home/.prodex",
+            "home/.prodex/profile-lifecycle.json.lock",
+            "home/.prodex/runtime-housekeeping.last-run",
+            "home/.prodex/runtime-housekeeping.lock",
+            "home/.prodex/update-check.lock"
+          ]
+        },
+        "modex": {
+          "exit_code": 0,
+          "stdout": "[\n  {\n    \"id\": \"019a1234-5678-7123-8123-0123456789ab\",\n    \"thread_name\": \"Session fixture\",\n    \"updated_at\": \"2026-10-24T01:00:00Z\",\n    \"cwd\": \"<FIXTURE_ROOT>/workspace\",\n    \"profile\": null,\n    \"model_provider\": \"openai\",\n    \"path\": \"<FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl\"\n  }\n]\n",
+          "stderr": "",
+          "new_paths": [
+            "home/.prodex"
+          ]
+        }
+      },
+      "status": "UNAPPROVED_SAFE_DIFFERENCE"
+    },
+    {
+      "case": "startup-effects",
+      "arguments": [
+        "session",
+        "list",
+        "--json"
+      ],
+      "observations": {
+        "baseline": {
+          "exit_code": 0,
+          "stdout": "[\n  {\n    \"id\": \"019a1234-5678-7123-8123-0123456789ab\",\n    \"thread_name\": \"Session fixture\",\n    \"updated_at\": \"2026-10-24T01:00:00Z\",\n    \"cwd\": \"<FIXTURE_ROOT>/workspace\",\n    \"profile\": null,\n    \"model_provider\": \"openai\",\n    \"path\": \"<FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl\"\n  }\n]\n",
+          "stderr": "",
+          "new_paths": [
+            "home/.prodex",
+            "home/.prodex/profile-lifecycle.json.lock",
+            "home/.prodex/runtime-housekeeping.last-run",
+            "home/.prodex/runtime-housekeeping.lock",
+            "home/.prodex/update-check.lock"
+          ]
+        },
+        "modex": {
+          "exit_code": 0,
+          "stdout": "[\n  {\n    \"id\": \"019a1234-5678-7123-8123-0123456789ab\",\n    \"thread_name\": \"Session fixture\",\n    \"updated_at\": \"2026-10-24T01:00:00Z\",\n    \"cwd\": \"<FIXTURE_ROOT>/workspace\",\n    \"profile\": null,\n    \"model_provider\": \"openai\",\n    \"path\": \"<FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl\"\n  }\n]\n",
+          "stderr": "",
+          "new_paths": [
+            "home/.prodex"
+          ]
+        }
+      },
+      "status": "FAIL"
+    },
+    {
+      "case": "state-load",
+      "arguments": [
+        "session",
+        "list",
+        "--json"
+      ],
+      "observations": {
+        "baseline": {
+          "exit_code": 0,
+          "stdout": "[\n  {\n    \"id\": \"019a1234-5678-7123-8123-0123456789ab\",\n    \"thread_name\": \"Session fixture\",\n    \"updated_at\": \"2026-10-24T01:00:00Z\",\n    \"cwd\": \"<FIXTURE_ROOT>/workspace\",\n    \"profile\": null,\n    \"model_provider\": \"openai\",\n    \"path\": \"<FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl\"\n  }\n]\n",
+          "stderr": "",
+          "new_paths": [
+            "home/.prodex/profile-lifecycle.json.lock",
+            "home/.prodex/runtime-housekeeping.last-run",
+            "home/.prodex/runtime-housekeeping.lock",
+            "home/.prodex/state.json.lock",
+            "home/.prodex/update-check.lock"
+          ]
+        },
+        "modex": {
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "Error: locked state loading and recovery are not implemented\n",
+          "new_paths": []
+        }
+      },
+      "status": "FAIL"
+    },
+    {
+      "case": "text-output",
+      "arguments": [
+        "session",
+        "list"
+      ],
+      "observations": {
+        "baseline": {
+          "exit_code": 0,
+          "stdout": "[ Sessions ] =================================================================================================\nID                    UPDATED               THREAD                CWD                    PATH                 \n--------------------------------------------------------------------------------------------------------------\n019a1234-5678-712...  2026-10-24T01:00:00Z  Session fixture       /tmp/modex-session...  /tmp/modex-session...\n  id: 019a1234-5678-7123-8123-0123456789ab",
+          "stderr": "",
+          "new_paths": [
+            "home/.prodex",
+            "home/.prodex/profile-lifecycle.json.lock",
+            "home/.prodex/runtime-housekeeping.last-run",
+            "home/.prodex/runtime-housekeeping.lock",
+            "home/.prodex/update-check.lock"
+          ]
+        },
+        "modex": {
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "Error: session terminal and text rendering are not implemented\n",
+          "new_paths": [
+            "home/.prodex"
+          ]
+        }
+      },
+      "status": "FAIL"
+    }
+  ]
+}

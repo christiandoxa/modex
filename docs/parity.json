@@ -575,12 +575,19 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": null,
-      "tests": [],
-      "evidence": [],
-      "status": "NOT_STARTED",
+      "implementation": "src/modex/sessions.mojo; src/modex/cli.mojo; src/modex/json.mojo",
+      "tests": [
+        "tests/test_sessions.mojo",
+        "tests/test_sessions.py",
+        "tests/session_mismatches.py"
+      ],
+      "evidence": [
+        "docs/evidence/session-tests.txt",
+        "docs/evidence/session-mismatches.json"
+      ],
+      "status": "FAIL",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "FAIL",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -588,7 +595,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Machine-output comparisons pass for plain sessions with no existing state. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, numeric/fallback time formatting and unapproved safe handling of baseline panic."
       ]
     },
     {
@@ -613,12 +621,19 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": null,
-      "tests": [],
-      "evidence": [],
-      "status": "NOT_STARTED",
+      "implementation": "src/modex/sessions.mojo; src/modex/cli.mojo; src/modex/json.mojo",
+      "tests": [
+        "tests/test_sessions.mojo",
+        "tests/test_sessions.py",
+        "tests/session_mismatches.py"
+      ],
+      "evidence": [
+        "docs/evidence/session-tests.txt",
+        "docs/evidence/session-mismatches.json"
+      ],
+      "status": "FAIL",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "FAIL",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -626,7 +641,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Machine-output comparisons pass for plain sessions with no existing state. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, numeric/fallback time formatting and unapproved safe handling of baseline panic."
       ]
     },
     {

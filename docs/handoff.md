@@ -17,10 +17,11 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `rtk make test` (11 Mojo unit programs, test-only
-JSON/Zstandard/text/log/TOML drivers, and 124 Python methods PASS; no skips),
-plus the added focused JSON numeric boundary test PASS (125 Python methods
-verified in total). This includes
+Validation: `rtk make test` (13 Mojo unit programs, test-only
+JSON/Zstandard/text/log/TOML/SHA-256/HTTP drivers, and 149 Python methods PASS;
+no skips). Later HTTP hardening and expanded recording-mode cases have separate
+focused reruns in `docs/evidence/log-foundations-tests.txt`, for 155 distinct
+Python methods verified in total. This includes
 712 policy-oracle comparisons, 500 deterministic generated JSON values,
 malformed UTF-8/syntax/boundary vectors and numeric/local session times,
 future recurring rules through 2100, transition-second boundaries and
@@ -90,8 +91,8 @@ reads at most 1 MiB per poll, caps pending data at 1 MiB and checks complete
 lossy-UTF8 line sizes against 2 MiB. Split lines/scalars, truncation, replacement,
 two-second path discovery, descriptor pressure and oversized-line recovery are
 covered by native and actual release process tests. Inspection errors retain
-the release's exit code and cause formatting. Broker/direct-source registries
-and terminal views fail explicitly; they do not fall back to another runtime.
+the release's exit code and cause formatting. Without explicit disk recording,
+broker/direct-source registries still fail explicitly; terminal views also fail.
 Evidence: `docs/evidence/upstream-follow-tests.txt` and
 `docs/evidence/upstream-follow-link.txt`.
 
@@ -109,6 +110,37 @@ normalization and URL display cases. Decimal conversion and notation match the
 observed default release behavior across 382 generated finite floats and 27
 raw numeric boundary cases. Evidence: `docs/evidence/log-stream-tests.txt`
 and `docs/evidence/log-stream-link.txt`.
+
+Explicit disk recording now bypasses live registry discovery for detached
+`log`, `log stream` and `log upstream`, including registries present at startup
+or appearing during follow. The shared predicate preserves the frozen
+Unicode trimming and ASCII case rules for `1`, `true`, `yes` and `on`.
+Actual release comparisons cover JSON/plain output and unchanged registry
+contents/directory inventory. Disabled/absent recording retains the explicit
+unsupported live-source guard. Evidence: `docs/evidence/log-foundations-tests.txt`.
+
+Native SHA-256 and a bounded loopback HTTP/1 GET client are implemented and
+tested as standalone foundations. SHA vectors include padding boundaries,
+incremental binary input, repeat digests and message-length overflow rejection;
+file hashing uses 64 KiB reads and a 512 MiB default cap. The HTTP client uses
+only the pinned stdlib's existing POSIX socket wrappers, with nonblocking
+I/O, absolute deadlines, validated requests and bounded response framing.
+Both drivers run in test filesystems without implementation helpers. Neither
+module is connected to the CLI yet, and no production cryptography readiness,
+general HTTP equivalence or non-host capability is claimed. Dependency/link
+evidence: `docs/evidence/log-foundations-link.txt`.
+
+`tests/capture_log_live.py` retains eight actual Modex/release mismatches in
+`docs/evidence/log-live-mismatch.json`. The oracle's authenticated direct/broker
+snapshots, cursor reset and rejected-identity behavior are characterized; Modex
+still exits explicitly without connecting. This harness keeps host PID/network
+namespaces because the attempted user/mount namespace prevented inspection of
+the host identity holder. Its synthetic HOME/cwd/ports are isolated, but it is
+not clean-runtime evidence. Registry loading must acquire the release's
+compatible `.json.lock` and preserve recovery/legacy effects; the pinned stdlib
+still lacks those facilities. The reference also executes candidate binaries
+with `--version`, which conflicts with the prohibition on product calls to
+Prodex. Do not bypass locking or add a helper to connect the foundations.
 
 The release emits credential-like values unchanged from stream_payload source
 and text. Modex masks those values in both JSON and plain output. Exact startup
@@ -209,9 +241,11 @@ also cover correction overflow. The fixtures are synthetic; this host has no
 installed `right/` leap-zone directory. Evidence:
 `docs/evidence/leap-timezone-tests.txt` and `tests/test_timezone_files.py`.
 
-Next work: implement live broker/direct-source log acquisition and terminal
-views, broaden URL/parser/failure coverage, and verify policy recursion/resource
-boundaries while continuing independent command slices.
+Next work: resolve compatible registry locking/recovery and private capability
+reads before connecting live broker/direct-source acquisition. Preserve the
+candidate-version-probe conflict. Continue independent command/config slices,
+URL/parser/failure coverage and policy recursion/resource verification while
+those capabilities remain unavailable; terminal views also remain unfinished.
 The parser has an explicit 128-level value-nesting limit; equivalence to the
 release beyond the tested corpus remains unverified. General policy/config
 application outside log-directory selection is still unfinished.

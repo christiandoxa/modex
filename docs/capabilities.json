@@ -58,11 +58,56 @@
         "TCP listeners",
         "DNS",
         "TLS/certificate verification",
-        "HTTP/proxy traversal",
+        "general HTTP/proxy traversal",
         "SSE/WebSocket",
         "stable public networking API"
       ],
       "assessment": "The pinned official stdlib contains internal POSIX socket bindings. They are not stable public APIs. This probe introduces no bindings and imports no third-party library. Production use requires explicit ownership/error/cancellation review and interoperability evidence."
+    },
+    {
+      "id": "LOOPBACK-HTTP-NATIVE",
+      "status": "PROVEN_LOCAL_INTERNAL_API",
+      "source": "src/modex/loopback_http.mojo",
+      "tests": ["tests/loopback_http_driver.mojo", "tests/test_loopback_http.py"],
+      "evidence": ["docs/evidence/log-foundations-tests.txt", "docs/evidence/log-foundations-link.txt"],
+      "proven": [
+        "numeric IPv4 127/8 and compressed IPv6 ::1 client connections through official socket wrappers",
+        "validated HTTP/1 GET and partial request/response I/O without SIGPIPE",
+        "nonblocking connect with SO_ERROR/getpeername and absolute request deadlines",
+        "bounded Content-Length, chunked and connection-close response bodies",
+        "fragmented/coalesced informational responses and rejection of ambiguous framing",
+        "standalone driver without helper executables in a bubblewrap filesystem sharing the host network for the synthetic loopback server"
+      ],
+      "not_proven": [
+        "production CLI integration and registry/capability/process admission",
+        "general address/HTTP/reqwest tolerance equivalence",
+        "DNS, TLS, proxies, redirects, upgrades or connection pooling",
+        "SSE/WebSocket or streaming response API",
+        "non-host targets or stable public networking API"
+      ],
+      "assessment": "An independently authored native Mojo protocol foundation using only bundled internal POSIX wrappers and types. No new binding or application dependency. Standalone checks establish a limited Linux capability, not runtime-broker parity.",
+      "specification": "https://www.rfc-editor.org/rfc/rfc9112.html"
+    },
+    {
+      "id": "SHA256-NATIVE",
+      "status": "PROVEN_LOCAL_VECTORS",
+      "source": "src/modex/sha256.mojo",
+      "tests": ["tests/test_sha256.mojo", "tests/sha256_driver.mojo", "tests/test_sha256.py"],
+      "evidence": ["docs/evidence/log-foundations-tests.txt", "docs/evidence/log-foundations-link.txt"],
+      "proven": [
+        "FIPS 180-4 known-answer vectors, padding boundaries and incremental updates",
+        "non-destructive digest calls and subsequent updates",
+        "test-only hashlib comparisons for seeded binary inputs and bounded file reads",
+        "message bit-length overflow rejection through a synthetic counter boundary",
+        "standalone file hashing without external implementation helpers"
+      ],
+      "not_proven": [
+        "production CLI integration and process identity admission",
+        "production cryptography readiness or independent security review",
+        "TLS, authentication, encryption or other cryptographic formats",
+        "non-host targets"
+      ],
+      "specification": "https://csrc.nist.gov/files/pubs/fips/180-4/final/docs/fips180-4.pdf"
     },
     {
       "id": "FILESYSTEM-PUBLIC-GAP",
@@ -83,7 +128,7 @@
       "status": "GAP",
       "source": "probes/gaps/crypto.mojo",
       "finding": "SHA256 is absent from std.hash and secure_random_bytes from std.random. Linux OS randomness is separately proven via the standard file API.",
-      "next": "Use official specifications and known-answer/interoperability/negative vectors for any native Mojo standards implementation. No production-ready crypto claim without security review."
+      "next": "Native SHA-256 now has separate known-answer/interoperability evidence; the public API gap and other crypto requirements remain. No production-ready crypto claim without security review."
     },
     {
       "id": "TERMINAL-PUBLIC-GAP",
@@ -133,7 +178,7 @@
   ],
   "remaining_probes": [
     "DNS/proxy/TLS",
-    "HTTP/SSE/WebSocket framing",
+    "general HTTP/provider framing, SSE and WebSocket beyond the tested loopback GET subset",
     "process-tree cleanup/cancellation",
     "concurrent synchronization and event handling",
     "native credential backends",

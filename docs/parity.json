@@ -556,7 +556,7 @@
       "input": "mode and json",
       "output": "log stream/snapshot",
       "failure_modes": "filesystem/framing failures",
-      "side_effects": "Application-root startup creation/permission repair, followed by read-only log access.",
+      "side_effects": "Application-root startup creation/permission repair and read-only log access; live-source registry locking, recovery and legacy-artifact handling when disk recording is disabled.",
       "platforms": [
         "x86_64-unknown-linux-gnu",
         "aarch64-unknown-linux-gnu",
@@ -585,6 +585,9 @@
         "tests/test_json_float.mojo",
         "tests/test_json_float_oracle.py",
         "tests/test_log_stream.py",
+        "tests/test_log_sources.mojo",
+        "tests/test_log_recording.py",
+        "tests/capture_log_live.py",
         "tests/test_log_stream_paths.py",
         "tests/test_log_stream_redaction.py",
         "tests/test_log_transcript_events.mojo",
@@ -610,7 +613,10 @@
         "docs/evidence/upstream-follow-link.txt",
         "docs/evidence/log-stream-tests.txt",
         "docs/evidence/log-stream-link.txt",
-        "docs/evidence/log-stream-mismatch.json"
+        "docs/evidence/log-stream-mismatch.json",
+        "docs/evidence/log-foundations-tests.txt",
+        "docs/evidence/log-foundations-link.txt",
+        "docs/evidence/log-live-mismatch.json"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -623,7 +629,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Detached snapshots, upstream file following and general runtime/session streaming are connected with native operational projection, shared bounded descriptors, per-source reservations and actual process comparisons. Full LOG still fails on root permission repair, four prior redaction differences plus stream_payload secret masking, and unimplemented live broker/direct-source and terminal paths. Unexercised URL/parser/projection/follow failure cases and other platforms remain unverified."
+        "Detached snapshots, upstream file following and general runtime/session streaming are connected with native operational projection, shared bounded descriptors and per-source reservations. Explicit disk recording now bypasses live registry discovery as in tested release scenarios. Full LOG still fails on root permission repair, four prior redaction differences plus stream_payload secret masking, and unimplemented live broker/direct-source and terminal paths. Eight retained live comparisons FAIL. Native SHA-256/loopback HTTP remain unconnected foundations: compatible registry locking/recovery and compliant process identity resolution are unresolved. Unexercised URL/parser/projection/follow failure cases and other platforms remain unverified."
       ]
     },
     {

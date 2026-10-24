@@ -9,6 +9,8 @@
     "src/modex/root_help.mojo",
     "src/modex/json.mojo",
     "src/modex/json_float.mojo",
+    "src/modex/sha256.mojo",
+    "src/modex/loopback_http.mojo",
     "src/modex/paths.mojo",
     "src/modex/session_time.mojo",
     "src/modex/sessions.mojo",
@@ -50,6 +52,14 @@
     "local modex modules",
     "std.memory (bitcast)"
   ],
+  "unconnected_foundations": {
+    "modules": ["src/modex/sha256.mojo", "src/modex/loopback_http.mojo"],
+    "status": "Standalone test drivers only; neither module is called by the product CLI yet.",
+    "imports": ["std.bit", "std.memory.MaybeUninit", "std.net._sys.inet", "std.net._sys.unix", "std.sys._libc.close", "std.sys._libc.fcntl", "std.sys._libc_errno"],
+    "assessment": "All imports are from the pinned official Mojo standard library. Internal socket wrappers and types are used directly; no new native function, layout, ABI declaration, application library or implementation helper was added. The private APIs are version-sensitive and tested only on Linux x86-64.",
+    "pointer_ownership": "Socket addresses and error/length storage remain live through synchronous calls. Send/receive buffer pointers remain valid during their calls; no pointer is retained by an asynchronous operation. The client owns and closes each created descriptor on success and raised errors.",
+    "evidence": ["docs/evidence/log-foundations-tests.txt", "docs/evidence/log-foundations-link.txt"]
+  },
   "include_paths": [
     "src",
     "official toolchain standard library"
@@ -95,7 +105,9 @@
   "unicode_alphanumeric_implementation": "Static Unicode 17 Alphabetic union General_Category=N interval data in Mojo, checked over all valid scalars against pinned independent UCD files. Final data is re-derived with tests/unicode_properties_derive.mojo (test-only native Mojo audit); no production generator, runtime data-file dependency, Rust code copy, new binding or application library. See UnicodeData.provenance.txt for the corrected authoring history. Unicode License V3 and NOTICE apply.",
   "toml_implementation": "Independently authored native TOML 1.1 document parser and policy validation. Product build/runtime uses only official Mojo stdlib. tests/fixtures/toml11 contains only pinned MIT-licensed conformance inputs, expected typed JSON, version manifests and license; no upstream runner, implementation or generator is included. Production does not load test files. Current value-nesting limit: 128; full resource-boundary equivalence remains unverified.",
   "log_timestamp_implementation": "Native Mojo parsing and local rendering of RFC3339 and frozen custom log timestamps. Reuses the existing calendar/TZif implementation; no Chrono code, external parser, process helper, binding or application library is included. Official-release comparisons and native tests cover fixed/variable fields, signed years, Unicode whitespace, fractions, leap seconds, DST and historical offset rounding.",
-  "upstream_follow_implementation": "Native incremental file following uses official Mojo file/stat APIs, retained descriptors, /proc/self/fd identity checks and std.time polling. The bundled private std.sys._libc_errno wrapper classifies OS errors without adding a native binding. Source discovery retains at most 32 files; reads and partial-line buffers are bounded. Live broker/direct-source registries and terminal views fail explicitly as unimplemented; no service or executable supplies missing behavior. Linux only; other targets unverified.",
+  "upstream_follow_implementation": "Native incremental file following uses official Mojo file/stat APIs, retained descriptors, /proc/self/fd identity checks and std.time polling. The bundled private std.sys._libc_errno wrapper classifies OS errors without adding a native binding. Source discovery retains at most 32 files; reads and partial-line buffers are bounded. Explicit disk recording bypasses live registry discovery as in the release. Without recording, live broker/direct-source registries still fail explicitly; terminal views remain unimplemented. No service or executable supplies missing behavior. Linux only; other targets unverified.",
   "general_stream_implementation": "Native Mojo combines runtime/session followers under a shared 32-descriptor budget with per-source reservations, 2/10-second discovery intervals and all transcript projections per record. Operational event classification and detail rendering are independently authored from the frozen behavior contract; endpoint display performs native URL path parsing without a library or helper. Exact tested format cases do not establish complete URL or stream equivalence.",
-  "json_number_implementation": "Native JSON numeric conversion reproduces the release's default significand-then-decimal-scaling order and output notation, using only UInt64/Float64 arithmetic and official Mojo numeric primitives. It was derived independently from actual oracle outputs, including finite seeded values. No dependency implementation or power table was copied and no production generator is involved."
+  "json_number_implementation": "Native JSON numeric conversion reproduces the release's default significand-then-decimal-scaling order and output notation, using only UInt64/Float64 arithmetic and official Mojo numeric primitives. It was derived independently from actual oracle outputs, including finite seeded values. No dependency implementation or power table was copied and no production generator is involved.",
+  "sha256_foundation": "Independent native Mojo SHA-256 from NIST FIPS 180-4, with incremental hashing, non-destructive digest calculation and bounded file reads. Numerical constants are specified by FIPS, not copied from a dependency implementation. Python hashlib supplies independent test-only comparisons. No production cryptography readiness or executable identity admission claim.",
+  "loopback_http_foundation": "Native Mojo HTTP/1 GET over official internal nonblocking POSIX socket wrappers, with numeric loopback-only admission, request validation, absolute deadlines, bounded headers/body/framing and Content-Length/chunked/EOF response handling. Standalone tests include a filesystem containing only the driver and platform/official Mojo runtime libraries, sharing the host network to reach the synthetic loopback server. DNS, TLS, proxies, redirects, general HTTP equivalence and live broker admission remain unfinished."
 }

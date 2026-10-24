@@ -1,0 +1,1411 @@
+{
+  "metadata": {
+    "schema_version": 1,
+    "compiler": "Mojo 1.2.0 (2016d0cd)",
+    "baseline_oracle": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+    "baseline_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+    "modex_binary": "/home/doxa/IdeaProjects/modex/build/modex",
+    "modex_binary_sha256": "302efa691b188b3f67745b00ad8dd9f871be14c43b57d05347b45dfd59642f0b",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+    "python": "3.16.0a1",
+    "isolation": "synthetic HOME and cwd; server binds 127.0.0.1; host PID namespace retained",
+    "isolation_limit": "bwrap user/mount namespace prevents holder /proc/<pid>/exe inspection under host ptrace policy",
+    "argv_templates": {
+      "holder": [
+        "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+        "log",
+        "stream"
+      ],
+      "tested_process": [
+        "<binary>",
+        "log",
+        "stream",
+        "--json"
+      ]
+    },
+    "modex_capture_command": "python3 tests/capture_log_live.py"
+  },
+  "observations": [
+    {
+      "key": "live-direct-test",
+      "invalid_fixture": null,
+      "instance_reset": false,
+      "status": "FAIL",
+      "failure_reasons": [
+        "stdout_or_stderr_differs",
+        "snapshot_request_trace_differs",
+        "exit_code_differs",
+        "process_survival_differs",
+        "cursor_trace_incomplete",
+        "expected_marker_missing"
+      ],
+      "oracle": {
+        "exit_code_during_capture": null,
+        "stdout": "{\"timestamp\":\"live\",\"source\":\"error\",\"text\":\"-  runtime log gap  reason=bounded_buffer \u00b7 dropped=2\"}\n{\"cached_input_tokens\":0,\"event\":\"token_usage\",\"fields\":{\"cached_input_tokens\":0,\"generation_ms\":1000,\"input_tokens\":10,\"output_tokens\":4,\"output_tokens_per_second\":4.0,\"profile\":\"synthetic\",\"reasoning_tokens\":0,\"request\":\"1\",\"source\":\"synthetic-live-log-marker\",\"transport\":\"http\"},\"generation_ms\":1000,\"input_tokens\":10,\"output_tokens\":4,\"output_tokens_per_second\":4.0,\"profile\":\"synthetic\",\"reasoning_tokens\":0,\"request\":1,\"source\":\"synthetic-live-log-marker\",\"timestamp\":\"2026-10-24 01:02:03.000 +00:00\",\"transport\":\"http\"}\n{\"timestamp\":\"live\",\"source\":\"error\",\"text\":\"-  runtime log gap  reason=bounded_buffer \u00b7 dropped=2\"}\n",
+        "stderr": "",
+        "requests": [
+          "GET /__prodex/runtime/log/snapshot?after=0&limit=512 HTTP/1.1",
+          "GET /__prodex/runtime/log/snapshot?after=1&limit=512 HTTP/1.1"
+        ],
+        "authentication_failures": 0,
+        "alive_during_capture": true,
+        "fixture": {
+          "argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 240680,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771184",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:41867",
+          "source_key": "live-direct-test",
+          "registry_path": ".prodex/runtime-broker-live-direct-test.json",
+          "capability_path": ".prodex/runtime-broker-live-direct-test.capability",
+          "registry": {
+            "pid": 240680,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771184",
+            "listen_addr": "127.0.0.1:41867",
+            "started_at": 1792871713,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": null,
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [
+          "0",
+          "1"
+        ],
+        "request_errors": [],
+        "marker_event_count": 1
+      },
+      "modex": {
+        "exit_code_during_capture": 1,
+        "stdout": "",
+        "stderr": "Error: live runtime log sources are not implemented\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": false,
+        "fixture": {
+          "argv": [
+            "/home/doxa/IdeaProjects/modex/build/modex",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 241238,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771244",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:39797",
+          "source_key": "live-direct-test",
+          "registry_path": ".prodex/runtime-broker-live-direct-test.json",
+          "capability_path": ".prodex/runtime-broker-live-direct-test.capability",
+          "registry": {
+            "pid": 241238,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771244",
+            "listen_addr": "127.0.0.1:39797",
+            "started_at": 1792871714,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": null,
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      }
+    },
+    {
+      "key": "broker-test",
+      "invalid_fixture": null,
+      "instance_reset": false,
+      "status": "FAIL",
+      "failure_reasons": [
+        "stdout_or_stderr_differs",
+        "snapshot_request_trace_differs",
+        "exit_code_differs",
+        "process_survival_differs",
+        "cursor_trace_incomplete",
+        "expected_marker_missing"
+      ],
+      "oracle": {
+        "exit_code_during_capture": null,
+        "stdout": "{\"timestamp\":\"live\",\"source\":\"error\",\"text\":\"-  runtime log gap  reason=bounded_buffer \u00b7 dropped=2\"}\n{\"cached_input_tokens\":0,\"event\":\"token_usage\",\"fields\":{\"cached_input_tokens\":0,\"generation_ms\":1000,\"input_tokens\":10,\"output_tokens\":4,\"output_tokens_per_second\":4.0,\"profile\":\"synthetic\",\"reasoning_tokens\":0,\"request\":\"1\",\"source\":\"synthetic-live-log-marker\",\"transport\":\"http\"},\"generation_ms\":1000,\"input_tokens\":10,\"output_tokens\":4,\"output_tokens_per_second\":4.0,\"profile\":\"synthetic\",\"reasoning_tokens\":0,\"request\":1,\"source\":\"synthetic-live-log-marker\",\"timestamp\":\"2026-10-24 01:02:03.000 +00:00\",\"transport\":\"http\"}\n{\"timestamp\":\"live\",\"source\":\"error\",\"text\":\"-  runtime log gap  reason=bounded_buffer \u00b7 dropped=2\"}\n",
+        "stderr": "",
+        "requests": [
+          "GET /__prodex/runtime/log/snapshot?after=0&limit=512 HTTP/1.1",
+          "GET /__prodex/runtime/log/snapshot?after=1&limit=512 HTTP/1.1"
+        ],
+        "authentication_failures": 0,
+        "alive_during_capture": true,
+        "fixture": {
+          "argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 241723,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771294",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:37595",
+          "source_key": "broker-test",
+          "registry_path": ".prodex/runtime-broker-broker-test.json",
+          "capability_path": ".prodex/runtime-broker-broker-test.capability",
+          "registry": {
+            "pid": 241723,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771294",
+            "listen_addr": "127.0.0.1:37595",
+            "started_at": 1792871714,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": false,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": null,
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [
+          "0",
+          "1"
+        ],
+        "request_errors": [],
+        "marker_event_count": 1
+      },
+      "modex": {
+        "exit_code_during_capture": 1,
+        "stdout": "",
+        "stderr": "Error: live runtime log sources are not implemented\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": false,
+        "fixture": {
+          "argv": [
+            "/home/doxa/IdeaProjects/modex/build/modex",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 242289,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771355",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:41621",
+          "source_key": "broker-test",
+          "registry_path": ".prodex/runtime-broker-broker-test.json",
+          "capability_path": ".prodex/runtime-broker-broker-test.capability",
+          "registry": {
+            "pid": 242289,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771355",
+            "listen_addr": "127.0.0.1:41621",
+            "started_at": 1792871715,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": false,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": null,
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      }
+    },
+    {
+      "key": "live-reset-test",
+      "invalid_fixture": null,
+      "instance_reset": true,
+      "status": "FAIL",
+      "failure_reasons": [
+        "stdout_or_stderr_differs",
+        "snapshot_request_trace_differs",
+        "exit_code_differs",
+        "process_survival_differs",
+        "cursor_trace_incomplete",
+        "expected_marker_missing"
+      ],
+      "oracle": {
+        "exit_code_during_capture": null,
+        "stdout": "{\"timestamp\":\"live\",\"source\":\"error\",\"text\":\"-  runtime log gap  reason=bounded_buffer \u00b7 dropped=2\"}\n{\"cached_input_tokens\":0,\"event\":\"token_usage\",\"fields\":{\"cached_input_tokens\":0,\"generation_ms\":1000,\"input_tokens\":10,\"output_tokens\":4,\"output_tokens_per_second\":4.0,\"profile\":\"synthetic\",\"reasoning_tokens\":0,\"request\":\"1\",\"source\":\"synthetic-live-log-marker\",\"transport\":\"http\"},\"generation_ms\":1000,\"input_tokens\":10,\"output_tokens\":4,\"output_tokens_per_second\":4.0,\"profile\":\"synthetic\",\"reasoning_tokens\":0,\"request\":1,\"source\":\"synthetic-live-log-marker\",\"timestamp\":\"2026-10-24 01:02:03.000 +00:00\",\"transport\":\"http\"}\n{\"timestamp\":\"live\",\"source\":\"error\",\"text\":\"-  runtime log gap  reason=bounded_buffer \u00b7 dropped=2\"}\n{\"timestamp\":\"live\",\"source\":\"error\",\"text\":\"-  runtime log gap  reason=bounded_buffer \u00b7 dropped=2\"}\n{\"cached_input_tokens\":0,\"event\":\"token_usage\",\"fields\":{\"cached_input_tokens\":0,\"generation_ms\":1000,\"input_tokens\":10,\"output_tokens\":4,\"output_tokens_per_second\":4.0,\"profile\":\"synthetic\",\"reasoning_tokens\":0,\"request\":\"1\",\"source\":\"synthetic-live-log-marker\",\"transport\":\"http\"},\"generation_ms\":1000,\"input_tokens\":10,\"output_tokens\":4,\"output_tokens_per_second\":4.0,\"profile\":\"synthetic\",\"reasoning_tokens\":0,\"request\":1,\"source\":\"synthetic-live-log-marker\",\"timestamp\":\"2026-10-24 01:02:03.000 +00:00\",\"transport\":\"http\"}\n",
+        "stderr": "",
+        "requests": [
+          "GET /__prodex/runtime/log/snapshot?after=0&limit=512 HTTP/1.1",
+          "GET /__prodex/runtime/log/snapshot?after=1&limit=512 HTTP/1.1",
+          "GET /__prodex/runtime/log/snapshot?after=0&limit=512 HTTP/1.1"
+        ],
+        "authentication_failures": 0,
+        "alive_during_capture": true,
+        "fixture": {
+          "argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 242767,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771405",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:37871",
+          "source_key": "live-reset-test",
+          "registry_path": ".prodex/runtime-broker-live-reset-test.json",
+          "capability_path": ".prodex/runtime-broker-live-reset-test.capability",
+          "registry": {
+            "pid": 242767,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771405",
+            "listen_addr": "127.0.0.1:37871",
+            "started_at": 1792871715,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": null,
+          "reset_instance_after_second_request": true
+        },
+        "cursor_trace": [
+          "0",
+          "1",
+          "0"
+        ],
+        "request_errors": [],
+        "marker_event_count": 2
+      },
+      "modex": {
+        "exit_code_during_capture": 1,
+        "stdout": "",
+        "stderr": "Error: live runtime log sources are not implemented\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": false,
+        "fixture": {
+          "argv": [
+            "/home/doxa/IdeaProjects/modex/build/modex",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 243473,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771481",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:40571",
+          "source_key": "live-reset-test",
+          "registry_path": ".prodex/runtime-broker-live-reset-test.json",
+          "capability_path": ".prodex/runtime-broker-live-reset-test.capability",
+          "registry": {
+            "pid": 243473,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771481",
+            "listen_addr": "127.0.0.1:40571",
+            "started_at": 1792871716,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": null,
+          "reset_instance_after_second_request": true
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      }
+    },
+    {
+      "key": "live-invalid-test",
+      "invalid_fixture": "pid",
+      "instance_reset": false,
+      "status": "FAIL",
+      "failure_reasons": [
+        "stdout_or_stderr_differs",
+        "exit_code_differs",
+        "process_survival_differs"
+      ],
+      "oracle": {
+        "exit_code_during_capture": null,
+        "stdout": "",
+        "stderr": "Waiting for transcript, upstream payload, or token events.\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": true,
+        "fixture": {
+          "argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 243945,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771531",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:37715",
+          "source_key": "live-invalid-test",
+          "registry_path": ".prodex/runtime-broker-live-invalid-test.json",
+          "capability_path": ".prodex/runtime-broker-live-invalid-test.capability",
+          "registry": {
+            "pid": 4294967295,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771531",
+            "listen_addr": "127.0.0.1:37715",
+            "started_at": 1792871716,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": "pid",
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      },
+      "modex": {
+        "exit_code_during_capture": 1,
+        "stdout": "",
+        "stderr": "Error: live runtime log sources are not implemented\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": false,
+        "fixture": {
+          "argv": [
+            "/home/doxa/IdeaProjects/modex/build/modex",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 245019,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771631",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:33737",
+          "source_key": "live-invalid-test",
+          "registry_path": ".prodex/runtime-broker-live-invalid-test.json",
+          "capability_path": ".prodex/runtime-broker-live-invalid-test.capability",
+          "registry": {
+            "pid": 4294967295,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771631",
+            "listen_addr": "127.0.0.1:33737",
+            "started_at": 1792871717,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": "pid",
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      }
+    },
+    {
+      "key": "live-invalid-test",
+      "invalid_fixture": "birth",
+      "instance_reset": false,
+      "status": "FAIL",
+      "failure_reasons": [
+        "stdout_or_stderr_differs",
+        "exit_code_differs",
+        "process_survival_differs"
+      ],
+      "oracle": {
+        "exit_code_during_capture": null,
+        "stdout": "",
+        "stderr": "Waiting for transcript, upstream payload, or token events.\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": true,
+        "fixture": {
+          "argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 245515,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771681",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:33207",
+          "source_key": "live-invalid-test",
+          "registry_path": ".prodex/runtime-broker-live-invalid-test.json",
+          "capability_path": ".prodex/runtime-broker-live-invalid-test.capability",
+          "registry": {
+            "pid": 245515,
+            "process_birth_identity": "linux:stale",
+            "listen_addr": "127.0.0.1:33207",
+            "started_at": 1792871718,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": "birth",
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      },
+      "modex": {
+        "exit_code_during_capture": 1,
+        "stdout": "",
+        "stderr": "Error: live runtime log sources are not implemented\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": false,
+        "fixture": {
+          "argv": [
+            "/home/doxa/IdeaProjects/modex/build/modex",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 246437,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771782",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:35143",
+          "source_key": "live-invalid-test",
+          "registry_path": ".prodex/runtime-broker-live-invalid-test.json",
+          "capability_path": ".prodex/runtime-broker-live-invalid-test.capability",
+          "registry": {
+            "pid": 246437,
+            "process_birth_identity": "linux:stale",
+            "listen_addr": "127.0.0.1:35143",
+            "started_at": 1792871719,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": "birth",
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      }
+    },
+    {
+      "key": "live-invalid-test",
+      "invalid_fixture": "capability",
+      "instance_reset": false,
+      "status": "FAIL",
+      "failure_reasons": [
+        "stdout_or_stderr_differs",
+        "exit_code_differs",
+        "process_survival_differs"
+      ],
+      "oracle": {
+        "exit_code_during_capture": null,
+        "stdout": "",
+        "stderr": "Waiting for transcript, upstream payload, or token events.\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": true,
+        "fixture": {
+          "argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 246880,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771832",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:35925",
+          "source_key": "live-invalid-test",
+          "registry_path": ".prodex/runtime-broker-live-invalid-test.json",
+          "capability_path": ".prodex/runtime-broker-live-invalid-test.capability",
+          "registry": {
+            "pid": 246880,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771832",
+            "listen_addr": "127.0.0.1:35925",
+            "started_at": 1792871719,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": "capability",
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      },
+      "modex": {
+        "exit_code_during_capture": 1,
+        "stdout": "",
+        "stderr": "Error: live runtime log sources are not implemented\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": false,
+        "fixture": {
+          "argv": [
+            "/home/doxa/IdeaProjects/modex/build/modex",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 247848,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771932",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:44217",
+          "source_key": "live-invalid-test",
+          "registry_path": ".prodex/runtime-broker-live-invalid-test.json",
+          "capability_path": ".prodex/runtime-broker-live-invalid-test.capability",
+          "registry": {
+            "pid": 247848,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771932",
+            "listen_addr": "127.0.0.1:44217",
+            "started_at": 1792871720,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": "capability",
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      }
+    },
+    {
+      "key": "live-invalid-test",
+      "invalid_fixture": "instance",
+      "instance_reset": false,
+      "status": "FAIL",
+      "failure_reasons": [
+        "stdout_or_stderr_differs",
+        "exit_code_differs",
+        "process_survival_differs"
+      ],
+      "oracle": {
+        "exit_code_during_capture": null,
+        "stdout": "",
+        "stderr": "Waiting for transcript, upstream payload, or token events.\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": true,
+        "fixture": {
+          "argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 248333,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771982",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:41237",
+          "source_key": "live-invalid-test",
+          "registry_path": ".prodex/runtime-broker-live-invalid-test.json",
+          "capability_path": ".prodex/runtime-broker-live-invalid-test.capability",
+          "registry": {
+            "pid": 248333,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10771982",
+            "listen_addr": "127.0.0.1:41237",
+            "started_at": 1792871721,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "different-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": "instance",
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      },
+      "modex": {
+        "exit_code_during_capture": 1,
+        "stdout": "",
+        "stderr": "Error: live runtime log sources are not implemented\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": false,
+        "fixture": {
+          "argv": [
+            "/home/doxa/IdeaProjects/modex/build/modex",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 249248,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10772082",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:39747",
+          "source_key": "live-invalid-test",
+          "registry_path": ".prodex/runtime-broker-live-invalid-test.json",
+          "capability_path": ".prodex/runtime-broker-live-invalid-test.capability",
+          "registry": {
+            "pid": 249248,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10772082",
+            "listen_addr": "127.0.0.1:39747",
+            "started_at": 1792871722,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "different-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": "instance",
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      }
+    },
+    {
+      "key": "live-invalid-test",
+      "invalid_fixture": "binary",
+      "instance_reset": false,
+      "status": "FAIL",
+      "failure_reasons": [
+        "stdout_or_stderr_differs",
+        "exit_code_differs",
+        "process_survival_differs"
+      ],
+      "oracle": {
+        "exit_code_during_capture": null,
+        "stdout": "",
+        "stderr": "Waiting for transcript, upstream payload, or token events.\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": true,
+        "fixture": {
+          "argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 249503,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10772132",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:33621",
+          "source_key": "live-invalid-test",
+          "registry_path": ".prodex/runtime-broker-live-invalid-test.json",
+          "capability_path": ".prodex/runtime-broker-live-invalid-test.capability",
+          "registry": {
+            "pid": 249503,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10772132",
+            "listen_addr": "127.0.0.1:33621",
+            "started_at": 1792871722,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/bin/true",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": "binary",
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      },
+      "modex": {
+        "exit_code_during_capture": 1,
+        "stdout": "",
+        "stderr": "Error: live runtime log sources are not implemented\n",
+        "requests": [],
+        "authentication_failures": 0,
+        "alive_during_capture": false,
+        "fixture": {
+          "argv": [
+            "/home/doxa/IdeaProjects/modex/build/modex",
+            "log",
+            "stream",
+            "--json"
+          ],
+          "working_directory": "<temporary-work>",
+          "environment": {
+            "HOME": "<temporary-home>",
+            "PATH": "",
+            "TERM": "dumb",
+            "NO_COLOR": "1",
+            "TZ": "UTC",
+            "PRODEX_RUNTIME_LOG_RECORD": "false"
+          },
+          "holder_argv": [
+            "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+            "log",
+            "stream"
+          ],
+          "holder_pid": 249613,
+          "holder_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10772233",
+          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+          "listen_addr": "127.0.0.1:41721",
+          "source_key": "live-invalid-test",
+          "registry_path": ".prodex/runtime-broker-live-invalid-test.json",
+          "capability_path": ".prodex/runtime-broker-live-invalid-test.capability",
+          "registry": {
+            "pid": 249613,
+            "process_birth_identity": "linux:82cec490-c4b4-446f-a72b-173b2e9db175:10772233",
+            "listen_addr": "127.0.0.1:41721",
+            "started_at": 1792871723,
+            "upstream_base_url": "http://127.0.0.1/unused",
+            "include_code_review": false,
+            "upstream_no_proxy": false,
+            "smart_context_enabled": true,
+            "current_profile": "synthetic",
+            "instance_id": "synthetic-live-log-instance",
+            "prodex_version": "0.439.0",
+            "executable_path": "/bin/true",
+            "executable_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+            "openai_mount_path": "/v1",
+            "realtime_ws_addr": null
+          },
+          "capability": "version=1, matching instance, synthetic token; value omitted",
+          "snapshot_response_template": {
+            "after_0": {
+              "cursor": 1,
+              "dropped": 2,
+              "entries": [
+                {
+                  "sequence": 1,
+                  "line": "[2026-10-24 01:02:03.000 +00:00] token_usage request=1 transport=http profile=synthetic source=synthetic-live-log-marker input_tokens=10 output_tokens=4 generation_ms=1000 output_tokens_per_second=4.0 \n"
+                }
+              ]
+            },
+            "after_nonzero": {
+              "cursor": 2,
+              "dropped": 4,
+              "entries": []
+            },
+            "reset": "registry and capability switch to a new matching instance before request 3"
+          },
+          "mutation": "binary",
+          "reset_instance_after_second_request": false
+        },
+        "cursor_trace": [],
+        "request_errors": [],
+        "marker_event_count": 0
+      }
+    }
+  ]
+}

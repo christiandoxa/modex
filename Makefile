@@ -26,6 +26,10 @@ unit: check-toolchain
 	build/tests/test_json
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json_float.mojo -o build/tests/test_json_float
 	build/tests/test_json_float
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_sha256.mojo -o build/tests/test_sha256
+	build/tests/test_sha256
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/sha256_driver.mojo -o build/tests/sha256_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/loopback_http_driver.mojo -o build/tests/loopback_http_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_sessions.mojo -o build/tests/test_sessions
 	build/tests/test_sessions
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_local_time.mojo -o build/tests/test_local_time
@@ -55,6 +59,8 @@ unit: check-toolchain
 	build/tests/test_log_operational
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_log_transcript_events.mojo -o build/tests/test_log_transcript_events
 	build/tests/test_log_transcript_events
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_log_sources.mojo -o build/tests/test_log_sources
+	build/tests/test_log_sources
 
 test: build unit
 	python3 -m unittest discover -s tests -p 'test_*.py' -v

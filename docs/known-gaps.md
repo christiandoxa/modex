@@ -84,10 +84,41 @@ paths in a tied-mtime fixture under the same cap; path discovery and adjacent
 transcript duplicate behavior are covered by actual process comparisons.
 URL display and JSON number normalization have additional corpus coverage;
 complete URL/parser equivalence is still unverified. Live broker/direct sources
-and terminal views remain unfinished. File following fails explicitly when a
-live-source registry or unsupported terminal path is present. Further follow
+and terminal views remain unfinished. When explicit runtime disk recording is
+enabled, file following skips live registry discovery as in the release.
+Otherwise a live-source registry still fails explicitly; unsupported terminal
+paths also fail. Further follow
 failure/race cases and non-host platforms remain unverified. Evidence:
 `docs/evidence/upstream-follow-tests.txt`.
+
+Live-source admission also requires the frozen registry store's exclusive
+`.json.lock`, backup recovery and legacy-artifact handling before reading a
+registry. The pinned stdlib exposes no compatible file-lock wrapper or the
+durable replacement/permission operations required by recovery. Reading an
+unlocked registry would weaken the storage contract, so it remains unsupported.
+The reference process identity resolver also runs candidate executables with
+`--version`; invoking Prodex from Modex is prohibited. SHA-present and
+version-only identity cases still need a compliant admission design and exact
+behavioral verification. Source: `runtime_broker/registry/store.rs`,
+`runtime_store/io.rs`, `runtime_broker/registry/process.rs` and
+`app_commands/log_live.rs` under the frozen `crates/prodex-app/src/`.
+
+`tests/capture_log_live.py` characterizes the actual oracle with synthetic
+loopback snapshots and validates the capability header, cursor advance/reset,
+gap markers and rejected identities. All eight current Modex comparisons are
+FAIL in `docs/evidence/log-live-mismatch.json`, including rejection cases where
+Modex exits while the release keeps following. The harness uses isolated HOME,
+working directories and ports in the host PID/network namespaces: its attempted
+bubblewrap isolation could not inspect the host identity holder's executable.
+This is limited test evidence, not clean-runtime or live-source parity.
+
+Native SHA-256 and loopback HTTP foundations now have standalone tests; they
+are not connected to CLI broker acquisition. SHA known-answer and independent
+hashlib checks do not establish production cryptography readiness. The HTTP
+client has additional bounded framing limits and rejects unsupported protocol
+features; exact equivalence to reqwest tolerance and non-host platforms is
+unverified. See `docs/evidence/log-foundations-tests.txt` and
+`docs/evidence/log-foundations-link.txt`.
 Native policy loading and directory resolution now match tested release paths,
 schema errors and fallback behavior, including 712 wrapped corpus inputs.
 Binary-text classification uses exact Unicode 17 Alphabetic/Number data;

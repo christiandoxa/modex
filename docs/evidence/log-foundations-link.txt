@@ -1,0 +1,81 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+
+Artifact: build/modex
+Build flags: mojo build -O3 --target-cpu=x86-64-v3 -I src
+readelf -d (NEEDED/RUNPATH)
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+
+ldd
+	linux-vdso.so.1 (0x0000735117ac5000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x0000735117851000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x0000735117600000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x0000735117517000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x0000735117200000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x0000735117820000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x0000735116600000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007351174e9000)
+	/lib64/ld-linux-x86-64.so.2 (0x0000735117ac7000)
+
+sha256sum
+302efa691b188b3f67745b00ad8dd9f871be14c43b57d05347b45dfd59642f0b  build/modex
+
+
+Artifact: build/tests/sha256_driver
+Build flags: mojo build -O3 --target-cpu=x86-64-v3 -I src
+readelf -d (NEEDED/RUNPATH)
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+
+ldd
+	linux-vdso.so.1 (0x00007eff472d5000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007eff4716e000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007eff46e00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007eff47064000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007eff46a00000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007eff47054000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007eff45e00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007eff47026000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007eff472d7000)
+
+sha256sum
+cffdfcfb7cfc2dc5388e31c19b17f7e81821b127376bcd4773d4de903cb8f70b  build/tests/sha256_driver
+
+
+Artifact: build/tests/loopback_http_driver
+Build flags: mojo build -O3 --target-cpu=x86-64-v3 -I src
+readelf -d (NEEDED/RUNPATH)
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+
+ldd
+	linux-vdso.so.1 (0x00007e69c7c1e000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007e69c7ab1000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007e69c7800000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007e69c7717000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007e69c7400000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007e69c7a80000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007e69c6800000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007e69c7a52000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007e69c7c20000)
+
+sha256sum
+17a4a30a40e7eb38bc420301ea68b8f5fcdb6c970fec8f500d7a476643eba628  build/tests/loopback_http_driver
+
+
+Only the platform and official Mojo support runtime libraries were found.
+The absolute toolchain RUNPATH remains a distribution gap.
+The SHA-256 and HTTP modules are not connected to the product CLI. Their
+standalone drivers were separately tested in isolated filesystems without
+Python, Node, Rust, Prodex or other implementation helper executables.
+The HTTP driver shares the host network to reach the synthetic loopback server;
+it retains --unshare-all and then overrides the network with --share-net.
+
+No new native declaration, application library, product subprocess, download,
+external implementation copy or production code generator was introduced.
+Internal POSIX wrappers/types are supplied by the pinned official stdlib;
+their version sensitivity and unverified non-host behavior remain documented.

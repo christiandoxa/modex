@@ -6,11 +6,26 @@ from std.sys import stderr
 from std.time import perf_counter, sleep
 
 from .log_follow import FollowedLog, collect_new_followed_lines, retain_followed_paths
+from .log_redaction import starts_ascii_case_insensitive
+from .log_text import trim_unicode
 from .logs import RUNTIME_TAIL_BYTES, RuntimeRecord, UpstreamEvent, read_tail, recent_runtime_log_paths, render_upstream, timestamp_wins, upstream_event
 from .paths import ensure_app_root
 
 
+def runtime_log_recording_enabled_value(value: String) -> Bool:
+    var trimmed = trim_unicode(value)
+    for enabled in ["1", "true", "yes", "on"]:
+        if trimmed.byte_length() == enabled.byte_length() and starts_ascii_case_insensitive(trimmed, 0, enabled):
+            return True
+    return False
+
+
+def runtime_log_recording_enabled() -> Bool:
+    return runtime_log_recording_enabled_value(getenv("PRODEX_RUNTIME_LOG_RECORD", ""))
+
+
 def require_file_log_sources(root: String) raises:
+    if runtime_log_recording_enabled(): return
     for name in listdir(root):
         if name.startswith("runtime-broker-") and name.endswith(".json"):
             raise Error("live runtime log sources are not implemented")

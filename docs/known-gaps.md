@@ -129,6 +129,11 @@ does not call the modules yet; translation, completion/error envelopes,
 HTTP/TLS/proxies, backpressure and cancellation remain unfinished. Evidence:
 `docs/evidence/provider-sse-tests.txt` and `docs/evidence/provider-sse-link.txt`.
 
+Chat-compatible choice/error decoding is also a standalone foundation. Its
+source-derived tests do not establish full provider translation, request/auth
+behavior, usage conversion, tool-call state, completion/error envelopes or
+transport parity. See `docs/evidence/provider-chat-tests.txt`.
+
 Native policy loading and directory resolution now match tested release paths,
 schema errors and fallback behavior, including 712 wrapped corpus inputs.
 Binary-text classification uses exact Unicode 17 Alphabetic/Number data;

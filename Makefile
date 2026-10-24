@@ -29,6 +29,9 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_sse_json.mojo -o build/tests/test_provider_sse_json
 	build/tests/test_provider_sse_json
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_sse_driver.mojo -o build/tests/provider_sse_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_chat_chunk.mojo -o build/tests/test_provider_chat_chunk
+	build/tests/test_provider_chat_chunk
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_chat_chunk_driver.mojo -o build/tests/provider_chat_chunk_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json.mojo -o build/tests/test_json
 	build/tests/test_json
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json_float.mojo -o build/tests/test_json_float

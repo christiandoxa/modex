@@ -1,0 +1,241 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+Frozen baseline: Prodex 0.439.0, 433aad44bb249d5c25a231a6b06c2fa522a39a1f
+Scope: standalone native chat-compatible first-choice, metadata/delta and
+embedded-error decoding. Source-derived fixtures, not provider/release parity.
+
+Implementation and final fixtures: root. Parallel GPT-6 Luna fixture/review
+tasks were attempted but returned no changes before being stopped; no worker
+implementation or review result is claimed for this second checkpoint.
+The preceding provider SSE checkpoint contains completed Luna test/build work.
+
+Commands and results:
+rtk make unit -> exit 0; 17 native Mojo unit programs PASS.
+python3 -m unittest discover -s tests -p 'test_provider*.py' -v -> 27 PASS,
+including 8 new chat methods and the prior 19 SSE methods; no skips.
+The preceding full rtk make test run passed 178 Python methods. The new module
+is unconnected to existing product execution; existing implementation paths
+were unchanged. Across that full run and this focused run, 186 distinct Python
+methods have been verified. No full 186-method run is claimed.
+
+Coverage: absent/wrong-type choice arrays; first element regardless of index;
+unknown first-choice/array fields; typed string/array defaults; empty delta
+strings versus empty finish_reason; no message fallback; explicit null and
+presence precedence for type/code and message/detail; embedded scalar errors;
+signed-i64 numeric codes, adjacent bounds, u64 max, negative zero, float and
+exponent spellings; malformed JSON and non-object selected choices.
+The composed native SSE-to-chat case includes a multiline event, fragmented
+Unicode, first-choice selection, [DONE] and unread trailing invalid UTF-8.
+The test driver uses JSONL, so assembled values are explicitly reframed onto
+that test transport after their content is checked. This does not establish
+byte-for-byte provider wire equivalence.
+
+Clean runtime: the chat driver runs with only its binary and platform/official
+Mojo shared libraries mounted in a disposable filesystem/network namespace,
+with synthetic HOME/cwd and no Python, Node, Rust or Prodex helper.
+The product binary remains unchanged; hashes and link results follow below.
+Imports: only existing modex.json APIs; no new library, native binding,
+unsafe pointer, runtime helper or production code generator.
+
+Limits: no CLI/provider execution path calls the module yet. Stateful event
+translation, normalized usage, tool-call accumulation/completion, request/auth,
+transport and completion/error envelopes remain unfinished. Selected non-object
+choices raise an explicit Modex error; the frozen source's kernel rejection
+and Rust expect path have not been characterized with an official executable.
+Provenance: tests/fixtures/provider-chat/README.md.
+Complete contracts: 0/60; platform obligations: 1/360 PASS; inventory incomplete.
+
+Compiler Crashpad and existing native-test warnings are retained below.
+Whitespace-only compiler diagnostic lines are rendered as empty lines.
+RTK's 19 elided output lines are restored from rtk recall 9ac01599c226.
+
+Native unit output:
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
+        var output = String()
+                           ^
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+    append_bytes(path, utf8^)
+                           ^
+
+/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+    append_bytes(path, utf8^)
+                           ^
+
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
+    var missing = False
+                  ^
+mkdir -p build/tests
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_sse_wire.mojo -o build/tests/test_provider_sse_wire
+build/tests/test_provider_sse_wire
+Provider SSE wire checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_sse_json.mojo -o build/tests/test_provider_sse_json
+build/tests/test_provider_sse_json
+Provider SSE JSON assembler checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_sse_driver.mojo -o build/tests/provider_sse_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_chunk.mojo -o build/tests/test_provider_chat_chunk
+build/tests/test_provider_chat_chunk
+Provider chat chunk checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_chat_chunk_driver.mojo -o build/tests/provider_chat_chunk_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_json.mojo -o build/tests/test_json
+build/tests/test_json
+JSON unit checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_json_float.mojo -o build/tests/test_json_float
+build/tests/test_json_float
+native JSON float parsing: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_sha256.mojo -o build/tests/test_sha256
+build/tests/test_sha256
+native SHA-256 vectors: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/sha256_driver.mojo -o build/tests/sha256_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/loopback_http_driver.mojo -o build/tests/loopback_http_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_sessions.mojo -o build/tests/test_sessions
+build/tests/test_sessions
+session metadata, filters, timestamps, text and argument checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_local_time.mojo -o build/tests/test_local_time
+build/tests/test_local_time
+TZif parsing, signed epochs, Gregorian calendar and local-time checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/json_driver.mojo -o build/tests/json_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_zstd.mojo -o build/tests/test_zstd
+build/tests/test_zstd
+Zstandard bits, default entropy tables and checksum checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/zstd_driver.mojo -o build/tests/zstd_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/text_driver.mojo -o build/tests/text_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/width_memory_driver.mojo -o build/tests/width_memory_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_text_driver.mojo -o build/tests/log_text_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_transcript_driver.mojo -o build/tests/log_transcript_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_payload_driver.mojo -o build/tests/log_payload_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_payload_render_driver.mojo -o build/tests/log_payload_render_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/unicode_properties_driver.mojo -o build/tests/unicode_properties_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_toml.mojo -o build/tests/test_toml
+build/tests/test_toml
+TOML unit checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/toml_driver.mojo -o build/tests/toml_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_time.mojo -o build/tests/test_log_time
+build/tests/test_log_time
+Log timestamp checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_time_driver.mojo -o build/tests/log_time_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow.mojo -o build/tests/test_log_follow
+build/tests/test_log_follow /home/doxa/IdeaProjects/modex/build/tests/log-follow-files
+native incremental log follow: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow_paths.mojo -o build/tests/test_log_follow_paths
+build/tests/test_log_follow_paths /home/doxa/IdeaProjects/modex/build/tests/follow-paths
+Log follower path selection checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_operational.mojo -o build/tests/test_log_operational
+build/tests/test_log_operational
+native operational log projection: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_transcript_events.mojo -o build/tests/test_log_transcript_events
+build/tests/test_log_transcript_events
+Transcript all-events projection checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_sources.mojo -o build/tests/test_log_sources
+build/tests/test_log_sources
+recording-enabled predicate: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_child.mojo -o build/tests/process_child
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_spawn.mojo -o build/tests/test_process_spawn
+build/tests/test_process_spawn /home/doxa/IdeaProjects/modex/build/tests/process_child
+synthetic-child-ok
+explicit environment spawn checks: PASS
+Focused Python output:
+test_absent_and_wrong_type_choices (test_provider_chat_chunk.ProviderChatChunkTests.test_absent_and_wrong_type_choices) ... ok
+test_embedded_error_presence_and_fallback_precedence (test_provider_chat_chunk.ProviderChatChunkTests.test_embedded_error_presence_and_fallback_precedence) ... ok
+test_first_array_element_and_unknown_choice_fields (test_provider_chat_chunk.ProviderChatChunkTests.test_first_array_element_and_unknown_choice_fields) ... ok
+test_numeric_error_code_boundaries_and_number_spellings (test_provider_chat_chunk.ProviderChatChunkTests.test_numeric_error_code_boundaries_and_number_spellings) ... ok
+test_selected_nonobject_choices_and_malformed_json_fail_explicitly (test_provider_chat_chunk.ProviderChatChunkTests.test_selected_nonobject_choices_and_malformed_json_fail_explicitly) ... ok
+test_typed_delta_defaults_and_empty_string_rules (test_provider_chat_chunk.ProviderChatChunkTests.test_typed_delta_defaults_and_empty_string_rules) ... ok
+test_chat_decoder_with_only_its_native_runtime_dependencies (test_provider_chat_sse.ProviderChatSSETests.test_chat_decoder_with_only_its_native_runtime_dependencies) ... ok
+test_fragmented_sse_values_reach_native_chat_decoder (test_provider_chat_sse.ProviderChatSSETests.test_fragmented_sse_values_reach_native_chat_decoder) ... ok
+test_accumulation_joins_without_newline_and_flushes_on_done (test_provider_sse.ProviderSSETests.test_accumulation_joins_without_newline_and_flushes_on_done) ... ok
+test_bom_is_preserved_and_invalid_utf8_fails (test_provider_sse.ProviderSSETests.test_bom_is_preserved_and_invalid_utf8_fails) ... ok
+test_completed_frames_survive_a_later_parse_error (test_provider_sse.ProviderSSETests.test_completed_frames_survive_a_later_parse_error) ... ok
+test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over (test_provider_sse.ProviderSSETests.test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over) ... ok
+test_done_any_data_line_flushes_and_repeated_done_is_idempotent (test_provider_sse.ProviderSSETests.test_done_any_data_line_flushes_and_repeated_done_is_idempotent) ... ok
+test_done_stops_before_malformed_or_oversized_trailing_input (test_provider_sse.ProviderSSETests.test_done_stops_before_malformed_or_oversized_trailing_input) ... ok
+test_empty_frames_and_eof_partial_line (test_provider_sse.ProviderSSETests.test_empty_frames_and_eof_partial_line) ... ok
+test_eof_carriage_return_preserves_completed_frame (test_provider_sse.ProviderSSETests.test_eof_carriage_return_preserves_completed_frame) ... ok
+test_event_limit_includes_separator_bytes (test_provider_sse.ProviderSSETests.test_event_limit_includes_separator_bytes) ... ok
+test_every_byte_cut_matches_single_chunk (test_provider_sse.ProviderSSETests.test_every_byte_cut_matches_single_chunk) ... ok
+test_exact_and_exceeded_accumulation_limit (test_provider_sse.ProviderSSETests.test_exact_and_exceeded_accumulation_limit) ... ok
+test_invalid_utf8_precedes_line_size_error (test_provider_sse.ProviderSSETests.test_invalid_utf8_precedes_line_size_error) ... ok
+test_joined_then_separate_json_values (test_provider_sse.ProviderSSETests.test_joined_then_separate_json_values) ... ok
+test_line_limit_exact_and_one_over (test_provider_sse.ProviderSSETests.test_line_limit_exact_and_one_over) ... ok
+test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed (test_provider_sse.ProviderSSETests.test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed) ... ok
+test_nul_and_bom_are_not_silently_normalized (test_provider_sse.ProviderSSETests.test_nul_and_bom_are_not_silently_normalized) ... ok
+test_seeded_chunk_schedules_match_single_chunk (test_provider_sse.ProviderSSETests.test_seeded_chunk_schedules_match_single_chunk) ... ok
+test_wire_delimiters_data_field_and_ignored_fields (test_provider_sse.ProviderSSETests.test_wire_delimiters_data_field_and_ignored_fields) ... ok
+test_json_runtime_fragmentation_done_and_invalid_utf8 (test_provider_sse_runtime.ProviderSSERuntimeTests.test_json_runtime_fragmentation_done_and_invalid_utf8) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 1.238s
+
+OK
+
+
+Link audit:
+
+Artifact: build/modex
+SHA256: 82a3ca2f5a291d7f8f1eee4d92720eb2b2f32547d73e6b20046cc1039c449a9e
+
+Artifact: build/tests/provider_chat_chunk_driver
+SHA256: 7065f6cd4b669029160018d6db4b95cd119ec1be94c95b9a405af06fc8142322
+Command: readelf -d build/tests/provider_chat_chunk_driver
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+Command: ldd build/tests/provider_chat_chunk_driver
+	linux-vdso.so.1 (0x00007fa17a999000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007fa17a821000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fa17a400000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fa17a717000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fa17a000000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007fa17a707000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007fa179400000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fa17a6d9000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fa17a99b000)
+
+Artifact: build/tests/test_provider_chat_chunk
+SHA256: 1af94d35b79210e893c6859090963de3247b4556e8fffcd7cb17d67b3a7159b0
+Command: readelf -d build/tests/test_provider_chat_chunk
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+Command: ldd build/tests/test_provider_chat_chunk
+	linux-vdso.so.1 (0x000078f477626000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x000078f4774a9000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000078f477200000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000078f477117000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x000078f476e00000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x000078f477478000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x000078f476200000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000078f47744a000)
+	/lib64/ld-linux-x86-64.so.2 (0x000078f477628000)

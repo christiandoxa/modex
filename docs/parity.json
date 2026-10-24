@@ -2047,12 +2047,20 @@
       "prerequisites": [
         "DeepSeek services"
       ],
-      "implementation": null,
-      "tests": [],
-      "evidence": [],
-      "status": "NOT_STARTED",
+      "implementation": "src/modex/provider_chat_chunk.mojo (standalone chat-compatible choice/error decoding only)",
+      "tests": [
+        "tests/test_provider_chat_chunk.mojo",
+        "tests/provider_chat_chunk_driver.mojo",
+        "tests/test_provider_chat_chunk.py",
+        "tests/test_provider_chat_sse.py"
+      ],
+      "evidence": [
+        "tests/fixtures/provider-chat/README.md",
+        "docs/evidence/provider-chat-tests.txt"
+      ],
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -2060,7 +2068,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Chat-compatible chunk decoding is a standalone source-derived foundation. Stateful provider event translation, usage conversion, auth/config/request transformation, tool lifecycles, transport and completion/error semantics remain unfinished and are not connected to the CLI. No official-release provider equivalence is claimed."
       ]
     },
     {

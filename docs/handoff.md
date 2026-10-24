@@ -30,6 +30,12 @@ explicit/invalid POSIX TZ strings. Additional capability validation:
 retains 3 FAIL cases and 3 unapproved differences for baseline panics.
 Actual compiler diagnostics and commands are in `docs/evidence/capabilities/`.
 
+The later standalone chat-decoding addition passes `rtk make unit` (17 native
+programs) and 27 focused provider Python methods, including 8 new chat tests.
+There are 186 distinct verified Python methods across the prior full run and
+this focused run; no full 186-method run is claimed. Evidence:
+`docs/evidence/provider-chat-tests.txt`.
+
 The frozen help inventory now contains 35 routes and 326 option mentions,
 including four hidden commands and both Super exposure/short aliases. Capture
 command: `python3 tests/capture_cli.py`; all help routes exit 0 with empty stderr
@@ -264,6 +270,16 @@ envelopes and HTTP/TLS/proxy/cancellation/backpressure integration remain next
 work. Evidence: `docs/evidence/provider-sse-tests.txt` and
 `docs/evidence/provider-sse-link.txt`. No complete contract or additional
 platform obligation is counted PASS.
+
+Chat-compatible provider chunk helpers now select the first choice, decode
+choice metadata/text/tool deltas and classify embedded errors in native Mojo.
+The implementations reuse the JSON decoder and preserve frozen typed-field
+and presence-based fallback rules. These remain standalone foundations;
+stateful translation, usage conversion, tool lifecycles and completion/error
+envelopes are still next work. Evidence and limits:
+`docs/evidence/provider-chat-tests.txt` and
+`tests/fixtures/provider-chat/README.md`.
+
 The parser now preserves the frozen independent limits: 80 active
 array/inline-table levels and 80 segments per local key path. Forty-five
 additional policy comparisons cover exact boundaries, large keys/strings,

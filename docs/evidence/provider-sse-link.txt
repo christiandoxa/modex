@@ -1,0 +1,86 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+Scope: standalone provider SSE foundations; no connected CLI/provider parity.
+Flags: mojo build -O3 --target-cpu=x86-64-v3 -I src
+
+Artifact: build/modex
+SHA256: 82a3ca2f5a291d7f8f1eee4d92720eb2b2f32547d73e6b20046cc1039c449a9e
+Command: readelf -d build/modex
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+Command: ldd build/modex
+	linux-vdso.so.1 (0x00007e778a906000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007e778a689000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007e778a400000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007e778a317000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007e778a000000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007e778a658000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007e7789400000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007e778a62a000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007e778a908000)
+
+Artifact: build/tests/provider_sse_driver
+SHA256: 83a4936149361fcede4d78126b9d83584d829a148408ccd832d8aa4ebacfd677
+Command: readelf -d build/tests/provider_sse_driver
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+Command: ldd build/tests/provider_sse_driver
+	linux-vdso.so.1 (0x000070de2a1b4000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x000070de2a042000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000070de29e00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000070de29d17000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x000070de29a00000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x000070de29d07000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x000070de28e00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000070de29cd9000)
+	/lib64/ld-linux-x86-64.so.2 (0x000070de2a1b6000)
+
+Artifact: build/tests/test_provider_sse_wire
+SHA256: 2984e457966dba25a7f19752aa26ebc02ad3f8c72cf79abf2e1c1a76ac5d4d08
+Command: readelf -d build/tests/test_provider_sse_wire
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+Command: ldd build/tests/test_provider_sse_wire
+	linux-vdso.so.1 (0x00007283bec27000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007283beaba000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007283be800000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007283be717000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007283be400000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007283bea89000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007283bd800000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007283bea5b000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007283bec29000)
+
+Artifact: build/tests/test_provider_sse_json
+SHA256: 55cb68f9d3337438ee3899a616c8e4387cb8d62eab53585fdd3536f0bb32a73f
+Command: readelf -d build/tests/test_provider_sse_json
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+Command: ldd build/tests/test_provider_sse_json
+	linux-vdso.so.1 (0x0000779bddc51000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x0000779bddade000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x0000779bdd800000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x0000779bdd717000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x0000779bdd400000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x0000779bddaad000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x0000779bdc800000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x0000779bdda7f000)
+	/lib64/ld-linux-x86-64.so.2 (0x0000779bddc53000)
+
+Provider modules import official std.collections plus existing local JSON/text code.
+No pointer API, native binding, third-party parser, process, network download,
+Python interop, runtime helper or build-time generator was added.
+The main product binary is unchanged by these unconnected modules.
+
+tests/test_provider_sse_runtime.py runs the test driver in a disposable
+bubblewrap filesystem/network namespace with only the native binary, its
+platform/official Mojo shared libraries, synthetic HOME/cwd and zoneinfo.
+No Python, Node, Rust or Prodex binary is mounted. Inputs use stdin.
+Its fragmented Unicode/multiline JSON and invalid-UTF8 cases pass.
+
+The absolute toolchain RUNPATH remains a distribution gap.
+Other release targets and provider transport integration remain unverified.

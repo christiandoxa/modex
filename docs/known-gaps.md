@@ -119,6 +119,16 @@ client has additional bounded framing limits and rejects unsupported protocol
 features; exact equivalence to reqwest tolerance and non-host platforms is
 unverified. See `docs/evidence/log-foundations-tests.txt` and
 `docs/evidence/log-foundations-link.txt`.
+
+Native provider SSE framing and JSON assembly now have bounded, incremental
+tests, including fragmented UTF-8, exact size limits, malformed input and
+`[DONE]` termination. The test driver also runs without Python, Node, Rust or
+Prodex in its filesystem/network namespace. These are frozen-source
+regressions, not observations against the official release. Provider execution
+does not call the modules yet; translation, completion/error envelopes,
+HTTP/TLS/proxies, backpressure and cancellation remain unfinished. Evidence:
+`docs/evidence/provider-sse-tests.txt` and `docs/evidence/provider-sse-link.txt`.
+
 Native policy loading and directory resolution now match tested release paths,
 schema errors and fallback behavior, including 712 wrapped corpus inputs.
 Binary-text classification uses exact Unicode 17 Alphabetic/Number data;

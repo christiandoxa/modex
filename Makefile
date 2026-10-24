@@ -24,6 +24,11 @@ probes: check-toolchain
 
 unit: check-toolchain
 	mkdir -p build/tests
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_sse_wire.mojo -o build/tests/test_provider_sse_wire
+	build/tests/test_provider_sse_wire
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_sse_json.mojo -o build/tests/test_provider_sse_json
+	build/tests/test_provider_sse_json
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_sse_driver.mojo -o build/tests/provider_sse_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json.mojo -o build/tests/test_json
 	build/tests/test_json
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json_float.mojo -o build/tests/test_json_float

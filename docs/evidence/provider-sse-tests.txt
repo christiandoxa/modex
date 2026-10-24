@@ -1,0 +1,372 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+Frozen baseline: Prodex 0.439.0, 433aad44bb249d5c25a231a6b06c2fa522a39a1f
+Work: parallel GPT-6 Luna implementation/test workers with root integration,
+source review, an EOF data-loss fix and dependency/link audit.
+Scope: standalone native provider SSE framing/JSON assembly, source-derived.
+No official-release provider observations or connected provider parity claim.
+
+Full regression: rtk make test -> exit 0, 16 native Mojo unit programs and
+178 Python test methods PASS, no skips. The full Python run includes the
+EOF CR-separator regression. The wire unit/driver received a final rebuild
+and focused run during the full suite; those final commands passed as below.
+RTK's 18 elided make-output lines are restored from rtk recall b3f80919acae.
+The compiler's existing missing-Crashpad-handler warnings are retained.
+Whitespace-only compiler diagnostic lines are rendered as empty lines.
+
+Final focused commands:
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_sse_wire.mojo -o build/tests/test_provider_sse_wire
+build/tests/test_provider_sse_wire -> Provider SSE wire checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_sse_driver.mojo -o build/tests/provider_sse_driver
+python3 -m unittest discover -s tests -p 'test_provider_sse*.py' -v -> 19 tests PASS
+
+Boundary scope: LF/CRLF, repeated trailing CR, CR-only EOF separator,
+ignored fields/BOM preservation, one optional ASCII space, split Unicode,
+strict UTF-8-before-limit diagnostics, default/exact/overflow line/event caps,
+joined/separate/accumulated JSON precedence, Unicode-trimmed [DONE],
+malformed JSON, accumulation limits, sticky failure and idempotent finish.
+The hex-line test driver stops before malformed/oversized trailing bytes
+following [DONE]; the harness requires exit 0, empty stderr and EOF/ERROR.
+
+Root reproduced a lost frame before the EOF fix:
+run('frames', b'data: value\n\r') -> (0, [('EOF', None)])
+After returning process_line()'s final optional event, the same case emits
+FRAME value, then EOF. Native/Python tests retain the regression.
+
+Clean runtime: tests/test_provider_sse_runtime.py runs only the driver and
+platform/official Mojo shared libraries in a disposable filesystem/network
+namespace, with synthetic HOME/cwd and no Python, Node, Rust or Prodex.
+No new application library, native declaration, product helper or generator.
+Link/import evidence: docs/evidence/provider-sse-link.txt.
+
+The assembler returns JSON text, not translated provider output. Provider
+completion/error envelopes (including unexpected EOF), runtime/HTTP/TLS,
+proxies, backpressure and cancellation remain unfinished. CLI dispatch does
+not call these foundations yet. Frozen provenance:
+tests/fixtures/provider-sse/README.md.
+Complete contracts: 0/60; platform obligations: 1/360 PASS; inventory incomplete.
+No complete contract or additional platform obligation becomes PASS here.
+
+Full regression output:
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
+        var output = String()
+                           ^
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+    append_bytes(path, utf8^)
+                           ^
+
+/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+    append_bytes(path, utf8^)
+                           ^
+
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
+    var missing = False
+                  ^
+test_unimplemented_command_fails_without_echoing_arguments (test_cli.CliTests.test_unimplemented_command_fails_without_echoing_arguments) ... ok
+test_version_identity_mapping_and_no_mutations (test_cli.CliTests.test_version_identity_mapping_and_no_mutations) ... ok
+test_compressed_metadata_filters_and_output (test_compressed_sessions.CompressedSessionTests.test_compressed_metadata_filters_and_output) ... ok
+test_decoded_line_limit (test_compressed_sessions.CompressedSessionTests.test_decoded_line_limit) ... ok
+test_lines_cross_frames_and_blocks (test_compressed_sessions.CompressedSessionTests.test_lines_cross_frames_and_blocks) ... ok
+test_malformed_release_diagnostics (test_compressed_sessions.CompressedSessionTests.test_malformed_release_diagnostics) ... ok
+test_noncanonical_differences_are_retained (test_compressed_sessions.CompressedSessionTests.test_noncanonical_differences_are_retained) ... ok
+test_help_and_diagnostics_match_release_without_mutations (test_inspection_cli.InspectionCliTests.test_help_and_diagnostics_match_release_without_mutations) ... ok
+test_seeded_argument_ordering_matches_release (test_inspection_cli.InspectionCliTests.test_seeded_argument_ordering_matches_release) ... ok
+test_raw_status_numbers_match_frozen_stream (test_json_float_oracle.JsonFloatOracleTests.test_raw_status_numbers_match_frozen_stream) ... ok
+test_escaped_keys_duplicate_keys_and_boundary_values (test_json_fuzz.JsonDifferentialTests.test_escaped_keys_duplicate_keys_and_boundary_values) ... ok
+test_generated_values_round_trip_through_mojo_tree (test_json_fuzz.JsonDifferentialTests.test_generated_values_round_trip_through_mojo_tree) ... ok
+test_invalid_syntax_utf8_and_number_overflow_are_rejected (test_json_fuzz.JsonDifferentialTests.test_invalid_syntax_utf8_and_number_overflow_are_rejected) ... ok
+test_log_help_and_argument_diagnostics (test_log_cli.LogCliTests.test_log_help_and_argument_diagnostics) ... ok
+test_more_than_32_runtime_files_prunes_old_paths_but_follows_recent (test_log_follow_limits.LogFollowLimitTests.test_more_than_32_runtime_files_prunes_old_paths_but_follows_recent) ... ok
+test_oversized_partial_line_can_recover_to_valid_event (test_log_follow_limits.LogFollowLimitTests.test_oversized_partial_line_can_recover_to_valid_event) ... ok
+test_recent_file_survives_descriptor_pressure (test_log_follow_limits.LogFollowLimitTests.test_recent_file_survives_descriptor_pressure) ... ok
+test_full_operational_catalog_and_boundary_corpus_matches_frozen_stream (test_log_operational.OperationalLogProjectionTests.test_full_operational_catalog_and_boundary_corpus_matches_frozen_stream) ... ok
+test_binary_signatures_and_first_present_path (test_log_payload.LogPayloadTests.test_binary_signatures_and_first_present_path) ... ok
+test_text_is_preserved_and_known_binary_has_label (test_log_payload.LogPayloadTests.test_text_is_preserved_and_known_binary_has_label) ... ok
+test_zstd_limit_requires_complete_frame (test_log_payload.LogPayloadTests.test_zstd_limit_requires_complete_frame) ... ok
+test_pretty_fallback_and_json_string_arguments (test_log_payload_render.LogPayloadRenderTests.test_pretty_fallback_and_json_string_arguments) ... ok
+test_runtime_payload_display_matches_frozen_release (test_log_payload_render.LogPayloadRenderTests.test_runtime_payload_display_matches_frozen_release) ... ok
+test_structured_payload (test_log_payload_render.LogPayloadRenderTests.test_structured_payload) ... ok
+test_environment_override_and_empty_value (test_log_policy.LogPolicyTests.test_environment_override_and_empty_value) ... ok
+test_invalid_policy_falls_back_to_tmpdir (test_log_policy.LogPolicyTests.test_invalid_policy_falls_back_to_tmpdir) ... ok
+test_policy_scalar_type_and_range_boundaries (test_log_policy.LogPolicyTests.test_policy_scalar_type_and_range_boundaries) ... ok
+test_relative_and_absolute_policy_log_dirs (test_log_policy.LogPolicyTests.test_relative_and_absolute_policy_log_dirs) ... ok
+test_disabled_or_absent_recording_keeps_unsupported_live_guard (test_log_recording.RecordingLogTests.test_disabled_or_absent_recording_keeps_unsupported_live_guard) ... ok
+test_recorded_files_bypass_preexisting_and_new_registries (test_log_recording.RecordingLogTests.test_recorded_files_bypass_preexisting_and_new_registries) ... ok
+test_bearer_schemes_and_api_key_prefix_boundaries (test_log_redaction.LogRedactionTests.test_bearer_schemes_and_api_key_prefix_boundaries) ... ok
+test_nested_json_and_quoted_sensitive_assignments (test_log_redaction.LogRedactionTests.test_nested_json_and_quoted_sensitive_assignments) ... ok
+test_unicode_whitespace_credentials_are_safely_redacted (test_log_redaction.LogRedactionTests.test_unicode_whitespace_credentials_are_safely_redacted) ... ok
+test_duplicate_runtime_keys_keep_last_non_scalar_value (test_log_runtime.LogRuntimeTests.test_duplicate_runtime_keys_keep_last_non_scalar_value) ... ok
+test_invalid_base64_payload_is_ignored (test_log_runtime.LogRuntimeTests.test_invalid_base64_payload_is_ignored) ... ok
+test_malformed_input_token_count_rejects_runtime_record (test_log_runtime.LogRuntimeTests.test_malformed_input_token_count_rejects_runtime_record) ... ok
+test_reads_valid_final_runtime_event_after_one_mib (test_log_runtime.LogRuntimeTests.test_reads_valid_final_runtime_event_after_one_mib) ... ok
+test_reads_valid_final_session_event_after_two_mib (test_log_runtime.LogRuntimeTests.test_reads_valid_final_session_event_after_two_mib) ... ok
+test_runtime_equal_mtimes_sort_descending_by_path (test_log_runtime.LogRuntimeTests.test_runtime_equal_mtimes_sort_descending_by_path) ... ok
+test_session_same_millisecond_mtimes_sort_ascending_by_path (test_log_runtime.LogRuntimeTests.test_session_same_millisecond_mtimes_sort_ascending_by_path) ... ok
+test_token_defaults_rates_and_plain_metadata (test_log_runtime.LogRuntimeTests.test_token_defaults_rates_and_plain_metadata) ... ok
+test_upstream_payload_requires_payload_b64 (test_log_runtime.LogRuntimeTests.test_upstream_payload_requires_payload_b64) ... ok
+test_default_stream_and_option_before_mode_wait_and_follow (test_log_stream.LogStreamTests.test_default_stream_and_option_before_mode_wait_and_follow) ... ok
+test_initial_snapshot_order_and_empty_waiting_message (test_log_stream.LogStreamTests.test_initial_snapshot_order_and_empty_waiting_message) ... ok
+test_operational_routine_load_suppression_and_error_output (test_log_stream.LogStreamTests.test_operational_routine_load_suppression_and_error_output) ... ok
+test_runtime_and_session_appends_follow_existing_paths (test_log_stream.LogStreamTests.test_runtime_and_session_appends_follow_existing_paths) ... ok
+test_combined_budget_ties_and_follow_survival_under_descriptor_limit (test_log_stream_paths.LogStreamPathTests.test_combined_budget_ties_and_follow_survival_under_descriptor_limit) ... ok
+test_runtime_two_second_and_session_ten_second_path_discovery (test_log_stream_paths.LogStreamPathTests.test_runtime_two_second_and_session_ten_second_path_discovery) ... ok
+test_stream_payload_masks_synthetic_secrets_and_records_oracle_difference (test_log_stream_redaction.LogStreamRedactionDifferenceTests.test_stream_payload_masks_synthetic_secrets_and_records_oracle_difference) ... ok
+test_message_visibility_filters_attachment_paths_and_preserves_spacing (test_log_text.LogTextTests.test_message_visibility_filters_attachment_paths_and_preserves_spacing) ... ok
+test_safe_text_redacts_controls_and_bounds_utf8 (test_log_text.LogTextTests.test_safe_text_redacts_controls_and_bounds_utf8) ... ok
+test_tool_names_and_operation_values_are_bounded_and_safe (test_log_text.LogTextTests.test_tool_names_and_operation_values_are_bounded_and_safe) ... ok
+test_tool_visibility_strips_ansi_normalizes_cr_and_suppresses_binary (test_log_text.LogTextTests.test_tool_visibility_strips_ansi_normalizes_cr_and_suppresses_binary) ... ok
+test_visibility_matches_frozen_log_last (test_log_text.LogTextTests.test_visibility_matches_frozen_log_last) ... ok
+test_historical_offsets_and_leap_seconds_match_oracle (test_log_timestamps.LogTimestampTests.test_historical_offsets_and_leap_seconds_match_oracle) ... ok
+test_runtime_and_transcript_timestamps_match_oracle_across_zones (test_log_timestamps.LogTimestampTests.test_runtime_and_transcript_timestamps_match_oracle_across_zones) ... ok
+test_messages_context_and_tools_match_frozen_log_last (test_log_transcript.TranscriptTests.test_messages_context_and_tools_match_frozen_log_last) ... ok
+test_operation_shapes_and_presence_match_oracle (test_log_transcript.TranscriptTests.test_operation_shapes_and_presence_match_oracle) ... ok
+test_production_json_and_plain_labels_match_oracle (test_log_transcript.TranscriptTests.test_production_json_and_plain_labels_match_oracle) ... ok
+test_unknown_and_invisible_records_are_skipped (test_log_transcript.TranscriptTests.test_unknown_and_invisible_records_are_skipped) ... ok
+test_append_and_partial_line_delivery (test_log_upstream_follow.LogUpstreamFollowTests.test_append_and_partial_line_delivery) ... ok
+test_initial_latest_event_and_empty_waiting_message (test_log_upstream_follow.LogUpstreamFollowTests.test_initial_latest_event_and_empty_waiting_message) ... ok
+test_invalid_parent_of_tracked_log_exits_with_inspect_error (test_log_upstream_follow.LogUpstreamFollowTests.test_invalid_parent_of_tracked_log_exits_with_inspect_error) ... ok
+test_new_log_file_is_followed_after_reconciliation (test_log_upstream_follow.LogUpstreamFollowTests.test_new_log_file_is_followed_after_reconciliation) ... ok
+test_split_utf8_waits_for_complete_line (test_log_upstream_follow.LogUpstreamFollowTests.test_split_utf8_waits_for_complete_line) ... ok
+test_truncation_and_rotation_reopen_followed_file (test_log_upstream_follow.LogUpstreamFollowTests.test_truncation_and_rotation_reopen_followed_file) ... ok
+test_argument_diagnostics_match_release (test_logs.LogLastTests.test_argument_diagnostics_match_release) ... ok
+test_empty_text_and_json_match_release_and_create_private_root (test_logs.LogLastTests.test_empty_text_and_json_match_release_and_create_private_root) ... ok
+test_runtime_upstream_and_token_events_match_release (test_logs.LogLastTests.test_runtime_upstream_and_token_events_match_release) ... ok
+test_transcript_json_and_native_redaction_match_release (test_logs.LogLastTests.test_transcript_json_and_native_redaction_match_release) ... ok
+test_transcript_text_matches_release (test_logs.LogLastTests.test_transcript_text_matches_release) ... ok
+test_unsafe_existing_app_root_reports_known_repair_gap (test_logs.LogLastTests.test_unsafe_existing_app_root_reports_known_repair_gap) ... ok
+test_absolute_deadline_with_slow_drip (test_loopback_http.LoopbackHTTPTests.test_absolute_deadline_with_slow_drip) ... ok
+test_body_limit_and_connect_refusal (test_loopback_http.LoopbackHTTPTests.test_body_limit_and_connect_refusal) ... ok
+test_chunk_extension_and_total_trailer_limits (test_loopback_http.LoopbackHTTPTests.test_chunk_extension_and_total_trailer_limits) ... ok
+test_chunked_with_extension_and_trailer (test_loopback_http.LoopbackHTTPTests.test_chunked_with_extension_and_trailer) ... ok
+test_clean_filesystem_runtime_with_shared_network (test_loopback_http.LoopbackHTTPTests.test_clean_filesystem_runtime_with_shared_network) ... ok
+test_close_delimited_body_and_non_success_status (test_loopback_http.LoopbackHTTPTests.test_close_delimited_body_and_non_success_status) ... ok
+test_content_length_and_sensitive_header_request (test_loopback_http.LoopbackHTTPTests.test_content_length_and_sensitive_header_request) ... ok
+test_descriptors_close_on_repeated_success_and_error (test_loopback_http.LoopbackHTTPTests.test_descriptors_close_on_repeated_success_and_error) ... ok
+test_exact_body_cap_and_many_small_chunks (test_loopback_http.LoopbackHTTPTests.test_exact_body_cap_and_many_small_chunks) ... ok
+test_header_controls_rejected_before_ows_trim (test_loopback_http.LoopbackHTTPTests.test_header_controls_rejected_before_ows_trim) ... ok
+test_header_limit (test_loopback_http.LoopbackHTTPTests.test_header_limit) ... ok
+test_informational_response_bounds_and_upgrade_rejection (test_loopback_http.LoopbackHTTPTests.test_informational_response_bounds_and_upgrade_rejection) ... ok
+test_ipv6_loopback (test_loopback_http.LoopbackHTTPTests.test_ipv6_loopback) ... ok
+test_keepalive_content_length_and_informational_response (test_loopback_http.LoopbackHTTPTests.test_keepalive_content_length_and_informational_response) ... ok
+test_malformed_chunks_and_trailers (test_loopback_http.LoopbackHTTPTests.test_malformed_chunks_and_trailers) ... ok
+test_malformed_header_fails_before_peer_close (test_loopback_http.LoopbackHTTPTests.test_malformed_header_fails_before_peer_close) ... ok
+test_malformed_response_and_timeout (test_loopback_http.LoopbackHTTPTests.test_malformed_response_and_timeout) ... ok
+test_multiple_informational_responses_fragmented_and_coalesced (test_loopback_http.LoopbackHTTPTests.test_multiple_informational_responses_fragmented_and_coalesced) ... ok
+test_peer_close_during_send_does_not_signal_process (test_loopback_http.LoopbackHTTPTests.test_peer_close_during_send_does_not_signal_process) ... ok
+test_rejects_nonloopback_and_header_injection (test_loopback_http.LoopbackHTTPTests.test_rejects_nonloopback_and_header_injection) ... ok
+test_request_injection_rejected_before_connect (test_loopback_http.LoopbackHTTPTests.test_request_injection_rejected_before_connect) ... ok
+test_truncated_conflicting_and_ambiguous_content_length (test_loopback_http.LoopbackHTTPTests.test_truncated_conflicting_and_ambiguous_content_length) ... ok
+test_unsafe_body_cap_rejected_before_socket (test_loopback_http.LoopbackHTTPTests.test_unsafe_body_cap_rejected_before_socket) ... ok
+test_zero_body_and_no_body_status (test_loopback_http.LoopbackHTTPTests.test_zero_body_and_no_body_status) ... ok
+test_all_toml_11_manifest_files_match_runtime_policy_load (test_policy_corpus.PolicyCorpusTests.test_all_toml_11_manifest_files_match_runtime_policy_load) ... ok
+test_resource_and_structure_boundaries_match_oracle (test_policy_limits.PolicyLimitTests.test_resource_and_structure_boundaries_match_oracle) ... ok
+test_explicit_environment_spawn_with_only_mojo_and_platform_libraries (test_process_runtime.ProcessRuntimeTests.test_explicit_environment_spawn_with_only_mojo_and_platform_libraries) ... ok
+test_accumulation_joins_without_newline_and_flushes_on_done (test_provider_sse.ProviderSSETests.test_accumulation_joins_without_newline_and_flushes_on_done) ... ok
+test_bom_is_preserved_and_invalid_utf8_fails (test_provider_sse.ProviderSSETests.test_bom_is_preserved_and_invalid_utf8_fails) ... ok
+test_completed_frames_survive_a_later_parse_error (test_provider_sse.ProviderSSETests.test_completed_frames_survive_a_later_parse_error) ... ok
+test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over (test_provider_sse.ProviderSSETests.test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over) ... ok
+test_done_any_data_line_flushes_and_repeated_done_is_idempotent (test_provider_sse.ProviderSSETests.test_done_any_data_line_flushes_and_repeated_done_is_idempotent) ... ok
+test_done_stops_before_malformed_or_oversized_trailing_input (test_provider_sse.ProviderSSETests.test_done_stops_before_malformed_or_oversized_trailing_input) ... ok
+test_empty_frames_and_eof_partial_line (test_provider_sse.ProviderSSETests.test_empty_frames_and_eof_partial_line) ... ok
+test_eof_carriage_return_preserves_completed_frame (test_provider_sse.ProviderSSETests.test_eof_carriage_return_preserves_completed_frame) ... ok
+test_event_limit_includes_separator_bytes (test_provider_sse.ProviderSSETests.test_event_limit_includes_separator_bytes) ... ok
+test_every_byte_cut_matches_single_chunk (test_provider_sse.ProviderSSETests.test_every_byte_cut_matches_single_chunk) ... ok
+test_exact_and_exceeded_accumulation_limit (test_provider_sse.ProviderSSETests.test_exact_and_exceeded_accumulation_limit) ... ok
+test_invalid_utf8_precedes_line_size_error (test_provider_sse.ProviderSSETests.test_invalid_utf8_precedes_line_size_error) ... ok
+test_joined_then_separate_json_values (test_provider_sse.ProviderSSETests.test_joined_then_separate_json_values) ... ok
+test_line_limit_exact_and_one_over (test_provider_sse.ProviderSSETests.test_line_limit_exact_and_one_over) ... ok
+test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed (test_provider_sse.ProviderSSETests.test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed) ... ok
+test_nul_and_bom_are_not_silently_normalized (test_provider_sse.ProviderSSETests.test_nul_and_bom_are_not_silently_normalized) ... ok
+test_seeded_chunk_schedules_match_single_chunk (test_provider_sse.ProviderSSETests.test_seeded_chunk_schedules_match_single_chunk) ... ok
+test_wire_delimiters_data_field_and_ignored_fields (test_provider_sse.ProviderSSETests.test_wire_delimiters_data_field_and_ignored_fields) ... ok
+test_json_runtime_fragmentation_done_and_invalid_utf8 (test_provider_sse_runtime.ProviderSSERuntimeTests.test_json_runtime_fragmentation_done_and_invalid_utf8) ... ok
+test_custom_argv0_matches_release (test_root_help.RootHelpTests.test_custom_argv0_matches_release) ... ok
+test_help_forms_match_release_and_do_not_mutate_home (test_root_help.RootHelpTests.test_help_forms_match_release_and_do_not_mutate_home) ... ok
+test_version_with_only_platform_and_official_mojo_runtime_libraries (test_runtime.CleanRuntimeTests.test_version_with_only_platform_and_official_mojo_runtime_libraries) ... ok
+test_generated_argument_sequences (test_session_cli.SessionCliTests.test_generated_argument_sequences) ... ok
+test_release_help_and_argument_diagnostics (test_session_cli.SessionCliTests.test_release_help_and_argument_diagnostics) ... ok
+test_all_short_kirat_vowel_sequences (test_session_text.SessionTextTests.test_all_short_kirat_vowel_sequences) ... ok
+test_emoji_script_ligatures_and_control_cells (test_session_text.SessionTextTests.test_emoji_script_ligatures_and_control_cells) ... ok
+test_empty_panels_and_wrapping (test_session_text.SessionTextTests.test_empty_panels_and_wrapping) ... ok
+test_generated_unicode_width_sequences (test_session_text.SessionTextTests.test_generated_unicode_width_sequences) ... ok
+test_interactive_view_remains_explicitly_unimplemented (test_session_text.SessionTextTests.test_interactive_view_remains_explicitly_unimplemented) ... ok
+test_official_emoji_sequences_match_oracle (test_session_text.SessionTextTests.test_official_emoji_sequences_match_oracle) ... ok
+test_optional_cells_multiple_rows_and_current (test_session_text.SessionTextTests.test_optional_cells_multiple_rows_and_current) ... ok
+test_table_columns_truncation_and_full_ids (test_session_text.SessionTextTests.test_table_columns_truncation_and_full_ids) ... ok
+test_unicode_path_wrapping (test_session_text.SessionTextTests.test_unicode_path_wrapping) ... ok
+test_unicode_range_edges (test_session_text.SessionTextTests.test_unicode_range_edges) ... ok
+test_unicode_scalar_property_boundaries (test_session_text.SessionTextTests.test_unicode_scalar_property_boundaries) ... ok
+test_unicode_titles_ids_and_cell_boundaries (test_session_text.SessionTextTests.test_unicode_titles_ids_and_cell_boundaries) ... ok
+test_width_override_grammar_and_fallback (test_session_text.SessionTextTests.test_width_override_grammar_and_fallback) ... ok
+test_archived_children_and_newest_first_ordering (test_sessions.SessionOutputTests.test_archived_children_and_newest_first_ordering) ... ok
+test_filters_limits_and_machine_output_modes (test_sessions.SessionOutputTests.test_filters_limits_and_machine_output_modes) ... ok
+test_future_recurring_timezone_rules (test_sessions.SessionOutputTests.test_future_recurring_timezone_rules) ... ok
+test_future_timezone_transition_seconds (test_sessions.SessionOutputTests.test_future_timezone_transition_seconds) ... ok
+test_json_file_and_metadata_precedence (test_sessions.SessionOutputTests.test_json_file_and_metadata_precedence) ... ok
+test_malformed_records_and_symlinks (test_sessions.SessionOutputTests.test_malformed_records_and_symlinks) ... ok
+test_nonobject_followup_records_do_not_crash_modex (test_sessions.SessionOutputTests.test_nonobject_followup_records_do_not_crash_modex) ... ok
+test_numeric_timestamps_and_fallback_file_times (test_sessions.SessionOutputTests.test_numeric_timestamps_and_fallback_file_times) ... ok
+test_numeric_timezones_and_daylight_transitions (test_sessions.SessionOutputTests.test_numeric_timezones_and_daylight_transitions) ... ok
+test_populated_json (test_sessions.SessionOutputTests.test_populated_json) ... ok
+test_posix_timezone_strings (test_sessions.SessionOutputTests.test_posix_timezone_strings) ... ok
+test_unicode_prefix_on_first_metadata_record_is_not_accepted (test_sessions.SessionOutputTests.test_unicode_prefix_on_first_metadata_record_is_not_accepted) ... ok
+test_unicode_whitespace_and_blank_string_fallbacks (test_sessions.SessionOutputTests.test_unicode_whitespace_and_blank_string_fallbacks) ... ok
+test_file_hash_without_external_implementation_helpers (test_sha256.SHA256Tests.test_file_hash_without_external_implementation_helpers) ... ok
+test_file_hashing_limits_and_empty_file (test_sha256.SHA256Tests.test_file_hashing_limits_and_empty_file) ... ok
+test_large_incremental_binary_payload (test_sha256.SHA256Tests.test_large_incremental_binary_payload) ... ok
+test_seeded_payloads_at_block_and_padding_boundaries (test_sha256.SHA256Tests.test_seeded_payloads_at_block_and_padding_boundaries) ... ok
+test_large_mixed_title_output_matches_checksum_verified_oracle (test_text_memory.SessionTextMemoryParityTests.test_large_mixed_title_output_matches_checksum_verified_oracle) ... ok
+test_session_line_limit_and_overflow_match_oracle (test_text_memory.SessionTextMemoryParityTests.test_session_line_limit_and_overflow_match_oracle) ... ok
+test_auxiliary_rss_does_not_scale_with_non_ascii_input (test_text_memory.WidthMemoryTests.test_auxiliary_rss_does_not_scale_with_non_ascii_input) ... ok
+test_64bit_transitions_and_future_rules (test_timezone_files.TimezoneFileTests.test_64bit_transitions_and_future_rules) ... ok
+test_indicator_pairs_follow_release (test_timezone_files.TimezoneFileTests.test_indicator_pairs_follow_release) ... ok
+test_invalid_leap_files_fall_back_to_utc (test_timezone_files.TimezoneFileTests.test_invalid_leap_files_fall_back_to_utc) ... ok
+test_positive_negative_and_mixed_leap_transitions (test_timezone_files.TimezoneFileTests.test_positive_negative_and_mixed_leap_transitions) ... ok
+test_invalid_utf8_is_rejected (test_toml.TomlDifferentialTests.test_invalid_utf8_is_rejected) ... ok
+test_pinned_upstream_conformance_corpus (test_toml.TomlDifferentialTests.test_pinned_upstream_conformance_corpus) ... ok
+test_spec_overlap_examples (test_toml.TomlDifferentialTests.test_spec_overlap_examples) ... ok
+test_value_normalization_preserves_precision_and_signed_zero (test_toml.TomlDifferentialTests.test_value_normalization_preserves_precision_and_signed_zero) ... ok
+test_deseret_letters_are_alphanumeric_and_retained_in_transcript (test_unicode_properties.UnicodePropertyTests.test_deseret_letters_are_alphanumeric_and_retained_in_transcript) ... ok
+test_every_unicode_scalar_against_independent_unicode_17_data (test_unicode_properties.UnicodePropertyTests.test_every_unicode_scalar_against_independent_unicode_17_data) ... ok
+test_tool_output_property_edges_match_production_oracle (test_unicode_properties.UnicodePropertyTests.test_tool_output_property_edges_match_production_oracle) ... ok
+test_all_arabic_lam_alef_groups (test_unicode_width.UnicodeWidthTests.test_all_arabic_lam_alef_groups) ... ok
+test_auxiliary_properties_against_unicode_data (test_unicode_width.UnicodeWidthTests.test_auxiliary_properties_against_unicode_data) ... ok
+test_controls_and_script_ligatures (test_unicode_width.UnicodeWidthTests.test_controls_and_script_ligatures) ... ok
+test_emoji_data_sequences (test_unicode_width.UnicodeWidthTests.test_emoji_data_sequences) ... ok
+test_every_scalar_against_unicode_17_data (test_unicode_width.UnicodeWidthTests.test_every_scalar_against_unicode_17_data) ... ok
+test_concatenation_skippable_frames_and_block_flushes (test_zstd.ZstdTests.test_concatenation_skippable_frames_and_block_flushes) ... ok
+test_explicit_huffman_and_sequence_modes (test_zstd.ZstdTests.test_explicit_huffman_and_sequence_modes) ... ok
+test_generated_payloads_and_mutated_entropy (test_zstd.ZstdTests.test_generated_payloads_and_mutated_entropy) ... ok
+test_levels_strategies_and_checksums (test_zstd.ZstdTests.test_levels_strategies_and_checksums) ... ok
+test_raw_rle_and_small_frames (test_zstd.ZstdTests.test_raw_rle_and_small_frames) ... ok
+test_truncation_and_malformed_frames (test_zstd.ZstdTests.test_truncation_and_malformed_frames) ... ok
+
+----------------------------------------------------------------------
+Ran 178 tests in 426.721s
+
+OK
+mkdir -p build
+mojo build -O3 --target-cpu=x86-64-v3 -I src src/main.mojo -o build/modex
+mkdir -p build/tests
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_sse_wire.mojo -o build/tests/test_provider_sse_wire
+build/tests/test_provider_sse_wire
+Provider SSE wire checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_sse_json.mojo -o build/tests/test_provider_sse_json
+build/tests/test_provider_sse_json
+Provider SSE JSON assembler checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_sse_driver.mojo -o build/tests/provider_sse_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_json.mojo -o build/tests/test_json
+build/tests/test_json
+JSON unit checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_json_float.mojo -o build/tests/test_json_float
+build/tests/test_json_float
+native JSON float parsing: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_sha256.mojo -o build/tests/test_sha256
+build/tests/test_sha256
+native SHA-256 vectors: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/sha256_driver.mojo -o build/tests/sha256_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/loopback_http_driver.mojo -o build/tests/loopback_http_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_sessions.mojo -o build/tests/test_sessions
+build/tests/test_sessions
+session metadata, filters, timestamps, text and argument checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_local_time.mojo -o build/tests/test_local_time
+build/tests/test_local_time
+TZif parsing, signed epochs, Gregorian calendar and local-time checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/json_driver.mojo -o build/tests/json_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_zstd.mojo -o build/tests/test_zstd
+build/tests/test_zstd
+Zstandard bits, default entropy tables and checksum checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/zstd_driver.mojo -o build/tests/zstd_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/text_driver.mojo -o build/tests/text_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/width_memory_driver.mojo -o build/tests/width_memory_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_text_driver.mojo -o build/tests/log_text_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_transcript_driver.mojo -o build/tests/log_transcript_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_payload_driver.mojo -o build/tests/log_payload_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_payload_render_driver.mojo -o build/tests/log_payload_render_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/unicode_properties_driver.mojo -o build/tests/unicode_properties_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_toml.mojo -o build/tests/test_toml
+build/tests/test_toml
+TOML unit checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/toml_driver.mojo -o build/tests/toml_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_time.mojo -o build/tests/test_log_time
+build/tests/test_log_time
+Log timestamp checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_time_driver.mojo -o build/tests/log_time_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow.mojo -o build/tests/test_log_follow
+build/tests/test_log_follow /home/doxa/IdeaProjects/modex/build/tests/log-follow-files
+native incremental log follow: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow_paths.mojo -o build/tests/test_log_follow_paths
+build/tests/test_log_follow_paths /home/doxa/IdeaProjects/modex/build/tests/follow-paths
+Log follower path selection checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_operational.mojo -o build/tests/test_log_operational
+build/tests/test_log_operational
+native operational log projection: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_transcript_events.mojo -o build/tests/test_log_transcript_events
+build/tests/test_log_transcript_events
+Transcript all-events projection checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_sources.mojo -o build/tests/test_log_sources
+build/tests/test_log_sources
+recording-enabled predicate: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_child.mojo -o build/tests/process_child
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_spawn.mojo -o build/tests/test_process_spawn
+build/tests/test_process_spawn /home/doxa/IdeaProjects/modex/build/tests/process_child
+synthetic-child-ok
+explicit environment spawn checks: PASS
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+Final focused output:
+test_accumulation_joins_without_newline_and_flushes_on_done (test_provider_sse.ProviderSSETests.test_accumulation_joins_without_newline_and_flushes_on_done) ... ok
+test_bom_is_preserved_and_invalid_utf8_fails (test_provider_sse.ProviderSSETests.test_bom_is_preserved_and_invalid_utf8_fails) ... ok
+test_completed_frames_survive_a_later_parse_error (test_provider_sse.ProviderSSETests.test_completed_frames_survive_a_later_parse_error) ... ok
+test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over (test_provider_sse.ProviderSSETests.test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over) ... ok
+test_done_any_data_line_flushes_and_repeated_done_is_idempotent (test_provider_sse.ProviderSSETests.test_done_any_data_line_flushes_and_repeated_done_is_idempotent) ... ok
+test_done_stops_before_malformed_or_oversized_trailing_input (test_provider_sse.ProviderSSETests.test_done_stops_before_malformed_or_oversized_trailing_input) ... ok
+test_empty_frames_and_eof_partial_line (test_provider_sse.ProviderSSETests.test_empty_frames_and_eof_partial_line) ... ok
+test_eof_carriage_return_preserves_completed_frame (test_provider_sse.ProviderSSETests.test_eof_carriage_return_preserves_completed_frame) ... ok
+test_event_limit_includes_separator_bytes (test_provider_sse.ProviderSSETests.test_event_limit_includes_separator_bytes) ... ok
+test_every_byte_cut_matches_single_chunk (test_provider_sse.ProviderSSETests.test_every_byte_cut_matches_single_chunk) ... ok
+test_exact_and_exceeded_accumulation_limit (test_provider_sse.ProviderSSETests.test_exact_and_exceeded_accumulation_limit) ... ok
+test_invalid_utf8_precedes_line_size_error (test_provider_sse.ProviderSSETests.test_invalid_utf8_precedes_line_size_error) ... ok
+test_joined_then_separate_json_values (test_provider_sse.ProviderSSETests.test_joined_then_separate_json_values) ... ok
+test_line_limit_exact_and_one_over (test_provider_sse.ProviderSSETests.test_line_limit_exact_and_one_over) ... ok
+test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed (test_provider_sse.ProviderSSETests.test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed) ... ok
+test_nul_and_bom_are_not_silently_normalized (test_provider_sse.ProviderSSETests.test_nul_and_bom_are_not_silently_normalized) ... ok
+test_seeded_chunk_schedules_match_single_chunk (test_provider_sse.ProviderSSETests.test_seeded_chunk_schedules_match_single_chunk) ... ok
+test_wire_delimiters_data_field_and_ignored_fields (test_provider_sse.ProviderSSETests.test_wire_delimiters_data_field_and_ignored_fields) ... ok
+test_json_runtime_fragmentation_done_and_invalid_utf8 (test_provider_sse_runtime.ProviderSSERuntimeTests.test_json_runtime_fragmentation_done_and_invalid_utf8) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 1.136s
+
+OK

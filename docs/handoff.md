@@ -17,8 +17,8 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `rtk make test` (14 Mojo unit programs, test-only
-JSON/Zstandard/text/log/TOML/SHA-256/HTTP drivers, and 159 Python methods PASS;
+Validation: `rtk make test` (16 Mojo unit programs, test-only
+JSON/Zstandard/text/log/TOML/SHA-256/HTTP/SSE drivers, and 178 Python methods PASS;
 no skips). Final endpoint-edge and absolute-executable-path changes have
 focused reruns in `docs/evidence/inspection-policy-tests.txt`. This includes
 712 policy-oracle comparisons, 500 deterministic generated JSON values,
@@ -249,8 +249,21 @@ reads before connecting live broker/direct-source acquisition. Preserve the
 candidate-version-probe conflict. Continue independent command/config slices,
 URL/parser/failure coverage and policy recursion/resource verification while
 those capabilities remain unavailable; terminal views also remain unfinished.
-An independent next slice is native incremental SSE framing and provider-event
-decoding, with frozen protocol fixtures and malformed/fragmented-input checks.
+Native incremental provider SSE framing and JSON assembly are implemented as
+standalone foundations. Parallel GPT-6 Luna workers completed build/test
+integration, boundary regressions and a clean-runtime check. Framing preserves
+the frozen data-field rules, CR/LF suffix handling, strict UTF-8 and independent
+4 MiB line/event limits; JSON assembly preserves joined/separate/accumulated
+precedence, exact accumulation diagnostics and Unicode-trimmed `[DONE]`.
+The test driver stops before malformed/oversized trailing input after `[DONE]`.
+Root review also fixed a dropped event at a final CR-only separator; native
+and process regressions cover it. All 19 focused SSE Python methods pass.
+These are frozen-source tests, not official-release provider observations or
+a connected product path. Provider-event translation, completion/error
+envelopes and HTTP/TLS/proxy/cancellation/backpressure integration remain next
+work. Evidence: `docs/evidence/provider-sse-tests.txt` and
+`docs/evidence/provider-sse-link.txt`. No complete contract or additional
+platform obligation is counted PASS.
 The parser now preserves the frozen independent limits: 80 active
 array/inline-table levels and 80 segments per local key path. Forty-five
 additional policy comparisons cover exact boundaries, large keys/strings,

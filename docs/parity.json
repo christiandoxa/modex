@@ -79,17 +79,21 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": null,
+      "implementation": "src/modex/cli.mojo; src/main.mojo (session help and diagnostics only)",
       "tests": [
-        "tests/capture_cli.py"
+        "tests/capture_cli.py",
+        "tests/capture_session_cli.py",
+        "tests/test_session_cli.py"
       ],
       "evidence": [
         "docs/cli-inventory.json",
-        "docs/evidence/baseline/help/"
+        "docs/evidence/baseline/help/",
+        "docs/evidence/baseline/session-cli.json",
+        "docs/evidence/session-cli-tests.txt"
       ],
-      "status": "NOT_STARTED",
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -98,7 +102,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "35 oracle help routes captured. Product help/argument rendering and broader parsing contracts are still unimplemented."
+        "35 oracle help routes captured. Session help and diagnostics match 39 official-release cases. Other commands, suggestions, short-flag clusters and complex argument combinations remain unfinished or unverified."
       ]
     },
     {
@@ -591,13 +595,16 @@
         "tests/test_sessions.py",
         "tests/session_mismatches.py",
         "tests/test_local_time.mojo",
-        "tests/test_json_fuzz.py"
+        "tests/test_json_fuzz.py",
+        "tests/test_session_cli.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
         "docs/evidence/session-mismatches.json",
         "docs/evidence/time-json-tests.txt",
-        "docs/evidence/recurring-time-tests.txt"
+        "docs/evidence/recurring-time-tests.txt",
+        "docs/evidence/baseline/session-cli.json",
+        "docs/evidence/session-cli-tests.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -641,13 +648,16 @@
         "tests/test_sessions.py",
         "tests/session_mismatches.py",
         "tests/test_local_time.mojo",
-        "tests/test_json_fuzz.py"
+        "tests/test_json_fuzz.py",
+        "tests/test_session_cli.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
         "docs/evidence/session-mismatches.json",
         "docs/evidence/time-json-tests.txt",
-        "docs/evidence/recurring-time-tests.txt"
+        "docs/evidence/recurring-time-tests.txt",
+        "docs/evidence/baseline/session-cli.json",
+        "docs/evidence/session-cli-tests.txt"
       ],
       "status": "FAIL",
       "platform_status": {

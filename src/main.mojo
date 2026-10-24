@@ -1,7 +1,7 @@
 from std.collections import List
 from std.sys import argv, exit, stderr
 
-from modex.cli import parse_session_options
+from modex.cli import parse_session_options, session_help
 from modex.sessions import inspect_sessions
 
 
@@ -15,6 +15,13 @@ def main():
     if len(args) >= 2 and args[1] == "session":
         try:
             var options = parse_session_options(args)
+            if options.output == "help":
+                var executable_parts = args[0].split("/")
+                print(session_help(options.query, String(executable_parts[len(executable_parts) - 1])), end="")
+                return
+            if options.output == "resume":
+                print("Error: session resume is not implemented", file=stderr)
+                exit(1)
             try:
                 var output = inspect_sessions(options)
                 print(output, end="")
@@ -22,7 +29,7 @@ def main():
                 print("Error:", error, file=stderr)
                 exit(1)
         except error:
-            print("error:", error, file=stderr)
+            print(error, end="" if len(args) == 2 else "\n", file=stderr)
             exit(2)
         return
     print(

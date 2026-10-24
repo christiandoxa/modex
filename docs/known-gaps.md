@@ -9,8 +9,13 @@ metadata precedence, timestamp ordering, Unicode whitespace and query behavior,
 parent filtering, limits, exact JSON formatting, ID/resume command output, and
 symlink exclusion. The product rejects existing state rather than reading
 without the required lock/recovery. Compressed rollouts, leap-second timezone
-files, text/terminal output, argument-error wording, profile bindings,
+files, text/terminal output, profile bindings,
 and startup lifecycle/housekeeping effects remain unfinished.
+
+Session help and argument-error output match 39 frozen-release cases. Broader
+CLI behavior, including suggestions, short-flag clusters and complex argument
+combinations, remains unverified. Valid session resume execution still fails
+explicitly as unimplemented. Evidence: `docs/evidence/session-cli-tests.txt`.
 
 Numeric and file-modification timestamps now match the release in UTC,
 Asia/Jakarta, America/New_York and Europe/London for the tested dates, including

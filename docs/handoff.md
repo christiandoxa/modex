@@ -15,7 +15,7 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `make test` (3 Mojo unit programs, a test-only JSON driver, and 19
+Validation: `make test` (3 Mojo unit programs, a test-only JSON driver, and 20
 Python black-box/runtime tests PASS, including 500 deterministic generated
 JSON values plus malformed UTF-8/syntax/boundary vectors and numeric/local
 session time comparisons, including future recurring rules through 2100,
@@ -30,6 +30,15 @@ including four hidden commands and both Super exposure/short aliases. Capture
 command: `python3 tests/capture_cli.py`; all help routes exit 0 with empty stderr
 and no state mutations. Help mentions still require source validation for
 registered flags, hidden flags, defaults, precedence and passthrough.
+
+Session help and argument diagnostics now match 39 captured official-release
+cases, including missing/invalid/overflow values, duplicate/conflicting flags,
+help precedence, stdout/stderr, exit codes and absence of state mutations on
+help/error paths. Reproduce with `python3 tests/capture_session_cli.py` and
+`python3 -m unittest discover -s tests -p test_session_cli.py`.
+Evidence: `docs/evidence/baseline/session-cli.json` and
+`docs/evidence/session-cli-tests.txt`. Suggestions, short-flag clusters,
+complex argument combinations and valid resume execution remain unfinished.
 
 The active release staging/smoke path imports the JavaScript gateway SDK.
 Its module-import compatibility is BLOCKED by the Mojo-only/no-adapter policy,

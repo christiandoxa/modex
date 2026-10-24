@@ -1,0 +1,457 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "oracle_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+  "reproduce": "python3 tests/capture_session_cli.py",
+  "cases": [
+    {
+      "arguments": [
+        "session"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "Inspect shared Codex session metadata.\n\nUsage: prodex session <COMMAND>\n\nCommands:\n  list     List shared Codex sessions\n  current  List shared Codex sessions started from the current directory\n  resume   Resume a shared Codex session by unique partial or full id\n  help     Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help  Print help\n\nExamples:\n  prodex session list\n  prodex session list --json\n  prodex session list --id-only\n  prodex session list --resume-command\n  prodex session list --parent-only\n  prodex session list --profile main --query triage\n  prodex session current\n  prodex session current --resume-command\n  prodex session current --limit 20\n  prodex session resume 1234abcd\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "--help"
+      ],
+      "exit_code": 0,
+      "stdout": "Inspect shared Codex session metadata.\n\nUsage: prodex session <COMMAND>\n\nCommands:\n  list     List shared Codex sessions\n  current  List shared Codex sessions started from the current directory\n  resume   Resume a shared Codex session by unique partial or full id\n  help     Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help  Print help\n\nExamples:\n  prodex session list\n  prodex session list --json\n  prodex session list --id-only\n  prodex session list --resume-command\n  prodex session list --parent-only\n  prodex session list --profile main --query triage\n  prodex session current\n  prodex session current --resume-command\n  prodex session current --limit 20\n  prodex session resume 1234abcd\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "-h"
+      ],
+      "exit_code": 0,
+      "stdout": "Inspect shared Codex session metadata.\n\nUsage: prodex session <COMMAND>\n\nCommands:\n  list     List shared Codex sessions\n  current  List shared Codex sessions started from the current directory\n  resume   Resume a shared Codex session by unique partial or full id\n  help     Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help  Print help\n\nExamples:\n  prodex session list\n  prodex session list --json\n  prodex session list --id-only\n  prodex session list --resume-command\n  prodex session list --parent-only\n  prodex session list --profile main --query triage\n  prodex session current\n  prodex session current --resume-command\n  prodex session current --limit 20\n  prodex session resume 1234abcd\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "help"
+      ],
+      "exit_code": 0,
+      "stdout": "Inspect shared Codex session metadata.\n\nUsage: prodex session <COMMAND>\n\nCommands:\n  list     List shared Codex sessions\n  current  List shared Codex sessions started from the current directory\n  resume   Resume a shared Codex session by unique partial or full id\n  help     Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help  Print help\n\nExamples:\n  prodex session list\n  prodex session list --json\n  prodex session list --id-only\n  prodex session list --resume-command\n  prodex session list --parent-only\n  prodex session list --profile main --query triage\n  prodex session current\n  prodex session current --resume-command\n  prodex session current --limit 20\n  prodex session resume 1234abcd\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "help",
+        "list"
+      ],
+      "exit_code": 0,
+      "stdout": "List shared Codex sessions\n\nUsage: prodex session list [OPTIONS]\n\nOptions:\n      --json               Emit machine-readable JSON\n      --id-only            Print only full session ids, one per line\n      --resume-command     Print a resume command for each matching session\n      --profile <NAME>     Show only sessions attached to this profile binding\n      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text\n      --limit <N>          Limit the number of sessions shown after sorting newest first\n      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility\n      --parent-only        Show only resumable parent sessions\n  -h, --help               Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "help",
+        "current"
+      ],
+      "exit_code": 0,
+      "stdout": "List shared Codex sessions started from the current directory\n\nUsage: prodex session current [OPTIONS]\n\nOptions:\n      --json               Emit machine-readable JSON\n      --id-only            Print only full session ids, one per line\n      --resume-command     Print a resume command for each matching session\n      --profile <NAME>     Show only sessions attached to this profile binding\n      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text\n      --limit <N>          Limit the number of sessions shown after sorting newest first\n      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility\n      --parent-only        Show only resumable parent sessions\n  -h, --help               Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "help",
+        "resume"
+      ],
+      "exit_code": 0,
+      "stdout": "Resume a shared Codex session by unique partial or full id\n\nUsage: prodex session resume <ID>\n\nArguments:\n  <ID>  Unique full or partial shared Codex session id\n\nOptions:\n  -h, --help  Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--help"
+      ],
+      "exit_code": 0,
+      "stdout": "List shared Codex sessions\n\nUsage: prodex session list [OPTIONS]\n\nOptions:\n      --json               Emit machine-readable JSON\n      --id-only            Print only full session ids, one per line\n      --resume-command     Print a resume command for each matching session\n      --profile <NAME>     Show only sessions attached to this profile binding\n      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text\n      --limit <N>          Limit the number of sessions shown after sorting newest first\n      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility\n      --parent-only        Show only resumable parent sessions\n  -h, --help               Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "-h"
+      ],
+      "exit_code": 0,
+      "stdout": "List shared Codex sessions\n\nUsage: prodex session list [OPTIONS]\n\nOptions:\n      --json               Emit machine-readable JSON\n      --id-only            Print only full session ids, one per line\n      --resume-command     Print a resume command for each matching session\n      --profile <NAME>     Show only sessions attached to this profile binding\n      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text\n      --limit <N>          Limit the number of sessions shown after sorting newest first\n      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility\n      --parent-only        Show only resumable parent sessions\n  -h, --help               Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--help"
+      ],
+      "exit_code": 0,
+      "stdout": "List shared Codex sessions started from the current directory\n\nUsage: prodex session current [OPTIONS]\n\nOptions:\n      --json               Emit machine-readable JSON\n      --id-only            Print only full session ids, one per line\n      --resume-command     Print a resume command for each matching session\n      --profile <NAME>     Show only sessions attached to this profile binding\n      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text\n      --limit <N>          Limit the number of sessions shown after sorting newest first\n      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility\n      --parent-only        Show only resumable parent sessions\n  -h, --help               Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume",
+        "--help"
+      ],
+      "exit_code": 0,
+      "stdout": "Resume a shared Codex session by unique partial or full id\n\nUsage: prodex session resume <ID>\n\nArguments:\n  <ID>  Unique full or partial shared Codex session id\n\nOptions:\n  -h, --help  Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--query <TEXT>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--id-only",
+        "--help"
+      ],
+      "exit_code": 0,
+      "stdout": "List shared Codex sessions\n\nUsage: prodex session list [OPTIONS]\n\nOptions:\n      --json               Emit machine-readable JSON\n      --id-only            Print only full session ids, one per line\n      --resume-command     Print a resume command for each matching session\n      --profile <NAME>     Show only sessions attached to this profile binding\n      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text\n      --limit <N>          Limit the number of sessions shown after sorting newest first\n      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility\n      --parent-only        Show only resumable parent sessions\n  -h, --help               Print help\n",
+      "stderr": "",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--json",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used multiple times\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--unknown",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "bad",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value 'bad' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--id-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used with '--id-only'\n\nUsage: prodex session list --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--resume-command",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--resume-command' cannot be used with '--json'\n\nUsage: prodex session list --resume-command\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--parent-only",
+        "--include-subagents"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--parent-only' cannot be used with '--include-subagents'\n\nUsage: prodex session list --parent-only\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--include-subagents",
+        "--parent-only"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--include-subagents' cannot be used with '--parent-only'\n\nUsage: prodex session list --include-subagents\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used multiple times\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--profile",
+        "a",
+        "--profile",
+        "b"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--profile <NAME>' cannot be used multiple times\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--query <TEXT>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--query=",
+        "--json"
+      ],
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "new_paths": [
+        "home/.prodex",
+        "home/.prodex/profile-lifecycle.json.lock",
+        "home/.prodex/runtime-housekeeping.lock",
+        "home/.prodex/update-check.lock"
+      ]
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--limit <N>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '' for '--limit <N>': cannot parse integer from empty string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "bad"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value 'bad' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "-1"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-1' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit=-1"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '-1' for '--limit <N>': invalid digit found in string\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--limit",
+        "18446744073709551616"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: invalid value '18446744073709551616' for '--limit <N>': number too large to fit in target type\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--json=true"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected value 'true' for '--json' found; no more were expected\n\nUsage: prodex session list --json\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "-j"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '-j' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--unknown' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "extra"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument 'extra' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "list",
+        "--cwd",
+        "/tmp"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unexpected argument '--cwd' found\n\nUsage: prodex session list [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--cwd"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: a value is required for '--cwd <PATH>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "current",
+        "--json",
+        "--json"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the argument '--json' cannot be used multiple times\n\nUsage: prodex session current [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "resume"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: the following required arguments were not provided:\n  <ID>\n\nUsage: prodex session resume <ID>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    },
+    {
+      "arguments": [
+        "session",
+        "nonsense"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: unrecognized subcommand 'nonsense'\n\nUsage: prodex session <COMMAND>\n\nFor more information, try '--help'.\n",
+      "new_paths": []
+    }
+  ]
+}

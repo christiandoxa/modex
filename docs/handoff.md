@@ -17,8 +17,8 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `rtk make test` (6 Mojo unit programs, test-only
-JSON/Zstandard/text/log/TOML drivers, and 107 Python tests PASS). This includes
+Validation: `rtk make test` (7 Mojo unit programs, test-only
+JSON/Zstandard/text/log/TOML drivers, and 116 Python tests PASS; no skips). This includes
 712 policy-oracle comparisons, 500 deterministic generated JSON values,
 malformed UTF-8/syntax/boundary vectors and numeric/local session times,
 future recurring rules through 2100, transition-second boundaries and
@@ -82,7 +82,18 @@ subminute offsets round as in the release, including leap-second normalization.
 Evidence: `docs/evidence/log-timestamps-tests.txt` and
 `docs/evidence/log-timestamps-link.txt`.
 
-This remains an incomplete log contract. Live stream, upstream-follow and
+File-based `log upstream` now follows processed payloads after an initial
+latest-event snapshot. The native follower retains at most 32 descriptors,
+reads at most 1 MiB per poll, caps pending data at 1 MiB and checks complete
+lossy-UTF8 line sizes against 2 MiB. Split lines/scalars, truncation, replacement,
+two-second path discovery, descriptor pressure and oversized-line recovery are
+covered by native and actual release process tests. Inspection errors retain
+the release's exit code and cause formatting. Broker/direct-source registries
+and terminal views fail explicitly; they do not fall back to another runtime.
+Evidence: `docs/evidence/upstream-follow-tests.txt` and
+`docs/evidence/upstream-follow-link.txt`.
+
+This remains an incomplete log contract. General live stream, broker feeds and
 terminal views remain unimplemented. Existing insecure application roots still fail instead of
 receiving baseline permission repair. Remaining event selection and projection
 combinations need further verification. Three Unicode-whitespace inputs expose
@@ -176,7 +187,8 @@ also cover correction overflow. The fixtures are synthetic; this host has no
 installed `right/` leap-zone directory. Evidence:
 `docs/evidence/leap-timezone-tests.txt` and `tests/test_timezone_files.py`.
 
-Next work: complete log live views and remaining commands, broaden event
+Next work: implement the general log stream and operational event projection,
+then complete remaining live views/commands, broaden event
 selection/projection coverage, and verify policy recursion/resource boundaries.
 The parser has an explicit 128-level value-nesting limit; equivalence to the
 release beyond the tested corpus remains unverified. General policy/config

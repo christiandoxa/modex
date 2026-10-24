@@ -106,19 +106,7 @@ def log_last(json: Bool) raises -> String:
         if transcript:
             break
 
-    var runtime = List[String]()
-    var runtime_dir = runtime_log_dir(root)
-    try:
-        collect_files(runtime_dir, runtime, ".log", False)
-    except:
-        pass
-    var recognized = List[String]()
-    for path in runtime:
-        var name_parts = path.split("/")
-        var name = name_parts[len(name_parts) - 1]
-        if name.startswith("prodex-runtime-"):
-            recognized.append(String(path))
-    sort(Span(recognized), lambda (left: String, right: String) -> Bool: file_newer(left, right))
+    var recognized = recent_runtime_log_paths(root)
     var upstream = Optional[UpstreamEvent]()
     var token = Optional[TokenEvent]()
     for index in range(min(32, len(recognized))):
@@ -159,6 +147,25 @@ def log_last(json: Bool) raises -> String:
     if token:
         output += render_token(token.value())
     return output^
+
+
+def recent_runtime_log_paths(root: String) raises -> List[String]:
+    var runtime = List[String]()
+    var runtime_dir = runtime_log_dir(root)
+    try:
+        collect_files(runtime_dir, runtime, ".log", False)
+    except:
+        pass
+    var recognized = List[String]()
+    for path in runtime:
+        var name_parts = path.split("/")
+        var name = name_parts[len(name_parts) - 1]
+        if name.startswith("prodex-runtime-"):
+            recognized.append(String(path))
+    sort(Span(recognized), lambda (left: String, right: String) -> Bool: file_newer(left, right))
+    while len(recognized) > 32:
+        _ = recognized.pop()
+    return recognized^
 
 
 def collect_files(root: String, mut paths: List[String], suffix: String, recursive: Bool = True) raises:

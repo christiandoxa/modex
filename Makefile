@@ -45,6 +45,8 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_log_time.mojo -o build/tests/test_log_time
 	build/tests/test_log_time
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/log_time_driver.mojo -o build/tests/log_time_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_log_follow.mojo -o build/tests/test_log_follow
+	build/tests/test_log_follow $(CURDIR)/build/tests/log-follow-files
 
 test: build unit
 	python3 -m unittest discover -s tests -p 'test_*.py' -v

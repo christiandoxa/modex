@@ -4,6 +4,7 @@ from std.sys import argv, exit, stderr
 from modex.cli import parse_session_options, session_help
 from modex.log_cli import log_help, log_short_help, parse_log_arguments
 from modex.logs import log_last
+from modex.log_upstream_follow import follow_upstream
 from modex.root_help import root_help
 from modex.sessions import inspect_sessions
 
@@ -44,6 +45,13 @@ def main():
             if options[0] == "last":
                 try:
                     print(log_last(options[1]), end="")
+                except error:
+                    print("Error:", error, file=stderr)
+                    exit(1)
+                return
+            if options[0] == "upstream":
+                try:
+                    follow_upstream(options[1])
                 except error:
                     print("Error:", error, file=stderr)
                     exit(1)

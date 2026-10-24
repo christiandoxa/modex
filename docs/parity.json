@@ -566,7 +566,7 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/log_cli.mojo; src/modex/log_payload.mojo; src/modex/log_payload_render.mojo; src/modex/log_redaction.mojo; src/modex/log_text.mojo; src/modex/log_time.mojo; src/modex/log_transcript.mojo; src/modex/logs.mojo; src/main.mojo; src/modex/json.mojo; src/modex/zstd.mojo; src/modex/runtime_policy.mojo; src/modex/toml.mojo; src/modex/unicode_properties.mojo",
+      "implementation": "src/modex/log_cli.mojo; src/modex/log_follow.mojo; src/modex/log_payload.mojo; src/modex/log_payload_render.mojo; src/modex/log_redaction.mojo; src/modex/log_text.mojo; src/modex/log_time.mojo; src/modex/log_transcript.mojo; src/modex/log_upstream_follow.mojo; src/modex/logs.mojo; src/main.mojo; src/modex/json.mojo; src/modex/zstd.mojo; src/modex/runtime_policy.mojo; src/modex/toml.mojo; src/modex/unicode_properties.mojo",
       "tests": [
         "tests/test_log_cli.py",
         "tests/test_log_payload.py",
@@ -576,6 +576,9 @@
         "tests/test_log_text.py",
         "tests/test_log_time.mojo",
         "tests/test_log_timestamps.py",
+        "tests/test_log_follow.mojo",
+        "tests/test_log_follow_limits.py",
+        "tests/test_log_upstream_follow.py",
         "tests/test_log_transcript.py",
         "tests/test_logs.py",
         "tests/capture_log_mismatches.py",
@@ -593,7 +596,9 @@
         "docs/evidence/policy-unicode-link.txt",
         "docs/evidence/policy-corpus.json",
         "docs/evidence/log-timestamps-tests.txt",
-        "docs/evidence/log-timestamps-link.txt"
+        "docs/evidence/log-timestamps-link.txt",
+        "docs/evidence/upstream-follow-tests.txt",
+        "docs/evidence/upstream-follow-link.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -606,7 +611,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Detached last snapshots include native TOML policy/schema validation and log-directory precedence, exact Unicode17 alphanumeric classification, complete scalar checks, 712 wrapped policy comparisons and 732 timestamp comparisons. Retained Deseret and policy-directory failures now match. Full LOG still fails on root permission repair, unapproved redaction differences, and unimplemented live/stream/upstream-follow/TUI paths. Unexercised timestamp/projection cases, parser resource boundaries and other platforms remain unverified."
+        "Detached snapshots include native TOML policy validation, Unicode17 alphanumeric classification, 712 policy comparisons and 732 timestamp comparisons. File-based upstream follow is connected with bounded reads/descriptors, rotation/truncation handling and actual process comparisons. Full LOG still fails on root permission repair, unapproved redaction differences, and unimplemented live broker/direct-source, stream and terminal paths. Unexercised timestamp/projection/follow failure cases, parser resource boundaries and other platforms remain unverified."
       ]
     },
     {

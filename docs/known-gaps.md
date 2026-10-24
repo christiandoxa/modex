@@ -74,7 +74,14 @@ Detached `log last` is connected for transcript/upstream/token snapshots with
 JSON and plain output. The suite covers 75 log CLI argv cases, bounded tails,
 mtime ties, numeric validation, strict base64, redaction, context/tool/protocol
 events, payload rendering and 128 KiB decompressed-payload boundaries.
-`stream`, upstream-follow, live sources and terminal views remain unfinished.
+File-based upstream following is connected for detached JSON/plain output,
+including bounded incremental reads, partial lines, rotation/truncation and
+two-second file discovery. Process tests cover more than 32 runtime files and
+`RLIMIT_NOFILE=48`. The general `stream` mode, live broker/direct sources and
+terminal views remain unfinished. Upstream following fails explicitly when a
+live-source registry or unsupported terminal path is present. Further follow
+failure/race cases and non-host platforms remain unverified. Evidence:
+`docs/evidence/upstream-follow-tests.txt`.
 Native policy loading and directory resolution now match tested release paths,
 schema errors and fallback behavior, including 712 wrapped corpus inputs.
 Binary-text classification uses exact Unicode 17 Alphabetic/Number data;

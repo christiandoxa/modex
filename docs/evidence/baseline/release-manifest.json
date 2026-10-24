@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "version": "0.439.0",
+  "commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "artifacts": {
+    "x86_64-unknown-linux-gnu": {
+      "asset": "prodex-x86_64-unknown-linux-gnu",
+      "implementation": "mojo-compiled-in",
+      "mojo_version": "1.1.0",
+      "mojo_features": [
+        "mojo-core"
+      ],
+      "runtime_bundle": false,
+      "minimum_glibc": "GLIBC_2.23"
+    },
+    "aarch64-unknown-linux-gnu": {
+      "asset": "prodex-aarch64-unknown-linux-gnu",
+      "implementation": "mojo-compiled-in",
+      "mojo_version": "1.1.0",
+      "mojo_features": [
+        "mojo-core"
+      ],
+      "runtime_bundle": false,
+      "minimum_glibc": "GLIBC_2.23"
+    },
+    "x86_64-apple-darwin": {
+      "asset": "prodex-x86_64-apple-darwin",
+      "implementation": "mojo-compiled-in",
+      "mojo_version": "1.1.0",
+      "mojo_features": [
+        "mojo-core"
+      ],
+      "runtime_bundle": false,
+      "minimum_glibc": null
+    },
+    "aarch64-apple-darwin": {
+      "asset": "prodex-aarch64-apple-darwin",
+      "implementation": "mojo-compiled-in",
+      "mojo_version": "1.1.0",
+      "mojo_features": [
+        "mojo-core"
+      ],
+      "runtime_bundle": false,
+      "minimum_glibc": null
+    },
+    "x86_64-pc-windows-msvc": {
+      "asset": "prodex-x86_64-pc-windows-msvc.exe",
+      "implementation": "mojo-compiled-in",
+      "mojo_version": "1.1.0",
+      "mojo_features": [
+        "mojo-core"
+      ],
+      "runtime_bundle": false,
+      "minimum_glibc": null
+    },
+    "aarch64-pc-windows-msvc": {
+      "asset": "prodex-aarch64-pc-windows-msvc.exe",
+      "implementation": "mojo-compiled-in",
+      "mojo_version": "1.1.0",
+      "mojo_features": [
+        "mojo-core"
+      ],
+      "runtime_bundle": false,
+      "minimum_glibc": null
+    }
+  }
+}

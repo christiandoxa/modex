@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "compiler": "Mojo 1.2.0 (2016d0cd)",
+  "host": "x86_64-unknown-linux-gnu",
+  "evidence": "docs/evidence/capabilities/run.json",
+  "run_command": "python3 tests/probe_capabilities.py",
+  "results": [
+    {
+      "id": "OS-PUBLIC",
+      "status": "PROVEN_LOCAL",
+      "source": "probes/platform.mojo",
+      "proven": [
+        "filesystem read/write",
+        "mkdir mode 0700",
+        "symlink and lstat",
+        "environment",
+        "monotonic timer and sleep",
+        "atomic counter operations",
+        "32-byte /dev/urandom read via standard file API",
+        "isatty detection"
+      ],
+      "not_proven": [
+        "atomic replacement",
+        "file locking",
+        "fchmod/fsync",
+        "race-safe private-file opens",
+        "concurrent synchronization",
+        "PTY/width",
+        "cryptographic randomness abstraction on other platforms"
+      ]
+    },
+    {
+      "id": "PROCESS-PUBLIC",
+      "status": "PROVEN_LOCAL",
+      "source": "probes/process.mojo",
+      "proven": [
+        "piped bytes",
+        "direct argv spawn",
+        "exit status",
+        "kill/wait direct child"
+      ],
+      "not_proven": [
+        "separate child environment",
+        "stdio redirection",
+        "process groups",
+        "descendant cleanup",
+        "cancellation with bounded output draining"
+      ]
+    },
+    {
+      "id": "SOCKET-INTERNAL",
+      "status": "PROVEN_LOCAL_INTERNAL_API",
+      "source": "probes/socket.mojo",
+      "proven": [
+        "official std.net._sys.unix socketpair/send/recv with std.sys._libc.close"
+      ],
+      "not_proven": [
+        "TCP listeners",
+        "DNS",
+        "TLS/certificate verification",
+        "HTTP/proxy traversal",
+        "SSE/WebSocket",
+        "stable public networking API"
+      ],
+      "assessment": "The pinned official stdlib contains internal POSIX socket bindings. They are not stable public APIs. This probe introduces no bindings and imports no third-party library. Production use requires explicit ownership/error/cancellation review and interoperability evidence."
+    },
+    {
+      "id": "FILESYSTEM-PUBLIC-GAP",
+      "status": "GAP",
+      "source": "probes/gaps/filesystem.mojo",
+      "finding": "chmod/flock/fsync/rename are absent from std.os. The pinned stdlib source search found no corresponding exposed wrappers. This is evidence for these API gaps, not proof that all compliant alternatives are impossible.",
+      "next": "Evaluate existing official stdlib primitives against baseline atomic durability, locking and permission contracts. Do not replace atomic updates with truncate/write or introduce native bindings."
+    },
+    {
+      "id": "NETWORK-PUBLIC-GAP",
+      "status": "GAP",
+      "source": "probes/gaps/network.mojo",
+      "finding": "TcpListener/TcpStream/TlsStream are absent from std.net. Its pinned __init__.mojo states that only internal building blocks are available.",
+      "next": "Prove official internal socket primitives, implement Mojo protocol layers, and record the independently unsolved TLS/verification foundation."
+    },
+    {
+      "id": "CRYPTO-PUBLIC-GAP",
+      "status": "GAP",
+      "source": "probes/gaps/crypto.mojo",
+      "finding": "SHA256 is absent from std.hash and secure_random_bytes from std.random. Linux OS randomness is separately proven via the standard file API.",
+      "next": "Use official specifications and known-answer/interoperability/negative vectors for any native Mojo standards implementation. No production-ready crypto claim without security review."
+    },
+    {
+      "id": "TERMINAL-PUBLIC-GAP",
+      "status": "GAP",
+      "source": "probes/gaps/terminal.mojo",
+      "finding": "openpty and terminal_size are absent from std.os; only isatty is proven.",
+      "next": "Audit existing official facilities. Keep PTY/width/signal/terminal-restoration obligations open."
+    }
+  ],
+  "platforms": [
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "status": "LOCAL_BUILD_RUN_ONLY",
+      "evidence": "make build; make probes; tests/test_runtime.py",
+      "limitations": "Host glibc 2.39. Official Mojo 1.2 requires glibc >=2.34 and x86-64-v3, while baseline release manifest says minimum GLIBC_2.23. Older baseline CPU/OS obligations remain unresolved."
+    },
+    {
+      "target": "aarch64-unknown-linux-gnu",
+      "status": "NOT_TESTED",
+      "limitations": "Official Mojo supports ARM64 Linux; no execution environment tested here."
+    },
+    {
+      "target": "aarch64-apple-darwin",
+      "status": "NOT_TESTED",
+      "limitations": "Official Mojo supports Apple silicon macOS 15+; no execution environment tested here."
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "status": "BLOCKED",
+      "limitations": "Official Mojo 1.2 documents Apple silicon-only macOS support."
+    },
+    {
+      "target": "x86_64-pc-windows-msvc",
+      "status": "BLOCKED",
+      "limitations": "Official Mojo 1.2 does not support native Windows. WSL does not satisfy this native baseline target."
+    },
+    {
+      "target": "aarch64-pc-windows-msvc",
+      "status": "BLOCKED",
+      "limitations": "Official Mojo 1.2 does not support native Windows. WSL does not satisfy this native baseline target."
+    }
+  ],
+  "official_sources": [
+    "https://mojolang.org/releases/",
+    "https://mojolang.org/docs/requirements/",
+    "https://github.com/modular/modular/tree/527d069ee11a41ac5320af1f9402db0a66b2b868/Mojo/stdlib/std"
+  ],
+  "remaining_probes": [
+    "DNS/proxy/TLS",
+    "HTTP/SSE/WebSocket framing",
+    "process-tree cleanup/cancellation",
+    "concurrent synchronization and event handling",
+    "native credential backends",
+    "cryptographic formats",
+    "all non-host build/link/run targets"
+  ],
+  "compiler_diagnostic": "The installed compiler emits a nonfatal Crashpad handler discovery warning. It is preserved in raw evidence; all positive programs compile and run with exit 0."
+}

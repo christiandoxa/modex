@@ -1,0 +1,2325 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "inventory_complete": false,
+  "counting_policy": "Initial coarse contracts are not the final denominator. Each contract retains all applicable platform obligations. PASS requires reproducible evidence; compile-only, mock-only and unverified results never count. No full parity percentage until inventory completion.",
+  "inventory_history": [
+    {
+      "date": "2026-10-24",
+      "change": "Initial command-dispatch, nested command and domain inventory from the frozen source and official release manifest; no exclusions. Remaining production call paths, flags, platform behaviors and library/package surfaces require finer enumeration."
+    }
+  ],
+  "contracts": [
+    {
+      "id": "CLI-VERSION",
+      "domain": "cli",
+      "baseline": {
+        "path": "crates/prodex-cli/src/lib.rs",
+        "symbol": "Cli",
+        "trace_verified": true
+      },
+      "required_behavior": "--version and -V return the product version on stdout with exit 0.",
+      "input": "version flag",
+      "output": "product name and development version",
+      "failure_modes": "malformed extra arguments",
+      "side_effects": "none",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "src/main.mojo",
+      "tests": [
+        "tests/test_cli.py::CliTests.test_version_identity_mapping_and_no_mutations",
+        "tests/test_runtime.py::CleanRuntimeTests.test_version_with_only_platform_and_official_mojo_runtime_libraries"
+      ],
+      "evidence": [
+        "docs/evidence/bootstrap-tests.txt"
+      ],
+      "status": "IN_PROGRESS",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "PASS",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "CLI-HELP",
+      "domain": "cli",
+      "baseline": {
+        "path": "crates/prodex-cli/src/lib.rs",
+        "symbol": "Cli, Commands",
+        "trace_verified": true
+      },
+      "required_behavior": "Preserve help, aliases, usage, stdout/stderr and argument-error codes apart from narrow product identity mapping.",
+      "input": "command/flag argv",
+      "output": "help and parsing diagnostics",
+      "failure_modes": "unknown/missing/conflicting values",
+      "side_effects": "none",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "CLI-DISPATCH",
+      "domain": "cli",
+      "baseline": {
+        "path": "crates/prodex-cli/src/lib.rs",
+        "symbol": "parse_cli_command_from",
+        "trace_verified": true
+      },
+      "required_behavior": "Route all active commands including hidden helpers; default bare/upstream invocations to run; preserve literal argv boundaries.",
+      "input": "raw OS argv",
+      "output": "selected command and exact passthrough argv",
+      "failure_modes": "non-UTF8 and invalid combinations",
+      "side_effects": "selected command execution",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "managed upstream CLI"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROFILE-ADD",
+      "domain": "profiles",
+      "baseline": {
+        "path": "crates/prodex-app/src/profile_commands/manage.rs",
+        "symbol": "handle_add_profile",
+        "trace_verified": false
+      },
+      "required_behavior": "Create/register/seed profiles, validate private files and activate as requested.",
+      "input": "name, codex-home, copy-from, copy-current, activate, insecure",
+      "output": "profile panel",
+      "failure_modes": "duplicate, unsafe path, source failure",
+      "side_effects": "state, homes, journals, audit log",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROFILE-EXPORT",
+      "domain": "profiles",
+      "baseline": {
+        "path": "crates/prodex-app/src/profile_commands/import_export/export.rs",
+        "symbol": "handle_export_profiles",
+        "trace_verified": false
+      },
+      "required_behavior": "Export profiles and supported secrets with optional password protection.",
+      "input": "profile names, output path, password flags/environment",
+      "output": "export bundle and confirmation",
+      "failure_modes": "invalid profile, password, permissions, write failure",
+      "side_effects": "export file",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROFILE-IMPORT",
+      "domain": "profiles",
+      "baseline": {
+        "path": "crates/prodex-app/src/profile_commands/import_export/import.rs",
+        "symbol": "handle_import_profiles",
+        "trace_verified": false
+      },
+      "required_behavior": "Import bundles and active built-in provider sources with rollback/recovery.",
+      "input": "bundle/source, name, activate, insecure",
+      "output": "import confirmation",
+      "failure_modes": "malformed bundle, authentication, collisions, unsafe files",
+      "side_effects": "state, secrets, homes, journals",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "supported provider credential sources"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROFILE-IMPORT-CURRENT",
+      "domain": "profiles",
+      "baseline": {
+        "path": "crates/prodex-app/src/profile_commands/manage.rs",
+        "symbol": "handle_import_current_profile",
+        "trace_verified": false
+      },
+      "required_behavior": "Copy shared Codex home to a new managed profile and activate.",
+      "input": "optional name and insecure",
+      "output": "profile panel",
+      "failure_modes": "missing/unsafe source, duplicate, I/O",
+      "side_effects": "state, profile home, journals",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROFILE-LIST",
+      "domain": "profiles",
+      "baseline": {
+        "path": "crates/prodex-app/src/profile_commands/manage.rs",
+        "symbol": "handle_list_profiles",
+        "trace_verified": true
+      },
+      "required_behavior": "List sorted profiles, active status, provider/auth/identity/path; recover lifecycle and missing active references.",
+      "input": "profile list",
+      "output": "plain/terminal panels",
+      "failure_modes": "state, lock or recovery failure",
+      "side_effects": "documented repairs and startup state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROFILE-REMOVE",
+      "domain": "profiles",
+      "baseline": {
+        "path": "crates/prodex-app/src/profile_commands/manage.rs",
+        "symbol": "handle_remove_profile",
+        "trace_verified": false
+      },
+      "required_behavior": "Remove one/all profiles and optionally only eligible managed homes with safe lifecycle recovery.",
+      "input": "name/all and delete-home",
+      "output": "removal panel",
+      "failure_modes": "conflicts, nonexistent profile, unsafe deletion",
+      "side_effects": "state, eligible homes, journals, audit log",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROFILE-USE",
+      "domain": "profiles",
+      "baseline": {
+        "path": "crates/prodex-app/src/profile_commands/manage.rs",
+        "symbol": "handle_set_active_profile",
+        "trace_verified": true
+      },
+      "required_behavior": "Top-level use and profile use resolve selector/active default and persist activation.",
+      "input": "optional -p/--profile",
+      "output": "active profile and CODEX_HOME",
+      "failure_modes": "missing/invalid selection, persistence",
+      "side_effects": "state, audit log",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROFILE-CURRENT",
+      "domain": "profiles",
+      "baseline": {
+        "path": "crates/prodex-app/src/profile_commands/manage.rs",
+        "symbol": "handle_current_profile",
+        "trace_verified": true
+      },
+      "required_behavior": "Render active/only/no-active states including provider and auth summary.",
+      "input": "current",
+      "output": "profile panel",
+      "failure_modes": "state, lock, recovery failure",
+      "side_effects": "documented repairs and startup state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "INFO",
+      "domain": "diagnostics",
+      "baseline": {
+        "path": "crates/prodex-app/src/reports/info.rs",
+        "symbol": "handle_info",
+        "trace_verified": false
+      },
+      "required_behavior": "Read-only version/profile/policy/log/secret/runtime information and optional token totals.",
+      "input": "json and tokens",
+      "output": "human or JSON information",
+      "failure_modes": "configuration and read errors",
+      "side_effects": "none",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "STATUS",
+      "domain": "diagnostics",
+      "baseline": {
+        "path": "crates/prodex-app/src/app_commands/status.rs",
+        "symbol": "handle_status",
+        "trace_verified": false
+      },
+      "required_behavior": "Live or once quota/token/resource dashboard with interval validation.",
+      "input": "once, interval 1..60",
+      "output": "dashboard",
+      "failure_modes": "probe and resource failures",
+      "side_effects": "runtime observations",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "provider quota endpoints"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "LOG",
+      "domain": "observability",
+      "baseline": {
+        "path": "crates/prodex-app/src/app_commands/log_command_tui.rs",
+        "symbol": "handle_log",
+        "trace_verified": false
+      },
+      "required_behavior": "Redacted stream/last/upstream output, JSON envelopes, session/runtime event selection and terminal rendering.",
+      "input": "mode and json",
+      "output": "log stream/snapshot",
+      "failure_modes": "filesystem/framing failures",
+      "side_effects": "read-only log access",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "SESSION-LIST",
+      "domain": "sessions",
+      "baseline": {
+        "path": "crates/prodex-app/src/app_commands/session.rs",
+        "symbol": "handle_session, load_session_reports",
+        "trace_verified": true
+      },
+      "required_behavior": "List shared sessions newest first with profile/query/limit/subagent filters and output modes.",
+      "input": "list, json/id-only/resume-command, filters",
+      "output": "session reports",
+      "failure_modes": "conflicts, malformed storage, I/O",
+      "side_effects": "baseline startup behavior",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "SESSION-CURRENT",
+      "domain": "sessions",
+      "baseline": {
+        "path": "crates/prodex-app/src/app_commands/session.rs",
+        "symbol": "handle_session",
+        "trace_verified": true
+      },
+      "required_behavior": "Match shared sessions to current or explicit cwd, with list filters and output modes.",
+      "input": "current, cwd and filters",
+      "output": "matching session reports",
+      "failure_modes": "path/state/input failures",
+      "side_effects": "baseline startup behavior",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "SESSION-RESUME",
+      "domain": "sessions",
+      "baseline": {
+        "path": "crates/prodex-app/src/app_commands/session.rs",
+        "symbol": "handle_session_resume",
+        "trace_verified": true
+      },
+      "required_behavior": "Resolve unique full/partial session ID and launch with correct ownership and repair.",
+      "input": "ID",
+      "output": "managed upstream process",
+      "failure_modes": "missing/ambiguous ID, ownership conflicts",
+      "side_effects": "session index and runtime launch",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "Codex"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "DOCTOR",
+      "domain": "diagnostics",
+      "baseline": {
+        "path": "crates/prodex-app/src/command_dispatch.rs",
+        "symbol": "execute_command -> handle_doctor",
+        "trace_verified": false
+      },
+      "required_behavior": "Report local/quota/runtime/install state, redacted bundles, policy suggestions and explicit repairs.",
+      "input": "doctor args",
+      "output": "text/JSON/bundle",
+      "failure_modes": "invalid options, capability/config/probe failure",
+      "side_effects": "only requested repairs",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "Codex and optional quota services"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "LOGIN",
+      "domain": "authentication",
+      "baseline": {
+        "path": "crates/prodex-app/src/command_dispatch.rs",
+        "symbol": "execute_command -> handle_codex_login",
+        "trace_verified": false
+      },
+      "required_behavior": "Provider login with profile-local credentials and workspace identity defaults.",
+      "input": "profile/provider/login arguments",
+      "output": "login status and child process",
+      "failure_modes": "provider/authentication failures",
+      "side_effects": "credentials, profiles and rollback journals",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "provider CLI/auth services"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "LOGOUT",
+      "domain": "authentication",
+      "baseline": {
+        "path": "crates/prodex-app/src/command_dispatch.rs",
+        "symbol": "execute_command -> handle_codex_logout",
+        "trace_verified": false
+      },
+      "required_behavior": "Log out selected/active profile through supported provider behavior.",
+      "input": "positional or option profile",
+      "output": "logout result",
+      "failure_modes": "selection/launch/auth failures",
+      "side_effects": "profile-local credentials",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "Codex or provider CLI"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "UPDATE",
+      "domain": "distribution",
+      "baseline": {
+        "path": "crates/prodex-app/src/command_dispatch.rs",
+        "symbol": "execute_command -> handle_prodex_update",
+        "trace_verified": false
+      },
+      "required_behavior": "Resolve and verify a release and atomically install the matching Modex artifact.",
+      "input": "update and release environment",
+      "output": "update outcome",
+      "failure_modes": "network/checksum/platform/install failures",
+      "side_effects": "Modex executable only",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "GitHub Modex releases"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "QUOTA",
+      "domain": "quota",
+      "baseline": {
+        "path": "crates/prodex-cli/src/lib.rs",
+        "symbol": "parse_cli_command_from; execute_command -> handle_quota",
+        "trace_verified": false
+      },
+      "required_behavior": "Default detailed pool view; filtered/single/raw/once/watch quota and baseline errors.",
+      "input": "quota args",
+      "output": "quota snapshots/stream",
+      "failure_modes": "auth, rate limit, transport, parsing",
+      "side_effects": "quota state/cache",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "provider quota services"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "REDEEM",
+      "domain": "quota",
+      "baseline": {
+        "path": "crates/prodex-cli/src/profile.rs",
+        "symbol": "RedeemArgs; execute_command -> handle_redeem",
+        "trace_verified": false
+      },
+      "required_behavior": "Redeem one OpenAI reset credit with near-reset confirmation and proxy controls.",
+      "input": "profile, yes, base-url, no-proxy",
+      "output": "credit outcome",
+      "failure_modes": "wrong provider, auth, quota/network errors",
+      "side_effects": "provider reset credit",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "OpenAI/Codex credit endpoint"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PING-OPENAI",
+      "domain": "providers",
+      "baseline": {
+        "path": "crates/prodex-cli/src/ping.rs",
+        "symbol": "PingCommands::Openai",
+        "trace_verified": false
+      },
+      "required_behavior": "Minimal requests through the real eligible OpenAI runtime path with stable JSON results.",
+      "input": "profile, model, effort, base-url, no-proxy, json",
+      "output": "per-profile probe results",
+      "failure_modes": "auth/runtime/provider failures",
+      "side_effects": "normal runtime request state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "OpenAI/Codex endpoint"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "RUN",
+      "domain": "runtime",
+      "baseline": {
+        "path": "crates/prodex-app/src/command_dispatch.rs",
+        "symbol": "execute_command -> runtime_launch::handle_run",
+        "trace_verified": false
+      },
+      "required_behavior": "Quota preflight, eligible precommit rotation, managed argv/env/process launch and exit propagation.",
+      "input": "RunArgs and upstream argv",
+      "output": "upstream stdio and exit",
+      "failure_modes": "config/quota/launch/transport",
+      "side_effects": "runtime state, sessions, logs",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "Codex"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "SUPER",
+      "domain": "runtime",
+      "baseline": {
+        "path": "crates/prodex-app/src/command_dispatch.rs",
+        "symbol": "execute_super",
+        "trace_verified": false
+      },
+      "required_behavior": "Super/s aliases, providers, agents, tool stack, dry-run and opt-in Presidio with precedence.",
+      "input": "SuperArgs and tail argv",
+      "output": "native or managed launch/dry-run",
+      "failure_modes": "invalid overrides/URLs/provider/features",
+      "side_effects": "overlays, runtime and optional tools",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "selected supported upstream CLI/tools"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "GATEWAY",
+      "domain": "transport",
+      "baseline": {
+        "path": "crates/prodex-cli/src/runtime_args.rs",
+        "symbol": "GatewayArgs; execute_command -> handle_gateway",
+        "trace_verified": false
+      },
+      "required_behavior": "OpenAI-compatible listener, provider transformation, streaming, smart context and redaction policy.",
+      "input": "listen, provider, base-url/url, api-key, policy flags",
+      "output": "HTTP gateway",
+      "failure_modes": "bind/auth/upstream/protocol failures",
+      "side_effects": "listener and runtime logs",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "configured provider endpoint"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "SUPER-EXPOSE",
+      "domain": "integration",
+      "baseline": {
+        "path": "crates/prodex-cli/src/runtime_args/expose.rs",
+        "symbol": "SuperExposeArgs; super_expose::handle_super_expose",
+        "trace_verified": false
+      },
+      "required_behavior": "Hidden __super-expose and public super expose alias; preserve modes, lifecycle and provider tools.",
+      "input": "expose args",
+      "output": "configured exposure/processes",
+      "failure_modes": "launch, configuration and transport errors",
+      "side_effects": "exposure state and processes",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "baseline exposure services/tools"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "RUNTIME-BROKER",
+      "domain": "runtime",
+      "baseline": {
+        "path": "crates/prodex-app/src/command_dispatch.rs",
+        "symbol": "execute_command -> handle_runtime_broker",
+        "trace_verified": false
+      },
+      "required_behavior": "Hidden broker command with runtime ownership, shared coordination and shutdown.",
+      "input": "__runtime-broker and runtime config",
+      "output": "broker transport",
+      "failure_modes": "locking/startup/protocol failures",
+      "side_effects": "shared runtime state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "MCP-BRIDGE",
+      "domain": "protocol",
+      "baseline": {
+        "path": "crates/prodex-app/src/app_commands/mcp_jsonl_bridge.rs",
+        "symbol": "handle_mcp_jsonl_bridge",
+        "trace_verified": true
+      },
+      "required_behavior": "Launch JSONL MCP target, adapt both input framings, supervise and clean its process tree.",
+      "input": "target command and exact argv, framed stdin",
+      "output": "framed stdout and redacted failure stderr",
+      "failure_modes": "spawn, malformed/oversize JSON, premature EOF, nonzero target",
+      "side_effects": "target process and pipes",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "specified JSONL MCP server"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "SUB-AGENT",
+      "domain": "integration",
+      "baseline": {
+        "path": "crates/prodex-cli/src/runtime_args.rs",
+        "symbol": "SubAgentExecArgs; execute_command -> handle_sub_agent_exec",
+        "trace_verified": false
+      },
+      "required_behavior": "Hidden delegated execution from secret-free config and exact task file.",
+      "input": "config and task-file",
+      "output": "delegated upstream output",
+      "failure_modes": "invalid config/task, launch/runtime errors",
+      "side_effects": "subagent process and session state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "selected supported upstream CLI"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "MCP-FRAMING",
+      "domain": "protocol",
+      "baseline": {
+        "path": "crates/prodex-mcp-stdio/src/lib.rs",
+        "symbol": "read_mcp_message, write_mcp_message",
+        "trace_verified": true
+      },
+      "required_behavior": "JSONL/Content-Length with 64 MiB message, 4 KiB first header, 16 KiB continuation and 64 KiB metadata budgets.",
+      "input": "bytes",
+      "output": "canonical JSON message/framing",
+      "failure_modes": "duplicate length, invalid UTF8/JSON, truncation, oversize",
+      "side_effects": "stream read/write",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PATH-DISCOVERY",
+      "domain": "configuration",
+      "baseline": {
+        "path": "crates/prodex-core/src/lib.rs",
+        "symbol": "AppPaths::discover, default_codex_home",
+        "trace_verified": true
+      },
+      "required_behavior": "Preserve PRODEX_HOME/PRODEX_SHARED_CODEX_HOME, defaults, relative/absolute and legacy discovery rules.",
+      "input": "environment and filesystem",
+      "output": "resolved paths",
+      "failure_modes": "missing home, path/I/O errors",
+      "side_effects": "none",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "CONFIG-PRECEDENCE",
+      "domain": "configuration",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_config.rs",
+        "symbol": "runtime_config module",
+        "trace_verified": false
+      },
+      "required_behavior": "Preserve policy/config/env/CLI precedence, validation and defaults.",
+      "input": "TOML/config/environment/argv",
+      "output": "validated runtime policy",
+      "failure_modes": "unknown/invalid values and conflicting overrides",
+      "side_effects": "policy persistence when baseline requires",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "CREDENTIAL-ISOLATION",
+      "domain": "security",
+      "baseline": {
+        "path": "crates/prodex-secret-store/src/lib.rs",
+        "symbol": "secret_store public production paths",
+        "trace_verified": false
+      },
+      "required_behavior": "Isolate secrets per profile and backend, preserve permissions, keyring and migration behavior.",
+      "input": "credential configuration and files",
+      "output": "protected credential use",
+      "failure_modes": "insecure files/symlinks, backend errors",
+      "side_effects": "secret store",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "native credential backend where selected"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "EXPORT-CRYPTO",
+      "domain": "security",
+      "baseline": {
+        "path": "crates/prodex-profile-export/src/lib.rs",
+        "symbol": "profile export bundle production paths",
+        "trace_verified": false
+      },
+      "required_behavior": "Standard authenticated protected bundle formats and password derivation with verified interoperability.",
+      "input": "bundle/password/randomness",
+      "output": "compatible protected bytes",
+      "failure_modes": "wrong password, tampering, malformed format",
+      "side_effects": "export/import secret material",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "STATE-PERSISTENCE",
+      "domain": "storage",
+      "baseline": {
+        "path": "crates/prodex-state/src/app_state.rs",
+        "symbol": "AppState, APP_STATE_SCHEMA_VERSION",
+        "trace_verified": false
+      },
+      "required_behavior": "Schema 1 state, bounded bindings and merge-safe concurrent atomic updates.",
+      "input": "state JSON and updates",
+      "output": "compatible persisted state",
+      "failure_modes": "malformed/newer schema, I/O/lock errors",
+      "side_effects": "state.json and related persistence",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "STATE-CRASH-RECOVERY",
+      "domain": "storage",
+      "baseline": {
+        "path": "crates/prodex-app/src/profile_commands/import_export/import/lifecycle_support.rs",
+        "symbol": "load_profile_state_with_profile_recovery_locked",
+        "trace_verified": false
+      },
+      "required_behavior": "Recover interrupted profile lifecycle and auth journals without exposing or losing credentials.",
+      "input": "state/journals",
+      "output": "consistent recovered state",
+      "failure_modes": "invalid journals and rollback failure",
+      "side_effects": "journal/state/secret/home repairs",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "SESSION-AFFINITY",
+      "domain": "runtime-policy",
+      "baseline": {
+        "path": "crates/prodex-runtime-quota/src/selection.rs",
+        "symbol": "runtime route selection",
+        "trace_verified": false
+      },
+      "required_behavior": "Preserve hard continuation ownership, affinity, binding conflicts and unknown metadata.",
+      "input": "requests, bindings and pool",
+      "output": "eligible fixed route",
+      "failure_modes": "continuation/binding conflicts",
+      "side_effects": "session/response bindings",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "RETRY-COMMIT",
+      "domain": "runtime-policy",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_proxy.rs",
+        "symbol": "runtime_proxy production paths",
+        "trace_verified": false
+      },
+      "required_behavior": "Bound retry/recovery, distinguish failure classes, never rotate after stream/response commit or duplicate side effects.",
+      "input": "requests and failures",
+      "output": "baseline route/retry behavior",
+      "failure_modes": "quota/rate/overload/transport classes",
+      "side_effects": "bounded routing and request state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "HTTP-STREAMING",
+      "domain": "transport",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_proxy.rs",
+        "symbol": "runtime_proxy production paths",
+        "trace_verified": false
+      },
+      "required_behavior": "HTTP/proxy traversal, TLS verification, SSE, backpressure and cancellation behavior.",
+      "input": "HTTP/stream bytes",
+      "output": "preserved response metadata and stream",
+      "failure_modes": "TLS/proxy/truncation/timeouts",
+      "side_effects": "connections and bounded buffers",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "configured upstream endpoints"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "WEBSOCKET",
+      "domain": "transport",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_proxy/websocket.rs",
+        "symbol": "websocket runtime paths",
+        "trace_verified": false
+      },
+      "required_behavior": "Handshake, frames, request/response tracking, cancellation and continuation recovery.",
+      "input": "WebSocket traffic",
+      "output": "compatible bidirectional stream",
+      "failure_modes": "protocol, close, auth and transport failures",
+      "side_effects": "connections and session bindings",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "baseline WebSocket upstream"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROVIDER-OPENAI",
+      "domain": "providers",
+      "baseline": {
+        "path": "crates/prodex-provider-core/src/lib.rs",
+        "symbol": "provider production API",
+        "trace_verified": false
+      },
+      "required_behavior": "Codex/OpenAI requests, quota, auth, errors and response metadata.",
+      "input": "provider requests",
+      "output": "OpenAI/Codex-compatible messages",
+      "failure_modes": "auth/quota/protocol/transport errors",
+      "side_effects": "provider state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "OpenAI/Codex services"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROVIDER-GEMINI",
+      "domain": "providers",
+      "baseline": {
+        "path": "crates/prodex-provider-core/src/gemini_bridge.rs",
+        "symbol": "Gemini bridge production paths",
+        "trace_verified": false
+      },
+      "required_behavior": "Gemini transformation, tools/images/streaming/auth and error contracts.",
+      "input": "provider requests",
+      "output": "compatible transformed responses",
+      "failure_modes": "provider/translation failures",
+      "side_effects": "provider state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "Google Gemini services"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROVIDER-ANTHROPIC",
+      "domain": "providers",
+      "baseline": {
+        "path": "crates/prodex-provider-core/src/lib.rs",
+        "symbol": "Anthropic production paths",
+        "trace_verified": false
+      },
+      "required_behavior": "Anthropic/Claude transformation, auth, tools/streaming and quota semantics.",
+      "input": "provider requests",
+      "output": "compatible transformed responses",
+      "failure_modes": "provider/translation failures",
+      "side_effects": "provider state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "Anthropic services/Claude CLI"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROVIDER-COPILOT",
+      "domain": "providers",
+      "baseline": {
+        "path": "crates/prodex-provider-core/src/lib.rs",
+        "symbol": "Copilot production paths",
+        "trace_verified": false
+      },
+      "required_behavior": "Copilot identity, auth, model limits, quotas and transformations.",
+      "input": "provider requests/credential source",
+      "output": "compatible responses",
+      "failure_modes": "provider/auth/quota errors",
+      "side_effects": "provider state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "GitHub Copilot services/CLI"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROVIDER-KIRO",
+      "domain": "providers",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_kiro.rs",
+        "symbol": "Kiro runtime production paths",
+        "trace_verified": false
+      },
+      "required_behavior": "Kiro account/auth source, request translation, streaming and native integration.",
+      "input": "provider requests/credential source",
+      "output": "compatible responses",
+      "failure_modes": "provider/auth/translation failures",
+      "side_effects": "provider state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "Kiro CLI/services"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROVIDER-DEEPSEEK",
+      "domain": "providers",
+      "baseline": {
+        "path": "crates/prodex-cli/src/runtime_args.rs",
+        "symbol": "SuperExternalProvider::DeepSeek",
+        "trace_verified": false
+      },
+      "required_behavior": "DeepSeek presets, config and Anthropic/OpenAI protocol adaptation.",
+      "input": "provider args/requests",
+      "output": "compatible responses",
+      "failure_modes": "configuration/auth/provider errors",
+      "side_effects": "provider runtime state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "DeepSeek services"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROVIDER-LOCAL",
+      "domain": "providers",
+      "baseline": {
+        "path": "crates/prodex-cli/src/runtime_args.rs",
+        "symbol": "super_local_provider_codex_args",
+        "trace_verified": false
+      },
+      "required_behavior": "Local OpenAI-compatible URL validation, defaults and runtime adaptation.",
+      "input": "URL/model/requests",
+      "output": "local provider responses",
+      "failure_modes": "invalid URL/transport/protocol",
+      "side_effects": "provider runtime state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "configured local provider"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROVIDER-AGY",
+      "domain": "integration",
+      "baseline": {
+        "path": "crates/prodex-app/src/command_dispatch.rs",
+        "symbol": "command_uses_native_agy, execute_super",
+        "trace_verified": false
+      },
+      "required_behavior": "Native Antigravity launch with baseline minimal startup and account behavior.",
+      "input": "Super agent/provider args",
+      "output": "native upstream process",
+      "failure_modes": "resolution/auth/launch errors",
+      "side_effects": "native agent state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "Antigravity CLI"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "SMART-CONTEXT",
+      "domain": "runtime-policy",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_proxy/smart_context.rs",
+        "symbol": "smart_context production paths",
+        "trace_verified": false
+      },
+      "required_behavior": "Context budgeting, compaction, calibrated tokens and content/metadata preservation.",
+      "input": "requests and context policy",
+      "output": "baseline context transforms",
+      "failure_modes": "budget/compaction/upstream failures",
+      "side_effects": "calibration and continuation state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "OPTIONAL-TOOLS",
+      "domain": "integration",
+      "baseline": {
+        "path": "crates/prodex-optional-tools/src/lib.rs",
+        "symbol": "optional tool production paths",
+        "trace_verified": false
+      },
+      "required_behavior": "Discover/configure baseline optional tools; distinguish integration targets from implementation helpers.",
+      "input": "tool policy/environment",
+      "output": "managed tools and status",
+      "failure_modes": "unavailable/incompatible tool failures",
+      "side_effects": "baseline tool config/overlay",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "RTK, Codebase Memory MCP, Playwright MCP, supported skills/plugins"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PRESIDIO",
+      "domain": "integration",
+      "baseline": {
+        "path": "crates/prodex-presidio/src/lib.rs",
+        "symbol": "Presidio production API",
+        "trace_verified": false
+      },
+      "required_behavior": "Optional baseline Presidio lifecycle and redaction behavior; no silently added implementation helper.",
+      "input": "policy and request data",
+      "output": "redacted requests/status",
+      "failure_modes": "unavailable/failing redaction service",
+      "side_effects": "baseline service/process state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "baseline Presidio integration"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "REDACTION",
+      "domain": "security",
+      "baseline": {
+        "path": "crates/prodex-redaction/src/lib.rs",
+        "symbol": "redaction_redact_secret_like_text, redaction_redact_json",
+        "trace_verified": false
+      },
+      "required_behavior": "Redact CLI/env/JSON/log/diagnostic secrets without corrupting required visible content.",
+      "input": "text/JSON/argv/env",
+      "output": "safe diagnostic output",
+      "failure_modes": "fail closed on redaction failure",
+      "side_effects": "none",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "TERMINAL",
+      "domain": "presentation",
+      "baseline": {
+        "path": "crates/prodex-terminal-ui/src/lib.rs",
+        "symbol": "terminal UI production API",
+        "trace_verified": false
+      },
+      "required_behavior": "PTY, width/height, Unicode display, NO_COLOR, CI modes, signals and cleanup.",
+      "input": "terminal state/environment",
+      "output": "baseline user-facing rendering",
+      "failure_modes": "terminal/resize/broken pipe",
+      "side_effects": "restored terminal state",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROCESS-LIFECYCLE",
+      "domain": "platform",
+      "baseline": {
+        "path": "crates/prodex-app/src/child_process.rs",
+        "symbol": "child process production paths",
+        "trace_verified": false
+      },
+      "required_behavior": "Isolated argv/env/stdio, process groups, signals, timeouts, cancellation and descendant cleanup.",
+      "input": "launch configuration",
+      "output": "upstream process/exit semantics",
+      "failure_modes": "spawn/poll/pipe/signal errors",
+      "side_effects": "child tree and descriptors",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "selected upstream program"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "INSTALL-PACKAGING",
+      "domain": "distribution",
+      "baseline": {
+        "path": "install.sh; install.ps1; npm/package.json",
+        "symbol": "baseline installation/package surfaces",
+        "trace_verified": false
+      },
+      "required_behavior": "Preserve active installation and packaging contracts with Modex identity and verified Modex artifacts.",
+      "input": "platform/package/install options",
+      "output": "installed Modex",
+      "failure_modes": "unsupported platform, checksum/download/install failures",
+      "side_effects": "Modex installation",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [
+        "toolchain/platform package prerequisites"
+      ],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PUBLIC-API",
+      "domain": "packaging",
+      "baseline": {
+        "path": "src/lib.rs; crates/prodex-app/src/lib.rs; package.json",
+        "symbol": "public API and package exports",
+        "trace_verified": false
+      },
+      "required_behavior": "Audit whether public library/SDK surfaces are active compatibility contracts; record Mojo-only conflicts.",
+      "input": "library/package consumers",
+      "output": "documented supported public interfaces",
+      "failure_modes": "unresolved compatibility/language conflicts",
+      "side_effects": "package installation",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PLATFORM-RELEASE",
+      "domain": "distribution",
+      "baseline": {
+        "path": ".github/workflows/standalone-release.yml",
+        "symbol": "release target matrix; release-manifest.json",
+        "trace_verified": false
+      },
+      "required_behavior": "Build/link/run and audit independently on every one of the six official baseline targets.",
+      "input": "target OS/architecture and artifact",
+      "output": "clean-environment working Modex",
+      "failure_modes": "unsupported toolchain target/runtime/OS minimum",
+      "side_effects": "distribution artifact",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": null,
+      "tests": [],
+      "evidence": [],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+      ]
+    }
+  ]
+}

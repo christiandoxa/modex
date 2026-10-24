@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-10-24",
+  "repository": "https://github.com/christiandoxa/modex",
+  "reference": {
+    "repository": "https://github.com/christiandoxa/prodex",
+    "tag": "0.439.0",
+    "commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+    "tag_resolution_matches": true,
+    "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+    "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.0",
+    "release_features": [
+      "mojo-core"
+    ],
+    "release_implementation": "mojo-compiled-in with Rust host; reference only",
+    "oracle": "~/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+    "checksum_verification": "sha256sum --check --ignore-missing SHA256SUMS: Linux binary, release-manifest.json, release-manifest.tsv and release-sbom.spdx.json all OK",
+    "release_targets": [
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
+    ]
+  },
+  "toolchain": {
+    "compiler": "Mojo",
+    "version": "1.2.0",
+    "build_identifier": "2016d0cd",
+    "version_output": "Mojo 1.2.0 (2016d0cd)",
+    "compiler_sha256": "2f57923dc2a088231b7e85e03d29bc15a7892e2beff1c388a3effaed945d2aa3",
+    "stdlib_version": "1.2.0",
+    "stdlib_artifact": "modular/lib/mojo/std.mojoc",
+    "stdlib_sha256": "be760e71e17bb9252981292aea1209bdea430fc2be14ad1a5db2fd35381ef329",
+    "official_release_index": "https://mojolang.org/releases/",
+    "official_release_notes": "https://mojolang.org/releases/v1.2.0/",
+    "official_installation": "https://mojolang.org/install/",
+    "official_distribution": "Official Modular mojo==1.2.0 and mojo-compiler==1.2.0 packages",
+    "source_tag": "mojo/v1.2.0",
+    "source_commit": "527d069ee11a41ac5320af1f9402db0a66b2b868",
+    "source_reference_outside_product_graph": "~/.cache/modex/toolchains/mojo-1.2.0-source",
+    "host_target": "x86_64-unknown-linux-gnu",
+    "host_os": "Linux 7.0.0-38-generic",
+    "build_flags": [
+      "-O3",
+      "--target-cpu=x86-64-v3",
+      "-I src"
+    ],
+    "update_policy": "No compiler update without explicit repinning and regression tests.",
+    "runtime_requirements": "Audit actual linked artifact before claiming clean runtime support."
+  },
+  "identity_mapping": {
+    "executable": {
+      "baseline": "prodex",
+      "modex": "modex"
+    },
+    "version": {
+      "baseline": "0.439.0",
+      "modex": "0.1.0-dev"
+    },
+    "distribution_repository": {
+      "baseline": "christiandoxa/prodex",
+      "modex": "christiandoxa/modex"
+    },
+    "unchanged_contracts": [
+      "PRODEX_* environment names",
+      "config keys",
+      "JSON fields",
+      "HTTP headers and endpoints",
+      "state formats and schema versions",
+      "discovery rules and data locations"
+    ]
+  }
+}

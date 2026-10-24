@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "policy": "Only official Mojo 1.2.0 standard library application dependencies. No third-party libraries, new native bindings, product subprocess helpers, code generation or Python runtime.",
+  "implementation_dependencies": [],
+  "production_sources": [
+    "src/main.mojo"
+  ],
+  "production_imports": [
+    "std.sys"
+  ],
+  "include_paths": [
+    "src",
+    "official toolchain standard library"
+  ],
+  "linker_inputs": "Mojo default host link, no custom library or linker flags",
+  "direct_dynamic_dependencies": [
+    "libKGENCompilerRTShared.so",
+    "libc.so.6"
+  ],
+  "transitive_runtime_prerequisites": [
+    "libMSupportGlobals.so",
+    "libAsyncRTRuntimeGlobals.so",
+    "libm.so.6",
+    "libstdc++.so.6",
+    "libgcc_s.so.1",
+    "ld-linux-x86-64.so.2"
+  ],
+  "runtime_origin": "Official Mojo compiler support runtime plus OS C/C++ runtime; no product C/C++ logic or added bindings. Actual shared-library resolution audited with ldd/readelf.",
+  "development_tools": [
+    "Mojo compiler/linker",
+    "GNU Make",
+    "Git/GitHub CLI for checkpoints and read-only reference retrieval",
+    "Python standard library for complex test orchestration only",
+    "bubblewrap for isolated test filesystem/network namespace",
+    "ldd/readelf/sha256sum for audit only"
+  ],
+  "integration_targets": "Initial candidates and prerequisites are listed in docs/parity.json; their audit is not complete and none are product implementation dependencies.",
+  "production_subprocess_invocations": [],
+  "production_network_downloads": [],
+  "installer_status": "NOT_STARTED",
+  "release_artifact_status": "No release artifact; development build only",
+  "clean_runtime_evidence": "tests/test_runtime.py binds only the executable, resolved platform and official Mojo runtime libraries into an empty filesystem/network namespace. No Python/Node/Rust/Prodex executable or library is mounted. Scope: version output on local Linux only.",
+  "distribution_gap": "The development executable has an absolute toolchain RUNPATH. Relocatable packaging and official-runtime redistribution/licensing require separate verification."
+}

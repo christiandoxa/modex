@@ -1,0 +1,5 @@
+Effective target configuration:
+  --target-triple x86_64-unknown-linux-gnu
+  --target-cpu x86-64-v3
+  --target-features +avx,+avx2,+bmi,+bmi2,+cmov,+crc32,+cx16,+cx8,+f16c,+fma,+fxsr,+lzcnt,+mmx,+movbe,+popcnt,+sahf,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave
+  --target-accelerator nvidia:sm_86

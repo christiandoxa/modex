@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "host": "x86_64-unknown-linux-gnu",
+  "probes": [
+    {
+      "source": "probes/platform.mojo",
+      "compiler": "Mojo 1.2.0 (2016d0cd)",
+      "compile": {
+        "command": [
+          "/home/doxa/.local/bin/mojo",
+          "build",
+          "-O3",
+          "--target-cpu=x86-64-v3",
+          "probes/platform.mojo",
+          "-o",
+          "/home/doxa/IdeaProjects/modex/build/probes/platform"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable\n"
+      },
+      "run": {
+        "command": [
+          "/home/doxa/IdeaProjects/modex/build/probes/platform",
+          "/tmp/modex-capability-7mufr73u/filesystem"
+        ],
+        "exit_code": 0,
+        "stdout": "filesystem read/write; directory permissions; symlink/lstat; environment; timer; atomic; OS random read: PASS\nstdout is a terminal: False\n",
+        "stderr": ""
+      },
+      "result": "PASS"
+    },
+    {
+      "source": "probes/process.mojo",
+      "compiler": "Mojo 1.2.0 (2016d0cd)",
+      "compile": {
+        "command": [
+          "/home/doxa/.local/bin/mojo",
+          "build",
+          "-O3",
+          "--target-cpu=x86-64-v3",
+          "probes/process.mojo",
+          "-o",
+          "/home/doxa/IdeaProjects/modex/build/probes/process"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable\n"
+      },
+      "run": {
+        "command": [
+          "/home/doxa/IdeaProjects/modex/build/probes/process"
+        ],
+        "exit_code": 0,
+        "stdout": "pipe; direct argv spawn; exit status; direct-child signal/wait: PASS\n",
+        "stderr": ""
+      },
+      "result": "PASS"
+    },
+    {
+      "source": "probes/socket.mojo",
+      "compiler": "Mojo 1.2.0 (2016d0cd)",
+      "compile": {
+        "command": [
+          "/home/doxa/.local/bin/mojo",
+          "build",
+          "-O3",
+          "--target-cpu=x86-64-v3",
+          "probes/socket.mojo",
+          "-o",
+          "/home/doxa/IdeaProjects/modex/build/probes/socket"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable\n"
+      },
+      "run": {
+        "command": [
+          "/home/doxa/IdeaProjects/modex/build/probes/socket"
+        ],
+        "exit_code": 0,
+        "stdout": "official internal stdlib socketpair/send/recv/close: PASS\n",
+        "stderr": ""
+      },
+      "result": "PASS"
+    },
+    {
+      "source": "probes/gaps/crypto.mojo",
+      "compiler": "Mojo 1.2.0 (2016d0cd)",
+      "compile": {
+        "command": [
+          "/home/doxa/.local/bin/mojo",
+          "build",
+          "-O3",
+          "--target-cpu=x86-64-v3",
+          "probes/gaps/crypto.mojo",
+          "-o",
+          "/home/doxa/IdeaProjects/modex/build/probes/crypto"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable\n/home/doxa/IdeaProjects/modex/probes/gaps/crypto.mojo:1:22: error: package 'hash' does not contain 'SHA256'\nfrom std.hash import SHA256\n                     ^\n/home/doxa/IdeaProjects/modex/probes/gaps/crypto.mojo:2:24: error: package 'random' does not contain 'secure_random_bytes'\nfrom std.random import secure_random_bytes\n                       ^\n/home/doxa/.local/bin/mojo: error: failed to parse the provided Mojo source module\n"
+      },
+      "result": "PUBLIC_API_GAP"
+    },
+    {
+      "source": "probes/gaps/filesystem.mojo",
+      "compiler": "Mojo 1.2.0 (2016d0cd)",
+      "compile": {
+        "command": [
+          "/home/doxa/.local/bin/mojo",
+          "build",
+          "-O3",
+          "--target-cpu=x86-64-v3",
+          "probes/gaps/filesystem.mojo",
+          "-o",
+          "/home/doxa/IdeaProjects/modex/build/probes/filesystem"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable\n/home/doxa/IdeaProjects/modex/probes/gaps/filesystem.mojo:1:20: error: package 'os' does not contain 'chmod'\nfrom std.os import chmod, flock, fsync, rename\n                   ^\n/home/doxa/IdeaProjects/modex/probes/gaps/filesystem.mojo:1:27: error: package 'os' does not contain 'flock'\nfrom std.os import chmod, flock, fsync, rename\n                          ^\n/home/doxa/IdeaProjects/modex/probes/gaps/filesystem.mojo:1:34: error: package 'os' does not contain 'fsync'\nfrom std.os import chmod, flock, fsync, rename\n                                 ^\n/home/doxa/IdeaProjects/modex/probes/gaps/filesystem.mojo:1:41: error: package 'os' does not contain 'rename'\nfrom std.os import chmod, flock, fsync, rename\n                                        ^\n/home/doxa/.local/bin/mojo: error: failed to parse the provided Mojo source module\n"
+      },
+      "result": "PUBLIC_API_GAP"
+    },
+    {
+      "source": "probes/gaps/network.mojo",
+      "compiler": "Mojo 1.2.0 (2016d0cd)",
+      "compile": {
+        "command": [
+          "/home/doxa/.local/bin/mojo",
+          "build",
+          "-O3",
+          "--target-cpu=x86-64-v3",
+          "probes/gaps/network.mojo",
+          "-o",
+          "/home/doxa/IdeaProjects/modex/build/probes/network"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable\n/home/doxa/IdeaProjects/modex/probes/gaps/network.mojo:1:21: error: package 'net' does not contain 'TcpListener'\nfrom std.net import TcpListener, TcpStream, TlsStream\n                    ^\n/home/doxa/IdeaProjects/modex/probes/gaps/network.mojo:1:34: error: package 'net' does not contain 'TcpStream'\nfrom std.net import TcpListener, TcpStream, TlsStream\n                                 ^\n/home/doxa/IdeaProjects/modex/probes/gaps/network.mojo:1:45: error: package 'net' does not contain 'TlsStream'\nfrom std.net import TcpListener, TcpStream, TlsStream\n                                            ^\n/home/doxa/.local/bin/mojo: error: failed to parse the provided Mojo source module\n"
+      },
+      "result": "PUBLIC_API_GAP"
+    },
+    {
+      "source": "probes/gaps/terminal.mojo",
+      "compiler": "Mojo 1.2.0 (2016d0cd)",
+      "compile": {
+        "command": [
+          "/home/doxa/.local/bin/mojo",
+          "build",
+          "-O3",
+          "--target-cpu=x86-64-v3",
+          "probes/gaps/terminal.mojo",
+          "-o",
+          "/home/doxa/IdeaProjects/modex/build/probes/terminal"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable\n/home/doxa/IdeaProjects/modex/probes/gaps/terminal.mojo:1:20: error: package 'os' does not contain 'openpty'\nfrom std.os import openpty, terminal_size\n                   ^\n/home/doxa/IdeaProjects/modex/probes/gaps/terminal.mojo:1:29: error: package 'os' does not contain 'terminal_size'\nfrom std.os import openpty, terminal_size\n                            ^\n/home/doxa/.local/bin/mojo: error: failed to parse the provided Mojo source module\n"
+      },
+      "result": "PUBLIC_API_GAP"
+    }
+  ]
+}

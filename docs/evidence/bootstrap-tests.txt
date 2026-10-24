@@ -1,0 +1,8 @@
+test_unimplemented_command_fails_without_echoing_arguments (test_cli.CliTests.test_unimplemented_command_fails_without_echoing_arguments) ... ok
+test_version_identity_mapping_and_no_mutations (test_cli.CliTests.test_version_identity_mapping_and_no_mutations) ... ok
+test_version_with_only_platform_and_official_mojo_runtime_libraries (test_runtime.CleanRuntimeTests.test_version_with_only_platform_and_official_mojo_runtime_libraries) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.107s
+
+OK

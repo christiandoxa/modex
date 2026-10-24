@@ -1,21 +1,31 @@
 """Projection of visible transcript records from session JSONL."""
 
 from .json import JSON_ARRAY, JSON_BOOL, JSON_NULL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, serialize_json
+from std.collections import List
 from .log_text import operation_value, safe_text, tool_name, trim_unicode, visible_message, visible_tool_output
 
 
 def transcript_event(line: String) raises -> Optional[Tuple[String, String, String]]:
+    var events = transcript_events(line)
+    if not events:
+        return None
+    var last = events[len(events) - 1]
+    return last^
+
+
+def transcript_events(line: String) raises -> List[Tuple[String, String, String]]:
+    var events = List[Tuple[String, String, String]]()
     var doc: JsonDocument
     try:
         doc = JsonDocument(line)
     except:
-        return None
+        return events^
     var timestamp_node = doc.get(doc.root, "timestamp")
     var timestamp = doc.string(timestamp_node) if timestamp_node >= 0 and doc.nodes[timestamp_node].kind == JSON_STRING else String("-")
     var kind = doc.string(doc.get(doc.root, "type"))
     var payload = doc.get(doc.root, "payload")
     if payload < 0 or doc.nodes[payload].kind != JSON_OBJECT:
-        return None
+        return events^
     var event_type = doc.string(doc.get(payload, "type"))
     var source = String()
     var text = String()
@@ -24,8 +34,9 @@ def transcript_event(line: String) raises -> Optional[Tuple[String, String, Stri
         var base = doc.get(payload, "base_instructions")
         var base_text = doc.string(doc.get(base, "text"))
         if base_text.strip():
-            source = "prompt-engineering"
-            text = base_text
+            var prompt = safe_text(base_text)
+            if trim_unicode(prompt):
+                events.append((timestamp, "prompt-engineering", prompt))
         var provider = doc.get(payload, "model_provider")
         if provider < 0:
             provider = doc.get(payload, "provider")
@@ -123,9 +134,9 @@ def transcript_event(line: String) raises -> Optional[Tuple[String, String, Stri
             text = protocol_fields(doc, payload, event_type)
 
     text = safe_text(text)
-    if not trim_unicode(text):
-        return None
-    return (timestamp^, source^, text^)
+    if trim_unicode(text):
+        events.append((timestamp, source^, text^))
+    return events^
 
 
 def context_field(doc: JsonDocument, mut current: String, label: String, node: Int) -> String:

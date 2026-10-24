@@ -7,7 +7,7 @@ from std.memory import bitcast
 from std.os import getenv, lstat, listdir, stat
 from std.os.path import exists
 
-from .json import JSON_BOOL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json
+from .json import JSON_BOOL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_number
 from .log_payload import readable_upstream_payload
 from .log_payload_render import payload_lines
 from .log_redaction import redact_log_text
@@ -260,7 +260,8 @@ struct RuntimeRecord:
                 for index in range(len(doc.nodes[fields].children)):
                     var child = doc.nodes[fields].children[index]
                     var kind = doc.nodes[child].kind
-                    self.fields.append((doc.nodes[fields].names[index], doc.nodes[child].text,
+                    var text = serialize_number(doc.nodes[child].text) if kind == JSON_NUMBER else doc.nodes[child].text
+                    self.fields.append((doc.nodes[fields].names[index], text,
                                         kind == JSON_STRING or kind == JSON_NUMBER or kind == JSON_BOOL))
             return
         except:

@@ -5,6 +5,7 @@ from modex.cli import parse_session_options, session_help
 from modex.log_cli import log_help, log_short_help, parse_log_arguments
 from modex.logs import log_last
 from modex.log_upstream_follow import follow_upstream
+from modex.log_stream import follow_stream
 from modex.root_help import root_help
 from modex.sessions import inspect_sessions
 
@@ -52,6 +53,13 @@ def main():
             if options[0] == "upstream":
                 try:
                     follow_upstream(options[1])
+                except error:
+                    print("Error:", error, file=stderr)
+                    exit(1)
+                return
+            if not options[0] or options[0] == "stream":
+                try:
+                    follow_stream(options[1])
                 except error:
                     print("Error:", error, file=stderr)
                     exit(1)

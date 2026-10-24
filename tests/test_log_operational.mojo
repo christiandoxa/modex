@@ -1,0 +1,66 @@
+from std.collections import Optional
+from std.testing import assert_equal, assert_true
+
+from modex.logs import LogEvent, RuntimeRecord, event_label
+from modex.log_operational import human_event_name, operational_event, safe_endpoint
+
+
+def event(name: String, fields: String = "") raises -> Optional[LogEvent]:
+    var line = "{\"timestamp\":\"2026-01-10T11:00:00Z\",\"event\":\"" + name + "\",\"fields\":{" + fields + "}}"
+    return operational_event(RuntimeRecord(line))
+
+
+def main() raises:
+    assert_true(not operational_event(RuntimeRecord("invalid runtime line")))
+    assert_equal(human_event_name("_custom__event_"), " custom  event ")
+    assert_equal(safe_endpoint("https://example.test"), "/")
+    assert_equal(safe_endpoint("https://example.test/a/../responses?secret=x"), "/responses")
+    assert_equal(safe_endpoint("https://example.test/a/%2e%2e/encoded-dot"), "/encoded-dot")
+    assert_equal(safe_endpoint("https://example.test/雪"), "/%E9%9B%AA")
+    assert_equal(safe_endpoint("mailto:user@example.test"), "user@example.test")
+    assert_equal(safe_endpoint("https://example.test?next=/hidden"), "/")
+    assert_equal(safe_endpoint("https://example.test/ASCII~!$&'()*+,;=:@[]%25"), "/ASCII~!$&'()*+,;=:@[]%25")
+    assert_equal(safe_endpoint("ftp://example.test/resource"), "/resource")
+    assert_equal(safe_endpoint("https://"), "upstream")
+    assert_equal(safe_endpoint("https:///path?query=x"), "/")
+    assert_equal(safe_endpoint("http://:80/path"), "upstream")
+    assert_equal(safe_endpoint("https://example.test:bad/path"), "upstream")
+    assert_equal(safe_endpoint("https://exa mple.test/path"), "upstream")
+    assert_equal(safe_endpoint("https://?query=/path"), "upstream")
+    var request = event("request_captured", "\"request\":65553,\"profile\":\"fixture\",\"model\":\"gpt-test\",\"url\":\"https://example.test/responses?secret=hidden\"")
+    assert_true(request)
+    assert_equal(request.value().source, "request")
+    assert_true(request.value().text.startswith("r0011  received request"))
+    assert_true(request.value().text.find("path=/responses") >= 0)
+    assert_true(request.value().text.find("secret=hidden") < 0)
+
+    assert_true(not event("stream_payload", "\"request\":17"))
+    assert_true(not event("upstream_payload", "\"request\":17"))
+    assert_true(not event("token_usage", "\"request\":17"))
+    assert_true(not event("token_usage_progress", "\"request\":17"))
+    assert_true(not event("profile_commit", "\"switched\":false"))
+    var switched = event("profile_commit", "\"switched\":true,\"request\":17")
+    assert_equal(switched.value().source, "route")
+
+    assert_true(not event("compat_request_surface", "\"tool_surface\":\"none\",\"family\":\"codex\",\"continuation\":\"none\""))
+    var mcp = event("compat_request_surface", "\"tool_surface\":\"mcp,functions\"")
+    assert_equal(mcp.value().source, "mcp")
+    var overloaded = event("runtime_proxy_queue_overloaded", "\"profile\":\"fixture\",\"reason\":\"busy\"")
+    assert_equal(overloaded.value().source, "error")
+    var load = event("runtime_proxy_lane_limit_reached", "\"profile\":\"fixture\",\"path\":\"https://example.test/lane?secret=x\"")
+    assert_equal(load.value().source, "load")
+    assert_true(load.value().text.find("fixture") >= 0)
+    var upstream = event("upstream_start", "\"url\":\"https://example.test/lane?secret=x\"")
+    assert_true(upstream.value().text.find("path=/lane") >= 0)
+    assert_true(upstream.value().text.find("secret=x") < 0)
+
+    var quota = event("quota_blocked", "\"quota_band\":\"-\",\"five_hour_remaining\":\"-\",\"weekly_remaining\":\"\"")
+    assert_true(quota.value().text.find("5h=-%") >= 0)
+    var smart = event("smart_context_autopilot", "\"tokens_before\":\"100\",\"tokens_after\":\"50\"")
+    assert_true(smart.value().text.find("tokens_before=100") >= 0)
+    assert_true(smart.value().text.find("tokens_after=50") >= 0)
+    var fallback = event("smart_context_prepare_fallback")
+    assert_equal(fallback.value().source, "event")
+    assert_equal(event_label("tool-call:shell"), "TOOL CALL")
+    assert_equal(event_label("mystery"), "stream mystery")
+    print("native operational log projection: PASS")

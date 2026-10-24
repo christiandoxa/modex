@@ -1,0 +1,106 @@
+{
+  "classification": "UNAPPROVED_SAFE_DIFFERENCE",
+  "parity_pass": false,
+  "approval": "not approved",
+  "scope": "log stream stream_payload source and text fields",
+  "recorded_at_utc": "2026-10-24T19:07:41+00:00",
+  "oracle": {
+    "release": "Prodex 0.439.0",
+    "path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+    "sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a"
+  },
+  "baseline_reference_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "modex": {
+    "binary": "build/modex",
+    "sha256": "7957b13c35641a388c1da6b70d575f326b906c855aaeeb27054bf5864eee4546"
+  },
+  "fixture": {
+    "credentials_are_synthetic": true,
+    "runtime_records": [
+      {
+        "timestamp": "2026-10-24T01:02:03Z",
+        "event": "stream_payload",
+        "fields": {
+          "source": "startup-source-marker Authorization: Bearer synthetic-bearer-startup api_key=synthetic-api-startup",
+          "stream": "startup-text-marker Authorization: Bearer synthetic-bearer-startup api_key=synthetic-api-startup"
+        }
+      },
+      {
+        "timestamp": "2026-10-24T01:02:04Z",
+        "event": "stream_payload",
+        "fields": {
+          "source": "append-source-marker Authorization: Bearer synthetic-bearer-append api_key=synthetic-api-append",
+          "stream": "append-text-marker Authorization: Bearer synthetic-bearer-append api_key=synthetic-api-append"
+        }
+      }
+    ],
+    "secret_sentinels": [
+      "synthetic-bearer-startup",
+      "synthetic-api-startup",
+      "synthetic-bearer-append",
+      "synthetic-api-append"
+    ],
+    "preserved_markers": [
+      "startup-source-marker",
+      "startup-text-marker",
+      "append-source-marker",
+      "append-text-marker"
+    ],
+    "delivery": "one stream_payload record at startup and one appended to the tracked runtime log"
+  },
+  "modes": {
+    "json": {
+      "oracle": {
+        "returncode": -15,
+        "termination": {
+          "signal": "SIGTERM",
+          "method": "harness cleanup after startup and append outputs were collected",
+          "natural_completion": false
+        },
+        "stdout_utf8": "{\"timestamp\":\"2026-10-24 01:02:03.000 +00:00\",\"source\":\"startup-source-marker Authorization: Bearer synthetic-bearer-startup api_key=synthetic-api-startup\",\"text\":\"startup-text-marker Authorization: Bearer synthetic-bearer-startup api_key=synthetic-api-startup\"}\n{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"append-source-marker Authorization: Bearer synthetic-bearer-append api_key=synthetic-api-append\",\"text\":\"append-text-marker Authorization: Bearer synthetic-bearer-append api_key=synthetic-api-append\"}\n",
+        "stdout_base64": "eyJ0aW1lc3RhbXAiOiIyMDI2LTEwLTI0IDAxOjAyOjAzLjAwMCArMDA6MDAiLCJzb3VyY2UiOiJzdGFydHVwLXNvdXJjZS1tYXJrZXIgQXV0aG9yaXphdGlvbjogQmVhcmVyIHN5bnRoZXRpYy1iZWFyZXItc3RhcnR1cCBhcGlfa2V5PXN5bnRoZXRpYy1hcGktc3RhcnR1cCIsInRleHQiOiJzdGFydHVwLXRleHQtbWFya2VyIEF1dGhvcml6YXRpb246IEJlYXJlciBzeW50aGV0aWMtYmVhcmVyLXN0YXJ0dXAgYXBpX2tleT1zeW50aGV0aWMtYXBpLXN0YXJ0dXAifQp7InRpbWVzdGFtcCI6IjIwMjYtMTAtMjQgMDE6MDI6MDQuMDAwICswMDowMCIsInNvdXJjZSI6ImFwcGVuZC1zb3VyY2UtbWFya2VyIEF1dGhvcml6YXRpb246IEJlYXJlciBzeW50aGV0aWMtYmVhcmVyLWFwcGVuZCBhcGlfa2V5PXN5bnRoZXRpYy1hcGktYXBwZW5kIiwidGV4dCI6ImFwcGVuZC10ZXh0LW1hcmtlciBBdXRob3JpemF0aW9uOiBCZWFyZXIgc3ludGhldGljLWJlYXJlci1hcHBlbmQgYXBpX2tleT1zeW50aGV0aWMtYXBpLWFwcGVuZCJ9Cg==",
+        "stderr_utf8": "",
+        "stderr_base64": ""
+      },
+      "modex": {
+        "returncode": -15,
+        "termination": {
+          "signal": "SIGTERM",
+          "method": "harness cleanup after startup and append outputs were collected",
+          "natural_completion": false
+        },
+        "stdout_utf8": "{\"timestamp\":\"2026-10-24 01:02:03.000 +00:00\",\"source\":\"startup-source-marker Authorization: Bearer <redacted> api_key=<redacted>\",\"text\":\"startup-text-marker Authorization: Bearer <redacted> api_key=<redacted>\"}\n{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"append-source-marker Authorization: Bearer <redacted> api_key=<redacted>\",\"text\":\"append-text-marker Authorization: Bearer <redacted> api_key=<redacted>\"}\n",
+        "stdout_base64": "eyJ0aW1lc3RhbXAiOiIyMDI2LTEwLTI0IDAxOjAyOjAzLjAwMCArMDA6MDAiLCJzb3VyY2UiOiJzdGFydHVwLXNvdXJjZS1tYXJrZXIgQXV0aG9yaXphdGlvbjogQmVhcmVyIDxyZWRhY3RlZD4gYXBpX2tleT08cmVkYWN0ZWQ+IiwidGV4dCI6InN0YXJ0dXAtdGV4dC1tYXJrZXIgQXV0aG9yaXphdGlvbjogQmVhcmVyIDxyZWRhY3RlZD4gYXBpX2tleT08cmVkYWN0ZWQ+In0KeyJ0aW1lc3RhbXAiOiIyMDI2LTEwLTI0IDAxOjAyOjA0LjAwMCArMDA6MDAiLCJzb3VyY2UiOiJhcHBlbmQtc291cmNlLW1hcmtlciBBdXRob3JpemF0aW9uOiBCZWFyZXIgPHJlZGFjdGVkPiBhcGlfa2V5PTxyZWRhY3RlZD4iLCJ0ZXh0IjoiYXBwZW5kLXRleHQtbWFya2VyIEF1dGhvcml6YXRpb246IEJlYXJlciA8cmVkYWN0ZWQ+IGFwaV9rZXk9PHJlZGFjdGVkPiJ9Cg==",
+        "stderr_utf8": "",
+        "stderr_base64": ""
+      }
+    },
+    "plain": {
+      "oracle": {
+        "returncode": -15,
+        "termination": {
+          "signal": "SIGTERM",
+          "method": "harness cleanup after startup and append outputs were collected",
+          "natural_completion": false
+        },
+        "stdout_utf8": "[2026-10-24 01:02:03.000 +00:00] stream startup-source-marker Authorization: Bearer synthetic-bearer-startup api_key=synthetic-api-startup\n  | startup-text-marker Authorization: Bearer synthetic-bearer-startup api_key=synthetic-api-startup\n[2026-10-24 01:02:04.000 +00:00] stream append-source-marker Authorization: Bearer synthetic-bearer-append api_key=synthetic-api-append\n  | append-text-marker Authorization: Bearer synthetic-bearer-append api_key=synthetic-api-append\n",
+        "stdout_base64": "WzIwMjYtMTAtMjQgMDE6MDI6MDMuMDAwICswMDowMF0gc3RyZWFtIHN0YXJ0dXAtc291cmNlLW1hcmtlciBBdXRob3JpemF0aW9uOiBCZWFyZXIgc3ludGhldGljLWJlYXJlci1zdGFydHVwIGFwaV9rZXk9c3ludGhldGljLWFwaS1zdGFydHVwCiAgfCBzdGFydHVwLXRleHQtbWFya2VyIEF1dGhvcml6YXRpb246IEJlYXJlciBzeW50aGV0aWMtYmVhcmVyLXN0YXJ0dXAgYXBpX2tleT1zeW50aGV0aWMtYXBpLXN0YXJ0dXAKWzIwMjYtMTAtMjQgMDE6MDI6MDQuMDAwICswMDowMF0gc3RyZWFtIGFwcGVuZC1zb3VyY2UtbWFya2VyIEF1dGhvcml6YXRpb246IEJlYXJlciBzeW50aGV0aWMtYmVhcmVyLWFwcGVuZCBhcGlfa2V5PXN5bnRoZXRpYy1hcGktYXBwZW5kCiAgfCBhcHBlbmQtdGV4dC1tYXJrZXIgQXV0aG9yaXphdGlvbjogQmVhcmVyIHN5bnRoZXRpYy1iZWFyZXItYXBwZW5kIGFwaV9rZXk9c3ludGhldGljLWFwaS1hcHBlbmQK",
+        "stderr_utf8": "",
+        "stderr_base64": ""
+      },
+      "modex": {
+        "returncode": -15,
+        "termination": {
+          "signal": "SIGTERM",
+          "method": "harness cleanup after startup and append outputs were collected",
+          "natural_completion": false
+        },
+        "stdout_utf8": "[2026-10-24 01:02:03.000 +00:00] stream startup-source-marker Authorization: Bearer <redacted> api_key=<redacted>\n  | startup-text-marker Authorization: Bearer <redacted> api_key=<redacted>\n[2026-10-24 01:02:04.000 +00:00] stream append-source-marker Authorization: Bearer <redacted> api_key=<redacted>\n  | append-text-marker Authorization: Bearer <redacted> api_key=<redacted>\n",
+        "stdout_base64": "WzIwMjYtMTAtMjQgMDE6MDI6MDMuMDAwICswMDowMF0gc3RyZWFtIHN0YXJ0dXAtc291cmNlLW1hcmtlciBBdXRob3JpemF0aW9uOiBCZWFyZXIgPHJlZGFjdGVkPiBhcGlfa2V5PTxyZWRhY3RlZD4KICB8IHN0YXJ0dXAtdGV4dC1tYXJrZXIgQXV0aG9yaXphdGlvbjogQmVhcmVyIDxyZWRhY3RlZD4gYXBpX2tleT08cmVkYWN0ZWQ+ClsyMDI2LTEwLTI0IDAxOjAyOjA0LjAwMCArMDA6MDBdIHN0cmVhbSBhcHBlbmQtc291cmNlLW1hcmtlciBBdXRob3JpemF0aW9uOiBCZWFyZXIgPHJlZGFjdGVkPiBhcGlfa2V5PTxyZWRhY3RlZD4KICB8IGFwcGVuZC10ZXh0LW1hcmtlciBBdXRob3JpemF0aW9uOiBCZWFyZXIgPHJlZGFjdGVkPiBhcGlfa2V5PTxyZWRhY3RlZD4K",
+        "stderr_utf8": "",
+        "stderr_base64": ""
+      }
+    }
+  },
+  "decision": "Oracle output exposes synthetic Authorization bearer and API key values. Modex redacts them in source and text. Keep this mismatch visible; do not count it as parity until separately approved."
+}

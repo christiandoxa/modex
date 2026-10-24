@@ -1,7 +1,7 @@
 """RFC 8259 JSON decoding without application dependencies."""
 
 from std.collections import List, Span
-from std.math import isfinite
+from .json_float import json_float
 
 comptime JSON_NULL = 0
 comptime JSON_BOOL = 1
@@ -148,8 +148,7 @@ struct JsonDocument:
             while 48 <= self._peek() <= 57:
                 self.position += 1
         var text = String(self.source[byte=start:self.position])
-        if not isfinite(atof(text)):
-            raise Error("JSON number is out of range")
+        _ = json_float(text)
         return text^
 
     def _value(mut self, depth: Int) raises -> Int:
@@ -215,7 +214,30 @@ def serialize_number(text: String) -> String:
         elif text.byte_length() < 20 or (text.byte_length() == 20 and text <= "18446744073709551615"):
             return text
     try:
-        return String(atof(text))
+        var formatted = String(json_float(text))
+        var marker = formatted.find("e")
+        if marker < 0:
+            return formatted^
+        var position = marker + 1
+        var negative_exponent = formatted.as_bytes()[position] == 45
+        if formatted.as_bytes()[position] == 43 or negative_exponent:
+            position += 1
+        var exponent = 0
+        while position < formatted.byte_length():
+            exponent = exponent * 10 + Int(formatted.as_bytes()[position]) - 48
+            position += 1
+        if negative_exponent:
+            exponent = -exponent
+        # The frozen JSON formatter uses fixed notation down to 1e-5.
+        if -5 <= exponent < 0:
+            var negative = formatted.startswith("-")
+            var fixed = String("-0." if negative else "0.") + String("0") * (-exponent - 1)
+            for index in range(1 if negative else 0, marker):
+                var byte = formatted.as_bytes()[index]
+                if byte != 46:
+                    fixed += chr(Int(byte))
+            return fixed^
+        return String(formatted[byte=:marker]) + ("e+" if exponent >= 0 else "e-") + String(abs(exponent))
     except:
         return text
 

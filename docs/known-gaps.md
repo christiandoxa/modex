@@ -77,8 +77,14 @@ events, payload rendering and 128 KiB decompressed-payload boundaries.
 File-based upstream following is connected for detached JSON/plain output,
 including bounded incremental reads, partial lines, rotation/truncation and
 two-second file discovery. Process tests cover more than 32 runtime files and
-`RLIMIT_NOFILE=48`. The general `stream` mode, live broker/direct sources and
-terminal views remain unfinished. Upstream following fails explicitly when a
+`RLIMIT_NOFILE=48`. The general detached stream now follows both runtime and
+session files with operational event projection and all per-record transcript
+events. Its combined descriptor selection matches the release's exact 16/16
+paths in a tied-mtime fixture under the same cap; path discovery and adjacent
+transcript duplicate behavior are covered by actual process comparisons.
+URL display and JSON number normalization have additional corpus coverage;
+complete URL/parser equivalence is still unverified. Live broker/direct sources
+and terminal views remain unfinished. File following fails explicitly when a
 live-source registry or unsupported terminal path is present. Further follow
 failure/race cases and non-host platforms remain unverified. Evidence:
 `docs/evidence/upstream-follow-tests.txt`.
@@ -104,6 +110,13 @@ still pending. These are four `UNAPPROVED_SAFE_DIFFERENCE` observations, not
 parity passes. The actual outputs and two resolved regression cases are retained
 in `docs/evidence/log-mismatches.json`; reproduce with
 `python3 tests/capture_log_mismatches.py`.
+
+The release also prints synthetic bearer/API key values unchanged from
+stream_payload source and text, at startup and during follow. Modex masks both
+fields. This additional unapproved safe difference is retained with exact
+JSON/plain inputs and outputs in `docs/evidence/log-stream-mismatch.json`;
+reproduce with `python3 tests/capture_log_stream_mismatch.py`. It is not parity
+PASS. General stream evidence is in `docs/evidence/log-stream-tests.txt`.
 
 Numeric and file-modification timestamps now match the release in UTC,
 Asia/Jakarta, America/New_York and Europe/London for the tested dates, including

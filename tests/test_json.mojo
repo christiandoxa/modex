@@ -1,7 +1,7 @@
 from std.collections import List
 from std.testing import assert_equal, assert_true
 
-from modex.json import JSON_ARRAY, JSON_NUMBER, JsonDocument, quote_json, serialize_json
+from modex.json import JSON_ARRAY, JSON_NUMBER, JsonDocument, quote_json, serialize_json, serialize_number
 
 
 def main() raises:
@@ -45,6 +45,11 @@ def main() raises:
     assert_equal(serialize_json(ordered, ordered.root), "{\"a\":[true,null,{\"first\":1,\"second\":2}],\"z\":9}")
     var compact = JsonDocument("{\"z\":1e0,\"a\":-0,\"max\":18446744073709551615}")
     assert_equal(serialize_json(compact, compact.root), "{\"a\":-0.0,\"max\":18446744073709551615,\"z\":1.0}")
+    for source, expected in [
+        ("1e-7", "1e-7"), ("-1e-6", "-1e-6"), ("1e-5", "0.00001"),
+        ("-1.234e-5", "-0.00001234"), ("1e2", "100.0"), ("-0", "-0.0"),
+    ]:
+        assert_equal(serialize_number(source), expected)
     var pretty = JsonDocument("{\"z\":[],\"a\":{\"x\":\"表🙂\"}}")
     assert_equal(serialize_json(pretty, pretty.root, 2), "{\n  \"a\": {\n    \"x\": \"表🙂\"\n  },\n  \"z\": []\n}")
     print("JSON unit checks: PASS")

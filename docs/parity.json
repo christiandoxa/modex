@@ -566,7 +566,7 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/log_cli.mojo; src/modex/log_follow.mojo; src/modex/log_payload.mojo; src/modex/log_payload_render.mojo; src/modex/log_redaction.mojo; src/modex/log_text.mojo; src/modex/log_time.mojo; src/modex/log_transcript.mojo; src/modex/log_upstream_follow.mojo; src/modex/logs.mojo; src/main.mojo; src/modex/json.mojo; src/modex/zstd.mojo; src/modex/runtime_policy.mojo; src/modex/toml.mojo; src/modex/unicode_properties.mojo",
+      "implementation": "src/modex/log_cli.mojo; src/modex/log_follow.mojo; src/modex/log_follow_paths.mojo; src/modex/log_operational.mojo; src/modex/log_payload.mojo; src/modex/log_payload_render.mojo; src/modex/log_redaction.mojo; src/modex/log_stream.mojo; src/modex/log_text.mojo; src/modex/log_time.mojo; src/modex/log_transcript.mojo; src/modex/log_upstream_follow.mojo; src/modex/logs.mojo; src/main.mojo; src/modex/json.mojo; src/modex/zstd.mojo; src/modex/runtime_policy.mojo; src/modex/toml.mojo; src/modex/unicode_properties.mojo",
       "tests": [
         "tests/test_log_cli.py",
         "tests/test_log_payload.py",
@@ -579,6 +579,15 @@
         "tests/test_log_follow.mojo",
         "tests/test_log_follow_limits.py",
         "tests/test_log_upstream_follow.py",
+        "tests/test_log_follow_paths.mojo",
+        "tests/test_log_operational.mojo",
+        "tests/test_log_operational.py",
+        "tests/test_json_float.mojo",
+        "tests/test_json_float_oracle.py",
+        "tests/test_log_stream.py",
+        "tests/test_log_stream_paths.py",
+        "tests/test_log_stream_redaction.py",
+        "tests/test_log_transcript_events.mojo",
         "tests/test_log_transcript.py",
         "tests/test_logs.py",
         "tests/capture_log_mismatches.py",
@@ -598,7 +607,10 @@
         "docs/evidence/log-timestamps-tests.txt",
         "docs/evidence/log-timestamps-link.txt",
         "docs/evidence/upstream-follow-tests.txt",
-        "docs/evidence/upstream-follow-link.txt"
+        "docs/evidence/upstream-follow-link.txt",
+        "docs/evidence/log-stream-tests.txt",
+        "docs/evidence/log-stream-link.txt",
+        "docs/evidence/log-stream-mismatch.json"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -611,7 +623,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Detached snapshots include native TOML policy validation, Unicode17 alphanumeric classification, 712 policy comparisons and 732 timestamp comparisons. File-based upstream follow is connected with bounded reads/descriptors, rotation/truncation handling and actual process comparisons. Full LOG still fails on root permission repair, unapproved redaction differences, and unimplemented live broker/direct-source, stream and terminal paths. Unexercised timestamp/projection/follow failure cases, parser resource boundaries and other platforms remain unverified."
+        "Detached snapshots, upstream file following and general runtime/session streaming are connected with native operational projection, shared bounded descriptors, per-source reservations and actual process comparisons. Full LOG still fails on root permission repair, four prior redaction differences plus stream_payload secret masking, and unimplemented live broker/direct-source and terminal paths. Unexercised URL/parser/projection/follow failure cases and other platforms remain unverified."
       ]
     },
     {

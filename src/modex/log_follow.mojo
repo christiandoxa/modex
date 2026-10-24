@@ -43,6 +43,25 @@ def log_follow_gap(dropped: Int, reason: String) -> String:
     return "[log] runtime_log_gap dropped=" + String(dropped) + " reason=" + reason
 
 
+def retain_followed_paths(mut paths: List[String], mut states: List[FollowedLog], var selected: List[String]) raises:
+    if paths == selected:
+        return
+    var retained = List[FollowedLog]()
+    for path in selected:
+        var previous = -1
+        for index in range(len(paths)):
+            if paths[index] == path:
+                previous = index
+                break
+        if previous < 0:
+            retained.append(FollowedLog(path))
+        else:
+            retained.append(states.pop(previous))
+            _ = paths.pop(previous)
+    paths = selected^
+    states = retained^
+
+
 def collect_new_followed_lines(path: String, mut state: FollowedLog) raises -> List[String]:
     var output = List[String]()
     var mode: Int

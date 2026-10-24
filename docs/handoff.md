@@ -17,8 +17,10 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `rtk make test` (7 Mojo unit programs, test-only
-JSON/Zstandard/text/log/TOML drivers, and 116 Python tests PASS; no skips). This includes
+Validation: `rtk make test` (11 Mojo unit programs, test-only
+JSON/Zstandard/text/log/TOML drivers, and 124 Python methods PASS; no skips),
+plus the added focused JSON numeric boundary test PASS (125 Python methods
+verified in total). This includes
 712 policy-oracle comparisons, 500 deterministic generated JSON values,
 malformed UTF-8/syntax/boundary vectors and numeric/local session times,
 future recurring rules through 2100, transition-second boundaries and
@@ -93,7 +95,27 @@ and terminal views fail explicitly; they do not fall back to another runtime.
 Evidence: `docs/evidence/upstream-follow-tests.txt` and
 `docs/evidence/upstream-follow-link.txt`.
 
-This remains an incomplete log contract. General live stream, broker feeds and
+Detached general `log` / `log stream` now emits ordered startup snapshots and
+follows runtime/session events, including operational details and every
+session-metadata projection. Adjacent duplicate transcript events are suppressed
+within each file-read batch, while later batches retain repeated events. Runtime
+paths refresh every two seconds and session paths every ten seconds. Their
+shared 32-file budget reserves 16 entries per source and fills unused slots by
+full-precision modification time and path. An isolated Linux process test
+compares the exact 16/16 retained descriptor paths with the release under
+`RLIMIT_NOFILE=48` before writing synthetic events. Operational tests cover the
+frozen event catalog, detail order, clipping/control handling, scalar number
+normalization and URL display cases. Decimal conversion and notation match the
+observed default release behavior across 382 generated finite floats and 27
+raw numeric boundary cases. Evidence: `docs/evidence/log-stream-tests.txt`
+and `docs/evidence/log-stream-link.txt`.
+
+The release emits credential-like values unchanged from stream_payload source
+and text. Modex masks those values in both JSON and plain output. Exact startup
+and append fixtures are retained as an additional UNAPPROVED_SAFE_DIFFERENCE in
+`docs/evidence/log-stream-mismatch.json`; they do not count as parity PASS.
+
+This remains an incomplete log contract. Broker feeds and
 terminal views remain unimplemented. Existing insecure application roots still fail instead of
 receiving baseline permission repair. Remaining event selection and projection
 combinations need further verification. Three Unicode-whitespace inputs expose
@@ -187,9 +209,9 @@ also cover correction overflow. The fixtures are synthetic; this host has no
 installed `right/` leap-zone directory. Evidence:
 `docs/evidence/leap-timezone-tests.txt` and `tests/test_timezone_files.py`.
 
-Next work: implement the general log stream and operational event projection,
-then complete remaining live views/commands, broaden event
-selection/projection coverage, and verify policy recursion/resource boundaries.
+Next work: implement live broker/direct-source log acquisition and terminal
+views, broaden URL/parser/failure coverage, and verify policy recursion/resource
+boundaries while continuing independent command slices.
 The parser has an explicit 128-level value-nesting limit; equivalence to the
 release beyond the tested corpus remains unverified. General policy/config
 application outside log-directory selection is still unfinished.

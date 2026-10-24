@@ -24,6 +24,8 @@ unit: check-toolchain
 	mkdir -p build/tests
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json.mojo -o build/tests/test_json
 	build/tests/test_json
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json_float.mojo -o build/tests/test_json_float
+	build/tests/test_json_float
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_sessions.mojo -o build/tests/test_sessions
 	build/tests/test_sessions
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_local_time.mojo -o build/tests/test_local_time
@@ -47,6 +49,12 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/log_time_driver.mojo -o build/tests/log_time_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_log_follow.mojo -o build/tests/test_log_follow
 	build/tests/test_log_follow $(CURDIR)/build/tests/log-follow-files
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_log_follow_paths.mojo -o build/tests/test_log_follow_paths
+	build/tests/test_log_follow_paths $(CURDIR)/build/tests/follow-paths
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_log_operational.mojo -o build/tests/test_log_operational
+	build/tests/test_log_operational
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_log_transcript_events.mojo -o build/tests/test_log_transcript_events
+	build/tests/test_log_transcript_events
 
 test: build unit
 	python3 -m unittest discover -s tests -p 'test_*.py' -v

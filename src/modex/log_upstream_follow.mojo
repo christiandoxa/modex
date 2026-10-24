@@ -5,7 +5,7 @@ from std.os import getenv, isatty, listdir
 from std.sys import stderr
 from std.time import perf_counter, sleep
 
-from .log_follow import FollowedLog, collect_new_followed_lines
+from .log_follow import FollowedLog, collect_new_followed_lines, retain_followed_paths
 from .logs import RUNTIME_TAIL_BYTES, RuntimeRecord, UpstreamEvent, read_tail, recent_runtime_log_paths, render_upstream, timestamp_wins, upstream_event
 from .paths import ensure_app_root
 
@@ -51,20 +51,7 @@ def follow_upstream(json: Bool) raises:
         var now = perf_counter()
         if now - refreshed >= 2.0:
             var discovered = recent_runtime_log_paths(root)
-            var retained = List[FollowedLog]()
-            for path in discovered:
-                var previous = -1
-                for index in range(len(paths)):
-                    if paths[index] == path:
-                        previous = index
-                        break
-                if previous < 0:
-                    retained.append(FollowedLog(path))
-                else:
-                    retained.append(states.pop(previous))
-                    _ = paths.pop(previous)
-            paths = discovered^
-            states = retained^
+            retain_followed_paths(paths, states, discovered^)
             refreshed = now
         for index in range(len(paths)):
             var lines = collect_new_followed_lines(paths[index], states[index])

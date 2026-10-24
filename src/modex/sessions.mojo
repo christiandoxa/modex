@@ -8,6 +8,7 @@ from .local_time import format_local_epoch
 from .paths import app_root, comparable_path, shared_root
 from .session_time import integer_timestamp, timestamp_key
 from .text import cli_width, pad_cell, section_header, status_panel, text_width, trim_text
+from .zstd import ZstdReader
 
 comptime SESSION_LINE_LIMIT = 64 * 1024 * 1024
 
@@ -181,15 +182,54 @@ def apply_line(mut report: SessionReport, line: String, mut started: Bool) raise
     return True
 
 
+def decode_session_line(bytes: List[UInt8], path: String) raises -> String:
+    try:
+        return String(from_utf8=Span(bytes))
+    except:
+        raise Error("failed to read session " + path + ": stream did not contain valid UTF-8")
+
+
+def apply_session_block(mut report: SessionReport, block: List[UInt8], mut pending: List[UInt8], mut started: Bool, path: String) raises -> Bool:
+    for byte in block:
+        pending.append(byte)
+        if len(pending) > SESSION_LINE_LIMIT:
+            raise Error("session line " + path + " exceeds safe size limit (67108864 bytes)")
+        if byte == 10:
+            var line = decode_session_line(pending, path)
+            pending.clear()
+            if not apply_line(report, line, started):
+                return False
+    return True
+
+
 def read_session(path: String) raises -> Optional[SessionReport]:
-    if path.endswith(".zst"):
-        raise Error("compressed session decoding is not implemented")
+    var compressed = path.endswith(".jsonl.zst")
     var components = path.split("/")
     var filename = components[len(components) - 1]
-    var suffix = 5 if path.endswith(".json") else 6
+    var suffix = 10 if compressed else 5 if path.endswith(".json") else 6
     var identifier = String(filename[byte=:filename.byte_length() - suffix])
     var report = SessionReport(identifier^, "", "", "", "", "", path, stat(path).st_mtimespec.tv_sec)
     var started = False
+    if compressed:
+        var decoder = ZstdReader(checked_session_file(path))
+        var pending = List[UInt8]()
+        while True:
+            var block: List[UInt8]
+            try:
+                block = decoder.read_chunk()
+            except error:
+                raise Error("failed to read session " + path + ": " + String(error))
+            if not block:
+                break
+            if not apply_session_block(report, block, pending, started, path):
+                return None
+        if pending and not apply_line(report, decode_session_line(pending, path), started):
+            return None
+        if not started:
+            return None
+        if not report.updated_at:
+            report.updated_at = format_local_epoch(report.sort_key)
+        return report^
     with checked_session_file(path) as file:
         if path.endswith(".json"):
             var bytes = file.read_bytes(SESSION_LINE_LIMIT + 1)
@@ -219,17 +259,10 @@ def read_session(path: String) raises -> Optional[SessionReport]:
                 var block = file.read_bytes(64 * 1024)
                 if not block:
                     break
-                for byte in block:
-                    pending.append(byte)
-                    if len(pending) > SESSION_LINE_LIMIT:
-                        raise Error("session line exceeds safe size limit (67108864 bytes)")
-                    if byte == 10:
-                        var line = String(from_utf8=Span(pending))
-                        pending.clear()
-                        if not apply_line(report, line, started):
-                            return None
+                if not apply_session_block(report, block, pending, started, path):
+                    return None
             if pending:
-                if not apply_line(report, String(from_utf8=Span(pending)), started):
+                if not apply_line(report, decode_session_line(pending, path), started):
                     return None
     if not started:
         return None

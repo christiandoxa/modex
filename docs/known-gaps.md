@@ -8,7 +8,7 @@ Session machine-output tests cover populated and archived plain JSON/JSONL,
 metadata precedence, timestamp ordering, Unicode whitespace and query behavior,
 parent filtering, limits, exact JSON formatting, ID/resume command output, and
 symlink exclusion. The product rejects existing state rather than reading
-without the required lock/recovery. Compressed rollouts, leap-second timezone
+without the required lock/recovery. Leap-second timezone
 files, remaining Unicode/control text output, interactive terminal output,
 profile bindings,
 and startup lifecycle/housekeeping effects remain unfinished.
@@ -27,6 +27,27 @@ zero-width behavior is checked against the release. The 239 current raw-output
 scenarios cover these ranges, but other scripts, emoji sequences and remaining
 control cells still fail explicitly. Full Unicode rendering remains unfinished.
 Evidence: `docs/evidence/session-unicode-tests.txt`.
+
+Dictionary-free compressed rollouts now pass native decoder interoperability
+and production-command comparisons. Coverage includes entropy table reuse,
+repeat offsets, frame checksums, concatenated/skippable frames, line boundaries
+and the decoded 64 MiB line limit. The implementation uses a 128 MiB window
+bound, matching the tested release boundary. Compression encoding and stateful
+metadata repair remain unfinished. Evidence: `docs/evidence/zstd-tests.txt`.
+
+A retained synthetic Huffman mutation has unused bits after its required
+symbols. [RFC 8878 section 4.2.2](https://www.rfc-editor.org/rfc/rfc8878.html#section-4.2.2)
+requires exact bit consumption. The frozen release accepts the compressed
+stream and later reports invalid UTF-8; Modex reports compressed-data
+corruption first. Proposed handling: retain exact-consumption validation and
+approve the difference separately. This remains an unapproved difference,
+not parity. The binary reproducer and both errors are in
+`docs/evidence/baseline/session-zstd-errors.json`.
+
+The release also accepts an empty frame whose declared decoded size is
+134217729 bytes. Modex rejects its oversized window. This malformed-frame
+difference is retained beside the Huffman case, with the exact input bytes;
+keeping size/window validation is proposed and remains unapproved.
 
 Session help and argument-error output match 39 frozen-release cases. Broader
 CLI behavior, including suggestions, short-flag clusters and complex argument

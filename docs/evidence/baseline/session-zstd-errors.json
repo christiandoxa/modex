@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "oracle_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+  "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "reproduce": "python3 tests/capture_session_zstd.py",
+  "cases": [
+    {
+      "case": "empty",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: incomplete frame\n"
+    },
+    {
+      "case": "bad-magic",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Unknown frame descriptor\n"
+    },
+    {
+      "case": "truncated",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: incomplete frame\n"
+    },
+    {
+      "case": "checksum",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Restored data doesn't match checksum\n"
+    },
+    {
+      "case": "dictionary",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Dictionary mismatch\n"
+    },
+    {
+      "case": "window",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Frame requires too much memory for decoding\n"
+    },
+    {
+      "case": "window-limit",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": ""
+    },
+    {
+      "case": "window-over-limit",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Frame requires too much memory for decoding\n"
+    },
+    {
+      "case": "reserved-block",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Data corruption detected\n"
+    },
+    {
+      "case": "wrong-size",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Data corruption detected\n"
+    },
+    {
+      "case": "skippable-truncated",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: incomplete frame\n"
+    },
+    {
+      "case": "skippable-empty",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": ""
+    },
+    {
+      "case": "empty-frame",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": ""
+    },
+    {
+      "case": "invalid-first-line-checksum",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": ""
+    },
+    {
+      "case": "invalid-first-line-short-checksum",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": ""
+    },
+    {
+      "case": "invalid-first-line-tiny-checksum",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Restored data doesn't match checksum\n"
+    },
+    {
+      "case": "invalid-first-line-8191-checksum",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Restored data doesn't match checksum\n"
+    },
+    {
+      "case": "invalid-first-line-8192-checksum",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Restored data doesn't match checksum\n"
+    },
+    {
+      "case": "invalid-first-line-8193-checksum",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": ""
+    },
+    {
+      "case": "invalid-first-line-raw-truncated",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": ""
+    },
+    {
+      "case": "invalid-first-line-raw-tiny-truncated",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": ""
+    },
+    {
+      "case": "invalid-utf8",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: stream did not contain valid UTF-8\n"
+    },
+    {
+      "case": "invalid-first-line-raw-unfinished",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": ""
+    },
+    {
+      "case": "invalid-first-line-flushed-unfinished",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": ""
+    },
+    {
+      "case": "invalid-first-line-checksum-missing",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": ""
+    }
+  ],
+  "known_differences": [
+    {
+      "case": "noncanonical-huffman",
+      "observations": {
+        "baseline": {
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: stream did not contain valid UTF-8\n"
+        },
+        "modex": {
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Data corruption detected\n"
+        }
+      },
+      "status": "UNAPPROVED_DIFFERENCE",
+      "input": "tests/fixtures/zstd-noncanonical-huffman.zst",
+      "input_sha256": "cd6cd6c87dd74d4d71d147bbe0b03488d408ef89d0806797f8a0365be7c1aa70",
+      "reason": "The release accepts leftover Huffman bits despite RFC 8878 section 4.2.2; Modex rejects the noncanonical stream. The released session command reaches UTF-8 validation instead."
+    },
+    {
+      "case": "oversized-empty-frame",
+      "observations": {
+        "baseline": {
+          "exit_code": 0,
+          "stdout": "[]\n",
+          "stderr": ""
+        },
+        "modex": {
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Frame requires too much memory for decoding\n"
+        }
+      },
+      "status": "UNAPPROVED_DIFFERENCE",
+      "input_hex": "28b52ffda001000008010000",
+      "reason": "The release accepts an empty frame declaring 134217729 decoded bytes. Modex rejects its oversized window; decoded content size and window validation are retained pending separate approval."
+    }
+  ]
+}

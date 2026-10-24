@@ -15,7 +15,7 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `make test` (3 Mojo unit programs, a test-only JSON driver, and 29
+Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard drivers, and 40
 Python black-box/runtime tests PASS, including 500 deterministic generated
 JSON values plus malformed UTF-8/syntax/boundary vectors and numeric/local
 session time comparisons, including future recurring rules through 2100,
@@ -57,6 +57,24 @@ edges, truncation, padding, full IDs and Unicode/paragraph path wrapping.
 Other scripts, emoji sequences and remaining control cells still fail
 explicitly. Evidence: `docs/evidence/session-unicode-tests.txt`.
 
+Session inspection now decodes dictionary-free Zstandard rollouts in native
+Mojo, including raw/RLE/compressed blocks, FSE/Huffman tables and reuse,
+repeat offsets, checksums, concatenated/skippable frames and bounded streaming.
+Independent vectors come from Python's test-only standard `compression.zstd`;
+the production binary never calls it. Full command checks cover list/current,
+filters and machine output, records crossing frames/blocks, decoded line-size
+limits and 25 frozen-release diagnostic cases. Error/read ordering around
+8192 decoded bytes is reproduced, including early rejection of non-session
+metadata. Evidence: `docs/evidence/zstd-tests.txt` and
+`docs/evidence/baseline/session-zstd-errors.json`.
+
+One noncanonical Huffman input is accepted by the release despite unused
+entropy bits prohibited by RFC 8878 section 4.2.2. Modex rejects it before the
+release's subsequent UTF-8 error. The exact synthetic input and both observed
+errors are retained as an unapproved difference. A second retained difference
+is an empty frame declaring 134217729 decoded bytes: the release accepts it,
+while Modex rejects the oversized window. No parity PASS is claimed.
+
 The active release staging/smoke path imports the JavaScript gateway SDK.
 Its module-import compatibility is BLOCKED by the Mojo-only/no-adapter policy,
 not removed from scope. `docs/packaging-audit.json` preserves conflicting
@@ -64,7 +82,7 @@ source/publishing/README evidence.
 
 Next work: trace hidden/default/precedence flag contracts, complete remaining
 Unicode display widths and the terminal view, and evaluate official stdlib mechanisms
-for state loading and recovery. Current stateful, compressed and leap-second
+for state loading and recovery. Current stateful and leap-second
 paths fail explicitly. Future recurring timezone rules and POSIX TZ strings are
 implemented; their current evidence is `docs/evidence/recurring-time-tests.txt`.
 Startup effects still differ. Details and the baseline

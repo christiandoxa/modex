@@ -589,7 +589,7 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/sessions.mojo; src/modex/cli.mojo; src/modex/json.mojo",
+      "implementation": "src/modex/sessions.mojo; src/modex/cli.mojo; src/modex/json.mojo; src/modex/zstd.mojo; src/modex/zstd_entropy.mojo; src/modex/xxhash.mojo",
       "tests": [
         "tests/test_sessions.mojo",
         "tests/test_sessions.py",
@@ -597,7 +597,10 @@
         "tests/test_local_time.mojo",
         "tests/test_json_fuzz.py",
         "tests/test_session_cli.py",
-        "tests/test_session_text.py"
+        "tests/test_session_text.py",
+        "tests/test_zstd.mojo",
+        "tests/test_zstd.py",
+        "tests/test_compressed_sessions.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -607,7 +610,9 @@
         "docs/evidence/baseline/session-cli.json",
         "docs/evidence/session-cli-tests.txt",
         "docs/evidence/session-text-tests.txt",
-        "docs/evidence/session-unicode-tests.txt"
+        "docs/evidence/session-unicode-tests.txt",
+        "docs/evidence/zstd-tests.txt",
+        "docs/evidence/baseline/session-zstd-errors.json"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -620,7 +625,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons and 239 detached text scenarios pass for plain sessions with no existing state, including supported Latin, Greek, Cyrillic, CJK, kana and Hangul ranges and combining accents. Full contract fails: state locking/recovery, startup effects, remaining scripts/emoji/control display widths, interactive terminal rendering and dimensions, compressed rollouts, leap-second timezone files and unapproved safe handling of baseline panic."
+        "Machine-output comparisons, dictionary-free compressed rollout cases and 239 detached text scenarios pass with no existing state. Full contract fails: state locking/recovery, startup effects, remaining scripts/emoji/control display widths, interactive terminal rendering and dimensions, leap-second timezone files, baseline panic handling and unapproved noncanonical compressed-frame differences."
       ]
     },
     {
@@ -645,7 +650,7 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/sessions.mojo; src/modex/cli.mojo; src/modex/json.mojo",
+      "implementation": "src/modex/sessions.mojo; src/modex/cli.mojo; src/modex/json.mojo; src/modex/zstd.mojo; src/modex/zstd_entropy.mojo; src/modex/xxhash.mojo",
       "tests": [
         "tests/test_sessions.mojo",
         "tests/test_sessions.py",
@@ -653,7 +658,10 @@
         "tests/test_local_time.mojo",
         "tests/test_json_fuzz.py",
         "tests/test_session_cli.py",
-        "tests/test_session_text.py"
+        "tests/test_session_text.py",
+        "tests/test_zstd.mojo",
+        "tests/test_zstd.py",
+        "tests/test_compressed_sessions.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -663,7 +671,9 @@
         "docs/evidence/baseline/session-cli.json",
         "docs/evidence/session-cli-tests.txt",
         "docs/evidence/session-text-tests.txt",
-        "docs/evidence/session-unicode-tests.txt"
+        "docs/evidence/session-unicode-tests.txt",
+        "docs/evidence/zstd-tests.txt",
+        "docs/evidence/baseline/session-zstd-errors.json"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -676,7 +686,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons and 239 detached text scenarios pass for plain sessions with no existing state, including supported Latin, Greek, Cyrillic, CJK, kana and Hangul ranges and combining accents. Full contract fails: state locking/recovery, startup effects, remaining scripts/emoji/control display widths, interactive terminal rendering and dimensions, compressed rollouts, leap-second timezone files and unapproved safe handling of baseline panic."
+        "Machine-output comparisons, dictionary-free compressed rollout cases and 239 detached text scenarios pass with no existing state. Full contract fails: state locking/recovery, startup effects, remaining scripts/emoji/control display widths, interactive terminal rendering and dimensions, leap-second timezone files, baseline panic handling and unapproved noncanonical compressed-frame differences."
       ]
     },
     {

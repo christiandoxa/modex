@@ -11,7 +11,10 @@
     "src/modex/session_time.mojo",
     "src/modex/sessions.mojo",
     "src/modex/text.mojo",
-    "src/modex/local_time.mojo"
+    "src/modex/local_time.mojo",
+    "src/modex/xxhash.mojo",
+    "src/modex/zstd.mojo",
+    "src/modex/zstd_entropy.mojo"
   ],
   "production_imports": [
     "std.collections",
@@ -45,13 +48,19 @@
     "Mojo compiler/linker",
     "GNU Make",
     "Git/GitHub CLI for checkpoints and read-only reference retrieval",
-    "Python standard library for complex test orchestration only",
+    "Python 3.14+ standard library, including compression.zstd, for complex test orchestration and independent compressed vectors only",
     "bubblewrap for isolated test filesystem/network namespace",
     "ldd/readelf/sha256sum for audit only"
   ],
   "integration_targets": "Initial candidates and prerequisites are listed in docs/parity.json; their audit is not complete and none are product implementation dependencies.",
   "production_subprocess_invocations": [],
   "production_network_downloads": [],
+  "compression_specs": [
+    "RFC 8878 and verified errata: https://www.rfc-editor.org/rfc/rfc8878.html",
+    "XXH64 specification: https://github.com/Cyan4973/xxHash/blob/v0.8.3/doc/xxhash_spec.md"
+  ],
+  "compression_implementation": "Native Mojo frame, FSE, Huffman, sequence and incremental checksum logic. Numerical format parameters follow RFC 8878. No external codec implementation, codec library, subprocess or generated production code is included. tests/fixtures/zstd-noncanonical-huffman.zst is synthetic non-executable test data.",
+  "compression_dependency_evidence": "docs/evidence/zstd-link.txt; tests/test_compressed_sessions.py runs Modex with only platform and official Mojo runtime libraries mounted, without a Python runtime or external codec.",
   "installer_status": "NOT_STARTED",
   "release_artifact_status": "No release artifact; development build only",
   "clean_runtime_evidence": "tests/test_runtime.py binds only the executable, resolved platform and official Mojo runtime libraries into an empty filesystem/network namespace. No Python/Node/Rust/Prodex executable or library is mounted. Scope: version output on local Linux only.",

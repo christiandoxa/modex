@@ -2,6 +2,8 @@
 
 import json
 import os
+from datetime import datetime, timezone as datetime_timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 import subprocess
 import tempfile
@@ -168,6 +170,60 @@ class SessionOutputTests(unittest.TestCase):
     def test_numeric_timezones_and_daylight_transitions(self):
         for timezone in ("Asia/Jakarta", "America/New_York", "Europe/London", "UTC0", "GMT0"):
             for epoch in (1767225600, 1782864000, 1792800000):
+                def change(root):
+                    original = next((root / "home/.codex").rglob("*.jsonl"))
+                    original.write_text(original.read_text() + json.dumps({"updated_at": epoch}) + "\n")
+                with self.subTest(timezone=timezone, epoch=epoch):
+                    self.assert_outputs(["session", "list", "--json"], change, timezone=timezone)
+
+    def test_future_recurring_timezone_rules(self):
+        for timezone in ("America/New_York", "Europe/London", "Australia/Sydney",
+                         "Australia/Lord_Howe", "Pacific/Chatham", "Africa/Casablanca"):
+            for date in ((2050, 1, 1), (2050, 7, 1), (2100, 1, 1), (2100, 7, 1)):
+                epoch = int(datetime(*date, tzinfo=datetime_timezone.utc).timestamp())
+                def change(root):
+                    original = next((root / "home/.codex").rglob("*.jsonl"))
+                    original.write_text(original.read_text() + json.dumps({"updated_at": epoch}) + "\n")
+                with self.subTest(timezone=timezone, date=date):
+                    self.assert_outputs(["session", "list", "--json"], change, timezone=timezone)
+
+    def test_posix_timezone_strings(self):
+        for timezone in ("EST5", "<-0430>4:30", "IST-5:30", "NPT-5:45",
+                         "EST5EDT,M3.2.0,M11.1.0", "EST5EDT",
+                         "AEST-10AEDT,M10.1.0,M4.1.0/3", "XST0XDT,J60/0,J300/0",
+                         "XST0XDT,59/0,300/0", "XST0XDT,M3.5.0/-2,M10.5.0/26",
+                         "EST5EDT,0/0,J365/25", "XXX3EDT4,0/0,J365/23",
+                         "XST5XDT", "invalid/zone", "UTC25", ":IST-5:30"):
+            for date in ((2024, 2, 29), (2024, 3, 1), (2050, 1, 1), (2050, 7, 1)):
+                epoch = int(datetime(*date, tzinfo=datetime_timezone.utc).timestamp())
+                def change(root):
+                    original = next((root / "home/.codex").rglob("*.jsonl"))
+                    original.write_text(original.read_text() + json.dumps({"updated_at": epoch}) + "\n")
+                with self.subTest(timezone=timezone, date=date):
+                    self.assert_outputs(["session", "list", "--json"], change, timezone=timezone)
+
+    def test_future_timezone_transition_seconds(self):
+        first = int(datetime(2050, 1, 1, tzinfo=datetime_timezone.utc).timestamp())
+        for timezone in ("America/New_York", "Europe/London", "Australia/Sydney",
+                         "Australia/Lord_Howe", "Pacific/Chatham", "Europe/Dublin"):
+            zone = ZoneInfo(timezone)
+            previous = datetime.fromtimestamp(first, zone).utcoffset()
+            changes = []
+            for day in range(1, 366):
+                current = first + day * 86400
+                offset = datetime.fromtimestamp(current, zone).utcoffset()
+                if offset != previous:
+                    low, high = current - 86400, current
+                    while high - low > 1:
+                        middle = (low + high) // 2
+                        if datetime.fromtimestamp(middle, zone).utcoffset() == previous:
+                            low = middle
+                        else:
+                            high = middle
+                    changes.extend((high - 1, high))
+                previous = offset
+            self.assertEqual(len(changes), 4, timezone)
+            for epoch in changes:
                 def change(root):
                     original = next((root / "home/.codex").rglob("*.jsonl"))
                     original.write_text(original.read_text() + json.dumps({"updated_at": epoch}) + "\n")

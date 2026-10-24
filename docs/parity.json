@@ -596,7 +596,8 @@
       "evidence": [
         "docs/evidence/session-tests.txt",
         "docs/evidence/session-mismatches.json",
-        "docs/evidence/time-json-tests.txt"
+        "docs/evidence/time-json-tests.txt",
+        "docs/evidence/recurring-time-tests.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -609,7 +610,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons pass for plain sessions with no existing state, including tested numeric/fallback local timestamps. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, future recurring timezone rules and unapproved safe handling of baseline panic."
+        "Machine-output comparisons pass for plain sessions with no existing state, including tested numeric/fallback local timestamps, future timezone recurrences and POSIX TZ strings. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, leap-second timezone files and unapproved safe handling of baseline panic."
       ]
     },
     {
@@ -645,7 +646,8 @@
       "evidence": [
         "docs/evidence/session-tests.txt",
         "docs/evidence/session-mismatches.json",
-        "docs/evidence/time-json-tests.txt"
+        "docs/evidence/time-json-tests.txt",
+        "docs/evidence/recurring-time-tests.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -658,7 +660,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Machine-output comparisons pass for plain sessions with no existing state, including tested numeric/fallback local timestamps. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, future recurring timezone rules and unapproved safe handling of baseline panic."
+        "Machine-output comparisons pass for plain sessions with no existing state, including tested numeric/fallback local timestamps, future timezone recurrences and POSIX TZ strings. Full contract fails: state locking/recovery, startup effects, text/terminal rendering, compressed rollouts, leap-second timezone files and unapproved safe handling of baseline panic."
       ]
     },
     {

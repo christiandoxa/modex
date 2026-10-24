@@ -1,6 +1,6 @@
 """Local epoch rendering using OS TZif data through official file APIs."""
 
-from std.collections import List, Span
+from std.collections import List, Optional, Span
 from std.os import getenv
 from std.os.path import exists
 
@@ -29,17 +29,215 @@ struct ZoneType(Copyable):
     var name: String
 
 
+def is_leap_year(year: Int) -> Bool:
+    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+
+
+def civil_days(year: Int, month: Int, day: Int) -> Int:
+    var adjusted = year - (1 if month <= 2 else 0)
+    var era = adjusted // 400
+    var year_of_era = adjusted - era * 400
+    var month_index = month + (-3 if month > 2 else 9)
+    var day_of_year = (153 * month_index + 2) // 5 + day - 1
+    return era * 146097 + year_of_era * 365 + year_of_era // 4 - year_of_era // 100 + day_of_year - 719468
+
+
+def civil_fields(local: Int) -> Tuple[Int, Int, Int, Int]:
+    var days = local // 86400
+    var second = local % 86400
+    var shifted = days + 719468
+    var era = shifted // 146097
+    var day_of_era = shifted - era * 146097
+    var year_of_era = (day_of_era - day_of_era // 1460 + day_of_era // 36524 - day_of_era // 146096) // 365
+    var year = year_of_era + era * 400
+    var day_of_year = day_of_era - (365 * year_of_era + year_of_era // 4 - year_of_era // 100)
+    var month_index = (5 * day_of_year + 2) // 153
+    var day = day_of_year - (153 * month_index + 2) // 5 + 1
+    var month = month_index + (3 if month_index < 10 else -9)
+    if month <= 2:
+        year += 1
+    return year, month, day, second
+
+
+@fieldwise_init
+struct TransitionRule(Copyable):
+    var kind: Int
+    var day: Int
+    var month: Int
+    var week: Int
+    var weekday: Int
+    var seconds: Int
+
+    def epoch(self, year: Int, previous_offset: Int) -> Int:
+        var day_index = self.day
+        if self.kind == 0:
+            day_index -= 1
+            if is_leap_year(year) and self.day >= 60:
+                day_index += 1
+        elif self.kind == 2:
+            var start = civil_days(year, self.month, 1)
+            var first_weekday = (start + 4) % 7
+            var day = 1 + (self.weekday - first_weekday) % 7 + (self.week - 1) * 7
+            var following = civil_days(year + 1, 1, 1) if self.month == 12 else civil_days(year, self.month + 1, 1)
+            if start + day - 1 >= following:
+                day -= 7
+            day_index = start + day - 1 - civil_days(year, 1, 1)
+        return (civil_days(year, 1, 1) + day_index) * 86400 + self.seconds - previous_offset
+
+
+struct PosixZone(Copyable):
+    var standard: ZoneType
+    var daylight: Optional[ZoneType]
+    var start: TransitionRule
+    var end: TransitionRule
+
+    def __init__(out self, text: String, extended: Bool = True) raises:
+        var parser = ZoneParser(text, 0, extended)
+        var name = parser.name()
+        self.standard = ZoneType(-parser.clock(24), name^)
+        self.daylight = None
+        self.start = TransitionRule(1, 0, 0, 0, 0, 0)
+        self.end = TransitionRule(1, 0, 0, 0, 0, 0)
+        if parser.peek() != -1:
+            var daylight_name = parser.name()
+            var offset = self.standard.offset + 3600
+            if parser.peek() != -1 and parser.peek() != 44:
+                offset = -parser.clock(24)
+            self.daylight = ZoneType(offset, daylight_name^)
+            parser.expect(44)
+            self.start = parser.rule()
+            parser.expect(44)
+            self.end = parser.rule()
+        if parser.peek() != -1:
+            raise Error("trailing POSIX time-zone data")
+
+    def at(self, epoch: Int) -> ZoneType:
+        if not self.daylight:
+            return self.standard.copy()
+        var year = civil_fields(epoch)[0]
+        var latest = Int.MIN
+        var daylight = False
+        # Adjacent years cover rules that spill across New Year by up to seven days.
+        for candidate in range(year - 1, year + 2):
+            var start = self.start.epoch(candidate, self.standard.offset)
+            var end = self.end.epoch(candidate, self.daylight.value().offset)
+            if start <= epoch and start >= latest:
+                latest = start
+                daylight = True
+            if end <= epoch and end > latest:
+                latest = end
+                daylight = False
+        return self.daylight.value().copy() if daylight else self.standard.copy()
+
+
+@fieldwise_init
+struct ZoneParser:
+    var text: String
+    var position: Int
+    var extended: Bool
+
+    def peek(self) -> Int:
+        return Int(self.text.as_bytes()[self.position]) if self.position < self.text.byte_length() else -1
+
+    def expect(mut self, byte: Int) raises:
+        if self.peek() != byte:
+            raise Error("invalid POSIX time-zone separator")
+        self.position += 1
+
+    def number(mut self, maximum: Int) raises -> Int:
+        var start = self.position
+        var value = 0
+        while self.peek() >= 48 and self.peek() <= 57:
+            var digit = self.peek() - 48
+            if value > (maximum - digit) // 10:
+                raise Error("POSIX time-zone number is out of range")
+            value = value * 10 + digit
+            self.position += 1
+        if self.position == start or value > maximum:
+            raise Error("invalid POSIX time-zone number")
+        return value
+
+    def name(mut self) raises -> String:
+        var quoted = self.peek() == 60
+        if quoted:
+            self.position += 1
+        var start = self.position
+        while True:
+            var byte = self.peek()
+            var allowed = (65 <= byte <= 90 or 97 <= byte <= 122)
+            if quoted:
+                allowed = allowed or 48 <= byte <= 57 or byte == 43 or byte == 45
+            if not allowed:
+                break
+            self.position += 1
+        if self.position - start < 3:
+            raise Error("POSIX time-zone name is too short")
+        var name = String(self.text[byte=start:self.position])
+        if quoted:
+            self.expect(62)
+        return name^
+
+    def clock(mut self, maximum_hour: Int) raises -> Int:
+        var sign = 1
+        if self.peek() == 45 or self.peek() == 43:
+            if self.peek() == 45:
+                sign = -1
+            self.position += 1
+        var hour = self.number(maximum_hour)
+        var minute = 0
+        var second = 0
+        if self.peek() == 58:
+            self.position += 1
+            minute = self.number(59)
+            if self.peek() == 58:
+                self.position += 1
+                second = self.number(59)
+        return sign * (hour * 3600 + minute * 60 + second)
+
+    def rule(mut self) raises -> TransitionRule:
+        var kind = 1
+        var day = 0
+        var month = 0
+        var week = 0
+        var weekday = 0
+        if self.peek() == 74:
+            self.position += 1
+            kind = 0
+            day = self.number(365)
+            if day < 1:
+                raise Error("invalid Julian transition day")
+        elif self.peek() == 77:
+            self.position += 1
+            kind = 2
+            month = self.number(12)
+            self.expect(46)
+            week = self.number(5)
+            self.expect(46)
+            weekday = self.number(6)
+            if month < 1 or week < 1:
+                raise Error("invalid monthly transition rule")
+        else:
+            day = self.number(365)
+        var seconds = 7200
+        if self.peek() == 47:
+            self.position += 1
+            if not self.extended and (self.peek() == 43 or self.peek() == 45):
+                raise Error("signed transition time requires extended TZif rules")
+            seconds = self.clock(167 if self.extended else 24)
+        return TransitionRule(kind, day, month, week, weekday, seconds)
+
+
 struct TimeZone:
     var transitions: List[Int]
     var transition_types: List[Int]
     var types: List[ZoneType]
-    var needs_future_rules: Bool
+    var future: Optional[PosixZone]
 
     def __init__(out self, bytes: List[UInt8]) raises:
         self.transitions = List[Int]()
         self.transition_types = List[Int]()
         self.types = List[ZoneType]()
-        self.needs_future_rules = False
+        self.future = None
         var header = 0
         var width = 4
         var counts = zone_header(bytes, 0)
@@ -100,9 +298,13 @@ struct TimeZone:
                 raise Error("invalid time-zone footer")
             if "\x00" in footer or footer.count("\n") != 2:
                 raise Error("invalid time-zone footer encoding")
-            self.needs_future_rules = "," in footer
+            var rule = String(footer[byte=1:footer.byte_length() - 1])
+            if rule:
+                self.future = PosixZone(rule, extended=version >= 51)
 
     def at(self, epoch: Int) raises -> ZoneType:
+        if self.future and (not self.transitions or epoch >= self.transitions[len(self.transitions) - 1]):
+            return self.future.value().at(epoch)
         var selected = 0
         var low = 0
         var high = len(self.transitions)
@@ -114,9 +316,6 @@ struct TimeZone:
                 high = middle
         if low > 0:
             selected = self.transition_types[low - 1]
-        # shortcut: recurring TZif footer rules remain a gap; reject future DST dates until those rules are implemented.
-        if self.needs_future_rules and (not self.transitions or epoch > self.transitions[len(self.transitions) - 1]):
-            raise Error("future recurring time-zone rules are not implemented")
         return self.types[selected].copy()
 
 
@@ -148,20 +347,7 @@ def calendar_time(epoch: Int, zone: ZoneType) -> String:
     # These UTC bounds match Chrono 0.4.44's NaiveDate MIN and MAX.
     if epoch < -8_334_601_228_800 or epoch > 8_210_266_876_799:
         return String(epoch)
-    var local = epoch + zone.offset
-    var days = local // 86400
-    var second = local % 86400
-    var shifted = days + 719468
-    var era = shifted // 146097
-    var day_of_era = shifted - era * 146097
-    var year_of_era = (day_of_era - day_of_era // 1460 + day_of_era // 36524 - day_of_era // 146096) // 365
-    var year = year_of_era + era * 400
-    var day_of_year = day_of_era - (365 * year_of_era + year_of_era // 4 - year_of_era // 100)
-    var month_index = (5 * day_of_year + 2) // 153
-    var day = day_of_year - (153 * month_index + 2) // 5 + 1
-    var month = month_index + (3 if month_index < 10 else -9)
-    if month <= 2:
-        year += 1
+    var year, month, day, second = civil_fields(epoch + zone.offset)
     var year_text = String(abs(year))
     while year_text.byte_length() < 4:
         year_text = "0" + year_text
@@ -182,12 +368,20 @@ def format_local_epoch(epoch: Int) raises -> String:
     var zone_name = getenv("TZ", ":/etc/localtime")
     if zone_name == "UTC" or zone_name == "UTC0" or zone_name == "" or zone_name == "GMT" or zone_name == "GMT0":
         return calendar_time(epoch, ZoneType(0, "GMT" if zone_name.startswith("GMT") else "UTC"))
-    if zone_name.startswith(":"):
+    var file_only = zone_name.startswith(":")
+    if file_only:
         var unprefixed = String(zone_name[byte=1:])
         zone_name = unprefixed^
     var path = zone_name if zone_name.startswith("/") else "/usr/share/zoneinfo/" + zone_name
     if not exists(path):
-        raise Error("POSIX time-zone strings are not implemented")
+        if not file_only:
+            try:
+                var zone = PosixZone(zone_name, extended=False)
+                return calendar_time(epoch, zone.at(epoch))
+            except:
+                pass
+        # The release's local-time backend falls back to UTC for invalid TZ values.
+        return calendar_time(epoch, ZoneType(0, "UTC"))
     with open(path, "r") as file:
         var bytes = file.read_bytes(1024 * 1024 + 1)
         if len(bytes) > 1024 * 1024:

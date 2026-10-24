@@ -8,8 +8,8 @@ Session machine-output tests cover populated and archived plain JSON/JSONL,
 metadata precedence, timestamp ordering, Unicode whitespace and query behavior,
 parent filtering, limits, exact JSON formatting, ID/resume command output, and
 symlink exclusion. The product rejects existing state rather than reading
-without the required lock/recovery. Compressed rollouts, future recurring
-timezone rules and POSIX TZ strings, text/terminal output, argument-error wording, profile bindings,
+without the required lock/recovery. Compressed rollouts, leap-second timezone
+files, text/terminal output, argument-error wording, profile bindings,
 and startup lifecycle/housekeeping effects remain unfinished.
 
 Numeric and file-modification timestamps now match the release in UTC,
@@ -18,8 +18,14 @@ daylight offsets, negative epochs, expanded years and Chrono's range limits.
 The Mojo implementation parses OS TZif files using standard file APIs.
 References: [TZif format](https://www.rfc-editor.org/rfc/rfc9636.html) and
 [Chrono 0.4.44 date limits](https://docs.rs/chrono/0.4.44/chrono/naive/struct.NaiveDate.html).
-Leap-second TZif files and dates requiring a recurring footer rule fail
-explicitly; they are not silently rendered using the last known offset.
+Recurring TZif footer rules now handle future dates, northern/southern seasons,
+half-hour daylight changes, Julian/ordinal/month-week dates and signed extended
+transition times. Explicit POSIX TZ strings use the release's narrower syntax;
+invalid values fall back to UTC as observed in the official artifact. Sources:
+[POSIX TZ grammar](https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap08.html)
+and [glibc timezone documentation](https://sourceware.org/glibc/manual/latest/html_node/Proleptic-TZ.html).
+The current differential suite checks dates through 2100 and exact transition
+seconds in six named zones. Leap-second TZif files remain unimplemented.
 
 `python3 tests/session_mismatches.py` records both executables' output, exit
 status and new files. The output-focused tests explicitly exclude those

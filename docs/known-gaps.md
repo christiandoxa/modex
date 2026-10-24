@@ -23,9 +23,14 @@ and the frozen width rules. Tests check all 1,112,064 Unicode scalars and the
 auxiliary property tables, plus actual production output for 3,026 official
 emoji sequences, 960 generated mixed-script strings, property boundaries and
 wrapped paths. Scalar clipping and wrapping match the release, including cuts
-inside emoji. Other sequence combinations remain unverified. Non-ASCII width
-measurement buffers scalars; maximum-size display-field memory has not been
-tested. Evidence: `docs/evidence/unicode-width-tests.txt`.
+inside emoji. All 3,905 Kirat vowel sequences of lengths one through five
+also match production oracle output. Other sequence combinations remain
+unverified. Width measurement uses constant auxiliary state over UTF-8
+slices. Linux RSS samples cover five large-input patterns, and production
+checks cover a 1,100,000-byte mixed title and the exact 64 MiB line boundary
+plus one-byte overflow. Whole-command peak memory and other platforms remain
+unverified. Evidence: `docs/evidence/unicode-width-tests.txt`,
+`docs/evidence/text-memory-tests.txt` and `docs/evidence/text-memory.json`.
 
 The release's scalar planners reject U+17D8's three-cell width and panic when
 truncating or wrapping it. Modex renders these cases. Proposed handling:

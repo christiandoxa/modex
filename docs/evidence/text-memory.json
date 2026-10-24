@@ -1,0 +1,365 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-24",
+  "scope": "Auxiliary memory in native Unicode width measurement on the Linux host; not whole-command or cross-platform parity.",
+  "compiler": "Mojo 1.2.0 (2016d0cd)",
+  "build_flags": "-O3 --target-cpu=x86-64-v3",
+  "oracle_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+  "method": "Each of three RSS samples starts a fresh Python harness, forks and execs the Mojo driver, and records Linux wait4 peak RSS in bytes. Normalized growth subtracts input byte growth from median peak growth. Tolerance is the sum of sample spreads plus max(16 pages, input growth / 100). The driver reserves input storage before constructing its string.",
+  "before": {
+    "modex_revision": "449c575002c1e0d2c59beca83cf5d7542678a0ac",
+    "width_source_sha256": "98cc00ee872161ef74ce6bd265f1cfe507a931bdaa69f7410265b86ae5c958b5",
+    "driver_sha256": "535c918a197dbefe1a5d49b9d7f02ddfce12c45094bc0a2f6994e7579b2b6124",
+    "regression_test_exit_code": 1,
+    "expected_failure_patterns": [
+      "mixed",
+      "tifinagh",
+      "kirat",
+      "emoji-tag"
+    ],
+    "measurements": {
+      "host": {
+        "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+        "python": "3.16.0a1",
+        "page_size_bytes": 4096,
+        "mem_available_bytes_at_start": 26487574528,
+        "cgroup_memory_limit_bytes": null,
+        "ru_maxrss_unit": "KiB (Linux wait4)"
+      },
+      "patterns": {
+        "ascii": [
+          {
+            "count": 524288,
+            "input_bytes": 524288,
+            "peak_rss_samples_bytes": [
+              14872576,
+              14872576,
+              14872576
+            ],
+            "median_peak_rss_bytes": 14872576,
+            "median_rss_over_input_bytes": 14348288,
+            "overhead_sample_spread_bytes": 0
+          },
+          {
+            "count": 8388608,
+            "input_bytes": 8388608,
+            "peak_rss_samples_bytes": [
+              18870272,
+              18841600,
+              18997248
+            ],
+            "median_peak_rss_bytes": 18870272,
+            "median_rss_over_input_bytes": 10481664,
+            "overhead_sample_spread_bytes": 155648,
+            "normalized_growth_bytes": -3866624,
+            "allowed_growth_bytes": 234291
+          }
+        ],
+        "mixed": [
+          {
+            "count": 49152,
+            "input_bytes": 540672,
+            "peak_rss_samples_bytes": [
+              15200256,
+              15601664,
+              15200256
+            ],
+            "median_peak_rss_bytes": 15200256,
+            "median_rss_over_input_bytes": 14659584,
+            "overhead_sample_spread_bytes": 401408
+          },
+          {
+            "count": 786432,
+            "input_bytes": 8650752,
+            "peak_rss_samples_bytes": [
+              71843840,
+              71716864,
+              71675904
+            ],
+            "median_peak_rss_bytes": 71716864,
+            "median_rss_over_input_bytes": 63066112,
+            "overhead_sample_spread_bytes": 167936,
+            "normalized_growth_bytes": 48406528,
+            "allowed_growth_bytes": 650444
+          }
+        ],
+        "tifinagh": [
+          {
+            "count": 32768,
+            "input_bytes": 196611,
+            "peak_rss_samples_bytes": [
+              14983168,
+              14872576,
+              14876672
+            ],
+            "median_peak_rss_bytes": 14876672,
+            "median_rss_over_input_bytes": 14680061,
+            "overhead_sample_spread_bytes": 110592
+          },
+          {
+            "count": 524288,
+            "input_bytes": 3145731,
+            "peak_rss_samples_bytes": [
+              39514112,
+              39362560,
+              39055360
+            ],
+            "median_peak_rss_bytes": 39362560,
+            "median_rss_over_input_bytes": 36216829,
+            "overhead_sample_spread_bytes": 458752,
+            "normalized_growth_bytes": 21536768,
+            "allowed_growth_bytes": 634880
+          }
+        ],
+        "kirat": [
+          {
+            "count": 32768,
+            "input_bytes": 131072,
+            "peak_rss_samples_bytes": [
+              14979072,
+              14872576,
+              14979072
+            ],
+            "median_peak_rss_bytes": 14979072,
+            "median_rss_over_input_bytes": 14848000,
+            "overhead_sample_spread_bytes": 106496
+          },
+          {
+            "count": 524288,
+            "input_bytes": 2097152,
+            "peak_rss_samples_bytes": [
+              35225600,
+              34709504,
+              35254272
+            ],
+            "median_peak_rss_bytes": 35225600,
+            "median_rss_over_input_bytes": 33128448,
+            "overhead_sample_spread_bytes": 544768,
+            "normalized_growth_bytes": 18280448,
+            "allowed_growth_bytes": 716800
+          }
+        ],
+        "emoji-tag": [
+          {
+            "count": 32768,
+            "input_bytes": 131080,
+            "peak_rss_samples_bytes": [
+              14872576,
+              14876672,
+              14991360
+            ],
+            "median_peak_rss_bytes": 14876672,
+            "median_rss_over_input_bytes": 14745592,
+            "overhead_sample_spread_bytes": 118784
+          },
+          {
+            "count": 524288,
+            "input_bytes": 2097160,
+            "peak_rss_samples_bytes": [
+              25600000,
+              25423872,
+              25292800
+            ],
+            "median_peak_rss_bytes": 25423872,
+            "median_rss_over_input_bytes": 23326712,
+            "overhead_sample_spread_bytes": 307200,
+            "normalized_growth_bytes": 8581120,
+            "allowed_growth_bytes": 491520
+          }
+        ]
+      }
+    }
+  },
+  "after": {
+    "source_sha256": {
+      "Makefile": "a56ea4f6c00e3e96fb6b596ccf70d391f2388951830acd2ddc8d46b1d823e47e",
+      "src/modex/unicode_width.mojo": "54fe9859dceb7775c48f021abe67cdf90d7a08ddb75912c1c0f8dae2ad8d8f52",
+      "tests/test_sessions.mojo": "f701322ce3b06979d596133b63d9d47b8f3090318186ed468010f546dd57ea02",
+      "tests/test_session_text.py": "b3a8b560f1f7be649e63ebd90886aaaa26cceff29349735ee33862ce06c6974d",
+      "tests/test_text_memory.py": "51a49ed18c311da1f6a81541050b9b6be47d96a5c3d058474063c18df405ff5d",
+      "tests/width_memory_driver.mojo": "bc58c2e69a9180934613a6682987581b6d93bdd22a35f96282ba2ebf88ca89ce"
+    },
+    "driver_sha256": "268a32fef6f5d6db68b8d48c3cd7356e58c3d4728ecc16e9449b5f86939b4963",
+    "modex_sha256": "d8263dac3f9d9c50b68765f114e1414ddc4810fd75cbbee9eae636e9aebb8bcf",
+    "regression_test_exit_code": 0,
+    "measurements": {
+      "host": {
+        "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+        "python": "3.16.0a1",
+        "page_size_bytes": 4096,
+        "mem_available_bytes_at_start": 25521823744,
+        "cgroup_memory_limit_bytes": null,
+        "ru_maxrss_unit": "KiB (Linux wait4)"
+      },
+      "patterns": {
+        "ascii": [
+          {
+            "count": 524288,
+            "input_bytes": 524288,
+            "peak_rss_samples_bytes": [
+              14987264,
+              14872576,
+              14987264
+            ],
+            "median_peak_rss_bytes": 14987264,
+            "median_rss_over_input_bytes": 14462976,
+            "overhead_sample_spread_bytes": 114688
+          },
+          {
+            "count": 8388608,
+            "input_bytes": 8388608,
+            "peak_rss_samples_bytes": [
+              18829312,
+              18878464,
+              18997248
+            ],
+            "median_peak_rss_bytes": 18878464,
+            "median_rss_over_input_bytes": 10489856,
+            "overhead_sample_spread_bytes": 167936,
+            "normalized_growth_bytes": -3973120,
+            "allowed_growth_bytes": 361267
+          }
+        ],
+        "mixed": [
+          {
+            "count": 49152,
+            "input_bytes": 540672,
+            "peak_rss_samples_bytes": [
+              14987264,
+              14983168,
+              14880768
+            ],
+            "median_peak_rss_bytes": 14983168,
+            "median_rss_over_input_bytes": 14442496,
+            "overhead_sample_spread_bytes": 106496
+          },
+          {
+            "count": 786432,
+            "input_bytes": 8650752,
+            "peak_rss_samples_bytes": [
+              19128320,
+              19128320,
+              19079168
+            ],
+            "median_peak_rss_bytes": 19128320,
+            "median_rss_over_input_bytes": 10477568,
+            "overhead_sample_spread_bytes": 49152,
+            "normalized_growth_bytes": -3964928,
+            "allowed_growth_bytes": 236748
+          }
+        ],
+        "tifinagh": [
+          {
+            "count": 32768,
+            "input_bytes": 196611,
+            "peak_rss_samples_bytes": [
+              14872576,
+              14983168,
+              14872576
+            ],
+            "median_peak_rss_bytes": 14872576,
+            "median_rss_over_input_bytes": 14675965,
+            "overhead_sample_spread_bytes": 110592
+          },
+          {
+            "count": 524288,
+            "input_bytes": 3145731,
+            "peak_rss_samples_bytes": [
+              14876672,
+              14979072,
+              14876672
+            ],
+            "median_peak_rss_bytes": 14876672,
+            "median_rss_over_input_bytes": 11730941,
+            "overhead_sample_spread_bytes": 102400,
+            "normalized_growth_bytes": -2945024,
+            "allowed_growth_bytes": 278528
+          }
+        ],
+        "kirat": [
+          {
+            "count": 32768,
+            "input_bytes": 131072,
+            "peak_rss_samples_bytes": [
+              14876672,
+              14983168,
+              14876672
+            ],
+            "median_peak_rss_bytes": 14876672,
+            "median_rss_over_input_bytes": 14745600,
+            "overhead_sample_spread_bytes": 106496
+          },
+          {
+            "count": 524288,
+            "input_bytes": 2097152,
+            "peak_rss_samples_bytes": [
+              14983168,
+              14983168,
+              14876672
+            ],
+            "median_peak_rss_bytes": 14983168,
+            "median_rss_over_input_bytes": 12886016,
+            "overhead_sample_spread_bytes": 106496,
+            "normalized_growth_bytes": -1859584,
+            "allowed_growth_bytes": 278528
+          }
+        ],
+        "emoji-tag": [
+          {
+            "count": 32768,
+            "input_bytes": 131080,
+            "peak_rss_samples_bytes": [
+              14876672,
+              14872576,
+              14872576
+            ],
+            "median_peak_rss_bytes": 14872576,
+            "median_rss_over_input_bytes": 14741496,
+            "overhead_sample_spread_bytes": 4096
+          },
+          {
+            "count": 524288,
+            "input_bytes": 2097160,
+            "peak_rss_samples_bytes": [
+              14864384,
+              14983168,
+              14872576
+            ],
+            "median_peak_rss_bytes": 14872576,
+            "median_rss_over_input_bytes": 12775416,
+            "overhead_sample_spread_bytes": 118784,
+            "normalized_growth_bytes": -1966080,
+            "allowed_growth_bytes": 188416
+          }
+        ]
+      }
+    }
+  },
+  "production_oracle_comparisons": {
+    "mixed_title_utf8_bytes": 1100000,
+    "jsonl_line_size_accepted_bytes": 67108864,
+    "jsonl_line_size_rejected_bytes": 67108865,
+    "kirat_vowel_alphabet_codepoints": [
+      "16D63",
+      "16D67",
+      "16D68",
+      "16D69",
+      "16D6A"
+    ],
+    "kirat_vowel_lengths": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "kirat_vowel_sequences": 3905
+  },
+  "interpretation": "No observed input-proportional auxiliary RSS growth after the rewrite. Negative normalized values reflect fixed runtime and allocator floors, not negative memory usage. Source inspection establishes constant auxiliary state in UTF-8 scanning, Tifinagh parity counters and Kirat folding.",
+  "limitations": [
+    "Linux host RSS samples only; other platforms are untested.",
+    "RSS includes runtime, allocator and pre-exec harness memory; source inspection is required for the auxiliary-state bound.",
+    "Inputs, session parsing and rendering output still require storage; no constant whole-command memory claim.",
+    "Full parity remains incomplete; existing startup and malformed-input differences are retained."
+  ]
+}

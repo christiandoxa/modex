@@ -1,5 +1,6 @@
 """Compare unmodified plain session output in identical disposable homes."""
 
+import itertools
 import json
 import os
 from pathlib import Path
@@ -194,6 +195,12 @@ class SessionTextTests(unittest.TestCase):
                 with self.subTest(value=value, columns=columns):
                     baseline, modex = compare_text(["session", "list"], columns=columns, change=change)
                     self.assertEqual(modex, baseline)
+
+    def test_all_short_kirat_vowel_sequences(self):
+        vowels = "\U00016d63\U00016d67\U00016d68\U00016d69\U00016d6a"
+        self.assert_title_batch(["P" + "".join(sequence) + "Q"
+                                 for length in range(1, 6)
+                                 for sequence in itertools.product(vowels, repeat=length)])
 
     def test_generated_unicode_width_sequences(self):
         generator = random.Random(43917)

@@ -5,7 +5,6 @@ Tables contain UCD data, not an external width implementation.
 """
 
 from std.builtin.globals import global_constant
-from std.collections import List
 from std.collections.string._grapheme_break import _gbp_lookup
 
 
@@ -220,44 +219,76 @@ def joining_transparent(code: Int) -> Bool:
     return (default_ignorable(code) or grapheme_extend(code)) and not in_ranges[TRANSPARENT_EXCLUSIONS](code)
 
 
-def skip_ligature_marks(codes: List[Int], var index: Int) -> Tuple[Int, Bool]:
+def codepoint_at(value: StringSlice, offset: Int) -> Int:
+    # The slice is a valid UTF-8 String suffix beginning at a codepoint boundary.
+    var suffix = value[byte=offset:]
+    for character in suffix.codepoints():
+        return Int(character)
+    return -1
+
+
+def codepoint_bytes(code: Int) -> Int:
+    if code < 0x80:
+        return 1
+    if code < 0x800:
+        return 2
+    if code < 0x10000:
+        return 3
+    return 4
+
+
+def previous_codepoint(value: StringSlice, end: Int) -> Tuple[Int, Int]:
+    # The end offset is a codepoint boundary in a valid UTF-8 String.
+    var bytes = value.as_bytes()
+    var start = end - 1
+    while start > 0 and Int(bytes[start]) & 0xC0 == 0x80:
+        start -= 1
+    return start, codepoint_at(value, start)
+
+
+def skip_ligature_marks(value: StringSlice, var offset: Int) -> Tuple[Int, Bool]:
     var joined = False
-    while index < len(codes):
-        var code = codes[index]
+    while offset < value.byte_length():
+        var code = codepoint_at(value, offset)
         if code == 0x200D:
             joined = True
         elif not (default_ignorable(code) and grapheme_extend(code)):
             break
-        index += 1
-    return index, joined
+        offset += codepoint_bytes(code)
+    return offset, joined
 
 
 def tifinagh_consonant(code: Int) -> Bool:
     return 0x2D31 <= code <= 0x2D65 or code == 0x2D6F
 
 
-def tifinagh_width(codes: List[Int], index: Int) -> Tuple[Int, Int]:
-    var end = index + 1
-    var joiners = List[Int]()
-    while end < len(codes):
-        var next, joined = skip_ligature_marks(codes, end)
+def tifinagh_width(value: StringSlice, offset: Int) -> Tuple[Int, Int]:
+    var end = offset + codepoint_bytes(codepoint_at(value, offset))
+    var joiners = 0
+    var even_cells = 0
+    var odd_cells = 0
+    while end < value.byte_length():
+        var next, joined = skip_ligature_marks(value, end)
         var cells = 0
-        if next < len(codes) and codes[next] == 0x2D7F:
-            next, _ = skip_ligature_marks(codes, next + 1)
+        if next < value.byte_length() and codepoint_at(value, next) == 0x2D7F:
+            next += codepoint_bytes(0x2D7F)
+            next, _ = skip_ligature_marks(value, next)
             joined = True
             cells = 1
-        if not joined or next >= len(codes) or not tifinagh_consonant(codes[next]):
+        if not joined or next >= value.byte_length() or not tifinagh_consonant(codepoint_at(value, next)):
             break
-        joiners.append(cells)
-        end = next + 1
+        if joiners % 2:
+            odd_cells += cells
+        else:
+            even_cells += cells
+        joiners += 1
+        end = next + codepoint_bytes(codepoint_at(value, next))
     if not joiners:
-        return index, 0
+        return offset, 0
     # The frozen renderer pairs consonants from the right, without overlap.
-    var count = len(joiners) + 1
+    var count = joiners + 1
     var width = (count + 1) // 2
-    for index in range(len(joiners)):
-        if (count - 2 - index) % 2:
-            width += joiners[index]
+    width += odd_cells if count % 2 == 0 else even_cells
     return end, width
 
 
@@ -265,96 +296,110 @@ def kirat_vowel(code: Int) -> Bool:
     return code == 0x16D63 or 0x16D67 <= code <= 0x16D6A
 
 
-def kirat_width(codes: List[Int], var index: Int) -> Tuple[Int, Int]:
-    var decomposed = List[Int]()
-    var end = index
-    while index < len(codes) and kirat_vowel(codes[index]):
-        var code = codes[index]
-        if code == 0x16D63 or code == 0x16D69 or code == 0x16D6A:
-            decomposed.append(0)
-        if code != 0x16D63:
-            decomposed.append(1)
-        if code == 0x16D68 or code == 0x16D6A:
-            decomposed.append(1)
-        end = index + 1
-        index = end
-    var count = len(decomposed)
+def kirat_feed(width: Int, pending: Int, bit: Int) -> Tuple[Int, Int]:
+    if pending == 0:
+        return (width + 1, 0) if bit == 0 else (width, 1)
+    if pending == 1:
+        return (width + 1, 0) if bit == 0 else (width, 2)
+    return (width + 1, 0) if bit == 0 else (width + 1, 1)
+
+
+def kirat_width(value: StringSlice, offset: Int) -> Tuple[Int, Int]:
+    var end = offset
+    while end < value.byte_length():
+        var code = codepoint_at(value, end)
+        if not kirat_vowel(code):
+            break
+        end += codepoint_bytes(code)
     var width = 0
-    while count:
-        if count >= 3 and decomposed[count - 3] == 0 and decomposed[count - 2] == 1 and decomposed[count - 1] == 1:
-            count -= 3
-        elif count >= 2 and decomposed[count - 1] == 1:
-            count -= 2
+    var pending = 0
+    var position = end
+    while position > offset:
+        var start, code = previous_codepoint(value, position)
+        if code == 0x16D63:
+            width, pending = kirat_feed(width, pending, 0)
+        elif code == 0x16D67:
+            width, pending = kirat_feed(width, pending, 1)
+        elif code == 0x16D68:
+            width, pending = kirat_feed(width, pending, 1)
+            width, pending = kirat_feed(width, pending, 1)
+        elif code == 0x16D69:
+            width, pending = kirat_feed(width, pending, 1)
+            width, pending = kirat_feed(width, pending, 0)
         else:
-            count -= 1
+            width, pending = kirat_feed(width, pending, 1)
+            width, pending = kirat_feed(width, pending, 1)
+            width, pending = kirat_feed(width, pending, 0)
+        position = start
+    if pending:
         width += 1
     return end, width
 
 
-def script_ligature(codes: List[Int], index: Int) raises -> Tuple[Int, Int]:
-    var code = codes[index]
+def script_ligature(value: StringSlice, offset: Int) raises -> Tuple[Int, Int]:
+    var code = codepoint_at(value, offset)
     if tifinagh_consonant(code):
-        return tifinagh_width(codes, index)
+        return tifinagh_width(value, offset)
     if kirat_vowel(code):
-        return kirat_width(codes, index)
+        return kirat_width(value, offset)
     if code == 0x644 or 0x6B5 <= code <= 0x6B8 or code == 0x76A or code == 0x8A6 or code == 0x8C7:
-        var next = index + 1
-        while next < len(codes) and joining_transparent(codes[next]) and character_width(codes[next]) == 0:
-            next += 1
-        if next < len(codes):
-            var alef = codes[next]
+        var next = offset + codepoint_bytes(code)
+        while next < value.byte_length() and joining_transparent(codepoint_at(value, next)) and character_width(codepoint_at(value, next)) == 0:
+            next += codepoint_bytes(codepoint_at(value, next))
+        if next < value.byte_length():
+            var alef = codepoint_at(value, next)
             if (alef == 0x622 or alef == 0x623 or alef == 0x625 or alef == 0x627
                 or 0x671 <= alef <= 0x673 or alef == 0x675 or 0x773 <= alef <= 0x774 or 0x870 <= alef <= 0x882):
-                return next + 1, 1
+                return next + codepoint_bytes(alef), 1
     elif (code == 0x5D0 or code == 0x10C32 or code == 0x1A15 or code == 0x17D2
           or 0xA4F8 <= code <= 0xA4FB):
-        var next, joined = skip_ligature_marks(codes, index + 1)
-        if next >= len(codes):
-            return index, 0
-        var other = codes[next]
+        var next, joined = skip_ligature_marks(value, offset + codepoint_bytes(code))
+        if next >= value.byte_length():
+            return offset, 0
+        var other = codepoint_at(value, next)
         if joined and ((code == 0x5D0 and other == 0x5DC) or (code == 0x10C32 and other == 0x10C03)):
-            return next + 1, 1
+            return next + codepoint_bytes(other), 1
         if 0xA4F8 <= code <= 0xA4FB and 0xA4FC <= other <= 0xA4FD:
-            return next + 1, 1
+            return next + codepoint_bytes(other), 1
         if code == 0x1A15 and other == 0x1A17:
-            var end, has_joiner = skip_ligature_marks(codes, next + 1)
-            if has_joiner and end < len(codes) and codes[end] == 0x1A10:
-                return end + 1, 1
+            var end, has_joiner = skip_ligature_marks(value, next + codepoint_bytes(other))
+            if has_joiner and end < value.byte_length() and codepoint_at(value, end) == 0x1A10:
+                return end + codepoint_bytes(0x1A10), 1
         if code == 0x17D2 and (0x1780 <= other <= 0x1782 or 0x1784 <= other <= 0x1787
             or 0x1789 <= other <= 0x178C or 0x178E <= other <= 0x1793 or 0x1795 <= other <= 0x1798
             or 0x179B <= other <= 0x179D or other == 0x17A0 or other == 0x17A2 or other == 0x17A7
             or 0x17AB <= other <= 0x17AC or other == 0x17AF):
-            return next + 1, 0
-    return index, 0
+            return next + codepoint_bytes(other), 0
+    return offset, 0
 
 
-def emoji_part(codes: List[Int], index: Int) raises -> Tuple[Int, Int, Bool]:
-    var code = codes[index]
-    var end = index + 1
+def emoji_part(value: StringSlice, offset: Int) raises -> Tuple[Int, Int, Bool]:
+    var code = codepoint_at(value, offset)
+    var end = offset + codepoint_bytes(code)
     var cells = character_width(code)
     var emoji = in_ranges[EMOJI_PRESENTATION](code)
     if 0x1F1E6 <= code <= 0x1F1FF:
-        if end < len(codes) and 0x1F1E6 <= codes[end] <= 0x1F1FF:
-            return end + 1, 2, True
+        if end < value.byte_length() and 0x1F1E6 <= codepoint_at(value, end) <= 0x1F1FF:
+            return end + codepoint_bytes(codepoint_at(value, end)), 2, True
         return end, 1, False
-    if end < len(codes) and codes[end] == 0xFE0E and in_ranges[TEXT_VARIANTS](code):
-        return end + 1, 1, False
-    if end < len(codes) and codes[end] == 0xFE0F and (emoji or in_ranges[EMOJI_VARIANTS](code)):
-        end += 1
+    if end < value.byte_length() and codepoint_at(value, end) == 0xFE0E and in_ranges[TEXT_VARIANTS](code):
+        return end + codepoint_bytes(0xFE0E), 1, False
+    if end < value.byte_length() and codepoint_at(value, end) == 0xFE0F and (emoji or in_ranges[EMOJI_VARIANTS](code)):
+        end += codepoint_bytes(0xFE0F)
         cells = 2
         emoji = True
-    if emoji and end < len(codes) and codes[end] == 0x20E3 and (code == 0x23 or code == 0x2A or 0x30 <= code <= 0x39):
-        return end + 1, 2, True
-    if end == index + 1 and end < len(codes) and 0x1F3FB <= codes[end] <= 0x1F3FF and in_ranges[MODIFIER_BASES](code):
-        end += 1
+    if emoji and end < value.byte_length() and codepoint_at(value, end) == 0x20E3 and (code == 0x23 or code == 0x2A or 0x30 <= code <= 0x39):
+        return end + codepoint_bytes(0x20E3), 2, True
+    if end == offset + codepoint_bytes(code) and end < value.byte_length() and 0x1F3FB <= codepoint_at(value, end) <= 0x1F3FF and in_ranges[MODIFIER_BASES](code):
+        end += codepoint_bytes(codepoint_at(value, end))
         cells = 2
         emoji = True
     if code == 0x1F3F4:
         var tag = end
-        while tag < len(codes) and 0xE0020 <= codes[tag] <= 0xE007E:
-            tag += 1
-        if tag > end and tag < len(codes) and codes[tag] == 0xE007F:
-            end = tag + 1
+        while tag < value.byte_length() and 0xE0020 <= codepoint_at(value, tag) <= 0xE007E:
+            tag += codepoint_bytes(codepoint_at(value, tag))
+        if tag > end and tag < value.byte_length() and codepoint_at(value, tag) == 0xE007F:
+            end = tag + codepoint_bytes(0xE007F)
     return end, cells, emoji
 
 
@@ -371,41 +416,45 @@ def text_width(value: String) raises -> Int:
         previous = Int(byte)
     if ascii:
         return ascii_width
-    # shortcut: non-ASCII text buffers scalars; use bounded lookahead for rendering large fields.
-    var codes = List[Int]()
-    for character in value.codepoints():
-        codes.append(Int(character))
+    var text = StringSlice(value)
+    var length = text.byte_length()
     var width = 0
-    var index = 0
-    while index < len(codes):
-        var code = codes[index]
+    var offset = 0
+    while offset < length:
+        var code = codepoint_at(text, offset)
+        var next = offset + codepoint_bytes(code)
         if code < 0x20 or 0x7F <= code <= 0x9F:
             width += 1
-            index += 2 if code == 13 and index + 1 < len(codes) and codes[index + 1] == 10 else 1
+            if code == 13 and next < length and codepoint_at(text, next) == 10:
+                next += 1
+            offset = next
             continue
         if 0x20 <= code <= 0x7E and code != 0x23 and code != 0x2A and not 0x30 <= code <= 0x39:
             width += 1
-            index += 1
+            offset = next
             continue
-        if (code == 0x2018 or code == 0x2019 or code == 0x201C or code == 0x201D) and index + 1 < len(codes) and 0xFE00 <= codes[index + 1] <= 0xFE02:
-            width += 2 if codes[index + 1] == 0xFE01 else 1
-            index += 2
+        if (code == 0x2018 or code == 0x2019 or code == 0x201C or code == 0x201D) and next < length and 0xFE00 <= codepoint_at(text, next) <= 0xFE02:
+            width += 2 if codepoint_at(text, next) == 0xFE01 else 1
+            offset = next + codepoint_bytes(codepoint_at(text, next))
             continue
-        var ligature, ligature_cells = script_ligature(codes, index)
-        if ligature > index:
+        var ligature, ligature_cells = script_ligature(text, offset)
+        if ligature > offset:
             width += ligature_cells
-            index = ligature
+            offset = ligature
             continue
-        var end, cells, emoji = emoji_part(codes, index)
+        var end, cells, emoji = emoji_part(text, offset)
         if emoji:
-            while end + 1 < len(codes) and codes[end] == 0x200D:
-                var next, _, joined = emoji_part(codes, end + 1)
+            while end < length and codepoint_at(text, end) == 0x200D:
+                var joined_start = end + codepoint_bytes(0x200D)
+                if joined_start >= length:
+                    break
+                var joined_end, _, joined = emoji_part(text, joined_start)
                 if not joined:
                     break
-                end = next
+                end = joined_end
             width += cells
-            index = end
+            offset = end
             continue
         width += cells
-        index = end
+        offset = end
     return width

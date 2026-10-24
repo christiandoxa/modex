@@ -33,6 +33,7 @@ unit: check-toolchain
 	build/tests/test_zstd
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/zstd_driver.mojo -o build/tests/zstd_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/text_driver.mojo -o build/tests/text_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/width_memory_driver.mojo -o build/tests/width_memory_driver
 
 test: build unit
 	python3 -m unittest discover -s tests -p 'test_*.py' -v

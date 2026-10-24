@@ -17,7 +17,7 @@ platform obligations; 1 Linux obligation passes, and 0 complete cross-platform
 contracts pass. Inventory expansion remains necessary; no parity percentage is
 valid.
 
-Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard/text drivers, and 55
+Validation: `make test` (4 Mojo unit programs, test-only JSON/Zstandard/text drivers, and 59
 Python black-box/runtime tests PASS, including 500 deterministic generated
 JSON values plus malformed UTF-8/syntax/boundary vectors and numeric/local
 session time comparisons, including future recurring rules through 2100,
@@ -71,10 +71,19 @@ cover 3,026 official emoji sequences, 960 seeded mixed-script strings,
 property-range boundaries, truncation, padding, full IDs and path wrapping.
 The release's scalar cuts and scalar wrapping are preserved even when they
 split an emoji sequence; cell measurement uses combined string widths.
-ASCII width checks avoid allocation. Non-ASCII width checks still buffer
-scalars, so memory at maximum-size display fields remains unverified.
+Width checks now walk UTF-8 slices with constant auxiliary state. Tifinagh
+joiner parity and backward Kirat folding avoid scalar and decomposition lists.
+Linux RSS checks cover ASCII, mixed Unicode, Tifinagh, Kirat and emoji tags;
+fresh harnesses prevent inherited Python memory from masking regressions.
+The old implementation fails the same memory regression check. Output also
+matches the oracle for a 1,100,000-byte mixed title, the exact 64 MiB JSONL
+line boundary and its one-byte overflow, and all 3,905 Kirat vowel sequences
+of lengths one through five. RSS observations support the source-level bound;
+they do not establish a whole-command or cross-platform memory guarantee.
 Evidence: `docs/evidence/unicode-width-tests.txt`; the earlier 239 scenarios
-are retained in `docs/evidence/session-unicode-tests.txt`.
+are retained in `docs/evidence/session-unicode-tests.txt`. The bounded-width
+checks and before/after samples are in `docs/evidence/text-memory-tests.txt`
+and `docs/evidence/text-memory.json`.
 
 The release panics with exit 101 when U+17D8 (a three-cell Khmer glyph) reaches
 its scalar truncation or wrapping planner, which rejects widths above two.
@@ -114,8 +123,9 @@ also cover correction overflow. The fixtures are synthetic; this host has no
 installed `right/` leap-zone directory. Evidence:
 `docs/evidence/leap-timezone-tests.txt` and `tests/test_timezone_files.py`.
 
-Next work: bound non-ASCII width memory, complete remaining sequence edge
-cases and the terminal view, and implement independent remaining commands.
+Next work: finish detached `log last` event selection, redaction and policy
+path resolution with oracle regressions, then complete remaining sequence
+edge cases and the terminal view. Log work is not in this memory checkpoint.
 Stateful paths still fail explicitly. Future recurring timezone rules and
 POSIX TZ strings are implemented; their earlier evidence is
 `docs/evidence/recurring-time-tests.txt`.

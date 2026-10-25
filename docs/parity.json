@@ -1756,18 +1756,23 @@
       "prerequisites": [
         "configured upstream endpoints"
       ],
-      "implementation": "src/modex/provider_sse_wire.mojo; src/modex/provider_sse_json.mojo (standalone provider SSE foundations only)",
+      "implementation": "src/modex/provider_sse_wire.mojo; src/modex/provider_sse_json.mojo; src/modex/provider_chat_reader.mojo (standalone provider SSE and chat response-stream foundations)",
       "tests": [
         "tests/test_provider_sse_wire.mojo",
         "tests/test_provider_sse_json.mojo",
         "tests/provider_sse_driver.mojo",
         "tests/test_provider_sse.py",
-        "tests/test_provider_sse_runtime.py"
+        "tests/test_provider_sse_runtime.py",
+        "tests/test_provider_chat_stream.mojo",
+        "tests/test_provider_chat_stream.py",
+        "tests/capture_provider_stream.py"
       ],
       "evidence": [
         "tests/fixtures/provider-sse/README.md",
         "docs/evidence/provider-sse-tests.txt",
-        "docs/evidence/provider-sse-link.txt"
+        "docs/evidence/provider-sse-link.txt",
+        "docs/evidence/provider-chat-stream-tests.txt",
+        "docs/evidence/provider-chat-stream-link.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -1780,7 +1785,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Provider SSE framing and JSON assembly are standalone native foundations with frozen-source fixtures and isolated runtime tests, not connected provider execution or official-release stream comparisons. Provider translation, completion/error envelopes, HTTP/TLS/proxies, cancellation, backpressure and remaining transport semantics are unfinished. No complete transport or provider parity is claimed."
+        "Provider SSE framing/JSON assembly and DeepSeek response-stream translation are standalone native foundations with frozen-source, isolated-runtime and synthetic official-release adapter comparisons. The product CLI does not call them yet. HTTP/TLS/proxies, cancellation/backpressure, full error/resource equivalence and remaining transport semantics are unfinished. No complete transport or provider parity is claimed."
       ]
     },
     {
@@ -2047,16 +2052,31 @@
       "prerequisites": [
         "DeepSeek services"
       ],
-      "implementation": "src/modex/provider_chat_chunk.mojo (standalone chat-compatible choice/error decoding only)",
+      "implementation": "src/modex/provider_chat_chunk.mojo; src/modex/provider_chat_reader.mojo; src/modex/provider_chat_stream.mojo; src/modex/provider_chat_items.mojo; src/modex/provider_chat_tools.mojo; src/modex/provider_chat_metadata.mojo; src/modex/provider_chat_usage.mojo; src/modex/provider_sse_events.mojo (standalone response-stream translation; not connected to CLI)",
       "tests": [
         "tests/test_provider_chat_chunk.mojo",
         "tests/provider_chat_chunk_driver.mojo",
         "tests/test_provider_chat_chunk.py",
-        "tests/test_provider_chat_sse.py"
+        "tests/test_provider_chat_sse.py",
+        "tests/test_provider_chat_stream.mojo",
+        "tests/test_provider_chat_items.mojo",
+        "tests/test_provider_chat_tools.mojo",
+        "tests/test_provider_chat_metadata.mojo",
+        "tests/test_provider_chat_usage.mojo",
+        "tests/test_provider_sse_events.mojo",
+        "tests/test_uuid7.mojo",
+        "tests/test_rtk_command.mojo",
+        "tests/provider_chat_stream_driver.mojo",
+        "tests/test_provider_chat_stream.py",
+        "tests/capture_provider_stream.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
-        "docs/evidence/provider-chat-tests.txt"
+        "docs/evidence/provider-chat-tests.txt",
+        "tests/fixtures/provider-stream/README.md",
+        "tests/fixtures/provider-stream/cases.json",
+        "docs/evidence/provider-chat-stream-tests.txt",
+        "docs/evidence/provider-chat-stream-link.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2069,7 +2089,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Chat-compatible chunk decoding is a standalone source-derived foundation. Stateful provider event translation, usage conversion, auth/config/request transformation, tool lifecycles, transport and completion/error semantics remain unfinished and are not connected to the CLI. No official-release provider equivalence is claimed."
+        "Native response-stream translation has source-derived and synthetic official-release adapter comparisons, but remains a standalone component outside CLI dispatch. Request transformation, auth/config, conversation persistence, HTTP/TLS/proxies, cancellation/backpressure, full resource/error equivalence and non-host execution remain unfinished. Component comparisons are not provider-command parity."
       ]
     },
     {

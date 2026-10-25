@@ -54,7 +54,8 @@ def main() raises:
     except:
         incomplete_done = True
     assert_true(incomplete_done)
-    assert_true(not pending_done.saw_done)
+    assert_true(pending_done.saw_done)
+    assert_true(not pending_done.done)
     var rejected_after_failure = False
     try:
         _ = values(pending_done, ["1}"])

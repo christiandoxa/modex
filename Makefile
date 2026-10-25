@@ -32,6 +32,23 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_chat_chunk.mojo -o build/tests/test_provider_chat_chunk
 	build/tests/test_provider_chat_chunk
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_chat_chunk_driver.mojo -o build/tests/provider_chat_chunk_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_sse_events.mojo -o build/tests/test_provider_sse_events
+	build/tests/test_provider_sse_events
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_chat_usage.mojo -o build/tests/test_provider_chat_usage
+	build/tests/test_provider_chat_usage
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_chat_tools.mojo -o build/tests/test_provider_chat_tools
+	build/tests/test_provider_chat_tools
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_uuid7.mojo -o build/tests/test_uuid7
+	build/tests/test_uuid7
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_chat_items.mojo -o build/tests/test_provider_chat_items
+	build/tests/test_provider_chat_items
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_rtk_command.mojo -o build/tests/test_rtk_command
+	build/tests/test_rtk_command
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_chat_metadata.mojo -o build/tests/test_provider_chat_metadata
+	build/tests/test_provider_chat_metadata
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_chat_stream.mojo -o build/tests/test_provider_chat_stream
+	build/tests/test_provider_chat_stream
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_chat_stream_driver.mojo -o build/tests/provider_chat_stream_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json.mojo -o build/tests/test_json
 	build/tests/test_json
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json_float.mojo -o build/tests/test_json_float

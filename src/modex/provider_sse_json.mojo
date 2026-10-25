@@ -31,11 +31,11 @@ struct ProviderSSEJSONAssembler:
             return List[String]()
         for line in data_lines:
             if trim_text(line) == "[DONE]":
+                self.saw_done = True
                 try:
                     var result = self._flush()
                     if self.accumulated_json:
                         raise Error("incomplete JSON segment")
-                    self.saw_done = True
                     self.done = True
                     return result^
                 except:

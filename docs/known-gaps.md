@@ -129,10 +129,34 @@ does not call the modules yet; translation, completion/error envelopes,
 HTTP/TLS/proxies, backpressure and cancellation remain unfinished. Evidence:
 `docs/evidence/provider-sse-tests.txt` and `docs/evidence/provider-sse-link.txt`.
 
-Chat-compatible choice/error decoding is also a standalone foundation. Its
-source-derived tests do not establish full provider translation, request/auth
-behavior, usage conversion, tool-call state, completion/error envelopes or
-transport parity. See `docs/evidence/provider-chat-tests.txt`.
+Chat-compatible choice/error decoding now feeds a native stateful DeepSeek
+response-stream translator. It accumulates text/reasoning/tool deltas, emits
+completion/failure envelopes, projects usage/metadata and shapes tool items.
+Synthetic loopback fixtures run through the checksum-verified official
+release's Super adapter and are replayed through the native component. Missing
+tool IDs require UUIDv7; the runtime initializes them before the deterministic
+provider-core fallback can apply. Two independent release captures prove the
+varying UUID bytes; comparison preserves all other bytes and validates stable
+UUIDv7 identity within each stream.
+
+These remain standalone modules outside the product CLI. The test-only
+synthetic Codex client replaces the external integration target, never Modex;
+its outer Super process exits 1 because it does not implement app-server.
+Adapter response comparisons do not establish Super command parity. Request
+transformation, auth/config, conversation persistence, first-event retry,
+HTTP/TLS/proxies, cancellation/backpressure and full resource/error equivalence
+remain unfinished. UUID generation uses the official file API to read
+`/dev/urandom` and is only exercised on Linux. Non-host behavior is unverified.
+See `docs/evidence/provider-chat-stream-tests.txt`,
+`docs/evidence/provider-chat-stream-link.txt` and
+`tests/fixtures/provider-stream/README.md`.
+
+Two seeded malformed-shape captures (`choices: [7]` and `tool_calls: [null]`)
+do not yield official-release SSE. Super exits with `Codex hook-trust preflight
+initialize failed: channel is empty and sending half is closed`. The catalog
+retains upstream bytes and observed stderr without an expected response. These
+cases establish an oracle observation gap, not successful provider equivalence;
+the native component's defined failure behavior is only source-derived.
 
 Native policy loading and directory resolution now match tested release paths,
 schema errors and fallback behavior, including 712 wrapped corpus inputs.

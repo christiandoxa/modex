@@ -1,0 +1,109 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+Flags: mojo build -O3 --target-cpu=x86-64-v3 -I src
+Scope: standalone DeepSeek response-stream translator; no connected provider CLI claim.
+
+Command: readelf -d build/tests/provider_chat_stream_driver
+
+Dynamic section at offset 0x50cc8 contains 29 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+ 0x000000000000000c (INIT)               0x1000
+ 0x000000000000000d (FINI)               0x40f10
+ 0x0000000000000019 (INIT_ARRAY)         0x51cb8
+ 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)
+ 0x000000000000001a (FINI_ARRAY)         0x51cc0
+ 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)
+ 0x000000006ffffef5 (GNU_HASH)           0x3a0
+ 0x0000000000000005 (STRTAB)             0x710
+ 0x0000000000000006 (SYMTAB)             0x3c8
+ 0x000000000000000a (STRSZ)              785 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000015 (DEBUG)              0x0
+ 0x0000000000000003 (PLTGOT)             0x51ed8
+ 0x0000000000000002 (PLTRELSZ)           696 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0xb78
+ 0x0000000000000007 (RELA)               0xab8
+ 0x0000000000000008 (RELASZ)             192 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000000000001e (FLAGS)              BIND_NOW
+ 0x000000006ffffffb (FLAGS_1)            Flags: NOW PIE
+ 0x000000006ffffffe (VERNEED)            0xa68
+ 0x000000006fffffff (VERNEEDNUM)         1
+ 0x000000006ffffff0 (VERSYM)             0xa22
+ 0x000000006ffffff9 (RELACOUNT)          3
+ 0x0000000000000000 (NULL)               0x0
+
+Command: ldd build/tests/provider_chat_stream_driver
+	linux-vdso.so.1 (0x00007009d8ff7000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007009d8e4e000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007009d8c00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007009d8b17000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007009d8800000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007009d8e1d000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007009d7c00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007009d8ae9000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007009d8ff9000)
+
+Commands: sha256sum build/modex build/tests/provider_chat_stream_driver; import inventory
+82a3ca2f5a291d7f8f1eee4d92720eb2b2f32547d73e6b20046cc1039c449a9e  build/modex
+f7153cb8c837f8f3739df0085c6c7d583749a6d3345fb80d8bf574354e7428e7  build/tests/provider_chat_stream_driver
+src/modex/uuid7.mojo:3:from std.collections import ImmSpan, List
+src/modex/uuid7.mojo:4:from std.time.time import _realtime_nanoseconds
+src/modex/provider_chat_items.mojo:3:from std.collections import List
+src/modex/provider_chat_items.mojo:5:from .json import JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_chat_items.mojo:6:from .rtk_command import prefixed_noisy_command
+src/modex/provider_chat_items.mojo:7:from .text import trim_text
+src/modex/rtk_command.mojo:3:from std.collections import List, Span
+src/modex/rtk_command.mojo:5:from .text import is_whitespace
+src/modex/provider_chat_usage.mojo:3:from .json import JSON_NUMBER, JSON_OBJECT, JsonDocument, quote_json, serialize_json, serialize_number
+src/modex/provider_chat_usage.mojo:4:from .text import unsigned_value
+src/modex/provider_chat_tools.mojo:3:from .json import JSON_OBJECT, JSON_STRING, JsonDocument, quote_json
+src/modex/provider_chat_tools.mojo:4:from .provider_chat_usage import json_unsigned
+src/modex/provider_chat_tools.mojo:5:from .text import trim_text
+src/modex/provider_chat_reader.mojo:3:from std.collections import List
+src/modex/provider_chat_reader.mojo:5:from .provider_chat_stream import DeepSeekChatState
+src/modex/provider_chat_reader.mojo:6:from .provider_sse_json import ProviderSSEJSONAssembler
+src/modex/provider_chat_reader.mojo:7:from .provider_sse_wire import ProviderSSEFramer
+src/modex/provider_chat_stream.mojo:3:from std.collections import List
+src/modex/provider_chat_stream.mojo:5:from .json import JSON_ARRAY, JSON_NULL, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_chat_stream.mojo:6:from .provider_chat_chunk import chat_choice_delta, chat_choice_metadata, chat_first_choice, chat_stream_error
+src/modex/provider_chat_stream.mojo:7:from .provider_chat_items import tool_added_item, tool_output_item, wrap_tool_arguments
+src/modex/provider_chat_stream.mojo:8:from .provider_chat_metadata import merge_chat_metadata
+src/modex/provider_chat_stream.mojo:9:from .provider_chat_tools import chat_tool_delta, incremental_arguments
+src/modex/provider_chat_stream.mojo:10:from .provider_chat_usage import chat_usage, json_unsigned
+src/modex/provider_chat_stream.mojo:11:from .provider_sse_events import sse_event, sse_failed_event, sse_text_item_added, sse_text_item_done
+src/modex/provider_chat_stream.mojo:12:from .text import trim_text
+src/modex/provider_chat_stream.mojo:13:from .uuid7 import new_uuid7
+src/modex/provider_sse_events.mojo:3:from .json import JsonDocument, quote_json, serialize_json
+src/modex/provider_sse_events.mojo:4:from .log_redaction import redact_log_text
+src/modex/provider_chat_metadata.mojo:3:from .json import JSON_OBJECT, JsonDocument, quote_json, serialize_json
+
+All imports resolve to official pinned Mojo stdlib or existing local Mojo modules.
+The only new private stdlib clock API is std.time.time._realtime_nanoseconds.
+UUIDv7 reads 16 /dev/urandom bytes through the official file API and fails on
+short reads. It never substitutes a weak random source. Layout test source:
+https://www.rfc-editor.org/rfc/rfc9562.html#section-5.7
+Independent vector: RFC 9562 Appendix A.6.
+No native ABI declaration, new binding, application library, external parser,
+Python runtime, process helper, network download or production code generator
+was added. RTK tool handling only rewrites strings; it does not execute RTK.
+No Prodex reference path is imported, linked or called by production sources.
+
+The driver runs UUIDv7 generation and malformed-UTF8 failure in a disposable
+bubblewrap filesystem/network namespace using only its binary, platform and
+official Mojo runtime libraries, synthetic HOME/cwd and /dev (urandom).
+Python, Node, Rust and Prodex executables are absent from that namespace.
+See tests/test_provider_chat_stream.py for reproducible runtime checks.
+The capture harness separately runs Prodex as a test oracle with synthetic
+credentials on loopback and keeps host network access; that capture is not
+clean-runtime evidence. No real account or paid provider traffic is used.
+
+The product executable hash is unchanged because provider modules remain
+outside CLI dispatch. Its prior readelf/ldd audit is recorded in
+provider-sse-link.txt. Absolute toolchain RUNPATH remains a distribution gap.
+Cross-platform entropy, transport integration and full provider parity remain
+unverified. The six release targets remain in the parity denominator.

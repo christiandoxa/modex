@@ -275,10 +275,55 @@ Chat-compatible provider chunk helpers now select the first choice, decode
 choice metadata/text/tool deltas and classify embedded errors in native Mojo.
 The implementations reuse the JSON decoder and preserve frozen typed-field
 and presence-based fallback rules. These remain standalone foundations;
-stateful translation, usage conversion, tool lifecycles and completion/error
-envelopes are still next work. Evidence and limits:
+stateful translation has subsequently been implemented as described below.
+Original chunk evidence and limits:
 `docs/evidence/provider-chat-tests.txt` and
 `tests/fixtures/provider-chat/README.md`.
+
+The recovered chat-stream work now combines SSE bytes, JSON assembly and
+stateful DeepSeek response events in native Mojo. Three parallel GPT-6 Luna
+workers implemented stream regressions, tool-item/RTK shaping and an
+official-release capture/replay harness; root reviewed and integrated their
+changes. Usage conversion, request/provider metadata merge, text/reasoning
+completion, tool ordering, failure idempotence and synthetic malformed input
+are covered at the standalone component boundary. Root corrected a random
+UUID test that treated hex `a`/`b` as ASCII punctuation and added zero/max
+timestamp vectors. UUID layout also matches RFC 9562 Appendix A.6.
+
+The actual release generates UUIDv7 fallback tool IDs. The apparent conflict
+with deterministic provider-core ID helpers is resolved by
+`RuntimeDeepSeekToolCall::default`, which sets a fresh `Some(CallId::new())`
+before those fallback helpers are consulted. Two independently captured
+release UUIDs prove their changing bytes. The comparer validates canonical
+UUIDv7, count and within-stream identity before allowing that specific field
+to vary; all other output bytes remain compared. No incomplete component,
+successful assertion or oracle-only observation increases the parity count.
+
+The provider modules are not connected to CLI execution. Next integration
+requires request/auth/config handling, HTTP/TLS/proxies, conversation history
+persistence, bounded transport/backpressure/cancellation and first-event retry.
+The test-only synthetic Codex child records real release HTTP/SSE behavior but
+does not complete app-server; outer Super exit 1 remains explicit. This is not
+a Super command parity result. Keep the incomplete inventory at 60 coarse
+contracts/360 platform obligations, with 1 Linux obligation and 0 complete
+cross-platform contracts PASS. Validation and dependency evidence for this
+checkpoint: `docs/evidence/provider-chat-stream-tests.txt` and
+`docs/evidence/provider-chat-stream-link.txt`.
+
+Checkpoint validation: `rtk make test` exits 0 with 25 native Mojo unit
+programs and 194 Python methods PASS, no skips. Final unified-diff section,
+ASCII/Unicode whitespace and literal `/dev/null` path regressions were then
+rebuilt and run through native item/stream tests and all 35 focused provider
+Python methods, all PASS. The fresh official-release capture exits 1 because
+two oracle responses are unavailable: 39 available responses match exact
+bytes and one matches after the proven UUIDv7 field normalization. No other
+captured response mismatch remains; unavailable captures do not count PASS.
+
+The capture catalog also preserves two unavailable official-release responses:
+non-object first choices and null tool entries reach the synthetic upstream,
+but Super exits before producing SSE with its hook-trust preflight channel
+error. These are explicit observation gaps. Native unit failure behavior for
+these shapes is not a parity PASS, and no expected response is fabricated.
 
 The parser now preserves the frozen independent limits: 80 active
 array/inline-table levels and 80 segments per local key path. Forty-five

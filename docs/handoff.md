@@ -401,13 +401,48 @@ Transport checkpoint validation: `rtk make test` exits 0 with 31 native Mojo
 unit programs and 235 Python methods PASS, no skips. Source/dependency and
 unchanged-denominator checks pass. The product CLI binary hash is unchanged.
 
-Next integration work: implement the frozen buffered chat-response path and
-route dispatch, then connect native provider request/response execution to
-the real runtime entry point while preserving continuation ownership,
+Next work is native provider request/response execution through the real
+runtime entry point while preserving continuation ownership,
 first-event retry and the unresolved platform/capability obligations. Keep
 the original full goal active and the incomplete inventory at 60 coarse
 contracts/360 platform obligations, with 0 complete contracts and 1 Linux
 obligation PASS.
+
+Buffered DeepSeek success JSON now uses that same real POST exchange. A Luna
+MAX worker authored the mapper/native tests/driver and another Luna MAX worker
+captured deterministic application/json observations from the checksum-pinned
+release. The Sol MAX lead traced and corrected active conformance/fallback
+differences, typed UUIDv7 IDs, namespace/RTK behavior, metadata omission and
+malformed-argument diagnostics; he added native assistant-history extraction.
+This work used an isolated worktree with disjoint file ownership. Root copied
+the reviewed files, wired buffered response dispatch, and retained conversation
+messages separately from request preparation and translated Responses output.
+
+The mapper preserves the release's structural acceptance of ordinary tool
+argument strings, including some malformed literal/escape spellings. Strict
+diagnostics apply when that structural scan rejects or tool-search arguments
+would produce invalid output JSON. This observable distinction has retained
+oracle fixtures; no execution or broad validation readiness is claimed.
+Failed translations and blank response IDs produce no completed conversation
+result. The result is still in memory; no persistence or live continuation
+lookup is connected. Fallback response ID/time remain explicit caller inputs,
+as in the SSE component; production clock/UUID generation at CLI dispatch is
+still required. HTTP translation failures currently raise through the native
+driver, not the release's full HTTP 502 rendering path.
+
+Buffered component evidence: `docs/evidence/provider-buffered-tests.txt`,
+`docs/evidence/provider-buffered-link.txt`, and
+`tests/fixtures/provider-buffered/README.md`. All prior platform and transport
+gaps, route/Anthropic web-search adaptation, rate-limit response headers,
+retry/rotation, conversation persistence and CLI integration remain in scope.
+Buffered validation: four pinned native builds and the buffered/header native
+programs PASS; all 72 focused provider Python methods PASS, no skips. Seventeen
+buffered oracle cases produce 15 exact body-byte matches and two narrowly
+canonical-UUIDv7-normalized matches through real POST. Both SSE and buffered
+restricted-filesystem tests ran. The whole 235-method repository run belongs
+to the previous streaming checkpoint; it was not repeated here. Large-output
+conformance fallback and complete parser/resource/error equivalence remain
+unverified. No complete contract or new platform obligation is counted PASS.
 
 The parser now preserves the frozen independent limits: 80 active
 array/inline-table levels and 80 segments per local key path. Forty-five

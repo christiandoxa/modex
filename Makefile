@@ -60,6 +60,9 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_request.mojo -o build/tests/test_provider_request
 	build/tests/test_provider_request
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_request_driver.mojo -o build/tests/provider_request_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_chat_buffered.mojo -o build/tests/test_provider_chat_buffered
+	build/tests/test_provider_chat_buffered
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_chat_buffered_driver.mojo -o build/tests/provider_chat_buffered_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_deepseek_transport.mojo -o build/tests/test_provider_deepseek_transport
 	build/tests/test_provider_deepseek_transport
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_deepseek_transport_driver.mojo -o build/tests/provider_deepseek_transport_driver

@@ -1,0 +1,572 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "oracle_version": "0.439.0",
+  "oracle_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+  "capture_harness": "tests/capture_provider_buffered.py",
+  "scope": "Actual buffered JSON response dispatch through the frozen DeepSeek adapter with synthetic loopback chat completions.",
+  "runtime_claim": "Each case uses isolated HOME, Prodex/Codex storage, request files, environment and an ephemeral 127.0.0.1 upstream. The fake Codex client captures the local response; its incomplete app-server can leave the outer Super command nonzero.",
+  "cases": [
+    {
+      "name": "text_tool_usage_metadata",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_buffered_1\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\\u3053\\u3093\\u306b\\u3061\\u306f \\ud83c\\udf0b\",\"reasoning_content\":\"\\u8003\\u3048\\u3066\\u3044\\u307e\\u3059\",\"refusal\":\"\\u62d2\\u5426\",\"annotations\":[{\"type\":\"citation\",\"url\":\"https://example.invalid/source\"}],\"tool_calls\":[{\"id\":\"call_\\u6771\\u4eac\",\"function\":{\"name\":\"functions.\\u691c\\u7d22\",\"arguments\":\"{\\\"query\\\":\\\"caf\\u00e9 \\ud83c\\udf5c\\\"}\"}}]},\"finish_reason\":\"tool_calls\",\"logprobs\":{\"tokens\":[\"ok\"]}}],\"system_fingerprint\":\"fp_buffered_1\",\"usage\":{\"prompt_tokens\":11,\"completion_tokens\":7,\"total_tokens\":18,\"prompt_cache_hit_tokens\":5,\"prompt_cache_miss_tokens\":6,\"completion_tokens_details\":{\"reasoning_tokens\":2}}}",
+        "sha256": "4b67624c5d82e11df28697b52ddd5b30a967b0ffc30b99655b3f0097307ea87e"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"id\":\"chatcmpl_buffered_1\",\"metadata\":{\"deepseek\":{\"annotations\":[{\"type\":\"citation\",\"url\":\"https://example.invalid/source\"}],\"finish_reason\":\"tool_calls\",\"logprobs\":{\"tokens\":[\"ok\"]},\"reasoning_content\":\"考えています\",\"refusal\":\"拒否\",\"system_fingerprint\":\"fp_buffered_1\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"content\":[{\"text\":\"こんにちは 🌋\",\"type\":\"output_text\"}],\"role\":\"assistant\",\"type\":\"message\"},{\"arguments\":\"{\\\"query\\\":\\\"café 🍜\\\"}\",\"call_id\":\"call_東京\",\"name\":\"検索\",\"namespace\":\"functions\",\"type\":\"function_call\"}],\"usage\":{\"input_tokens\":11,\"input_tokens_details\":{\"cached_tokens\":5},\"metadata\":{\"deepseek\":{\"prompt_cache_hit_tokens\":5,\"prompt_cache_miss_tokens\":6}},\"output_tokens\":7,\"output_tokens_details\":{\"reasoning_tokens\":2},\"total_tokens\":18}}",
+        "sha256": "5708acf44538e2c00f02b61c189c74630dc03972c62d265138ed80e7f771bb10"
+      }
+    },
+    {
+      "name": "malformed_tool_arguments",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_buffered_bad_tool\",\"model\":\"deepseek-chat\",\"created\":1700000001,\"choices\":[{\"message\":{\"content\":\"before error\",\"tool_calls\":[{\"id\":\"call_bad\",\"function\":{\"name\":\"lookup\",\"arguments\":\"{bad\"}}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "420757960df105f7db6815fbbb6eace9268dd4f6dc4876428b66bb65d088ff59"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000001,\"error\":{\"code\":\"invalid_tool_call_arguments\",\"message\":\"DeepSeek returned malformed JSON arguments for tool call `lookup`: key must be a string at line 1 column 2\"},\"id\":\"chatcmpl_buffered_bad_tool\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"content\":[{\"text\":\"before error\",\"type\":\"output_text\"}],\"role\":\"assistant\",\"type\":\"message\"}],\"status\":\"failed\"}",
+        "sha256": "3985514f0fcb32825960542e8151b41b17186455d602c1372288df44f22c8a64"
+      }
+    },
+    {
+      "name": "blank_provider_metadata",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_blank_metadata\",\"model\":\"deepseek-chat\",\"created\":1700000002,\"choices\":[{\"message\":{\"content\":\"blank provider metadata\",\"reasoning_content\":\"\",\"annotations\":[]},\"finish_reason\":null}],\"system_fingerprint\":\"\"}",
+        "sha256": "eff02e62e0d058d79bfa6695d73082b539ada87180f39cb06f3213d492c6ae17"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000002,\"id\":\"chatcmpl_blank_metadata\",\"metadata\":{\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"content\":[{\"text\":\"blank provider metadata\",\"type\":\"output_text\"}],\"role\":\"assistant\",\"type\":\"message\"}]}",
+        "sha256": "4d47973eb39ad42b2af49d2c26d4ff8c7d15e1ce56e5a0dba152d0be6b3f2e0e"
+      }
+    },
+    {
+      "name": "standalone_name_trim",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_standalone_name_trim\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"  lookup  \",\"arguments\":\"{}\"},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "629ddde5389092e8526a7f4d39bb15510a67943d674c2798781959f6b0c44adf"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"id\":\"chatcmpl_standalone_name_trim\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"arguments\":\"{}\",\"call_id\":\"call_buffered\",\"name\":\"lookup\",\"type\":\"function_call\"}]}",
+        "sha256": "09455daa2ab3ce360b1a5b279c9d3aba6c3664a8437362ccc1cbb3563ec9381a"
+      }
+    },
+    {
+      "name": "spaced_namespace_trim",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_spaced_namespace_trim\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\" functions . lookup \",\"arguments\":\"{}\"},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "4c0744b71eccc7efd7a1b84653c217f82ad4b9392bc738f821037237de515057"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"id\":\"chatcmpl_spaced_namespace_trim\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"arguments\":\"{}\",\"call_id\":\"call_buffered\",\"name\":\"lookup\",\"namespace\":\"functions\",\"type\":\"function_call\"}]}",
+        "sha256": "ff9d6eda8f16a635c00543f202b2b0efd3da9fb8d6fda8716132e503c718bdfd"
+      }
+    },
+    {
+      "name": "shell_command_only",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_shell_command_only\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"functions.exec_command\",\"arguments\":\"{\\\"command\\\":\\\"cargo test\\\"}\"},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "60b5361e3962eef486ed1ac48e238f23946bc1a0afa875fe39265ddc1a00d652"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"id\":\"chatcmpl_shell_command_only\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"arguments\":\"{\\\"command\\\":\\\"cargo test\\\"}\",\"call_id\":\"call_buffered\",\"name\":\"exec_command\",\"namespace\":\"functions\",\"type\":\"function_call\"}]}",
+        "sha256": "edbf00d9f0d5c626c4d5ae83e2f46bc4f037787d92be22a4f324a0c628d5ea8d"
+      }
+    },
+    {
+      "name": "shell_cmd_rewrite",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_shell_cmd_rewrite\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"functions.exec_command\",\"arguments\":\"{\\\"cmd\\\":\\\"cargo test\\\"}\"},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "97ad398c889d566e3f5b886a3ed163d14f88cb04feda5e9f24fbf0274e8d468f"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"id\":\"chatcmpl_shell_cmd_rewrite\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"arguments\":\"{\\\"cmd\\\":\\\"rtk cargo test\\\"}\",\"call_id\":\"call_buffered\",\"name\":\"exec_command\",\"namespace\":\"functions\",\"type\":\"function_call\"}]}",
+        "sha256": "6355a306a1a074ab102b680f91a7772322c00ec0f6d3ecb7ec2661e4ca401811"
+      }
+    },
+    {
+      "name": "wrong_type_arguments",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_wrong_type_arguments\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"lookup\",\"arguments\":7},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "b74e17f3b575d6a5360a1b35f7c1f9c47695ff58dc2d964af866e136151f9f10"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"id\":\"chatcmpl_wrong_type_arguments\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"arguments\":\"{}\",\"call_id\":\"call_buffered\",\"name\":\"lookup\",\"type\":\"function_call\"}]}",
+        "sha256": "8d8979712ce17152d44c53338583e4f36d25600e61fb1c038ce394dcfcc77193"
+      }
+    },
+    {
+      "name": "malformed_nested_trailing_comma",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_malformed_nested_trailing_comma\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"lookup\",\"arguments\":\"{\\\"x\\\":[1,]}\"},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "a6b5788ac99a162275a765dd6e98b67e4f6c07793454569905af28543426a2b7"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"error\":{\"code\":\"invalid_tool_call_arguments\",\"message\":\"DeepSeek returned malformed JSON arguments for tool call `lookup`: trailing comma at line 1 column 9\"},\"id\":\"chatcmpl_malformed_nested_trailing_comma\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[],\"status\":\"failed\"}",
+        "sha256": "143be69d7f84edfab9c7462d360c923813bb07a45fd9d5dd4defc9babafad057"
+      }
+    },
+    {
+      "name": "malformed_nested_eof",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_malformed_nested_eof\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"lookup\",\"arguments\":\"{\\\"x\\\":\"},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "f29a1bb23c19d5d59524573c2972a631365ab1f97e5d4b03409477266d7567e9"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"error\":{\"code\":\"invalid_tool_call_arguments\",\"message\":\"DeepSeek returned malformed JSON arguments for tool call `lookup`: EOF while parsing a value at line 1 column 5\"},\"id\":\"chatcmpl_malformed_nested_eof\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[],\"status\":\"failed\"}",
+        "sha256": "7204c54ac4de5388a6ea3e176734a7b69dfae878ec3355bc7de2c2c44fb895c2"
+      }
+    },
+    {
+      "name": "malformed_nested_unicode",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_malformed_nested_unicode\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"lookup\",\"arguments\":\"{\\n\\\"\\u00e9\\\": 1,\\n\\\"x\\\":truX}\"},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "bac739de90379c7e4a6d24c67e1d79e796a41d9d226471eda43a66df29664b5a"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"id\":\"chatcmpl_malformed_nested_unicode\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"arguments\":\"{\\n\\\"é\\\": 1,\\n\\\"x\\\":truX}\",\"call_id\":\"call_buffered\",\"name\":\"lookup\",\"type\":\"function_call\"}]}",
+        "sha256": "ce07466c1d880b5bbfee1400a4e14a8031cac6800d09c344cdac710a96f3f693"
+      }
+    },
+    {
+      "name": "empty_tool_search_whitespace",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_empty_tool_search_whitespace\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"tool_search\",\"arguments\":\"   \"},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "99077f94340249b9b354bcdf183663603ed5b5bb712a57a99405bd1fd9fc4e10"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"error\":{\"code\":\"invalid_tool_call_arguments\",\"message\":\"DeepSeek returned malformed JSON arguments for tool call `tool_search`: EOF while parsing a value at line 1 column 3\"},\"id\":\"chatcmpl_empty_tool_search_whitespace\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[],\"status\":\"failed\"}",
+        "sha256": "03edaf471cf24a15da905991eb1418e189388400f7c9e798542cc46f5a54c5b4"
+      }
+    },
+    {
+      "name": "apply_patch_raw",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_apply_patch_raw\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"apply_patch\",\"arguments\":\"{\\\"patch\\\":\\\"*** Begin Patch\\\\n*** End Patch\\\"}\"},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "c2d6be0682ca61176e449d021f2fc8717af9cc917fc81eb759eb7a56d3852e9d"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"id\":\"chatcmpl_apply_patch_raw\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"call_id\":\"call_buffered\",\"input\":\"{\\\"patch\\\":\\\"*** Begin Patch\\\\n*** End Patch\\\"}\",\"name\":\"apply_patch\",\"type\":\"custom_tool_call\"}]}",
+        "sha256": "a5611f9fcea475d4c5d70dad2364e6687067fcea702a5b5ec4a1ea78810f80e8"
+      }
+    },
+    {
+      "name": "missing_tool_call_id_sample_a",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_missing_tool_call_id\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"lookup\",\"arguments\":\"{}\"}}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "671d9d35424945a92f49a6b3b0ff5269f14cf118fa32dea73ff3dd3a4f579de3"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"id\":\"chatcmpl_missing_tool_call_id\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"arguments\":\"{}\",\"call_id\":\"call_deepseek_01a17418-be2a-71a2-a602-3f8e363d2a5e\",\"name\":\"lookup\",\"type\":\"function_call\"}]}",
+        "sha256": "c59d4d8fc8467d037fa7a858ca0f46e2340eb0fa45a1b0ba1fab7753af02a865"
+      }
+    },
+    {
+      "name": "missing_tool_call_id_sample_b",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_missing_tool_call_id\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"lookup\",\"arguments\":\"{}\"}}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "671d9d35424945a92f49a6b3b0ff5269f14cf118fa32dea73ff3dd3a4f579de3"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"id\":\"chatcmpl_missing_tool_call_id\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"arguments\":\"{}\",\"call_id\":\"call_deepseek_01a17418-c130-7039-a0da-ea5c1830998c\",\"name\":\"lookup\",\"type\":\"function_call\"}]}",
+        "sha256": "3242b4592f983ed594779c2533baf7700b7a2e570d82fb3999e79a0d8ece6349"
+      }
+    },
+    {
+      "name": "structural_invalid_literal",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_structural_invalid_literal\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"lookup\",\"arguments\":\"truX\"},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "3034539fc9e08ef6e6b3902a8ad915aaf3cabaf59a53214b28e75f9f244f1bca"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"id\":\"chatcmpl_structural_invalid_literal\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[{\"arguments\":\"truX\",\"call_id\":\"call_buffered\",\"name\":\"lookup\",\"type\":\"function_call\"}]}",
+        "sha256": "07b562f38fad8f0d2876c4ff30f2e05e86a1f59304ac85e1559047260d3f621a"
+      }
+    },
+    {
+      "name": "tool_search_invalid_literal",
+      "request": {
+        "model": "deepseek-chat",
+        "input": "buffered synthetic response",
+        "metadata": {
+          "trace": "synthetic"
+        }
+      },
+      "upstream_request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "authorization": "Bearer synthetic-provider-key",
+        "content_type": "application/json",
+        "body": "{\"messages\":[{\"content\":\"buffered synthetic response\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":false}",
+        "destination": "127.0.0.1:<ephemeral>",
+        "body_sha256": "b6ae434260cf76481d1bc091fff28028ba48b47391d80b3ae3ef9add4bd4d816"
+      },
+      "upstream_response": {
+        "status": 200,
+        "content_type": "application/json",
+        "body": "{\"id\":\"chatcmpl_tool_search_invalid_literal\",\"model\":\"deepseek-chat\",\"created\":1700000000,\"choices\":[{\"message\":{\"content\":\"\",\"tool_calls\":[{\"function\":{\"name\":\"tool_search\",\"arguments\":\"truX\"},\"id\":\"call_buffered\"}]},\"finish_reason\":\"tool_calls\"}]}",
+        "sha256": "bd8bbb30f2f4c1313d2dace8fec335d3d41551b36149ae8f41ba07c069e307bf"
+      },
+      "oracle_super_returncode": 1,
+      "oracle_stderr": "[ Update Available ] =========================================================================================\nA newer prodex release is available: 0.439.0 -> 0.439.1\nUpdate with: prodex update\nProdex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: channel is empty and sending half is closed\n",
+      "oracle_response": {
+        "status": 200,
+        "content_type": "application/json; charset=utf-8",
+        "body": "{\"created_at\":1700000000,\"error\":{\"code\":\"invalid_tool_call_arguments\",\"message\":\"DeepSeek Mojo returned invalid response tool-call JSON: expected ident at line 1 column 90\"},\"id\":\"chatcmpl_tool_search_invalid_literal\",\"metadata\":{\"deepseek\":{\"finish_reason\":\"tool_calls\"},\"trace\":\"synthetic\"},\"model\":\"deepseek-chat\",\"object\":\"response\",\"output\":[],\"status\":\"failed\"}",
+        "sha256": "278d5147b75f59f0acd2d7706b9e66484daf785dce7c1b5322122daec55352ff"
+      }
+    }
+  ]
+}

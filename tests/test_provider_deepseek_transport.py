@@ -14,10 +14,12 @@ import tempfile
 import threading
 import time
 import unittest
+import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUEST_FIXTURE = ROOT / "tests/fixtures/provider-requests/cases.json"
 STREAM_FIXTURE = ROOT / "tests/fixtures/provider-stream/cases.json"
+BUFFERED_FIXTURE = ROOT / "tests/fixtures/provider-buffered/cases.json"
 DRIVER = Path(os.environ.get(
     "MODEX_PROVIDER_DEEPSEEK_TRANSPORT_DRIVER",
     ROOT / "build/tests/provider_deepseek_transport_driver",
@@ -113,7 +115,8 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
     def setUpClass(cls):
         cls.requests = json.loads(REQUEST_FIXTURE.read_text(encoding="utf-8"))
         cls.streams = json.loads(STREAM_FIXTURE.read_text(encoding="utf-8"))
-        for catalog in (cls.requests, cls.streams):
+        cls.buffered = json.loads(BUFFERED_FIXTURE.read_text(encoding="utf-8"))
+        for catalog in (cls.requests, cls.streams, cls.buffered):
             if catalog["oracle_sha256"] != ORACLE_SHA256:
                 raise AssertionError("fixture does not identify the pinned Prodex oracle")
             if catalog["baseline_commit"] != "433aad44bb249d5c25a231a6b06c2fa522a39a1f":
@@ -122,6 +125,7 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
             raise AssertionError(f"native transport driver has not been built: {DRIVER}")
         cls.request_cases = {case["name"]: case for case in cls.requests["cases"]}
         cls.stream_cases = {case["name"]: case for case in cls.streams["cases"]}
+        cls.buffered_cases = {case["name"]: case for case in cls.buffered["cases"]}
 
     def run_native(self, server, request_case, stream_case=None, *, options=None,
                    timeout=5, sandbox=False):
@@ -182,7 +186,7 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
     def call(self, body=b"", *, status=200, content_type="text/event-stream",
              chunked=False, hold_open=False, drop_connection=False,
              response_headers=None, chunk_size=11, delay=0,
-             request_name="defaults", stream_name="text_done", options=None,
+             request_name="defaults", request_case=None, stream_name="text_done", options=None,
              timeout=5, sandbox=False):
         server = Upstream(
             body, status=status, content_type=content_type, chunked=chunked,
@@ -194,7 +198,7 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
         thread.start()
         try:
             result = self.run_native(
-                server, self.request_cases[request_name],
+                server, request_case or self.request_cases[request_name],
                 self.stream_cases.get(stream_name) if stream_name else None,
                 options=options, timeout=timeout, sandbox=sandbox,
             )
@@ -207,6 +211,99 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
     @staticmethod
     def records(output, kind):
         return [item for item in output if item.get("type") == kind]
+
+    def buffered_response_bytes(self, output, stdout, expected_case):
+        self.assertEqual([item.get("type") for item in output], ["headers", "buffered", "done"], output)
+        self.assertEqual(self.records(output, "done"), [{"type": "done", "cancelled": False}])
+        response = self.records(output, "buffered")
+        self.assertEqual(len(response), 1, output)
+        expected = expected_case["oracle_response"]
+        self.assertEqual(response[0]["status"], expected["status"])
+        lines = stdout.splitlines()
+        raw = next(
+            line for line in lines
+            if json.loads(line).get("type") == "buffered"
+        ).decode("utf-8")
+        marker = '"body":'
+        start = raw.index(marker) + len(marker)
+        _, end = json.JSONDecoder().raw_decode(raw, start)
+        actual = raw[start:end].encode("utf-8")
+        expected_bytes = expected["body"].encode("utf-8")
+        self.assertEqual(hashlib.sha256(expected_bytes).hexdigest(), expected["sha256"])
+        if expected_case["name"].startswith("missing_tool_call_id_"):
+            actual_body = json.loads(actual)
+            expected_body = json.loads(expected_bytes)
+            actual_id = actual_body["output"][0]["call_id"]
+            expected_id = expected_body["output"][0]["call_id"]
+            for call_id in (actual_id, expected_id):
+                self.assertTrue(call_id.startswith("call_deepseek_"), call_id)
+                suffix = call_id.removeprefix("call_deepseek_")
+                parsed = uuid.UUID(suffix)
+                self.assertEqual(suffix, str(parsed), call_id)
+                self.assertEqual(parsed.version, 7, call_id)
+                self.assertEqual(parsed.variant, uuid.RFC_4122, call_id)
+            actual_marker = actual_id.encode("utf-8")
+            expected_marker = expected_id.encode("utf-8")
+            self.assertEqual(actual.count(actual_marker), 1)
+            self.assertEqual(expected_bytes.count(expected_marker), 1)
+            actual = actual.replace(actual_marker, b"call_deepseek_UUIDv7")
+            expected_bytes = expected_bytes.replace(expected_marker, b"call_deepseek_UUIDv7")
+        else:
+            self.assertEqual(hashlib.sha256(actual).hexdigest(), expected["sha256"])
+        self.assertEqual(actual, expected_bytes)
+        return actual
+
+    def test_real_post_and_buffered_responses_match_frozen_fixtures(self):
+        request_case = self.buffered_cases["text_tool_usage_metadata"]
+        upstream = request_case["upstream_response"]
+        expected_request = request_case["upstream_request"]
+        body = upstream["body"].encode("utf-8")
+        self.assertEqual(hashlib.sha256(body).hexdigest(), upstream["sha256"])
+        output, stdout, _, server = self.call(
+            body, status=upstream["status"], content_type=upstream["content_type"],
+            request_case={"request": request_case["request"]}, stream_name=None,
+            chunk_size=13, delay=0.001,
+        )
+        self.assertEqual(len(server.records), 1, "buffered transport must issue one POST")
+        sent = server.records[0]
+        self.assertEqual((sent["method"], sent["path"]), (expected_request["method"], expected_request["path"]))
+        self.assertEqual(sent["body"].decode("utf-8"), expected_request["body"])
+        self.assertEqual(hashlib.sha256(sent["body"]).hexdigest(), expected_request["body_sha256"])
+        self.assertEqual(sent["headers"].get("authorization"), expected_request["authorization"])
+        self.assertEqual(sent["headers"].get("content-type"), expected_request["content_type"])
+        self.assertNotIn(b'"metadata"', sent["body"])
+        expected_response = self.buffered_response_bytes(output, stdout, request_case)
+        self.assertIn('"trace":"synthetic"'.encode(), expected_response)
+        pending = self.records(output, "headers")[0]["messages"]
+        history = self.records(output, "buffered")[0]["conversation_messages"]
+        self.assertEqual(history[:-1], pending)
+        original = json.loads(upstream["body"])["choices"][0]["message"]
+        self.assertEqual(history[-1], {
+            "role": "assistant", "content": original["content"],
+            "reasoning_content": original["reasoning_content"],
+            "tool_calls": original["tool_calls"],
+        })
+        self.assertEqual(self.records(output, "done"), [{"type": "done", "cancelled": False}])
+
+    def test_buffered_mapper_cases_match_frozen_bytes(self):
+        for name, case in self.buffered_cases.items():
+            with self.subTest(case=name):
+                upstream = case["upstream_response"]
+                output, stdout, _, server = self.call(
+                    upstream["body"].encode("utf-8"),
+                    status=upstream["status"], content_type=upstream["content_type"],
+                    request_case={"request": case["request"]}, stream_name=None,
+                    chunk_size=17,
+                )
+                self.assertEqual(len(server.records), 1)
+                self.assertEqual(
+                    server.records[0]["body"].decode("utf-8"),
+                    case["upstream_request"]["body"],
+                )
+                self.buffered_response_bytes(output, stdout, case)
+                if json.loads(case["oracle_response"]["body"]).get("status") == "failed":
+                    self.assertEqual(self.records(output, "buffered")[0]["conversation_messages"], [])
+                self.assertEqual(self.records(output, "done"), [{"type": "done", "cancelled": False}])
 
     def test_real_post_and_fragmented_sse_match_frozen_fixtures(self):
         request_case = self.request_cases["defaults"]
@@ -316,21 +413,40 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
             ],
         )
         self.assertEqual(len(server.records), 1)
-        self.assertTrue(self.records(output, "headers"), output)
         errors = self.records(output, "error")
         self.assertEqual(len(errors), 1, output)
-        self.assertIn("text/event-stream", errors[0]["message"])
-        self.assertTrue(server.client_closed.wait(0.5), "unsupported MIME must close the socket")
+        self.assertEqual(errors[0]["message"], "failed to parse DeepSeek chat response JSON")
+        self.assertEqual(self.records(output, "buffered"), [])
+        self.assertEqual(self.records(output, "http_error"), [])
+        self.assertTrue(server.client_closed.wait(0.5), "JSON parse failure must close the socket")
 
-    def test_unsupported_json_mime_closes_the_socket(self):
+    def test_sse_first_content_type_header_selects_stream_reader(self):
+        stream_case = self.stream_cases["text_done"]
+        upstream = base64.b64decode(stream_case["upstream_base64"], validate=True)
+        expected = base64.b64decode(stream_case["expected_base64"], validate=True)
         output, _, _, server = self.call(
-            b'{"synthetic":true}', content_type="application/json", hold_open=True,
+            upstream,
+            response_headers=[
+                ("Content-Type", "text/event-stream"),
+                ("Content-Type", "application/json"),
+            ],
+        )
+        self.assertEqual(len(server.records), 1)
+        actual = b"".join(item["sse"].encode() for item in self.records(output, "event"))
+        self.assertEqual(actual, expected)
+        self.assertEqual(self.records(output, "error"), [])
+
+    def test_malformed_json_response_closes_the_socket(self):
+        output, _, _, server = self.call(
+            b'{"synthetic":', content_type="application/json", hold_open=True,
         )
         self.assertEqual(len(server.records), 1)
         errors = self.records(output, "error")
         self.assertEqual(len(errors), 1, output)
-        self.assertIn("text/event-stream", errors[0]["message"])
-        self.assertTrue(server.client_closed.wait(0.5), "unsupported MIME must close the socket")
+        self.assertEqual(errors[0]["message"], "failed to parse DeepSeek chat response JSON")
+        self.assertEqual(self.records(output, "buffered"), [])
+        self.assertEqual(self.records(output, "http_error"), [])
+        self.assertTrue(server.client_closed.wait(0.5), "malformed buffered JSON must close the socket")
 
     def test_empty_and_whitespace_api_keys_are_rejected_before_post(self):
         upstream = base64.b64decode(
@@ -357,6 +473,22 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
         message = bounded[0]["message"].lower()
         self.assertTrue(any(word in message for word in ("oversized", "limit", "too large")), output)
         self.assertNotIn(b"x" * 128, stdout)
+
+    def test_buffered_body_limit_fails_closed_without_emitting_payload(self):
+        oversized = b'{"padding":"' + b"x" * 2048 + b'"}'
+        output, stdout, _, server = self.call(
+            oversized, content_type="application/json", hold_open=True,
+            stream_name=None, options={"max_body_bytes": 64},
+        )
+        self.assertEqual(len(server.records), 1)
+        errors = self.records(output, "error")
+        self.assertEqual(len(errors), 1, output)
+        self.assertEqual(self.records(output, "buffered"), [])
+        self.assertEqual(self.records(output, "http_error"), [])
+        message = errors[0]["message"].lower()
+        self.assertTrue(any(word in message for word in ("oversized", "limit", "too large")), output)
+        self.assertNotIn(b"x" * 128, stdout)
+        self.assertTrue(server.client_closed.wait(0.5), "oversized buffered JSON must close the socket")
 
     def test_sse_line_limit_fails_without_emitting_oversized_input(self):
         oversized = b"data: " + b"x" * 128 + b"\n\n"
@@ -450,9 +582,30 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
         unit = ROOT / "build/tests/test_provider_deepseek_transport"
         self.assertTrue(unit.is_file(), f"build native lifecycle test first: {unit}")
         upstream = base64.b64decode(self.stream_cases["text_done"]["upstream_base64"], validate=True)
-        for mode in ("body", "events", "cancel", "drop"):
+        successful = {
+            "id": "chat-buffered-lifecycle", "created": 7,
+            "choices": [{"message": {
+                "content": "synthetic buffered", "tool_calls": [{
+                    "id": "call-lifecycle", "function": {
+                        "name": "shell", "arguments": '{"cmd":"cargo test"}',
+                    },
+                }],
+            }}],
+        }
+        buffered = {
+            "buffered": successful, "buffered_events": successful,
+            "buffered_failed": {"id": "chat-buffered-failed", "choices": [{"message": {
+                "content": "before error", "tool_calls": [{}],
+            }}]},
+            "buffered_blank_id": {"id": "   ", "choices": [{"message": {"content": "synthetic buffered"}}]},
+        }
+        for mode in ("body", "events", "cancel", "drop", "events_buffered", *buffered):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix="modex-exchange-lifecycle-") as directory:
-                server = Upstream(upstream, chunked=mode != "body", hold_open=True, chunk_size=len(upstream))
+                body = json.dumps(buffered[mode], separators=(",", ":")).encode() if mode in buffered else upstream
+                server = Upstream(
+                    body, chunked=mode not in buffered and mode != "body", hold_open=True,
+                    chunk_size=len(body), content_type="application/json" if mode in buffered else "text/event-stream",
+                )
                 thread = threading.Thread(target=server.serve_forever, daemon=True)
                 thread.start()
                 try:
@@ -487,6 +640,23 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
         )
         actual = b"".join(item["sse"].encode() for item in self.records(output, "event"))
         self.assertEqual(actual, expected)
+
+    def test_clean_runtime_buffered_transport_only(self):
+        if not shutil.which("bwrap"):
+            self.skipTest("bubblewrap is unavailable; clean-runtime buffered transport not verified")
+        case = self.buffered_cases["text_tool_usage_metadata"]
+        upstream = case["upstream_response"]
+        expected_request = case["upstream_request"]
+        output, stdout, _, server = self.call(
+            upstream["body"].encode("utf-8"),
+            status=upstream["status"], content_type=upstream["content_type"],
+            request_case={"request": case["request"]}, stream_name=None,
+            chunk_size=13, sandbox=True,
+        )
+        self.assertEqual(len(server.records), 1)
+        self.assertEqual(server.records[0]["body"].decode("utf-8"), expected_request["body"])
+        self.buffered_response_bytes(output, stdout, case)
+        self.assertEqual(self.records(output, "done"), [{"type": "done", "cancelled": False}])
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ from std.collections import List
 from std.sys import argv
 from std.testing import assert_equal, assert_true
 
+from modex.json import JsonDocument, serialize_json
 from modex.provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
 
 
@@ -54,9 +55,49 @@ def lifecycle(address: String, mode: String) raises:
         assert_true(exchange.done and exchange.cancelled)
         assert_equal(len(exchange.read_events()), 0)
         assert_equal(len(exchange.read_body()), 0)
+    elif mode == "buffered" or mode == "buffered_events":
+        var response = JsonDocument(exchange.read_buffered())
+        assert_equal(response.string(response.get(response.root, "id")), "chat-buffered-lifecycle")
+        assert_equal(response.nodes[response.get(response.root, "created_at")].text, "7")
+        assert_equal(response.get(response.root, "error"), -1)
+        var history = JsonDocument('[{"role":"user","content":"synthetic lifecycle"},{"role":"assistant","content":"synthetic buffered","tool_calls":[{"id":"call-lifecycle","function":{"name":"shell","arguments":"{\\"cmd\\":\\"rtk cargo test\\"}"}}]}]')
+        assert_equal(exchange.conversation_messages, serialize_json(history, history.root))
+        assert_true(exchange.done and not exchange.cancelled)
+        if mode == "buffered_events":
+            var error = String()
+            try:
+                _ = exchange.read_events()
+            except failure:
+                error = String(failure)
+            assert_equal(error, "DeepSeek response body was already read as bytes")
+    elif mode == "buffered_failed":
+        var response = JsonDocument(exchange.read_buffered())
+        assert_equal(response.string(response.get(response.root, "status")), "failed")
+        var error = response.get(response.root, "error")
+        assert_equal(response.string(response.get(error, "code")), "invalid_tool_call_arguments")
+        assert_equal(exchange.conversation_messages, "[]")
+        assert_true(exchange.done and not exchange.cancelled)
+    elif mode == "buffered_blank_id":
+        var response = JsonDocument(exchange.read_buffered())
+        assert_equal(response.string(response.get(response.root, "id")), "   ")
+        assert_equal(exchange.conversation_messages, "[]")
+        assert_true(exchange.done and not exchange.cancelled)
+    elif mode == "events_buffered":
+        assert_true(len(exchange.read_events()) > 0)
+        assert_true(not exchange.done)
+        var error = String()
+        try:
+            _ = exchange.read_buffered()
+        except failure:
+            error = String(failure)
+        assert_equal(error, "DeepSeek buffered reader requires a non-event-stream response")
+        assert_true(exchange.done and not exchange.cancelled)
+        assert_equal(exchange.conversation_messages, "[]")
     else:
         raise Error("unknown lifecycle test mode")
     assert_equal(exchange.http.fd, -1)
+    assert_equal(len(exchange.pending), 0)
+    assert_equal(exchange.pending_offset, 0)
 
 
 def main() raises:
@@ -119,5 +160,5 @@ def main() raises:
     if len(args) == 3:
         lifecycle(args[1], args[2])
     elif len(args) != 1:
-        raise Error("usage: test_provider_deepseek_transport [ADDRESS body|events|cancel|drop]")
+        raise Error("usage: test_provider_deepseek_transport [ADDRESS MODE]")
     print("Provider DeepSeek transport header checks: PASS")

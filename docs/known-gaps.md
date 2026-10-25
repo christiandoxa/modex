@@ -194,13 +194,33 @@ full-header oracle capture or whole-process provider parity is claimed.
 This remains a component outside CLI execution. Only numeric IPv4 127/8 and
 compressed IPv6 `::1` are admitted. Total decoded response data is capped at
 4 MiB, whereas the frozen SSE reader can consume longer streams under its
-per-frame limits. Success JSON response translation, route selection and
+per-frame limits. Route selection and
 Anthropic web-search adaptation, TLS/DNS/proxies/redirects/pooling,
 retry/rotation, persistent conversation state, general HTTP parser tolerance,
 downstream backpressure and non-host behavior remain unfinished. Closing is
 explicit between synchronous reads; interrupting an in-progress read relies
 on its idle deadline. Evidence: `docs/evidence/provider-transport-tests.txt`
 and `docs/evidence/provider-transport-link.txt`.
+
+Buffered chat success JSON now goes through the same real POST exchange. The
+native mapper handles text/tool outputs, usage, metadata, typed fallback IDs
+and the frozen malformed-argument distinction between structural acceptance
+and strict diagnostic parsing. A malformed literal/escape inside an ordinary
+function-call argument string can remain a string in the release; a raw
+tool-search argument must form valid output JSON. Captured examples document
+that behavior without treating it as execution or validation readiness.
+Missing call IDs use UUIDv7; explicit empty IDs remain present. Response ID
+and time fallback are supplied by the component caller; production runtime
+generation still needs wiring at the CLI path.
+
+The exchange exposes pending plus normalized assistant messages only for
+nonfailed translated responses with a nonblank response ID. No persistent
+conversation store has been connected. Exact buffered captures and real
+socket regressions are in `tests/fixtures/provider-buffered/cases.json`,
+`docs/evidence/provider-buffered-tests.txt` and
+`docs/evidence/provider-buffered-link.txt`. Large-output conformance fallback, complete parser/resource/error
+equivalence, rate-limit response headers, provider route selection and all
+previously listed transport/CLI/platform gaps remain unfinished.
 
 Native policy loading and directory resolution now match tested release paths,
 schema errors and fallback behavior, including 712 wrapped corpus inputs.

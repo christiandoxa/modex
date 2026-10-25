@@ -1,0 +1,175 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+Build flags: -O3 --target-cpu=x86-64-v3 -I src
+Baseline: Prodex 0.439.0 at 433aad44bb249d5c25a231a6b06c2fa522a39a1f.
+Scope: native buffered chat mapping and real numeric-loopback POST integration;
+not whole-provider, runtime-proxy or CLI parity.
+
+Implementation: a Luna MAX worker wrote the mapper, native unit and driver in
+an isolated worktree. Another Luna MAX worker authored the oracle capture and
+replay harness, then the main-worktree real HTTP tests. The Sol MAX lead
+reviewed the active conformance/fallback path, corrected IDs, metadata, tool
+handling and parser diagnostics, and added assistant-history extraction.
+Root integrated the reviewed source, connected success JSON response dispatch
+and exposed completed in-memory conversation messages separately from the
+prepared body and pending messages. No fixture is loaded by production code.
+
+Baseline trace:
+- local_rewrite_response_dispatch.rs:59,94 selects first ASCII Content-Type,
+  lowercases it and adapts 2xx response statuses only.
+- local_rewrite_response_chat_compatible.rs:75 selects SSE or buffered JSON.
+- deepseek_rewrite/response.rs:23 reads under the 4 MiB raw-body limit, tries
+  provider-core conformance, falls back when unavailable, and merges metadata.
+- response.rs:63,112 retains conversations only for nonfailed responses and
+  nonblank IDs, using original assistant messages plus normalized tool content.
+- response.rs:136 replaces absent/nonstring response and tool-call IDs with
+  fresh typed UUIDv7; explicit empty string IDs remain present.
+- provider-core translators/deepseek/tooling/response_tool_calls.rs selects
+  string arguments or {}, with raw apply_patch and cmd-only shell wrapping.
+- mojo/prodex_core/deepseek.mojo:1609,3391 omits blank provider metadata.
+- mojo/prodex_core/json_view.mojo:45-112,169 structurally accepts argument
+  fragments without validating every literal/number/escape spelling. Ordinary
+  argument strings preserve that behavior. A tool-search argument is raw output
+  JSON and must parse strictly; its failure message includes its envelope offset.
+- deepseek.mojo:6292-6349 and messages.rs:35-83 select the first assistant
+  content/reasoning/tool calls; deepseek_message_common.mojo normalizes content.
+
+Oracle captures use only synthetic credentials, isolated HOME/config/state/env,
+temporary files and ephemeral 127.0.0.1 ports. Their outer Super process exits 1
+after the synthetic child captures the response because it does not implement
+app-server/hook-trust preflight. That exit is retained, not counted as CLI parity.
+
+Limits: the component remains outside CLI dispatch. Fallback response ID/time
+are caller inputs; live runtime generation and persistence are unfinished.
+Rate-limit headers, Anthropic/web-search routing, TLS/DNS/proxies/redirects,
+retry/rotation, full error/parser/resource and non-host behavior remain gaps.
+HTTP parser/body translation errors raise through the native test driver rather
+than reproducing the proxy's HTTP 502 response. The earlier total SSE 4 MiB
+transport cap and synchronous cancellation/backpressure limits remain.
+No complete contract or new platform obligation is counted PASS.
+
+test_buffered_edge_observations_and_exact_tool_errors (test_provider_chat_buffered.ProviderChatBufferedTests.test_buffered_edge_observations_and_exact_tool_errors) ... ok
+test_captures_are_checksum_verified_oracle_observations (test_provider_chat_buffered.ProviderChatBufferedTests.test_captures_are_checksum_verified_oracle_observations) ... ok
+test_existing_oracle_text_and_request_metadata_cases_match_native (test_provider_chat_buffered.ProviderChatBufferedTests.test_existing_oracle_text_and_request_metadata_cases_match_native) ... ok
+test_missing_oracle_tool_call_ids_are_unique_uuid7 (test_provider_chat_buffered.ProviderChatBufferedTests.test_missing_oracle_tool_call_ids_are_unique_uuid7) ... ok
+test_native_buffered_results_match_frozen_oracle_captures (test_provider_chat_buffered.ProviderChatBufferedTests.test_native_buffered_results_match_frozen_oracle_captures) ... ok
+test_oracle_maps_buffered_text_tool_usage_metadata_and_tool_errors (test_provider_chat_buffered.ProviderChatBufferedTests.test_oracle_maps_buffered_text_tool_usage_metadata_and_tool_errors) ... ok
+test_provider_request_fixture_has_oracle_buffered_text_and_metadata_cases (test_provider_chat_buffered.ProviderChatBufferedTests.test_provider_request_fixture_has_oracle_buffered_text_and_metadata_cases) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.187s
+
+OK
+Provider buffered chat checks: PASS
+Provider DeepSeek transport header checks: PASS
+test_buffered_edge_observations_and_exact_tool_errors (test_provider_chat_buffered.ProviderChatBufferedTests.test_buffered_edge_observations_and_exact_tool_errors) ... ok
+test_captures_are_checksum_verified_oracle_observations (test_provider_chat_buffered.ProviderChatBufferedTests.test_captures_are_checksum_verified_oracle_observations) ... ok
+test_existing_oracle_text_and_request_metadata_cases_match_native (test_provider_chat_buffered.ProviderChatBufferedTests.test_existing_oracle_text_and_request_metadata_cases_match_native) ... ok
+test_missing_oracle_tool_call_ids_are_unique_uuid7 (test_provider_chat_buffered.ProviderChatBufferedTests.test_missing_oracle_tool_call_ids_are_unique_uuid7) ... ok
+test_native_buffered_results_match_frozen_oracle_captures (test_provider_chat_buffered.ProviderChatBufferedTests.test_native_buffered_results_match_frozen_oracle_captures) ... ok
+test_oracle_maps_buffered_text_tool_usage_metadata_and_tool_errors (test_provider_chat_buffered.ProviderChatBufferedTests.test_oracle_maps_buffered_text_tool_usage_metadata_and_tool_errors) ... ok
+test_provider_request_fixture_has_oracle_buffered_text_and_metadata_cases (test_provider_chat_buffered.ProviderChatBufferedTests.test_provider_request_fixture_has_oracle_buffered_text_and_metadata_cases) ... ok
+test_absent_and_wrong_type_choices (test_provider_chat_chunk.ProviderChatChunkTests.test_absent_and_wrong_type_choices) ... ok
+test_embedded_error_presence_and_fallback_precedence (test_provider_chat_chunk.ProviderChatChunkTests.test_embedded_error_presence_and_fallback_precedence) ... ok
+test_first_array_element_and_unknown_choice_fields (test_provider_chat_chunk.ProviderChatChunkTests.test_first_array_element_and_unknown_choice_fields) ... ok
+test_numeric_error_code_boundaries_and_number_spellings (test_provider_chat_chunk.ProviderChatChunkTests.test_numeric_error_code_boundaries_and_number_spellings) ... ok
+test_selected_nonobject_choices_and_malformed_json_fail_explicitly (test_provider_chat_chunk.ProviderChatChunkTests.test_selected_nonobject_choices_and_malformed_json_fail_explicitly) ... ok
+test_typed_delta_defaults_and_empty_string_rules (test_provider_chat_chunk.ProviderChatChunkTests.test_typed_delta_defaults_and_empty_string_rules) ... ok
+test_chat_decoder_with_only_its_native_runtime_dependencies (test_provider_chat_sse.ProviderChatSSETests.test_chat_decoder_with_only_its_native_runtime_dependencies) ... ok
+test_fragmented_sse_values_reach_native_chat_decoder (test_provider_chat_sse.ProviderChatSSETests.test_fragmented_sse_values_reach_native_chat_decoder) ... ok
+test_all_captured_streams_match_byte_for_byte (test_provider_chat_stream.ProviderChatStreamOracleTests.test_all_captured_streams_match_byte_for_byte) ... ok
+test_chunk_replay_is_stable_bytewise_and_at_seeded_boundaries (test_provider_chat_stream.ProviderChatStreamOracleTests.test_chunk_replay_is_stable_bytewise_and_at_seeded_boundaries) ... ok
+test_clean_runtime_uuid7_and_malformed_utf8 (test_provider_chat_stream.ProviderChatStreamOracleTests.test_clean_runtime_uuid7_and_malformed_utf8) ... ok
+test_frozen_oracle_identity (test_provider_chat_stream.ProviderChatStreamOracleTests.test_frozen_oracle_identity) ... ok
+test_frozen_oracle_transport_failures_remain_visible (test_provider_chat_stream.ProviderChatStreamOracleTests.test_frozen_oracle_transport_failures_remain_visible) ... ok
+test_missing_call_id_is_proven_uuid7_nondeterminism (test_provider_chat_stream.ProviderChatStreamOracleTests.test_missing_call_id_is_proven_uuid7_nondeterminism) ... ok
+test_oracle_preserves_tool_search_json_argument_shapes (test_provider_chat_stream.ProviderChatStreamOracleTests.test_oracle_preserves_tool_search_json_argument_shapes) ... ok
+test_uuid7_comparison_only_ignores_one_valid_fallback_value (test_provider_chat_stream.ProviderChatStreamOracleTests.test_uuid7_comparison_only_ignores_one_valid_fallback_value) ... ok
+test_bounded_http_error_body (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_bounded_http_error_body) ... ok
+test_buffered_body_limit_fails_closed_without_emitting_payload (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_buffered_body_limit_fails_closed_without_emitting_payload) ... ok
+test_buffered_mapper_cases_match_frozen_bytes (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_buffered_mapper_cases_match_frozen_bytes) ... ok
+test_cancel_after_first_event_closes_once (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_cancel_after_first_event_closes_once) ... ok
+test_clean_runtime_buffered_transport_only (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_clean_runtime_buffered_transport_only) ... ok
+test_clean_runtime_with_native_transport_only (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_clean_runtime_with_native_transport_only) ... ok
+test_connect_error_is_explicit (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_connect_error_is_explicit) ... ok
+test_content_type_matching_is_case_insensitive (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_content_type_matching_is_case_insensitive) ... ok
+test_done_closes_stream_before_eof_and_ignores_trailing_payload (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_done_closes_stream_before_eof_and_ignores_trailing_payload) ... ok
+test_empty_and_whitespace_api_keys_are_rejected_before_post (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_empty_and_whitespace_api_keys_are_rejected_before_post) ... ok
+test_first_content_type_header_controls_reader_selection (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_first_content_type_header_controls_reader_selection) ... ok
+test_headers_are_filtered_and_request_metadata_is_preserved (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_headers_are_filtered_and_request_metadata_is_preserved) ... ok
+test_idle_timeout_emits_failure_without_retry (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_idle_timeout_emits_failure_without_retry) ... ok
+test_malformed_json_response_closes_the_socket (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_malformed_json_response_closes_the_socket) ... ok
+test_native_reader_modes_and_exchange_ownership (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_native_reader_modes_and_exchange_ownership) ... ok
+test_non_2xx_is_reported_without_retry (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_non_2xx_is_reported_without_retry) ... ok
+test_prepared_body_does_not_replace_pending_messages (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_prepared_body_does_not_replace_pending_messages) ... ok
+test_real_post_and_buffered_responses_match_frozen_fixtures (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_real_post_and_buffered_responses_match_frozen_fixtures) ... ok
+test_real_post_and_fragmented_sse_match_frozen_fixtures (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_real_post_and_fragmented_sse_match_frozen_fixtures) ... ok
+test_sse_first_content_type_header_selects_stream_reader (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_sse_first_content_type_header_selects_stream_reader) ... ok
+test_sse_line_limit_fails_without_emitting_oversized_input (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_sse_line_limit_fails_without_emitting_oversized_input) ... ok
+test_upstream_disconnect_does_not_retry (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_upstream_disconnect_does_not_retry) ... ok
+test_captured_request_bodies (test_provider_requests.ProviderRequestTests.test_captured_request_bodies) ... ok
+test_catalog_cases_are_observed_or_explicit_gaps (test_provider_requests.ProviderRequestTests.test_catalog_cases_are_observed_or_explicit_gaps) ... ok
+test_clean_runtime_with_only_native_binary_and_official_libraries (test_provider_requests.ProviderRequestTests.test_clean_runtime_with_only_native_binary_and_official_libraries) ... ok
+test_isolated_environment_repeats_without_user_configuration (test_provider_requests.ProviderRequestTests.test_isolated_environment_repeats_without_user_configuration) ... ok
+test_native_rejections_cover_trust_boundaries (test_provider_requests.ProviderRequestTests.test_native_rejections_cover_trust_boundaries) ... ok
+test_other_provider_routes_are_recorded_separately (test_provider_requests.ProviderRequestTests.test_other_provider_routes_are_recorded_separately) ... ok
+test_recorded_local_rejections_keep_hidden_diagnostics_explicit (test_provider_requests.ProviderRequestTests.test_recorded_local_rejections_keep_hidden_diagnostics_explicit) ... ok
+test_request_metadata_stays_separate_from_completion_metadata (test_provider_requests.ProviderRequestTests.test_request_metadata_stays_separate_from_completion_metadata) ... ok
+test_accumulation_joins_without_newline_and_flushes_on_done (test_provider_sse.ProviderSSETests.test_accumulation_joins_without_newline_and_flushes_on_done) ... ok
+test_bom_is_preserved_and_invalid_utf8_fails (test_provider_sse.ProviderSSETests.test_bom_is_preserved_and_invalid_utf8_fails) ... ok
+test_completed_frames_survive_a_later_parse_error (test_provider_sse.ProviderSSETests.test_completed_frames_survive_a_later_parse_error) ... ok
+test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over (test_provider_sse.ProviderSSETests.test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over) ... ok
+test_done_any_data_line_flushes_and_repeated_done_is_idempotent (test_provider_sse.ProviderSSETests.test_done_any_data_line_flushes_and_repeated_done_is_idempotent) ... ok
+test_done_stops_before_malformed_or_oversized_trailing_input (test_provider_sse.ProviderSSETests.test_done_stops_before_malformed_or_oversized_trailing_input) ... ok
+test_empty_frames_and_eof_partial_line (test_provider_sse.ProviderSSETests.test_empty_frames_and_eof_partial_line) ... ok
+test_eof_carriage_return_preserves_completed_frame (test_provider_sse.ProviderSSETests.test_eof_carriage_return_preserves_completed_frame) ... ok
+test_event_limit_includes_separator_bytes (test_provider_sse.ProviderSSETests.test_event_limit_includes_separator_bytes) ... ok
+test_every_byte_cut_matches_single_chunk (test_provider_sse.ProviderSSETests.test_every_byte_cut_matches_single_chunk) ... ok
+test_exact_and_exceeded_accumulation_limit (test_provider_sse.ProviderSSETests.test_exact_and_exceeded_accumulation_limit) ... ok
+test_invalid_utf8_precedes_line_size_error (test_provider_sse.ProviderSSETests.test_invalid_utf8_precedes_line_size_error) ... ok
+test_joined_then_separate_json_values (test_provider_sse.ProviderSSETests.test_joined_then_separate_json_values) ... ok
+test_line_limit_exact_and_one_over (test_provider_sse.ProviderSSETests.test_line_limit_exact_and_one_over) ... ok
+test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed (test_provider_sse.ProviderSSETests.test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed) ... ok
+test_nul_and_bom_are_not_silently_normalized (test_provider_sse.ProviderSSETests.test_nul_and_bom_are_not_silently_normalized) ... ok
+test_seeded_chunk_schedules_match_single_chunk (test_provider_sse.ProviderSSETests.test_seeded_chunk_schedules_match_single_chunk) ... ok
+test_wire_delimiters_data_field_and_ignored_fields (test_provider_sse.ProviderSSETests.test_wire_delimiters_data_field_and_ignored_fields) ... ok
+test_json_runtime_fragmentation_done_and_invalid_utf8 (test_provider_sse_runtime.ProviderSSERuntimeTests.test_json_runtime_fragmentation_done_and_invalid_utf8) ... ok
+
+----------------------------------------------------------------------
+Ran 72 tests in 26.864s
+
+OK
+
+Root final validation
+Command: pinned Mojo builds (-O3 --target-cpu=x86-64-v3 -I src) for
+  tests/provider_chat_buffered_driver.mojo
+  tests/test_provider_chat_buffered.mojo
+  tests/provider_deepseek_transport_driver.mojo
+  tests/test_provider_deepseek_transport.mojo
+Exit: 0 for each build. Native buffered and transport unit programs PASS.
+Native boundary test: exact 4194304-byte response accepted; one byte over
+raises the frozen buffered size context. Five new buffered lifecycle modes
+run against real TCP alongside the four prior raw/events/cancel/drop modes.
+
+Command: python3 -m unittest discover -s tests -p test_provider*.py -v
+Exit: 0; 72 Python methods PASS, no skips (full output above).
+The 17 buffered oracle cases yield 15 exact response-body byte matches and
+two narrowly UUIDv7-normalized matches through the actual POST exchange.
+Comparers require canonical lowercase UUIDv7, RFC variant, prefix and exactly
+one occurrence before replacing only that field. Other bytes remain exact.
+Both SSE and buffered restricted-filesystem runtime cases actually ran.
+Native history checks are source-derived; the oracle response does not expose
+conversation storage. Completed messages stay in memory and are not persisted.
+
+Command: python3 -m py_compile tests/capture_provider_buffered.py
+  tests/test_provider_chat_buffered.py tests/test_provider_deepseek_transport.py
+Exit: 0.
+Command: git diff --check; JSON/source inventory/platform-denominator audit
+Exit: 0; 54 source paths exactly inventoried; no application dependency added;
+all 60 coarse contracts and all 360 platform obligations unchanged.
+
+The whole repository suite was last run at the preceding streaming checkpoint:
+31 native programs and 235 Python methods PASS. It was not repeated for this
+buffered-only component change. Large-output conformance fallback, complete
+parser/resource/error behavior, rate-limit headers and all remaining full-goal
+requirements are still unverified or unfinished, never counted as parity PASS.

@@ -85,8 +85,8 @@
       "id": "LOOPBACK-HTTP-NATIVE",
       "status": "PROVEN_LOCAL_INTERNAL_API",
       "source": "src/modex/loopback_http.mojo",
-      "tests": ["tests/loopback_http_driver.mojo", "tests/test_loopback_http.py", "tests/loopback_http_stream_driver.mojo", "tests/test_loopback_http_stream.py", "tests/provider_deepseek_transport_driver.mojo", "tests/test_provider_deepseek_transport.py"],
-      "evidence": ["docs/evidence/log-foundations-tests.txt", "docs/evidence/log-foundations-link.txt", "docs/evidence/provider-transport-tests.txt", "docs/evidence/provider-transport-link.txt"],
+      "tests": ["tests/loopback_http_driver.mojo", "tests/test_loopback_http.py", "tests/loopback_http_stream_driver.mojo", "tests/test_loopback_http_stream.py", "tests/provider_deepseek_transport_driver.mojo", "tests/test_provider_deepseek_transport.py", "tests/test_provider_chat_buffered.mojo", "tests/test_provider_chat_buffered.py"],
+      "evidence": ["docs/evidence/log-foundations-tests.txt", "docs/evidence/log-foundations-link.txt", "docs/evidence/provider-transport-tests.txt", "docs/evidence/provider-transport-link.txt", "docs/evidence/provider-buffered-tests.txt", "docs/evidence/provider-buffered-link.txt"],
       "proven": [
         "numeric IPv4 127/8 and compressed IPv6 ::1 client connections through official socket wrappers",
         "validated HTTP/1 GET and partial request/response I/O without SIGPIPE",
@@ -97,6 +97,7 @@
         "delivery before HTTP chunk completion, response EOF or the terminal zero chunk",
         "setup/request deadlines, body idle timeouts and explicit/drop/error socket cleanup",
         "native DeepSeek preparation through real POST and incremental SSE translation with [DONE] early close",
+        "buffered DeepSeek JSON responses through real POST with normalized assistant message results",
         "standalone driver without helper executables in a bubblewrap filesystem sharing the host network for the synthetic loopback server"
       ],
       "not_proven": [

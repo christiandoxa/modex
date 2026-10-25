@@ -6,7 +6,7 @@ from std.sys import argv
 
 from modex.json import JSON_ARRAY, JSON_BOOL, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
 from modex.provider_chat_usage import json_unsigned
-from modex.provider_deepseek_transport import DeepSeekExchange
+from modex.provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream
 
 
 def _string(doc: JsonDocument, key: StringSlice, fallback: String = "", required: Bool = False) raises -> String:
@@ -99,6 +99,9 @@ def run(path: String, mut output: RawFileDescriptor) raises:
     _emit(output, '{"type":"headers","status":' + String(exchange.status()) + ',"headers":' + _headers_json(exchange.headers()) + ',"body":' + exchange.body + ',"messages":' + exchange.messages + ',"response_metadata":' + exchange.response_metadata + "}")
     if not exchange.successful():
         _emit(output, '{"type":"http_error","status":' + String(exchange.status()) + ',"body_hex":' + quote_json(_hex(exchange.read_body())) + "}")
+    elif not deepseek_event_stream(exchange.headers()):
+        var body = exchange.read_buffered()
+        _emit(output, '{"type":"buffered","status":' + String(exchange.status()) + ',"body":' + body + ',"conversation_messages":' + exchange.conversation_messages + "}")
     else:
         var emitted = UInt64(0)
         if cancel_after == 0:

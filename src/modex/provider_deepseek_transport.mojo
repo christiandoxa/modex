@@ -2,7 +2,8 @@
 
 from std.collections import List, Span
 
-from .json import JsonDocument, serialize_json
+from .json import JSON_STRING, JsonDocument, serialize_json
+from .provider_chat_buffered import deepseek_buffered_assistant_messages, deepseek_buffered_response
 from .loopback_http import LoopbackHTTPStream, _http_token_byte
 from .provider_chat_reader import DeepSeekChatReader
 from .provider_request import translate_deepseek_request
@@ -80,6 +81,7 @@ struct DeepSeekExchange(Movable):
     var body: String
     var messages: String
     var response_metadata: String
+    var conversation_messages: String
     var pending: List[UInt8]
     var pending_offset: Int
     var read_mode: Int
@@ -91,6 +93,7 @@ struct DeepSeekExchange(Movable):
         self.body = serialize_json(prepared, prepared.get(prepared.root, "body"))
         self.messages = serialize_json(prepared, prepared.get(prepared.root, "messages"))
         self.response_metadata = serialize_json(prepared, prepared.get(prepared.root, "response_metadata"))
+        self.conversation_messages = "[]"
         self.reader = DeepSeekChatReader(request_id, response_id, created_at, self.response_metadata, line_max_bytes, event_max_bytes, accumulated_max_bytes)
         self.pending = List[UInt8]()
         self.pending_offset = 0
@@ -149,7 +152,6 @@ struct DeepSeekExchange(Movable):
         if not self.successful():
             self._finish()
             raise Error("DeepSeek HTTP error body must be read without SSE translation")
-        # shortcut: buffered JSON response translation is pending, add it with the nonstream adapter.
         if not deepseek_event_stream(self.http.headers):
             self._finish()
             raise Error("DeepSeek event reader requires a text/event-stream response")
@@ -178,3 +180,29 @@ struct DeepSeekExchange(Movable):
                 raise
             self.reader.done = True
             return self.reader.state.fail("provider_stream_error", String(error))
+
+    def read_buffered(mut self) raises -> String:
+        if not self.successful():
+            self._finish()
+            raise Error("DeepSeek HTTP error body must be read without JSON translation")
+        if deepseek_event_stream(self.http.headers):
+            self._finish()
+            raise Error("DeepSeek buffered reader requires a non-event-stream response")
+        var bytes = self.read_body()
+        var source: String
+        try:
+            source = String(from_utf8=Span(bytes))
+        except:
+            raise Error("failed to parse DeepSeek chat response JSON")
+        var response = deepseek_buffered_response(source, self.reader.state.created_at, self.reader.state.response_id, self.response_metadata)
+        var translated = JsonDocument(response)
+        var id = translated.get(translated.root, "id")
+        if translated.string(translated.get(translated.root, "status")) != "failed" and id >= 0 and translated.nodes[id].kind == JSON_STRING and trim_text(translated.nodes[id].text):
+            var assistant = deepseek_buffered_assistant_messages(source)
+            self.conversation_messages = self.messages
+            if assistant != "[]":
+                if self.messages == "[]":
+                    self.conversation_messages = assistant
+                else:
+                    self.conversation_messages = String(self.messages[byte=0:self.messages.byte_length() - 1]) + "," + String(assistant[byte=1:])
+        return response

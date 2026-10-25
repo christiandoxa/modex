@@ -1,0 +1,90 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+Build flags: -O3 --target-cpu=x86-64-v3 -I src
+Scope: native buffered DeepSeek JSON response mapping and numeric-loopback POST.
+
+Command: readelf -d build/tests/provider_deepseek_transport_driver
+
+Dynamic section at offset 0xb8c80 contains 29 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+ 0x000000000000000c (INIT)               0x2000
+ 0x000000000000000d (FINI)               0x9e758
+ 0x0000000000000019 (INIT_ARRAY)         0xb9c70
+ 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)
+ 0x000000000000001a (FINI_ARRAY)         0xb9c78
+ 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)
+ 0x000000006ffffef5 (GNU_HASH)           0x3a0
+ 0x0000000000000005 (STRTAB)             0x7e8
+ 0x0000000000000006 (SYMTAB)             0x3c8
+ 0x000000000000000a (STRSZ)              873 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000015 (DEBUG)              0x0
+ 0x0000000000000003 (PLTGOT)             0xb9e90
+ 0x0000000000000002 (PLTRELSZ)           912 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0xcc0
+ 0x0000000000000007 (RELA)               0xc00
+ 0x0000000000000008 (RELASZ)             192 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000000000001e (FLAGS)              BIND_NOW
+ 0x000000006ffffffb (FLAGS_1)            Flags: NOW PIE
+ 0x000000006ffffffe (VERNEED)            0xbb0
+ 0x000000006fffffff (VERNEEDNUM)         1
+ 0x000000006ffffff0 (VERSYM)             0xb52
+ 0x000000006ffffff9 (RELACOUNT)          3
+ 0x0000000000000000 (NULL)               0x0
+
+Command: ldd build/tests/provider_deepseek_transport_driver
+	linux-vdso.so.1 (0x00007e9b1a442000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007e9b1a231000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007e9b19e00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007e9b1a127000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007e9b19a00000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007e9b1a117000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007e9b18e00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007e9b1a0e9000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007e9b1a444000)
+
+Command: sha256sum build/modex build/tests/provider_deepseek_transport_driver build/tests/provider_chat_buffered_driver
+82a3ca2f5a291d7f8f1eee4d92720eb2b2f32547d73e6b20046cc1039c449a9e  build/modex
+258c724b32241008ccba56937a43aa80088273ace90dee949591ebe9897c1888  build/tests/provider_deepseek_transport_driver
+ffb77b89c8737925089b1f689b581a574fc7ec5d050c1ef49a0bb780b7e04a09  build/tests/provider_chat_buffered_driver
+
+Command: rg -n '^(from|import) ' src/modex/provider_chat_buffered.mojo src/modex/provider_deepseek_transport.mojo
+src/modex/provider_deepseek_transport.mojo:3:from std.collections import List, Span
+src/modex/provider_deepseek_transport.mojo:5:from .json import JSON_STRING, JsonDocument, serialize_json
+src/modex/provider_deepseek_transport.mojo:6:from .provider_chat_buffered import deepseek_buffered_assistant_messages, deepseek_buffered_response
+src/modex/provider_deepseek_transport.mojo:7:from .loopback_http import LoopbackHTTPStream, _http_token_byte
+src/modex/provider_deepseek_transport.mojo:8:from .provider_chat_reader import DeepSeekChatReader
+src/modex/provider_deepseek_transport.mojo:9:from .provider_request import translate_deepseek_request
+src/modex/provider_deepseek_transport.mojo:10:from .text import is_whitespace, trim_text
+src/modex/provider_chat_buffered.mojo:3:from .json import JSON_ARRAY, JSON_NULL, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_chat_buffered.mojo:4:from .json_float import json_float
+src/modex/provider_chat_buffered.mojo:5:from .provider_chat_items import wrap_tool_arguments
+src/modex/provider_chat_buffered.mojo:6:from .provider_chat_metadata import merge_chat_metadata
+src/modex/provider_chat_buffered.mojo:7:from .provider_chat_usage import chat_usage, json_unsigned
+src/modex/provider_chat_buffered.mojo:8:from .text import trim_text
+src/modex/provider_chat_buffered.mojo:9:from .uuid7 import new_uuid7
+
+Only existing local Modex modules and official stdlib are imported. The mapper
+uses existing UUIDv7, JSON, metadata, usage and command-string helpers; it does
+not launch commands or call external code. The independently authored scanner
+uses bounded native string/number logic. No application library, ABI/binding,
+implementation helper, Python production import or runtime fixture dependency
+is added. Production and its build do not depend on the Python capture/tests.
+
+Both SSE and buffered JSON paths execute the actual native POST exchange in a
+bubblewrap filesystem with the native binary, platform/official Mojo runtime
+libraries and synthetic data only. Host Python serves the loopback upstream
+outside that filesystem; no Python/Node/Rust/Prodex executable is available
+inside it. This proves the tested component's runtime dependency boundary,
+not general HTTP, distribution, CLI or non-host parity.
+
+All 54 production Mojo paths exactly match the inventory. The product binary
+hash is unchanged; CLI dispatch still does not call these provider modules.
+All 60 coarse contracts and 360 platform obligations retain previous statuses.
+The absolute toolchain RUNPATH, version-sensitive private stdlib networking,
+general transport support and other full-goal gaps remain unresolved.

@@ -85,21 +85,26 @@
       "id": "LOOPBACK-HTTP-NATIVE",
       "status": "PROVEN_LOCAL_INTERNAL_API",
       "source": "src/modex/loopback_http.mojo",
-      "tests": ["tests/loopback_http_driver.mojo", "tests/test_loopback_http.py"],
-      "evidence": ["docs/evidence/log-foundations-tests.txt", "docs/evidence/log-foundations-link.txt"],
+      "tests": ["tests/loopback_http_driver.mojo", "tests/test_loopback_http.py", "tests/loopback_http_stream_driver.mojo", "tests/test_loopback_http_stream.py", "tests/provider_deepseek_transport_driver.mojo", "tests/test_provider_deepseek_transport.py"],
+      "evidence": ["docs/evidence/log-foundations-tests.txt", "docs/evidence/log-foundations-link.txt", "docs/evidence/provider-transport-tests.txt", "docs/evidence/provider-transport-link.txt"],
       "proven": [
         "numeric IPv4 127/8 and compressed IPv6 ::1 client connections through official socket wrappers",
         "validated HTTP/1 GET and partial request/response I/O without SIGPIPE",
         "nonblocking connect with SO_ERROR/getpeername and absolute request deadlines",
         "bounded Content-Length, chunked and connection-close response bodies",
         "fragmented/coalesced informational responses and rejection of ambiguous framing",
+        "owning POST stream with duplicate response headers and incremental Content-Length/chunked/EOF decoding",
+        "delivery before HTTP chunk completion, response EOF or the terminal zero chunk",
+        "setup/request deadlines, body idle timeouts and explicit/drop/error socket cleanup",
+        "native DeepSeek preparation through real POST and incremental SSE translation with [DONE] early close",
         "standalone driver without helper executables in a bubblewrap filesystem sharing the host network for the synthetic loopback server"
       ],
       "not_proven": [
         "production CLI integration and registry/capability/process admission",
         "general address/HTTP/reqwest tolerance equivalence",
         "DNS, TLS, proxies, redirects, upgrades or connection pooling",
-        "SSE/WebSocket or streaming response API",
+        "arbitrary-length streaming, complete framing/error tolerance and downstream backpressure equivalence",
+        "WebSocket and other provider transports",
         "non-host targets or stable public networking API"
       ],
       "assessment": "An independently authored native Mojo protocol foundation using only bundled internal POSIX wrappers and types. No new binding or application dependency. Standalone checks establish a limited Linux capability, not runtime-broker parity.",
@@ -195,7 +200,7 @@
   ],
   "remaining_probes": [
     "DNS/proxy/TLS",
-    "general HTTP/provider framing, SSE and WebSocket beyond the tested loopback GET subset",
+    "general HTTP/provider framing, SSE and WebSocket beyond the bounded numeric-loopback GET/POST subset",
     "process-tree cleanup/cancellation",
     "concurrent synchronization and event handling",
     "native credential backends",

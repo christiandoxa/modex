@@ -60,6 +60,9 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_request.mojo -o build/tests/test_provider_request
 	build/tests/test_provider_request
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_request_driver.mojo -o build/tests/provider_request_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_deepseek_transport.mojo -o build/tests/test_provider_deepseek_transport
+	build/tests/test_provider_deepseek_transport
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_deepseek_transport_driver.mojo -o build/tests/provider_deepseek_transport_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json.mojo -o build/tests/test_json
 	build/tests/test_json
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json_float.mojo -o build/tests/test_json_float
@@ -68,6 +71,7 @@ unit: check-toolchain
 	build/tests/test_sha256
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/sha256_driver.mojo -o build/tests/sha256_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/loopback_http_driver.mojo -o build/tests/loopback_http_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/loopback_http_stream_driver.mojo -o build/tests/loopback_http_stream_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_sessions.mojo -o build/tests/test_sessions
 	build/tests/test_sessions
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_local_time.mojo -o build/tests/test_local_time

@@ -1,4 +1,4 @@
-"""Bounded loopback HTTP/1 GET through the pinned official POSIX wrappers."""
+"""Bounded loopback HTTP/1 GET and streaming POST through official POSIX wrappers."""
 
 from std.bit import byte_swap
 from std.collections import Array, List, Span
@@ -67,6 +67,17 @@ def _network32(value: UInt32) -> UInt32:
         return value
 
 
+def _http_token_byte(b: UInt8) -> Bool:
+    return (
+        (b >= 48 and b <= 57)
+        or (b >= 65 and b <= 90)
+        or (b >= 97 and b <= 122)
+        or b == 33 or b == 35 or b == 36 or b == 37 or b == 38 or b == 39
+        or b == 42 or b == 43 or b == 45 or b == 46 or b == 94 or b == 95
+        or b == 96 or b == 124 or b == 126
+    )
+
+
 def _request(path: String, header_name: String, header_value: String, host: String) raises -> List[UInt8]:
     if path.byte_length() == 0 or path.byte_length() > HTTP_HEADER_LIMIT or not path.startswith("/") or "\r" in path or "\n" in path or "#" in path:
         raise Error("invalid HTTP request target")
@@ -75,15 +86,15 @@ def _request(path: String, header_name: String, header_value: String, host: Stri
             raise Error("invalid HTTP request target")
     if header_name.byte_length() == 0:
         raise Error("invalid HTTP header name")
-    for c in header_name:
-        if not ((c >= "a" and c <= "z") or (c >= "A" and c <= "Z") or (c >= "0" and c <= "9") or c == "-" or c == "_"):
+    for b in header_name.as_bytes():
+        if not _http_token_byte(b):
             raise Error("invalid HTTP header name")
     if "\r" in header_value or "\n" in header_value:
         raise Error("invalid HTTP header value")
     if header_value.byte_length() + header_name.byte_length() + host.byte_length() > HTTP_HEADER_LIMIT:
         raise Error("HTTP request headers exceed limit")
     for b in header_value.as_bytes():
-        if b < 32 or b == 127:
+        if (b < 32 and b != 9) or b == 127:
             raise Error("invalid HTTP header value")
     var bytes = List[UInt8]()
     var head = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n" + header_name + ": " + header_value + "\r\n\r\n"
@@ -164,7 +175,7 @@ def _advance_chunks(bytes: List[UInt8], mut progress: ChunkProgress, max_body_by
             if colon <= 0:
                 raise Error("malformed HTTP trailer")
             for b in trailer[byte=0:colon].as_bytes():
-                if not ((b >= 65 and b <= 90) or (b >= 97 and b <= 122) or (b >= 48 and b <= 57) or b == 45 or b == 95):
+                if not _http_token_byte(b):
                     raise Error("malformed HTTP trailer")
             for b in trailer[byte=colon + 1:].as_bytes():
                 if (b < 32 and b != 9) or b == 127:
@@ -224,7 +235,7 @@ def _response_head(bytes: List[UInt8], end: Int) raises -> Tuple[Int, Int, Bool]
     if len(status_parts) < 2 or status_parts[1].byte_length() != 3:
         raise Error("malformed HTTP response status")
     var status = _number(status_parts[1])
-    if status < 100 or status > 599:
+    if status < 100 or status > 999:
         raise Error("malformed HTTP response status")
     var length = -1
     var chunked = False
@@ -235,7 +246,7 @@ def _response_head(bytes: List[UInt8], end: Int) raises -> Tuple[Int, Int, Bool]
             raise Error("malformed HTTP response header")
         var raw_name = line[byte=0:colon]
         for b in raw_name.as_bytes():
-            if not ((b >= 65 and b <= 90) or (b >= 97 and b <= 122) or (b >= 48 and b <= 57) or b == 45 or b == 95):
+            if not _http_token_byte(b):
                 raise Error("malformed HTTP response header")
         var name = raw_name.lower()
         var raw_value = line[byte=colon + 1:]
@@ -306,7 +317,7 @@ def _parse_body(bytes: List[UInt8], start: Int, status: Int, length: Int, chunke
                     if trailer_colon <= 0:
                         raise Error("malformed HTTP trailer")
                     for b in trailer[byte=0:trailer_colon].as_bytes():
-                        if not ((b >= 65 and b <= 90) or (b >= 97 and b <= 122) or (b >= 48 and b <= 57) or b == 45 or b == 95):
+                        if not _http_token_byte(b):
                             raise Error("malformed HTTP trailer")
                     for b in trailer[byte=trailer_colon + 1:].as_bytes():
                         if (b < 32 and b != 9) or b == 127:
@@ -339,6 +350,45 @@ def _parse_body(bytes: List[UInt8], start: Int, status: Int, length: Int, chunke
 
 
 
+def _open_loopback_socket(ipv6: Bool) raises -> Int32:
+    var fd = socket(AF_INET6 if ipv6 else AF_INET, SOCK_STREAM, 0)
+    if fd < 0:
+        raise Error("failed to create loopback socket")
+    if fcntl(fd, FcntlCommands.F_SETFD, FcntlFDFlags.FD_CLOEXEC) < 0:
+        _ = close(fd)
+        raise Error("failed to set loopback socket close-on-exec")
+    var flags = fcntl(fd, F_GETFL)
+    if flags < 0 or fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0:
+        _ = close(fd)
+        raise Error("failed to set loopback socket nonblocking")
+    return fd
+
+
+def _finish_loopback_connect(fd: Int32, result: Int32, deadline: Float64) raises:
+    if result >= 0:
+        return
+    var e = get_errno()
+    if e != ErrNo.EINPROGRESS and e != ErrNo.EINTR and e != ErrNo.EAGAIN:
+        raise Error("loopback HTTP connect failed")
+    while True:
+        var sock_error: Int32 = 0
+        var opt_len = UInt32(size_of[Int32]())
+        if getsockopt(fd, SOL_SOCKET, SO_ERROR, Pointer(to=sock_error).unsafe_bitcast[NoneType](), Pointer(to=opt_len)) < 0:
+            raise Error("loopback HTTP connect check failed")
+        if sock_error != 0:
+            raise Error("loopback HTTP connect failed")
+        var storage = MaybeUninit[sockaddr_storage]()
+        var peer_len: UInt32 = UInt32(size_of[sockaddr_storage]())
+        var peer_result = getpeername(fd, Pointer(to=storage).unsafe_bitcast[sockaddr](), Pointer(to=peer_len))
+        _ = storage^.unsafe_forget()
+        if peer_result == 0:
+            return
+        e = get_errno()
+        if e != ErrNo.ENOTCONN and e != ErrNo.EINVAL and e != ErrNo.EINPROGRESS:
+            raise Error("loopback HTTP connect failed")
+        _deadline_wait(deadline)
+
+
 def loopback_get(
     address: String,
     path: String,
@@ -365,20 +415,11 @@ def loopback_get(
         if port == 0 or port > 65535:
             raise Error("invalid loopback HTTP port")
         req = _request(path, header_name, header_value, address)
-        fd = socket(AF_INET6, SOCK_STREAM, 0)
-        if fd < 0:
-            raise Error("failed to create loopback socket")
+        fd = _open_loopback_socket(True)
         var addr_bytes = Array[UInt8, 16](fill=0)
         addr_bytes[15] = 1
         var addr6 = in6_addr(s6_addr=addr_bytes^)
         var peer6 = sockaddr_in6(port=_port_bytes(port), addr=addr6^, flowinfo=0, scope_id=0)
-        if fcntl(fd, FcntlCommands.F_SETFD, FcntlFDFlags.FD_CLOEXEC) < 0:
-            _ = close(fd)
-            raise Error("failed to set loopback socket close-on-exec")
-        var flags = fcntl(fd, F_GETFL)
-        if flags < 0 or fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0:
-            _ = close(fd)
-            raise Error("failed to set loopback socket nonblocking")
         started = perf_counter()
         result = connect(fd, Pointer(to=peer6).unsafe_bitcast[sockaddr](), UInt32(size_of[sockaddr_in6]()))
     else:
@@ -400,17 +441,8 @@ def loopback_get(
         if port == 0 or port > 65535:
             raise Error("invalid loopback HTTP port")
         req = _request(path, header_name, header_value, address)
-        fd = socket(AF_INET, SOCK_STREAM, 0)
-        if fd < 0:
-            raise Error("failed to create loopback socket")
+        fd = _open_loopback_socket(False)
         var peer = sockaddr_in(port=_port_bytes(port), addr=in_addr(s_addr=_network32(ip)))
-        if fcntl(fd, FcntlCommands.F_SETFD, FcntlFDFlags.FD_CLOEXEC) < 0:
-            _ = close(fd)
-            raise Error("failed to set loopback socket close-on-exec")
-        var flags = fcntl(fd, F_GETFL)
-        if flags < 0 or fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0:
-            _ = close(fd)
-            raise Error("failed to set loopback socket nonblocking")
         started = perf_counter()
         result = connect(fd, Pointer(to=peer).unsafe_bitcast[sockaddr](), UInt32(size_of[sockaddr_in]()))
     try:
@@ -418,28 +450,7 @@ def loopback_get(
         var connect_deadline = started + Float64(connect_timeout_ms) / 1000.0
         if read_deadline < connect_deadline:
             connect_deadline = read_deadline
-        if result < 0:
-            var e = get_errno()
-            if e != ErrNo.EINPROGRESS and e != ErrNo.EINTR and e != ErrNo.EAGAIN:
-                raise Error("loopback HTTP connect failed")
-            while True:
-                var sock_error: Int32 = 0
-                var opt_len = UInt32(size_of[Int32]())
-                if getsockopt(fd, SOL_SOCKET, SO_ERROR, Pointer(to=sock_error).unsafe_bitcast[NoneType](), Pointer(to=opt_len)) < 0:
-                    raise Error("loopback HTTP connect check failed")
-                if sock_error != 0:
-                    raise Error("loopback HTTP connect failed")
-                var storage = MaybeUninit[sockaddr_storage]()
-                var peer_len: UInt32 = UInt32(size_of[sockaddr_storage]())
-                var peer_result = getpeername(fd, Pointer(to=storage).unsafe_bitcast[sockaddr](), Pointer(to=peer_len))
-                _ = storage^.unsafe_forget()
-                if peer_result == 0:
-                    break
-                else:
-                    var e = get_errno()
-                    if e != ErrNo.ENOTCONN and e != ErrNo.EINVAL and e != ErrNo.EINPROGRESS:
-                        raise Error("loopback HTTP connect failed")
-                    _deadline_wait(connect_deadline)
+        _finish_loopback_connect(fd, result, connect_deadline)
         _send_all(fd, req, read_deadline)
         var response = List[UInt8]()
         var max_wire_bytes = HTTP_HEADER_LIMIT + 65536 + max_body_bytes * 8
@@ -528,3 +539,362 @@ def loopback_get(
     except:
         _ = close(fd)
         raise
+
+
+def _drop_prefix(mut bytes: List[UInt8], count: Int):
+    var rest = List[UInt8]()
+    for i in range(count, len(bytes)):
+        rest.append(bytes[i])
+    bytes = rest^
+
+
+def _line_end(bytes: List[UInt8], start: Int) -> Int:
+    for i in range(max(0, start), len(bytes) - 1):
+        if bytes[i] == 13 and bytes[i + 1] == 10:
+            return i
+    return -1
+
+
+def _valid_request_field(name: String, value: String) raises:
+    if name.byte_length() == 0:
+        raise Error("invalid HTTP header name")
+    for b in name.as_bytes():
+        if not _http_token_byte(b):
+            raise Error("invalid HTTP header name")
+    for b in value.as_bytes():
+        if (b < 32 and b != 9) or b == 127:
+            raise Error("invalid HTTP header value")
+    var lower_name = name.lower()
+    if lower_name == "host" or lower_name == "content-length" or lower_name == "transfer-encoding" or lower_name == "connection":
+        raise Error("caller-controlled HTTP framing header is forbidden")
+
+
+def _stream_request(path: String, headers: List[Tuple[String, String]], host: String, body_length: Int) raises -> List[UInt8]:
+    # Reuse GET's target validation without changing its established request bytes.
+    _ = _request(path, "X", "", host)
+    var head = "POST " + path + " HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\nContent-Length: " + String(body_length) + "\r\n"
+    var head_bytes = head.byte_length()
+    if head_bytes > HTTP_HEADER_LIMIT - 2:
+        raise Error("HTTP request headers exceed limit")
+    for entry in headers:
+        var name_bytes = entry[0].byte_length()
+        var value_bytes = entry[1].byte_length()
+        if name_bytes > HTTP_HEADER_LIMIT or value_bytes > HTTP_HEADER_LIMIT:
+            raise Error("HTTP request headers exceed limit")
+        var field_bytes = name_bytes + value_bytes + 4
+        if field_bytes > HTTP_HEADER_LIMIT - 2 - head_bytes:
+            raise Error("HTTP request headers exceed limit")
+        _valid_request_field(entry[0], entry[1])
+        head += entry[0] + ": " + entry[1] + "\r\n"
+        head_bytes += field_bytes
+    head += "\r\n"
+    var request = List[UInt8]()
+    for b in head.as_bytes():
+        request.append(b)
+    return request^
+
+
+struct LoopbackHTTPStream(Movable):
+    var fd: Int32
+    var status: Int
+    var headers: List[Tuple[String, String]]
+    var done: Bool
+    var buffer: List[UInt8]
+    var phase: Int
+    var remaining: Int
+    var body_bytes: Int
+    var trailer_bytes: Int
+    var header_scan: Int
+    var interim_count: Int
+    var interim_bytes: Int
+    var wire_bytes: Int
+    var max_wire_bytes: Int
+    var max_body_bytes: Int
+    var length: Int
+    var request_deadline: Float64
+    var idle_timeout_ms: UInt64
+
+    def __init__(
+        out self,
+        address: String,
+        path: String,
+        headers: List[Tuple[String, String]],
+        body: List[UInt8],
+        connect_timeout_ms: UInt64,
+        request_timeout_ms: UInt64,
+        idle_timeout_ms: UInt64,
+        max_body_bytes: Int,
+    ) raises:
+        self.fd = -1
+        self.status = 0
+        self.headers = List[Tuple[String, String]]()
+        self.done = False
+        self.buffer = List[UInt8]()
+        self.phase = 0
+        self.remaining = 0
+        self.body_bytes = 0
+        self.trailer_bytes = 0
+        self.header_scan = 0
+        self.interim_count = 0
+        self.interim_bytes = 0
+        self.wire_bytes = 0
+        self.max_wire_bytes = 0
+        self.max_body_bytes = max_body_bytes
+        self.length = -1
+        self.request_deadline = 0.0
+        self.idle_timeout_ms = idle_timeout_ms
+        # shortcut: total decoded bodies stop at 4 MiB; separate frame and total budgets for full provider streaming.
+        if max_body_bytes < 0 or max_body_bytes > 4 * 1024 * 1024 or connect_timeout_ms == 0 or request_timeout_ms == 0 or idle_timeout_ms == 0:
+            raise Error("invalid or unsupported HTTP stream limits")
+
+        var ipv6 = address.byte_length() > 0 and address.startswith("[")
+        var port: Int
+        var ip: UInt32 = 0
+        if ipv6:
+            var close_bracket = address.find("]")
+            if close_bracket != 4 or close_bracket + 1 >= address.byte_length() or not address[byte=close_bracket + 1:].startswith(":") or not address[byte=1:close_bracket].startswith("::1"):
+                raise Error("HTTP address is not loopback")
+            port = _number(address[byte=close_bracket + 2:])
+        else:
+            var parts = address.split(":")
+            if len(parts) != 2:
+                raise Error("invalid loopback HTTP address")
+            var octets = parts[0].split(".")
+            if len(octets) != 4:
+                raise Error("invalid loopback HTTP address")
+            for i in range(4):
+                var octet = _number(octets[i])
+                if octet > 255:
+                    raise Error("invalid loopback HTTP address")
+                if i == 0 and octet != 127:
+                    raise Error("HTTP address is not loopback")
+                ip = (ip << 8) | UInt32(octet)
+            port = _number(parts[1])
+        if port == 0 or port > 65535:
+            raise Error("invalid loopback HTTP port")
+        var request = _stream_request(path, headers, address, len(body))
+        var started = perf_counter()
+        self.request_deadline = started + Float64(request_timeout_ms) / 1000.0
+        var connect_deadline = started + Float64(connect_timeout_ms) / 1000.0
+        if connect_deadline > self.request_deadline:
+            connect_deadline = self.request_deadline
+        self.max_wire_bytes = HTTP_HEADER_LIMIT * 2 + 65536 + max_body_bytes * 8
+        self.fd = _open_loopback_socket(ipv6)
+        try:
+            var result: Int32
+            if ipv6:
+                var addr_bytes = Array[UInt8, 16](fill=0)
+                addr_bytes[15] = 1
+                var peer6 = sockaddr_in6(port=_port_bytes(port), addr=in6_addr(s6_addr=addr_bytes^), flowinfo=0, scope_id=0)
+                result = connect(self.fd, Pointer(to=peer6).unsafe_bitcast[sockaddr](), UInt32(size_of[sockaddr_in6]()))
+            else:
+                var peer = sockaddr_in(port=_port_bytes(port), addr=in_addr(s_addr=_network32(ip)))
+                result = connect(self.fd, Pointer(to=peer).unsafe_bitcast[sockaddr](), UInt32(size_of[sockaddr_in]()))
+            _finish_loopback_connect(self.fd, result, connect_deadline)
+            _send_all(self.fd, request, self.request_deadline)
+            _send_all(self.fd, body, self.request_deadline)
+            while self.phase == 0:
+                self._read_head()
+        except:
+            self.close()
+            raise
+
+    def close(mut self):
+        if self.fd >= 0:
+            _ = close(self.fd)
+            self.fd = -1
+        self.done = True
+
+    def __deinit__(deinit self):
+        self.close()
+
+    def _receive(mut self) raises:
+        var deadline = self.request_deadline if self.phase == 0 else perf_counter() + Float64(self.idle_timeout_ms) / 1000.0
+        var chunk = List[UInt8](length=8192, fill=0)
+        while True:
+            if perf_counter() >= deadline:
+                raise Error("loopback HTTP stream timed out")
+            var n = recv(self.fd, chunk.unsafe_ptr(), UInt(len(chunk)), MSG_DONTWAIT)
+            if n > 0:
+                var count = Int(n)
+                if self.wire_bytes > self.max_wire_bytes - count:
+                    raise Error("HTTP stream exceeds wire limit")
+                self.wire_bytes += count
+                for i in range(count):
+                    self.buffer.append(chunk[i])
+                return
+            if n == 0:
+                self.phase = 6
+                return
+            var e = get_errno()
+            if e != ErrNo.EAGAIN and e != ErrNo.EINTR:
+                raise Error("loopback HTTP stream read failed")
+            _deadline_wait(deadline)
+
+    def _read_head(mut self) raises:
+        var end = _header_end_from(self.buffer, self.header_scan)
+        while end < 0:
+            if len(self.buffer) > HTTP_HEADER_LIMIT:
+                raise Error("HTTP response headers exceed limit")
+            self.header_scan = max(0, len(self.buffer) - 3)
+            if self.phase == 6:
+                raise Error("truncated HTTP response headers")
+            self._receive()
+            end = _header_end_from(self.buffer, self.header_scan)
+        if end > HTTP_HEADER_LIMIT:
+            raise Error("HTTP response headers exceed limit")
+        var parsed = _response_head(self.buffer, end)
+        if parsed[0] >= 100 and parsed[0] < 200:
+            if parsed[0] == 101:
+                raise Error("HTTP protocol upgrade is unsupported")
+            self.interim_count += 1
+            self.interim_bytes += end + 4
+            if self.interim_count > 8 or self.interim_bytes > HTTP_HEADER_LIMIT:
+                raise Error("too many or oversized informational responses")
+            _drop_prefix(self.buffer, end + 4)
+            self.header_scan = 0
+            return
+        self.status = parsed[0]
+        self.length = parsed[1]
+        if self.length > self.max_body_bytes:
+            raise Error("oversized HTTP response body")
+        var lines = _ascii(self.buffer, 0, end).split("\r\n")
+        self.headers = List[Tuple[String, String]]()
+        for i in range(1, len(lines)):
+            var colon = lines[i].find(":")
+            self.headers.append((String(lines[i][byte=0:colon]), String(lines[i][byte=colon + 1:].strip(" \t"))))
+        _drop_prefix(self.buffer, end + 4)
+        self.header_scan = 0
+        if parsed[0] == 204 or parsed[0] == 304:
+            self.phase = 6
+        elif parsed[2]:
+            self.phase = 2
+        elif self.length >= 0:
+            self.remaining = self.length
+            self.phase = 1
+        else:
+            self.phase = 5
+
+    def _read_trailers(mut self) raises:
+        while True:
+            var end = _line_end(self.buffer, self.header_scan)
+            while end < 0:
+                if self.trailer_bytes + len(self.buffer) > HTTP_HEADER_LIMIT:
+                    raise Error("HTTP trailers exceed limit")
+                if self.phase == 6:
+                    raise Error("truncated HTTP chunk trailers")
+                self.header_scan = max(0, len(self.buffer) - 1)
+                self._receive()
+                end = _line_end(self.buffer, self.header_scan)
+            if self.trailer_bytes + end + 2 > HTTP_HEADER_LIMIT:
+                raise Error("HTTP trailers exceed limit")
+            if end == 0:
+                _drop_prefix(self.buffer, 2)
+                self.header_scan = 0
+                self.phase = 6
+                return
+            var trailer = _ascii(self.buffer, 0, end)
+            var colon = trailer.find(":")
+            if colon <= 0:
+                raise Error("malformed HTTP trailer")
+            for b in trailer[byte=0:colon].as_bytes():
+                if not _http_token_byte(b):
+                    raise Error("malformed HTTP trailer")
+            for b in trailer[byte=colon + 1:].as_bytes():
+                if (b < 32 and b != 9) or b == 127:
+                    raise Error("malformed HTTP trailer")
+            self.trailer_bytes += end + 2
+            _drop_prefix(self.buffer, end + 2)
+            self.header_scan = 0
+
+    def read_chunk(mut self) raises -> List[UInt8]:
+        if self.done:
+            return List[UInt8]()
+        try:
+            while True:
+                if self.phase == 0:
+                    self._read_head()
+                elif self.phase == 1:
+                    if self.remaining == 0:
+                        self.phase = 6
+                        continue
+                    if len(self.buffer) == 0:
+                        self._receive()
+                    if self.phase == 6:
+                        raise Error("truncated HTTP response body")
+                    var take = min(8192, min(len(self.buffer), self.remaining))
+                    var out = List[UInt8]()
+                    for i in range(take):
+                        out.append(self.buffer[i])
+                    _drop_prefix(self.buffer, take)
+                    self.remaining -= take
+                    self.body_bytes += take
+                    return out^
+                elif self.phase == 2:
+                    var end = _line_end(self.buffer, self.header_scan)
+                    while end < 0:
+                        if len(self.buffer) > HTTP_HEADER_LIMIT:
+                            raise Error("HTTP chunk-size line exceeds limit")
+                        if self.phase == 6:
+                            raise Error("truncated HTTP chunk size")
+                        self.header_scan = max(0, len(self.buffer) - 1)
+                        self._receive()
+                        end = _line_end(self.buffer, self.header_scan)
+                    if end > HTTP_HEADER_LIMIT:
+                        raise Error("HTTP chunk-size line exceeds limit")
+                    var size = _hex(_ascii(self.buffer, 0, end).split(";")[0])
+                    _drop_prefix(self.buffer, end + 2)
+                    self.header_scan = 0
+                    if size == 0:
+                        self.phase = 4
+                    else:
+                        if size > self.max_body_bytes - self.body_bytes:
+                            raise Error("oversized chunked HTTP response")
+                        self.remaining = size
+                        self.phase = 3
+                elif self.phase == 3:
+                    if len(self.buffer) == 0:
+                        self._receive()
+                    if self.phase == 6:
+                        raise Error("truncated chunked HTTP response")
+                    var take = min(8192, min(len(self.buffer), self.remaining))
+                    var out = List[UInt8]()
+                    for i in range(take):
+                        out.append(self.buffer[i])
+                    _drop_prefix(self.buffer, take)
+                    self.remaining -= take
+                    self.body_bytes += take
+                    if self.remaining == 0:
+                        self.phase = 7
+                    return out^
+                elif self.phase == 7:
+                    while len(self.buffer) < 2:
+                        if self.phase == 6:
+                            raise Error("truncated chunk terminator")
+                        self._receive()
+                    if self.buffer[0] != 13 or self.buffer[1] != 10:
+                        raise Error("malformed chunk terminator")
+                    _drop_prefix(self.buffer, 2)
+                    self.phase = 2
+                elif self.phase == 4:
+                    self.phase = 5
+                    self._read_trailers()
+                elif self.phase == 5:
+                    if len(self.buffer) > self.max_body_bytes - self.body_bytes:
+                        raise Error("oversized HTTP response body")
+                    if len(self.buffer) > 0:
+                        var take = min(8192, len(self.buffer))
+                        var out = List[UInt8]()
+                        for i in range(take):
+                            out.append(self.buffer[i])
+                        _drop_prefix(self.buffer, take)
+                        self.body_bytes += take
+                        return out^
+                    self._receive()
+                elif self.phase == 6:
+                    self.done = True
+                    self.close()
+                    return List[UInt8]()
+        except:
+            self.close()
+            raise

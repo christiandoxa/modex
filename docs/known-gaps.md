@@ -182,6 +182,26 @@ provider transport and CLI dispatch remain unfinished. Evidence:
 `docs/evidence/provider-request-link.txt` and
 `tests/fixtures/provider-requests/README.md`.
 
+The native DeepSeek exchange now joins preparation, source-derived provider
+header/auth filtering, a real HTTP POST socket and incremental response SSE.
+It preserves duplicate response headers and separate pending messages/metadata,
+returns body bytes for HTTP errors, and closes on completion, cancellation,
+drop or error. Socket tests exercise partial HTTP chunk delivery before EOF,
+malformed/truncated framing and setup/idle deadlines. Stored release request
+and SSE observations are replayed through that native socket path; no new
+full-header oracle capture or whole-process provider parity is claimed.
+
+This remains a component outside CLI execution. Only numeric IPv4 127/8 and
+compressed IPv6 `::1` are admitted. Total decoded response data is capped at
+4 MiB, whereas the frozen SSE reader can consume longer streams under its
+per-frame limits. Success JSON response translation, route selection and
+Anthropic web-search adaptation, TLS/DNS/proxies/redirects/pooling,
+retry/rotation, persistent conversation state, general HTTP parser tolerance,
+downstream backpressure and non-host behavior remain unfinished. Closing is
+explicit between synchronous reads; interrupting an in-progress read relies
+on its idle deadline. Evidence: `docs/evidence/provider-transport-tests.txt`
+and `docs/evidence/provider-transport-link.txt`.
+
 Native policy loading and directory resolution now match tested release paths,
 schema errors and fallback behavior, including 712 wrapped corpus inputs.
 Binary-text classification uses exact Unicode 17 Alphabetic/Number data;

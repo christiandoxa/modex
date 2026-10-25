@@ -364,6 +364,51 @@ matches, six generic local HTTP rejections with hidden detailed diagnostics,
 and one separate Anthropic web-search route observation. The latter route
 and incomplete outer Super process are not provider-command parity.
 
+Native provider transport now joins request preparation, provider header/auth
+filtering, real HTTP POST and incremental DeepSeek SSE translation. The Sol
+MAX lead wrote the exchange, native driver and header regressions. Two Luna
+MAX workers wrote the owning socket stream, shared socket helpers and real
+TCP/process harnesses. File ownership stayed disjoint; workers built and
+tested actual native code. Root reviewed the combined paths, added the build
+targets, tightened test-environment isolation and recorded the remaining gaps.
+The stream preserves duplicate response headers and returns partial chunk
+payloads before the chunk, response or zero terminator has finished. It has
+setup/request and body-idle deadlines and closes on explicit cancellation,
+drop, malformed/truncated input, timeout or translated `[DONE]`.
+
+The integration retains prepared body, pending messages and response metadata
+separately. Tests replay stored checksum-pinned upstream request/SSE captures
+through actual sockets; the filtering and framing regressions are separately
+source-derived, not new official-release full-header captures. The native
+driver also runs in a bubblewrap filesystem with only its executable,
+platform/official Mojo libraries and synthetic data, sharing the host network
+only for its synthetic loopback upstream. Python serves that peer outside
+the namespace and supplies no product implementation.
+
+The provider exchange remains outside CLI dispatch and accepts only numeric
+IPv4 127/8 or compressed IPv6 `::1`. Its 4 MiB total decoded-body cap is a
+known gap from the frozen reader's per-frame limits on arbitrarily long SSE.
+Buffered success JSON translation, Anthropic web-search routing/adaptation,
+credential/config discovery, conversation persistence, TLS/DNS/proxies,
+redirects/pooling, retry/rotation, complete downstream backpressure and
+non-host execution remain unfinished. Cancellation between reads closes the
+socket; interrupting an in-progress synchronous read relies on its idle
+deadline. No whole provider/transport contract or new platform obligation is
+counted PASS. Evidence: `docs/evidence/provider-transport-tests.txt` and
+`docs/evidence/provider-transport-link.txt`.
+
+Transport checkpoint validation: `rtk make test` exits 0 with 31 native Mojo
+unit programs and 235 Python methods PASS, no skips. Source/dependency and
+unchanged-denominator checks pass. The product CLI binary hash is unchanged.
+
+Next integration work: implement the frozen buffered chat-response path and
+route dispatch, then connect native provider request/response execution to
+the real runtime entry point while preserving continuation ownership,
+first-event retry and the unresolved platform/capability obligations. Keep
+the original full goal active and the incomplete inventory at 60 coarse
+contracts/360 platform obligations, with 0 complete contracts and 1 Linux
+obligation PASS.
+
 The parser now preserves the frozen independent limits: 80 active
 array/inline-table levels and 80 segments per local key path. Forty-five
 additional policy comparisons cover exact boundaries, large keys/strings,

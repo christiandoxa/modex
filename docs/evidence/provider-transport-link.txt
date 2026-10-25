@@ -1,0 +1,93 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+Build flags: -O3 --target-cpu=x86-64-v3 -I src
+Scope: native loopback POST/DeepSeek SSE component, not CLI/provider-command parity.
+
+Command: readelf -d build/tests/provider_deepseek_transport_driver
+
+Dynamic section at offset 0xaac80 contains 29 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+ 0x000000000000000c (INIT)               0x2000
+ 0x000000000000000d (FINI)               0x91518
+ 0x0000000000000019 (INIT_ARRAY)         0xabc70
+ 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)
+ 0x000000000000001a (FINI_ARRAY)         0xabc78
+ 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)
+ 0x000000006ffffef5 (GNU_HASH)           0x3a0
+ 0x0000000000000005 (STRTAB)             0x7e8
+ 0x0000000000000006 (SYMTAB)             0x3c8
+ 0x000000000000000a (STRSZ)              873 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000015 (DEBUG)              0x0
+ 0x0000000000000003 (PLTGOT)             0xabe90
+ 0x0000000000000002 (PLTRELSZ)           912 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0xcc0
+ 0x0000000000000007 (RELA)               0xc00
+ 0x0000000000000008 (RELASZ)             192 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000000000001e (FLAGS)              BIND_NOW
+ 0x000000006ffffffb (FLAGS_1)            Flags: NOW PIE
+ 0x000000006ffffffe (VERNEED)            0xbb0
+ 0x000000006fffffff (VERNEEDNUM)         1
+ 0x000000006ffffff0 (VERSYM)             0xb52
+ 0x000000006ffffff9 (RELACOUNT)          3
+ 0x0000000000000000 (NULL)               0x0
+
+Command: ldd build/tests/provider_deepseek_transport_driver
+	linux-vdso.so.1 (0x00007c48537bc000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007c48535b9000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007c4853200000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007c48534af000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007c4852e00000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007c485349f000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007c4852200000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007c4853471000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007c48537be000)
+
+Command: sha256sum build/modex build/tests/provider_deepseek_transport_driver build/tests/loopback_http_stream_driver
+82a3ca2f5a291d7f8f1eee4d92720eb2b2f32547d73e6b20046cc1039c449a9e  build/modex
+24825a32af26f6feb5fdcd4ff8376948a0b7db886dd6878571df6b8d4853bbc6  build/tests/provider_deepseek_transport_driver
+5d4f25ae195d594161e5f5a07d92e3f75a4d6e731dc11d7d46404a0da26264e8  build/tests/loopback_http_stream_driver
+
+Command: rg -n '^(from|import) ' src/modex/loopback_http.mojo src/modex/provider_deepseek_transport.mojo
+src/modex/provider_deepseek_transport.mojo:3:from std.collections import List, Span
+src/modex/provider_deepseek_transport.mojo:5:from .json import JsonDocument, serialize_json
+src/modex/provider_deepseek_transport.mojo:6:from .loopback_http import LoopbackHTTPStream, _http_token_byte
+src/modex/provider_deepseek_transport.mojo:7:from .provider_chat_reader import DeepSeekChatReader
+src/modex/provider_deepseek_transport.mojo:8:from .provider_request import translate_deepseek_request
+src/modex/provider_deepseek_transport.mojo:9:from .text import is_whitespace, trim_text
+src/modex/loopback_http.mojo:3:from std.bit import byte_swap
+src/modex/loopback_http.mojo:4:from std.collections import Array, List, Span
+src/modex/loopback_http.mojo:5:from std.net._sys.inet import in6_addr, in_addr
+src/modex/loopback_http.mojo:6:from std.memory import MaybeUninit
+src/modex/loopback_http.mojo:7:from std.net._sys.unix import (
+src/modex/loopback_http.mojo:13:from std.sys import Endian, size_of
+src/modex/loopback_http.mojo:14:from std.sys._libc import FcntlCommands, FcntlFDFlags, close, fcntl
+src/modex/loopback_http.mojo:15:from std.sys._libc_errno import ErrNo, get_errno
+src/modex/loopback_http.mojo:16:from std.time import perf_counter, sleep
+
+Source inventory: all 53 production Mojo paths exactly match docs/dependencies.json.
+All 60 contracts and 360 platform statuses are unchanged from the previous checkpoint.
+
+Only official stdlib collections, existing local JSON/text/provider modules and
+already-proven official internal POSIX wrappers are used. No new native binding,
+ABI record, application library, Python production import, helper executable,
+runtime download or build generator was added. Socket addresses and buffer
+storage remain live through synchronous calls; no borrowed pointer is retained.
+The socket is closed on success, explicit cancellation, move/drop and failures.
+
+Real restricted-filesystem tests mount only the native binary, its platform and
+official Mojo runtime libraries and synthetic input directories. Python supplies
+the loopback upstream outside that filesystem. It supplies no Modex behavior.
+No Python/Node/Rust/Prodex executable exists inside the test namespace.
+
+The product binary is unchanged because CLI dispatch does not call the provider
+component. Linux x86-64 only is tested. Private stdlib wrappers are version-sensitive;
+absolute toolchain RUNPATH and relocatable distribution remain gaps. DNS/TLS/proxies,
+redirects/pooling, full cancellation/backpressure, arbitrary-length SSE and complete
+provider/runtime parity remain unfinished. Total decoded response bodies stop at
+4 MiB; the frozen reader's individual frame limits allow longer total streams.

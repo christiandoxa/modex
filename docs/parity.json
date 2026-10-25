@@ -1756,7 +1756,7 @@
       "prerequisites": [
         "configured upstream endpoints"
       ],
-      "implementation": "src/modex/provider_sse_wire.mojo; src/modex/provider_sse_json.mojo; src/modex/provider_chat_reader.mojo (standalone provider SSE and chat response-stream foundations)",
+      "implementation": "src/modex/provider_sse_wire.mojo; src/modex/provider_sse_json.mojo; src/modex/provider_chat_reader.mojo; src/modex/loopback_http.mojo; src/modex/provider_deepseek_transport.mojo (native bounded loopback POST/SSE integration outside CLI dispatch)",
       "tests": [
         "tests/test_provider_sse_wire.mojo",
         "tests/test_provider_sse_json.mojo",
@@ -1765,14 +1765,21 @@
         "tests/test_provider_sse_runtime.py",
         "tests/test_provider_chat_stream.mojo",
         "tests/test_provider_chat_stream.py",
-        "tests/capture_provider_stream.py"
+        "tests/capture_provider_stream.py",
+        "tests/loopback_http_stream_driver.mojo",
+        "tests/test_loopback_http_stream.py",
+        "tests/test_provider_deepseek_transport.mojo",
+        "tests/provider_deepseek_transport_driver.mojo",
+        "tests/test_provider_deepseek_transport.py"
       ],
       "evidence": [
         "tests/fixtures/provider-sse/README.md",
         "docs/evidence/provider-sse-tests.txt",
         "docs/evidence/provider-sse-link.txt",
         "docs/evidence/provider-chat-stream-tests.txt",
-        "docs/evidence/provider-chat-stream-link.txt"
+        "docs/evidence/provider-chat-stream-link.txt",
+        "docs/evidence/provider-transport-tests.txt",
+        "docs/evidence/provider-transport-link.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -1785,7 +1792,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Provider SSE framing/JSON assembly and DeepSeek response-stream translation are standalone native foundations with frozen-source, isolated-runtime and synthetic official-release adapter comparisons. The product CLI does not call them yet. HTTP/TLS/proxies, cancellation/backpressure, full error/resource equivalence and remaining transport semantics are unfinished. No complete transport or provider parity is claimed."
+        "Native numeric-loopback POST now joins request preparation and incremental DeepSeek SSE translation, with real sockets, partial-chunk delivery, timeout and close/drop/error checks. The product CLI does not call it. Total decoded response data is capped at 4 MiB; arbitrary-length streams, general addresses/HTTP, TLS/DNS/proxies/redirects/pooling, retries, buffered success JSON translation, full cancellation/backpressure/error/resource equivalence and non-host behavior remain unfinished. No complete transport or provider parity is claimed."
       ]
     },
     {
@@ -2052,7 +2059,7 @@
       "prerequisites": [
         "DeepSeek services"
       ],
-      "implementation": "src/modex/provider_request.mojo; src/modex/provider_request_messages.mojo; src/modex/provider_request_params.mojo; src/modex/provider_request_prepare.mojo; src/modex/provider_request_tools.mojo; src/modex/provider_chat_chunk.mojo; src/modex/provider_chat_reader.mojo; src/modex/provider_chat_stream.mojo; src/modex/provider_chat_items.mojo; src/modex/provider_chat_tools.mojo; src/modex/provider_chat_metadata.mojo; src/modex/provider_chat_usage.mojo; src/modex/provider_sse_events.mojo (standalone request preparation and response-stream translation; not connected to CLI)",
+      "implementation": "src/modex/provider_request.mojo; src/modex/provider_request_messages.mojo; src/modex/provider_request_params.mojo; src/modex/provider_request_prepare.mojo; src/modex/provider_request_tools.mojo; src/modex/provider_chat_chunk.mojo; src/modex/provider_chat_reader.mojo; src/modex/provider_chat_stream.mojo; src/modex/provider_chat_items.mojo; src/modex/provider_chat_tools.mojo; src/modex/provider_chat_metadata.mojo; src/modex/provider_chat_usage.mojo; src/modex/provider_sse_events.mojo; src/modex/provider_deepseek_transport.mojo; src/modex/loopback_http.mojo (bounded loopback request/response integration outside CLI dispatch)",
       "tests": [
         "tests/test_provider_chat_chunk.mojo",
         "tests/provider_chat_chunk_driver.mojo",
@@ -2076,7 +2083,10 @@
         "tests/test_provider_request_tools.mojo",
         "tests/provider_request_driver.mojo",
         "tests/test_provider_requests.py",
-        "tests/capture_provider_requests.py"
+        "tests/capture_provider_requests.py",
+        "tests/test_provider_deepseek_transport.mojo",
+        "tests/provider_deepseek_transport_driver.mojo",
+        "tests/test_provider_deepseek_transport.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
@@ -2088,7 +2098,9 @@
         "tests/fixtures/provider-requests/cases.json",
         "tests/fixtures/provider-requests/README.md",
         "docs/evidence/provider-request-tests.txt",
-        "docs/evidence/provider-request-link.txt"
+        "docs/evidence/provider-request-link.txt",
+        "docs/evidence/provider-transport-tests.txt",
+        "docs/evidence/provider-transport-link.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2101,7 +2113,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Native request preparation and response-stream translation have source-derived and synthetic official-release adapter comparisons, but remain standalone components outside CLI dispatch. Request route selection/Anthropic adaptation, auth/config, conversation storage/lookup, HTTP/TLS/proxies, cancellation/backpressure, full resource/error equivalence and non-host execution remain unfinished. Component comparisons and retained oracle preflight gaps are not provider-command parity."
+        "Native request preparation now reaches real numeric-loopback POST and incremental SSE response translation, preserving pending messages/metadata separately from the body. It remains outside CLI dispatch with a 4 MiB total decoded response limit. Request route selection/Anthropic adaptation, credential/config discovery, conversation storage/lookup, buffered success JSON translation, general HTTP/TLS/DNS/proxies/redirects, retry/rotation, full cancellation/backpressure/resource/error equivalence and non-host execution remain unfinished. Component comparisons and retained oracle preflight gaps are not provider-command parity."
       ]
     },
     {

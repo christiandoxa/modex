@@ -1,0 +1,180 @@
+"""Native loopback DeepSeek POST and incremental Responses SSE exchange."""
+
+from std.collections import List, Span
+
+from .json import JsonDocument, serialize_json
+from .loopback_http import LoopbackHTTPStream, _http_token_byte
+from .provider_chat_reader import DeepSeekChatReader
+from .provider_request import translate_deepseek_request
+from .text import is_whitespace, trim_text
+
+
+def _policy_name(name: String) -> String:
+    var start = 0
+    var end = name.byte_length()
+    while start < end and name.as_bytes()[start] <= 32:
+        start += 1
+    while end > start and name.as_bytes()[end - 1] <= 32:
+        end -= 1
+    return String(name[byte=start:end]).lower()
+
+
+def _header_token(value: String) -> Bool:
+    if not value:
+        return False
+    for byte in value.as_bytes():
+        if not _http_token_byte(byte):
+            return False
+    return True
+
+
+def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: String) raises -> List[Tuple[String, String]]:
+    if not api_key:
+        raise Error("--api-key cannot be empty")
+    for character in api_key.codepoints():
+        if is_whitespace(Int(character)):
+            raise Error("--api-key must not contain whitespace")
+    var connection_tokens = List[String]()
+    for name, value in headers:
+        if name.byte_length() > 4096:
+            raise Error("DeepSeek request header name exceeds limit")
+        if name.lower() == "connection":
+            for part in value.split(","):
+                var token = trim_text(String(part))
+                if _header_token(token):
+                    connection_tokens.append(token.lower())
+    var output: List[Tuple[String, String]] = [
+        ("content-type", "application/json"),
+        ("accept-encoding", "identity"),
+        ("accept", "text/event-stream, application/json"),
+        ("authorization", "Bearer " + api_key),
+    ]
+    # The frozen auth pass adds the first user agent before copying inbound headers.
+    for name, value in headers:
+        if name.lower() == "user-agent":
+            output.append(("user-agent", value))
+            break
+    for name, value in headers:
+        var normalized = _policy_name(name)
+        var skip = normalized in connection_tokens or normalized.startswith("sec-websocket-") or normalized.startswith("x-prodex-internal-")
+        for local_name in ["connection", "content-length", "host", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade", "authorization", "chatgpt-account-id"]:
+            skip = skip or normalized == local_name
+        if not skip:
+            output.append((name, value))
+    return output^
+
+
+def deepseek_event_stream(headers: List[Tuple[String, String]]) -> Bool:
+    for name, value in headers:
+        if name.lower() == "content-type":
+            for byte in value.as_bytes():
+                if (byte < 32 and byte != 9) or byte >= 127:
+                    return False
+            return "text/event-stream" in value.lower()
+    return False
+
+
+struct DeepSeekExchange(Movable):
+    var http: LoopbackHTTPStream
+    var reader: DeepSeekChatReader
+    var body: String
+    var messages: String
+    var response_metadata: String
+    var pending: List[UInt8]
+    var pending_offset: Int
+    var read_mode: Int
+    var done: Bool
+    var cancelled: Bool
+
+    def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304) raises:
+        var prepared = JsonDocument(translate_deepseek_request(request, history, strict_tools, web_search_mode))
+        self.body = serialize_json(prepared, prepared.get(prepared.root, "body"))
+        self.messages = serialize_json(prepared, prepared.get(prepared.root, "messages"))
+        self.response_metadata = serialize_json(prepared, prepared.get(prepared.root, "response_metadata"))
+        self.reader = DeepSeekChatReader(request_id, response_id, created_at, self.response_metadata, line_max_bytes, event_max_bytes, accumulated_max_bytes)
+        self.pending = List[UInt8]()
+        self.pending_offset = 0
+        self.read_mode = 0
+        self.done = False
+        self.cancelled = False
+        var bytes = List[UInt8]()
+        for byte in self.body.as_bytes():
+            bytes.append(byte)
+        self.http = LoopbackHTTPStream(address, path, deepseek_request_headers(headers, api_key), bytes, connect_timeout_ms, request_timeout_ms, idle_timeout_ms, max_body_bytes)
+
+    def status(self) -> Int:
+        return self.http.status
+
+    def headers(self) -> List[Tuple[String, String]]:
+        return self.http.headers.copy()
+
+    def successful(self) -> Bool:
+        return 200 <= self.http.status < 300
+
+    def close(mut self):
+        if not self.done:
+            self.cancelled = True
+        self._finish()
+
+    def _finish(mut self):
+        self.done = True
+        self.pending.clear()
+        self.pending_offset = 0
+        self.http.close()
+
+    def read_body(mut self) raises -> List[UInt8]:
+        if self.read_mode == 2:
+            self._finish()
+            raise Error("DeepSeek response body was already handed to the event reader")
+        self.read_mode = 1
+        var output = List[UInt8]()
+        try:
+            while not self.done:
+                var chunk = self.http.read_chunk()
+                output.extend(chunk^)
+                if self.http.done:
+                    self.done = True
+            self._finish()
+            return output^
+        except:
+            self._finish()
+            raise
+
+    def read_events(mut self) raises -> List[String]:
+        if self.read_mode == 1:
+            self._finish()
+            raise Error("DeepSeek response body was already read as bytes")
+        if self.done:
+            return List[String]()
+        if not self.successful():
+            self._finish()
+            raise Error("DeepSeek HTTP error body must be read without SSE translation")
+        # shortcut: buffered JSON response translation is pending, add it with the nonstream adapter.
+        if not deepseek_event_stream(self.http.headers):
+            self._finish()
+            raise Error("DeepSeek event reader requires a text/event-stream response")
+        self.read_mode = 2
+        try:
+            while True:
+                if self.pending_offset < len(self.pending):
+                    var result = self.reader.consume(Span(self.pending)[self.pending_offset:])
+                    if result[0] <= 0:
+                        raise Error("DeepSeek event reader made no progress")
+                    self.pending_offset += result[0]
+                    if self.reader.done:
+                        self._finish()
+                    if result[1] or self.done:
+                        return result[1].copy()
+                    continue
+                self.pending = self.http.read_chunk()
+                self.pending_offset = 0
+                if not self.pending:
+                    var events = self.reader.finish()
+                    self._finish()
+                    return events^
+        except error:
+            self._finish()
+            if self.reader.state.completed:
+                raise
+            self.reader.done = True
+            return self.reader.state.fail("provider_stream_error", String(error))

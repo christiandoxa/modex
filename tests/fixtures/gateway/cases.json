@@ -1,0 +1,548 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "oracle_version": "0.439.0",
+  "oracle_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+  "capture_harness": "tests/capture_gateway.py",
+  "scope": "Frozen gateway CLI help, parse-only cases, and synthetic DeepSeek startup probes.",
+  "runtime_claim": "The explicit DeepSeek gateway cannot reach HTTP in the frozen build: empty state has no active profile; a synthetic profileless DeepSeek Codex config reaches the no-OpenAI-compatible-proxy error. Parse-only captures and filesystem deltas preserve CLI behavior without startup. Loopback records prove the startup failure cases send no upstream request.",
+  "cases": [
+    {
+      "name": "gateway_help",
+      "class": "help",
+      "argv": [
+        "prodex",
+        "gateway",
+        "--help"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 0,
+      "timed_out": false,
+      "stdout": "Run a lean OpenAI-compatible provider gateway.\n\nUsage: prodex gateway [OPTIONS]\n\nOptions:\n      --listen <ADDR>        Address to bind the OpenAI-compatible gateway to. Defaults to loopback with an ephemeral port\n      --provider <PROVIDER>  External provider preset. Omit for an OpenAI-compatible upstream\n      --base-url <URL>       Upstream base URL [alias: --url]\n      --api-key <KEY>        Provider API key. Prefer provider-specific environment variables\n      --smart-context        Enable Smart Context Autopilot\n      --presidio             Enable Presidio request-body redaction\n      --no-presidio          Disable policy-enabled Presidio redaction\n  -h, --help                 Print help\n",
+      "stderr": "",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_delta": []
+    },
+    {
+      "name": "cli_missing_provider_value",
+      "class": "parse_only",
+      "argv": [
+        "prodex",
+        "gateway",
+        "--provider"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 2,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "error: a value is required for '--provider <PROVIDER>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_delta": []
+    },
+    {
+      "name": "cli_missing_base_url_value",
+      "class": "parse_only",
+      "argv": [
+        "prodex",
+        "gateway",
+        "--base-url"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 2,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "error: a value is required for '--base-url <URL>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_delta": []
+    },
+    {
+      "name": "cli_missing_api_key_value",
+      "class": "parse_only",
+      "argv": [
+        "prodex",
+        "gateway",
+        "--api-key"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 2,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "error: a value is required for '--api-key <KEY>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_delta": []
+    },
+    {
+      "name": "cli_missing_listen_value",
+      "class": "parse_only",
+      "argv": [
+        "prodex",
+        "gateway",
+        "--listen"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 2,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "error: a value is required for '--listen <ADDR>' but none was supplied\n\nFor more information, try '--help'.\n",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_delta": []
+    },
+    {
+      "name": "cli_duplicate_base_url_alias",
+      "class": "parse_only",
+      "argv": [
+        "prodex",
+        "gateway",
+        "--base-url",
+        "http://127.0.0.1:1",
+        "--url",
+        "http://127.0.0.1:2"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 2,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "error: the argument '--base-url <URL>' cannot be used multiple times\n\nUsage: prodex gateway [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_delta": []
+    },
+    {
+      "name": "cli_conflicting_presidio",
+      "class": "parse_only",
+      "argv": [
+        "prodex",
+        "gateway",
+        "--presidio",
+        "--no-presidio"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 2,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "error: the argument '--presidio' cannot be used with '--no-presidio'\n\nUsage: prodex gateway --presidio\n\nFor more information, try '--help'.\n",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_delta": []
+    },
+    {
+      "name": "cli_invalid_provider",
+      "class": "parse_only",
+      "argv": [
+        "prodex",
+        "gateway",
+        "--provider",
+        "not-a-provider"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 2,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "error: invalid value 'not-a-provider' for '--provider <PROVIDER>': invalid --provider: supported values are anthropic, copilot, deepseek, gemini, kiro, got \"not-a-provider\"\n\nFor more information, try '--help'.\n",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_delta": []
+    },
+    {
+      "name": "cli_unexpected_argument",
+      "class": "parse_only",
+      "argv": [
+        "prodex",
+        "gateway",
+        "unexpected"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 2,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "error: unexpected argument 'unexpected' found\n\nUsage: prodex gateway [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_delta": []
+    },
+    {
+      "name": "cli_help_before_unexpected_argument",
+      "class": "parse_only",
+      "argv": [
+        "prodex",
+        "gateway",
+        "--help",
+        "unexpected"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 0,
+      "timed_out": false,
+      "stdout": "Run a lean OpenAI-compatible provider gateway.\n\nUsage: prodex gateway [OPTIONS]\n\nOptions:\n      --listen <ADDR>        Address to bind the OpenAI-compatible gateway to. Defaults to loopback with an ephemeral port\n      --provider <PROVIDER>  External provider preset. Omit for an OpenAI-compatible upstream\n      --base-url <URL>       Upstream base URL [alias: --url]\n      --api-key <KEY>        Provider API key. Prefer provider-specific environment variables\n      --smart-context        Enable Smart Context Autopilot\n      --presidio             Enable Presidio request-body redaction\n      --no-presidio          Disable policy-enabled Presidio redaction\n  -h, --help                 Print help\n",
+      "stderr": "",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_delta": []
+    },
+    {
+      "name": "cli_help_after_unexpected_argument",
+      "class": "parse_only",
+      "argv": [
+        "prodex",
+        "gateway",
+        "unexpected",
+        "--help"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 2,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "error: unexpected argument 'unexpected' found\n\nUsage: prodex gateway [OPTIONS]\n\nFor more information, try '--help'.\n",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_delta": []
+    },
+    {
+      "name": "deepseek_empty_home",
+      "class": "startup",
+      "argv": [
+        "prodex",
+        "gateway",
+        "--provider",
+        "deepseek",
+        "--base-url",
+        "{base_url}",
+        "--api-key",
+        "synthetic-provider-key",
+        "--no-presidio",
+        "--listen",
+        "127.0.0.1:0"
+      ],
+      "synthetic_shared_config": null,
+      "returncode": 1,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "Error: no active profile selected and no Codex-compatible profiles are available; use `prodex use --profile <name>` or pass --profile\n",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        }
+      },
+      "filesystem_after": {
+        "prodex/profile-lifecycle.json.lock": {
+          "mode": 436,
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "prodex/runtime-housekeeping.last-run": {
+          "mode": 436,
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "prodex/runtime-housekeeping.lock": {
+          "mode": 436,
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "b105f2b600356f5cabbe7f6feee287497e48d2a10df9041fd4967475d8536394"
+        },
+        "prodex-runtime.lock": {
+          "mode": 384,
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "filesystem_delta": [
+        {
+          "path": "prodex-runtime.lock",
+          "before": null,
+          "after": {
+            "mode": 384,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "path": "prodex/profile-lifecycle.json.lock",
+          "before": null,
+          "after": {
+            "mode": 436,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "path": "prodex/runtime-housekeeping.last-run",
+          "before": null,
+          "after": {
+            "mode": 436,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "path": "prodex/runtime-housekeeping.lock",
+          "before": null,
+          "after": {
+            "mode": 436,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ]
+    },
+    {
+      "name": "deepseek_profileless_codex_config",
+      "class": "startup",
+      "argv": [
+        "prodex",
+        "gateway",
+        "--provider",
+        "deepseek",
+        "--base-url",
+        "{base_url}",
+        "--api-key",
+        "synthetic-provider-key",
+        "--no-presidio",
+        "--listen",
+        "127.0.0.1:0"
+      ],
+      "synthetic_shared_config": "model_provider = \"prodex-deepseek\"\n",
+      "returncode": 1,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "Error: gateway provider does not expose an OpenAI-compatible proxy\n",
+      "upstream_requests": [],
+      "filesystem_before": {
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "befd8f5f2d91f7fa3479ff6a1d27ca6c5f73b7f83431b26de08bff7c88317d28"
+        },
+        "shared-codex/config.toml": {
+          "mode": 384,
+          "size": 35,
+          "sha256": "4c0559995d0f1e7682ee4069ad94080783fbd5370762e65650718c860d123feb"
+        }
+      },
+      "filesystem_after": {
+        "prodex/profile-lifecycle.json.lock": {
+          "mode": 436,
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "prodex/runtime-housekeeping.last-run": {
+          "mode": 436,
+          "size": 11,
+          "sha256": "e4e9969735dab7654448dcf70069834925fec60a362dfbaf8b6a0eb8380edffe"
+        },
+        "prodex/runtime-housekeeping.lock": {
+          "mode": 436,
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "prodex/update-check.json": {
+          "mode": 384,
+          "size": 71,
+          "sha256": "befd8f5f2d91f7fa3479ff6a1d27ca6c5f73b7f83431b26de08bff7c88317d28"
+        },
+        "prodex-runtime.lock": {
+          "mode": 384,
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "shared-codex/config.toml": {
+          "mode": 384,
+          "size": 35,
+          "sha256": "4c0559995d0f1e7682ee4069ad94080783fbd5370762e65650718c860d123feb"
+        }
+      },
+      "filesystem_delta": [
+        {
+          "path": "prodex-runtime.lock",
+          "before": null,
+          "after": {
+            "mode": 384,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "path": "prodex/profile-lifecycle.json.lock",
+          "before": null,
+          "after": {
+            "mode": 436,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "path": "prodex/runtime-housekeeping.last-run",
+          "before": null,
+          "after": {
+            "mode": 436,
+            "size": 11,
+            "sha256": "e4e9969735dab7654448dcf70069834925fec60a362dfbaf8b6a0eb8380edffe"
+          }
+        },
+        {
+          "path": "prodex/runtime-housekeeping.lock",
+          "before": null,
+          "after": {
+            "mode": 436,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ]
+    }
+  ]
+}

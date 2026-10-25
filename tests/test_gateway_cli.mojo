@@ -1,0 +1,57 @@
+from std.collections import List
+from std.testing import assert_equal, assert_true
+
+from modex.runtime_local_rewrite import _history, _namespace, local_rewrite_upstream
+from modex.gateway_cli import gateway_help, parse_gateway_arguments
+from modex.json import JsonDocument
+from modex.provider_conversations import ProviderConversationStore
+
+
+def main() raises:
+    var args: List[String] = ["modex", "gateway", "--provider", " DeepSeek ", "--url=http://127.0.0.1:10000/v1", "--api-key=synthetic", "--no-presidio"]
+    var options = parse_gateway_arguments(args, "modex")
+    assert_equal(options.listen, "127.0.0.1:0")
+    assert_equal(options.provider, "deepseek")
+    assert_equal(options.base_url, "http://127.0.0.1:10000/v1")
+    assert_equal(options.api_key.value(), "synthetic")
+    assert_true(options.no_presidio and not options.presidio)
+    assert_true(gateway_help("modex").find("Usage: modex gateway [OPTIONS]") >= 0)
+    assert_true(parse_gateway_arguments(["modex", "gateway", "--help"], "modex").help)
+    for invalid in [
+        List[String](copy=["modex", "gateway", "--presidio", "--no-presidio"]),
+        List[String](copy=["modex", "gateway", "--provider"]),
+        List[String](copy=["modex", "gateway", "--listen=a", "--listen=b"]),
+        List[String](copy=["modex", "gateway", "--smart-context=true"]),
+        List[String](copy=["modex", "gateway", "--unknown"]),
+    ]:
+        var rejected = False
+        try:
+            _ = parse_gateway_arguments(invalid, "modex")
+        except:
+            rejected = True
+        assert_true(rejected)
+    var document = JsonDocument('{"session_id":" body ","client_metadata":{"session_id":"nested"}}')
+    assert_equal(_namespace([], document), "body")
+    assert_equal(_namespace([("session_id", " header "), ("x-session-id", "ignored")], document), "header")
+    assert_equal(_namespace([("session_id", " "), ("x-session-id", "ignored")], document), "body")
+    assert_equal(_namespace([("x-codex-turn-metadata", '{"client_metadata":{"session_id":" turn "}}')], document), "turn")
+    assert_equal(_namespace([("x-codex-turn-metadata", "invalid"), ("x-codex-turn-metadata", '{"session_id":"ignored"}')], document), "body")
+    var blocked_nested = JsonDocument('{"session_id":false,"client_metadata":{"session_id":"ignored"}}')
+    assert_equal(_namespace([("x-prodex-internal-conversation-namespace", " raw ")], blocked_nested), " raw ")
+    assert_equal(_namespace([], blocked_nested), "gateway")
+    var store = ProviderConversationStore()
+    store.insert("saved", '[{"tool_calls":[{"id":"call-synthetic"}]}]', "a")
+    var blank_call = JsonDocument('{"input":[{"type":"function_call_output","call_id":"","tool_call_id":"call-synthetic"}]}')
+    assert_equal(_history(blank_call, store, "a"), "[]")
+    var typed_fallback = JsonDocument('{"input":[{"type":"function_call_output","call_id":null,"tool_call_id":"call-synthetic"}]}')
+    assert_equal(_history(typed_fallback, store, "a"), store.history("saved", "a").value())
+    assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/")[1], "/v1/chat/completions")
+    assert_equal(local_rewrite_upstream("http://[::1]:1234")[0], "[::1]:1234")
+    for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://localhost:1", "http://127.0.0.1:0", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://127.0.0.1:1/v1/../other"]:
+        var rejected = False
+        try:
+            _ = local_rewrite_upstream(url)
+        except:
+            rejected = True
+        assert_true(rejected)
+    print("Gateway argument checks: PASS")

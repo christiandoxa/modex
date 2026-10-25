@@ -1,0 +1,123 @@
+{
+  "classification": "UNAPPROVED_SAFE_DIFFERENCE",
+  "status": "FAIL",
+  "parity_pass": false,
+  "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "oracle_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+  "modex_sha256": "902212317b7c9e6285ed8d08187581b5a99df4b1a0a18f2ddae7623325c3b72c",
+  "reproduce": "python3 tests/capture_gateway_permissions.py",
+  "input_config_mode": "0664",
+  "baseline": {
+    "name": "deepseek_group_writable_config",
+    "class": "startup",
+    "argv": [
+      "prodex",
+      "gateway",
+      "--provider",
+      "deepseek",
+      "--base-url",
+      "{base_url}",
+      "--api-key",
+      "synthetic-provider-key",
+      "--no-presidio",
+      "--listen",
+      "127.0.0.1:0"
+    ],
+    "synthetic_shared_config": "model_provider = \"prodex-deepseek\"\n",
+    "returncode": 1,
+    "timed_out": false,
+    "stdout": "",
+    "stderr": "Error: gateway provider does not expose an OpenAI-compatible proxy\n",
+    "upstream_requests": [],
+    "filesystem_before": {
+      "prodex/update-check.json": {
+        "mode": 384,
+        "size": 71,
+        "sha256": "3b73300e8eb80d957484a92af6e70c48cde5e381ded646d27eab25d049c555a8"
+      },
+      "shared-codex/config.toml": {
+        "mode": 436,
+        "size": 35,
+        "sha256": "4c0559995d0f1e7682ee4069ad94080783fbd5370762e65650718c860d123feb"
+      }
+    },
+    "filesystem_after": {
+      "prodex/profile-lifecycle.json.lock": {
+        "mode": 436,
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "prodex/runtime-housekeeping.last-run": {
+        "mode": 436,
+        "size": 11,
+        "sha256": "07147bccd606d65357bf22a1e0c914ff8d109e52060aa00dc399c8dc225ac1bf"
+      },
+      "prodex/runtime-housekeeping.lock": {
+        "mode": 436,
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "prodex/update-check.json": {
+        "mode": 384,
+        "size": 71,
+        "sha256": "3b73300e8eb80d957484a92af6e70c48cde5e381ded646d27eab25d049c555a8"
+      },
+      "prodex-runtime.lock": {
+        "mode": 384,
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "shared-codex/config.toml": {
+        "mode": 436,
+        "size": 35,
+        "sha256": "4c0559995d0f1e7682ee4069ad94080783fbd5370762e65650718c860d123feb"
+      }
+    },
+    "filesystem_delta": [
+      {
+        "path": "prodex-runtime.lock",
+        "before": null,
+        "after": {
+          "mode": 384,
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      {
+        "path": "prodex/profile-lifecycle.json.lock",
+        "before": null,
+        "after": {
+          "mode": 436,
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      {
+        "path": "prodex/runtime-housekeeping.last-run",
+        "before": null,
+        "after": {
+          "mode": 436,
+          "size": 11,
+          "sha256": "07147bccd606d65357bf22a1e0c914ff8d109e52060aa00dc399c8dc225ac1bf"
+        }
+      },
+      {
+        "path": "prodex/runtime-housekeeping.lock",
+        "before": null,
+        "after": {
+          "mode": 436,
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    ]
+  },
+  "modex": {
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "Error: gateway Codex config requires an owned file without shared write access\n",
+    "upstream_requests": [],
+    "filesystem_delta": []
+  },
+  "finding": "The release reaches its no-compatible-proxy failure with group-writable synthetic config. Modex rejects that file before reading it. This stricter guard is retained as a difference, not counted as parity."
+}

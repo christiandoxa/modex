@@ -10,7 +10,7 @@ from .provider_request_tools import request_tool_fields
 from .text import trim_text
 
 
-def translate_deepseek_request(source: String, history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto") raises -> String:
+def translate_deepseek_request(source: String, history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", previous_response_found: Bool = False) raises -> String:
     var initial: JsonDocument
     try:
         initial = JsonDocument(source)
@@ -38,7 +38,7 @@ def translate_deepseek_request(source: String, history: String = "[]", strict_to
         for index in range(len(parsed.nodes[parsed.root].children)):
             fields.append(quote_json(parsed.nodes[parsed.root].names[index]) + ":" + serialize_json(parsed, parsed.nodes[parsed.root].children[index]))
     var runtime_body = JsonDocument(fields_object(fields))
-    var prepared = prepare_request_body(doc, serialize_json(runtime_body, runtime_body.root), history)
+    var prepared = prepare_request_body(doc, serialize_json(runtime_body, runtime_body.root), history, previous_response_found)
     # The frozen simple-request pass replaces the body while keeping pending runtime messages.
     var result = JsonDocument('{"body":' + prepared + ',"messages":' + messages + ',"response_metadata":' + metadata + "}")
     return serialize_json(result, result.root)

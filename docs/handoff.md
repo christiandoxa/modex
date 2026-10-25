@@ -444,6 +444,74 @@ to the previous streaming checkpoint; it was not repeated here. Large-output
 conformance fallback and complete parser/resource/error equivalence remain
 unverified. No complete contract or new platform obligation is counted PASS.
 
+The native loopback listener, scoped in-memory conversation cache and internal
+local-rewrite relay are implemented together. Sol MAX wrote CLI/runtime
+composition and native argument/namespace checks; Luna MAX workers wrote the
+listener, borrowed-peer cancellation and process/oracle harnesses. Root
+integrated the source, implemented retention and fixed connect errno capture
+before peer probes, plus empty-history/body-conformance distinctions. Reset
+cancellation and valid request `SHUT_WR` have separate real socket checks.
+
+The frozen gateway is a different entry path from Super local rewrite: it
+sets `force_runtime_proxy=true`, which excludes the latter path. Captured
+DeepSeek startup either reports no available profile or no compatible proxy.
+The public CLI now matches those observed outputs, exits and zero-upstream
+behavior; it does not expose a successful DeepSeek gateway extension. Native
+relay operation is exercised only through `tests/local_rewrite_driver.mojo`.
+The internal driver covers exact buffered/streamed bodies, scoped continuations,
+unknown versus known-empty history, reset/half-close handling and clean runtime.
+
+Gateway startup side effects still FAIL: real runtime/profile lifecycle locks
+and housekeeping artifacts are missing. The exact baseline/current observations
+are retained in `docs/evidence/gateway-mismatch.json`; no dummy artifacts are
+created. `tests/capture_gateway_mismatches.py` exits 1 for that retained mismatch.
+Standard tests verify both output compatibility and the documented remaining
+filesystem failure. They do not label the whole gateway contract PASS.
+The output cases use private `0600` Codex config. An additional `0664` probe
+is retained in `docs/evidence/gateway-permissions-mismatch.json`: the release
+reaches its factory error while Modex rejects group write access. This remains
+an unapproved safe difference and is not hidden by the private input cases.
+
+The baseline conversation store is in memory. The native cache scopes by the
+frozen session-header/metadata/body precedence and UTF-8-length prefixes, keeps
+256 entries per scope/2048 total under logical 64 MiB accounting, and preserves
+sequence saturation and latest tool-history selection. Serde layout weights
+are inferred from source, not verified artifact resource boundaries. It has
+one serial owner, without the baseline shared Mutex/worker concurrency.
+
+The incoming native request limit is 64 MiB; larger positive u64 baseline
+configuration values remain unsupported. Arbitrary-length SSE still differs
+because of the earlier total 4 MiB cap. Graceful FIN cancellation, signals,
+first-event retry, full backpressure/admission/concurrency, route/provider
+coverage, TLS/DNS/proxies and non-host execution remain unfinished. Fallback
+clock/UUID timing is not yet exact for delayed buffered responses.
+
+Next active-path work: Super's `force_runtime_proxy=false` and Smart Context
+enable local rewrite, but overlays and Codex app-server hook trust must finish
+before the real child launch. The preflight sends `initialize`, `hooks/list`,
+optional `config/batchWrite` and another `hooks/list` within a 12-second RPC
+deadline. The test-only synthetic child currently fails that handshake. Do
+not bypass it or claim a completed Super command from provider observations.
+Redirected process I/O, deadlines/descendant cleanup and prior capability gaps
+remain necessary. Evidence: `docs/evidence/runtime-local-tests.txt` and
+`docs/evidence/runtime-local-link.txt`. No complete contract or additional
+platform obligation is counted PASS; all six targets and the full goal remain.
+
+The internal driver currently uses the no-local-file-access namespace context.
+Actual Super integration must select the appropriate context, including the
+unscoped cache for allowed local-file access, rather than inferring it from
+the test driver. The native store already supports unscoped and scoped keys.
+
+Checkpoint validation: `rtk make test` exits 0 with 34 native Mojo programs
+and 275 Python methods PASS, no skips. Final empty-history corrections then
+have four rebuilt native drivers/programs, native preparation/cache checks,
+72 focused provider tests, 11 relay tests and five gateway output/retained-
+difference tests PASS. Strict gateway mismatch/permission capture commands
+each exit 1 for their explicitly retained failures. The source/dependency
+audit matches all 58 Mojo paths. The denominator remains 60 contracts and
+360 platform obligations; GATEWAY is now FAIL instead of NOT_STARTED, with
+0 complete contract PASS and 1 Linux platform obligation PASS.
+
 The parser now preserves the frozen independent limits: 80 active
 array/inline-table levels and 80 segments per local key path. Forty-five
 additional policy comparisons cover exact boundaries, large keys/strings,

@@ -3,6 +3,7 @@
 import os
 import select
 import socket
+import struct
 import subprocess
 import tempfile
 import threading
@@ -74,6 +75,24 @@ class LoopbackHTTPStreamTests(unittest.TestCase):
         thread.start()
         return address, accepted, errors, thread
 
+    def downstream_peer(self):
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(1)
+        client = socket.create_connection(listener.getsockname(), timeout=2)
+        watched, _ = listener.accept()
+        listener.close()
+        client.settimeout(2)
+        return client, watched
+
+    def start_watching(self, address, watched):
+        return subprocess.Popen(
+            [str(DRIVER), address, "/v1/chat", "payload", "watch", str(watched.fileno())],
+            cwd=ROOT, env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            pass_fds=(watched.fileno(),),
+        )
+
     def call(self, address, path="/v1/chat", body="payload", mode=None):
         args = [str(DRIVER), address, path, body]
         if mode:
@@ -102,6 +121,22 @@ class LoopbackHTTPStreamTests(unittest.TestCase):
         self.assertTrue(request.endswith(b"\r\n\r\npayload"))
         self.assertIn(b"S 201\nH X-Trace: one\nH X-Trace: two\nH X.Foo: a\tb\nH Content-Length: 2\n\nok", result.stdout)
         self.assertEqual(errors, [])
+
+    def test_connect_errno_survives_downstream_probe(self):
+        left, right = socket.socketpair()
+        try:
+            result = subprocess.run(
+                [str(DRIVER), "127.0.0.1:1", "/", "", "connect-errno", str(left.fileno())],
+                cwd=ROOT, env=self.env, capture_output=True, timeout=3,
+                pass_fds=(left.fileno(),),
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(b"CONNECT_ERRNO_PASS", result.stdout)
+            left.sendall(b"owned-by-test")
+            self.assertEqual(right.recv(13), b"owned-by-test")
+        finally:
+            left.close()
+            right.close()
 
     def test_chunk_payload_streams_before_chunk_and_response_finish(self):
         def respond(conn, request):
@@ -320,6 +355,66 @@ class LoopbackHTTPStreamTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue(result.stdout.endswith(b"first"))
             self.assertEqual(peer_closed, [True])
+
+    def test_downstream_reset_cancels_held_open_sse(self):
+        upstream_closed = threading.Event()
+
+        def hold_sse(conn, request):
+            conn.sendall(
+                b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n"
+                b"6\r\nfirst\n\r\n"
+            )
+            try:
+                if conn.recv(1) == b"":
+                    upstream_closed.set()
+            except ConnectionResetError:
+                upstream_closed.set()
+
+        address, _, errors, thread = self.serve(hold_sse)
+        client, watched = self.downstream_peer()
+        process = self.start_watching(address, watched)
+        watched.close()
+        try:
+            self.assertEqual(client.recv(1), b"f")
+            client.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+            client.close()
+            stdout, stderr = process.communicate(timeout=3)
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertIn(b"CANCELLED downstream client disconnected", stdout)
+            self.assertTrue(upstream_closed.wait(1), "reset must close the held-open upstream stream")
+            thread.join(2)
+            self.assertEqual(errors, [])
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+            if client.fileno() >= 0:
+                client.close()
+            thread.join(2)
+
+    def test_downstream_request_half_close_keeps_response_readable(self):
+        address, _, errors, thread = self.serve(
+            lambda conn, request: conn.sendall(
+                b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok"
+            )
+        )
+        client, watched = self.downstream_peer()
+        client.shutdown(socket.SHUT_WR)
+        process = self.start_watching(address, watched)
+        watched.close()
+        try:
+            stdout, stderr = process.communicate(timeout=3)
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertNotIn(b"CANCELLED", stdout)
+            self.assertEqual(client.recv(2), b"ok")
+            thread.join(2)
+            self.assertEqual(errors, [])
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+            client.close()
+            thread.join(2)
 
     def test_rejects_injected_and_caller_framing_headers_before_connect(self):
         address, accepted, _, thread = self.serve(

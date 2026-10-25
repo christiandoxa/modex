@@ -222,6 +222,53 @@ socket regressions are in `tests/fixtures/provider-buffered/cases.json`,
 equivalence, rate-limit response headers, provider route selection and all
 previously listed transport/CLI/platform gaps remain unfinished.
 
+The native listener and internal local-rewrite relay now serve real synthetic
+HTTP requests through the existing provider exchange. They remain outside the
+active Super launch path. The frozen gateway forces a different proxy path;
+the two captured DeepSeek configurations fail at profile/proxy preparation.
+Modex preserves those observed output/exit/upstream failures rather than
+exposing a successful DeepSeek gateway extension. Gateway help and ten parse
+cases also have captured output checks. Remaining argument combinations and
+all operational gateway providers/configurations are unfinished.
+
+Both startup cases still omit real runtime/profile lifecycle locks and
+housekeeping side effects. `docs/evidence/gateway-mismatch.json` records exact
+baseline and Modex deltas with overall FAIL. The tests assert that this
+reproducible mismatch remains documented; passing those assertions does not
+establish gateway parity. No placeholder lock files are created.
+
+The private `0600` fixture is not the whole permission contract. A separate
+synthetic `0664` Codex config reaches the release's no-proxy failure, while
+Modex refuses the group-writable file. This stricter guard remains an
+unapproved safe difference in `docs/evidence/gateway-permissions-mismatch.json`;
+reproduce with `python3 tests/capture_gateway_permissions.py` (exit 1).
+
+Conversation state is a scoped in-memory cache, not disk persistence. The
+native implementation preserves 256 entries per scope, 2048 globally, logical
+64 MiB retention, sequence saturation, replacement and latest tool-history
+selection. Logical Serde type weights are source-inferred; actual artifact
+memory-eviction boundaries and non-host layouts are unverified. The serial
+relay owns one cache; shared Mutex/concurrent behavior remains unfinished.
+Known empty histories are retained separately from unknown response IDs, so
+the frozen body-only conformance pass receives the correct existence fact.
+
+The relay supports bounded request capture, incremental response writes,
+buffered/streamed scoped continuation and upstream cleanup on downstream
+reset. Valid request half-close remains supported. Graceful full FIN cannot
+be distinguished from request half-close by the current peek-only watcher;
+immediate cancellation in that case remains unverified. Requests are serial;
+worker/admission concurrency, complete first-event retry/backpressure,
+graceful signals, limits above the incoming 64 MiB cap and the existing total
+SSE 4 MiB cap remain gaps. Fallback ID/time generation timing is also unverified.
+
+The real Super path requires Smart Context, overlays and Codex app-server
+hook trust (`initialize`, `hooks/list`, optional `config/batchWrite`, then
+`hooks/list`, with a 12-second RPC deadline). Existing synthetic captures do
+not complete that preflight. No bypass or successful launch stub is added.
+Process stdio/deadline/descendant primitives and other recorded capability
+gaps still block that integration. See `docs/evidence/runtime-local-tests.txt`
+and `docs/evidence/runtime-local-link.txt`.
+
 Native policy loading and directory resolution now match tested release paths,
 schema errors and fallback behavior, including 712 wrapped corpus inputs.
 Binary-text classification uses exact Unicode 17 Alphabetic/Number data;

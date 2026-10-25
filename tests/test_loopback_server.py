@@ -1,0 +1,297 @@
+"""Synthetic TCP tests for Modex's native loopback HTTP listener."""
+
+import json
+import socket
+import struct
+import subprocess
+import tempfile
+import time
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+DRIVER = ROOT / "build/tests/loopback_server_driver"
+DEFAULT_BODY_LIMIT = 64 * 1024 * 1024
+SERVER_ENV = {}
+
+
+def read_until(sock, marker):
+    data = bytearray()
+    while marker not in data:
+        part = sock.recv(4096)
+        if not part:
+            break
+        data.extend(part)
+    return bytes(data)
+
+
+def read_exact(sock, size):
+    data = bytearray()
+    while len(data) < size:
+        part = sock.recv(size - len(data))
+        if not part:
+            raise AssertionError(f"peer closed after {len(data)} of {size} bytes")
+        data.extend(part)
+    return bytes(data)
+
+
+def start(mode):
+    process = subprocess.Popen(
+        [str(DRIVER), mode], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        cwd=SERVER_ENV["HOME"], env=SERVER_ENV,
+    )
+    ready = process.stdout.readline().strip()
+    if not ready.startswith("READY "):
+        error = process.stderr.read()
+        process.wait(timeout=3)
+        process.stdout.close()
+        process.stderr.close()
+        raise RuntimeError(f"server failed to start: {ready!r} {error!r}")
+    address = ready[6:]
+    if address.startswith("["):
+        host, port = address[1:].split("]:", 1)
+        family = socket.AF_INET6
+    else:
+        host, port = address.rsplit(":", 1)
+        family = socket.AF_INET
+    client = socket.socket(family, socket.SOCK_STREAM)
+    client.settimeout(3)
+    client.connect((host, int(port)))
+    return process, client
+
+
+def finish(process, client):
+    response = bytearray()
+    while True:
+        try:
+            part = client.recv(4096)
+        except ConnectionResetError:
+            break
+        if not part:
+            break
+        response.extend(part)
+    client.close()
+    stdout = process.stdout.read()
+    stderr = process.stderr.read()
+    code = process.wait(timeout=4)
+    process.stdout.close()
+    process.stderr.close()
+    if code:
+        raise AssertionError(f"driver exited {code}: {stderr}\n{stdout}")
+    return bytes(response), stdout
+
+
+def status(response):
+    head = response.split(b"\r\n", 1)[0]
+    return int(head.split(b" ")[1])
+
+
+def request(path="/synthetic", body=b"payload"):
+    return (
+        b"POST " + path.encode() + b" HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: "
+        + str(len(body)).encode() + b"\r\n\r\n" + body
+    )
+
+
+class LoopbackHTTPServerTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if not DRIVER.is_file():
+            raise AssertionError(f"native driver is not built: {DRIVER}")
+        cls.home = tempfile.TemporaryDirectory(prefix="modex-listener-home-")
+        SERVER_ENV.update({
+            "HOME": cls.home.name, "TMPDIR": cls.home.name, "PATH": "/usr/bin:/bin",
+            "TERM": "dumb", "NO_COLOR": "1", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
+        })
+
+    @classmethod
+    def tearDownClass(cls):
+        SERVER_ENV.clear()
+        cls.home.cleanup()
+
+    def test_fixed_length_request_and_response_with_partial_body(self):
+        process, client = start("echo")
+        client.sendall(
+            b"POST /synthetic HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 7\r\nX-Test:  a\t b \r\n\r\nabc"
+        )
+        time.sleep(0.02)
+        client.sendall(b"defg")
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 200)
+        self.assertTrue(response.endswith(b"abcdefg"))
+        parsed = json.loads(next(line[8:] for line in stdout.splitlines() if line.startswith("REQUEST ")))
+        self.assertEqual(parsed["method"], "POST")
+        self.assertEqual(parsed["target"], "/synthetic")
+        self.assertEqual(parsed["body_hex"], b"abcdefg".hex())
+        self.assertIn(["X-Test", "a\t b"], parsed["headers"])
+
+    def test_chunked_request_and_trailers_are_decoded(self):
+        process, client = start("echo")
+        client.sendall(
+            b"POST /chunks HTTP/1.1\r\nHost: local\r\nTransfer-Encoding: chunked\r\n\r\n"
+            b"3\r\nfoo\r\n2;ext=yes\r\nba\r\n0\r\nX-Trace: synthetic\r\n\r\n"
+        )
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 200)
+        parsed = json.loads(next(line[8:] for line in stdout.splitlines() if line.startswith("REQUEST ")))
+        self.assertEqual(parsed["body_hex"], b"fooba".hex())
+
+    def test_expect_continue_is_answered_before_body_read(self):
+        process, client = start("echo")
+        client.sendall(
+            b"POST /expect HTTP/1.1\r\nHost: local\r\nContent-Length: 4\r\nExpect: 100-continue\r\n\r\n"
+        )
+        self.assertEqual(read_until(client, b"\r\n\r\n"), b"HTTP/1.1 100 Continue\r\n\r\n")
+        client.sendall(b"body")
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 200)
+        self.assertIn('"body_hex":"626f6479"', stdout)
+
+    def test_ambiguous_duplicate_and_malformed_headers_are_rejected(self):
+        samples = [
+            b"POST / HTTP/1.1\r\nHost: local\r\nContent-Length: 0\r\nTransfer-Encoding: chunked\r\n\r\n",
+            b"POST / HTTP/1.1\r\nHost: local\r\nContent-Length: 0\r\nContent-Length: 0\r\n\r\n",
+            b"POST / HTTP/1.1\r\nHost: local\r\nBad Header: x\r\nContent-Length: 0\r\n\r\n",
+        ]
+        for wire in samples:
+            with self.subTest(wire=wire):
+                process, client = start("echo")
+                client.sendall(wire)
+                response, stdout = finish(process, client)
+                self.assertEqual(status(response), 400)
+                self.assertIn("REJECT ", stdout)
+
+    def test_oversized_and_truncated_bodies_are_rejected(self):
+        process, client = start("echo")
+        client.sendall(
+            b"POST /large HTTP/1.1\r\nHost: local\r\nContent-Length: "
+            + str(DEFAULT_BODY_LIMIT + 1).encode()
+            + b"\r\n\r\n"
+        )
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 413)
+        self.assertIn("oversized HTTP request body", stdout)
+
+        process, client = start("echo")
+        client.sendall(
+            b"POST /exact-limit HTTP/1.1\r\nHost: local\r\nContent-Length: "
+            + str(DEFAULT_BODY_LIMIT).encode()
+            + b"\r\n\r\n"
+        )
+        client.shutdown(socket.SHUT_WR)
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 400)
+        self.assertIn("truncated HTTP request", stdout)
+
+        process, client = start("echo")
+        client.sendall(b"POST /short HTTP/1.1\r\nHost: local\r\nContent-Length: 8\r\n\r\nabc")
+        client.shutdown(socket.SHUT_WR)
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 400)
+        self.assertIn("truncated HTTP request", stdout)
+
+    def test_small_caller_body_limit_accepts_exact_and_rejects_over(self):
+        process, client = start("small-limit")
+        client.sendall(request(body=b"abc"))
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 200)
+        self.assertTrue(response.endswith(b"abc"))
+        self.assertIn('"body_hex":"616263"', stdout)
+
+        process, client = start("small-limit")
+        client.sendall(request(body=b"abcd"))
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 413)
+        self.assertIn("oversized HTTP request body", stdout)
+
+    def test_read_timeout_and_idle_accept_timeout(self):
+        process = subprocess.Popen(
+            [str(DRIVER), "idle"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            cwd=SERVER_ENV["HOME"], env=SERVER_ENV,
+        )
+        self.assertTrue(process.stdout.readline().startswith("READY "))
+        self.assertEqual(process.stdout.readline().strip(), "IDLE true")
+        self.assertEqual(process.wait(timeout=2), 0)
+        process.stdout.close()
+        process.stderr.close()
+
+        process, client = start("timeout")
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 400)
+        self.assertIn("loopback HTTP request timed out", stdout)
+
+    def test_response_rejects_header_injection_and_caller_framing(self):
+        for mode in ("bad-response", "framing-response"):
+            with self.subTest(mode=mode):
+                process, client = start(mode)
+                client.sendall(request(body=b""))
+                response, stdout = finish(process, client)
+                self.assertEqual(response, b"")
+                self.assertIn("RESPONSE_REJECTED ", stdout)
+
+    def test_chunked_stream_delivers_first_chunk_before_finish(self):
+        process, client = start("stream")
+        client.sendall(request(body=b""))
+        header = read_until(client, b"\r\n\r\n")
+        self.assertIn(b"Transfer-Encoding: chunked\r\n", header)
+        first = read_exact(client, len(b"6\r\nfirst\n\r\n"))
+        self.assertEqual(first, b"6\r\nfirst\n\r\n")
+        client.settimeout(0.08)
+        with self.assertRaises(socket.timeout):
+            client.recv(1)
+        client.settimeout(3)
+        rest = bytearray()
+        while not rest.endswith(b"0\r\n\r\n"):
+            part = client.recv(4096)
+            if not part:
+                break
+            rest.extend(part)
+        client.close()
+        stdout = process.stdout.read()
+        stderr = process.stderr.read()
+        self.assertEqual(process.wait(timeout=4), 0, stderr + stdout)
+        self.assertEqual(bytes(rest), b"7\r\nsecond\n\r\n0\r\n\r\n")
+        self.assertIn("STREAM_DONE", stdout)
+        process.stdout.close()
+        process.stderr.close()
+
+    def test_peer_reset_is_detected_and_connection_move_keeps_ownership(self):
+        process, client = start("cancel")
+        client.sendall(request(body=b""))
+        self.assertIn(b"Transfer-Encoding: chunked", read_until(client, b"\r\n\r\n"))
+        self.assertEqual(read_exact(client, len(b"6\r\nfirst\n\r\n")), b"6\r\nfirst\n\r\n")
+        client.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+        client.close()
+        stdout = process.stdout.read()
+        stderr = process.stderr.read()
+        self.assertEqual(process.wait(timeout=4), 0, stderr + stdout)
+        self.assertIn("DISCONNECTED true", stdout)
+        self.assertIn("WRITE_FAILED", stdout)
+        process.stdout.close()
+        process.stderr.close()
+
+        process, client = start("move")
+        client.sendall(request(body=b"moved"))
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 202)
+        self.assertTrue(response.endswith(b"moved"))
+        self.assertIn("RESPONDED", stdout)
+
+        process, client = start("close")
+        response, stdout = finish(process, client)
+        self.assertEqual(response, b"")
+        self.assertIn("CLOSED", stdout)
+
+    def test_ipv6_loopback_listener_when_available(self):
+        try:
+            process, client = start("ipv6")
+        except (OSError, RuntimeError) as error:
+            self.skipTest(f"IPv6 loopback is unavailable: {error}")
+        client.sendall(request(body=b"v6"))
+        response, _ = finish(process, client)
+        self.assertEqual(status(response), 200)
+        self.assertTrue(response.endswith(b"v6"))
+
+
+if __name__ == "__main__":
+    unittest.main()

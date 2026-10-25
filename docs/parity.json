@@ -80,14 +80,17 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/cli.mojo; src/modex/root_help.mojo; src/modex/log_cli.mojo; src/modex/inspection_cli.mojo; src/main.mojo (root/session/log/current/info/status help and diagnostics)",
+      "implementation": "src/modex/cli.mojo; src/modex/root_help.mojo; src/modex/log_cli.mojo; src/modex/inspection_cli.mojo; src/modex/gateway_cli.mojo; src/main.mojo (root/session/log/current/info/status/gateway help and diagnostics)",
       "tests": [
         "tests/capture_cli.py",
         "tests/capture_session_cli.py",
         "tests/test_session_cli.py",
         "tests/test_root_help.py",
         "tests/test_log_cli.py",
-        "tests/test_inspection_cli.py"
+        "tests/test_inspection_cli.py",
+        "tests/test_gateway_cli.mojo",
+        "tests/test_gateway.py",
+        "tests/capture_gateway.py"
       ],
       "evidence": [
         "docs/cli-inventory.json",
@@ -97,7 +100,9 @@
         "docs/evidence/session-arguments-tests.txt",
         "docs/evidence/unicode-width-tests.txt",
         "docs/evidence/log-tests.txt",
-        "docs/evidence/inspection-policy-tests.txt"
+        "docs/evidence/inspection-policy-tests.txt",
+        "tests/fixtures/gateway/cases.json",
+        "docs/evidence/runtime-local-tests.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -1203,12 +1208,24 @@
       "prerequisites": [
         "configured provider endpoint"
       ],
-      "implementation": null,
-      "tests": [],
-      "evidence": [],
-      "status": "NOT_STARTED",
+      "implementation": "src/modex/gateway_cli.mojo; src/main.mojo (help, sampled argument diagnostics and two captured DeepSeek startup-output cases; operational gateway still unfinished)",
+      "tests": [
+        "tests/test_gateway_cli.mojo",
+        "tests/test_gateway.py",
+        "tests/capture_gateway.py",
+        "tests/capture_gateway_mismatches.py",
+        "tests/capture_gateway_permissions.py"
+      ],
+      "evidence": [
+        "tests/fixtures/gateway/cases.json",
+        "docs/evidence/gateway-mismatch.json",
+        "docs/evidence/runtime-local-tests.txt",
+        "docs/evidence/runtime-local-link.txt",
+        "docs/evidence/gateway-permissions-mismatch.json"
+      ],
+      "status": "FAIL",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "FAIL",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -1216,7 +1233,9 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Two captured startup cases retain filesystem FAIL: runtime/profile lifecycle locks and housekeeping effects are missing. Output/exit/upstream comparisons pass, but successful assertions are not full startup parity. The forced-proxy path excludes native DeepSeek local rewrite; no operational extension is exposed through gateway. Other providers/configs, running gateway policy and all remaining contracts are unfinished.",
+        "A captured group-writable 0664 synthetic Codex config reaches the release factory error, while Modex refuses that file before reading. This stricter permission guard is an unapproved safe difference and remains FAIL, not hidden by the private 0600 output fixtures."
       ]
     },
     {
@@ -1756,7 +1775,7 @@
       "prerequisites": [
         "configured upstream endpoints"
       ],
-      "implementation": "src/modex/provider_sse_wire.mojo; src/modex/provider_sse_json.mojo; src/modex/provider_chat_reader.mojo; src/modex/loopback_http.mojo; src/modex/provider_deepseek_transport.mojo; src/modex/provider_chat_buffered.mojo (native bounded loopback POST/SSE integration outside CLI dispatch)",
+      "implementation": "src/modex/provider_sse_wire.mojo; src/modex/provider_sse_json.mojo; src/modex/provider_chat_reader.mojo; src/modex/loopback_http.mojo; src/modex/provider_deepseek_transport.mojo; src/modex/provider_chat_buffered.mojo (native bounded loopback POST/SSE integration outside CLI dispatch); src/modex/loopback_server.mojo; src/modex/runtime_local_rewrite.mojo (internal listener/relay tested through native driver, outside the active Super CLI path)",
       "tests": [
         "tests/test_provider_sse_wire.mojo",
         "tests/test_provider_sse_json.mojo",
@@ -1774,7 +1793,11 @@
         "tests/test_provider_chat_buffered.mojo",
         "tests/provider_chat_buffered_driver.mojo",
         "tests/test_provider_chat_buffered.py",
-        "tests/capture_provider_buffered.py"
+        "tests/capture_provider_buffered.py",
+        "tests/loopback_server_driver.mojo",
+        "tests/test_loopback_server.py",
+        "tests/local_rewrite_driver.mojo",
+        "tests/test_local_rewrite.py"
       ],
       "evidence": [
         "tests/fixtures/provider-sse/README.md",
@@ -1786,7 +1809,9 @@
         "docs/evidence/provider-transport-link.txt",
         "tests/fixtures/provider-buffered/cases.json",
         "docs/evidence/provider-buffered-tests.txt",
-        "docs/evidence/provider-buffered-link.txt"
+        "docs/evidence/provider-buffered-link.txt",
+        "docs/evidence/runtime-local-tests.txt",
+        "docs/evidence/runtime-local-link.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -1799,7 +1824,8 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Native numeric-loopback POST now joins request preparation with incremental DeepSeek SSE and buffered JSON response translation, with real sockets, partial-chunk delivery, timeout and close/drop/error checks. The product CLI does not call it. Total decoded response data is capped at 4 MiB; arbitrary-length streams, general addresses/HTTP, TLS/DNS/proxies/redirects/pooling, retries, rate-limit response headers, full cancellation/backpressure/error/resource equivalence and non-host behavior remain unfinished. No complete transport or provider parity is claimed."
+        "Native numeric-loopback POST now joins request preparation with incremental DeepSeek SSE and buffered JSON response translation, with real sockets, partial-chunk delivery, timeout and close/drop/error checks. The product CLI does not call it. Total decoded response data is capped at 4 MiB; arbitrary-length streams, general addresses/HTTP, TLS/DNS/proxies/redirects/pooling, retries, rate-limit response headers, full cancellation/backpressure/error/resource equivalence and non-host behavior remain unfinished. No complete transport or provider parity is claimed.",
+        "Internal serial relay now exercises incremental socket serving, borrowed downstream reset checks and valid request half-close. Graceful FIN cancellation, worker/admission concurrency, limits above the 64 MiB incoming default/cap, general HTTP and the active Super process/preflight path remain unfinished. It is not exposed as a different public gateway behavior."
       ]
     },
     {
@@ -2066,7 +2092,7 @@
       "prerequisites": [
         "DeepSeek services"
       ],
-      "implementation": "src/modex/provider_request.mojo; src/modex/provider_request_messages.mojo; src/modex/provider_request_params.mojo; src/modex/provider_request_prepare.mojo; src/modex/provider_request_tools.mojo; src/modex/provider_chat_chunk.mojo; src/modex/provider_chat_reader.mojo; src/modex/provider_chat_stream.mojo; src/modex/provider_chat_items.mojo; src/modex/provider_chat_tools.mojo; src/modex/provider_chat_metadata.mojo; src/modex/provider_chat_usage.mojo; src/modex/provider_sse_events.mojo; src/modex/provider_deepseek_transport.mojo; src/modex/loopback_http.mojo; src/modex/provider_chat_buffered.mojo (bounded loopback request/response integration outside CLI dispatch)",
+      "implementation": "src/modex/provider_request.mojo; src/modex/provider_request_messages.mojo; src/modex/provider_request_params.mojo; src/modex/provider_request_prepare.mojo; src/modex/provider_request_tools.mojo; src/modex/provider_chat_chunk.mojo; src/modex/provider_chat_reader.mojo; src/modex/provider_chat_stream.mojo; src/modex/provider_chat_items.mojo; src/modex/provider_chat_tools.mojo; src/modex/provider_chat_metadata.mojo; src/modex/provider_chat_usage.mojo; src/modex/provider_sse_events.mojo; src/modex/provider_deepseek_transport.mojo; src/modex/loopback_http.mojo; src/modex/provider_chat_buffered.mojo (bounded loopback request/response integration outside CLI dispatch); src/modex/provider_conversations.mojo; src/modex/runtime_local_rewrite.mojo (scoped in-memory history and internal native relay)",
       "tests": [
         "tests/test_provider_chat_chunk.mojo",
         "tests/provider_chat_chunk_driver.mojo",
@@ -2097,7 +2123,10 @@
         "tests/test_provider_chat_buffered.mojo",
         "tests/provider_chat_buffered_driver.mojo",
         "tests/test_provider_chat_buffered.py",
-        "tests/capture_provider_buffered.py"
+        "tests/capture_provider_buffered.py",
+        "tests/test_provider_conversations.mojo",
+        "tests/local_rewrite_driver.mojo",
+        "tests/test_local_rewrite.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
@@ -2114,7 +2143,9 @@
         "docs/evidence/provider-transport-link.txt",
         "tests/fixtures/provider-buffered/cases.json",
         "docs/evidence/provider-buffered-tests.txt",
-        "docs/evidence/provider-buffered-link.txt"
+        "docs/evidence/provider-buffered-link.txt",
+        "docs/evidence/runtime-local-tests.txt",
+        "docs/evidence/runtime-local-link.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2127,7 +2158,8 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Native request preparation now reaches real numeric-loopback POST with incremental SSE and buffered JSON response translation, preserving pending messages/metadata separately from the body. It remains outside CLI dispatch with a 4 MiB total decoded response limit. Request route selection/Anthropic adaptation, credential/config discovery, conversation storage/lookup, rate-limit response headers, general HTTP/TLS/DNS/proxies/redirects, retry/rotation, full cancellation/backpressure/resource/error equivalence and non-host execution remain unfinished. Component comparisons and retained oracle preflight gaps are not provider-command parity."
+        "Native request preparation now reaches real numeric-loopback POST with incremental SSE and buffered JSON response translation, preserving pending messages/metadata separately from the body. It remains outside CLI dispatch with a 4 MiB total decoded response limit. Request route selection/Anthropic adaptation, credential/config discovery, conversation storage/lookup, rate-limit response headers, general HTTP/TLS/DNS/proxies/redirects, retry/rotation, full cancellation/backpressure/resource/error equivalence and non-host execution remain unfinished. Component comparisons and retained oracle preflight gaps are not provider-command parity.",
+        "Conversation state is an in-memory bounded cache, not a disk store. Scoped buffered/streamed continuation is tested in the internal relay; Serde logical weight/artifact boundaries and concurrent shared ownership are unverified. Super requires Smart Context, overlays and real Codex app-server hook trust; no preflight bypass or completed launch is implemented."
       ]
     },
     {

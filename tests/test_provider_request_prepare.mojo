@@ -11,6 +11,8 @@ def main() raises:
     assert_equal(prepare_request_body(combo_model, '{"runtime":true}'), '{"model":"combo:flash,auto","stream":false,"messages":[{"role":"user","content":"x"}]}')
 
     var missing = JsonDocument('{"model":"deepseek-chat"}')
+    var known_empty = JsonDocument('{"input":"next","previous_response_id":"saved"}')
+    assert_equal(prepare_request_body(known_empty, '{"runtime":true}', previous_response_found=True), '{"runtime":true}')
     assert_equal(prepare_request_body(missing, '{"runtime":true}'), '{"runtime":true}')
     var empty = JsonDocument('{"input":""}')
     assert_equal(prepare_request_body(empty, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":""}]}')

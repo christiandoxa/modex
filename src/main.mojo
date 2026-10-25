@@ -2,6 +2,7 @@ from std.collections import List
 from std.sys import argv, exit, stderr
 
 from modex.cli import parse_session_options, session_help
+from modex.gateway_cli import GatewayOptions, gateway_help, parse_gateway_arguments, run_gateway
 from modex.inspection_cli import inspection_help, inspection_help_requested, inspection_usage
 from modex.log_cli import log_help, log_short_help, parse_log_arguments
 from modex.logs import log_last
@@ -15,6 +16,31 @@ def main():
     var args = List[String]()
     for arg in argv():
         args.append(String(arg))
+    if len(args) >= 3 and args[1] == "help" and args[2] == "gateway":
+        var parts = args[0].split("/")
+        if len(args) > 3:
+            print("error: unrecognized subcommand '" + args[3] + "'\n\nUsage: " + String(parts[len(parts) - 1]) + " gateway [OPTIONS]\n\nFor more information, try '--help'.\n", file=stderr, end="")
+            exit(2)
+        print(gateway_help(String(parts[len(parts) - 1])), end="")
+        return
+    if len(args) >= 2 and args[1] == "gateway":
+        var parts = args[0].split("/")
+        var options: GatewayOptions
+        try:
+            options = parse_gateway_arguments(args, String(parts[len(parts) - 1]))
+        except error:
+            print(error, file=stderr, end="")
+            exit(2)
+            return
+        if options.help:
+            print(gateway_help(String(parts[len(parts) - 1])), end="")
+            return
+        try:
+            run_gateway(options)
+        except error:
+            print("Error:", error, file=stderr)
+            exit(1)
+        return
     if len(args) >= 3 and args[1] == "help" and (args[2] == "current" or args[2] == "info" or args[2] == "status"):
         var parts = args[0].split("/")
         var executable = String(parts[len(parts) - 1])

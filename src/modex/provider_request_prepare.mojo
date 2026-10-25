@@ -6,17 +6,17 @@ from .json import JSON_ARRAY, JSON_BOOL, JSON_NULL, JSON_NUMBER, JSON_OBJECT, JS
 from .text import trim_text
 
 
-def prepare_request_body(doc: JsonDocument, runtime_body: String, history: String = "[]") raises -> String:
+def prepare_request_body(doc: JsonDocument, runtime_body: String, history: String = "[]", previous_response_found: Bool = False) raises -> String:
     if doc.nodes[doc.root].kind != JSON_OBJECT: return runtime_body
     var prior = JsonDocument(history)
     if prior.nodes[prior.root].kind != JSON_ARRAY: return runtime_body
-    if not _simple_request(doc, prior) or not _core_conforms(doc): return runtime_body
+    if not _simple_request(doc, prior, previous_response_found) or not _core_conforms(doc): return runtime_body
     return _native_body(doc)
 
 
-def _simple_request(doc: JsonDocument, history: JsonDocument) -> Bool:
+def _simple_request(doc: JsonDocument, history: JsonDocument, previous_response_found: Bool) -> Bool:
     var previous = doc.get(doc.root, "previous_response_id")
-    if previous >= 0 and doc.nodes[previous].kind == JSON_STRING and trim_text(doc.nodes[previous].text) and len(history.nodes[history.root].children) > 0: return False
+    if previous >= 0 and doc.nodes[previous].kind == JSON_STRING and trim_text(doc.nodes[previous].text) and (previous_response_found or len(history.nodes[history.root].children) > 0): return False
     for key in ["web_search_options", "safety_identifier"]:
         if doc.get(doc.root, key) >= 0: return False
     var format = doc.get(doc.root, "response_format")

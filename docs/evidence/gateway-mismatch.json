@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "classification": "RETAINED_PARITY_MISMATCH",
+  "overall_status": "FAIL",
+  "parity_pass": false,
+  "full_gateway_parity_claimed": false,
+  "scope": "Public gateway startup output, upstream attempts, and filesystem deltas for two frozen DeepSeek failure cases.",
+  "capture_command": "python3 tests/capture_gateway_mismatches.py",
+  "recorded_at_utc": "2026-10-25T20:22:10+00:00",
+  "oracle": {
+    "release": "Prodex 0.439.0",
+    "path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+    "sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a"
+  },
+  "baseline_reference_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "baseline_fixture": "tests/fixtures/gateway/cases.json",
+  "modex": {
+    "binary": "build/modex",
+    "sha256": "902212317b7c9e6285ed8d08187581b5a99df4b1a0a18f2ddae7623325c3b72c"
+  },
+  "cases": [
+    {
+      "name": "deepseek_empty_home",
+      "status": "FAIL",
+      "comparisons": {
+        "exit_code": "PASS",
+        "stdout": "PASS",
+        "stderr": "PASS",
+        "upstream_requests": "PASS",
+        "filesystem_delta": "FAIL"
+      },
+      "baseline": {
+        "returncode": 1,
+        "stdout": "",
+        "stderr": "Error: no active profile selected and no Codex-compatible profiles are available; use `prodex use --profile <name>` or pass --profile\n",
+        "upstream_requests": [],
+        "filesystem_delta": [
+          {
+            "path": "prodex-runtime.lock",
+            "before": null,
+            "after": {
+              "mode": 384,
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          {
+            "path": "prodex/profile-lifecycle.json.lock",
+            "before": null,
+            "after": {
+              "mode": 436,
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          {
+            "path": "prodex/runtime-housekeeping.last-run",
+            "before": null,
+            "after": {
+              "mode": 436,
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          {
+            "path": "prodex/runtime-housekeeping.lock",
+            "before": null,
+            "after": {
+              "mode": 436,
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          }
+        ]
+      },
+      "modex": {
+        "returncode": 1,
+        "stdout": "",
+        "stderr": "Error: no active profile selected and no Codex-compatible profiles are available; use `prodex use --profile <name>` or pass --profile\n",
+        "upstream_requests": [],
+        "filesystem_delta": []
+      },
+      "filesystem_mismatches": [
+        {
+          "path": "prodex-runtime.lock",
+          "baseline_after": {
+            "mode": 384,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "actual_after": null
+        },
+        {
+          "path": "prodex/profile-lifecycle.json.lock",
+          "baseline_after": {
+            "mode": 436,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "actual_after": null
+        },
+        {
+          "path": "prodex/runtime-housekeeping.last-run",
+          "baseline_after": {
+            "mode": 436,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "actual_after": null
+        },
+        {
+          "path": "prodex/runtime-housekeeping.lock",
+          "baseline_after": {
+            "mode": 436,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "actual_after": null
+        }
+      ],
+      "missing_artifacts": [
+        {
+          "path": "prodex-runtime.lock",
+          "baseline_mode": "0600",
+          "baseline_size": 0
+        },
+        {
+          "path": "prodex/profile-lifecycle.json.lock",
+          "baseline_mode": "0664",
+          "baseline_size": 0
+        },
+        {
+          "path": "prodex/runtime-housekeeping.last-run",
+          "baseline_mode": "0664",
+          "baseline_size": 0
+        },
+        {
+          "path": "prodex/runtime-housekeeping.lock",
+          "baseline_mode": "0664",
+          "baseline_size": 0
+        }
+      ]
+    },
+    {
+      "name": "deepseek_profileless_codex_config",
+      "status": "FAIL",
+      "comparisons": {
+        "exit_code": "PASS",
+        "stdout": "PASS",
+        "stderr": "PASS",
+        "upstream_requests": "PASS",
+        "filesystem_delta": "FAIL"
+      },
+      "baseline": {
+        "returncode": 1,
+        "stdout": "",
+        "stderr": "Error: gateway provider does not expose an OpenAI-compatible proxy\n",
+        "upstream_requests": [],
+        "filesystem_delta": [
+          {
+            "path": "prodex-runtime.lock",
+            "before": null,
+            "after": {
+              "mode": 384,
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          {
+            "path": "prodex/profile-lifecycle.json.lock",
+            "before": null,
+            "after": {
+              "mode": 436,
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          {
+            "path": "prodex/runtime-housekeeping.last-run",
+            "before": null,
+            "after": {
+              "mode": 436,
+              "size": 11,
+              "sha256": "e4e9969735dab7654448dcf70069834925fec60a362dfbaf8b6a0eb8380edffe"
+            }
+          },
+          {
+            "path": "prodex/runtime-housekeeping.lock",
+            "before": null,
+            "after": {
+              "mode": 436,
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          }
+        ]
+      },
+      "modex": {
+        "returncode": 1,
+        "stdout": "",
+        "stderr": "Error: gateway provider does not expose an OpenAI-compatible proxy\n",
+        "upstream_requests": [],
+        "filesystem_delta": []
+      },
+      "filesystem_mismatches": [
+        {
+          "path": "prodex-runtime.lock",
+          "baseline_after": {
+            "mode": 384,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "actual_after": null
+        },
+        {
+          "path": "prodex/profile-lifecycle.json.lock",
+          "baseline_after": {
+            "mode": 436,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "actual_after": null
+        },
+        {
+          "path": "prodex/runtime-housekeeping.last-run",
+          "baseline_after": {
+            "mode": 436,
+            "size": 11,
+            "sha256": "e4e9969735dab7654448dcf70069834925fec60a362dfbaf8b6a0eb8380edffe"
+          },
+          "actual_after": null
+        },
+        {
+          "path": "prodex/runtime-housekeeping.lock",
+          "baseline_after": {
+            "mode": 436,
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "actual_after": null
+        }
+      ],
+      "missing_artifacts": [
+        {
+          "path": "prodex-runtime.lock",
+          "baseline_mode": "0600",
+          "baseline_size": 0
+        },
+        {
+          "path": "prodex/profile-lifecycle.json.lock",
+          "baseline_mode": "0664",
+          "baseline_size": 0
+        },
+        {
+          "path": "prodex/runtime-housekeeping.last-run",
+          "baseline_mode": "0664",
+          "baseline_size": 11
+        },
+        {
+          "path": "prodex/runtime-housekeeping.lock",
+          "baseline_mode": "0664",
+          "baseline_size": 0
+        }
+      ]
+    }
+  ],
+  "decision": "Startup exit codes, stdout, stderr, and zero upstream requests match. The frozen build creates four runtime lock/housekeeping files that Modex does not create. Retain this filesystem mismatch as FAIL evidence; this capture does not establish full gateway parity."
+}

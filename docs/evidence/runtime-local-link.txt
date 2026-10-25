@@ -1,0 +1,165 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+Build flags: -O3 --target-cpu=x86-64-v3 -I src
+Scope: public gateway output subset plus internal native listener/local-rewrite runtime.
+
+Command: readelf -d build/modex
+
+Dynamic section at offset 0x129c60 contains 29 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+ 0x000000000000000c (INIT)               0x2000
+ 0x000000000000000d (FINI)               0xfb624
+ 0x0000000000000019 (INIT_ARRAY)         0x129c50
+ 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)
+ 0x000000000000001a (FINI_ARRAY)         0x129c58
+ 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)
+ 0x000000006ffffef5 (GNU_HASH)           0x3a0
+ 0x0000000000000005 (STRTAB)             0x848
+ 0x0000000000000006 (SYMTAB)             0x3c8
+ 0x000000000000000a (STRSZ)              911 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000015 (DEBUG)              0x0
+ 0x0000000000000003 (PLTGOT)             0x129e70
+ 0x0000000000000002 (PLTRELSZ)           1008 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0xd58
+ 0x0000000000000007 (RELA)               0xc98
+ 0x0000000000000008 (RELASZ)             192 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000000000001e (FLAGS)              BIND_NOW
+ 0x000000006ffffffb (FLAGS_1)            Flags: NOW PIE
+ 0x000000006ffffffe (VERNEED)            0xc38
+ 0x000000006fffffff (VERNEEDNUM)         1
+ 0x000000006ffffff0 (VERSYM)             0xbd8
+ 0x000000006ffffff9 (RELACOUNT)          3
+ 0x0000000000000000 (NULL)               0x0
+
+Command: ldd build/modex
+	linux-vdso.so.1 (0x00007948b7ecc000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007948b7c4b000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007948b7a00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007948b7917000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007948b7600000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007948b7c1a000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007948b6a00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007948b78e9000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007948b7ece000)
+
+Command: readelf -d build/tests/local_rewrite_driver
+
+Dynamic section at offset 0xcec50 contains 29 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+ 0x000000000000000c (INIT)               0x2000
+ 0x000000000000000d (FINI)               0xb10ec
+ 0x0000000000000019 (INIT_ARRAY)         0xcec40
+ 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)
+ 0x000000000000001a (FINI_ARRAY)         0xcec48
+ 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)
+ 0x000000006ffffef5 (GNU_HASH)           0x3a0
+ 0x0000000000000005 (STRTAB)             0x878
+ 0x0000000000000006 (SYMTAB)             0x3c8
+ 0x000000000000000a (STRSZ)              922 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000015 (DEBUG)              0x0
+ 0x0000000000000003 (PLTGOT)             0xcee60
+ 0x0000000000000002 (PLTRELSZ)           1056 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0xd88
+ 0x0000000000000007 (RELA)               0xcc8
+ 0x0000000000000008 (RELASZ)             192 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000000000001e (FLAGS)              BIND_NOW
+ 0x000000006ffffffb (FLAGS_1)            Flags: NOW PIE
+ 0x000000006ffffffe (VERNEED)            0xc78
+ 0x000000006fffffff (VERNEEDNUM)         1
+ 0x000000006ffffff0 (VERSYM)             0xc12
+ 0x000000006ffffff9 (RELACOUNT)          3
+ 0x0000000000000000 (NULL)               0x0
+
+Command: ldd build/tests/local_rewrite_driver
+	linux-vdso.so.1 (0x000079423d1a0000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x000079423cf7a000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000079423cc00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000079423ce70000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x000079423c800000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x000079423ce60000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x000079423bc00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000079423ce32000)
+	/lib64/ld-linux-x86-64.so.2 (0x000079423d1a2000)
+
+Command: sha256sum build/modex build/tests/local_rewrite_driver build/tests/loopback_server_driver build/tests/loopback_http_stream_driver
+902212317b7c9e6285ed8d08187581b5a99df4b1a0a18f2ddae7623325c3b72c  build/modex
+6f3e88afc790fd39e272612fc742b0e6b45b5efe65e03aaef7f7e20ac401f92b  build/tests/local_rewrite_driver
+6c1fd1b3895c3b33c6205d4bb137cce2bc18986d210f393e18cdb9ea4431265c  build/tests/loopback_server_driver
+d8fe22ff3de850478867b5033f1a2167c54b41a546fd6af70c323709066279c4  build/tests/loopback_http_stream_driver
+
+Command: rg -n '^(from|import) ' src/modex/gateway_cli.mojo src/modex/loopback_server.mojo src/modex/provider_conversations.mojo src/modex/runtime_local_rewrite.mojo
+src/modex/runtime_local_rewrite.mojo:3:from std.collections import List, Span
+src/modex/runtime_local_rewrite.mojo:4:from std.os import getenv
+src/modex/runtime_local_rewrite.mojo:5:from std.time import perf_counter
+src/modex/runtime_local_rewrite.mojo:6:from std.time.time import _realtime_nanoseconds
+src/modex/runtime_local_rewrite.mojo:8:from .json import JSON_ARRAY, JSON_STRING, JsonDocument
+src/modex/runtime_local_rewrite.mojo:9:from .loopback_http import _number
+src/modex/runtime_local_rewrite.mojo:10:from .loopback_server import LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest
+src/modex/runtime_local_rewrite.mojo:11:from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
+src/modex/runtime_local_rewrite.mojo:12:from .provider_conversations import ProviderConversationStore
+src/modex/runtime_local_rewrite.mojo:13:from .provider_request import translate_deepseek_request
+src/modex/runtime_local_rewrite.mojo:14:from .text import trim_text, unsigned_value
+src/modex/runtime_local_rewrite.mojo:15:from .uuid7 import new_uuid7
+src/modex/provider_conversations.mojo:3:from std.collections import List
+src/modex/provider_conversations.mojo:5:from .json import JSON_ARRAY, JSON_BOOL, JSON_NUMBER, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_conversations.mojo:6:from .provider_request_messages import _history_has_call
+src/modex/loopback_server.mojo:3:from std.bit import byte_swap
+src/modex/loopback_server.mojo:4:from std.collections import Array, List, Span
+src/modex/loopback_server.mojo:5:from std.memory import MaybeUninit
+src/modex/loopback_server.mojo:6:from std.net._sys.inet import in6_addr, in_addr
+src/modex/loopback_server.mojo:7:from std.net._sys.unix import (
+src/modex/loopback_server.mojo:12:from std.sys import Endian, size_of
+src/modex/loopback_server.mojo:13:from std.sys._libc import FcntlCommands, FcntlFDFlags, close, fcntl
+src/modex/loopback_server.mojo:14:from std.sys._libc_errno import ErrNo, get_errno
+src/modex/loopback_server.mojo:15:from std.time import perf_counter, sleep
+src/modex/gateway_cli.mojo:3:from std.collections import List, Span
+src/modex/gateway_cli.mojo:4:from std.io import RawFileDescriptor
+src/modex/gateway_cli.mojo:5:from std.os import getuid, listdir, lstat, stat
+src/modex/gateway_cli.mojo:6:from std.os.path import exists
+src/modex/gateway_cli.mojo:8:from .cli import argument_name, session_cli_error
+src/modex/gateway_cli.mojo:9:from .paths import ensure_app_root, shared_root
+src/modex/gateway_cli.mojo:10:from .sessions import checked_session_file
+src/modex/gateway_cli.mojo:11:from .text import trim_text
+src/modex/gateway_cli.mojo:12:from .toml import TOMLDocument
+
+The public CLI imports gateway parsing/startup checks using official file,
+metadata and existing local TOML/session helpers. It starts no provider proxy
+for the captured DeepSeek configurations. Native listener/cache/relay operation
+remains exercised by test drivers, not a different public gateway extension.
+
+All socket functions/records/constants are existing official stdlib wrappers.
+There is no new native binding, ABI layout, application library, Python product
+import, executable helper, generated product code or runtime fixture dependency.
+Raw sockaddr/buffer storage outlives synchronous calls. Listener and accepted
+sockets each have one move owner; downstream watch descriptors are borrowed and
+never closed by the upstream stream. A peer probe cannot overwrite connect's
+saved errno; regression tests exercise this boundary. Reset detection does not
+mistake valid request half-close for full disconnect.
+
+Native relay clean-runtime tests mount only its binary, platform/official Mojo
+runtime libraries and synthetic directories. Host Python serves the loopback
+peer outside that namespace; no Python/Node/Rust/Prodex executable is mounted.
+No real credential, login or paid provider traffic is used.
+
+The source inventory has 58 exact Mojo paths. All 60 contracts and 360 platform
+obligations remain; no new PASS is recorded. GATEWAY changes to FAIL because its
+captured output compatibility still omits real lock/housekeeping side effects.
+The retained report marks this explicitly; no dummy lock artifacts are created.
+
+Private stdlib networking and Linux /proc file identity are version/platform
+sensitive. Cache accounting uses inferred logical Serde type weights rather
+than new ABI declarations; artifact eviction boundaries are unverified.
+Absolute toolchain RUNPATH, non-host execution, full HTTP/TLS/proxies/concurrency,
+graceful signals and the active Super process/app-server preflight remain gaps.

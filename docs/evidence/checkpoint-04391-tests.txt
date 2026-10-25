@@ -170,11 +170,11 @@ Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: w
 /home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
     append_bytes(path, utf8^)
                            ^
-                           
+
 /home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
     append_bytes(path, utf8^)
                            ^
-                           
+
 build/tests/test_log_follow /home/doxa/IdeaProjects/modex/build/tests/log-follow-files
 native incremental log follow: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow_paths.mojo -o build/tests/test_log_follow_paths

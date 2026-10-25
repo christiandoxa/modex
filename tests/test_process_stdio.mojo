@@ -79,4 +79,3 @@ def main() raises:
     assert_true(rejected)
     assert_true(unsetenv("MODEX_PARENT_SENTINEL"))
     print("native redirected spawn, EOF, environment, and stdio restoration checks: PASS")
-

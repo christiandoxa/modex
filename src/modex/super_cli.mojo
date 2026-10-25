@@ -161,4 +161,3 @@ def validate_super_options(options: SuperOptions) raises:
 def run_super(options: SuperOptions) raises:
     validate_super_options(options)
     raise Error("Super startup is not implemented: secure temporary overlays, Smart Context initialization, and Codex launch supervision remain unavailable")
-

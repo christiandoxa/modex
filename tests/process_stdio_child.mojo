@@ -23,4 +23,3 @@ def main() raises:
         if count == 0:
             break
         output.write_bytes(Span(buffer)[0:count])
-

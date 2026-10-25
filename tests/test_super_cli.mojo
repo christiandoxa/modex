@@ -46,4 +46,3 @@ def main() raises:
     rejects([String("modex"), "super", "exec", "--sub-agent", "--sub-agent-url", "http://127.0.0.1:8131"], "--sub-agent-url requires --sub-agent-provider local")
     rejects([String("modex"), "super", "gui", "--sub-agent"], "--sub-agent is unsupported with the Codex Desktop frontend")
     print("Super extraction, literal boundaries, aliases, and launch validation: PASS")
-

@@ -8,8 +8,8 @@
   interop, external implementation helpers, or Prodex runtime delegation.
 - Python standard library is allowed only in separate complex test harnesses.
   Production builds must not depend on Python test code or code generation.
-- The frozen reference is Prodex 0.439.0 at
-  `433aad44bb249d5c25a231a6b06c2fa522a39a1f`. Inspect Git objects or an isolated
+- The frozen reference is Prodex 0.439.1 at
+  `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`. Inspect Git objects or an isolated
   snapshot outside this repository. Never modify the Prodex repository.
 - Keep all six baseline release targets in the parity denominator. Unsupported
   compiler targets and unverified security behavior remain visible gaps.

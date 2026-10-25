@@ -174,6 +174,24 @@ class LoopbackHTTPStreamTests(unittest.TestCase):
                 process.wait()
         thread.join(2)
 
+    def test_unbounded_incremental_body_exceeds_4_mib(self):
+        body = b"x" * (4 * 1024 * 1024 + 1)
+
+        def respond(conn, request):
+            conn.sendall(
+                b"HTTP/1.1 200 OK\r\nContent-Length: "
+                + str(len(body)).encode()
+                + b"\r\n\r\n"
+            )
+            for offset in range(0, len(body), 65536):
+                conn.sendall(body[offset:offset + 65536])
+
+        address, _, _, thread = self.serve(respond)
+        result = self.call(address, path="/", mode="unbounded")
+        thread.join(2)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(result.stdout.endswith(b"\n\n" + body))
+
     def test_interim_and_fragmented_chunk_response(self):
         def respond(conn, request):
             conn.sendall(b"HTTP/1.1 100 Continue\r\n\r")

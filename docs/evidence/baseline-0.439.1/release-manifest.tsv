@@ -1,0 +1,11 @@
+# Prodex release capability manifest
+schema_version	1
+version	0.439.1
+commit	81c1a01933bc33f536a24452c3fd72c3f8d0b1f3
+target	asset	implementation	mojo_version	mojo_features	runtime_bundle	minimum_glibc
+x86_64-unknown-linux-gnu	prodex-x86_64-unknown-linux-gnu	mojo-compiled-in	1.2.0	mojo-core	false	GLIBC_2.23
+aarch64-unknown-linux-gnu	prodex-aarch64-unknown-linux-gnu	mojo-compiled-in	1.2.0	mojo-core	false	GLIBC_2.23
+x86_64-apple-darwin	prodex-x86_64-apple-darwin	mojo-compiled-in	1.2.0	mojo-core	false	-
+aarch64-apple-darwin	prodex-aarch64-apple-darwin	mojo-compiled-in	1.2.0	mojo-core	false	-
+x86_64-pc-windows-msvc	prodex-x86_64-pc-windows-msvc.exe	mojo-compiled-in	1.2.0	mojo-core	false	-
+aarch64-pc-windows-msvc	prodex-aarch64-pc-windows-msvc.exe	mojo-compiled-in	1.2.0	mojo-core	false	-

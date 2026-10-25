@@ -10,6 +10,7 @@ from .loopback_http import _number
 from .loopback_server import LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
 from .provider_conversations import ProviderConversationStore
+from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
 from .text import trim_text, unsigned_value
 from .uuid7 import new_uuid7
@@ -210,10 +211,16 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         var response = JsonDocument(body)
         if response.string(response.get(response.root, "status")) != "failed" and trim_text(response.string(response.get(response.root, "id"))):
             conversations.insert(response.string(response.get(response.root, "id")), exchange.conversation_messages, namespace)
-        connection.respond(exchange.status(), [("content-type", "application/json; charset=utf-8")], _bytes(body), 30000)
+        var response_headers = List[Tuple[String, String]]()
+        response_headers.append(("content-type", "application/json; charset=utf-8"))
+        response_headers.extend(deepseek_codex_rate_limit_headers(exchange.headers()))
+        connection.respond(exchange.status(), response_headers, _bytes(body), 30000)
         return
     try:
-        connection.start_stream(exchange.status(), [("content-type", "text/event-stream; charset=utf-8")], 30000)
+        var response_headers = List[Tuple[String, String]]()
+        response_headers.append(("content-type", "text/event-stream; charset=utf-8"))
+        response_headers.extend(deepseek_codex_rate_limit_headers(exchange.headers()))
+        connection.start_stream(exchange.status(), response_headers, 30000)
         while not exchange.done:
             var events = exchange.read_events()
             for event in events:

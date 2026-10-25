@@ -28,6 +28,7 @@ ORACLE_SHA256 = "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186
 
 sys.path.insert(0, str(ROOT / "tests"))
 from session_oracle import sandbox_command
+from test_local_rewrite import RunningLocalRewrite, json_bytes, post_relay
 
 
 class Upstream(ThreadingHTTPServer):
@@ -502,7 +503,7 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
         self.assertNotIn(b"x" * 128, stdout)
         self.assertEqual(self.records(output, "done"), [{"type": "done", "cancelled": False}])
 
-    def test_idle_timeout_emits_failure_without_retry(self):
+    def test_idle_timeout_emits_failure(self):
         output, _, _, server = self.call(
             b"", chunked=True, hold_open=True, stream_name=None,
             options={"idle_timeout_ms": 100}, timeout=3,
@@ -512,6 +513,106 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
         failed = [item["sse"] for item in self.records(output, "event")]
         self.assertTrue(any("response.failed" in event for event in failed), output)
         self.assertEqual(self.records(output, "done"), [{"type": "done", "cancelled": False}])
+
+    def test_connected_local_rewrite_streams_over_4_mib_total(self):
+        content = b"x" * 2_100_000
+        event = b'data: {"choices":[{"delta":{"content":"' + content + b'"}}]}\n\n'
+        upstream = event + event + b"data: [DONE]\n\n"
+        self.assertGreater(len(upstream), 4 * 1024 * 1024)
+        server = Upstream(upstream, chunked=True, chunk_size=65536)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with RunningLocalRewrite(server.server_port) as relay:
+                status, headers, body = post_relay(
+                    relay.address,
+                    json_bytes({"model": "deepseek-chat", "input": "synthetic large stream", "stream": True}),
+                    timeout=20,
+                )
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+        self.assertEqual(status, 200)
+        self.assertEqual(headers.get("content-type"), "text/event-stream; charset=utf-8")
+        self.assertEqual(body.count(b"event: response.output_text.delta"), 2)
+        self.assertIn(content + content, body)
+        self.assertIn(b"response.completed", body)
+        self.assertEqual(len(server.records), 1)
+
+    def test_connected_local_rewrite_projects_provider_rate_limits(self):
+        buffered = json.dumps({
+            "id": "chatcmpl_rate_limit",
+            "model": "deepseek-chat",
+            "created": 1700000000,
+            "choices": [{"message": {"content": "limited"}, "finish_reason": "stop"}],
+        }, separators=(",", ":")).encode()
+        streamed = base64.b64decode(self.stream_cases["text_done"]["upstream_base64"], validate=True)
+        rate_headers = [
+            ("x-ratelimit-limit-requests", "100"),
+            ("x-ratelimit-remaining-requests", "40"),
+            ("x-ratelimit-reset-requests", "60s"),
+            ("x-ratelimit-limit-tokens", "80"),
+            ("x-ratelimit-remaining-tokens", "60"),
+            ("x-ratelimit-reset-tokens", "1700000000000"),
+        ]
+        for streaming, body, content_type in (
+            (False, buffered, "application/json"),
+            (True, streamed, "text/event-stream"),
+        ):
+            response_headers = [("Content-Type", content_type), *rate_headers]
+            server = Upstream(body, content_type=content_type, response_headers=response_headers)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                with RunningLocalRewrite(server.server_port) as relay:
+                    request = dict(self.request_cases["defaults"]["request"])
+                    request["stream"] = streaming
+                    before = int(time.time())
+                    status, headers, response = post_relay(relay.address, json_bytes(request))
+                    after = int(time.time())
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+            self.assertEqual(status, 200)
+            self.assertEqual(headers.get("x-deepseek-requests-limit-name"), "DeepSeek requests")
+            self.assertEqual(headers.get("x-deepseek-requests-primary-used-percent"), "60")
+            request_reset = int(headers["x-deepseek-requests-primary-reset-at"])
+            self.assertGreaterEqual(request_reset, before + 60)
+            self.assertLessEqual(request_reset, after + 60)
+            self.assertEqual(headers.get("x-deepseek-tokens-limit-name"), "DeepSeek tokens")
+            self.assertEqual(headers.get("x-deepseek-tokens-primary-used-percent"), "25")
+            self.assertEqual(headers.get("x-deepseek-tokens-primary-reset-at"), "1700000000")
+            self.assertEqual(len(server.records), 1)
+            if streaming:
+                self.assertIn(b"event: response.completed", response)
+            else:
+                self.assertEqual(json.loads(response)["output"][0]["content"][0]["text"], "limited")
+
+    def test_connected_local_rewrite_rejects_oversized_sse_event(self):
+        data = b"x" * 2_100_000
+        body = b"data: " + data + b"\ndata: " + data + b"\n\n"
+        self.assertGreater(len(body), 4 * 1024 * 1024)
+        server = Upstream(body, chunked=True, chunk_size=65536)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with RunningLocalRewrite(server.server_port) as relay:
+                status, headers, response = post_relay(
+                    relay.address,
+                    json_bytes({"model": "deepseek-chat", "input": "synthetic oversized event", "stream": True}),
+                    timeout=20,
+                )
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+        self.assertEqual(status, 200)
+        self.assertEqual(headers.get("content-type"), "text/event-stream; charset=utf-8")
+        self.assertIn(b"response.failed", response)
+        self.assertNotIn(b"x" * 1024, response)
+        self.assertEqual(len(server.records), 1)
 
     def test_connect_error_is_explicit(self):
         with tempfile.TemporaryDirectory(prefix="modex-deepseek-refused-") as directory:

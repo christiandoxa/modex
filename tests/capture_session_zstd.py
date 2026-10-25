@@ -124,7 +124,7 @@ def main():
             differences.append(record)
     output = ROOT / "docs/evidence/baseline/session-zstd-errors.json"
     output.write_text(json.dumps({"schema_version": 1, "oracle_sha256": ORACLE_SHA256,
-        "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+        "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
         "reproduce": "python3 tests/capture_session_zstd.py", "cases": records,
         "known_differences": differences}, indent=2) + "\n")
 

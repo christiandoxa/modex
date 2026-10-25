@@ -117,7 +117,7 @@ def main():
                                                 if path not in (root / "home", root / "workspace"))})
     output = ROOT / "docs/evidence/baseline/session-cli.json"
     output.write_text(json.dumps({"schema_version": 1, "baseline_commit":
-        "433aad44bb249d5c25a231a6b06c2fa522a39a1f", "oracle_sha256": ORACLE_SHA256,
+        "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3", "oracle_sha256": ORACLE_SHA256,
         "reproduce": "python3 tests/capture_session_cli.py", "cases": records}, indent=2) + "\n")
     print(f"Captured {len(records)} baseline session CLI cases")
 

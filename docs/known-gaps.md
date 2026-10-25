@@ -1,8 +1,29 @@
 # Verified gaps
 
 The goal remains complete behavioral and feature parity with all six Prodex
-0.439.0 release targets. Current tests establish narrow local facts, not that
+0.439.1 release targets at `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`.
+Historical 0.439.0 evidence retains its original provenance and needs
+revalidation against the new target. Current tests establish narrow local facts, not that
 goal. `docs/parity.json` records the initial inventory and platform obligations.
+
+The inventory now contains 71 contracts and 426 platform obligations and is
+still incomplete. Super help and selected argument errors reach the actual
+CLI, but startup fails before state, child or network mutations. Secure
+temporary overlays, Smart Context initialization and real launch supervision
+remain unfinished. Native hook-trust transport and provider relay improvements
+are exercised by real process/socket drivers; neither is invoked by a
+successful Super launch. Startup-only descriptor redirection requires no
+concurrent parent I/O and cleans up only the direct child. Process-tree
+cancellation and signal behavior remain unverified.
+
+DeepSeek SSE no longer has a 4 MiB aggregate HTTP-body cap; bounded read chunks
+and per-line/event/JSON-accumulation limits remain. Final response and
+conversation state still grow with provider output, as in the reference.
+Request/token rate-limit headers are projected on buffered and streamed relay
+responses. Native Messages first-event retry does not apply to this chat-only
+path, and no additional POST replay is introduced. Successful CLI provider
+traffic, full backpressure, TLS and the new worker-lane/recovery obligations
+remain incomplete.
 
 Session machine-output tests cover populated and archived plain JSON/JSONL,
 metadata precedence, timestamp ordering, Unicode whitespace and query behavior,
@@ -192,9 +213,9 @@ and SSE observations are replayed through that native socket path; no new
 full-header oracle capture or whole-process provider parity is claimed.
 
 This remains a component outside CLI execution. Only numeric IPv4 127/8 and
-compressed IPv6 `::1` are admitted. Total decoded response data is capped at
-4 MiB, whereas the frozen SSE reader can consume longer streams under its
-per-frame limits. Route selection and
+compressed IPv6 `::1` are admitted. Buffered/error bodies are capped at
+4 MiB; SSE reads are incremental and retain per-frame/accumulation limits.
+Final response and conversation memory remain proportional to output. Route selection and
 Anthropic web-search adaptation, TLS/DNS/proxies/redirects/pooling,
 retry/rotation, persistent conversation state, general HTTP parser tolerance,
 downstream backpressure and non-host behavior remain unfinished. Closing is
@@ -258,15 +279,16 @@ reset. Valid request half-close remains supported. Graceful full FIN cannot
 be distinguished from request half-close by the current peek-only watcher;
 immediate cancellation in that case remains unverified. Requests are serial;
 worker/admission concurrency, complete first-event retry/backpressure,
-graceful signals, limits above the incoming 64 MiB cap and the existing total
-SSE 4 MiB cap remain gaps. Fallback ID/time generation timing is also unverified.
+graceful signals and limits above the incoming 64 MiB cap remain gaps.
+Fallback ID/time generation timing is also unverified.
 
 The real Super path requires Smart Context, overlays and Codex app-server
 hook trust (`initialize`, `hooks/list`, optional `config/batchWrite`, then
-`hooks/list`, with a 12-second RPC deadline). Existing synthetic captures do
-not complete that preflight. No bypass or successful launch stub is added.
-Process stdio/deadline/descendant primitives and other recorded capability
-gaps still block that integration. See `docs/evidence/runtime-local-tests.txt`
+`hooks/list`, with a 12-second RPC deadline). Native stdio transport now
+completes the preflight against synthetic peers in a real process harness.
+Secure overlays, Smart Context and production launcher integration remain
+unfinished. Descendant cleanup and other recorded capability gaps remain.
+See `docs/evidence/checkpoint-04391-tests.txt`, `docs/evidence/runtime-local-tests.txt`
 and `docs/evidence/runtime-local-link.txt`.
 
 Native policy loading and directory resolution now match tested release paths,

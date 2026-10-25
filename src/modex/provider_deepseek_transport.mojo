@@ -82,6 +82,7 @@ struct DeepSeekExchange(Movable):
     var messages: String
     var response_metadata: String
     var conversation_messages: String
+    var max_body_bytes: Int
     var pending: List[UInt8]
     var pending_offset: Int
     var read_mode: Int
@@ -90,11 +91,14 @@ struct DeepSeekExchange(Movable):
 
     def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, downstream_fd: Int32 = -1, previous_response_found: Bool = False) raises:
         var prepared = JsonDocument(translate_deepseek_request(request, history, strict_tools, web_search_mode, previous_response_found))
+        if max_body_bytes < 0 or max_body_bytes > 4 * 1024 * 1024:
+            raise Error("invalid or unsupported HTTP stream limits")
         self.body = serialize_json(prepared, prepared.get(prepared.root, "body"))
         self.messages = serialize_json(prepared, prepared.get(prepared.root, "messages"))
         self.response_metadata = serialize_json(prepared, prepared.get(prepared.root, "response_metadata"))
         self.conversation_messages = "[]"
         self.reader = DeepSeekChatReader(request_id, response_id, created_at, self.response_metadata, line_max_bytes, event_max_bytes, accumulated_max_bytes)
+        self.max_body_bytes = max_body_bytes
         self.pending = List[UInt8]()
         self.pending_offset = 0
         self.read_mode = 0
@@ -103,7 +107,7 @@ struct DeepSeekExchange(Movable):
         var bytes = List[UInt8]()
         for byte in self.body.as_bytes():
             bytes.append(byte)
-        self.http = LoopbackHTTPStream(address, path, deepseek_request_headers(headers, api_key), bytes, connect_timeout_ms, request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd)
+        self.http = LoopbackHTTPStream(address, path, deepseek_request_headers(headers, api_key), bytes, connect_timeout_ms, request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd, True)
 
     def status(self) -> Int:
         return self.http.status
@@ -134,6 +138,8 @@ struct DeepSeekExchange(Movable):
         try:
             while not self.done:
                 var chunk = self.http.read_chunk()
+                if len(chunk) > self.max_body_bytes - len(output):
+                    raise Error("oversized HTTP response body")
                 output.extend(chunk^)
                 if self.http.done:
                     self.done = True

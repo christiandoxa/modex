@@ -643,6 +643,7 @@ struct LoopbackHTTPStream(Movable):
         idle_timeout_ms: UInt64,
         max_body_bytes: Int,
         downstream_fd: Int32 = -1,
+        allow_unbounded_body: Bool = False,
     ) raises:
         self.fd = -1
         self.downstream_fd = downstream_fd
@@ -659,11 +660,10 @@ struct LoopbackHTTPStream(Movable):
         self.interim_bytes = 0
         self.wire_bytes = 0
         self.max_wire_bytes = 0
-        self.max_body_bytes = max_body_bytes
+        self.max_body_bytes = -1 if allow_unbounded_body else max_body_bytes
         self.length = -1
         self.request_deadline = 0.0
         self.idle_timeout_ms = idle_timeout_ms
-        # shortcut: total decoded bodies stop at 4 MiB; separate frame and total budgets for full provider streaming.
         if max_body_bytes < 0 or max_body_bytes > 4 * 1024 * 1024 or connect_timeout_ms == 0 or request_timeout_ms == 0 or idle_timeout_ms == 0:
             raise Error("invalid or unsupported HTTP stream limits")
 
@@ -699,7 +699,7 @@ struct LoopbackHTTPStream(Movable):
         var connect_deadline = started + Float64(connect_timeout_ms) / 1000.0
         if connect_deadline > self.request_deadline:
             connect_deadline = self.request_deadline
-        self.max_wire_bytes = HTTP_HEADER_LIMIT * 2 + 65536 + max_body_bytes * 8
+        self.max_wire_bytes = -1 if allow_unbounded_body else HTTP_HEADER_LIMIT * 2 + 65536 + max_body_bytes * 8
         self.fd = _open_loopback_socket(ipv6)
         try:
             var result: Int32
@@ -739,9 +739,10 @@ struct LoopbackHTTPStream(Movable):
             var n = recv(self.fd, chunk.unsafe_ptr(), UInt(len(chunk)), MSG_DONTWAIT)
             if n > 0:
                 var count = Int(n)
-                if self.wire_bytes > self.max_wire_bytes - count:
+                if self.max_wire_bytes >= 0 and self.wire_bytes > self.max_wire_bytes - count:
                     raise Error("HTTP stream exceeds wire limit")
-                self.wire_bytes += count
+                if self.max_wire_bytes >= 0:
+                    self.wire_bytes += count
                 for i in range(count):
                     self.buffer.append(chunk[i])
                 return
@@ -778,7 +779,7 @@ struct LoopbackHTTPStream(Movable):
             return
         self.status = parsed[0]
         self.length = parsed[1]
-        if self.length > self.max_body_bytes:
+        if self.max_body_bytes >= 0 and self.length > self.max_body_bytes:
             raise Error("oversized HTTP response body")
         var lines = _ascii(self.buffer, 0, end).split("\r\n")
         self.headers = List[Tuple[String, String]]()
@@ -852,7 +853,8 @@ struct LoopbackHTTPStream(Movable):
                         out.append(self.buffer[i])
                     _drop_prefix(self.buffer, take)
                     self.remaining -= take
-                    self.body_bytes += take
+                    if self.max_body_bytes >= 0:
+                        self.body_bytes += take
                     return out^
                 elif self.phase == 2:
                     var end = _line_end(self.buffer, self.header_scan)
@@ -872,7 +874,7 @@ struct LoopbackHTTPStream(Movable):
                     if size == 0:
                         self.phase = 4
                     else:
-                        if size > self.max_body_bytes - self.body_bytes:
+                        if self.max_body_bytes >= 0 and size > self.max_body_bytes - self.body_bytes:
                             raise Error("oversized chunked HTTP response")
                         self.remaining = size
                         self.phase = 3
@@ -887,7 +889,8 @@ struct LoopbackHTTPStream(Movable):
                         out.append(self.buffer[i])
                     _drop_prefix(self.buffer, take)
                     self.remaining -= take
-                    self.body_bytes += take
+                    if self.max_body_bytes >= 0:
+                        self.body_bytes += take
                     if self.remaining == 0:
                         self.phase = 7
                     return out^
@@ -904,7 +907,7 @@ struct LoopbackHTTPStream(Movable):
                     self.phase = 5
                     self._read_trailers()
                 elif self.phase == 5:
-                    if len(self.buffer) > self.max_body_bytes - self.body_bytes:
+                    if self.max_body_bytes >= 0 and len(self.buffer) > self.max_body_bytes - self.body_bytes:
                         raise Error("oversized HTTP response body")
                     if len(self.buffer) > 0:
                         var take = min(8192, len(self.buffer))
@@ -912,7 +915,8 @@ struct LoopbackHTTPStream(Movable):
                         for i in range(take):
                             out.append(self.buffer[i])
                         _drop_prefix(self.buffer, take)
-                        self.body_bytes += take
+                        if self.max_body_bytes >= 0:
+                            self.body_bytes += take
                         return out^
                     self._receive()
                 elif self.phase == 6:

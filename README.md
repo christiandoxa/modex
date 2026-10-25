@@ -1,7 +1,7 @@
 # Modex
 
-Modex is a new Mojo implementation targeting the behavior of Prodex 0.439.0
-(`433aad44bb249d5c25a231a6b06c2fa522a39a1f`). It is under development and does
+Modex is a new Mojo implementation targeting the behavior of Prodex 0.439.1
+(`81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`). It is under development and does
 not yet provide feature parity. Version output, development session inspection
 and detached `log last` snapshots are connected to the production CLI.
 Session inspection reads plain

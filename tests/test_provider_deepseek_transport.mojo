@@ -4,6 +4,7 @@ from std.testing import assert_equal, assert_true
 
 from modex.json import JsonDocument, serialize_json
 from modex.provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
+from modex.provider_rate_limits import _reset_epoch, deepseek_codex_rate_limit_headers
 
 
 def values(headers: List[Tuple[String, String]], name: String) -> List[String]:
@@ -16,6 +17,63 @@ def values(headers: List[Tuple[String, String]], name: String) -> List[String]:
 
 def check(headers: List[Tuple[String, String]], name: String, expected: List[String]) raises:
     assert_equal(values(headers, name), expected)
+
+
+def rate_limits() raises:
+    var headers: List[Tuple[String, String]] = [
+        ("X-RateLimit-Limit-Requests", "1e2"),
+        ("x-ratelimit-remaining-requests", "+4e1"),
+        ("x-ratelimit-reset-requests", "1700000000000"),
+        ("x-ratelimit-limit-tokens", "200"),
+        ("x-ratelimit-remaining-tokens", "150"),
+        ("x-ratelimit-reset-tokens", "1970-01-01T00:00:00Z"),
+        ("x-ratelimit-limit-model", "100"),
+        ("x-ratelimit-remaining-model", "50"),
+    ]
+    var projected = deepseek_codex_rate_limit_headers(headers)
+    check(projected, "x-deepseek-requests-limit-name", ["DeepSeek requests"])
+    check(projected, "x-deepseek-requests-primary-used-percent", ["60"])
+    check(projected, "x-deepseek-requests-primary-reset-at", ["1700000000"])
+    check(projected, "x-deepseek-tokens-limit-name", ["DeepSeek tokens"])
+    check(projected, "x-deepseek-tokens-primary-used-percent", ["25"])
+    check(projected, "x-deepseek-tokens-primary-reset-at", ["0"])
+    assert_equal(len(projected), 6)
+
+    var rounded: List[Tuple[String, String]] = [
+        ("x-ratelimit-limit-requests", "3"),
+        ("x-ratelimit-remaining-requests", "1"),
+        ("x-ratelimit-reset-requests", "1h30m"),
+        ("x-ratelimit-limit-tokens", "0"),
+        ("x-ratelimit-remaining-tokens", "0"),
+    ]
+    projected = deepseek_codex_rate_limit_headers(rounded)
+    check(projected, "x-deepseek-requests-primary-used-percent", ["66.7"])
+    assert_equal(len(projected), 3)
+    assert_equal(len(values(projected, "x-deepseek-requests-primary-reset-at")), 1)
+
+    var invalid: List[Tuple[String, String]] = [
+        ("x-ratelimit-limit-requests", "100f"),
+        ("x-ratelimit-remaining-requests", "1"),
+        ("x-ratelimit-limit-tokens", "1_00"),
+        ("x-ratelimit-remaining-tokens", "0"),
+    ]
+    assert_equal(len(deepseek_codex_rate_limit_headers(invalid)), 0)
+
+    var malformed_date: List[Tuple[String, String]] = [
+        ("x-ratelimit-limit-requests", "100"),
+        ("x-ratelimit-remaining-requests", "20"),
+        ("x-ratelimit-reset-requests", "1970-+1-01T00:00:00Z"),
+    ]
+    projected = deepseek_codex_rate_limit_headers(malformed_date)
+    assert_equal(len(projected), 2)
+    assert_equal(len(values(projected, "x-deepseek-requests-primary-reset-at")), 0)
+
+    var overflow = _reset_epoch(String("9") * 400 + "d", 1234)
+    assert_true(overflow and overflow.value() == Int.MAX)
+    var underflow = _reset_epoch("0." + String("0") * 330 + "1ms", 1234)
+    assert_true(underflow and underflow.value() == 1234)
+    var many_segments = _reset_epoch(String("0s") * 65537, 1234)
+    assert_true(many_segments and many_segments.value() == 1234)
 
 
 def drop_exchange(address: String) raises:
@@ -156,6 +214,7 @@ def main() raises:
     assert_true(not deepseek_event_stream([]))
     assert_true(not deepseek_event_stream([("Content-Type", "application/json"), ("Content-Type", "text/event-stream")]))
     assert_true(deepseek_event_stream([("Content-Type", "text/event-stream"), ("Content-Type", "application/json")]))
+    rate_limits()
     var args = argv()
     if len(args) == 3:
         lifecycle(args[1], args[2])

@@ -50,10 +50,13 @@ def main() raises:
     var drop_after_first = False
     var move_stream = False
     var watch_downstream = False
+    var allow_unbounded_body = False
     var downstream_fd: Int32 = -1
     if len(args) >= 5:
         if args[4] == "idle-short":
             idle_timeout = 100
+        elif args[4] == "unbounded":
+            allow_unbounded_body = True
         elif args[4] == "request-short":
             request_timeout = 100
         elif args[4] == "close":
@@ -100,7 +103,7 @@ def main() raises:
             raise Error("invalid stream test mode")
         if len(args) == 6 and not watch_downstream:
             raise Error("downstream descriptor is only valid in watch mode")
-    var stream = LoopbackHTTPStream(args[1], args[2], headers, body, connect_timeout, request_timeout, idle_timeout, 1048576, downstream_fd)
+    var stream = LoopbackHTTPStream(args[1], args[2], headers, body, connect_timeout, request_timeout, idle_timeout, 1048576, downstream_fd, allow_unbounded_body)
     if move_stream:
         var moved = stream^
         _drive(moved^, stop_after_first, drop_after_first, downstream_fd)

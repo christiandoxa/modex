@@ -10,12 +10,42 @@ from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
 from modex.root_help import root_help
 from modex.sessions import inspect_sessions
+from modex.super_cli import parse_super_arguments, run_super
+from modex.super_help import super_help
 
 
 def main():
     var args = List[String]()
     for arg in argv():
         args.append(String(arg))
+    if len(args) >= 3 and args[1] == "help" and (args[2] == "super" or args[2] == "s"):
+        var parts = args[0].split("/")
+        var executable = String(parts[len(parts) - 1])
+        if len(args) > 3:
+            print("error: unrecognized subcommand '" + args[3] + "'\n\nUsage: " + executable + " super [OPTIONS] [CODEX_ARG]...\n\nFor more information, try '--help'.\n", file=stderr, end="")
+            exit(2)
+        print(super_help(executable), end="")
+        return
+    if len(args) >= 2 and (args[1] == "super" or args[1] == "s"):
+        var parts = args[0].split("/")
+        var executable = String(parts[len(parts) - 1])
+        try:
+            var options = parse_super_arguments(args, executable)
+            if options.help:
+                print(super_help(executable), end="")
+                return
+            try:
+                run_super(options)
+            except error:
+                print("Error:", error, file=stderr)
+                exit(1)
+        except error:
+            if String(error).startswith("error:"):
+                print(error, file=stderr, end="")
+                exit(2)
+            print("Error:", error, file=stderr)
+            exit(1)
+        return
     if len(args) >= 3 and args[1] == "help" and args[2] == "gateway":
         var parts = args[0].split("/")
         if len(args) > 3:

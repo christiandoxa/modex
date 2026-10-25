@@ -70,6 +70,8 @@ unit: check-toolchain
 	build/tests/test_provider_conversations
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_gateway_cli.mojo -o build/tests/test_gateway_cli
 	build/tests/test_gateway_cli
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_super_cli.mojo -o build/tests/test_super_cli
+	build/tests/test_super_cli
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/local_rewrite_driver.mojo -o build/tests/local_rewrite_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json.mojo -o build/tests/test_json
 	build/tests/test_json
@@ -112,6 +114,19 @@ unit: check-toolchain
 	build/tests/test_log_transcript_events
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_log_sources.mojo -o build/tests/test_log_sources
 	build/tests/test_log_sources
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_app_server_args.mojo -o build/tests/test_app_server_args
+	build/tests/test_app_server_args
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/app_server_args_driver.mojo -o build/tests/app_server_args_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/app_server_rpc_driver.mojo -o build/tests/app_server_rpc_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_super_hooks.mojo -o build/tests/test_super_hooks
+	build/tests/test_super_hooks
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/super_hooks_driver.mojo -o build/tests/super_hooks_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/process_wait_child.mojo -o build/tests/process_wait_child
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_process_wait.mojo -o build/tests/test_process_wait
+	build/tests/test_process_wait $(CURDIR)/build/tests/process_wait_child
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/process_stdio_child.mojo -o build/tests/process_stdio_child
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_process_stdio.mojo -o build/tests/test_process_stdio
+	build/tests/test_process_stdio $(CURDIR)/build/tests/process_stdio_child
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/process_child.mojo -o build/tests/process_child
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_process_spawn.mojo -o build/tests/test_process_spawn
 	build/tests/test_process_spawn $(CURDIR)/build/tests/process_child

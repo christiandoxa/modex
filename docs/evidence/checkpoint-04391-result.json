@@ -1,0 +1,17 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "command": "rtk proxy make test",
+  "exit_code": 0,
+  "native_build": "PASS",
+  "native_units": "PASS",
+  "python_tests": 301,
+  "python_seconds": 493.468,
+  "python_result": "OK",
+  "log": "docs/evidence/checkpoint-04391-tests.txt",
+  "dependency_evidence": "docs/evidence/checkpoint-04391-dependencies.txt",
+  "inventory_complete": false,
+  "contracts": 71,
+  "platform_obligations": 426,
+  "scope": "Verified incremental checkpoint only. Super startup, production provider invocation, full source inventory and all-platform parity remain incomplete."
+}

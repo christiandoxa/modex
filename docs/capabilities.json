@@ -102,25 +102,63 @@
       "id": "PROCESS-ENV-INTERNAL",
       "status": "PROVEN_LOCAL_INTERNAL_API",
       "source": "src/modex/process_spawn.mojo; probes/process_spawn.mojo",
-      "tests": ["tests/test_process_spawn.mojo", "tests/process_child.mojo", "tests/test_process_runtime.py"],
-      "evidence": ["docs/evidence/inspection-policy-tests.txt", "docs/evidence/inspection-policy-link.txt"],
+      "tests": [
+        "tests/test_process_spawn.mojo",
+        "tests/process_child.mojo",
+        "tests/test_process_runtime.py",
+        "tests/test_process_wait.mojo",
+        "tests/test_process_stdio.mojo",
+        "tests/test_app_server_rpc.py"
+      ],
+      "evidence": [
+        "docs/evidence/inspection-policy-tests.txt",
+        "docs/evidence/inspection-policy-link.txt",
+        "docs/evidence/checkpoint-04391-tests.txt"
+      ],
       "proven": [
         "absolute executable path and exact argv through the bundled posix_spawnp wrapper",
         "complete child environment replacement without changing the parent environment",
         "stable owned storage for borrowed argv/envp C-string spans",
         "long, empty and Unicode argv; long environment values; exit status 7",
         "NUL/malformed environment and relative executable path rejection",
-        "standalone Mojo parent/child in an isolated filesystem without implementation helpers"
+        "standalone Mojo parent/child in an isolated filesystem without implementation helpers",
+        "timed direct-child poll/kill/wait and startup-only stdin/stdout/stderr redirection using existing official stdlib wrappers",
+        "descriptor and FD_CLOEXEC restoration on success/spawn failure, synthetic pipe echo and explicitly isolated environment",
+        "native hook-trust RPC against synthetic app-server peers, per-RPC deadline, line-size guard and stderr suppression"
       ],
-      "not_proven": ["CLI integration", "redirected stdin/stdout/stderr", "bounded capture and deadlines", "process groups", "descendant cleanup", "non-host targets"],
-      "assessment": "Only official stdlib wrappers and types are used. The API requires an absolute executable path; it does not search PATH or mutate global environment/stdio. The high-level Process.run still lacks an environment override."
+      "not_proven": [
+        "successful production CLI Super launch",
+        "safe concurrent spawning or parent stdio I/O during descriptor transaction",
+        "process groups",
+        "descendant cleanup",
+        "cancellation/signals",
+        "non-host targets"
+      ],
+      "assessment": "Only official stdlib wrappers/types. Explicit env replacement remains parent-env safe; startup stdio helper briefly mutates/restores parent descriptors and therefore requires no concurrent parent I/O. Public Process.run still lacks an environment override. App-server transport is test-driver-connected, not a complete Super launch."
     },
     {
       "id": "LOOPBACK-HTTP-NATIVE",
       "status": "PROVEN_LOCAL_INTERNAL_API",
       "source": "src/modex/loopback_http.mojo",
-      "tests": ["tests/loopback_http_driver.mojo", "tests/test_loopback_http.py", "tests/loopback_http_stream_driver.mojo", "tests/test_loopback_http_stream.py", "tests/provider_deepseek_transport_driver.mojo", "tests/test_provider_deepseek_transport.py", "tests/test_provider_chat_buffered.mojo", "tests/test_provider_chat_buffered.py"],
-      "evidence": ["docs/evidence/log-foundations-tests.txt", "docs/evidence/log-foundations-link.txt", "docs/evidence/provider-transport-tests.txt", "docs/evidence/provider-transport-link.txt", "docs/evidence/provider-buffered-tests.txt", "docs/evidence/provider-buffered-link.txt"],
+      "tests": [
+        "tests/loopback_http_driver.mojo",
+        "tests/test_loopback_http.py",
+        "tests/loopback_http_stream_driver.mojo",
+        "tests/test_loopback_http_stream.py",
+        "tests/provider_deepseek_transport_driver.mojo",
+        "tests/test_provider_deepseek_transport.py",
+        "tests/test_provider_chat_buffered.mojo",
+        "tests/test_provider_chat_buffered.py"
+      ],
+      "evidence": [
+        "docs/evidence/log-foundations-tests.txt",
+        "docs/evidence/log-foundations-link.txt",
+        "docs/evidence/provider-transport-tests.txt",
+        "docs/evidence/provider-transport-link.txt",
+        "docs/evidence/provider-buffered-tests.txt",
+        "docs/evidence/provider-buffered-link.txt",
+        "docs/evidence/checkpoint-04391-tests.txt"
+      ],
       "proven": [
         "numeric IPv4 127/8 and compressed IPv6 ::1 client connections through official socket wrappers",
         "validated HTTP/1 GET and partial request/response I/O without SIGPIPE",
@@ -132,13 +170,15 @@
         "setup/request deadlines, body idle timeouts and explicit/drop/error socket cleanup",
         "native DeepSeek preparation through real POST and incremental SSE translation with [DONE] early close",
         "buffered DeepSeek JSON responses through real POST with normalized assistant message results",
-        "standalone driver without helper executables in a bubblewrap filesystem sharing the host network for the synthetic loopback server"
+        "standalone driver without helper executables in a bubblewrap filesystem sharing the host network for the synthetic loopback server",
+        "incremental SSE over 4 MiB aggregate with bounded HTTP chunks plus retained line/event/accumulation limits",
+        "DeepSeek request/token rate-limit header projection on buffered and SSE relay responses"
       ],
       "not_proven": [
         "production CLI integration and registry/capability/process admission",
         "general address/HTTP/reqwest tolerance equivalence",
         "DNS, TLS, proxies, redirects, upgrades or connection pooling",
-        "arbitrary-length streaming, complete framing/error tolerance and downstream backpressure equivalence",
+        "complete framing/error tolerance, output-state memory bounds and downstream backpressure equivalence",
         "WebSocket and other provider transports",
         "non-host targets or stable public networking API"
       ],
@@ -149,8 +189,15 @@
       "id": "SHA256-NATIVE",
       "status": "PROVEN_LOCAL_VECTORS",
       "source": "src/modex/sha256.mojo",
-      "tests": ["tests/test_sha256.mojo", "tests/sha256_driver.mojo", "tests/test_sha256.py"],
-      "evidence": ["docs/evidence/log-foundations-tests.txt", "docs/evidence/log-foundations-link.txt"],
+      "tests": [
+        "tests/test_sha256.mojo",
+        "tests/sha256_driver.mojo",
+        "tests/test_sha256.py"
+      ],
+      "evidence": [
+        "docs/evidence/log-foundations-tests.txt",
+        "docs/evidence/log-foundations-link.txt"
+      ],
       "proven": [
         "FIPS 180-4 known-answer vectors, padding boundaries and incremental updates",
         "non-destructive digest calls and subsequent updates",
@@ -242,5 +289,7 @@
     "cryptographic formats",
     "all non-host build/link/run targets"
   ],
-  "compiler_diagnostic": "The installed compiler emits a nonfatal Crashpad handler discovery warning. It is preserved in raw evidence; all positive programs compile and run with exit 0."
+  "compiler_diagnostic": "The installed compiler emits a nonfatal Crashpad handler discovery warning. It is preserved in raw evidence; all positive programs compile and run with exit 0.",
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "evidence_policy": "Historical probes retain original provenance; current aggregate evidence is scoped to executed checks, not complete production or cross-platform parity."
 }

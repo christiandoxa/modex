@@ -1,5 +1,72 @@
 # Current work
 
+The active target is Prodex 0.439.1 at
+`81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`. Its tag, Cargo version, release
+manifest, GitHub asset digests and Linux oracle checksum are verified. The
+immutable source snapshot and executable live outside the product graph in
+`~/.cache/modex/`. Evidence:
+`docs/evidence/baseline-0.439.1/reference-verification.json`.
+
+The current inventory has 71 contracts and 426 platform obligations, remains
+incomplete and includes all six release targets and the JavaScript SDK.
+Eleven newly separated obligations cover worker-lane capacity, nonblocking
+admission, local-pressure isolation, compaction capacity, progress-aware
+recovery/backoff/session ownership/diagnostics, tunnel-client 0.0.18, Kiro CLI
+2.34.0 and exact-commit release gates. None of these new obligations is PASS.
+Older 0.439.0 captures retain their original commit/checksum. Shared help,
+session CLI and malformed-Zstandard captures, plus Super hooks/app-server
+argv fixtures, were executed again against the verified 0.439.1 artifact.
+
+Sol implemented actual `super`/`s`/help routing and selected source-traced
+argument validation, direct-child timed wait and native startup stdio spawn
+with an explicit environment. The CLI still rejects Super startup before
+filesystem, child or network side effects: secure temporary overlays, Smart
+Context and live launch supervision are unfinished. Luna B completed native
+hook JSON-RPC transport with 12-second per-RPC deadlines, a 16 MiB stdout-line
+bound, stderr suppression and direct-child cleanup. It also corrected TOML
+model-value projection and recaptured 54 argv/14 hook scenarios against the
+new oracle. These transport components remain connected to real process test
+drivers, not a successful production Super launcher.
+
+Luna A removed the aggregate 4 MiB streaming HTTP-body cap while retaining
+bounded read chunks and SSE line/event/JSON-accumulation guards. Buffered/error
+bodies remain capped. It implemented DeepSeek request/token rate-limit header
+projection on both buffered and streamed relay responses, integrated with Sol
+in `runtime_local_rewrite.mojo`. A proposed chat-only POST retry was rejected
+after source review: the baseline gates its first-event prefetch to native
+Messages, which this relay does not support. No unsupported retry/replay was
+retained. Output/final-response/conversation memory still scales with output.
+The relay itself remains outside successful CLI startup.
+
+The spawner accepted explicit `gpt-6.1-sol`/MAX and two `gpt-6-luna`/MAX
+configurations. Runtime agent metadata exposes task status, not independently
+verifiable model/effort identity. All workers produced native code and ran
+checks. File ownership was coordinated; Sol corrected an overlapping relay
+edit before the final combined run. Only Sol may stage, commit and push shared
+`main`.
+
+Final combined verification: `rtk proxy make test` exited 0; `make build`,
+the full native unit phase and all 301 Python tests passed (493.468 seconds
+for Python discovery). Exact output:
+`docs/evidence/checkpoint-04391-tests.txt`. The previous 300-test run's 17 old
+fixture identity failures were fixed by actual 0.439.1 recapture before this
+full passing rerun. Scoped worker reruns passed 56 provider/HTTP/relay cases,
+14 hook/RPC cases and selected production Super comparisons against 0.439.1.
+Dependency/link inspection is in
+`docs/evidence/checkpoint-04391-dependencies.txt`: no new application library,
+native declaration, implementation helper or Python production dependency.
+The final diff and changed fixtures passed credential-pattern review; all
+release metadata JSON parses and manifest checksums match.
+
+Next implementation priorities remain real secure overlay/Smart Context
+preparation and launch integration, then the new worker-admission and native
+recovery obligations. Startup descriptor swapping is restricted to a parent
+with no concurrent I/O. Descendant cleanup/signals, secure durable storage,
+TLS/DNS, general backpressure and non-host targets remain visible gaps.
+
+The following milestones describe historical progress before this checkpoint;
+their original test counts and baseline references are not current totals.
+
 The destination repository began empty. The frozen tag and official Linux
 release checksum have been verified. Reference source and the oracle are kept
 outside the Modex source and build graph, under `~/.cache/modex/`.

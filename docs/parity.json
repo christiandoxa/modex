@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
   "inventory_complete": false,
   "counting_policy": "Initial coarse contracts are not the final denominator. Each contract retains all applicable platform obligations. PASS requires reproducible evidence; compile-only, mock-only and unverified results never count. No full parity percentage until inventory completion.",
   "inventory_history": [
@@ -11,6 +11,10 @@
     {
       "date": "2026-10-24",
       "change": "Captured all 35 help routes from the checksum-verified official Linux artifact without stderr or state mutations; corrected handler source paths from the frozen symbol graph; added JAVASCRIPT-SDK after tracing mandatory release staging and SDK import smoke. The denominator expands from 59 contracts/354 platform obligations to 60/360; no contracts removed."
+    },
+    {
+      "date": "2026-10-26",
+      "change": "Verified 0.439.1 tag, commit, official checksum manifest and Linux artifact. Retained earlier evidence provenance; shared live differential tests now use 0.439.1. Added separately tracked worker-lane/admission/recovery/tunnel/Kiro/release obligations; all six targets remain required and the inventory remains incomplete."
     }
   ],
   "contracts": [
@@ -20,7 +24,8 @@
       "baseline": {
         "path": "crates/prodex-cli/src/lib.rs",
         "symbol": "Cli",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
       },
       "required_behavior": "Exact leading --version and -V flags return the product version on stdout with exit 0, ignoring trailing arguments.",
       "input": "version flag",
@@ -43,7 +48,8 @@
       ],
       "evidence": [
         "docs/evidence/bootstrap-tests.txt",
-        "docs/evidence/version-arguments-tests.txt"
+        "docs/evidence/version-arguments-tests.txt",
+        "docs/evidence/checkpoint-04391-tests.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -64,7 +70,8 @@
       "baseline": {
         "path": "crates/prodex-cli/src/lib.rs",
         "symbol": "Cli, Commands",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Preserve help, aliases, usage, stdout/stderr and argument-error codes apart from narrow product identity mapping.",
       "input": "command/flag argv",
@@ -125,7 +132,8 @@
       "baseline": {
         "path": "crates/prodex-cli/src/lib.rs",
         "symbol": "parse_cli_command_from",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Route all active commands including hidden helpers; default bare/upstream invocations to run; preserve literal argv boundaries.",
       "input": "raw OS argv",
@@ -173,7 +181,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/manage.rs",
         "symbol": "handle_add_profile",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Create/register/seed profiles, validate private files and activate as requested.",
       "input": "name, codex-home, copy-from, copy-current, activate, insecure",
@@ -211,7 +220,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/import_export/export.rs",
         "symbol": "handle_export_profiles",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Export profiles and supported secrets with optional password protection.",
       "input": "profile names, output path, password flags/environment",
@@ -249,7 +259,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/import_export/import.rs",
         "symbol": "handle_import_profiles",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Import bundles and active built-in provider sources with rollback/recovery.",
       "input": "bundle/source, name, activate, insecure",
@@ -289,7 +300,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/import_export/import.rs",
         "symbol": "handle_import_current_profile",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Copy shared Codex home to a new managed profile and activate.",
       "input": "optional name and insecure",
@@ -327,7 +339,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/manage.rs",
         "symbol": "handle_list_profiles",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "List sorted profiles, active status, provider/auth/identity/path; recover lifecycle and missing active references.",
       "input": "profile list",
@@ -365,7 +378,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/manage.rs",
         "symbol": "handle_remove_profile",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Remove one/all profiles and optionally only eligible managed homes with safe lifecycle recovery.",
       "input": "name/all and delete-home",
@@ -403,7 +417,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/manage.rs",
         "symbol": "handle_set_active_profile",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Top-level use and profile use resolve selector/active default and persist activation.",
       "input": "optional -p/--profile",
@@ -441,7 +456,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/manage.rs",
         "symbol": "handle_current_profile",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Render active/only/no-active states including provider and auth summary.",
       "input": "current",
@@ -479,7 +495,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/info_handler.rs",
         "symbol": "handle_info",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Read-only version/profile/policy/log/secret/runtime information and optional token totals.",
       "input": "json and tokens",
@@ -517,7 +534,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/status.rs",
         "symbol": "handle_status",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Live or once quota/token/resource dashboard with interval validation.",
       "input": "once, interval 1..60",
@@ -557,7 +575,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/log_command_tui.rs",
         "symbol": "handle_log",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Redacted stream/last/upstream output, JSON envelopes, session/runtime event selection and terminal rendering.",
       "input": "mode and json",
@@ -648,7 +667,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/session.rs",
         "symbol": "handle_session, load_session_reports",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "List shared sessions newest first with profile/query/limit/subagent filters and output modes.",
       "input": "list, json/id-only/resume-command, filters",
@@ -719,7 +739,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/session.rs",
         "symbol": "handle_session",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Match shared sessions to current or explicit cwd, with list filters and output modes.",
       "input": "current, cwd and filters",
@@ -790,7 +811,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/session.rs",
         "symbol": "handle_session_resume",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Resolve unique full/partial session ID and launch with correct ownership and repair.",
       "input": "ID",
@@ -830,7 +852,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/doctor.rs",
         "symbol": "handle_doctor",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Report local/quota/runtime/install state, redacted bundles, policy suggestions and explicit repairs.",
       "input": "doctor args",
@@ -870,7 +893,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/login.rs",
         "symbol": "handle_codex_login",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Provider login with profile-local credentials and workspace identity defaults.",
       "input": "profile/provider/login arguments",
@@ -910,7 +934,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/logout.rs",
         "symbol": "handle_codex_logout",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Log out selected/active profile through supported provider behavior.",
       "input": "positional or option profile",
@@ -950,7 +975,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/prodex_update.rs",
         "symbol": "handle_prodex_update",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Resolve and verify a release and atomically install the matching Modex artifact.",
       "input": "update and release environment",
@@ -990,7 +1016,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/quota.rs",
         "symbol": "handle_quota; parse_cli_command_from (crates/prodex-cli/src/lib.rs)",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Default detailed pool view; filtered/single/raw/once/watch quota and baseline errors.",
       "input": "quota args",
@@ -1030,7 +1057,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/redeem.rs",
         "symbol": "handle_redeem",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Redeem one OpenAI reset credit with near-reset confirmation and proxy controls.",
       "input": "profile, yes, base-url, no-proxy",
@@ -1070,7 +1098,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/ping.rs",
         "symbol": "handle_ping",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Minimal requests through the real eligible OpenAI runtime path with stable JSON results.",
       "input": "profile, model, effort, base-url, no-proxy, json",
@@ -1110,7 +1139,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/command_dispatch.rs",
         "symbol": "execute_command -> runtime_launch::handle_run",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Quota preflight, eligible precommit rotation, managed argv/env/process launch and exit propagation.",
       "input": "RunArgs and upstream argv",
@@ -1150,7 +1180,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/command_dispatch.rs",
         "symbol": "execute_super",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Super/s aliases, providers, agents, tool stack, dry-run and opt-in Presidio with precedence.",
       "input": "SuperArgs and tail argv",
@@ -1168,12 +1199,20 @@
       "prerequisites": [
         "selected supported upstream CLI/tools"
       ],
-      "implementation": null,
-      "tests": [],
-      "evidence": [],
-      "status": "NOT_STARTED",
+      "implementation": "src/modex/super_cli.mojo; src/modex/super_help.mojo; src/main.mojo (help and selected validation); src/modex/app_server_rpc.mojo (test-driver-only preflight)",
+      "tests": [
+        "tests/test_super_cli.mojo",
+        "tests/test_super_cli.py",
+        "tests/test_app_server_rpc.py",
+        "tests/test_super_hooks_runtime.py",
+        "tests/test_app_server_args.py"
+      ],
+      "evidence": [
+        "docs/evidence/checkpoint-04391-tests.txt"
+      ],
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -1181,7 +1220,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Super startup still stops explicitly before filesystem, child or network side effects: secure overlays, Smart Context and real launcher preflight integration are incomplete. Hook transport checks do not establish product startup parity."
       ]
     },
     {
@@ -1190,7 +1230,8 @@
       "baseline": {
         "path": "crates/prodex-cli/src/runtime_args.rs",
         "symbol": "GatewayArgs; execute_command -> handle_gateway",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "OpenAI-compatible listener, provider transformation, streaming, smart context and redaction policy.",
       "input": "listen, provider, base-url/url, api-key, policy flags",
@@ -1244,7 +1285,8 @@
       "baseline": {
         "path": "crates/prodex-cli/src/runtime_args/expose.rs",
         "symbol": "SuperExposeArgs; super_expose::handle_super_expose",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Hidden __super-expose and public super expose alias; preserve modes, lifecycle and provider tools.",
       "input": "expose args",
@@ -1284,7 +1326,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/broker.rs",
         "symbol": "handle_runtime_broker",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Hidden broker command with runtime ownership, shared coordination and shutdown.",
       "input": "__runtime-broker and runtime config",
@@ -1322,7 +1365,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/mcp_jsonl_bridge.rs",
         "symbol": "handle_mcp_jsonl_bridge",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Launch JSONL MCP target, adapt both input framings, supervise and clean its process tree.",
       "input": "target command and exact argv, framed stdin",
@@ -1362,7 +1406,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/runtime_tools/sub_agents.rs",
         "symbol": "handle_sub_agent_exec",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Hidden delegated execution from secret-free config and exact task file.",
       "input": "config and task-file",
@@ -1402,7 +1447,8 @@
       "baseline": {
         "path": "crates/prodex-mcp-stdio/src/lib.rs",
         "symbol": "read_mcp_message, write_mcp_message",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "JSONL/Content-Length with 64 MiB message, 4 KiB first header, 16 KiB continuation and 64 KiB metadata budgets.",
       "input": "bytes",
@@ -1440,7 +1486,8 @@
       "baseline": {
         "path": "crates/prodex-core/src/lib.rs",
         "symbol": "AppPaths::discover, default_codex_home",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Preserve PRODEX_HOME/PRODEX_SHARED_CODEX_HOME, defaults, relative/absolute and legacy discovery rules.",
       "input": "environment and filesystem",
@@ -1478,7 +1525,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/runtime_config.rs",
         "symbol": "runtime_config module",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Preserve policy/config/env/CLI precedence, validation and defaults.",
       "input": "TOML/config/environment/argv",
@@ -1527,7 +1575,8 @@
       "baseline": {
         "path": "crates/prodex-secret-store/src/lib.rs",
         "symbol": "secret_store public production paths",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Isolate secrets per profile and backend, preserve permissions, keyring and migration behavior.",
       "input": "credential configuration and files",
@@ -1567,7 +1616,8 @@
       "baseline": {
         "path": "crates/prodex-profile-export/src/lib.rs",
         "symbol": "profile export bundle production paths",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Standard authenticated protected bundle formats and password derivation with verified interoperability.",
       "input": "bundle/password/randomness",
@@ -1605,7 +1655,8 @@
       "baseline": {
         "path": "crates/prodex-state/src/app_state.rs",
         "symbol": "AppState, APP_STATE_SCHEMA_VERSION",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Schema 1 state, bounded bindings and merge-safe concurrent atomic updates.",
       "input": "state JSON and updates",
@@ -1643,7 +1694,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/import_export/import/lifecycle_support.rs",
         "symbol": "load_profile_state_with_profile_recovery_locked",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Recover interrupted profile lifecycle and auth journals without exposing or losing credentials.",
       "input": "state/journals",
@@ -1681,7 +1733,8 @@
       "baseline": {
         "path": "crates/prodex-runtime-quota/src/selection.rs",
         "symbol": "runtime route selection",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Preserve hard continuation ownership, affinity, binding conflicts and unknown metadata.",
       "input": "requests, bindings and pool",
@@ -1719,7 +1772,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/runtime_proxy.rs",
         "symbol": "runtime_proxy production paths",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Bound retry/recovery, distinguish failure classes, never rotate after stream/response commit or duplicate side effects.",
       "input": "requests and failures",
@@ -1757,7 +1811,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/runtime_proxy.rs",
         "symbol": "runtime_proxy production paths",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "HTTP/proxy traversal, TLS verification, SSE, backpressure and cancellation behavior.",
       "input": "HTTP/stream bytes",
@@ -1811,7 +1866,8 @@
         "docs/evidence/provider-buffered-tests.txt",
         "docs/evidence/provider-buffered-link.txt",
         "docs/evidence/runtime-local-tests.txt",
-        "docs/evidence/runtime-local-link.txt"
+        "docs/evidence/runtime-local-link.txt",
+        "docs/evidence/checkpoint-04391-tests.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -1824,7 +1880,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Native numeric-loopback POST now joins request preparation with incremental DeepSeek SSE and buffered JSON response translation, with real sockets, partial-chunk delivery, timeout and close/drop/error checks. The product CLI does not call it. Total decoded response data is capped at 4 MiB; arbitrary-length streams, general addresses/HTTP, TLS/DNS/proxies/redirects/pooling, retries, rate-limit response headers, full cancellation/backpressure/error/resource equivalence and non-host behavior remain unfinished. No complete transport or provider parity is claimed.",
+        "Native numeric-loopback POST now joins request preparation with incremental DeepSeek SSE and buffered JSON response translation, with real sockets, partial-chunk delivery, timeout and close/drop/error checks. The product CLI does not call it. Buffered/error response bodies remain capped at 4 MiB; SSE passes that aggregate limit with bounded reads and retained per-line/event/JSON-accumulation guards. Native relay projects DeepSeek request/token rate-limit headers. General addresses/HTTP, TLS/DNS/proxies/redirects/pooling, native Messages first-event retry, full cancellation/backpressure/error/resource equivalence and non-host behavior remain unfinished. No complete transport or provider parity is claimed.",
         "Internal serial relay now exercises incremental socket serving, borrowed downstream reset checks and valid request half-close. Graceful FIN cancellation, worker/admission concurrency, limits above the 64 MiB incoming default/cap, general HTTP and the active Super process/preflight path remain unfinished. It is not exposed as a different public gateway behavior."
       ]
     },
@@ -1834,7 +1890,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/runtime_proxy/websocket.rs",
         "symbol": "websocket runtime paths",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Handshake, frames, request/response tracking, cancellation and continuation recovery.",
       "input": "WebSocket traffic",
@@ -1874,7 +1931,8 @@
       "baseline": {
         "path": "crates/prodex-provider-core/src/lib.rs",
         "symbol": "provider production API",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Codex/OpenAI requests, quota, auth, errors and response metadata.",
       "input": "provider requests",
@@ -1914,7 +1972,8 @@
       "baseline": {
         "path": "crates/prodex-provider-core/src/gemini_bridge.rs",
         "symbol": "Gemini bridge production paths",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Gemini transformation, tools/images/streaming/auth and error contracts.",
       "input": "provider requests",
@@ -1954,7 +2013,8 @@
       "baseline": {
         "path": "crates/prodex-provider-core/src/lib.rs",
         "symbol": "Anthropic production paths",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Anthropic/Claude transformation, auth, tools/streaming and quota semantics.",
       "input": "provider requests",
@@ -1994,7 +2054,8 @@
       "baseline": {
         "path": "crates/prodex-provider-core/src/lib.rs",
         "symbol": "Copilot production paths",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Copilot identity, auth, model limits, quotas and transformations.",
       "input": "provider requests/credential source",
@@ -2034,7 +2095,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_kiro.rs",
         "symbol": "Kiro runtime production paths",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Kiro account/auth source, request translation, streaming and native integration.",
       "input": "provider requests/credential source",
@@ -2074,7 +2136,8 @@
       "baseline": {
         "path": "crates/prodex-cli/src/runtime_args.rs",
         "symbol": "SuperExternalProvider::DeepSeek",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "DeepSeek presets, config and Anthropic/OpenAI protocol adaptation.",
       "input": "provider args/requests",
@@ -2145,7 +2208,8 @@
         "docs/evidence/provider-buffered-tests.txt",
         "docs/evidence/provider-buffered-link.txt",
         "docs/evidence/runtime-local-tests.txt",
-        "docs/evidence/runtime-local-link.txt"
+        "docs/evidence/runtime-local-link.txt",
+        "docs/evidence/checkpoint-04391-tests.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2158,7 +2222,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Native request preparation now reaches real numeric-loopback POST with incremental SSE and buffered JSON response translation, preserving pending messages/metadata separately from the body. It remains outside CLI dispatch with a 4 MiB total decoded response limit. Request route selection/Anthropic adaptation, credential/config discovery, conversation storage/lookup, rate-limit response headers, general HTTP/TLS/DNS/proxies/redirects, retry/rotation, full cancellation/backpressure/resource/error equivalence and non-host execution remain unfinished. Component comparisons and retained oracle preflight gaps are not provider-command parity.",
+        "Native request preparation now reaches real numeric-loopback POST with incremental SSE and buffered JSON response translation, preserving pending messages/metadata separately from the body. It remains outside CLI dispatch with capped buffered/error bodies and incremental SSE beyond 4 MiB aggregate. Request/token rate-limit headers now reach buffered and streamed relay responses. Request route selection/Anthropic adaptation, credential/config discovery, persistent conversation storage/lookup, general HTTP/TLS/DNS/proxies/redirects, native Messages first-event retry/rotation, full cancellation/backpressure/resource/error equivalence and non-host execution remain unfinished. Component comparisons and retained oracle preflight gaps are not provider-command parity.",
         "Conversation state is an in-memory bounded cache, not a disk store. Scoped buffered/streamed continuation is tested in the internal relay; Serde logical weight/artifact boundaries and concurrent shared ownership are unverified. Super requires Smart Context, overlays and real Codex app-server hook trust; no preflight bypass or completed launch is implemented."
       ]
     },
@@ -2168,7 +2232,8 @@
       "baseline": {
         "path": "crates/prodex-cli/src/runtime_args.rs",
         "symbol": "super_local_provider_codex_args",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Local OpenAI-compatible URL validation, defaults and runtime adaptation.",
       "input": "URL/model/requests",
@@ -2208,7 +2273,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/command_dispatch.rs",
         "symbol": "command_uses_native_agy, execute_super",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Native Antigravity launch with baseline minimal startup and account behavior.",
       "input": "Super agent/provider args",
@@ -2248,7 +2314,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/runtime_proxy/smart_context.rs",
         "symbol": "smart_context production paths",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Context budgeting, compaction, calibrated tokens and content/metadata preservation.",
       "input": "requests and context policy",
@@ -2286,7 +2353,8 @@
       "baseline": {
         "path": "crates/prodex-optional-tools/src/lib.rs",
         "symbol": "optional tool production paths",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Discover/configure baseline optional tools; distinguish integration targets from implementation helpers.",
       "input": "tool policy/environment",
@@ -2326,7 +2394,8 @@
       "baseline": {
         "path": "crates/prodex-presidio/src/lib.rs",
         "symbol": "Presidio production API",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Optional baseline Presidio lifecycle and redaction behavior; no silently added implementation helper.",
       "input": "policy and request data",
@@ -2366,7 +2435,8 @@
       "baseline": {
         "path": "crates/prodex-redaction/src/lib.rs",
         "symbol": "redaction_redact_secret_like_text, redaction_redact_json",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Redact CLI/env/JSON/log/diagnostic secrets without corrupting required visible content.",
       "input": "text/JSON/argv/env",
@@ -2412,7 +2482,8 @@
       "baseline": {
         "path": "crates/prodex-terminal-ui/src/lib.rs",
         "symbol": "terminal UI production API",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "PTY, width/height, Unicode display, NO_COLOR, CI modes, signals and cleanup.",
       "input": "terminal state/environment",
@@ -2450,7 +2521,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/app_commands/child_process_control.rs",
         "symbol": "configure_child_process_group, terminate_child_process_tree",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Isolated argv/env/stdio, process groups, signals, timeouts, cancellation and descendant cleanup.",
       "input": "launch configuration",
@@ -2468,12 +2540,19 @@
       "prerequisites": [
         "selected upstream program"
       ],
-      "implementation": null,
-      "tests": [],
-      "evidence": [],
-      "status": "NOT_STARTED",
+      "implementation": "src/modex/process_spawn.mojo; direct-child wait and startup-only stdio redirection",
+      "tests": [
+        "tests/test_process_wait.mojo",
+        "tests/test_process_stdio.mojo",
+        "tests/test_process_runtime.py",
+        "tests/test_app_server_rpc.py"
+      ],
+      "evidence": [
+        "docs/evidence/checkpoint-04391-tests.txt"
+      ],
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -2481,7 +2560,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Startup redirection temporarily changes parent descriptors and requires no concurrent parent I/O. Direct-child cleanup does not establish descendant/cancellation/signal parity; Super runtime is not connected."
       ]
     },
     {
@@ -2490,7 +2570,8 @@
       "baseline": {
         "path": "install.sh; install.ps1; npm/package.json",
         "symbol": "baseline installation/package surfaces",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Preserve active installation and packaging contracts with Modex identity and verified Modex artifacts.",
       "input": "platform/package/install options",
@@ -2530,7 +2611,8 @@
       "baseline": {
         "path": "src/lib.rs; crates/prodex-app/src/lib.rs; package.json",
         "symbol": "public API and package exports",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Audit whether public library/SDK surfaces are active compatibility contracts; record Mojo-only conflicts.",
       "input": "library/package consumers",
@@ -2568,7 +2650,8 @@
       "baseline": {
         "path": ".github/workflows/standalone-release.yml",
         "symbol": "release target matrix; release-manifest.json",
-        "trace_verified": false
+        "trace_verified": false,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Build/link/run and audit independently on every one of the six official baseline targets.",
       "input": "target OS/architecture and artifact",
@@ -2606,7 +2689,8 @@
       "baseline": {
         "path": "scripts/npm/stage.mjs; scripts/npm/common.mjs; scripts/ci/npm-package-smoke.mjs; .github/workflows/standalone-release.yml; npm/prodex-gateway-sdk/index.mjs; npm/prodex-gateway-sdk/index.d.ts",
         "symbol": "stageGatewaySdkPackage, gatewaySdkPackageManifest, ProdexGatewayClient, ProdexGatewayError",
-        "trace_verified": true
+        "trace_verified": true,
+        "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
       },
       "required_behavior": "Retain the actively staged/imported SDK package surface, JavaScript module import/error/client behavior, declared TypeScript types and client HTTP protocol contracts; resolve its Mojo-only conflict without silently dropping it.",
       "input": "JavaScript imports, client options and method arguments",
@@ -2641,6 +2725,460 @@
       "blockers": [
         "Native JavaScript module imports conflict with Mojo-only/no-runtime-adapter policy. HTTP compatibility is not equivalent to an importable module. Exact package-version publishing and documented server endpoint activity have contradictory evidence."
       ]
+    },
+    {
+      "id": "PROXY-WORKER-LANES",
+      "domain": "runtime",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_launch/proxy_startup/workers.rs",
+        "symbol": "source-traced 0.439.1 obligation",
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+      },
+      "required_behavior": "Cached WebSocket, HTTP Responses, unary compaction and ordinary request lanes have independent bounded worker capacity.",
+      "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
+      "output": "Source-matched responses, diagnostics and state transitions",
+      "failure_modes": "Saturation, transport failure, timeout, cancellation, stale ownership and invalid state must preserve security and no replay",
+      "side_effects": "Must match source and remain bounded and isolated",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet connected or verified",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROXY-NONBLOCKING-ADMISSION",
+      "domain": "runtime",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_proxy/lifecycle.rs",
+        "symbol": "source-traced 0.439.1 obligation",
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+      },
+      "required_behavior": "Ingress admission never waits for saturated workers; lane saturation returns retryable 503 with Retry-After while local control remains responsive.",
+      "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
+      "output": "Source-matched responses, diagnostics and state transitions",
+      "failure_modes": "Saturation, transport failure, timeout, cancellation, stale ownership and invalid state must preserve security and no replay",
+      "side_effects": "Must match source and remain bounded and isolated",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet connected or verified",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROXY-PRESSURE-ISOLATION",
+      "domain": "runtime",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_proxy/lifecycle.rs",
+        "symbol": "source-traced 0.439.1 obligation",
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+      },
+      "required_behavior": "Local lane pressure does not poison unrelated routes, global route health or upstream accounts.",
+      "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
+      "output": "Source-matched responses, diagnostics and state transitions",
+      "failure_modes": "Saturation, transport failure, timeout, cancellation, stale ownership and invalid state must preserve security and no replay",
+      "side_effects": "Must match source and remain bounded and isolated",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet connected or verified",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "PROXY-COMPACTION-CAPACITY",
+      "domain": "runtime",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_launch/proxy_startup/workers.rs",
+        "symbol": "source-traced 0.439.1 obligation",
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+      },
+      "required_behavior": "Idle cached WebSockets do not exhaust unary compaction or HTTP fallback capacity; original deadlines remain enforced.",
+      "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
+      "output": "Source-matched responses, diagnostics and state transitions",
+      "failure_modes": "Saturation, transport failure, timeout, cancellation, stale ownership and invalid state must preserve security and no replay",
+      "side_effects": "Must match source and remain bounded and isolated",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet connected or verified",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "NATIVE-RECOVERY-PROGRESS",
+      "domain": "runtime",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_tools/session_recovery.rs",
+        "symbol": "source-traced 0.439.1 obligation",
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+      },
+      "required_behavior": "Only assistant/tool output, completed compaction or another root session resets no-progress retry state; task starts, goal updates and accepted control RPCs do not.",
+      "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
+      "output": "Source-matched responses, diagnostics and state transitions",
+      "failure_modes": "Saturation, transport failure, timeout, cancellation, stale ownership and invalid state must preserve security and no replay",
+      "side_effects": "Must match source and remain bounded and isolated",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet connected or verified",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "NATIVE-RECOVERY-BACKOFF",
+      "domain": "runtime",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_tools/session_recovery/retry.rs",
+        "symbol": "source-traced 0.439.1 obligation",
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+      },
+      "required_behavior": "First recovery is immediate; repeated no-progress failures wait 5, 10, 20, 40 and at most 60 seconds starting at each failure, with monotonic deadlines.",
+      "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
+      "output": "Source-matched responses, diagnostics and state transitions",
+      "failure_modes": "Saturation, transport failure, timeout, cancellation, stale ownership and invalid state must preserve security and no replay",
+      "side_effects": "Must match source and remain bounded and isolated",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet connected or verified",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "NATIVE-RECOVERY-OWNERSHIP",
+      "domain": "runtime",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_tools/usage_limit_recovery.rs",
+        "symbol": "source-traced 0.439.1 obligation",
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+      },
+      "required_behavior": "Preserve exact native session ownership, user cancellation, goal budgets, session identity and exactly-once/no-replay boundaries during recovery.",
+      "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
+      "output": "Source-matched responses, diagnostics and state transitions",
+      "failure_modes": "Saturation, transport failure, timeout, cancellation, stale ownership and invalid state must preserve security and no replay",
+      "side_effects": "Must match source and remain bounded and isolated",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet connected or verified",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "NATIVE-RECOVERY-DIAGNOSTICS",
+      "domain": "runtime",
+      "baseline": {
+        "path": "crates/prodex-app/src/runtime_tools/usage_limit_recovery.rs",
+        "symbol": "source-traced 0.439.1 obligation",
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+      },
+      "required_behavior": "Report attempts_without_progress, retry_wait_ms and control_ack_is_progress=false without presenting accepted RPCs as actual progress.",
+      "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
+      "output": "Source-matched responses, diagnostics and state transitions",
+      "failure_modes": "Saturation, transport failure, timeout, cancellation, stale ownership and invalid state must preserve security and no replay",
+      "side_effects": "Must match source and remain bounded and isolated",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet connected or verified",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "TUNNEL-CLIENT-0018",
+      "domain": "compatibility",
+      "baseline": {
+        "path": "crates/prodex-app/src/super_expose/openai_tunnel.rs",
+        "symbol": "source-traced 0.439.1 obligation",
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+      },
+      "required_behavior": "Qualify tunnel-client 0.0.18, preserve runtime minimum/capability checks and remove conflicting ambient AWS workload-identity selectors only for static-key probe/child environments.",
+      "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
+      "output": "Source-matched responses, diagnostics and state transitions",
+      "failure_modes": "Saturation, transport failure, timeout, cancellation, stale ownership and invalid state must preserve security and no replay",
+      "side_effects": "Must match source and remain bounded and isolated",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet connected or verified",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "KIRO-CLI-2340",
+      "domain": "compatibility",
+      "baseline": {
+        "path": ".github/workflows/standalone-release.yml",
+        "symbol": "source-traced 0.439.1 obligation",
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+      },
+      "required_behavior": "Preserve Kiro CLI 2.34.0 packaging/checksum qualification, discovery and KIRO_DATA_DIR isolation.",
+      "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
+      "output": "Source-matched responses, diagnostics and state transitions",
+      "failure_modes": "Saturation, transport failure, timeout, cancellation, stale ownership and invalid state must preserve security and no replay",
+      "side_effects": "Must match source and remain bounded and isolated",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet connected or verified",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ]
+    },
+    {
+      "id": "RELEASE-EXACT-COMMIT",
+      "domain": "compatibility",
+      "baseline": {
+        "path": ".github/workflows/standalone-release.yml",
+        "symbol": "source-traced 0.439.1 obligation",
+        "trace_verified": true,
+        "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+      },
+      "required_behavior": "Retain exact-commit CI/publication gates, all six platform artifacts, checksum manifests, installation behavior and JavaScript SDK obligations.",
+      "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
+      "output": "Source-matched responses, diagnostics and state transitions",
+      "failure_modes": "Saturation, transport failure, timeout, cancellation, stale ownership and invalid state must preserve security and no replay",
+      "side_effects": "Must match source and remain bounded and isolated",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet connected or verified",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ]
     }
-  ]
+  ],
+  "previous_baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "baseline_version": "0.439.1",
+  "evidence_policy": "Every historical artifact retains its baseline commit/checksum. Older passing evidence is not proof against 0.439.1; revalidation is required before declaring new PASS obligations."
 }

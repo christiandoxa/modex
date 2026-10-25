@@ -67,7 +67,7 @@ def main():
                             "exit_code": result.returncode, "stderr": "", "file_mutations": []})
             if command not in (("super", "expose"), ("s",)):
                 queue.extend((*command, child) for child in children)
-    inventory = {"schema_version": 1, "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+    inventory = {"schema_version": 1, "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
                  "oracle_sha256": ORACLE_SHA256, "reproduce": "python3 tests/capture_cli.py",
                  "coverage": "Visible command tree plus four hidden production helpers, super expose and s alias. Help mentions are discovery evidence; hidden flags, defaults, precedence, passthrough and runtime contracts still require source tracing.",
                  "commands": records}

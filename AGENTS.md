@@ -25,7 +25,8 @@
   release, or create release tags without separate authorization.
 - Never count incomplete inventory or successful assertions as full parity.
   Record unfinished work and reproducible mismatches in `docs/handoff.md`.
-- Use GPT-6 Luna subagents in parallel for independent implementation,
+- Use GPT-6.1 Sol at MAX effort for primary implementation work and GPT-6 Luna
+  subagents at MAX effort in parallel for independent implementation,
   validation, and review tasks. Assign workers concrete code and test changes.
   Keep file ownership disjoint; integrate and verify the combined result
   before committing or pushing.

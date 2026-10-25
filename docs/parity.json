@@ -2052,7 +2052,7 @@
       "prerequisites": [
         "DeepSeek services"
       ],
-      "implementation": "src/modex/provider_chat_chunk.mojo; src/modex/provider_chat_reader.mojo; src/modex/provider_chat_stream.mojo; src/modex/provider_chat_items.mojo; src/modex/provider_chat_tools.mojo; src/modex/provider_chat_metadata.mojo; src/modex/provider_chat_usage.mojo; src/modex/provider_sse_events.mojo (standalone response-stream translation; not connected to CLI)",
+      "implementation": "src/modex/provider_request.mojo; src/modex/provider_request_messages.mojo; src/modex/provider_request_params.mojo; src/modex/provider_request_prepare.mojo; src/modex/provider_request_tools.mojo; src/modex/provider_chat_chunk.mojo; src/modex/provider_chat_reader.mojo; src/modex/provider_chat_stream.mojo; src/modex/provider_chat_items.mojo; src/modex/provider_chat_tools.mojo; src/modex/provider_chat_metadata.mojo; src/modex/provider_chat_usage.mojo; src/modex/provider_sse_events.mojo (standalone request preparation and response-stream translation; not connected to CLI)",
       "tests": [
         "tests/test_provider_chat_chunk.mojo",
         "tests/provider_chat_chunk_driver.mojo",
@@ -2068,7 +2068,15 @@
         "tests/test_rtk_command.mojo",
         "tests/provider_chat_stream_driver.mojo",
         "tests/test_provider_chat_stream.py",
-        "tests/capture_provider_stream.py"
+        "tests/capture_provider_stream.py",
+        "tests/test_provider_request.mojo",
+        "tests/test_provider_request_messages.mojo",
+        "tests/test_provider_request_params.mojo",
+        "tests/test_provider_request_prepare.mojo",
+        "tests/test_provider_request_tools.mojo",
+        "tests/provider_request_driver.mojo",
+        "tests/test_provider_requests.py",
+        "tests/capture_provider_requests.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
@@ -2076,7 +2084,11 @@
         "tests/fixtures/provider-stream/README.md",
         "tests/fixtures/provider-stream/cases.json",
         "docs/evidence/provider-chat-stream-tests.txt",
-        "docs/evidence/provider-chat-stream-link.txt"
+        "docs/evidence/provider-chat-stream-link.txt",
+        "tests/fixtures/provider-requests/cases.json",
+        "tests/fixtures/provider-requests/README.md",
+        "docs/evidence/provider-request-tests.txt",
+        "docs/evidence/provider-request-link.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2089,7 +2101,7 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Native response-stream translation has source-derived and synthetic official-release adapter comparisons, but remains a standalone component outside CLI dispatch. Request transformation, auth/config, conversation persistence, HTTP/TLS/proxies, cancellation/backpressure, full resource/error equivalence and non-host execution remain unfinished. Component comparisons are not provider-command parity."
+        "Native request preparation and response-stream translation have source-derived and synthetic official-release adapter comparisons, but remain standalone components outside CLI dispatch. Request route selection/Anthropic adaptation, auth/config, conversation storage/lookup, HTTP/TLS/proxies, cancellation/backpressure, full resource/error equivalence and non-host execution remain unfinished. Component comparisons and retained oracle preflight gaps are not provider-command parity."
       ]
     },
     {

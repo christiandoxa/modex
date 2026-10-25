@@ -49,6 +49,17 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_chat_stream.mojo -o build/tests/test_provider_chat_stream
 	build/tests/test_provider_chat_stream
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_chat_stream_driver.mojo -o build/tests/provider_chat_stream_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_request_messages.mojo -o build/tests/test_provider_request_messages
+	build/tests/test_provider_request_messages
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_request_prepare.mojo -o build/tests/test_provider_request_prepare
+	build/tests/test_provider_request_prepare
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_request_tools.mojo -o build/tests/test_provider_request_tools
+	build/tests/test_provider_request_tools
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_request_params.mojo -o build/tests/test_provider_request_params
+	build/tests/test_provider_request_params
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_request.mojo -o build/tests/test_provider_request
+	build/tests/test_provider_request
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_request_driver.mojo -o build/tests/provider_request_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json.mojo -o build/tests/test_json
 	build/tests/test_json
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_json_float.mojo -o build/tests/test_json_float

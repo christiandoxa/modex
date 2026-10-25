@@ -142,8 +142,8 @@ UUIDv7 identity within each stream.
 These remain standalone modules outside the product CLI. The test-only
 synthetic Codex client replaces the external integration target, never Modex;
 its outer Super process exits 1 because it does not implement app-server.
-Adapter response comparisons do not establish Super command parity. Request
-transformation, auth/config, conversation persistence, first-event retry,
+Adapter response comparisons do not establish Super command parity. Provider
+route selection, auth/config, conversation storage/lookup, first-event retry,
 HTTP/TLS/proxies, cancellation/backpressure and full resource/error equivalence
 remain unfinished. UUID generation uses the official file API to read
 `/dev/urandom` and is only exercised on Linux. Non-host behavior is unverified.
@@ -157,6 +157,30 @@ initialize failed: channel is empty and sending half is closed`. The catalog
 retains upstream bytes and observed stderr without an expected response. These
 cases establish an oracle observation gap, not successful provider equivalence;
 the native component's defined failure behavior is only source-derived.
+
+DeepSeek request preparation is now implemented as another standalone native
+component. It translates messages/history, tools and parameters and retains
+the pending response metadata separately from the prepared upstream body.
+The active release first validates/translates the runtime request, then may
+replace only its body with the native provider-core conformance result for a
+simple request. This preserves observable differences such as omitted
+`text.format` and `stream_options` in that body while pending messages retain
+JSON guidance. Native tests trace that pass instead of assuming pending
+messages equal upstream `messages`.
+
+Synthetic official-release captures exercise the prepared chat body and
+request metadata. The web-search fixture instead reaches the Anthropic
+Messages route and is kept separate; that adaptation is not implemented here.
+Several malformed requests receive the proxy's generic HTTP 502 without an
+upstream request. The frozen HTTP dispatcher deliberately hides the detailed
+translation error; no exact translator diagnostic is claimed from that body.
+The synthetic child's later hook-trust error also occurs on successful
+captures and is a separate harness limit. Isolated native tests verify
+source-derived errors. Credential/config setup, conversation lookup/storage,
+provider transport and CLI dispatch remain unfinished. Evidence:
+`docs/evidence/provider-request-tests.txt`,
+`docs/evidence/provider-request-link.txt` and
+`tests/fixtures/provider-requests/README.md`.
 
 Native policy loading and directory resolution now match tested release paths,
 schema errors and fallback behavior, including 712 wrapped corpus inputs.

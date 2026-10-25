@@ -325,6 +325,45 @@ but Super exits before producing SSE with its hook-trust preflight channel
 error. These are explicit observation gaps. Native unit failure behavior for
 these shapes is not a parity PASS, and no expected response is fabricated.
 
+Native DeepSeek request preparation now composes Responses input/history
+translation, adjacency/thinking rules, function/custom/MCP/namespace tools,
+strict schema normalization, request parameters and metadata. The active
+runtime computes pending messages/metadata before a simple-request conformance
+pass can replace only the upstream body. The implementation and tests retain
+that distinction, including raw `messages` precedence and the native body's
+`text.format`/`stream_options` omissions. Passed history is an explicit input;
+the live conversation store and lookup remain unfinished.
+
+The user now requires GPT-6.1 Sol at MAX effort for primary implementation
+and GPT-6 Luna at MAX effort for parallel implementation. This is recorded in
+`AGENTS.md`. An explicitly configured Sol MAX lead implemented combo-model
+handling, staged metadata limits and shared tool normalization; two explicitly
+configured Luna MAX workers wrote preparation fixes and the capture/test
+harness. Root integrated their disjoint files and ran the combined build.
+The workers performed code changes, builds and tests, including MCP config
+selection, strict tool handling, call-ID preservation and request preparation.
+
+The new request modules remain outside CLI dispatch. Next work is native
+provider transport/request routing, including the separately observed Anthropic
+web-search route, credential/config handling, persistent conversation lookup
+and cancellation/backpressure. The original full parity goal remains active;
+the incomplete inventory and all six release targets are unchanged. See
+`docs/evidence/provider-request-tests.txt`,
+`docs/evidence/provider-request-link.txt` and
+`tests/fixtures/provider-requests/README.md` for this component's evidence and
+its local HTTP rejections with hidden detailed diagnostics. The synthetic
+child's later hook-trust failure also occurs after successful responses and
+does not explain the generic HTTP 502 by itself.
+
+Request checkpoint validation: `rtk make build unit` exits 0 with 30 native
+programs PASS. The final parse-context change also has a rebuilt native
+integration test PASS. All 43 focused provider Python methods pass without
+skips, including a real clean-filesystem/network request-driver test.
+The fresh 27-case request capture contains 20 exact prepared-chat-body byte
+matches, six generic local HTTP rejections with hidden detailed diagnostics,
+and one separate Anthropic web-search route observation. The latter route
+and incomplete outer Super process are not provider-command parity.
+
 The parser now preserves the frozen independent limits: 80 active
 array/inline-table levels and 80 segments per local key path. Forty-five
 additional policy comparisons cover exact boundaries, large keys/strings,

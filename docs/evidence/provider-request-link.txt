@@ -1,0 +1,99 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+Build flags: -O3 --target-cpu=x86-64-v3 -I src
+Scope: standalone native DeepSeek request preparation; not CLI/provider-command parity.
+
+Command: readelf -d build/tests/provider_request_driver
+
+Dynamic section at offset 0x6bd08 contains 29 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+ 0x000000000000000c (INIT)               0x1000
+ 0x000000000000000d (FINI)               0x58610
+ 0x0000000000000019 (INIT_ARRAY)         0x6ccf8
+ 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)
+ 0x000000000000001a (FINI_ARRAY)         0x6cd00
+ 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)
+ 0x000000006ffffef5 (GNU_HASH)           0x3a0
+ 0x0000000000000005 (STRTAB)             0x650
+ 0x0000000000000006 (SYMTAB)             0x3c8
+ 0x000000000000000a (STRSZ)              711 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000015 (DEBUG)              0x0
+ 0x0000000000000003 (PLTGOT)             0x6cf18
+ 0x0000000000000002 (PLTRELSZ)           504 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0xa50
+ 0x0000000000000007 (RELA)               0x990
+ 0x0000000000000008 (RELASZ)             192 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000000000001e (FLAGS)              BIND_NOW
+ 0x000000006ffffffb (FLAGS_1)            Flags: NOW PIE
+ 0x000000006ffffffe (VERNEED)            0x950
+ 0x000000006fffffff (VERNEEDNUM)         1
+ 0x000000006ffffff0 (VERSYM)             0x918
+ 0x000000006ffffff9 (RELACOUNT)          3
+ 0x0000000000000000 (NULL)               0x0
+
+Command: ldd build/tests/provider_request_driver
+	linux-vdso.so.1 (0x000073608d3c5000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x000073608d201000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000073608ce00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000073608d0f7000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x000073608ca00000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x000073608d0e7000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x000073608be00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000073608d0b9000)
+	/lib64/ld-linux-x86-64.so.2 (0x000073608d3c7000)
+
+Commands: sha256sum build/modex build/tests/provider_request_driver; import inventory
+82a3ca2f5a291d7f8f1eee4d92720eb2b2f32547d73e6b20046cc1039c449a9e  build/modex
+d6513d69465eb31fa86e66d025dedae52289098bc85daf5e6bd3f9968631fb49  build/tests/provider_request_driver
+src/modex/provider_request_tools.mojo:3:from std.collections import List
+src/modex/provider_request_tools.mojo:4:from .json import JSON_ARRAY, JSON_BOOL, JSON_NULL, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_request_tools.mojo:5:from .text import trim_text
+src/modex/provider_request_tools.mojo:6:from .json_float import json_float
+src/modex/provider_request_messages.mojo:3:from std.collections import List
+src/modex/provider_request_messages.mojo:5:from .json import JSON_ARRAY, JSON_NULL, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_request_messages.mojo:6:from .text import trim_text
+src/modex/provider_request.mojo:3:from std.collections import List
+src/modex/provider_request.mojo:5:from .json import JSON_BOOL, JsonDocument, quote_json, serialize_json
+src/modex/provider_request.mojo:6:from .provider_request_messages import ensure_json_instruction, request_messages
+src/modex/provider_request.mojo:7:from .provider_request_params import fields_object, optional_request_fields, request_format, request_metadata, request_reasoning, reasoning_fields, thinking_enabled, validate_request_shape
+src/modex/provider_request.mojo:8:from .provider_request_prepare import prepare_request_body
+src/modex/provider_request.mojo:9:from .provider_request_tools import request_tool_fields
+src/modex/provider_request.mojo:10:from .text import trim_text
+src/modex/provider_request_prepare.mojo:3:from std.collections import List
+src/modex/provider_request_prepare.mojo:5:from .json import JSON_ARRAY, JSON_BOOL, JSON_NULL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_request_prepare.mojo:6:from .text import trim_text
+src/modex/provider_request_params.mojo:3:from std.collections import List
+src/modex/provider_request_params.mojo:5:from .json import JSON_ARRAY, JSON_BOOL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json, serialize_number
+src/modex/provider_request_params.mojo:6:from .text import trim_text
+
+All new request modules import only official std.collections and existing local
+JSON/text/float modules. There is no pointer API, native ABI/binding, linked
+application library, Python interop, executable helper, runtime download or
+production/build-time generator. The frozen Prodex snapshot is read-only test
+reference data outside the product graph; no production source calls Prodex.
+The test-only driver loads input JSONL from stdin and emits result/error JSONL.
+Production builds do not depend on that driver or on Python tests/fixtures.
+
+The product binary hash is unchanged: request preparation remains outside
+CLI dispatch. Its existing dynamic library audit is in provider-sse-link.txt.
+Official Mojo support libraries plus platform C/C++ runtime libraries remain
+the only resolved runtime prerequisites; no application library was added.
+The absolute toolchain RUNPATH remains an unresolved distribution gap.
+
+Synthetic oracle captures isolate HOME, config/state, environment, temporary
+directories and loopback ports. Host network access remains available during
+capture; it is not evidence of a clean runtime. Native clean-runtime checks
+must run the actual driver in a disposable bubblewrap namespace with only
+its executable, platform/official Mojo libraries and synthetic files mounted.
+No provider account, real credential or paid provider traffic is used.
+
+Request route selection/Anthropic web-search adaptation, credential/config
+handling, persistent conversation lookup/storage, HTTP/TLS/proxies, transport
+backpressure/cancellation and CLI dispatch remain unfinished. No production
+provider readiness, whole-contract parity or non-host support is claimed.

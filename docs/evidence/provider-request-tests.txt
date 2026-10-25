@@ -1,0 +1,294 @@
+Compiler: Mojo 1.2.0 (2016d0cd)
+Host: x86_64-unknown-linux-gnu
+Frozen baseline: Prodex 0.439.0 at 433aad44bb249d5c25a231a6b06c2fa522a39a1f
+Oracle SHA256: 2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a
+Scope: native request preparation component, not connected CLI/provider parity.
+
+Execution:
+- GPT-6.1 Sol configured explicitly with reasoning_effort=max implemented the
+  primary request orchestrator/params, model combo head handling, staged
+  metadata bounds, shared strict tool normalization/dedup and parse context.
+- GPT-6 Luna configured explicitly with reasoning_effort=max implemented
+  simple-request preparation fixes and capture/replay/isolation tests in
+  parallel, with disjoint file ownership. Workers wrote code, built and ran
+  focused tests; root inspected/integrated the actual files and verified them.
+- The current host turn does not expose a model-setting mutation API. The
+  requested Sol MAX lead and Luna MAX workers were launched through explicit
+  model/effort tool arguments; no host-setting change is claimed.
+- The model/effort and implementation-worker preference is in AGENTS.md.
+
+Frozen source trace:
+crates/prodex-app/src/runtime_launch/proxy_startup/chat_compatible_request.rs
+  owns runtime validation order, pending messages, tool/parameter mapping and
+  request-side response metadata before dispatch.
+local_rewrite_deepseek_send.rs: runtime_deepseek_prepare_model_request replaces
+  ONLY the upstream body when simple-request admission and native provider-core
+  conformance succeed; pending messages and request metadata remain intact.
+deepseek_rewrite/input_items.rs and provider-core deepseek_bridge/request_messages.rs,
+  input_items.rs, input_items/history.rs and messages/mojo.rs own message/history
+  conversion, adjacency, thinking normalization, content/ID/type validation.
+provider-core deepseek_bridge/request_params/*, request_tools/* and
+  translators/deepseek/request_transform.rs own parameter/tool normalization.
+mojo/prodex_core/deepseek.mojo, deepseek_message_*.mojo, chat_tools.mojo,
+  chat_tool_shapes.mojo and deepseek_function_tools.mojo provide the frozen
+  policies and exact typed/presence/precedence rules.
+local_rewrite_pipeline_dispatch.rs deliberately renders translation failures
+  as HTTP 502 with generic `upstream request failed` body. The native helper
+  models the outer parse context but not Serde cause/line-column chains.
+
+Implementation uses existing native JsonDocument/serialization/text/float code
+and official collections only; no helper executable, Python production path,
+new native binding or application dependency. Python stdlib is test-only.
+History is an explicit input array here; live conversation lookup/persistence
+is not implemented. Provider routing to Anthropic, auth/config, HTTP/TLS/proxies,
+transport backpressure/cancellation, first-event recovery and CLI dispatch
+remain unfinished. Clean-runtime and component evidence do not make the
+incomplete provider or transport contract PASS.
+
+Validation:
+rtk make build unit -> exit 0; 30 native programs PASS, all test drivers built.
+The final source parse-context fix was then rebuilt and its native integration
+program rerun: PASS. No new full Python suite run is claimed here.
+The preceding full project run (194 Python methods) is recorded separately in
+provider-chat-stream-tests.txt. Final focused request/provider output follows.
+
+Parity counting unchanged: 0/60 complete coarse contracts and 1/360 platform
+obligations PASS. The inventory is incomplete; no parity percentage is valid.
+All six baseline release targets remain in scope, including unsupported or
+unverified targets and behavior. See handoff.md and known-gaps.md.
+
+Final validation and observations:
+Command: python3 tests/capture_provider_requests.py
+Exit: 0; 27 catalog cases. Twenty actual DeepSeek chat requests match native
+prepared-body bytes exactly. Six other requests receive the frozen proxy's
+HTTP 502 `upstream request failed` with no provider dispatch; detailed errors
+are hidden. One web-search case reaches the separate Anthropic route and is
+not scored as a native chat translation match. Outer Super exit 1 reflects
+the incomplete synthetic app-server client and also occurs on successful
+HTTP captures; it is not used to infer rejection causes or command parity.
+Strict MCP requests use synthetic config and a loopback beta_base_url.
+Capture isolates each case's HOME, config/state, cwd, TMPDIR, environment and
+loopback port; host networking remains available. No real credentials/account
+login or paid traffic are used.
+
+Expected upstream bytes are captured from the pinned release, not generated
+by Modex. Request-side response_metadata expectations are traced separately
+from the synthetic completion's finish_reason; replay also verifies their
+observed merge in the final release response. Pending runtime messages are
+source-tested, not inferred from the prepared body. The tests extract the raw
+body object from the native driver's fixed JSON envelope and compare exact
+bytes, avoiding Python's loose equality between booleans and integers.
+
+The additional MCP/namespace capture cases were authored by the Luna MAX
+worker; root finalized the requested clean-runtime and exact-wire assertions,
+corrected the rejection evidence classification and reran the catalog/replay.
+The worker's extra fixture pass was interrupted for bounded final integration;
+its code and earlier proven build/test work were retained, not reset.
+
+Command: python3 -m unittest discover -s tests -p 'test_provider*.py' -v
+Exit: 0; 43 methods PASS, no skips (8 new request methods plus 35 existing).
+Includes 20 exact chat-body comparisons, metadata, rejection boundaries,
+route classification, bytewise/seeded response replay, and both environment
+isolation and genuine bubblewrap native runtime checks. The request runtime
+namespace contains only the driver, platform/official Mojo libraries and
+synthetic files; no Python, Node, Rust or Prodex executable is mounted.
+Other release targets, full HTTP behavior and CLI integration remain unverified.
+
+Command: git diff --check
+Exit: 0 after final evidence formatting.
+
+Combined build/unit output (RTK abbreviates the native Make stdout tail):
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
+        var output = String()
+                           ^
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+    append_bytes(path, utf8^)
+                           ^
+
+/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+    append_bytes(path, utf8^)
+                           ^
+
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
+    var missing = False
+                  ^
+mkdir -p build
+mojo build -O3 --target-cpu=x86-64-v3 -I src src/main.mojo -o build/modex
+mkdir -p build/tests
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_sse_wire.mojo -o build/tests/test_provider_sse_wire
+build/tests/test_provider_sse_wire
+Provider SSE wire checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_sse_json.mojo -o build/tests/test_provider_sse_json
+build/tests/test_provider_sse_json
+Provider SSE JSON assembler checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_sse_driver.mojo -o build/tests/provider_sse_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_chunk.mojo -o build/tests/test_provider_chat_chunk
+build/tests/test_provider_chat_chunk
+Provider chat chunk checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_chat_chunk_driver.mojo -o build/tests/provider_chat_chunk_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_sse_events.mojo -o build/tests/test_provider_sse_events
+build/tests/test_provider_sse_events
+Provider SSE event checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_usage.mojo -o build/tests/test_provider_chat_usage
+build/tests/test_provider_chat_usage
+Provider chat usage checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_tools.mojo -o build/tests/test_provider_chat_tools
+build/tests/test_provider_chat_tools
+Provider chat tools checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_uuid7.mojo -o build/tests/test_uuid7
+build/tests/test_uuid7
+UUIDv7 checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_items.mojo -o build/tests/test_provider_chat_items
+build/tests/test_provider_chat_items
+Provider chat item checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_rtk_command.mojo -o build/tests/test_rtk_command
+build/tests/test_rtk_command
+RTK command checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_metadata.mojo -o build/tests/test_provider_chat_metadata
+build/tests/test_provider_chat_metadata
+Provider chat metadata checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_stream.mojo -o build/tests/test_provider_chat_stream
+build/tests/test_provider_chat_stream
+Provider chat stream checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_chat_stream_driver.mojo -o build/tests/provider_chat_stream_driver
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_request_messages.mojo -o build/tests/test_provider_request_messages
+build/tests/test_provider_request_messages
+Provider request message checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_request_prepare.mojo -o build/tests/test_provider_request_prepare
+build/tests/test_provider_request_prepare
+Provider request preparation checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_request_tools.mojo -o build/tests/test_provider_request_tools
+build/tests/test_provider_request_tools
+Provider request tool checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_request_params.mojo -o build/tests/test_provider_request_params
+build/tests/test_provider_request_params
+... (62 lines truncated)
+[+62 hidden: rtk recall 1f6222af3037]
+
+Final focused provider output:
+test_absent_and_wrong_type_choices (test_provider_chat_chunk.ProviderChatChunkTests.test_absent_and_wrong_type_choices) ... ok
+test_embedded_error_presence_and_fallback_precedence (test_provider_chat_chunk.ProviderChatChunkTests.test_embedded_error_presence_and_fallback_precedence) ... ok
+test_first_array_element_and_unknown_choice_fields (test_provider_chat_chunk.ProviderChatChunkTests.test_first_array_element_and_unknown_choice_fields) ... ok
+test_numeric_error_code_boundaries_and_number_spellings (test_provider_chat_chunk.ProviderChatChunkTests.test_numeric_error_code_boundaries_and_number_spellings) ... ok
+test_selected_nonobject_choices_and_malformed_json_fail_explicitly (test_provider_chat_chunk.ProviderChatChunkTests.test_selected_nonobject_choices_and_malformed_json_fail_explicitly) ... ok
+test_typed_delta_defaults_and_empty_string_rules (test_provider_chat_chunk.ProviderChatChunkTests.test_typed_delta_defaults_and_empty_string_rules) ... ok
+test_chat_decoder_with_only_its_native_runtime_dependencies (test_provider_chat_sse.ProviderChatSSETests.test_chat_decoder_with_only_its_native_runtime_dependencies) ... ok
+test_fragmented_sse_values_reach_native_chat_decoder (test_provider_chat_sse.ProviderChatSSETests.test_fragmented_sse_values_reach_native_chat_decoder) ... ok
+test_all_captured_streams_match_byte_for_byte (test_provider_chat_stream.ProviderChatStreamOracleTests.test_all_captured_streams_match_byte_for_byte) ... ok
+test_chunk_replay_is_stable_bytewise_and_at_seeded_boundaries (test_provider_chat_stream.ProviderChatStreamOracleTests.test_chunk_replay_is_stable_bytewise_and_at_seeded_boundaries) ... ok
+test_clean_runtime_uuid7_and_malformed_utf8 (test_provider_chat_stream.ProviderChatStreamOracleTests.test_clean_runtime_uuid7_and_malformed_utf8) ... ok
+test_frozen_oracle_identity (test_provider_chat_stream.ProviderChatStreamOracleTests.test_frozen_oracle_identity) ... ok
+test_frozen_oracle_transport_failures_remain_visible (test_provider_chat_stream.ProviderChatStreamOracleTests.test_frozen_oracle_transport_failures_remain_visible) ... ok
+test_missing_call_id_is_proven_uuid7_nondeterminism (test_provider_chat_stream.ProviderChatStreamOracleTests.test_missing_call_id_is_proven_uuid7_nondeterminism) ... ok
+test_oracle_preserves_tool_search_json_argument_shapes (test_provider_chat_stream.ProviderChatStreamOracleTests.test_oracle_preserves_tool_search_json_argument_shapes) ... ok
+test_uuid7_comparison_only_ignores_one_valid_fallback_value (test_provider_chat_stream.ProviderChatStreamOracleTests.test_uuid7_comparison_only_ignores_one_valid_fallback_value) ... ok
+test_captured_request_bodies (test_provider_requests.ProviderRequestTests.test_captured_request_bodies) ... ok
+test_catalog_cases_are_observed_or_explicit_gaps (test_provider_requests.ProviderRequestTests.test_catalog_cases_are_observed_or_explicit_gaps) ... ok
+test_clean_runtime_with_only_native_binary_and_official_libraries (test_provider_requests.ProviderRequestTests.test_clean_runtime_with_only_native_binary_and_official_libraries) ... ok
+test_isolated_environment_repeats_without_user_configuration (test_provider_requests.ProviderRequestTests.test_isolated_environment_repeats_without_user_configuration) ... ok
+test_native_rejections_cover_trust_boundaries (test_provider_requests.ProviderRequestTests.test_native_rejections_cover_trust_boundaries) ... ok
+test_other_provider_routes_are_recorded_separately (test_provider_requests.ProviderRequestTests.test_other_provider_routes_are_recorded_separately) ... ok
+test_recorded_local_rejections_keep_hidden_diagnostics_explicit (test_provider_requests.ProviderRequestTests.test_recorded_local_rejections_keep_hidden_diagnostics_explicit) ... ok
+test_request_metadata_stays_separate_from_completion_metadata (test_provider_requests.ProviderRequestTests.test_request_metadata_stays_separate_from_completion_metadata) ... ok
+test_accumulation_joins_without_newline_and_flushes_on_done (test_provider_sse.ProviderSSETests.test_accumulation_joins_without_newline_and_flushes_on_done) ... ok
+test_bom_is_preserved_and_invalid_utf8_fails (test_provider_sse.ProviderSSETests.test_bom_is_preserved_and_invalid_utf8_fails) ... ok
+test_completed_frames_survive_a_later_parse_error (test_provider_sse.ProviderSSETests.test_completed_frames_survive_a_later_parse_error) ... ok
+test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over (test_provider_sse.ProviderSSETests.test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over) ... ok
+test_done_any_data_line_flushes_and_repeated_done_is_idempotent (test_provider_sse.ProviderSSETests.test_done_any_data_line_flushes_and_repeated_done_is_idempotent) ... ok
+test_done_stops_before_malformed_or_oversized_trailing_input (test_provider_sse.ProviderSSETests.test_done_stops_before_malformed_or_oversized_trailing_input) ... ok
+test_empty_frames_and_eof_partial_line (test_provider_sse.ProviderSSETests.test_empty_frames_and_eof_partial_line) ... ok
+test_eof_carriage_return_preserves_completed_frame (test_provider_sse.ProviderSSETests.test_eof_carriage_return_preserves_completed_frame) ... ok
+test_event_limit_includes_separator_bytes (test_provider_sse.ProviderSSETests.test_event_limit_includes_separator_bytes) ... ok
+test_every_byte_cut_matches_single_chunk (test_provider_sse.ProviderSSETests.test_every_byte_cut_matches_single_chunk) ... ok
+test_exact_and_exceeded_accumulation_limit (test_provider_sse.ProviderSSETests.test_exact_and_exceeded_accumulation_limit) ... ok
+test_invalid_utf8_precedes_line_size_error (test_provider_sse.ProviderSSETests.test_invalid_utf8_precedes_line_size_error) ... ok
+test_joined_then_separate_json_values (test_provider_sse.ProviderSSETests.test_joined_then_separate_json_values) ... ok
+test_line_limit_exact_and_one_over (test_provider_sse.ProviderSSETests.test_line_limit_exact_and_one_over) ... ok
+test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed (test_provider_sse.ProviderSSETests.test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed) ... ok
+test_nul_and_bom_are_not_silently_normalized (test_provider_sse.ProviderSSETests.test_nul_and_bom_are_not_silently_normalized) ... ok
+test_seeded_chunk_schedules_match_single_chunk (test_provider_sse.ProviderSSETests.test_seeded_chunk_schedules_match_single_chunk) ... ok
+test_wire_delimiters_data_field_and_ignored_fields (test_provider_sse.ProviderSSETests.test_wire_delimiters_data_field_and_ignored_fields) ... ok
+test_json_runtime_fragmentation_done_and_invalid_utf8 (test_provider_sse_runtime.ProviderSSERuntimeTests.test_json_runtime_fragmentation_done_and_invalid_utf8) ... ok
+
+----------------------------------------------------------------------
+Ran 43 tests in 2.160s
+
+OK
+
+Fresh official-release request capture output:
+defaults: HTTP request captured (97 bytes)
+reasoning: HTTP request captured (113 bytes)
+reasoning_high_effort: HTTP request captured (186 bytes)
+reasoning_medium_effort: HTTP request captured (169 bytes)
+json_object: HTTP request captured (134 bytes)
+json_schema: HTTP request captured (145 bytes)
+text_format_json_schema: HTTP request captured (104 bytes)
+metadata: HTTP request captured (136 bytes)
+metadata_reserved_key: HTTP request captured (90 bytes)
+numeric_defaults: observed local adapter rejected request before provider dispatch; detailed translator diagnostic unavailable (HTTP 502)
+numeric_bounds: HTTP request captured (133 bytes)
+message_history: HTTP request captured (207 bytes)
+tools: HTTP request captured (331 bytes)
+mcp_configs_selection: HTTP request captured (265 bytes)
+mcp_allowed_tools_strict: HTTP request captured (304 bytes)
+mcp_function_schema: HTTP request captured (173 bytes)
+mcp_toolset_multi_emission: HTTP request captured (322 bytes)
+namespace_trimmed_choice: HTTP request captured (223 bytes)
+custom_tool: HTTP request captured (549 bytes)
+web_search: HTTP request captured (202 bytes)
+model_alias: HTTP request captured (90 bytes)
+invalid_model: HTTP request captured (99 bytes)
+input_null: observed local adapter rejected request before provider dispatch; detailed translator diagnostic unavailable (HTTP 502)
+input_number: observed local adapter rejected request before provider dispatch; detailed translator diagnostic unavailable (HTTP 502)
+input_boolean: observed local adapter rejected request before provider dispatch; detailed translator diagnostic unavailable (HTTP 502)
+input_array: observed local adapter rejected request before provider dispatch; detailed translator diagnostic unavailable (HTTP 502)
+input_items: observed local adapter rejected request before provider dispatch; detailed translator diagnostic unavailable (HTTP 502)

@@ -1,11 +1,11 @@
 """Run the bounded Codex app-server hook-trust preflight over stdio pipes."""
 
-from std.collections import List, Span
-from std.io import FileHandle, RawFileDescriptor
-from std.net._sys.unix import F_GETFL, F_SETFL, O_NONBLOCK
+from std.collections import Array, List, Span
+from std.io import RawFileDescriptor
+from std.net._sys.unix import AF_UNIX, F_GETFL, F_SETFL, MSG_NOSIGNAL, O_NONBLOCK, SOCK_STREAM, send, socketpair
 from std.os.process import Pipe, Process
 from std.pathlib import cwd
-from std.sys._libc import fcntl
+from std.sys._libc import close, fcntl, FcntlCommands, FcntlFDFlags
 from std.sys._libc_errno import ErrNo, get_errno
 from std.time import perf_counter, sleep
 
@@ -14,6 +14,38 @@ from .process_spawn import spawn_with_env_stdio
 from .super_hooks import HOOK_TRUST_MAX_RPC_LINE_BYTES, HOOK_TRUST_RPC_TIMEOUT_MS, HookTrustSession
 
 comptime IO_CHUNK_BYTES = 8192
+
+
+struct _RpcInput:
+    var child_fd: Int32
+    var fd: Int32
+
+    def __init__(out self) raises:
+        self.child_fd = -1
+        self.fd = -1
+        var descriptors = Array[Int32, 2](fill=-1)
+        if socketpair(AF_UNIX, SOCK_STREAM, 0, Pointer(to=descriptors)) != 0:
+            raise Error("Codex hook-trust preflight could not create request socket")
+        self.child_fd = descriptors[0]
+        self.fd = descriptors[1]
+        for descriptor in descriptors:
+            if fcntl(descriptor, FcntlCommands.F_SETFD, FcntlFDFlags.FD_CLOEXEC) < 0:
+                self.close()
+                raise Error("Codex hook-trust preflight could not protect request socket")
+
+    def close_child(mut self):
+        if self.child_fd >= 0:
+            _ = close(self.child_fd)
+            self.child_fd = -1
+
+    def close(mut self):
+        self.close_child()
+        if self.fd >= 0:
+            _ = close(self.fd)
+            self.fd = -1
+
+    def __deinit__(deinit self):
+        self.close()
 
 
 struct _RpcReader:
@@ -82,29 +114,20 @@ def _write_request(fd: Int32, request: String, deadline: Float64, method: String
         raise Error("Codex hook-trust preflight request exceeds its supported size")
     var bytes = request.as_bytes()
     var offset = 0
-    var output = FileHandle()
-    # Borrow the pipe descriptor and detach it before FileHandle destruction.
-    output.handle = Int(fd)
-    try:
-        while offset < len(bytes):
-            if perf_counter() >= deadline:
-                raise Error("Codex hook-trust preflight " + method + " failed: timed out waiting on channel")
-            var written: Int
-            try:
-                written = output.write_once(bytes[offset:min(len(bytes), offset + IO_CHUNK_BYTES)])
-            except:
-                var error = get_errno()
-                if error != ErrNo.EAGAIN and error != ErrNo.EINTR:
-                    raise Error("Codex hook-trust preflight " + method + " failed: request write failed")
-                sleep(0.001)
-                continue
-            if written == 0:
-                raise Error("Codex hook-trust preflight " + method + " failed: request pipe is closed")
-            offset += written
-    except:
-        output.handle = -1
-        raise
-    output.handle = -1
+    while offset < len(bytes):
+        if perf_counter() >= deadline:
+            raise Error("Codex hook-trust preflight " + method + " failed: timed out waiting on channel")
+        # A closed peer must become an error without changing process-wide SIGPIPE policy.
+        var written = send(fd, bytes.unsafe_ptr().unsafe_offset(offset), UInt(min(len(bytes) - offset, IO_CHUNK_BYTES)), MSG_NOSIGNAL)
+        if written < 0:
+            var error = get_errno()
+            if error != ErrNo.EAGAIN and error != ErrNo.EINTR:
+                raise Error("Codex hook-trust preflight " + method + " failed: request write failed")
+            sleep(0.001)
+            continue
+        if written == 0:
+            raise Error("Codex hook-trust preflight " + method + " failed: request pipe is closed")
+        offset += Int(written)
 
 
 def _stop_child(mut child: Process) raises:
@@ -125,13 +148,13 @@ def _spawn_app_server(binary: String, args: List[String], environment: List[Stri
         raise Error("failed to start Codex hook-trust preflight with " + binary + ": " + String(error))
 
 
-def _run_session(mut session: HookTrustSession, input: Pipe, output: Pipe) raises:
+def _run_session(mut session: HookTrustSession, input: _RpcInput, output: Pipe) raises:
     var reader = _RpcReader()
     var output_fd = output.fd_in.value().value
     while not session.done:
         var method = session.method()
         var deadline = perf_counter() + Float64(HOOK_TRUST_RPC_TIMEOUT_MS) / 1000.0
-        _write_request(input.fd_out.value().value, session.request() + "\n", deadline, method)
+        _write_request(input.fd, session.request() + "\n", deadline, method)
         while True:
             var line = reader.next_line(output_fd, deadline, method)
             if session.accept(line):
@@ -146,7 +169,7 @@ def run_super_hook_trust_preflight(binary: String, workspace: String, runtime_ar
     """
     if not workspace.startswith("/") or String(cwd()) != workspace:
         raise Error("Codex hook-trust preflight workspace must match current working directory")
-    var input = Pipe()
+    var input = _RpcInput()
     var output = Pipe()
     var args = project_app_server_config_args(runtime_args, True)
     args.append("app-server")
@@ -155,13 +178,13 @@ def run_super_hook_trust_preflight(binary: String, workspace: String, runtime_ar
         binary,
         args,
         environment,
-        input.fd_in.value().value,
+        input.child_fd,
         output.fd_out.value().value,
     )
-    input.set_output_only()
+    input.close_child()
     output.set_input_only()
     try:
-        _set_nonblocking(input.fd_out.value().value)
+        _set_nonblocking(input.fd)
         _set_nonblocking(output.fd_in.value().value)
         var session = HookTrustSession(workspace)
         _run_session(session, input, output)

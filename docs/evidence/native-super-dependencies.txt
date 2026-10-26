@@ -1,0 +1,132 @@
+$ mojo --version
+Mojo 1.2.0 (2016d0cd)
+exit=0
+
+$ file build/modex
+build/modex: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=cea89914adc68789930c15881cdf716485903b87, for GNU/Linux 3.2.0, not stripped
+exit=0
+
+$ readelf -d build/modex
+
+Dynamic section at offset 0x1f9bb0 contains 29 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+ 0x000000000000000c (INIT)               0x2000
+ 0x000000000000000d (FINI)               0x1b4964
+ 0x0000000000000019 (INIT_ARRAY)         0x1faba0
+ 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)
+ 0x000000000000001a (FINI_ARRAY)         0x1faba8
+ 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)
+ 0x000000006ffffef5 (GNU_HASH)           0x3a0
+ 0x0000000000000005 (STRTAB)             0xa58
+ 0x0000000000000006 (SYMTAB)             0x3c8
+ 0x000000000000000a (STRSZ)              1092 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000015 (DEBUG)              0x0
+ 0x0000000000000003 (PLTGOT)             0x1fadc0
+ 0x0000000000000002 (PLTRELSZ)           1536 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0x1058
+ 0x0000000000000007 (RELA)               0xf98
+ 0x0000000000000008 (RELASZ)             192 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000000000001e (FLAGS)              BIND_NOW
+ 0x000000006ffffffb (FLAGS_1)            Flags: NOW PIE
+ 0x000000006ffffffe (VERNEED)            0xf28
+ 0x000000006fffffff (VERNEEDNUM)         1
+ 0x000000006ffffff0 (VERSYM)             0xe9c
+ 0x000000006ffffff9 (RELACOUNT)          3
+ 0x0000000000000000 (NULL)               0x0
+exit=0
+
+$ ldd build/modex
+	linux-vdso.so.1 (0x00007d556e298000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007d556df46000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007d556dc00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007d556de3c000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007d556d800000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007d556de2c000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007d556cc00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007d556dbd2000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007d556e29a000)
+exit=0
+
+$ nm -D --undefined-only build/modex
+                 U KGEN_CompilerRT_AlignedAlloc
+                 U KGEN_CompilerRT_AlignedFree
+                 U KGEN_CompilerRT_AsyncRT_GetCurrentCPUDevice
+                 U KGEN_CompilerRT_AsyncRT_GetOrCreateCPUDevice
+                 U KGEN_CompilerRT_AsyncRT_ReleaseCPUDevice
+                 U KGEN_CompilerRT_DestroyGlobals
+                 U KGEN_CompilerRT_GetArgV
+                 U KGEN_CompilerRT_GetOrCreateGlobal
+                 U KGEN_CompilerRT_GetStackTrace
+                 U KGEN_CompilerRT_PrintStackTraceOnFault
+                 U KGEN_CompilerRT_SetArgV
+                 U KGEN_CompilerRT_fprintf
+                 w _ITM_deregisterTMCloneTable
+                 w _ITM_registerTMCloneTable
+                 w __cxa_finalize@GLIBC_2.2.5
+                 U __errno_location@GLIBC_2.2.5
+                 w __gmon_start__
+                 U __libc_start_main@GLIBC_2.34
+                 U __lxstat@GLIBC_2.2.5
+                 U __xstat@GLIBC_2.2.5
+                 U accept@GLIBC_2.2.5
+                 U bind@GLIBC_2.2.5
+                 U clock_gettime@GLIBC_2.17
+                 U close@GLIBC_2.2.5
+                 U closedir@GLIBC_2.2.5
+                 U connect@GLIBC_2.2.5
+                 U dlsym@GLIBC_2.34
+                 U dup@GLIBC_2.2.5
+                 U dup2@GLIBC_2.2.5
+                 U exit@GLIBC_2.2.5
+                 U fclose@GLIBC_2.2.5
+                 U fcntl@GLIBC_2.2.5
+                 U fdopen@GLIBC_2.2.5
+                 U fflush@GLIBC_2.2.5
+                 U getcwd@GLIBC_2.2.5
+                 U getenv@GLIBC_2.2.5
+                 U getpeername@GLIBC_2.2.5
+                 U getpwuid@GLIBC_2.2.5
+                 U getsockname@GLIBC_2.2.5
+                 U getsockopt@GLIBC_2.2.5
+                 U getuid@GLIBC_2.2.5
+                 U isatty@GLIBC_2.2.5
+                 U kill@GLIBC_2.2.5
+                 U listen@GLIBC_2.2.5
+                 U lseek@GLIBC_2.2.5
+                 U memcpy@GLIBC_2.14
+                 U memmove@GLIBC_2.2.5
+                 U memset@GLIBC_2.2.5
+                 U mkdir@GLIBC_2.2.5
+                 U nanosleep@GLIBC_2.2.5
+                 U open@GLIBC_2.2.5
+                 U opendir@GLIBC_2.2.5
+                 U pipe@GLIBC_2.2.5
+                 U posix_spawnp@GLIBC_2.15
+                 U read@GLIBC_2.2.5
+                 U readdir@GLIBC_2.2.5
+                 U realpath@GLIBC_2.3
+                 U recv@GLIBC_2.2.5
+                 U rmdir@GLIBC_2.2.5
+                 U send@GLIBC_2.2.5
+                 U setsockopt@GLIBC_2.2.5
+                 U socket@GLIBC_2.2.5
+                 U socketpair@GLIBC_2.2.5
+                 U strerror@GLIBC_2.2.5
+                 U strlen@GLIBC_2.2.5
+                 U symlink@GLIBC_2.2.5
+                 U unlink@GLIBC_2.2.5
+                 U waitpid@GLIBC_2.2.5
+                 U write@GLIBC_2.2.5
+exit=0
+
+Product Mojo source files: 67
+Imports: [".app_server_args", ".app_server_rpc", ".cli", ".json", ".json_float", ".local_time", ".log_follow", ".log_follow_paths", ".log_operational", ".log_payload", ".log_payload_render", ".log_redaction", ".log_text", ".log_time", ".log_transcript", ".log_upstream_follow", ".logs", ".loopback_http", ".loopback_server", ".paths", ".process_spawn", ".provider_chat_buffered", ".provider_chat_chunk", ".provider_chat_items", ".provider_chat_metadata", ".provider_chat_reader", ".provider_chat_stream", ".provider_chat_tools", ".provider_chat_usage", ".provider_conversations", ".provider_deepseek_transport", ".provider_passthrough", ".provider_rate_limits", ".provider_request", ".provider_request_messages", ".provider_request_params", ".provider_request_prepare", ".provider_request_tools", ".provider_sse_events", ".provider_sse_json", ".provider_sse_wire", ".rtk_command", ".runtime_local_rewrite", ".runtime_policy", ".session_time", ".sessions", ".super_hooks", ".super_launch", ".text", ".toml", ".unicode_properties", ".unicode_width", ".uuid7", ".xxhash", ".zstd", ".zstd_entropy", "modex.cli", "modex.gateway_cli", "modex.inspection_cli", "modex.log_cli", "modex.log_stream", "modex.log_upstream_follow", "modex.logs", "modex.root_help", "modex.sessions", "modex.super_cli", "modex.super_help", "modex.super_launch", "std.bit", "std.builtin.globals", "std.collections", "std.collections.string._grapheme_break", "std.ffi", "std.io", "std.math", "std.memory", "std.net._sys.inet", "std.net._sys.unix", "std.os", "std.os.path", "std.os.process", "std.pathlib", "std.sys", "std.sys._libc", "std.sys._libc_errno", "std.time", "std.time.time"]
+No product native declarations, Python interop, shell implementation helpers or generated source were found. Explicit native self-relay and Codex integration subprocesses are documented in docs/dependencies.json. Recovery policy remains unconnected.
+
+Native binary SHA256: 6d4e501cfdd15563dc1f561c4ab977b389fabf106476a07523767fdcd218aa06

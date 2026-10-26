@@ -1,5 +1,89 @@
 # Current work
 
+Target: Prodex 0.439.1 at `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`.
+The reference repository remains unchanged. Sixteen relevant snapshot files were
+compared byte-for-byte with pinned Git objects; the 0.439.0-to-0.439.1 delta
+is 463 files, 8,026 additions and 26,066 deletions. Worker-lane isolation,
+nonblocking bounded admission, separate compaction capacity, targeted affinity
+release, progress-aware recovery/backoff, tunnel-client 0.0.18 and Kiro CLI
+2.34.0 were source-traced. Evidence: `docs/evidence/native-super-reference.json`.
+
+The existing tracked and untracked work was preserved and backed up outside
+the repository in `/tmp/modex-parity-20261026-initial`. This checkpoint integrates
+its process capture, Super argv validation and Chat Completions relay work.
+
+The production CLI now admits a narrow native Super launch: DeepSeek with an
+explicit model/API key/numeric-loopback base URL, `--no-presidio`,
+`--no-sub-agent`, and a simple `exec` invocation. `PRODEX_CODEX_BIN` must be an
+absolute path; the shared Codex home must be empty and owned/private, and
+existing account/config state is rejected before children/network traffic.
+For example, with isolated private `PRODEX_HOME` and
+`PRODEX_SHARED_CODEX_HOME` and an explicitly selected Codex executable:
+
+```text
+modex super --provider deepseek --api-key <key> --base-url http://127.0.0.1:PORT/v1 --model deepseek-chat --no-presidio --no-sub-agent exec -- <prompt>
+```
+
+`super_launch.mojo` creates a private temporary overlay, links session/history
+storage, writes the native selected/bundled DeepSeek model catalog and default
+budgets, probes Codex, performs the native hook-trust handshake and starts the
+same native Modex executable as a supervised relay, launches Codex with an
+explicit environment and returns its exit status. Relay readiness is bounded;
+normal/error paths kill and reap the direct relay/app-server/client children.
+The idle relay exits on parent-channel EOF. Unknown Codex-created overlay
+files are retained with their location reported, preserving data until their
+storage lifecycle is implemented. Shared session targets survive cleanup.
+The native relay handles buffered/streamed Responses and binary/query-preserving
+Chat Completions passthrough; successful SSE uses bounded reads without an
+aggregate cap, while error/non-SSE responses remain bounded.
+
+The pre-existing closed-stdin probe is fixed: hook requests use the official
+stdlib socketpair/send(MSG_NOSIGNAL) wrappers. A living peer that closes stdin
+now produces an RPC error and is reaped; Modex does not die with SIGPIPE.
+Tests cover that exact race, legacy hook bypass, client exit 7, relay failure,
+parent-channel closure, state preservation and credential containment.
+
+Two implementation workers ran concurrently through the required official
+launcher with disjoint provider and recovery files. Its configuration had no
+model/effort override; both child banners reported `gpt-6.1-sol` and reasoning
+effort `none`, rather than the requested Luna/MAX. Worker A implemented native
+passthrough/auth/header/streaming checks. Worker B implemented native recovery
+policy and tests. The primary owns integration, combined testing, docs,
+review, commit and push. Worker stdout/stderr were captured separately under
+`/tmp/modex-worker-{a,b}-20261026.{stdout,stderr}`; raw logs stay outside the
+repository because they contain launcher/account metadata.
+
+`runtime_recovery.mojo` ports the immediate/5/10/20/40/60-second schedule,
+saturating counters/deadlines and owned persistent thread/goal policy. An
+accepted control RPC increments attempt accounting; it is not actual goal
+progress. Only a changed real-progress revision or root session resets retry
+state, and each new failure starts its own cooldown. Native tests and 407
+pinned Mojo wire-policy differential vectors exercise the policy. This module
+is still unconnected to the production event monitor, owned control transport,
+affinity release and recovery mutation dispatcher. There is no live recovery
+or bounded-worker-lane PASS.
+
+Focused production Super tests passed against synthetic external Codex/provider
+peers, including live differential observations of the verified 0.439.1 release.
+These replace the external integration targets, never Modex itself. The final
+combined `rtk proxy make test` exited 0: the pinned build/native unit phase and all
+321 Python methods passed in 518.690 seconds for Python discovery, with no
+skips. Output and raw-log digest: `docs/evidence/native-super-tests.txt`. The
+intermediate run had two `ldd` harness errors because the primary rebuilt the binary
+during filesystem-isolation tests; the final run used a fixed artifact.
+No passing claim relies on that failed run. No complete contract or new release
+platform obligation is marked PASS. All six release qualifications are BLOCKED.
+
+Next: reconcile locked existing state and private file modes, implement
+additional model/config options and Smart Context, preserve all Codex shared
+storage and frontend companion lifecycle, then replace the serial relay with isolated
+bounded lanes/nonblocking admission and connect owned recovery transport and
+real progress observations. TLS/DNS/WS, account rotation, process-tree signals,
+older host OS/CPU support and the other five targets remain gaps. The current
+clean-home launch is a development slice, not complete Super parity.
+
+# Previous checkpoint (historical)
+
 The active target is Prodex 0.439.1 at
 `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`. Its tag, Cargo version, release
 manifest, GitHub asset digests and Linux oracle checksum are verified. The

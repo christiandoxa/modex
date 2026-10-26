@@ -68,6 +68,12 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_deepseek_transport_driver.mojo -o build/tests/provider_deepseek_transport_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_conversations.mojo -o build/tests/test_provider_conversations
 	build/tests/test_provider_conversations
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_passthrough.mojo -o build/tests/test_provider_passthrough
+	build/tests/test_provider_passthrough
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_passthrough_driver.mojo -o build/tests/provider_passthrough_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_runtime_recovery.mojo -o build/tests/test_runtime_recovery
+	build/tests/test_runtime_recovery
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/runtime_recovery_driver.mojo -o build/tests/runtime_recovery_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_gateway_cli.mojo -o build/tests/test_gateway_cli
 	build/tests/test_gateway_cli
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_super_cli.mojo -o build/tests/test_super_cli
@@ -127,6 +133,9 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/process_stdio_child.mojo -o build/tests/process_stdio_child
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_process_stdio.mojo -o build/tests/test_process_stdio
 	build/tests/test_process_stdio $(CURDIR)/build/tests/process_stdio_child
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/process_capture_child.mojo -o build/tests/process_capture_child
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_process_capture.mojo -o build/tests/test_process_capture
+	build/tests/test_process_capture $(CURDIR)/build/tests/process_capture_child
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/process_child.mojo -o build/tests/process_child
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_process_spawn.mojo -o build/tests/test_process_spawn
 	build/tests/test_process_spawn $(CURDIR)/build/tests/process_child

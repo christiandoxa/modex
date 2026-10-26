@@ -6,11 +6,13 @@ The returned standard Process waits for the child when destroyed.
 Other inheritable descriptors retain the standard POSIX spawn behavior.
 """
 
-from std.collections import List, Optional
+from std.collections import List, Optional, Span
 from std.ffi import c_pid_t, CStringSpan, ErrNo, get_errno
+from std.io import RawFileDescriptor
+from std.net._sys.unix import F_GETFL, F_SETFL, O_NONBLOCK
 from std.sys import CompilationTarget
-from std.sys._libc import close, dup, dup2, fcntl, FcntlCommands, FcntlFDFlags, posix_spawnp
-from std.os.process import Process, ProcessStatus
+from std.sys._libc import _get_environ, close, dup, dup2, fcntl, FcntlCommands, FcntlFDFlags, posix_spawnp
+from std.os.process import Pipe, Process, ProcessStatus
 from std.time import perf_counter, sleep
 
 
@@ -18,6 +20,22 @@ from std.time import perf_counter, sleep
 struct ProcessWaitOutcome(Copyable, ImplicitlyCopyable, Movable):
     var status: ProcessStatus
     var timed_out: Bool
+
+
+def inherited_environment(excluded: List[String] = List[String]()) -> List[String]:
+    """Copy the official stdlib environment view before any concurrent mutation."""
+    var result = List[String]()
+    var environment = _get_environ()
+    if environment:
+        var pointer = environment.value()
+        var index = 0
+        while pointer[unsafe_offset=index]:
+            var entry = String(pointer[unsafe_offset=index].value())
+            var name = String(entry.split("=", maxsplit=1)[0])
+            if name not in excluded:
+                result.append(entry)
+            index += 1
+    return result^
 
 
 def spawn_with_env(path: String, args: List[String], env: List[String]) raises -> Process:
@@ -190,3 +208,75 @@ def wait_or_kill(mut child: Process, timeout_ms: UInt64) raises -> ProcessWaitOu
             return ProcessWaitOutcome(status, False)
         raise Error("process timed out and direct child could not be terminated")
     return ProcessWaitOutcome(child.wait(), True)
+
+
+@fieldwise_init
+struct CapturedProcessOutput(Movable):
+    var status: ProcessStatus
+    var stdout: List[UInt8]
+    var stderr: List[UInt8]
+
+
+def _capture_read(fd: Int32, mut output: List[UInt8], mut eof: Bool, max_bytes: Int, label: String) raises -> Bool:
+    if eof:
+        return False
+    var bytes = List[UInt8](length=8192, fill=0)
+    var input = RawFileDescriptor(fd)
+    var count: Int
+    try:
+        count = input.read_bytes(Span(bytes))
+    except:
+        var error = get_errno()
+        if error == ErrNo.EAGAIN or error == ErrNo.EINTR:
+            return False
+        raise Error("failed to read " + label + " output")
+    if count > max_bytes - len(output):
+        raise Error(label + " output exceeded the limit")
+    for index in range(count):
+        output.append(bytes[index])
+    eof = count == 0
+    return count > 0
+
+
+def capture_with_env(path: String, args: List[String], environment: List[String], label: String, timeout_ms: UInt64 = 15000, max_output_bytes: Int = 1048576) raises -> CapturedProcessOutput:
+    """Capture both child channels fairly with null stdin and fixed resource limits."""
+    if timeout_ms == 0 or max_output_bytes < 0:
+        raise Error("invalid process capture limits")
+    var input = Pipe()
+    var output = Pipe()
+    var error_output = Pipe()
+    var child = spawn_with_env_stdio(path, args, environment, input.fd_in.value().value, output.fd_out.value().value, error_output.fd_out.value().value)
+    input.set_output_only()
+    input.set_input_only()
+    output.set_input_only()
+    error_output.set_input_only()
+    try:
+        for fd in [output.fd_in.value().value, error_output.fd_in.value().value]:
+            var flags = fcntl(fd, F_GETFL, 0)
+            if flags < 0 or fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0:
+                raise Error("failed to configure " + label + " output")
+        var stdout = List[UInt8]()
+        var stderr = List[UInt8]()
+        var stdout_eof = False
+        var stderr_eof = False
+        var deadline = perf_counter() + Float64(timeout_ms) / 1000.0
+        var close_deadline = 0.0
+        while True:
+            var progress = _capture_read(output.fd_in.value().value, stdout, stdout_eof, max_output_bytes, label)
+            progress = _capture_read(error_output.fd_in.value().value, stderr, stderr_eof, max_output_bytes, label) or progress
+            var status = child.poll()
+            if status.has_exited():
+                if stdout_eof and stderr_eof:
+                    return CapturedProcessOutput(status, stdout^, stderr^)
+                if close_deadline == 0.0:
+                    close_deadline = perf_counter() + 0.25
+                if perf_counter() >= close_deadline:
+                    # shortcut: descendant termination needs process-group stdlib support; reject inherited open output instead of waiting forever.
+                    raise Error(label + " output did not close")
+            elif perf_counter() >= deadline:
+                raise Error(label + " timed out")
+            if not progress:
+                sleep(0.001)
+    except:
+        _ = wait_or_kill(child, 1)
+        raise

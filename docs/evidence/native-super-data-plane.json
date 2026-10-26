@@ -1,0 +1,2702 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "native_sha256": "6d4e501cfdd15563dc1f561c4ab977b389fabf106476a07523767fdcd218aa06",
+  "command": "python3 tests/capture_super_launch.py",
+  "whole_command_parity": "BLOCKED",
+  "scope": "Compiled production Modex, synthetic external Codex/provider peers, isolated HOME/env/config/storage/ephemeral loopback ports. Host PID/network namespace; no real credentials, account login or paid provider traffic.",
+  "limitations": [
+    "Compared named data-plane observations only; dynamic IDs/times and complete envelopes are not normalized into a PASS.",
+    "Baseline launch output/config/catalog/defaults/storage/locks/companions remain incomplete; real Codex distributions are unverified.",
+    "All six full release platform qualifications remain BLOCKED."
+  ],
+  "cases": [
+    {
+      "scenario": "stream",
+      "checked_observations_match": {
+        "exit_and_stdout": true,
+        "http_status": true,
+        "upstream_target": true,
+        "upstream_body": true,
+        "model_catalog": true,
+        "generated_config_keys": true,
+        "generated_config_values": true,
+        "event_names": true
+      },
+      "baseline_config_keys_not_yet_implemented": [],
+      "observations": {
+        "baseline": {
+          "returncode": 0,
+          "stdout": "synthetic-client-complete\n",
+          "response": {
+            "kind": "response",
+            "status": 200,
+            "body": "6576656e743a20726573706f6e73652e637265617465640d0a646174613a207b22637265617465645f6174223a313739323938333933312c22726573706f6e7365223a7b226964223a2273796e7468657469632d63686174227d2c2273657175656e63655f6e756d626572223a302c2274797065223a22726573706f6e73652e63726561746564227d0d0a0d0a6576656e743a20726573706f6e73652e6f75747075745f6974656d2e61646465640d0a646174613a207b226974656d223a7b22636f6e74656e74223a5b5d2c226964223a226d73675f646565707365656b5f36303138393330333935313034343131363439222c22726f6c65223a22617373697374616e74222c2274797065223a226d657373616765227d2c22726573706f6e73655f6964223a2273796e7468657469632d63686174222c2273657175656e63655f6e756d626572223a312c2274797065223a22726573706f6e73652e6f75747075745f6974656d2e6164646564227d0d0a0d0a6576656e743a20726573706f6e73652e6f75747075745f746578742e64656c74610d0a646174613a207b22637265617465645f6174223a313739323938333933312c2264656c7461223a2273796e746865746963206772656574696e67222c22726573706f6e73655f6964223a2273796e7468657469632d63686174222c2273657175656e63655f6e756d626572223a322c2274797065223a22726573706f6e73652e6f75747075745f746578742e64656c7461227d0d0a0d0a6576656e743a20726573706f6e73652e6f75747075745f6974656d2e646f6e650d0a646174613a207b226974656d223a7b22636f6e74656e74223a5b7b2274657874223a2273796e746865746963206772656574696e67222c2274797065223a226f75747075745f74657874227d5d2c226964223a226d73675f646565707365656b5f36303138393330333935313034343131363439222c22726f6c65223a22617373697374616e74222c2274797065223a226d657373616765227d2c22726573706f6e73655f6964223a2273796e7468657469632d63686174222c2273657175656e63655f6e756d626572223a332c2274797065223a22726573706f6e73652e6f75747075745f6974656d2e646f6e65227d0d0a0d0a6576656e743a20726573706f6e73652e636f6d706c657465640d0a646174613a207b22637265617465645f6174223a313739323938333933312c22726573706f6e7365223a7b226964223a2273796e7468657469632d63686174222c226d65746164617461223a7b22646565707365656b223a7b2266696e6973685f726561736f6e223a2273746f70227d7d2c226d6f64656c223a22646565707365656b2d63686174222c226f7574707574223a5b7b22636f6e74656e74223a5b7b2274657874223a2273796e746865746963206772656574696e67222c2274797065223a226f75747075745f74657874227d5d2c22726f6c65223a22617373697374616e74222c2274797065223a226d657373616765227d5d7d2c2273657175656e63655f6e756d626572223a342c2274797065223a22726573706f6e73652e636f6d706c65746564227d0d0a0d0a"
+          },
+          "upstream": [
+            {
+              "path": "/v1/chat/completions",
+              "headers": {
+                "content-type": "application/json",
+                "accept-encoding": "identity",
+                "accept": "text/event-stream, application/json",
+                "authorization": "Bearer synthetic-provider-key",
+                "host": "127.0.0.1:44739",
+                "content-length": "97"
+              },
+              "body": "7b226d65737361676573223a5b7b22636f6e74656e74223a2273796e7468657469632070726f6d7074222c22726f6c65223a2275736572227d5d2c226d6f64656c223a22646565707365656b2d63686174222c2273747265616d223a747275657d"
+            }
+          ],
+          "config": {
+            "model_catalog_json": "/tmp/modex-super-launch-b94jrngy/state/profiles/.prodex-overlay-14a5e6-0/prodex-deepseek-model-catalog.json",
+            "projects": "{\"/tmp/modex-super-launch-b94jrngy/work\"={trust_level=\"trusted\"}}",
+            "model_provider": "prodex-deepseek",
+            "model": "deepseek-chat",
+            "model_providers.prodex-deepseek.name": "DeepSeek",
+            "model_providers.prodex-deepseek.base_url": "http://127.0.0.1:43293/v1",
+            "model_providers.prodex-deepseek.wire_api": "responses",
+            "model_providers.prodex-deepseek.requires_openai_auth": true,
+            "model_providers.prodex-deepseek.supports_websockets": false,
+            "model_context_window": 1048576,
+            "model_auto_compact_token_limit": 900000,
+            "model_reasoning_summary": "none",
+            "web_search": "live",
+            "features.apps": false,
+            "features.js_repl": false,
+            "features.image_generation": false
+          },
+          "catalog": {
+            "models": [
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek chat compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Chat",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 1,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-chat",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek fallback chain routed through current DeepSeek models.",
+                "display_name": "DeepSeek Auto",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 2,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "auto",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Pro alias routed through DeepSeek V4 Pro.",
+                "display_name": "DeepSeek Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 3,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Flash alias routed through DeepSeek V4 Flash.",
+                "display_name": "DeepSeek Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 4,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Pro routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 5,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Flash routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 6,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek reasoner compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Reasoner",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 7,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-reasoner",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              }
+            ]
+          },
+          "private_directory_mode": 448,
+          "overlay_leftovers": 0
+        },
+        "native": {
+          "returncode": 0,
+          "stdout": "synthetic-client-complete\n",
+          "response": {
+            "kind": "response",
+            "status": 200,
+            "body": "6576656e743a20726573706f6e73652e637265617465640d0a646174613a207b22637265617465645f6174223a313739323938333933322c22726573706f6e7365223a7b226964223a2273796e7468657469632d63686174227d2c2273657175656e63655f6e756d626572223a302c2274797065223a22726573706f6e73652e63726561746564227d0d0a0d0a6576656e743a20726573706f6e73652e6f75747075745f6974656d2e61646465640d0a646174613a207b226974656d223a7b22636f6e74656e74223a5b5d2c226964223a226d73675f646565707365656b5f31222c22726f6c65223a22617373697374616e74222c2274797065223a226d657373616765227d2c22726573706f6e73655f6964223a2273796e7468657469632d63686174222c2273657175656e63655f6e756d626572223a312c2274797065223a22726573706f6e73652e6f75747075745f6974656d2e6164646564227d0d0a0d0a6576656e743a20726573706f6e73652e6f75747075745f746578742e64656c74610d0a646174613a207b22637265617465645f6174223a313739323938333933322c2264656c7461223a2273796e746865746963206772656574696e67222c22726573706f6e73655f6964223a2273796e7468657469632d63686174222c2273657175656e63655f6e756d626572223a322c2274797065223a22726573706f6e73652e6f75747075745f746578742e64656c7461227d0d0a0d0a6576656e743a20726573706f6e73652e6f75747075745f6974656d2e646f6e650d0a646174613a207b226974656d223a7b22636f6e74656e74223a5b7b2274657874223a2273796e746865746963206772656574696e67222c2274797065223a226f75747075745f74657874227d5d2c226964223a226d73675f646565707365656b5f31222c22726f6c65223a22617373697374616e74222c2274797065223a226d657373616765227d2c22726573706f6e73655f6964223a2273796e7468657469632d63686174222c2273657175656e63655f6e756d626572223a332c2274797065223a22726573706f6e73652e6f75747075745f6974656d2e646f6e65227d0d0a0d0a6576656e743a20726573706f6e73652e636f6d706c657465640d0a646174613a207b22637265617465645f6174223a313739323938333933322c22726573706f6e7365223a7b226964223a2273796e7468657469632d63686174222c226d65746164617461223a7b22646565707365656b223a7b2266696e6973685f726561736f6e223a2273746f70227d7d2c226d6f64656c223a22646565707365656b2d63686174222c226f7574707574223a5b7b22636f6e74656e74223a5b7b2274657874223a2273796e746865746963206772656574696e67222c2274797065223a226f75747075745f74657874227d5d2c22726f6c65223a22617373697374616e74222c2274797065223a226d657373616765227d5d7d2c2273657175656e63655f6e756d626572223a342c2274797065223a22726573706f6e73652e636f6d706c65746564227d0d0a0d0a"
+          },
+          "upstream": [
+            {
+              "path": "/v1/chat/completions",
+              "headers": {
+                "Host": "127.0.0.1:46489",
+                "Connection": "close",
+                "Content-Length": "97",
+                "content-type": "application/json",
+                "accept-encoding": "identity",
+                "accept": "text/event-stream, application/json",
+                "authorization": "Bearer synthetic-provider-key",
+                "Accept-Encoding": "identity",
+                "Content-Type": "application/json"
+              },
+              "body": "7b226d65737361676573223a5b7b22636f6e74656e74223a2273796e7468657469632070726f6d7074222c22726f6c65223a2275736572227d5d2c226d6f64656c223a22646565707365656b2d63686174222c2273747265616d223a747275657d"
+            }
+          ],
+          "config": {
+            "model_catalog_json": "/tmp/modex-super-launch-st0pvdsh/state/profiles/.prodex-overlay-01a1762b-9e11-7d92-affe-74b4f83b6276/prodex-deepseek-model-catalog.json",
+            "projects": "{\"/tmp/modex-super-launch-st0pvdsh/work\"={trust_level=\"trusted\"}}",
+            "model_provider": "prodex-deepseek",
+            "model": "deepseek-chat",
+            "model_providers.prodex-deepseek.name": "DeepSeek",
+            "model_providers.prodex-deepseek.base_url": "http://127.0.0.1:33047/v1",
+            "model_providers.prodex-deepseek.wire_api": "responses",
+            "model_providers.prodex-deepseek.requires_openai_auth": true,
+            "model_providers.prodex-deepseek.supports_websockets": false,
+            "model_context_window": 1048576,
+            "model_auto_compact_token_limit": 900000,
+            "model_reasoning_summary": "none",
+            "web_search": "live",
+            "features.apps": false,
+            "features.js_repl": false,
+            "features.image_generation": false
+          },
+          "catalog": {
+            "models": [
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek chat compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Chat",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 1,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-chat",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek fallback chain routed through current DeepSeek models.",
+                "display_name": "DeepSeek Auto",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 2,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "auto",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Pro alias routed through DeepSeek V4 Pro.",
+                "display_name": "DeepSeek Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 3,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Flash alias routed through DeepSeek V4 Flash.",
+                "display_name": "DeepSeek Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 4,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Pro routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 5,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Flash routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 6,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek reasoner compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Reasoner",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 7,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-reasoner",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              }
+            ]
+          },
+          "private_directory_mode": 448,
+          "overlay_leftovers": 0
+        }
+      }
+    },
+    {
+      "scenario": "buffered",
+      "checked_observations_match": {
+        "exit_and_stdout": true,
+        "http_status": true,
+        "upstream_target": true,
+        "upstream_body": true,
+        "model_catalog": true,
+        "generated_config_keys": true,
+        "generated_config_values": true
+      },
+      "baseline_config_keys_not_yet_implemented": [],
+      "observations": {
+        "baseline": {
+          "returncode": 0,
+          "stdout": "synthetic-client-complete\n",
+          "response": {
+            "kind": "response",
+            "status": 200,
+            "body": "7b22637265617465645f6174223a313739323938333933332c226964223a2273796e7468657469632d63686174222c226d65746164617461223a7b22646565707365656b223a7b2266696e6973685f726561736f6e223a2273746f70227d7d2c226d6f64656c223a22646565707365656b2d63686174222c226f626a656374223a22726573706f6e7365222c226f7574707574223a5b7b22636f6e74656e74223a5b7b2274657874223a2273796e746865746963206772656574696e67222c2274797065223a226f75747075745f74657874227d5d2c22726f6c65223a22617373697374616e74222c2274797065223a226d657373616765227d5d7d"
+          },
+          "upstream": [
+            {
+              "path": "/v1/chat/completions",
+              "headers": {
+                "content-type": "application/json",
+                "accept-encoding": "identity",
+                "accept": "text/event-stream, application/json",
+                "authorization": "Bearer synthetic-provider-key",
+                "host": "127.0.0.1:39495",
+                "content-length": "98"
+              },
+              "body": "7b226d65737361676573223a5b7b22636f6e74656e74223a2273796e7468657469632070726f6d7074222c22726f6c65223a2275736572227d5d2c226d6f64656c223a22646565707365656b2d63686174222c2273747265616d223a66616c73657d"
+            }
+          ],
+          "config": {
+            "model_catalog_json": "/tmp/modex-super-launch-op3w2q2k/state/profiles/.prodex-overlay-14b159-0/prodex-deepseek-model-catalog.json",
+            "projects": "{\"/tmp/modex-super-launch-op3w2q2k/work\"={trust_level=\"trusted\"}}",
+            "model_provider": "prodex-deepseek",
+            "model": "deepseek-chat",
+            "model_providers.prodex-deepseek.name": "DeepSeek",
+            "model_providers.prodex-deepseek.base_url": "http://127.0.0.1:38129/v1",
+            "model_providers.prodex-deepseek.wire_api": "responses",
+            "model_providers.prodex-deepseek.requires_openai_auth": true,
+            "model_providers.prodex-deepseek.supports_websockets": false,
+            "model_context_window": 1048576,
+            "model_auto_compact_token_limit": 900000,
+            "model_reasoning_summary": "none",
+            "web_search": "live",
+            "features.apps": false,
+            "features.js_repl": false,
+            "features.image_generation": false
+          },
+          "catalog": {
+            "models": [
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek chat compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Chat",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 1,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-chat",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek fallback chain routed through current DeepSeek models.",
+                "display_name": "DeepSeek Auto",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 2,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "auto",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Pro alias routed through DeepSeek V4 Pro.",
+                "display_name": "DeepSeek Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 3,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Flash alias routed through DeepSeek V4 Flash.",
+                "display_name": "DeepSeek Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 4,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Pro routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 5,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Flash routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 6,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek reasoner compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Reasoner",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 7,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-reasoner",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              }
+            ]
+          },
+          "private_directory_mode": 448,
+          "overlay_leftovers": 0
+        },
+        "native": {
+          "returncode": 0,
+          "stdout": "synthetic-client-complete\n",
+          "response": {
+            "kind": "response",
+            "status": 200,
+            "body": "7b22637265617465645f6174223a313739323938333933332c226964223a2273796e7468657469632d63686174222c226d65746164617461223a7b22646565707365656b223a7b2266696e6973685f726561736f6e223a2273746f70227d7d2c226d6f64656c223a22646565707365656b2d63686174222c226f626a656374223a22726573706f6e7365222c226f7574707574223a5b7b22636f6e74656e74223a5b7b2274657874223a2273796e746865746963206772656574696e67222c2274797065223a226f75747075745f74657874227d5d2c22726f6c65223a22617373697374616e74222c2274797065223a226d657373616765227d5d7d"
+          },
+          "upstream": [
+            {
+              "path": "/v1/chat/completions",
+              "headers": {
+                "Host": "127.0.0.1:35861",
+                "Connection": "close",
+                "Content-Length": "98",
+                "content-type": "application/json",
+                "accept-encoding": "identity",
+                "accept": "text/event-stream, application/json",
+                "authorization": "Bearer synthetic-provider-key",
+                "Accept-Encoding": "identity",
+                "Content-Type": "application/json"
+              },
+              "body": "7b226d65737361676573223a5b7b22636f6e74656e74223a2273796e7468657469632070726f6d7074222c22726f6c65223a2275736572227d5d2c226d6f64656c223a22646565707365656b2d63686174222c2273747265616d223a66616c73657d"
+            }
+          ],
+          "config": {
+            "model_catalog_json": "/tmp/modex-super-launch-owk1hns5/state/profiles/.prodex-overlay-01a1762b-a340-7840-8f74-35bb89c035a4/prodex-deepseek-model-catalog.json",
+            "projects": "{\"/tmp/modex-super-launch-owk1hns5/work\"={trust_level=\"trusted\"}}",
+            "model_provider": "prodex-deepseek",
+            "model": "deepseek-chat",
+            "model_providers.prodex-deepseek.name": "DeepSeek",
+            "model_providers.prodex-deepseek.base_url": "http://127.0.0.1:45161/v1",
+            "model_providers.prodex-deepseek.wire_api": "responses",
+            "model_providers.prodex-deepseek.requires_openai_auth": true,
+            "model_providers.prodex-deepseek.supports_websockets": false,
+            "model_context_window": 1048576,
+            "model_auto_compact_token_limit": 900000,
+            "model_reasoning_summary": "none",
+            "web_search": "live",
+            "features.apps": false,
+            "features.js_repl": false,
+            "features.image_generation": false
+          },
+          "catalog": {
+            "models": [
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek chat compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Chat",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 1,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-chat",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek fallback chain routed through current DeepSeek models.",
+                "display_name": "DeepSeek Auto",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 2,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "auto",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Pro alias routed through DeepSeek V4 Pro.",
+                "display_name": "DeepSeek Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 3,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Flash alias routed through DeepSeek V4 Flash.",
+                "display_name": "DeepSeek Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 4,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Pro routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 5,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Flash routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 6,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek reasoner compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Reasoner",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 7,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-reasoner",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              }
+            ]
+          },
+          "private_directory_mode": 448,
+          "overlay_leftovers": 0
+        }
+      }
+    },
+    {
+      "scenario": "passthrough",
+      "checked_observations_match": {
+        "exit_and_stdout": true,
+        "http_status": true,
+        "upstream_target": true,
+        "upstream_body": true,
+        "model_catalog": true,
+        "generated_config_keys": true,
+        "generated_config_values": true,
+        "binary_body": true
+      },
+      "baseline_config_keys_not_yet_implemented": [],
+      "observations": {
+        "baseline": {
+          "returncode": 0,
+          "stdout": "synthetic-client-complete\n",
+          "response": {
+            "kind": "response",
+            "status": 200,
+            "body": "0073796e74686574696320757073747265616dff"
+          },
+          "upstream": [
+            {
+              "path": "/v1/chat/completions?synthetic=1",
+              "headers": {
+                "content-type": "application/json",
+                "accept-encoding": "identity",
+                "accept": "text/event-stream, application/json",
+                "authorization": "Bearer synthetic-provider-key",
+                "host": "127.0.0.1:33489",
+                "content-length": "11"
+              },
+              "body": "0073796e746865746963ff"
+            }
+          ],
+          "config": {
+            "model_catalog_json": "/tmp/modex-super-launch-wa3oslb5/state/profiles/.prodex-overlay-14b705-0/prodex-deepseek-model-catalog.json",
+            "projects": "{\"/tmp/modex-super-launch-wa3oslb5/work\"={trust_level=\"trusted\"}}",
+            "model_provider": "prodex-deepseek",
+            "model": "deepseek-chat",
+            "model_providers.prodex-deepseek.name": "DeepSeek",
+            "model_providers.prodex-deepseek.base_url": "http://127.0.0.1:40657/v1",
+            "model_providers.prodex-deepseek.wire_api": "responses",
+            "model_providers.prodex-deepseek.requires_openai_auth": true,
+            "model_providers.prodex-deepseek.supports_websockets": false,
+            "model_context_window": 1048576,
+            "model_auto_compact_token_limit": 900000,
+            "model_reasoning_summary": "none",
+            "web_search": "live",
+            "features.apps": false,
+            "features.js_repl": false,
+            "features.image_generation": false
+          },
+          "catalog": {
+            "models": [
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek chat compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Chat",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 1,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-chat",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek fallback chain routed through current DeepSeek models.",
+                "display_name": "DeepSeek Auto",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 2,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "auto",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Pro alias routed through DeepSeek V4 Pro.",
+                "display_name": "DeepSeek Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 3,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Flash alias routed through DeepSeek V4 Flash.",
+                "display_name": "DeepSeek Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 4,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Pro routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 5,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Flash routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 6,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek reasoner compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Reasoner",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 7,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-reasoner",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              }
+            ]
+          },
+          "private_directory_mode": 448,
+          "overlay_leftovers": 0
+        },
+        "native": {
+          "returncode": 0,
+          "stdout": "synthetic-client-complete\n",
+          "response": {
+            "kind": "response",
+            "status": 200,
+            "body": "0073796e74686574696320757073747265616dff"
+          },
+          "upstream": [
+            {
+              "path": "/v1/chat/completions?synthetic=1",
+              "headers": {
+                "Host": "127.0.0.1:41037",
+                "Connection": "close",
+                "Content-Length": "11",
+                "accept-encoding": "identity",
+                "authorization": "Bearer synthetic-provider-key",
+                "Content-Type": "application/x-synthetic"
+              },
+              "body": "0073796e746865746963ff"
+            }
+          ],
+          "config": {
+            "model_catalog_json": "/tmp/modex-super-launch-xywihnsd/state/profiles/.prodex-overlay-01a1762b-a862-72e2-b858-698d4fe4b675/prodex-deepseek-model-catalog.json",
+            "projects": "{\"/tmp/modex-super-launch-xywihnsd/work\"={trust_level=\"trusted\"}}",
+            "model_provider": "prodex-deepseek",
+            "model": "deepseek-chat",
+            "model_providers.prodex-deepseek.name": "DeepSeek",
+            "model_providers.prodex-deepseek.base_url": "http://127.0.0.1:39913/v1",
+            "model_providers.prodex-deepseek.wire_api": "responses",
+            "model_providers.prodex-deepseek.requires_openai_auth": true,
+            "model_providers.prodex-deepseek.supports_websockets": false,
+            "model_context_window": 1048576,
+            "model_auto_compact_token_limit": 900000,
+            "model_reasoning_summary": "none",
+            "web_search": "live",
+            "features.apps": false,
+            "features.js_repl": false,
+            "features.image_generation": false
+          },
+          "catalog": {
+            "models": [
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek chat compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Chat",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 1,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-chat",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek fallback chain routed through current DeepSeek models.",
+                "display_name": "DeepSeek Auto",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 2,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "auto",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Pro alias routed through DeepSeek V4 Pro.",
+                "display_name": "DeepSeek Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 3,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "Prodex DeepSeek Flash alias routed through DeepSeek V4 Flash.",
+                "display_name": "DeepSeek Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 4,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Pro routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Pro",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 5,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-pro",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek V4 Flash routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek V4 Flash",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 6,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-v4-flash",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              },
+              {
+                "additional_speed_tiers": [],
+                "apply_patch_tool_type": "freeform",
+                "auto_compact_token_limit": 900000,
+                "availability_nux": null,
+                "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.",
+                "context_window": 1048576,
+                "default_reasoning_level": "high",
+                "default_reasoning_summary": "none",
+                "default_service_tier": null,
+                "default_verbosity": null,
+                "description": "DeepSeek reasoner compatibility model routed through the Prodex Responses adapter.",
+                "display_name": "DeepSeek Reasoner",
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": [
+                  "text"
+                ],
+                "max_context_window": 1048576,
+                "priority": 7,
+                "service_tiers": [],
+                "shell_type": "shell_command",
+                "slug": "deepseek-reasoner",
+                "support_verbosity": false,
+                "supported_in_api": true,
+                "supported_reasoning_levels": [
+                  {
+                    "description": "DeepSeek low reasoning effort",
+                    "effort": "low"
+                  },
+                  {
+                    "description": "DeepSeek medium reasoning effort",
+                    "effort": "medium"
+                  },
+                  {
+                    "description": "DeepSeek high reasoning effort",
+                    "effort": "high"
+                  },
+                  {
+                    "description": "DeepSeek max reasoning effort",
+                    "effort": "xhigh"
+                  }
+                ],
+                "supports_image_detail_original": false,
+                "supports_parallel_tool_calls": true,
+                "supports_reasoning_summaries": false,
+                "supports_reasoning_summary_parameter": false,
+                "supports_search_tool": false,
+                "truncation_policy": {
+                  "limit": 10000,
+                  "mode": "tokens"
+                },
+                "upgrade": null,
+                "visibility": "list",
+                "web_search_tool_type": "text"
+              }
+            ]
+          },
+          "private_directory_mode": 448,
+          "overlay_leftovers": 0
+        }
+      }
+    }
+  ]
+}

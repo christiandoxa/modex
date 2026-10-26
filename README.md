@@ -4,6 +4,10 @@ Modex is a new Mojo implementation targeting the behavior of Prodex 0.439.1
 (`81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`). It is under development and does
 not yet provide feature parity. Version output, development session inspection
 and detached `log last` snapshots are connected to the production CLI.
+An explicit clean-home DeepSeek `super ... exec` slice now launches Codex
+through the native loopback relay, including hook preflight, model catalog,
+streaming/buffered Responses and Chat Completions passthrough. Its required
+options and remaining storage/lifecycle limits are in [next work](docs/handoff.md).
 Session inspection reads plain
 and Zstandard rollouts and prints JSON or plain tables with supported Unicode.
 Session state recovery, the interactive terminal view, resume, and baseline

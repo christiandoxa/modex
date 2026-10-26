@@ -1,5 +1,6 @@
 """Verify production Super help, selected baseline errors, and safe startup gaps."""
 
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -8,7 +9,10 @@ import time
 import unittest
 
 from session_oracle import sandbox_command
-from test_cli import MODEX, ORACLE
+from test_cli import MODEX, ORACLE, ORACLE_SHA256, ROOT
+
+
+SUPER_ARGV_CAPTURE = ROOT / "tests/fixtures/super-argv/cases.json"
 
 
 def isolated_super(binary, arguments):
@@ -63,6 +67,21 @@ class SuperCliTests(unittest.TestCase):
                 self.assertEqual((native.returncode, native.stdout, native.stderr),
                                  (baseline.returncode, baseline.stdout, baseline.stderr))
                 self.assertFalse(mutated)
+
+    def test_credential_free_url_validation_matches_frozen_capture(self):
+        capture = json.loads(SUPER_ARGV_CAPTURE.read_text())
+        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        self.assertEqual(capture["oracle_sha256"], ORACLE_SHA256)
+        self.assertTrue(capture["network_isolated"])
+        for case in capture["cases"]:
+            with self.subTest(name=case["name"]):
+                baseline, _ = isolated_super(ORACLE, case["argv"])
+                expected = (case["returncode"], case["stdout"].encode(), case["stderr"].encode())
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr), expected)
+                native, mutated = isolated_super(MODEX, case["argv"])
+                self.assertEqual((native.returncode, native.stdout, native.stderr), expected)
+                self.assertFalse(mutated)
+                self.assertNotIn("synthetic-secret".encode(), native.stderr)
 
     def test_unavailable_startup_fails_before_side_effects_and_keeps_keys_private(self):
         sentinel = "synthetic-key-never-print-this"

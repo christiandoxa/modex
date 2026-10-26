@@ -1,15 +1,20 @@
 """Internal loopback local-rewrite relay using native provider exchanges."""
 
 from std.collections import List, Span
+from std.io import RawFileDescriptor
+from std.net._sys.unix import F_GETFL, F_SETFL, O_NONBLOCK
+from std.sys._libc import fcntl
+from std.sys._libc_errno import ErrNo, get_errno
 from std.os import getenv
 from std.time import perf_counter
 from std.time.time import _realtime_nanoseconds
 
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument
-from .loopback_http import _number
+from .loopback_http import LoopbackHTTPStream, _number
 from .loopback_server import LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
 from .provider_conversations import ProviderConversationStore
+from .provider_passthrough import deepseek_chat_completions_path, deepseek_chat_completions_stream
 from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
 from .text import trim_text, unsigned_value
@@ -161,6 +166,48 @@ def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Str
 
 def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, connect_ms: UInt64, idle_ms: UInt64) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
+    if request.method == "POST" and target == "/v1/chat/completions":
+        var stream: LoopbackHTTPStream
+        try:
+            stream = deepseek_chat_completions_stream(
+                address,
+                deepseek_chat_completions_path(path, request.target),
+                key,
+                request.headers.copy(),
+                request.body.copy(),
+                connect_ms,
+                120000,
+                idle_ms,
+                connection.fd,
+            )
+        except:
+            _reply(connection, 502, "upstream request failed")
+            return
+        var status = stream.status
+        var response_headers = _response_headers(stream.headers.copy())
+        if status >= 400 or status == 204 or status == 304 or not deepseek_event_stream(stream.headers):
+            var body = List[UInt8]()
+            try:
+                while not stream.done:
+                    var chunk = stream.read_chunk()
+                    body.extend(chunk^)
+            except:
+                stream.close()
+                _reply(connection, 502, "upstream request failed")
+                return
+            connection.respond(status, response_headers, body, 30000)
+            return
+        try:
+            connection.start_stream(status, response_headers, 30000)
+            while not stream.done:
+                var chunk = stream.read_chunk()
+                if chunk:
+                    connection.write_chunk(chunk, 30000)
+            connection.finish_stream(30000)
+        except:
+            stream.close()
+            connection.close()
+        return
     if request.method != "POST" or target != "/v1/responses":
         _route_error(connection)
         return
@@ -233,16 +280,30 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         connection.close()
 
 
-def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, key: String) raises:
+def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, key: String, parent_fd: Int32 = -1) raises:
     var upstream = local_rewrite_upstream(upstream_url)
     _ = deepseek_request_headers([], key)
     var connect_ms = _timeout("PRODEX_RUNTIME_PROXY_HTTP_CONNECT_TIMEOUT_MS", 5000)
     var idle_ms = _timeout("PRODEX_RUNTIME_PROXY_STREAM_IDLE_TIMEOUT_MS", 300000)
     var request_id = UInt64(0)
     var conversations = ProviderConversationStore()
+    var parent_bytes = List[UInt8](length=1, fill=0)
+    if parent_fd >= 0:
+        var flags = fcntl(parent_fd, F_GETFL, 0)
+        if flags < 0 or fcntl(parent_fd, F_SETFL, flags | O_NONBLOCK) < 0:
+            raise Error("could not configure local provider parent channel")
     # shortcut: requests run serially; add workers together with baseline admission controls.
     while True:
-        var accepted = listener.accept(1000)
+        if parent_fd >= 0:
+            var parent = RawFileDescriptor(parent_fd)
+            try:
+                _ = parent.read_bytes(Span(parent_bytes))
+                return
+            except:
+                var error = get_errno()
+                if error != ErrNo.EAGAIN and error != ErrNo.EINTR:
+                    raise Error("local provider parent channel failed")
+        var accepted = listener.accept(UInt64(100 if parent_fd >= 0 else 1000))
         if not accepted: continue
         var connection = accepted.take()
         request_id = request_id + 1 if request_id < UInt64.MAX else request_id

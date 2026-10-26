@@ -14,11 +14,17 @@
         "tests/test_loopback_server.py",
         "tests/local_rewrite_driver.mojo",
         "tests/test_local_rewrite.py",
-        "tests/test_provider_conversations.mojo"
+        "tests/test_provider_conversations.mojo",
+        "tests/test_super_launch.py",
+        "tests/test_provider_passthrough.py"
       ],
       "evidence": [
         "docs/evidence/runtime-local-tests.txt",
-        "docs/evidence/runtime-local-link.txt"
+        "docs/evidence/runtime-local-link.txt",
+        "docs/evidence/native-super-reference.json",
+        "docs/evidence/native-super-data-plane.json",
+        "docs/evidence/native-super-tests.txt",
+        "docs/evidence/native-super-dependencies.txt"
       ],
       "proven": [
         "numeric IPv4/IPv6 loopback bind/listen/accept and ephemeral port discovery using existing official wrappers",
@@ -27,17 +33,17 @@
         "internal real TCP DeepSeek SSE/JSON relay and scoped buffered/streamed continuation",
         "downstream reset cancellation during upstream waits while preserving valid request half-close",
         "native in-memory scope/count/sequence/retention rules and known-empty history distinction",
-        "native relay driver in a restricted filesystem without implementation helpers"
+        "native relay driver in a restricted filesystem without implementation helpers",
+        "production CLI clean-home DeepSeek exec reaches native Responses SSE/JSON and binary passthrough through synthetic Codex/provider integration peers"
       ],
       "not_proven": [
-        "active Super launch/preflight integration",
         "public operational gateway/provider parity and startup side effects",
         "graceful FIN cancellation, signals and worker/admission concurrency",
         "configured incoming limits above 64 MiB and arbitrary-length SSE",
         "actual artifact Serde accounting boundaries and other platform layouts",
         "general HTTP tolerance, TLS/DNS/proxies/retries and non-host targets"
       ],
-      "assessment": "Existing bundled socket calls and records only; no native binding or application dependency. The relay stays internal because the captured forced gateway path excludes DeepSeek local rewrite. All complete contracts remain unfinished; gateway filesystem mismatches remain FAIL."
+      "assessment": "Guarded production Super integration is exercised on the host; complete gateway/provider, concurrent admission, security and non-host obligations remain blocked."
     },
     {
       "id": "OS-PUBLIC",
@@ -108,12 +114,18 @@
         "tests/test_process_runtime.py",
         "tests/test_process_wait.mojo",
         "tests/test_process_stdio.mojo",
-        "tests/test_app_server_rpc.py"
+        "tests/test_app_server_rpc.py",
+        "tests/test_process_capture.mojo",
+        "tests/test_super_launch.py"
       ],
       "evidence": [
         "docs/evidence/inspection-policy-tests.txt",
         "docs/evidence/inspection-policy-link.txt",
-        "docs/evidence/checkpoint-04391-tests.txt"
+        "docs/evidence/checkpoint-04391-tests.txt",
+        "docs/evidence/native-super-reference.json",
+        "docs/evidence/native-super-data-plane.json",
+        "docs/evidence/native-super-tests.txt",
+        "docs/evidence/native-super-dependencies.txt"
       ],
       "proven": [
         "absolute executable path and exact argv through the bundled posix_spawnp wrapper",
@@ -124,17 +136,19 @@
         "standalone Mojo parent/child in an isolated filesystem without implementation helpers",
         "timed direct-child poll/kill/wait and startup-only stdin/stdout/stderr redirection using existing official stdlib wrappers",
         "descriptor and FD_CLOEXEC restoration on success/spawn failure, synthetic pipe echo and explicitly isolated environment",
-        "native hook-trust RPC against synthetic app-server peers, per-RPC deadline, line-size guard and stderr suppression"
+        "native hook-trust RPC against synthetic app-server peers, per-RPC deadline, line-size guard and stderr suppression",
+        "socketpair MSG_NOSIGNAL hook request channel handles closed stdin without killing parent; synthetic child is killed/reaped",
+        "production clean-home launch exit 0/7, hook failure and relay death cleanup; private overlays preserve shared sessions and retain unexpected state; idle relay exits on parent-channel EOF"
       ],
       "not_proven": [
-        "successful production CLI Super launch",
         "safe concurrent spawning or parent stdio I/O during descriptor transaction",
         "process groups",
         "descendant cleanup",
         "cancellation/signals",
-        "non-host targets"
+        "non-host targets",
+        "default Super behavior, existing state, real Codex distributions and complete launch lifecycle"
       ],
-      "assessment": "Only official stdlib wrappers/types. Explicit env replacement remains parent-env safe; startup stdio helper briefly mutates/restores parent descriptors and therefore requires no concurrent parent I/O. Public Process.run still lacks an environment override. App-server transport is test-driver-connected, not a complete Super launch."
+      "assessment": "Only official stdlib wrappers/types. Explicit env replacement remains parent-env safe; startup stdio swaps restore parent descriptors/flags and require no concurrent parent I/O. Hook transport and direct-child supervision are connected to the guarded clean-home production Super launch. Public Process.run still lacks environment/stdio overrides; full lifecycle remains blocked."
     },
     {
       "id": "LOOPBACK-HTTP-NATIVE",
@@ -240,6 +254,26 @@
       "source": "probes/gaps/terminal.mojo",
       "finding": "openpty and terminal_size are absent from std.os; only isatty is proven.",
       "next": "Audit existing official facilities. Keep PTY/width/signal/terminal-restoration obligations open."
+    },
+    {
+      "id": "NATIVE-RECOVERY-POLICY",
+      "status": "PROVEN_LOCAL_FOUNDATION_ONLY",
+      "source": "src/modex/runtime_recovery.mojo",
+      "tests": [
+        "tests/test_runtime_recovery.mojo",
+        "tests/test_runtime_recovery.py"
+      ],
+      "evidence": [
+        "docs/evidence/native-super-tests.txt"
+      ],
+      "proven": [
+        "saturating progress-aware retry schedule and ownership/budget/quiescence wire policy",
+        "407 differential vectors execute pinned reference Mojo policy outside the product graph"
+      ],
+      "not_proven": [
+        "production event monitor, owned RPC transport, session affinity release and live goal recovery",
+        "accepted RPCs are never claimed as actual goal progress"
+      ]
     }
   ],
   "platforms": [
@@ -247,32 +281,38 @@
       "target": "x86_64-unknown-linux-gnu",
       "status": "LOCAL_BUILD_RUN_ONLY",
       "evidence": "make build; make probes; tests/test_runtime.py",
-      "limitations": "Host glibc 2.39. Official Mojo 1.2 requires glibc >=2.34 and x86-64-v3, while baseline release manifest says minimum GLIBC_2.23. Older baseline CPU/OS obligations remain unresolved."
+      "limitations": "Host glibc 2.39. Official Mojo 1.2 requires glibc >=2.34 and x86-64-v3, while baseline release manifest says minimum GLIBC_2.23. Older baseline CPU/OS obligations remain unresolved.",
+      "release_qualification": "BLOCKED"
     },
     {
       "target": "aarch64-unknown-linux-gnu",
       "status": "NOT_TESTED",
-      "limitations": "Official Mojo supports ARM64 Linux; no execution environment tested here."
+      "limitations": "Official Mojo supports ARM64 Linux; no execution environment tested here.",
+      "release_qualification": "BLOCKED"
     },
     {
       "target": "aarch64-apple-darwin",
       "status": "NOT_TESTED",
-      "limitations": "Official Mojo supports Apple silicon macOS 15+; no execution environment tested here."
+      "limitations": "Official Mojo supports Apple silicon macOS 15+; no execution environment tested here.",
+      "release_qualification": "BLOCKED"
     },
     {
       "target": "x86_64-apple-darwin",
       "status": "BLOCKED",
-      "limitations": "Official Mojo 1.2 documents Apple silicon-only macOS support."
+      "limitations": "Official Mojo 1.2 documents Apple silicon-only macOS support.",
+      "release_qualification": "BLOCKED"
     },
     {
       "target": "x86_64-pc-windows-msvc",
       "status": "BLOCKED",
-      "limitations": "Official Mojo 1.2 does not support native Windows. WSL does not satisfy this native baseline target."
+      "limitations": "Official Mojo 1.2 does not support native Windows. WSL does not satisfy this native baseline target.",
+      "release_qualification": "BLOCKED"
     },
     {
       "target": "aarch64-pc-windows-msvc",
       "status": "BLOCKED",
-      "limitations": "Official Mojo 1.2 does not support native Windows. WSL does not satisfy this native baseline target."
+      "limitations": "Official Mojo 1.2 does not support native Windows. WSL does not satisfy this native baseline target.",
+      "release_qualification": "BLOCKED"
     }
   ],
   "official_sources": [

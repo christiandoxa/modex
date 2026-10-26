@@ -44,6 +44,12 @@ def make_codex(path):
             if scenario == "timeout" and method == "initialize":
                 time.sleep(30)
                 break
+            if scenario == "closed_stdin_live" and method == "initialize":
+                os.close(0)
+                time.sleep(0.2)
+                send({"id": request["id"], "result": {}})
+                time.sleep(30)
+                break
             if scenario == "oversized" and method == "initialize":
                 sys.stdout.buffer.write(b"x" * (16_777_216 + 1) + b"\\n")
                 sys.stdout.flush()
@@ -177,6 +183,12 @@ class AppServerRpcTests(unittest.TestCase):
         result, records, _workspace, _codex_home = self.run_case("close_after_initialize")
         self.assertEqual(result.returncode, 1)
         self.assertIn(b"Codex hook-trust preflight hooks/list failed", result.stderr)
+        self.assert_child_reaped(records)
+
+    def test_live_peer_closing_stdin_reports_error_without_sigpipe(self):
+        result, records, _workspace, _codex_home = self.run_case("closed_stdin_live")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b"request write failed", result.stderr)
         self.assert_child_reaped(records)
 
     def test_workspace_mismatch_fails_before_codex_spawn(self):

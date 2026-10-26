@@ -1,0 +1,118 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "previous_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+  "reference_head": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "reference_tracked_status": "",
+  "delta": "463 files changed, 8026 insertions(+), 26066 deletions(-)",
+  "snapshot_git_object_matches": {
+    "Cargo.toml": "06439274c52f2cd2a2560f3bb484e452e8918b3804503600410d79317e830f66",
+    "crates/prodex-app/src/runtime_launch/proxy_startup/workers.rs": "8fe08d496bf80ac90cd188991af134fa23a507ae717660bd0afb7405c92f0f19",
+    "crates/prodex-app/src/runtime_proxy/lifecycle.rs": "e75644d0e3ecc02875c53fcfdd51e798937d4ec03640cbaee0bcf233573cdefa",
+    "crates/prodex-app/src/runtime_tools/session_recovery.rs": "023ffd1c2e36cdcbfcfcc567451a5c23e41a7811a38d259c59d87160b7bd5c5f",
+    "crates/prodex-app/src/runtime_tools/session_recovery/retry.rs": "bd3827daa9f7bcacfb879e162f1033c20fdb9a067be8fd84c5e641a2d9fc5ddb",
+    "crates/prodex-app/src/super_expose/openai_tunnel.rs": "db4ea104f595564f94c1807558dea34da7cf0451e90bdbf4c9d36f8dbdbe2885",
+    "migration/kiro-cli-2.34.0-source-evidence.json": "fec80a6e5589bb4001949a57cbc82450f1b0ec36c91883586110ca468a11ba30",
+    "migration/tunnel-client-v0.0.18-source-evidence.json": "f8599a7e582203e803b52b7d9adb6883098bf9d605a9dc40cb84260ae5a577cb",
+    "mojo/prodex_core/launch_config.mojo": "4cea7e71c2ccb0b71fc749143aacd531b802854726f45db037abcaa8a73eb560",
+    "mojo/prodex_core/rich_catalog.mojo": "3b689cd17f085b53cf777356c0295279bd71b84ea02209d4954e38e02e9c2b12",
+    "mojo/prodex_core/runtime_model_catalog.mojo": "5afd09a069cb1c00c8192b876538d96eee0fe2eadda04bcd0cc593d52047dbd5",
+    "mojo/prodex_core/runtime_catalog_plan.mojo": "d45d1bd51242ab1517efc83b9308f0a8fce0def3b420ec7ab3c27808a714196b",
+    "crates/prodex-provider-core/catalog/models.json": "ed8d65c08d0c544aefdef29aea8b023cb7fda9a90adcdaad9bdfa027b13cea04",
+    "crates/prodex-app/src/runtime_deepseek_config.rs": "5a5eab49a4ff8a6a3643494603626e5728e4bde1298a17921886db36555372d9",
+    "crates/prodex-app/src/runtime_tools/hook_trust.rs": "6904e600057c3d19f1313b03c485cb38eb0edd33b0fbe9f1a3cc0db73f8c9bc8",
+    "crates/prodex-shared-codex-fs/src/lib.rs": "277caf68166df953c423499101f467a287cabf35de59550f08f13d1f4114bab9"
+  },
+  "workers": {
+    "requested": {
+      "model": "gpt-6-luna",
+      "effort": "max",
+      "count": 2
+    },
+    "launcher_config": {
+      "provider": "openai",
+      "model": null,
+      "effort": null
+    },
+    "observed_banner": {
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "none"
+    },
+    "launcher_exit_codes": {
+      "a": 0,
+      "b": 0
+    },
+    "ownership": "A: provider passthrough/headers/tests. B: recovery policy/tests. Primary: CLI/lifecycle/relay integration, testing, docs, commit."
+  },
+  "workspace_package_version": "0.439.1",
+  "verification_method": "Exact unprefixed 0.439.0/0.439.1 tags, pinned commit objects, Cargo workspace version and isolated snapshot. Existing official release/checksum evidence is retained in baseline-0.439.1/reference-verification.json.",
+  "delta_obligations": {
+    "worker_lanes": {
+      "paths": [
+        "crates/prodex-app/src/runtime_launch/proxy_startup/workers.rs"
+      ],
+      "finding": "Separate bounded Responses, WebSocket, Compact and Standard executors; cached WS connections cannot own HTTP capacity; Compact worker count max(1,min(compact limit,worker_count)).",
+      "modex_status": "BLOCKED: relay remains serial."
+    },
+    "admission": {
+      "paths": [
+        "crates/prodex-app/src/runtime_proxy/lifecycle.rs",
+        "crates/prodex-app/src/runtime_launch/proxy_startup/workers.rs"
+      ],
+      "finding": "Authenticated admin handled before enqueue; try_send does not wait for capacity; original precommit deadline retained; lane-full rejection does not set global/account pressure.",
+      "modex_status": "BLOCKED: no worker queues/admission."
+    },
+    "rotation_and_affinity": {
+      "paths": [
+        "crates/prodex-app/src/runtime_tools/session_recovery.rs",
+        "crates/prodex-app/src/runtime_proxy/standard/compact/recovery.rs"
+      ],
+      "finding": "Recovery releases only the selected session/compact preference and retains hard response/turn ownership; eligible fallback excludes failed account and requires exact full-context recovery eligibility.",
+      "modex_status": "BLOCKED: no production affinity/rotation control."
+    },
+    "progress_and_retry": {
+      "paths": [
+        "crates/prodex-app/src/runtime_tools/session_recovery/retry.rs",
+        "crates/prodex-app/src/app_commands/runtime_launch/usage_limit_recovery/monitor_workflow.rs"
+      ],
+      "finding": "New failure starts cooldown at failure observation. Session/progress revision changes alone reset retries. Accepted RPC is not progress. Immediate/5/10/20/40/60-second backoff; stream commitment/completed compaction drive real progress revisions.",
+      "modex_status": "Tested native policy only; live monitor/transport BLOCKED."
+    },
+    "tunnel_client": {
+      "paths": [
+        "crates/prodex-app/src/super_expose/openai_tunnel.rs",
+        "migration/tunnel-client-v0.0.18-source-evidence.json"
+      ],
+      "finding": "Latest-stable reference 0.0.18; minimum supported version remains 0.0.13. Ambient AWS workload-identity conflicts are handled before launch.",
+      "modex_status": "BLOCKED: no native tunnel integration."
+    },
+    "kiro_cli": {
+      "paths": [
+        "migration/kiro-cli-2.34.0-source-evidence.json",
+        "crates/prodex-app/src/profile_commands/kiro/catalog_snapshot_tests.rs"
+      ],
+      "finding": "Source qualification evidence targets Kiro CLI 2.34.0; metadata/catalog regression fixtures updated.",
+      "modex_status": "BLOCKED: no native Kiro integration."
+    }
+  },
+  "tag_commits": {
+    "0.439.0": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+    "0.439.1": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+  },
+  "known_test_attempts": [
+    {
+      "attempt": "initial combined",
+      "log": "/tmp/modex-native-super-make-test.log",
+      "outcome": "make test exit 0; 319 Python methods passed before final catalog additions."
+    },
+    {
+      "attempt": "intermediate combined",
+      "log": "/tmp/modex-native-super-final-make-test.log",
+      "outcome": "make test exit 2; 321 methods ran, two ldd inspection errors because primary rebuilt build/modex during isolation tests. Not a PASS."
+    },
+    {
+      "attempt": "final stable artifact",
+      "log": "docs/evidence/native-super-tests.txt",
+      "outcome": "make test exit 0; build/native unit phase and all 321 Python tests passed (518.690 seconds for Python discovery), no skips. Includes final catalog/escape/ASCII-case/size checks."
+    }
+  ]
+}

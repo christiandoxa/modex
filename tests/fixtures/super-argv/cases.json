@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "oracle_version": "0.439.1",
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "capture_harness": "tests/capture_super_argv.py",
+  "scope": "Super URL validation, non-disclosure for synthetic credential/query inputs, and sub-agent concurrency parsing.",
+  "isolation": "Each case uses an isolated HOME, workspace and PRODEX_HOME in a temporary root; bubblewrap unshares the network namespace.",
+  "network_isolated": true,
+  "cases": [
+    {
+      "name": "url_credentials",
+      "argv": [
+        "super",
+        "exec",
+        "--url",
+        "http://synthetic-user:synthetic-secret@127.0.0.1:8131"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Error: invalid --url: expected an absolute http(s) URL with host and no credentials, query, or fragment\n"
+    },
+    {
+      "name": "url_query",
+      "argv": [
+        "super",
+        "exec",
+        "--url",
+        "http://127.0.0.1:8131/v1?api_key=synthetic-secret"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Error: invalid --url: expected an absolute http(s) URL with host and no credentials, query, or fragment\n"
+    },
+    {
+      "name": "url_fragment",
+      "argv": [
+        "super",
+        "exec",
+        "--url",
+        "https://127.0.0.1:8131/v1#token=synthetic-secret"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Error: invalid --url: expected an absolute http(s) URL with host and no credentials, query, or fragment\n"
+    },
+    {
+      "name": "url_non_http",
+      "argv": [
+        "super",
+        "exec",
+        "--url",
+        "ftp://127.0.0.1:8131"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Error: invalid --url: expected an absolute http(s) URL with host and no credentials, query, or fragment\n"
+    },
+    {
+      "name": "url_missing_host",
+      "argv": [
+        "super",
+        "exec",
+        "--url",
+        "http:///missing-host"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Error: invalid --url: expected an absolute http(s) URL with host and no credentials, query, or fragment\n"
+    },
+    {
+      "name": "base_url_credentials",
+      "argv": [
+        "super",
+        "exec",
+        "--base-url",
+        "https://synthetic-user:synthetic-secret@example.test/v1"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Error: invalid --base-url: expected an absolute http(s) URL with host and no credentials, query, or fragment\n"
+    },
+    {
+      "name": "sub_agent_url_credentials",
+      "argv": [
+        "super",
+        "exec",
+        "--sub-agent",
+        "--sub-agent-provider",
+        "local",
+        "--sub-agent-url",
+        "https://synthetic-user:synthetic-secret@127.0.0.1:8131"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Error: invalid --sub-agent-url: expected an absolute http(s) URL with host and no credentials, query, or fragment\n"
+    },
+    {
+      "name": "sub_agent_concurrency_zero",
+      "argv": [
+        "super",
+        "exec",
+        "--sub-agent",
+        "--sub-agent-max-concurrency",
+        "0"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Error: maximum active sub-agents must be between 1 and 64\n"
+    },
+    {
+      "name": "sub_agent_concurrency_above_limit",
+      "argv": [
+        "super",
+        "exec",
+        "--sub-agent",
+        "--sub-agent-max-concurrency",
+        "65"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Error: maximum active sub-agents must be between 1 and 64\n"
+    },
+    {
+      "name": "sub_agent_concurrency_syntax",
+      "argv": [
+        "super",
+        "exec",
+        "--sub-agent",
+        "--sub-agent-max-concurrency",
+        "unknown"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Error: invalid maximum active sub-agents: expected default or an integer from 1 to 64\n"
+    },
+    {
+      "name": "sub_agent_concurrency_overflow",
+      "argv": [
+        "super",
+        "exec",
+        "--sub-agent",
+        "--sub-agent-max-concurrency",
+        "99999999999999999999"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Error: invalid maximum active sub-agents: expected an integer from 1 to 64\n"
+    }
+  ]
+}

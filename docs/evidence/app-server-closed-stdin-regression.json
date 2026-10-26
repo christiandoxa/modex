@@ -1,0 +1,23 @@
+{
+  "baseline_target": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "modex_before_commit": "91b2282ed24b4dadb2928b73f9d27a296f7eb04f",
+  "probe": "Compiled app_server_rpc_driver with synthetic peer: read initialize, close fd0, wait 200ms, emit matching initialize response, remain alive for30s. Explicit synthetic HOME/environment, no network/real credentials.",
+  "before": {
+    "driver_returncode": -13,
+    "driver_stdout": "",
+    "driver_stderr": "",
+    "direct_child_still_alive": true,
+    "test_cleanup": "Root killed synthetic peer after observing failure."
+  },
+  "expected": "Parent reports failed RPC write and kills/reaps direct child without SIGPIPE termination.",
+  "status": "FIXED_NATIVE_REGRESSION",
+  "scope": "Native hook transport now invoked by guarded clean-home production Super launch; full lifecycle/security parity remains BLOCKED.",
+  "fix": {
+    "transport": "Official stdlib socketpair and send(MSG_NOSIGNAL), both socket ends CLOEXEC; per-RPC deadlines and kill/reap remain.",
+    "tests": [
+      "tests/test_app_server_rpc.py::AppServerRpcTests.test_live_peer_closing_stdin_reports_error_without_sigpipe",
+      "tests/test_super_launch.py::SuperLaunchTests.test_child_exit_and_preflight_failure_cleanup"
+    ],
+    "observed": "Compiled driver exits 1 with RPC request write failure; direct child reaped; parent not killed by SIGPIPE."
+  }
+}

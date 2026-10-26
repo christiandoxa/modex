@@ -1,0 +1,56 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "native_sha256": "6d4e501cfdd15563dc1f561c4ab977b389fabf106476a07523767fdcd218aa06",
+  "command": "rtk proxy make test",
+  "exit_status": 0,
+  "python_methods": 321,
+  "python_seconds": 518.69,
+  "skips": 0,
+  "native_build_and_units": "PASS_LOCAL",
+  "pinned_mojo_policy_vectors": 407,
+  "live_release_data_plane_scenarios": [
+    "stream",
+    "buffered",
+    "passthrough"
+  ],
+  "production_entrypoint": "src/main.mojo -> super_cli.run_super -> super_launch.run_clean_deepseek_super -> supervised native self-process relay + Codex integration target",
+  "whole_command_parity": "BLOCKED",
+  "full_release_qualification": {
+    "x86_64-unknown-linux-gnu": "BLOCKED",
+    "aarch64-unknown-linux-gnu": "BLOCKED",
+    "x86_64-apple-darwin": "BLOCKED",
+    "aarch64-apple-darwin": "BLOCKED",
+    "x86_64-pc-windows-msvc": "BLOCKED",
+    "aarch64-pc-windows-msvc": "BLOCKED"
+  },
+  "unconnected_foundation": "runtime_recovery.mojo policy is tested but live monitor/owned control socket/affinity/mutation dispatch remain BLOCKED. Accepted RPCs are not real goal progress.",
+  "evidence": [
+    "docs/evidence/native-super-tests.txt",
+    "docs/evidence/native-super-data-plane.json",
+    "docs/evidence/native-super-dependencies.txt",
+    "docs/evidence/native-super-reference.json"
+  ],
+  "workers": {
+    "requested": {
+      "model": "gpt-6-luna",
+      "effort": "max",
+      "count": 2
+    },
+    "launcher_config": {
+      "provider": "openai",
+      "model": null,
+      "effort": null
+    },
+    "observed_banner": {
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "none"
+    },
+    "launcher_exit_codes": {
+      "a": 0,
+      "b": 0
+    },
+    "ownership": "A: provider passthrough/headers/tests. B: recovery policy/tests. Primary: CLI/lifecycle/relay integration, testing, docs, commit."
+  },
+  "initial_worktree_backup": "/tmp/modex-parity-20261026-initial",
+  "integration_review": "Primary reviewed explicitly staged paths, exact scoped oracle comparisons, source/dependency restrictions, credential patterns and preserved initial WIP. No complete contract PASS or release claim."
+}

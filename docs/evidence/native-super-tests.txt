@@ -1,0 +1,584 @@
+Command: rtk proxy make test
+Pinned compiler: Mojo 1.2.0 (2016d0cd)
+Exit status: 0
+No concurrent product rebuilds during Python discovery.
+Whitespace-only compiler diagnostic lines normalized; raw log SHA256: a3f631b083b904367da1db6f039442f52d3333dd6da1b9a1d2710cccc62393bc
+
+mkdir -p build
+mojo build -O3 --target-cpu=x86-64-v3 -I src src/main.mojo -o build/modex
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mkdir -p build/tests
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_sse_wire.mojo -o build/tests/test_provider_sse_wire
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_sse_wire
+Provider SSE wire checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_sse_json.mojo -o build/tests/test_provider_sse_json
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_sse_json
+Provider SSE JSON assembler checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_sse_driver.mojo -o build/tests/provider_sse_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_chunk.mojo -o build/tests/test_provider_chat_chunk
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_chat_chunk
+Provider chat chunk checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_chat_chunk_driver.mojo -o build/tests/provider_chat_chunk_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_sse_events.mojo -o build/tests/test_provider_sse_events
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_sse_events
+Provider SSE event checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_usage.mojo -o build/tests/test_provider_chat_usage
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_chat_usage
+Provider chat usage checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_tools.mojo -o build/tests/test_provider_chat_tools
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_chat_tools
+Provider chat tools checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_uuid7.mojo -o build/tests/test_uuid7
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_uuid7
+UUIDv7 checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_items.mojo -o build/tests/test_provider_chat_items
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_chat_items
+Provider chat item checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_rtk_command.mojo -o build/tests/test_rtk_command
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_rtk_command
+RTK command checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_metadata.mojo -o build/tests/test_provider_chat_metadata
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_chat_metadata
+Provider chat metadata checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_stream.mojo -o build/tests/test_provider_chat_stream
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_chat_stream
+Provider chat stream checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_chat_stream_driver.mojo -o build/tests/provider_chat_stream_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_request_messages.mojo -o build/tests/test_provider_request_messages
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_request_messages
+Provider request message checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_request_prepare.mojo -o build/tests/test_provider_request_prepare
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_request_prepare
+Provider request preparation checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_request_tools.mojo -o build/tests/test_provider_request_tools
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_request_tools
+Provider request tool checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_request_params.mojo -o build/tests/test_provider_request_params
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_request_params
+Provider request parameter checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_request.mojo -o build/tests/test_provider_request
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_request
+Provider request integration checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_request_driver.mojo -o build/tests/provider_request_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_chat_buffered.mojo -o build/tests/test_provider_chat_buffered
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_chat_buffered
+Provider buffered chat checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_chat_buffered_driver.mojo -o build/tests/provider_chat_buffered_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_deepseek_transport.mojo -o build/tests/test_provider_deepseek_transport
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_deepseek_transport
+Provider DeepSeek transport header checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_deepseek_transport_driver.mojo -o build/tests/provider_deepseek_transport_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_conversations.mojo -o build/tests/test_provider_conversations
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_conversations
+Provider conversation cache checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_provider_passthrough.mojo -o build/tests/test_provider_passthrough
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_provider_passthrough
+Provider passthrough checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/provider_passthrough_driver.mojo -o build/tests/provider_passthrough_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_runtime_recovery.mojo -o build/tests/test_runtime_recovery
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_runtime_recovery
+runtime recovery tests passed
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/runtime_recovery_driver.mojo -o build/tests/runtime_recovery_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_gateway_cli.mojo -o build/tests/test_gateway_cli
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_gateway_cli
+Gateway argument checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_super_cli.mojo -o build/tests/test_super_cli
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_super_cli
+Super extraction, literal boundaries, aliases, and launch validation: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/local_rewrite_driver.mojo -o build/tests/local_rewrite_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_json.mojo -o build/tests/test_json
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_json
+JSON unit checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_json_float.mojo -o build/tests/test_json_float
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_json_float
+native JSON float parsing: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_sha256.mojo -o build/tests/test_sha256
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_sha256
+native SHA-256 vectors: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/sha256_driver.mojo -o build/tests/sha256_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/loopback_http_driver.mojo -o build/tests/loopback_http_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/loopback_http_stream_driver.mojo -o build/tests/loopback_http_stream_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/loopback_server_driver.mojo -o build/tests/loopback_server_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_sessions.mojo -o build/tests/test_sessions
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_sessions
+session metadata, filters, timestamps, text and argument checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_local_time.mojo -o build/tests/test_local_time
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_local_time
+TZif parsing, signed epochs, Gregorian calendar and local-time checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/json_driver.mojo -o build/tests/json_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_zstd.mojo -o build/tests/test_zstd
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_zstd
+Zstandard bits, default entropy tables and checksum checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/zstd_driver.mojo -o build/tests/zstd_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/text_driver.mojo -o build/tests/text_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/width_memory_driver.mojo -o build/tests/width_memory_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_text_driver.mojo -o build/tests/log_text_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
+        var output = String()
+                           ^
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_transcript_driver.mojo -o build/tests/log_transcript_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_payload_driver.mojo -o build/tests/log_payload_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_payload_render_driver.mojo -o build/tests/log_payload_render_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/unicode_properties_driver.mojo -o build/tests/unicode_properties_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_toml.mojo -o build/tests/test_toml
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_toml
+TOML unit checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/toml_driver.mojo -o build/tests/toml_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_time.mojo -o build/tests/test_log_time
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_log_time
+Log timestamp checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_time_driver.mojo -o build/tests/log_time_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow.mojo -o build/tests/test_log_follow
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+    append_bytes(path, utf8^)
+                           ^
+
+/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+    append_bytes(path, utf8^)
+                           ^
+
+build/tests/test_log_follow /home/doxa/IdeaProjects/modex/build/tests/log-follow-files
+native incremental log follow: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow_paths.mojo -o build/tests/test_log_follow_paths
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_log_follow_paths /home/doxa/IdeaProjects/modex/build/tests/follow-paths
+Log follower path selection checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_operational.mojo -o build/tests/test_log_operational
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_log_operational
+native operational log projection: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_transcript_events.mojo -o build/tests/test_log_transcript_events
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_log_transcript_events
+Transcript all-events projection checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_sources.mojo -o build/tests/test_log_sources
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_log_sources
+recording-enabled predicate: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_app_server_args.mojo -o build/tests/test_app_server_args
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_app_server_args
+app-server configuration projection checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/app_server_args_driver.mojo -o build/tests/app_server_args_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/app_server_rpc_driver.mojo -o build/tests/app_server_rpc_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_super_hooks.mojo -o build/tests/test_super_hooks
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_super_hooks
+Super hook-trust protocol checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/super_hooks_driver.mojo -o build/tests/super_hooks_driver
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_wait_child.mojo -o build/tests/process_wait_child
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_wait.mojo -o build/tests/test_process_wait
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_process_wait /home/doxa/IdeaProjects/modex/build/tests/process_wait_child
+direct-child polling, timeout termination, and cached reap checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_stdio_child.mojo -o build/tests/process_stdio_child
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_stdio.mojo -o build/tests/test_process_stdio
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_process_stdio /home/doxa/IdeaProjects/modex/build/tests/process_stdio_child
+native redirected spawn, EOF, environment, and stdio restoration checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_capture_child.mojo -o build/tests/process_capture_child
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_capture.mojo -o build/tests/test_process_capture
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+build/tests/test_process_capture /home/doxa/IdeaProjects/modex/build/tests/process_capture_child
+bounded simultaneous process capture, explicit environment and timeout checks: PASS
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_child.mojo -o build/tests/process_child
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_spawn.mojo -o build/tests/test_process_spawn
+Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+/home/doxa/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
+    var missing = False
+                  ^
+build/tests/test_process_spawn /home/doxa/IdeaProjects/modex/build/tests/process_child
+synthetic-child-ok
+explicit environment spawn checks: PASS
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+test_actual_runtime_arguments_project_to_captured_preflight_arguments (test_app_server_args.AppServerArgumentTests.test_actual_runtime_arguments_project_to_captured_preflight_arguments) ... ok
+test_closed_request_pipe_returns_error_and_reaps_child (test_app_server_rpc.AppServerRpcTests.test_closed_request_pipe_returns_error_and_reaps_child) ... ok
+test_live_peer_closing_stdin_reports_error_without_sigpipe (test_app_server_rpc.AppServerRpcTests.test_live_peer_closing_stdin_reports_error_without_sigpipe) ... ok
+test_method_not_found_returns_legacy_bypass (test_app_server_rpc.AppServerRpcTests.test_method_not_found_returns_legacy_bypass) ... ok
+test_oversized_rpc_line_is_rejected_and_child_is_terminated (test_app_server_rpc.AppServerRpcTests.test_oversized_rpc_line_is_rejected_and_child_is_terminated) ... ok
+test_per_rpc_deadline_terminates_unresponsive_app_server (test_app_server_rpc.AppServerRpcTests.test_per_rpc_deadline_terminates_unresponsive_app_server) ... ok
+test_stdio_preflight_runs_exact_rpc_sequence_and_cleans_up (test_app_server_rpc.AppServerRpcTests.test_stdio_preflight_runs_exact_rpc_sequence_and_cleans_up) ... ok
+test_workspace_mismatch_fails_before_codex_spawn (test_app_server_rpc.AppServerRpcTests.test_workspace_mismatch_fails_before_codex_spawn) ... ok
+test_unimplemented_command_fails_without_echoing_arguments (test_cli.CliTests.test_unimplemented_command_fails_without_echoing_arguments) ... ok
+test_version_identity_mapping_and_no_mutations (test_cli.CliTests.test_version_identity_mapping_and_no_mutations) ... ok
+test_compressed_metadata_filters_and_output (test_compressed_sessions.CompressedSessionTests.test_compressed_metadata_filters_and_output) ... ok
+test_decoded_line_limit (test_compressed_sessions.CompressedSessionTests.test_decoded_line_limit) ... ok
+test_lines_cross_frames_and_blocks (test_compressed_sessions.CompressedSessionTests.test_lines_cross_frames_and_blocks) ... ok
+test_malformed_release_diagnostics (test_compressed_sessions.CompressedSessionTests.test_malformed_release_diagnostics) ... ok
+test_noncanonical_differences_are_retained (test_compressed_sessions.CompressedSessionTests.test_noncanonical_differences_are_retained) ... ok
+test_deepseek_startup_failures_match_frozen_output_and_upstream_behavior (test_gateway.GatewayCLITests.test_deepseek_startup_failures_match_frozen_output_and_upstream_behavior) ... ok
+test_group_writable_config_guard_remains_an_explicit_difference (test_gateway.GatewayCLITests.test_group_writable_config_guard_remains_an_explicit_difference) ... ok
+test_help_matches_frozen_gateway_help (test_gateway.GatewayCLITests.test_help_matches_frozen_gateway_help) ... ok
+test_parse_only_cases_match_frozen_cli_and_have_no_side_effects (test_gateway.GatewayCLITests.test_parse_only_cases_match_frozen_cli_and_have_no_side_effects) ... ok
+test_retained_startup_filesystem_mismatch_is_exactly_documented (test_gateway.GatewayCLITests.test_retained_startup_filesystem_mismatch_is_exactly_documented) ... ok
+test_help_and_diagnostics_match_release_without_mutations (test_inspection_cli.InspectionCliTests.test_help_and_diagnostics_match_release_without_mutations) ... ok
+test_seeded_argument_ordering_matches_release (test_inspection_cli.InspectionCliTests.test_seeded_argument_ordering_matches_release) ... ok
+test_raw_status_numbers_match_frozen_stream (test_json_float_oracle.JsonFloatOracleTests.test_raw_status_numbers_match_frozen_stream) ... ok
+test_escaped_keys_duplicate_keys_and_boundary_values (test_json_fuzz.JsonDifferentialTests.test_escaped_keys_duplicate_keys_and_boundary_values) ... ok
+test_generated_values_round_trip_through_mojo_tree (test_json_fuzz.JsonDifferentialTests.test_generated_values_round_trip_through_mojo_tree) ... ok
+test_invalid_syntax_utf8_and_number_overflow_are_rejected (test_json_fuzz.JsonDifferentialTests.test_invalid_syntax_utf8_and_number_overflow_are_rejected) ... ok
+test_buffered_and_streamed_continuations_are_session_scoped (test_local_rewrite.LocalRewriteTests.test_buffered_and_streamed_continuations_are_session_scoped) ... ok
+test_buffered_request_and_response_match_frozen_fixtures (test_local_rewrite.LocalRewriteTests.test_buffered_request_and_response_match_frozen_fixtures) ... ok
+test_chat_completions_passthrough_preserves_body_query_headers_and_error (test_local_rewrite.LocalRewriteTests.test_chat_completions_passthrough_preserves_body_query_headers_and_error) ... ok
+test_chat_completions_sse_is_incremental_and_cancellation_closes_upstream (test_local_rewrite.LocalRewriteTests.test_chat_completions_sse_is_incremental_and_cancellation_closes_upstream) ... ok
+test_clean_runtime_buffered_relay_with_loopback_upstream (test_local_rewrite.LocalRewriteTests.test_clean_runtime_buffered_relay_with_loopback_upstream) ... ok
+test_downstream_rst_closes_active_upstream_stream (test_local_rewrite.LocalRewriteTests.test_downstream_rst_closes_active_upstream_stream) ... ok
+test_empty_cached_history_is_distinct_from_an_unknown_response (test_local_rewrite.LocalRewriteTests.test_empty_cached_history_is_distinct_from_an_unknown_response) ... ok
+test_invalid_and_oversized_requests_never_reach_upstream (test_local_rewrite.LocalRewriteTests.test_invalid_and_oversized_requests_never_reach_upstream) ... ok
+test_non_2xx_upstream_status_and_body_are_forwarded (test_local_rewrite.LocalRewriteTests.test_non_2xx_upstream_status_and_body_are_forwarded) ... ok
+test_sigterm_exit_status_remains_visible (test_local_rewrite.LocalRewriteTests.test_sigterm_exit_status_remains_visible) ... ok
+test_sse_completes_after_downstream_half_close (test_local_rewrite.LocalRewriteTests.test_sse_completes_after_downstream_half_close) ... ok
+test_sse_completes_before_upstream_eof (test_local_rewrite.LocalRewriteTests.test_sse_completes_before_upstream_eof) ... ok
+test_unsupported_route_returns_json_without_upstream_request (test_local_rewrite.LocalRewriteTests.test_unsupported_route_returns_json_without_upstream_request) ... ok
+test_log_help_and_argument_diagnostics (test_log_cli.LogCliTests.test_log_help_and_argument_diagnostics) ... ok
+test_more_than_32_runtime_files_prunes_old_paths_but_follows_recent (test_log_follow_limits.LogFollowLimitTests.test_more_than_32_runtime_files_prunes_old_paths_but_follows_recent) ... ok
+test_oversized_partial_line_can_recover_to_valid_event (test_log_follow_limits.LogFollowLimitTests.test_oversized_partial_line_can_recover_to_valid_event) ... ok
+test_recent_file_survives_descriptor_pressure (test_log_follow_limits.LogFollowLimitTests.test_recent_file_survives_descriptor_pressure) ... ok
+test_full_operational_catalog_and_boundary_corpus_matches_frozen_stream (test_log_operational.OperationalLogProjectionTests.test_full_operational_catalog_and_boundary_corpus_matches_frozen_stream) ... ok
+test_binary_signatures_and_first_present_path (test_log_payload.LogPayloadTests.test_binary_signatures_and_first_present_path) ... ok
+test_text_is_preserved_and_known_binary_has_label (test_log_payload.LogPayloadTests.test_text_is_preserved_and_known_binary_has_label) ... ok
+test_zstd_limit_requires_complete_frame (test_log_payload.LogPayloadTests.test_zstd_limit_requires_complete_frame) ... ok
+test_pretty_fallback_and_json_string_arguments (test_log_payload_render.LogPayloadRenderTests.test_pretty_fallback_and_json_string_arguments) ... ok
+test_runtime_payload_display_matches_frozen_release (test_log_payload_render.LogPayloadRenderTests.test_runtime_payload_display_matches_frozen_release) ... ok
+test_structured_payload (test_log_payload_render.LogPayloadRenderTests.test_structured_payload) ... ok
+test_environment_override_and_empty_value (test_log_policy.LogPolicyTests.test_environment_override_and_empty_value) ... ok
+test_invalid_policy_falls_back_to_tmpdir (test_log_policy.LogPolicyTests.test_invalid_policy_falls_back_to_tmpdir) ... ok
+test_policy_scalar_type_and_range_boundaries (test_log_policy.LogPolicyTests.test_policy_scalar_type_and_range_boundaries) ... ok
+test_relative_and_absolute_policy_log_dirs (test_log_policy.LogPolicyTests.test_relative_and_absolute_policy_log_dirs) ... ok
+test_disabled_or_absent_recording_keeps_unsupported_live_guard (test_log_recording.RecordingLogTests.test_disabled_or_absent_recording_keeps_unsupported_live_guard) ... ok
+test_recorded_files_bypass_preexisting_and_new_registries (test_log_recording.RecordingLogTests.test_recorded_files_bypass_preexisting_and_new_registries) ... ok
+test_bearer_schemes_and_api_key_prefix_boundaries (test_log_redaction.LogRedactionTests.test_bearer_schemes_and_api_key_prefix_boundaries) ... ok
+test_nested_json_and_quoted_sensitive_assignments (test_log_redaction.LogRedactionTests.test_nested_json_and_quoted_sensitive_assignments) ... ok
+test_unicode_whitespace_credentials_are_safely_redacted (test_log_redaction.LogRedactionTests.test_unicode_whitespace_credentials_are_safely_redacted) ... ok
+test_duplicate_runtime_keys_keep_last_non_scalar_value (test_log_runtime.LogRuntimeTests.test_duplicate_runtime_keys_keep_last_non_scalar_value) ... ok
+test_invalid_base64_payload_is_ignored (test_log_runtime.LogRuntimeTests.test_invalid_base64_payload_is_ignored) ... ok
+test_malformed_input_token_count_rejects_runtime_record (test_log_runtime.LogRuntimeTests.test_malformed_input_token_count_rejects_runtime_record) ... ok
+test_reads_valid_final_runtime_event_after_one_mib (test_log_runtime.LogRuntimeTests.test_reads_valid_final_runtime_event_after_one_mib) ... ok
+test_reads_valid_final_session_event_after_two_mib (test_log_runtime.LogRuntimeTests.test_reads_valid_final_session_event_after_two_mib) ... ok
+test_runtime_equal_mtimes_sort_descending_by_path (test_log_runtime.LogRuntimeTests.test_runtime_equal_mtimes_sort_descending_by_path) ... ok
+test_session_same_millisecond_mtimes_sort_ascending_by_path (test_log_runtime.LogRuntimeTests.test_session_same_millisecond_mtimes_sort_ascending_by_path) ... ok
+test_token_defaults_rates_and_plain_metadata (test_log_runtime.LogRuntimeTests.test_token_defaults_rates_and_plain_metadata) ... ok
+test_upstream_payload_requires_payload_b64 (test_log_runtime.LogRuntimeTests.test_upstream_payload_requires_payload_b64) ... ok
+test_default_stream_and_option_before_mode_wait_and_follow (test_log_stream.LogStreamTests.test_default_stream_and_option_before_mode_wait_and_follow) ... ok
+test_initial_snapshot_order_and_empty_waiting_message (test_log_stream.LogStreamTests.test_initial_snapshot_order_and_empty_waiting_message) ... ok
+test_operational_routine_load_suppression_and_error_output (test_log_stream.LogStreamTests.test_operational_routine_load_suppression_and_error_output) ... ok
+test_runtime_and_session_appends_follow_existing_paths (test_log_stream.LogStreamTests.test_runtime_and_session_appends_follow_existing_paths) ... ok
+test_combined_budget_ties_and_follow_survival_under_descriptor_limit (test_log_stream_paths.LogStreamPathTests.test_combined_budget_ties_and_follow_survival_under_descriptor_limit) ... ok
+test_runtime_two_second_and_session_ten_second_path_discovery (test_log_stream_paths.LogStreamPathTests.test_runtime_two_second_and_session_ten_second_path_discovery) ... ok
+test_stream_payload_masks_synthetic_secrets_and_records_oracle_difference (test_log_stream_redaction.LogStreamRedactionDifferenceTests.test_stream_payload_masks_synthetic_secrets_and_records_oracle_difference) ... ok
+test_message_visibility_filters_attachment_paths_and_preserves_spacing (test_log_text.LogTextTests.test_message_visibility_filters_attachment_paths_and_preserves_spacing) ... ok
+test_safe_text_redacts_controls_and_bounds_utf8 (test_log_text.LogTextTests.test_safe_text_redacts_controls_and_bounds_utf8) ... ok
+test_tool_names_and_operation_values_are_bounded_and_safe (test_log_text.LogTextTests.test_tool_names_and_operation_values_are_bounded_and_safe) ... ok
+test_tool_visibility_strips_ansi_normalizes_cr_and_suppresses_binary (test_log_text.LogTextTests.test_tool_visibility_strips_ansi_normalizes_cr_and_suppresses_binary) ... ok
+test_visibility_matches_frozen_log_last (test_log_text.LogTextTests.test_visibility_matches_frozen_log_last) ... ok
+test_historical_offsets_and_leap_seconds_match_oracle (test_log_timestamps.LogTimestampTests.test_historical_offsets_and_leap_seconds_match_oracle) ... ok
+test_runtime_and_transcript_timestamps_match_oracle_across_zones (test_log_timestamps.LogTimestampTests.test_runtime_and_transcript_timestamps_match_oracle_across_zones) ... ok
+test_messages_context_and_tools_match_frozen_log_last (test_log_transcript.TranscriptTests.test_messages_context_and_tools_match_frozen_log_last) ... ok
+test_operation_shapes_and_presence_match_oracle (test_log_transcript.TranscriptTests.test_operation_shapes_and_presence_match_oracle) ... ok
+test_production_json_and_plain_labels_match_oracle (test_log_transcript.TranscriptTests.test_production_json_and_plain_labels_match_oracle) ... ok
+test_unknown_and_invisible_records_are_skipped (test_log_transcript.TranscriptTests.test_unknown_and_invisible_records_are_skipped) ... ok
+test_append_and_partial_line_delivery (test_log_upstream_follow.LogUpstreamFollowTests.test_append_and_partial_line_delivery) ... ok
+test_initial_latest_event_and_empty_waiting_message (test_log_upstream_follow.LogUpstreamFollowTests.test_initial_latest_event_and_empty_waiting_message) ... ok
+test_invalid_parent_of_tracked_log_exits_with_inspect_error (test_log_upstream_follow.LogUpstreamFollowTests.test_invalid_parent_of_tracked_log_exits_with_inspect_error) ... ok
+test_new_log_file_is_followed_after_reconciliation (test_log_upstream_follow.LogUpstreamFollowTests.test_new_log_file_is_followed_after_reconciliation) ... ok
+test_split_utf8_waits_for_complete_line (test_log_upstream_follow.LogUpstreamFollowTests.test_split_utf8_waits_for_complete_line) ... ok
+test_truncation_and_rotation_reopen_followed_file (test_log_upstream_follow.LogUpstreamFollowTests.test_truncation_and_rotation_reopen_followed_file) ... ok
+test_argument_diagnostics_match_release (test_logs.LogLastTests.test_argument_diagnostics_match_release) ... ok
+test_empty_text_and_json_match_release_and_create_private_root (test_logs.LogLastTests.test_empty_text_and_json_match_release_and_create_private_root) ... ok
+test_runtime_upstream_and_token_events_match_release (test_logs.LogLastTests.test_runtime_upstream_and_token_events_match_release) ... ok
+test_transcript_json_and_native_redaction_match_release (test_logs.LogLastTests.test_transcript_json_and_native_redaction_match_release) ... ok
+test_transcript_text_matches_release (test_logs.LogLastTests.test_transcript_text_matches_release) ... ok
+test_unsafe_existing_app_root_reports_known_repair_gap (test_logs.LogLastTests.test_unsafe_existing_app_root_reports_known_repair_gap) ... ok
+test_absolute_deadline_with_slow_drip (test_loopback_http.LoopbackHTTPTests.test_absolute_deadline_with_slow_drip) ... ok
+test_body_limit_and_connect_refusal (test_loopback_http.LoopbackHTTPTests.test_body_limit_and_connect_refusal) ... ok
+test_chunk_extension_and_total_trailer_limits (test_loopback_http.LoopbackHTTPTests.test_chunk_extension_and_total_trailer_limits) ... ok
+test_chunked_with_extension_and_trailer (test_loopback_http.LoopbackHTTPTests.test_chunked_with_extension_and_trailer) ... ok
+test_clean_filesystem_runtime_with_shared_network (test_loopback_http.LoopbackHTTPTests.test_clean_filesystem_runtime_with_shared_network) ... ok
+test_close_delimited_body_and_non_success_status (test_loopback_http.LoopbackHTTPTests.test_close_delimited_body_and_non_success_status) ... ok
+test_content_length_and_sensitive_header_request (test_loopback_http.LoopbackHTTPTests.test_content_length_and_sensitive_header_request) ... ok
+test_descriptors_close_on_repeated_success_and_error (test_loopback_http.LoopbackHTTPTests.test_descriptors_close_on_repeated_success_and_error) ... ok
+test_exact_body_cap_and_many_small_chunks (test_loopback_http.LoopbackHTTPTests.test_exact_body_cap_and_many_small_chunks) ... ok
+test_header_controls_rejected_before_ows_trim (test_loopback_http.LoopbackHTTPTests.test_header_controls_rejected_before_ows_trim) ... ok
+test_header_limit (test_loopback_http.LoopbackHTTPTests.test_header_limit) ... ok
+test_informational_response_bounds_and_upgrade_rejection (test_loopback_http.LoopbackHTTPTests.test_informational_response_bounds_and_upgrade_rejection) ... ok
+test_ipv6_loopback (test_loopback_http.LoopbackHTTPTests.test_ipv6_loopback) ... ok
+test_keepalive_content_length_and_informational_response (test_loopback_http.LoopbackHTTPTests.test_keepalive_content_length_and_informational_response) ... ok
+test_malformed_chunks_and_trailers (test_loopback_http.LoopbackHTTPTests.test_malformed_chunks_and_trailers) ... ok
+test_malformed_header_fails_before_peer_close (test_loopback_http.LoopbackHTTPTests.test_malformed_header_fails_before_peer_close) ... ok
+test_malformed_response_and_timeout (test_loopback_http.LoopbackHTTPTests.test_malformed_response_and_timeout) ... ok
+test_multiple_informational_responses_fragmented_and_coalesced (test_loopback_http.LoopbackHTTPTests.test_multiple_informational_responses_fragmented_and_coalesced) ... ok
+test_peer_close_during_send_does_not_signal_process (test_loopback_http.LoopbackHTTPTests.test_peer_close_during_send_does_not_signal_process) ... ok
+test_rejects_nonloopback_and_header_injection (test_loopback_http.LoopbackHTTPTests.test_rejects_nonloopback_and_header_injection) ... ok
+test_request_injection_rejected_before_connect (test_loopback_http.LoopbackHTTPTests.test_request_injection_rejected_before_connect) ... ok
+test_truncated_conflicting_and_ambiguous_content_length (test_loopback_http.LoopbackHTTPTests.test_truncated_conflicting_and_ambiguous_content_length) ... ok
+test_unsafe_body_cap_rejected_before_socket (test_loopback_http.LoopbackHTTPTests.test_unsafe_body_cap_rejected_before_socket) ... ok
+test_zero_body_and_no_body_status (test_loopback_http.LoopbackHTTPTests.test_zero_body_and_no_body_status) ... ok
+test_body_can_outlast_setup_deadline_while_not_idle (test_loopback_http_stream.LoopbackHTTPStreamTests.test_body_can_outlast_setup_deadline_while_not_idle) ... ok
+test_chunk_decode_error_closes_socket (test_loopback_http_stream.LoopbackHTTPStreamTests.test_chunk_decode_error_closes_socket) ... ok
+test_chunk_payload_streams_before_chunk_and_response_finish (test_loopback_http_stream.LoopbackHTTPStreamTests.test_chunk_payload_streams_before_chunk_and_response_finish) ... ok
+test_close_and_destructor_close_peer_after_first_chunk (test_loopback_http_stream.LoopbackHTTPStreamTests.test_close_and_destructor_close_peer_after_first_chunk) ... ok
+test_close_delimited_body (test_loopback_http_stream.LoopbackHTTPStreamTests.test_close_delimited_body) ... ok
+test_connect_errno_survives_downstream_probe (test_loopback_http_stream.LoopbackHTTPStreamTests.test_connect_errno_survives_downstream_probe) ... ok
+test_constructor_error_closes_socket (test_loopback_http_stream.LoopbackHTTPStreamTests.test_constructor_error_closes_socket) ... ok
+test_downstream_request_half_close_keeps_response_readable (test_loopback_http_stream.LoopbackHTTPStreamTests.test_downstream_request_half_close_keeps_response_readable) ... ok
+test_downstream_reset_cancels_held_open_sse (test_loopback_http_stream.LoopbackHTTPStreamTests.test_downstream_reset_cancels_held_open_sse) ... ok
+test_informational_and_line_limits (test_loopback_http_stream.LoopbackHTTPStreamTests.test_informational_and_line_limits) ... ok
+test_interim_and_fragmented_chunk_response (test_loopback_http_stream.LoopbackHTTPStreamTests.test_interim_and_fragmented_chunk_response) ... ok
+test_ipv6_loopback (test_loopback_http_stream.LoopbackHTTPStreamTests.test_ipv6_loopback) ... ok
+test_limit_loopback_validation_and_path_injection (test_loopback_http_stream.LoopbackHTTPStreamTests.test_limit_loopback_validation_and_path_injection) ... ok
+test_post_and_duplicate_response_headers (test_loopback_http_stream.LoopbackHTTPStreamTests.test_post_and_duplicate_response_headers) ... ok
+test_rejects_bad_framing (test_loopback_http_stream.LoopbackHTTPStreamTests.test_rejects_bad_framing) ... ok
+test_rejects_injected_and_caller_framing_headers_before_connect (test_loopback_http_stream.LoopbackHTTPStreamTests.test_rejects_injected_and_caller_framing_headers_before_connect) ... ok
+test_request_and_idle_deadlines (test_loopback_http_stream.LoopbackHTTPStreamTests.test_request_and_idle_deadlines) ... ok
+test_status_799_and_full_token_names_are_accepted (test_loopback_http_stream.LoopbackHTTPStreamTests.test_status_799_and_full_token_names_are_accepted) ... ok
+test_stream_move_preserves_socket_ownership (test_loopback_http_stream.LoopbackHTTPStreamTests.test_stream_move_preserves_socket_ownership) ... ok
+test_unbounded_incremental_body_exceeds_4_mib (test_loopback_http_stream.LoopbackHTTPStreamTests.test_unbounded_incremental_body_exceeds_4_mib) ... ok
+test_ambiguous_duplicate_and_malformed_headers_are_rejected (test_loopback_server.LoopbackHTTPServerTests.test_ambiguous_duplicate_and_malformed_headers_are_rejected) ... ok
+test_chunked_request_and_trailers_are_decoded (test_loopback_server.LoopbackHTTPServerTests.test_chunked_request_and_trailers_are_decoded) ... ok
+test_chunked_stream_delivers_first_chunk_before_finish (test_loopback_server.LoopbackHTTPServerTests.test_chunked_stream_delivers_first_chunk_before_finish) ... ok
+test_expect_continue_is_answered_before_body_read (test_loopback_server.LoopbackHTTPServerTests.test_expect_continue_is_answered_before_body_read) ... ok
+test_fixed_length_request_and_response_with_partial_body (test_loopback_server.LoopbackHTTPServerTests.test_fixed_length_request_and_response_with_partial_body) ... ok
+test_ipv6_loopback_listener_when_available (test_loopback_server.LoopbackHTTPServerTests.test_ipv6_loopback_listener_when_available) ... ok
+test_oversized_and_truncated_bodies_are_rejected (test_loopback_server.LoopbackHTTPServerTests.test_oversized_and_truncated_bodies_are_rejected) ... ok
+test_peer_reset_is_detected_and_connection_move_keeps_ownership (test_loopback_server.LoopbackHTTPServerTests.test_peer_reset_is_detected_and_connection_move_keeps_ownership) ... ok
+test_read_timeout_and_idle_accept_timeout (test_loopback_server.LoopbackHTTPServerTests.test_read_timeout_and_idle_accept_timeout) ... ok
+test_response_rejects_header_injection_and_caller_framing (test_loopback_server.LoopbackHTTPServerTests.test_response_rejects_header_injection_and_caller_framing) ... ok
+test_small_caller_body_limit_accepts_exact_and_rejects_over (test_loopback_server.LoopbackHTTPServerTests.test_small_caller_body_limit_accepts_exact_and_rejects_over) ... ok
+test_all_toml_11_manifest_files_match_runtime_policy_load (test_policy_corpus.PolicyCorpusTests.test_all_toml_11_manifest_files_match_runtime_policy_load) ... ok
+test_resource_and_structure_boundaries_match_oracle (test_policy_limits.PolicyLimitTests.test_resource_and_structure_boundaries_match_oracle) ... ok
+test_direct_child_timeout_without_external_implementation_helpers (test_process_runtime.ProcessRuntimeTests.test_direct_child_timeout_without_external_implementation_helpers) ... ok
+test_explicit_environment_spawn_with_only_mojo_and_platform_libraries (test_process_runtime.ProcessRuntimeTests.test_explicit_environment_spawn_with_only_mojo_and_platform_libraries) ... ok
+test_redirected_spawn_without_external_implementation_helpers (test_process_runtime.ProcessRuntimeTests.test_redirected_spawn_without_external_implementation_helpers) ... ok
+test_buffered_edge_observations_and_exact_tool_errors (test_provider_chat_buffered.ProviderChatBufferedTests.test_buffered_edge_observations_and_exact_tool_errors) ... ok
+test_captures_are_checksum_verified_oracle_observations (test_provider_chat_buffered.ProviderChatBufferedTests.test_captures_are_checksum_verified_oracle_observations) ... ok
+test_existing_oracle_text_and_request_metadata_cases_match_native (test_provider_chat_buffered.ProviderChatBufferedTests.test_existing_oracle_text_and_request_metadata_cases_match_native) ... ok
+test_missing_oracle_tool_call_ids_are_unique_uuid7 (test_provider_chat_buffered.ProviderChatBufferedTests.test_missing_oracle_tool_call_ids_are_unique_uuid7) ... ok
+test_native_buffered_results_match_frozen_oracle_captures (test_provider_chat_buffered.ProviderChatBufferedTests.test_native_buffered_results_match_frozen_oracle_captures) ... ok
+test_oracle_maps_buffered_text_tool_usage_metadata_and_tool_errors (test_provider_chat_buffered.ProviderChatBufferedTests.test_oracle_maps_buffered_text_tool_usage_metadata_and_tool_errors) ... ok
+test_provider_request_fixture_has_oracle_buffered_text_and_metadata_cases (test_provider_chat_buffered.ProviderChatBufferedTests.test_provider_request_fixture_has_oracle_buffered_text_and_metadata_cases) ... ok
+test_absent_and_wrong_type_choices (test_provider_chat_chunk.ProviderChatChunkTests.test_absent_and_wrong_type_choices) ... ok
+test_embedded_error_presence_and_fallback_precedence (test_provider_chat_chunk.ProviderChatChunkTests.test_embedded_error_presence_and_fallback_precedence) ... ok
+test_first_array_element_and_unknown_choice_fields (test_provider_chat_chunk.ProviderChatChunkTests.test_first_array_element_and_unknown_choice_fields) ... ok
+test_numeric_error_code_boundaries_and_number_spellings (test_provider_chat_chunk.ProviderChatChunkTests.test_numeric_error_code_boundaries_and_number_spellings) ... ok
+test_selected_nonobject_choices_and_malformed_json_fail_explicitly (test_provider_chat_chunk.ProviderChatChunkTests.test_selected_nonobject_choices_and_malformed_json_fail_explicitly) ... ok
+test_typed_delta_defaults_and_empty_string_rules (test_provider_chat_chunk.ProviderChatChunkTests.test_typed_delta_defaults_and_empty_string_rules) ... ok
+test_chat_decoder_with_only_its_native_runtime_dependencies (test_provider_chat_sse.ProviderChatSSETests.test_chat_decoder_with_only_its_native_runtime_dependencies) ... ok
+test_fragmented_sse_values_reach_native_chat_decoder (test_provider_chat_sse.ProviderChatSSETests.test_fragmented_sse_values_reach_native_chat_decoder) ... ok
+test_all_captured_streams_match_byte_for_byte (test_provider_chat_stream.ProviderChatStreamOracleTests.test_all_captured_streams_match_byte_for_byte) ... ok
+test_chunk_replay_is_stable_bytewise_and_at_seeded_boundaries (test_provider_chat_stream.ProviderChatStreamOracleTests.test_chunk_replay_is_stable_bytewise_and_at_seeded_boundaries) ... ok
+test_clean_runtime_uuid7_and_malformed_utf8 (test_provider_chat_stream.ProviderChatStreamOracleTests.test_clean_runtime_uuid7_and_malformed_utf8) ... ok
+test_frozen_oracle_identity (test_provider_chat_stream.ProviderChatStreamOracleTests.test_frozen_oracle_identity) ... ok
+test_frozen_oracle_transport_failures_remain_visible (test_provider_chat_stream.ProviderChatStreamOracleTests.test_frozen_oracle_transport_failures_remain_visible) ... ok
+test_missing_call_id_is_proven_uuid7_nondeterminism (test_provider_chat_stream.ProviderChatStreamOracleTests.test_missing_call_id_is_proven_uuid7_nondeterminism) ... ok
+test_oracle_preserves_tool_search_json_argument_shapes (test_provider_chat_stream.ProviderChatStreamOracleTests.test_oracle_preserves_tool_search_json_argument_shapes) ... ok
+test_uuid7_comparison_only_ignores_one_valid_fallback_value (test_provider_chat_stream.ProviderChatStreamOracleTests.test_uuid7_comparison_only_ignores_one_valid_fallback_value) ... ok
+test_bounded_http_error_body (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_bounded_http_error_body) ... ok
+test_buffered_body_limit_fails_closed_without_emitting_payload (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_buffered_body_limit_fails_closed_without_emitting_payload) ... ok
+test_buffered_mapper_cases_match_frozen_bytes (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_buffered_mapper_cases_match_frozen_bytes) ... ok
+test_cancel_after_first_event_closes_once (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_cancel_after_first_event_closes_once) ... ok
+test_clean_runtime_buffered_transport_only (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_clean_runtime_buffered_transport_only) ... ok
+test_clean_runtime_with_native_transport_only (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_clean_runtime_with_native_transport_only) ... ok
+test_connect_error_is_explicit (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_connect_error_is_explicit) ... ok
+test_connected_local_rewrite_projects_provider_rate_limits (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_connected_local_rewrite_projects_provider_rate_limits) ... ok
+test_connected_local_rewrite_rejects_oversized_sse_event (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_connected_local_rewrite_rejects_oversized_sse_event) ... ok
+test_connected_local_rewrite_streams_over_4_mib_total (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_connected_local_rewrite_streams_over_4_mib_total) ... ok
+test_content_type_matching_is_case_insensitive (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_content_type_matching_is_case_insensitive) ... ok
+test_done_closes_stream_before_eof_and_ignores_trailing_payload (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_done_closes_stream_before_eof_and_ignores_trailing_payload) ... ok
+test_empty_and_whitespace_api_keys_are_rejected_before_post (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_empty_and_whitespace_api_keys_are_rejected_before_post) ... ok
+test_first_content_type_header_controls_reader_selection (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_first_content_type_header_controls_reader_selection) ... ok
+test_headers_are_filtered_and_request_metadata_is_preserved (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_headers_are_filtered_and_request_metadata_is_preserved) ... ok
+test_idle_timeout_emits_failure (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_idle_timeout_emits_failure) ... ok
+test_malformed_json_response_closes_the_socket (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_malformed_json_response_closes_the_socket) ... ok
+test_native_reader_modes_and_exchange_ownership (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_native_reader_modes_and_exchange_ownership) ... ok
+test_non_2xx_is_reported_without_retry (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_non_2xx_is_reported_without_retry) ... ok
+test_prepared_body_does_not_replace_pending_messages (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_prepared_body_does_not_replace_pending_messages) ... ok
+test_real_post_and_buffered_responses_match_frozen_fixtures (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_real_post_and_buffered_responses_match_frozen_fixtures) ... ok
+test_real_post_and_fragmented_sse_match_frozen_fixtures (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_real_post_and_fragmented_sse_match_frozen_fixtures) ... ok
+test_sse_first_content_type_header_selects_stream_reader (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_sse_first_content_type_header_selects_stream_reader) ... ok
+test_sse_line_limit_fails_without_emitting_oversized_input (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_sse_line_limit_fails_without_emitting_oversized_input) ... ok
+test_upstream_disconnect_does_not_retry (test_provider_deepseek_transport.ProviderDeepSeekTransportTests.test_upstream_disconnect_does_not_retry) ... ok
+test_loopback_framing_auth_and_bounded_streaming (test_provider_passthrough.ProviderPassthroughTests.test_loopback_framing_auth_and_bounded_streaming) ... ok
+test_captured_request_bodies (test_provider_requests.ProviderRequestTests.test_captured_request_bodies) ... ok
+test_catalog_cases_are_observed_or_explicit_gaps (test_provider_requests.ProviderRequestTests.test_catalog_cases_are_observed_or_explicit_gaps) ... ok
+test_clean_runtime_with_only_native_binary_and_official_libraries (test_provider_requests.ProviderRequestTests.test_clean_runtime_with_only_native_binary_and_official_libraries) ... ok
+test_isolated_environment_repeats_without_user_configuration (test_provider_requests.ProviderRequestTests.test_isolated_environment_repeats_without_user_configuration) ... ok
+test_native_rejections_cover_trust_boundaries (test_provider_requests.ProviderRequestTests.test_native_rejections_cover_trust_boundaries) ... ok
+test_other_provider_routes_are_recorded_separately (test_provider_requests.ProviderRequestTests.test_other_provider_routes_are_recorded_separately) ... ok
+test_recorded_local_rejections_keep_hidden_diagnostics_explicit (test_provider_requests.ProviderRequestTests.test_recorded_local_rejections_keep_hidden_diagnostics_explicit) ... ok
+test_request_metadata_stays_separate_from_completion_metadata (test_provider_requests.ProviderRequestTests.test_request_metadata_stays_separate_from_completion_metadata) ... ok
+test_accumulation_joins_without_newline_and_flushes_on_done (test_provider_sse.ProviderSSETests.test_accumulation_joins_without_newline_and_flushes_on_done) ... ok
+test_bom_is_preserved_and_invalid_utf8_fails (test_provider_sse.ProviderSSETests.test_bom_is_preserved_and_invalid_utf8_fails) ... ok
+test_completed_frames_survive_a_later_parse_error (test_provider_sse.ProviderSSETests.test_completed_frames_survive_a_later_parse_error) ... ok
+test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over (test_provider_sse.ProviderSSETests.test_default_cap_accepts_four_mib_line_and_rejects_one_byte_over) ... ok
+test_done_any_data_line_flushes_and_repeated_done_is_idempotent (test_provider_sse.ProviderSSETests.test_done_any_data_line_flushes_and_repeated_done_is_idempotent) ... ok
+test_done_stops_before_malformed_or_oversized_trailing_input (test_provider_sse.ProviderSSETests.test_done_stops_before_malformed_or_oversized_trailing_input) ... ok
+test_empty_frames_and_eof_partial_line (test_provider_sse.ProviderSSETests.test_empty_frames_and_eof_partial_line) ... ok
+test_eof_carriage_return_preserves_completed_frame (test_provider_sse.ProviderSSETests.test_eof_carriage_return_preserves_completed_frame) ... ok
+test_event_limit_includes_separator_bytes (test_provider_sse.ProviderSSETests.test_event_limit_includes_separator_bytes) ... ok
+test_every_byte_cut_matches_single_chunk (test_provider_sse.ProviderSSETests.test_every_byte_cut_matches_single_chunk) ... ok
+test_exact_and_exceeded_accumulation_limit (test_provider_sse.ProviderSSETests.test_exact_and_exceeded_accumulation_limit) ... ok
+test_invalid_utf8_precedes_line_size_error (test_provider_sse.ProviderSSETests.test_invalid_utf8_precedes_line_size_error) ... ok
+test_joined_then_separate_json_values (test_provider_sse.ProviderSSETests.test_joined_then_separate_json_values) ... ok
+test_line_limit_exact_and_one_over (test_provider_sse.ProviderSSETests.test_line_limit_exact_and_one_over) ... ok
+test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed (test_provider_sse.ProviderSSETests.test_lone_cr_is_not_a_delimiter_and_trailing_cr_is_trimmed) ... ok
+test_nul_and_bom_are_not_silently_normalized (test_provider_sse.ProviderSSETests.test_nul_and_bom_are_not_silently_normalized) ... ok
+test_seeded_chunk_schedules_match_single_chunk (test_provider_sse.ProviderSSETests.test_seeded_chunk_schedules_match_single_chunk) ... ok
+test_wire_delimiters_data_field_and_ignored_fields (test_provider_sse.ProviderSSETests.test_wire_delimiters_data_field_and_ignored_fields) ... ok
+test_json_runtime_fragmentation_done_and_invalid_utf8 (test_provider_sse_runtime.ProviderSSERuntimeTests.test_json_runtime_fragmentation_done_and_invalid_utf8) ... ok
+test_custom_argv0_matches_release (test_root_help.RootHelpTests.test_custom_argv0_matches_release) ... ok
+test_help_forms_match_release_and_do_not_mutate_home (test_root_help.RootHelpTests.test_help_forms_match_release_and_do_not_mutate_home) ... ok
+test_version_with_only_platform_and_official_mojo_runtime_libraries (test_runtime.CleanRuntimeTests.test_version_with_only_platform_and_official_mojo_runtime_libraries) ... ok
+test_budget_types_and_boundaries (test_runtime_recovery.RuntimeRecoveryTests.test_budget_types_and_boundaries) ... ok
+test_differential_pinned_mojo_policy (test_runtime_recovery.RuntimeRecoveryTests.test_differential_pinned_mojo_policy) ... Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
+ok
+test_identity_and_quiescence (test_runtime_recovery.RuntimeRecoveryTests.test_identity_and_quiescence) ... ok
+test_negative_zero_is_not_a_serde_signed_integer (test_runtime_recovery.RuntimeRecoveryTests.test_negative_zero_is_not_a_serde_signed_integer) ... ok
+test_path_identity_with_missing_children_and_symlinks (test_runtime_recovery.RuntimeRecoveryTests.test_path_identity_with_missing_children_and_symlinks) ... ok
+test_generated_argument_sequences (test_session_cli.SessionCliTests.test_generated_argument_sequences) ... ok
+test_release_help_and_argument_diagnostics (test_session_cli.SessionCliTests.test_release_help_and_argument_diagnostics) ... ok
+test_all_short_kirat_vowel_sequences (test_session_text.SessionTextTests.test_all_short_kirat_vowel_sequences) ... ok
+test_emoji_script_ligatures_and_control_cells (test_session_text.SessionTextTests.test_emoji_script_ligatures_and_control_cells) ... ok
+test_empty_panels_and_wrapping (test_session_text.SessionTextTests.test_empty_panels_and_wrapping) ... ok
+test_generated_unicode_width_sequences (test_session_text.SessionTextTests.test_generated_unicode_width_sequences) ... ok
+test_interactive_view_remains_explicitly_unimplemented (test_session_text.SessionTextTests.test_interactive_view_remains_explicitly_unimplemented) ... ok
+test_official_emoji_sequences_match_oracle (test_session_text.SessionTextTests.test_official_emoji_sequences_match_oracle) ... ok
+test_optional_cells_multiple_rows_and_current (test_session_text.SessionTextTests.test_optional_cells_multiple_rows_and_current) ... ok
+test_table_columns_truncation_and_full_ids (test_session_text.SessionTextTests.test_table_columns_truncation_and_full_ids) ... ok
+test_unicode_path_wrapping (test_session_text.SessionTextTests.test_unicode_path_wrapping) ... ok
+test_unicode_range_edges (test_session_text.SessionTextTests.test_unicode_range_edges) ... ok
+test_unicode_scalar_property_boundaries (test_session_text.SessionTextTests.test_unicode_scalar_property_boundaries) ... ok
+test_unicode_titles_ids_and_cell_boundaries (test_session_text.SessionTextTests.test_unicode_titles_ids_and_cell_boundaries) ... ok
+test_width_override_grammar_and_fallback (test_session_text.SessionTextTests.test_width_override_grammar_and_fallback) ... ok
+test_archived_children_and_newest_first_ordering (test_sessions.SessionOutputTests.test_archived_children_and_newest_first_ordering) ... ok
+test_filters_limits_and_machine_output_modes (test_sessions.SessionOutputTests.test_filters_limits_and_machine_output_modes) ... ok
+test_future_recurring_timezone_rules (test_sessions.SessionOutputTests.test_future_recurring_timezone_rules) ... ok
+test_future_timezone_transition_seconds (test_sessions.SessionOutputTests.test_future_timezone_transition_seconds) ... ok
+test_json_file_and_metadata_precedence (test_sessions.SessionOutputTests.test_json_file_and_metadata_precedence) ... ok
+test_malformed_records_and_symlinks (test_sessions.SessionOutputTests.test_malformed_records_and_symlinks) ... ok
+test_nonobject_followup_records_do_not_crash_modex (test_sessions.SessionOutputTests.test_nonobject_followup_records_do_not_crash_modex) ... ok
+test_numeric_timestamps_and_fallback_file_times (test_sessions.SessionOutputTests.test_numeric_timestamps_and_fallback_file_times) ... ok
+test_numeric_timezones_and_daylight_transitions (test_sessions.SessionOutputTests.test_numeric_timezones_and_daylight_transitions) ... ok
+test_populated_json (test_sessions.SessionOutputTests.test_populated_json) ... ok
+test_posix_timezone_strings (test_sessions.SessionOutputTests.test_posix_timezone_strings) ... ok
+test_unicode_prefix_on_first_metadata_record_is_not_accepted (test_sessions.SessionOutputTests.test_unicode_prefix_on_first_metadata_record_is_not_accepted) ... ok
+test_unicode_whitespace_and_blank_string_fallbacks (test_sessions.SessionOutputTests.test_unicode_whitespace_and_blank_string_fallbacks) ... ok
+test_file_hash_without_external_implementation_helpers (test_sha256.SHA256Tests.test_file_hash_without_external_implementation_helpers) ... ok
+test_file_hashing_limits_and_empty_file (test_sha256.SHA256Tests.test_file_hashing_limits_and_empty_file) ... ok
+test_large_incremental_binary_payload (test_sha256.SHA256Tests.test_large_incremental_binary_payload) ... ok
+test_seeded_payloads_at_block_and_padding_boundaries (test_sha256.SHA256Tests.test_seeded_payloads_at_block_and_padding_boundaries) ... ok
+test_credential_free_url_validation_matches_frozen_capture (test_super_cli.SuperCliTests.test_credential_free_url_validation_matches_frozen_capture) ... ok
+test_help_matches_baseline_without_creating_application_state (test_super_cli.SuperCliTests.test_help_matches_baseline_without_creating_application_state) ... ok
+test_positional_tail_validation_matches_baseline (test_super_cli.SuperCliTests.test_positional_tail_validation_matches_baseline) ... ok
+test_unavailable_startup_fails_before_side_effects_and_keeps_keys_private (test_super_cli.SuperCliTests.test_unavailable_startup_fails_before_side_effects_and_keeps_keys_private) ... ok
+test_clean_runtime_interactive_peer_preserves_inherited_channels (test_super_hooks_runtime.SuperHooksRuntimeTests.test_clean_runtime_interactive_peer_preserves_inherited_channels) ... ok
+test_interactive_peer_replies_after_each_actual_request (test_super_hooks_runtime.SuperHooksRuntimeTests.test_interactive_peer_replies_after_each_actual_request) ... ok
+test_large_batch_write_handles_pipe_backpressure (test_super_hooks_runtime.SuperHooksRuntimeTests.test_large_batch_write_handles_pipe_backpressure) ... ok
+test_native_driver_ignores_malformed_and_unmatched_peer_frames (test_super_hooks_runtime.SuperHooksRuntimeTests.test_native_driver_ignores_malformed_and_unmatched_peer_frames) ... ok
+test_native_driver_matches_observed_oracle_requests_and_results (test_super_hooks_runtime.SuperHooksRuntimeTests.test_native_driver_matches_observed_oracle_requests_and_results) ... ok
+test_oracle_synthetic_peer_captures_success_and_failure_paths (test_super_hooks_runtime.SuperHooksRuntimeTests.test_oracle_synthetic_peer_captures_success_and_failure_paths) ... ok
+test_timeout_message_matches_frozen_recv_timeout_error (test_super_hooks_runtime.SuperHooksRuntimeTests.test_timeout_message_matches_frozen_recv_timeout_error) ... ok
+test_untrusted_hook_is_written_then_verified_without_bypass (test_super_hooks_runtime.SuperHooksRuntimeTests.test_untrusted_hook_is_written_then_verified_without_bypass) ... ok
+test_buffered_and_binary_passthrough (test_super_launch.SuperLaunchTests.test_buffered_and_binary_passthrough) ... ok
+test_child_exit_and_preflight_failure_cleanup (test_super_launch.SuperLaunchTests.test_child_exit_and_preflight_failure_cleanup) ... ok
+test_existing_codex_data_is_preserved_before_child_or_network (test_super_launch.SuperLaunchTests.test_existing_codex_data_is_preserved_before_child_or_network) ... ok
+test_idle_relay_exits_when_its_parent_channel_closes (test_super_launch.SuperLaunchTests.test_idle_relay_exits_when_its_parent_channel_closes) ... ok
+test_legacy_hook_bypass_uses_the_baseline_cli_flag (test_super_launch.SuperLaunchTests.test_legacy_hook_bypass_uses_the_baseline_cli_flag) ... ok
+test_live_pinned_release_data_plane (test_super_launch.SuperLaunchTests.test_live_pinned_release_data_plane) ... ok
+test_model_catalog_selection_and_metadata_match_release (test_super_launch.SuperLaunchTests.test_model_catalog_selection_and_metadata_match_release) ... ok
+test_oversized_model_fails_before_child_or_upstream (test_super_launch.SuperLaunchTests.test_oversized_model_fails_before_child_or_upstream) ... ok
+test_real_cli_streams_and_preserves_session_after_private_overlay_cleanup (test_super_launch.SuperLaunchTests.test_real_cli_streams_and_preserves_session_after_private_overlay_cleanup) ... ok
+test_unexpected_codex_state_is_retained (test_super_launch.SuperLaunchTests.test_unexpected_codex_state_is_retained) ... ok
+test_large_mixed_title_output_matches_checksum_verified_oracle (test_text_memory.SessionTextMemoryParityTests.test_large_mixed_title_output_matches_checksum_verified_oracle) ... ok
+test_session_line_limit_and_overflow_match_oracle (test_text_memory.SessionTextMemoryParityTests.test_session_line_limit_and_overflow_match_oracle) ... ok
+test_auxiliary_rss_does_not_scale_with_non_ascii_input (test_text_memory.WidthMemoryTests.test_auxiliary_rss_does_not_scale_with_non_ascii_input) ... ok
+test_64bit_transitions_and_future_rules (test_timezone_files.TimezoneFileTests.test_64bit_transitions_and_future_rules) ... ok
+test_indicator_pairs_follow_release (test_timezone_files.TimezoneFileTests.test_indicator_pairs_follow_release) ... ok
+test_invalid_leap_files_fall_back_to_utc (test_timezone_files.TimezoneFileTests.test_invalid_leap_files_fall_back_to_utc) ... ok
+test_positive_negative_and_mixed_leap_transitions (test_timezone_files.TimezoneFileTests.test_positive_negative_and_mixed_leap_transitions) ... ok
+test_invalid_utf8_is_rejected (test_toml.TomlDifferentialTests.test_invalid_utf8_is_rejected) ... ok
+test_pinned_upstream_conformance_corpus (test_toml.TomlDifferentialTests.test_pinned_upstream_conformance_corpus) ... ok
+test_spec_overlap_examples (test_toml.TomlDifferentialTests.test_spec_overlap_examples) ... ok
+test_value_normalization_preserves_precision_and_signed_zero (test_toml.TomlDifferentialTests.test_value_normalization_preserves_precision_and_signed_zero) ... ok
+test_deseret_letters_are_alphanumeric_and_retained_in_transcript (test_unicode_properties.UnicodePropertyTests.test_deseret_letters_are_alphanumeric_and_retained_in_transcript) ... ok
+test_every_unicode_scalar_against_independent_unicode_17_data (test_unicode_properties.UnicodePropertyTests.test_every_unicode_scalar_against_independent_unicode_17_data) ... ok
+test_tool_output_property_edges_match_production_oracle (test_unicode_properties.UnicodePropertyTests.test_tool_output_property_edges_match_production_oracle) ... ok
+test_all_arabic_lam_alef_groups (test_unicode_width.UnicodeWidthTests.test_all_arabic_lam_alef_groups) ... ok
+test_auxiliary_properties_against_unicode_data (test_unicode_width.UnicodeWidthTests.test_auxiliary_properties_against_unicode_data) ... ok
+test_controls_and_script_ligatures (test_unicode_width.UnicodeWidthTests.test_controls_and_script_ligatures) ... ok
+test_emoji_data_sequences (test_unicode_width.UnicodeWidthTests.test_emoji_data_sequences) ... ok
+test_every_scalar_against_unicode_17_data (test_unicode_width.UnicodeWidthTests.test_every_scalar_against_unicode_17_data) ... ok
+test_concatenation_skippable_frames_and_block_flushes (test_zstd.ZstdTests.test_concatenation_skippable_frames_and_block_flushes) ... ok
+test_explicit_huffman_and_sequence_modes (test_zstd.ZstdTests.test_explicit_huffman_and_sequence_modes) ... ok
+test_generated_payloads_and_mutated_entropy (test_zstd.ZstdTests.test_generated_payloads_and_mutated_entropy) ... ok
+test_levels_strategies_and_checksums (test_zstd.ZstdTests.test_levels_strategies_and_checksums) ... ok
+test_raw_rle_and_small_frames (test_zstd.ZstdTests.test_raw_rle_and_small_frames) ... ok
+test_truncation_and_malformed_frames (test_zstd.ZstdTests.test_truncation_and_malformed_frames) ... ok
+
+----------------------------------------------------------------------
+Ran 321 tests in 518.690s
+
+OK
+Provider passthrough loopback checks: PASS

@@ -12,12 +12,20 @@ from modex.root_help import root_help
 from modex.sessions import inspect_sessions
 from modex.super_cli import parse_super_arguments, run_super
 from modex.super_help import super_help
+from modex.super_launch import run_local_rewrite_child
 
 
 def main():
     var args = List[String]()
     for arg in argv():
         args.append(String(arg))
+    if len(args) == 2 and args[1] == "__modex-local-rewrite":
+        try:
+            run_local_rewrite_child()
+        except:
+            print("Error: local provider relay failed", file=stderr)
+            exit(1)
+        return
     if len(args) >= 3 and args[1] == "help" and (args[2] == "super" or args[2] == "s"):
         var parts = args[0].split("/")
         var executable = String(parts[len(parts) - 1])
@@ -35,7 +43,7 @@ def main():
                 print(super_help(executable), end="")
                 return
             try:
-                run_super(options)
+                exit(run_super(options))
             except error:
                 print("Error:", error, file=stderr)
                 exit(1)

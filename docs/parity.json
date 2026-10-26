@@ -1199,29 +1199,35 @@
       "prerequisites": [
         "selected supported upstream CLI/tools"
       ],
-      "implementation": "src/modex/super_cli.mojo; src/modex/super_help.mojo; src/main.mojo (help and selected validation); src/modex/app_server_rpc.mojo (test-driver-only preflight)",
+      "implementation": "src/main.mojo -> super_cli.mojo -> super_launch.mojo implements a guarded clean-home DeepSeek exec launch with private overlay, explicit environment, Codex version/hook preflight, native self-process relay, exit propagation and direct-child cleanup. Existing CLI validation/passthrough WIP is retained. The selected model plus bundled preset catalog, metadata/ordering/ASCII case rules, and default provider/context/compaction settings are native and compared with the release.",
       "tests": [
         "tests/test_super_cli.mojo",
         "tests/test_super_cli.py",
         "tests/test_app_server_rpc.py",
         "tests/test_super_hooks_runtime.py",
-        "tests/test_app_server_args.py"
+        "tests/test_app_server_args.py",
+        "tests/test_super_launch.py",
+        "tests/test_process_capture.mojo"
       ],
       "evidence": [
-        "docs/evidence/checkpoint-04391-tests.txt"
+        "docs/evidence/checkpoint-04391-tests.txt",
+        "docs/evidence/native-super-reference.json",
+        "docs/evidence/native-super-data-plane.json",
+        "docs/evidence/native-super-tests.txt",
+        "docs/evidence/native-super-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Super startup still stops explicitly before filesystem, child or network side effects: secure overlays, Smart Context and real launcher preflight integration are incomplete. Hook transport checks do not establish product startup parity."
+        "Only explicit DeepSeek model/key/loopback base URL, --no-presidio, --no-sub-agent and simple exec are admitted. Existing account/config reconciliation, additional config/argv option combinations, Smart Context tokenization, shared locks, companions and full frontend/process-tree lifecycle are unfinished.",
+        "All six complete release obligations remain blocked; focused host observations do not qualify a release target."
       ]
     },
     {
@@ -1830,7 +1836,7 @@
       "prerequisites": [
         "configured upstream endpoints"
       ],
-      "implementation": "src/modex/provider_sse_wire.mojo; src/modex/provider_sse_json.mojo; src/modex/provider_chat_reader.mojo; src/modex/loopback_http.mojo; src/modex/provider_deepseek_transport.mojo; src/modex/provider_chat_buffered.mojo (native bounded loopback POST/SSE integration outside CLI dispatch); src/modex/loopback_server.mojo; src/modex/runtime_local_rewrite.mojo (internal listener/relay tested through native driver, outside the active Super CLI path)",
+      "implementation": "Production clean-home Super now reaches native buffered/streamed Responses and binary Chat Completions passthrough. Successful SSE reads bounded chunks without an aggregate body cap; non-SSE/error bodies remain bounded.",
       "tests": [
         "tests/test_provider_sse_wire.mojo",
         "tests/test_provider_sse_json.mojo",
@@ -1852,7 +1858,10 @@
         "tests/loopback_server_driver.mojo",
         "tests/test_loopback_server.py",
         "tests/local_rewrite_driver.mojo",
-        "tests/test_local_rewrite.py"
+        "tests/test_local_rewrite.py",
+        "tests/test_super_launch.py",
+        "tests/test_provider_passthrough.py",
+        "tests/test_provider_passthrough.mojo"
       ],
       "evidence": [
         "tests/fixtures/provider-sse/README.md",
@@ -1867,21 +1876,24 @@
         "docs/evidence/provider-buffered-link.txt",
         "docs/evidence/runtime-local-tests.txt",
         "docs/evidence/runtime-local-link.txt",
-        "docs/evidence/checkpoint-04391-tests.txt"
+        "docs/evidence/checkpoint-04391-tests.txt",
+        "docs/evidence/native-super-reference.json",
+        "docs/evidence/native-super-data-plane.json",
+        "docs/evidence/native-super-tests.txt",
+        "docs/evidence/native-super-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Native numeric-loopback POST now joins request preparation with incremental DeepSeek SSE and buffered JSON response translation, with real sockets, partial-chunk delivery, timeout and close/drop/error checks. The product CLI does not call it. Buffered/error response bodies remain capped at 4 MiB; SSE passes that aggregate limit with bounded reads and retained per-line/event/JSON-accumulation guards. Native relay projects DeepSeek request/token rate-limit headers. General addresses/HTTP, TLS/DNS/proxies/redirects/pooling, native Messages first-event retry, full cancellation/backpressure/error/resource equivalence and non-host behavior remain unfinished. No complete transport or provider parity is claimed.",
-        "Internal serial relay now exercises incremental socket serving, borrowed downstream reset checks and valid request half-close. Graceful FIN cancellation, worker/admission concurrency, limits above the 64 MiB incoming default/cap, general HTTP and the active Super process/preflight path remain unfinished. It is not exposed as a different public gateway behavior."
+        "Numeric loopback HTTP only. TLS/DNS/proxies/WS, full backpressure, graceful FIN cancellation, lane concurrency and non-host behavior remain unfinished. API keys are currently restricted to visible ASCII.",
+        "All six complete release obligations remain blocked; focused host observations do not qualify a release target."
       ]
     },
     {
@@ -2155,7 +2167,7 @@
       "prerequisites": [
         "DeepSeek services"
       ],
-      "implementation": "src/modex/provider_request.mojo; src/modex/provider_request_messages.mojo; src/modex/provider_request_params.mojo; src/modex/provider_request_prepare.mojo; src/modex/provider_request_tools.mojo; src/modex/provider_chat_chunk.mojo; src/modex/provider_chat_reader.mojo; src/modex/provider_chat_stream.mojo; src/modex/provider_chat_items.mojo; src/modex/provider_chat_tools.mojo; src/modex/provider_chat_metadata.mojo; src/modex/provider_chat_usage.mojo; src/modex/provider_sse_events.mojo; src/modex/provider_deepseek_transport.mojo; src/modex/loopback_http.mojo; src/modex/provider_chat_buffered.mojo (bounded loopback request/response integration outside CLI dispatch); src/modex/provider_conversations.mojo; src/modex/runtime_local_rewrite.mojo (scoped in-memory history and internal native relay)",
+      "implementation": "Native request/response translation, scoped conversation continuation, rate-limit headers and raw Chat Completions passthrough are connected through a guarded production Super launch.",
       "tests": [
         "tests/test_provider_chat_chunk.mojo",
         "tests/provider_chat_chunk_driver.mojo",
@@ -2189,7 +2201,9 @@
         "tests/capture_provider_buffered.py",
         "tests/test_provider_conversations.mojo",
         "tests/local_rewrite_driver.mojo",
-        "tests/test_local_rewrite.py"
+        "tests/test_local_rewrite.py",
+        "tests/test_super_launch.py",
+        "tests/test_provider_passthrough.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
@@ -2209,21 +2223,24 @@
         "docs/evidence/provider-buffered-link.txt",
         "docs/evidence/runtime-local-tests.txt",
         "docs/evidence/runtime-local-link.txt",
-        "docs/evidence/checkpoint-04391-tests.txt"
+        "docs/evidence/checkpoint-04391-tests.txt",
+        "docs/evidence/native-super-reference.json",
+        "docs/evidence/native-super-data-plane.json",
+        "docs/evidence/native-super-tests.txt",
+        "docs/evidence/native-super-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Native request preparation now reaches real numeric-loopback POST with incremental SSE and buffered JSON response translation, preserving pending messages/metadata separately from the body. It remains outside CLI dispatch with capped buffered/error bodies and incremental SSE beyond 4 MiB aggregate. Request/token rate-limit headers now reach buffered and streamed relay responses. Request route selection/Anthropic adaptation, credential/config discovery, persistent conversation storage/lookup, general HTTP/TLS/DNS/proxies/redirects, native Messages first-event retry/rotation, full cancellation/backpressure/resource/error equivalence and non-host execution remain unfinished. Component comparisons and retained oracle preflight gaps are not provider-command parity.",
-        "Conversation state is an in-memory bounded cache, not a disk store. Scoped buffered/streamed continuation is tested in the internal relay; Serde logical weight/artifact boundaries and concurrent shared ownership are unverified. Super requires Smart Context, overlays and real Codex app-server hook trust; no preflight bypass or completed launch is implemented."
+        "The production slice requires a clean base and explicit loopback/model/key/options. Complete provider preset routing and custom catalog/config options, real Codex distributions, native Messages, account rotation, TLS and general provider launch remain unverified or unfinished.",
+        "All six complete release obligations remain blocked; focused host observations do not qualify a release target."
       ]
     },
     {
@@ -2752,14 +2769,15 @@
       "implementation": "Not yet connected or verified",
       "tests": [],
       "evidence": [
-        "docs/evidence/baseline-0.439.1/reference-verification.json"
+        "docs/evidence/baseline-0.439.1/reference-verification.json",
+        "docs/evidence/native-super-reference.json"
       ],
-      "status": "NOT_STARTED",
+      "status": "BLOCKED",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
@@ -2793,14 +2811,15 @@
       "implementation": "Not yet connected or verified",
       "tests": [],
       "evidence": [
-        "docs/evidence/baseline-0.439.1/reference-verification.json"
+        "docs/evidence/baseline-0.439.1/reference-verification.json",
+        "docs/evidence/native-super-reference.json"
       ],
-      "status": "NOT_STARTED",
+      "status": "BLOCKED",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
@@ -2834,14 +2853,16 @@
       "implementation": "Not yet connected or verified",
       "tests": [],
       "evidence": [
-        "docs/evidence/baseline-0.439.1/reference-verification.json"
+        "docs/evidence/baseline-0.439.1/reference-verification.json",
+        "docs/evidence/native-super-reference.json",
+        "docs/evidence/native-super-result.json"
       ],
-      "status": "NOT_STARTED",
+      "status": "BLOCKED",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
@@ -2875,14 +2896,15 @@
       "implementation": "Not yet connected or verified",
       "tests": [],
       "evidence": [
-        "docs/evidence/baseline-0.439.1/reference-verification.json"
+        "docs/evidence/baseline-0.439.1/reference-verification.json",
+        "docs/evidence/native-super-reference.json"
       ],
-      "status": "NOT_STARTED",
+      "status": "BLOCKED",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
@@ -2913,22 +2935,30 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "Not yet connected or verified",
-      "tests": [],
-      "evidence": [
-        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      "implementation": "NativeRecoveryRetry in runtime_recovery.mojo resets only on caller-observed progress revision or session change. An accepted control RPC only increments completed-attempt accounting and cannot reset progress. Foundation only.",
+      "tests": [
+        "tests/test_runtime_recovery.mojo",
+        "tests/test_runtime_recovery.py"
       ],
-      "status": "NOT_STARTED",
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json",
+        "docs/evidence/native-super-reference.json",
+        "docs/evidence/native-super-data-plane.json",
+        "docs/evidence/native-super-tests.txt",
+        "docs/evidence/native-super-dependencies.txt"
+      ],
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+        "No production progress/failure event monitor or revision owner is connected. Standalone policy checks are not live recovery parity.",
+        "All six complete release obligations remain blocked; focused host observations do not qualify a release target."
       ]
     },
     {
@@ -2954,22 +2984,30 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "Not yet connected or verified",
-      "tests": [],
-      "evidence": [
-        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      "implementation": "Native saturating monotonic bookkeeping ports the pinned immediate/5/10/20/40/60-second schedule; each new failure starts its cooldown at observation time. Foundation only.",
+      "tests": [
+        "tests/test_runtime_recovery.mojo",
+        "tests/test_runtime_recovery.py"
       ],
-      "status": "NOT_STARTED",
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json",
+        "docs/evidence/native-super-reference.json",
+        "docs/evidence/native-super-data-plane.json",
+        "docs/evidence/native-super-tests.txt",
+        "docs/evidence/native-super-dependencies.txt"
+      ],
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+        "Not connected to a production owned recovery control socket, monitor or mutation dispatcher.",
+        "All six complete release obligations remain blocked; focused host observations do not qualify a release target."
       ]
     },
     {
@@ -2995,22 +3033,30 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "Not yet connected or verified",
-      "tests": [],
-      "evidence": [
-        "docs/evidence/baseline-0.439.1/reference-verification.json"
+      "implementation": "Native wire/JSON policy checks session UUID, persistent/direct-input thread and workspace/home identity, quiescence, goal ownership/budget and mutation confirmation. Foundation only.",
+      "tests": [
+        "tests/test_runtime_recovery.mojo",
+        "tests/test_runtime_recovery.py"
       ],
-      "status": "NOT_STARTED",
+      "evidence": [
+        "docs/evidence/baseline-0.439.1/reference-verification.json",
+        "docs/evidence/native-super-reference.json",
+        "docs/evidence/native-super-data-plane.json",
+        "docs/evidence/native-super-tests.txt",
+        "docs/evidence/native-super-dependencies.txt"
+      ],
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+        "Control connection ownership, affinity release, exactly-once mutation dispatch and ambiguous transport handling remain unconnected. Mutation acceptance is not goal progress.",
+        "All six complete release obligations remain blocked; focused host observations do not qualify a release target."
       ]
     },
     {
@@ -3039,14 +3085,15 @@
       "implementation": "Not yet connected or verified",
       "tests": [],
       "evidence": [
-        "docs/evidence/baseline-0.439.1/reference-verification.json"
+        "docs/evidence/baseline-0.439.1/reference-verification.json",
+        "docs/evidence/native-super-reference.json"
       ],
-      "status": "NOT_STARTED",
+      "status": "BLOCKED",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
@@ -3080,14 +3127,15 @@
       "implementation": "Not yet connected or verified",
       "tests": [],
       "evidence": [
-        "docs/evidence/baseline-0.439.1/reference-verification.json"
+        "docs/evidence/baseline-0.439.1/reference-verification.json",
+        "docs/evidence/native-super-reference.json"
       ],
-      "status": "NOT_STARTED",
+      "status": "BLOCKED",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
@@ -3121,14 +3169,15 @@
       "implementation": "Not yet connected or verified",
       "tests": [],
       "evidence": [
-        "docs/evidence/baseline-0.439.1/reference-verification.json"
+        "docs/evidence/baseline-0.439.1/reference-verification.json",
+        "docs/evidence/native-super-reference.json"
       ],
-      "status": "NOT_STARTED",
+      "status": "BLOCKED",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
@@ -3162,14 +3211,16 @@
       "implementation": "Not yet connected or verified",
       "tests": [],
       "evidence": [
-        "docs/evidence/baseline-0.439.1/reference-verification.json"
+        "docs/evidence/baseline-0.439.1/reference-verification.json",
+        "docs/evidence/native-super-reference.json",
+        "docs/evidence/native-super-result.json"
       ],
-      "status": "NOT_STARTED",
+      "status": "BLOCKED",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
-        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
         "x86_64-apple-darwin": "BLOCKED",
-        "aarch64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "BLOCKED",
         "x86_64-pc-windows-msvc": "BLOCKED",
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
@@ -3180,5 +3231,55 @@
   ],
   "previous_baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
   "baseline_version": "0.439.1",
-  "evidence_policy": "Every historical artifact retains its baseline commit/checksum. Older passing evidence is not proof against 0.439.1; revalidation is required before declaring new PASS obligations."
+  "evidence_policy": "Every historical artifact retains its baseline commit/checksum. Older passing evidence is not proof against 0.439.1; revalidation is required before declaring new PASS obligations.",
+  "release_qualification": {
+    "x86_64-unknown-linux-gnu": {
+      "status": "BLOCKED",
+      "reason": "Complete behavioral parity, security/storage/lifecycle obligations and packaging/OS/CPU qualification are unfinished.",
+      "evidence": [
+        "docs/capabilities.json",
+        "docs/known-gaps.md"
+      ]
+    },
+    "aarch64-unknown-linux-gnu": {
+      "status": "BLOCKED",
+      "reason": "Native build/execution and complete behavioral/security/packaging qualification are unverified or unsupported by the pinned compiler.",
+      "evidence": [
+        "docs/capabilities.json",
+        "docs/known-gaps.md"
+      ]
+    },
+    "x86_64-apple-darwin": {
+      "status": "BLOCKED",
+      "reason": "Native build/execution and complete behavioral/security/packaging qualification are unverified or unsupported by the pinned compiler.",
+      "evidence": [
+        "docs/capabilities.json",
+        "docs/known-gaps.md"
+      ]
+    },
+    "aarch64-apple-darwin": {
+      "status": "BLOCKED",
+      "reason": "Native build/execution and complete behavioral/security/packaging qualification are unverified or unsupported by the pinned compiler.",
+      "evidence": [
+        "docs/capabilities.json",
+        "docs/known-gaps.md"
+      ]
+    },
+    "x86_64-pc-windows-msvc": {
+      "status": "BLOCKED",
+      "reason": "Native build/execution and complete behavioral/security/packaging qualification are unverified or unsupported by the pinned compiler.",
+      "evidence": [
+        "docs/capabilities.json",
+        "docs/known-gaps.md"
+      ]
+    },
+    "aarch64-pc-windows-msvc": {
+      "status": "BLOCKED",
+      "reason": "Native build/execution and complete behavioral/security/packaging qualification are unverified or unsupported by the pinned compiler.",
+      "evidence": [
+        "docs/capabilities.json",
+        "docs/known-gaps.md"
+      ]
+    }
+  }
 }

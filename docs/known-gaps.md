@@ -1,29 +1,58 @@
 # Verified gaps
 
-The goal remains complete behavioral and feature parity with all six Prodex
-0.439.1 release targets at `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`.
-Historical 0.439.0 evidence retains its original provenance and needs
-revalidation against the new target. Current tests establish narrow local facts, not that
-goal. `docs/parity.json` records the initial inventory and platform obligations.
+Complete parity remains unfinished against Prodex 0.439.1 at
+`81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`. The incomplete inventory retains
+71 contracts and 426 platform obligations. All six complete release
+qualifications are explicitly BLOCKED; focused host tests do not establish a
+release PASS. Historical 0.439.0 observations retain their provenance.
 
-The inventory now contains 71 contracts and 426 platform obligations and is
-still incomplete. Super help and selected argument errors reach the actual
-CLI, but startup fails before state, child or network mutations. Secure
-temporary overlays, Smart Context initialization and real launch supervision
-remain unfinished. Native hook-trust transport and provider relay improvements
-are exercised by real process/socket drivers; neither is invoked by a
-successful Super launch. Startup-only descriptor redirection requires no
-concurrent parent I/O and cleans up only the direct child. Process-tree
-cancellation and signal behavior remain unverified.
+Super has a guarded production clean-home DeepSeek exec path with explicit
+loopback URL/model/key, `--no-presidio`, `--no-sub-agent` and absolute
+`PRODEX_CODEX_BIN`. It reaches real native HTTP/SSE/JSON and binary Chat
+Completions passthrough through the actual Modex CLI. Tests use isolated fake
+credentials and synthetic external Codex/provider peers and compare selected
+observations with the checksum-verified 0.439.1 release. Real Codex
+distributions and complete Super output/configuration/lifecycle are unverified.
 
-DeepSeek SSE no longer has a 4 MiB aggregate HTTP-body cap; bounded read chunks
-and per-line/event/JSON-accumulation limits remain. Final response and
-conversation state still grow with provider output, as in the reference.
-Request/token rate-limit headers are projected on buffered and streamed relay
-responses. Native Messages first-event retry does not apply to this chat-only
-path, and no additional POST replay is introduced. Successful CLI provider
-traffic, full backpressure, TLS and the new worker-lane/recovery obligations
-remain incomplete.
+Existing shared Codex contents/account state are rejected. The supported
+launch now emits a source-traced model catalog and default
+context/compaction/provider settings; additional config/argv combinations,
+provider preset routing, Smart Context tokenization, optional tools, native
+frontend companions and durable shared storage locks are unfinished. Temporary
+directories are private (0700), but exact private file modes and repair/atomic durability are not implemented.
+Unknown Codex-created overlay state is retained rather than deleted; that is
+data protection, not evidence of baseline cleanup/storage parity. Repeated
+launch after shared state is created still requires existing-state integration.
+Launch notices/side effects also differ from the baseline.
+
+Hook-trust request writes now survive closed peer stdin without SIGPIPE and
+reap the direct child. Normal exit/error, relay death and idle parent-channel
+closure are covered. Parent stdio swaps still require no concurrent parent I/O.
+Process-tree cleanup, signal forwarding, crash cleanup of overlays and
+cancellation during in-flight relay work remain incomplete. The parent EOF
+check runs between requests; the serial relay has bounded network deadlines,
+not a complete cross-process cancellation protocol.
+
+Passthrough preserves POST query/body/content type and authoritative credentials,
+filters hop-by-hop headers and removes the aggregate cap only for successful
+SSE. Buffered/error bodies stay bounded. API keys are currently limited to
+visible ASCII. Numeric loopback HTTP is supported; TLS/DNS/proxy traversal,
+WebSockets, general backpressure and account rotation remain unimplemented.
+Response/conversation memory can still grow with provider output. Worker-lane
+isolation, nonblocking bounded admission and reserved compaction capacity are
+source-traced obligations, not implemented behavior.
+
+Native recovery retry/wire policy has deterministic assertions and 407 actual
+pinned-source differential vectors. Accepted control RPCs are not progress.
+The event monitor/revision owner, owned control socket, targeted session/compact
+affinity release, mutation dispatch, ambiguity/no-replay handling and diagnostics
+are not connected to production. The module is a tested foundation only.
+Tunnel-client 0.0.18 and Kiro CLI 2.34.0 were verified in the pinned source;
+neither integration is qualified in Modex. Evidence:
+`docs/evidence/native-super-reference.json`,
+`docs/evidence/native-super-data-plane.json`,
+`docs/evidence/native-super-tests.txt` and
+`docs/evidence/native-super-dependencies.txt`.
 
 Session machine-output tests cover populated and archived plain JSON/JSONL,
 metadata precedence, timestamp ordering, Unicode whitespace and query behavior,
@@ -145,9 +174,9 @@ Native provider SSE framing and JSON assembly now have bounded, incremental
 tests, including fragmented UTF-8, exact size limits, malformed input and
 `[DONE]` termination. The test driver also runs without Python, Node, Rust or
 Prodex in its filesystem/network namespace. These are frozen-source
-regressions, not observations against the official release. Provider execution
-does not call the modules yet; translation, completion/error envelopes,
-HTTP/TLS/proxies, backpressure and cancellation remain unfinished. Evidence:
+regressions, not observations against the official release. The guarded Super
+path now calls these modules; complete translation/error, HTTP/TLS/proxy,
+backpressure and cancellation equivalence remain unfinished. Evidence:
 `docs/evidence/provider-sse-tests.txt` and `docs/evidence/provider-sse-link.txt`.
 
 Chat-compatible choice/error decoding now feeds a native stateful DeepSeek
@@ -160,10 +189,11 @@ provider-core fallback can apply. Two independent release captures prove the
 varying UUID bytes; comparison preserves all other bytes and validates stable
 UUIDv7 identity within each stream.
 
-These remain standalone modules outside the product CLI. The test-only
-synthetic Codex client replaces the external integration target, never Modex;
-its outer Super process exits 1 because it does not implement app-server.
-Adapter response comparisons do not establish Super command parity. Provider
+These modules now reach the guarded clean-home Super CLI path. The older
+test-only synthetic Codex client replaced the external integration target;
+its historical outer Super process exited 1 without app-server support.
+The new production launch tests provide that peer protocol and exit 0.
+Adapter response comparisons still do not establish Super command parity. Full provider
 route selection, auth/config, conversation storage/lookup, first-event retry,
 HTTP/TLS/proxies, cancellation/backpressure and full resource/error equivalence
 remain unfinished. UUID generation uses the official file API to read
@@ -179,7 +209,7 @@ retains upstream bytes and observed stderr without an expected response. These
 cases establish an oracle observation gap, not successful provider equivalence;
 the native component's defined failure behavior is only source-derived.
 
-DeepSeek request preparation is now implemented as another standalone native
+DeepSeek request preparation is implemented as a native
 component. It translates messages/history, tools and parameters and retains
 the pending response metadata separately from the prepared upstream body.
 The active release first validates/translates the runtime request, then may
@@ -212,7 +242,7 @@ malformed/truncated framing and setup/idle deadlines. Stored release request
 and SSE observations are replayed through that native socket path; no new
 full-header oracle capture or whole-process provider parity is claimed.
 
-This remains a component outside CLI execution. Only numeric IPv4 127/8 and
+The guarded production Super path now calls this exchange. Only numeric IPv4 127/8 and
 compressed IPv6 `::1` are admitted. Buffered/error bodies are capped at
 4 MiB; SSE reads are incremental and retain per-frame/accumulation limits.
 Final response and conversation memory remain proportional to output. Route selection and
@@ -240,12 +270,12 @@ conversation store has been connected. Exact buffered captures and real
 socket regressions are in `tests/fixtures/provider-buffered/cases.json`,
 `docs/evidence/provider-buffered-tests.txt` and
 `docs/evidence/provider-buffered-link.txt`. Large-output conformance fallback, complete parser/resource/error
-equivalence, rate-limit response headers, provider route selection and all
+equivalence, complete provider route selection and all
 previously listed transport/CLI/platform gaps remain unfinished.
 
 The native listener and internal local-rewrite relay now serve real synthetic
-HTTP requests through the existing provider exchange. They remain outside the
-active Super launch path. The frozen gateway forces a different proxy path;
+HTTP requests through the existing provider exchange. The guarded Super launch
+now invokes the relay. The frozen gateway forces a different proxy path;
 the two captured DeepSeek configurations fail at profile/proxy preparation.
 Modex preserves those observed output/exit/upstream failures rather than
 exposing a successful DeepSeek gateway extension. Gateway help and ten parse

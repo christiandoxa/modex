@@ -65,7 +65,11 @@ class UpstreamHandler(BaseHTTPRequestHandler):
                 "status": 500, "content_type": "text/plain", "body": b"no fixture response",
             }
         self.send_response(response["status"])
-        self.send_header("Content-Type", response["content_type"])
+        if response.get("response_headers") is None:
+            self.send_header("Content-Type", response["content_type"])
+        else:
+            for name, value in response["response_headers"]:
+                self.send_header(name, value)
         if response.get("chunked"):
             self.send_header("Transfer-Encoding", "chunked")
             self.send_header("Connection", "keep-alive")
@@ -568,6 +572,107 @@ class LocalRewriteTests(unittest.TestCase):
         self.assertEqual((status, body), (503, upstream_body))
         self.assertEqual(headers.get("content-type"), "text/plain")
         self.assertEqual(len(server.records), 1)
+
+    def test_chat_completions_passthrough_preserves_body_query_headers_and_error(self):
+        request_body = (
+            b'{ "model": "deepseek-chat", "messages": '
+            b'[{"role":"user","content":"passthrough"}], "stream": false }\n'
+        )
+        upstream_body = b'{"error":{"type":"rate_limit_error","message":"synthetic limit"}}'
+        response_headers = [
+            ("Content-Type", "application/json; charset=utf-8"),
+            ("X-Request-Id", "synthetic-deepseek-request"),
+            ("x-codex-turn-state", "synthetic-turn-state"),
+            ("Connection", "keep-alive, X-Upstream-Hop"),
+            ("X-Upstream-Hop", "strip-me"),
+        ]
+        with serving([{
+            "status": 429, "content_type": "application/json", "body": upstream_body,
+            "response_headers": response_headers,
+        }]) as server:
+            with RunningLocalRewrite(server.server_port) as relay:
+                status, headers, body = post_relay(
+                    relay.address,
+                    request_body,
+                    path="/v1/chat/completions?trace=synthetic",
+                    headers={
+                        "Authorization": "Bearer caller-secret",
+                        "Connection": "X-Request-Hop, keep-alive",
+                        "X-Request-Hop": "strip-me",
+                        "chatgpt-account-id": "account-secret",
+                        "x-prodex-internal-marker": "internal-secret",
+                        "X-Trace": "trace-17",
+                        "session_id": "session-17",
+                        "x-codex-turn-state": "turn-state-17",
+                    },
+                )
+
+        self.assertEqual((status, body), (429, upstream_body))
+        self.assertEqual(headers.get("content-type"), "application/json; charset=utf-8")
+        self.assertEqual(headers.get("x-request-id"), "synthetic-deepseek-request")
+        self.assertEqual(headers.get("x-codex-turn-state"), "synthetic-turn-state")
+        self.assertNotIn("x-upstream-hop", headers)
+        self.assertEqual(headers.get("content-length"), str(len(upstream_body)))
+        self.assertEqual(len(server.records), 1, "passthrough must never replay the request")
+        sent = server.records[0]
+        self.assertEqual((sent["method"], sent["path"]), (
+            "POST", "/v1/chat/completions?trace=synthetic",
+        ))
+        self.assertEqual(sent["body"], request_body)
+        self.assertEqual(sent["headers"].get("authorization"), "Bearer synthetic-provider-key")
+        self.assertEqual(sent["headers"].get("x-trace"), "trace-17")
+        self.assertEqual(sent["headers"].get("session_id"), "session-17")
+        self.assertEqual(sent["headers"].get("x-codex-turn-state"), "turn-state-17")
+        for name in (
+            "x-request-hop", "chatgpt-account-id", "x-prodex-internal-marker",
+        ):
+            self.assertNotIn(name, sent["headers"])
+
+    def test_chat_completions_sse_is_incremental_and_cancellation_closes_upstream(self):
+        event = b'data: {"id":"raw-chat-chunk","choices":[{"delta":{"content":"ok"}}]}\n\n'
+        with serving([{
+            "status": 200,
+            "content_type": "text/event-stream; charset=utf-8",
+            "body": event,
+            "chunked": True,
+            "hold_open": True,
+            "chunk_size": 7,
+        }]) as server:
+            with RunningLocalRewrite(server.server_port) as relay:
+                connection = HTTPConnection(relay.address[0], relay.address[1], timeout=5)
+                connection.request(
+                    "POST",
+                    "/v1/chat/completions?trace=stream",
+                    body=b'{"model":"deepseek-chat","stream":true}',
+                    headers={"Content-Type": "application/json"},
+                )
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(
+                    response.getheader("Content-Type"),
+                    "text/event-stream; charset=utf-8",
+                )
+                self.assertEqual(response.getheader("Transfer-Encoding"), "chunked")
+                self.assertEqual(response.read(len(event)), event)
+                client_socket = connection.sock or response.fp.raw._sock
+                client_socket.setsockopt(
+                    socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0),
+                )
+                client_socket.close()
+                response.close()
+                connection.close()
+                self.assertTrue(
+                    server.client_closed.wait(0.75),
+                    "downstream cancellation must close the provider connection",
+                )
+                self.assertFalse(server.hold_timed_out.is_set())
+
+        self.assertEqual(len(server.records), 1, "stream cancellation must not replay")
+        sent = server.records[0]
+        self.assertEqual((sent["method"], sent["path"]), (
+            "POST", "/v1/chat/completions?trace=stream",
+        ))
+        self.assertEqual(sent["body"], b'{"model":"deepseek-chat","stream":true}')
 
     def test_clean_runtime_buffered_relay_with_loopback_upstream(self):
         if not shutil.which("bwrap"):

@@ -4,6 +4,25 @@ Inspected the pinned Mojo 1.2.0 (2016d0cd) standard-library source under
 `/home/doxa/.cache/modex/toolchains/mojo-1.2.0-source/std`. These are API gaps
 in this toolchain version, not claims about future Mojo releases.
 
+The 0.439.1 checkpoint proved a narrower startup-only alternative to missing
+spawn file actions: `process_spawn.mojo` temporarily swaps parent stdio using
+the bundled `dup`/`dup2` wrappers, spawns with an explicit environment, then
+restores descriptors and flags. This requires no concurrent parent I/O and
+does not provide general thread-safe spawning. Timed direct-child poll/kill/
+wait and bounded nonblocking hook RPC reads are now tested. Process groups,
+descendant cleanup, durable storage and permission repair remain gaps.
+Current evidence: `docs/evidence/checkpoint-04391-tests.txt`.
+
+An additional deterministic closed-stdin probe then exposed fatal SIGPIPE on
+the pipe request writer. The official `std/net/_sys/unix.mojo` already exposes
+`socketpair` and `send` with `MSG_NOSIGNAL`; Modex now uses these wrappers for
+hook request writes, without new bindings or global signal changes. The live
+closed-stdin regression and production launch cleanup tests pass. The before/fix status is in
+`docs/evidence/app-server-closed-stdin-regression.json`.
+
+The remaining paragraphs preserve the earlier audit's findings before those
+new startup-only checks; their redirection/deadline limitations are historical.
+
 ## Filesystem and process APIs
 
 - `std/os/os.mojo` and `std/os/__init__.mojo` expose no chmod/fchmod, fsync,

@@ -3,6 +3,8 @@
 from std.collections import List
 
 from .cli import session_cli_error
+from .log_operational import valid_url_authority
+from .super_launch import run_clean_deepseek_super
 from .text import trim_text, unsigned_value
 
 
@@ -39,6 +41,23 @@ def _switch_option(name: String) -> Bool:
     return name in ["--auto-rotate", "--no-auto-rotate", "--auto-redeem", "--skip-quota-check", "--dry-run", "--no-proxy", "--presidio", "--no-presidio", "--sub-agent", "--no-sub-agent", "--full-access", "--current-time-reminder", "--respect-system-proxy", "--no-respect-system-proxy"]
 
 
+def _valid_http_url(value: String) -> Bool:
+    var scheme_end = value.find("://")
+    if scheme_end < 0 or value.find("?") >= 0 or value.find("#") >= 0:
+        return False
+    var scheme = String(value[byte=:scheme_end]).lower()
+    if scheme != "http" and scheme != "https":
+        return False
+    var authority_start = scheme_end + 3
+    var authority_end = value.byte_length()
+    for delimiter in ["/", "\\"]:
+        var found = value.find(delimiter, authority_start)
+        if found >= 0 and found < authority_end:
+            authority_end = found
+    var authority = String(value[byte=authority_start:authority_end])
+    return authority.find("@") < 0 and valid_url_authority(authority)
+
+
 def _provider(value: String) raises -> String:
     var provider = trim_text(value).lower()
     if provider == "claude": provider = "anthropic"
@@ -50,6 +69,21 @@ def _provider(value: String) raises -> String:
 
 def _validate_value(name: String, value: String) raises -> String:
     if name == "--provider": return _provider(value)
+    if name in ["--base-url", "--sub-agent-url", "--url"] and not _valid_http_url(value):
+        raise Error("invalid " + name + ": expected an absolute http(s) URL with host and no credentials, query, or fragment")
+    if name == "--sub-agent-max-concurrency":
+        if value == "default": return value
+        var count: UInt64
+        try:
+            count = unsigned_value(value)
+        except error:
+            if String(error) == "number too large to fit in target type":
+                raise Error("invalid maximum active sub-agents: expected an integer from 1 to 64")
+            raise Error("invalid maximum active sub-agents: expected default or an integer from 1 to 64")
+        if count > 65535:
+            raise Error("invalid maximum active sub-agents: expected an integer from 1 to 64")
+        if count == 0 or count > 64:
+            raise Error("maximum active sub-agents must be between 1 and 64")
     if name == "--cli" and value != "agy":
         raise Error("only --cli agy is retained; use --provider gemini|copilot|kiro for other providers")
     if name == "--sub-agent-model" and not trim_text(value):
@@ -62,10 +96,6 @@ def _validate_value(name: String, value: String) raises -> String:
         raise Error("invalid --current-time-clock-source: supported values are system, external")
     if name in ["--context-window", "--auto-compact-token-limit", "--rollout-budget-tokens", "--current-time-reminder-interval"]:
         _ = unsigned_value(value)
-    if name == "--sub-agent-max-concurrency":
-        var count = unsigned_value(value)
-        if count < 1 or count > 64:
-            raise Error("maximum active sub-agents must be between 1 and 64")
     if name == "--rollout-budget-reminders":
         for threshold in value.split(","):
             _ = unsigned_value(String(threshold))
@@ -73,7 +103,7 @@ def _validate_value(name: String, value: String) raises -> String:
 
 
 def parse_super_arguments(args: List[String], executable: String) raises -> SuperOptions:
-    # shortcut: full clap diagnostics and value normalization remain incomplete; finish them before enabling Super startup.
+    # shortcut: full clap diagnostics and value normalization remain incomplete; finish them before widening the guarded Super launch.
     var options = SuperOptions([], [], [], False)
     var positional = False
     var index = 2
@@ -158,6 +188,17 @@ def validate_super_options(options: SuperOptions) raises:
         raise Error("--sub-agent is unsupported with the Codex Desktop frontend")
 
 
-def run_super(options: SuperOptions) raises:
+def run_super(options: SuperOptions) raises -> Int:
     validate_super_options(options)
+    var supported = options.value("--provider") == "deepseek" and options.has("--no-presidio") and options.has("--no-sub-agent") and options.has("--base-url") and options.has("--api-key") and options.has("--model")
+    for name in options.names:
+        supported = supported and name in ["--provider", "--no-presidio", "--no-sub-agent", "--base-url", "--api-key", "--model", "--skip-quota-check"]
+    var simple_exec = options.codex_args and options.codex_args[0] == "exec"
+    if simple_exec and len(options.codex_args) > 1 and options.codex_args[1] != "--":
+        simple_exec = len(options.codex_args) == 2 and not options.codex_args[1].startswith("-")
+    if supported and simple_exec:
+        var prompt = List[String]()
+        for index in range(1, len(options.codex_args)):
+            prompt.append(options.codex_args[index])
+        return run_clean_deepseek_super(options.value("--model"), options.value("--base-url"), options.value("--api-key"), prompt)
     raise Error("Super startup is not implemented: secure temporary overlays, Smart Context initialization, and Codex launch supervision remain unavailable")

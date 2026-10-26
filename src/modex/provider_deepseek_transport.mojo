@@ -29,16 +29,24 @@ def _header_token(value: String) -> Bool:
     return True
 
 
-def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: String) raises -> List[Tuple[String, String]]:
+def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: String, passthrough: Bool = False) raises -> List[Tuple[String, String]]:
     if not api_key:
         raise Error("--api-key cannot be empty")
     for character in api_key.codepoints():
         if is_whitespace(Int(character)):
             raise Error("--api-key must not contain whitespace")
+    for byte in api_key.as_bytes():
+        if byte < 33 or byte > 126:
+            raise Error("--api-key must contain only visible ASCII")
     var connection_tokens = List[String]()
     for name, value in headers:
         if name.byte_length() > 4096:
             raise Error("DeepSeek request header name exceeds limit")
+        if not _header_token(name):
+            raise Error("invalid HTTP header name")
+        for byte in value.as_bytes():
+            if (byte < 32 and byte != 9) or byte == 127:
+                raise Error("invalid HTTP header value")
         if name.lower() == "connection":
             for part in value.split(","):
                 var token = trim_text(String(part))
@@ -50,9 +58,11 @@ def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: Stri
         ("accept", "text/event-stream, application/json"),
         ("authorization", "Bearer " + api_key),
     ]
+    if passthrough:
+        output = [("accept-encoding", "identity"), ("authorization", "Bearer " + api_key)]
     # The frozen auth pass adds the first user agent before copying inbound headers.
     for name, value in headers:
-        if name.lower() == "user-agent":
+        if not passthrough and name.lower() == "user-agent":
             output.append(("user-agent", value))
             break
     for name, value in headers:
@@ -60,6 +70,8 @@ def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: Stri
         var skip = normalized in connection_tokens or normalized.startswith("sec-websocket-") or normalized.startswith("x-prodex-internal-")
         for local_name in ["connection", "content-length", "host", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade", "authorization", "chatgpt-account-id"]:
             skip = skip or normalized == local_name
+        if passthrough and normalized == "accept-encoding":
+            skip = True
         if not skip:
             output.append((name, value))
     return output^

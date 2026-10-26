@@ -1,0 +1,93 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "starting_main": "9bd28f82da9151086b1e2b6963cb7c515c403512",
+  "previous_checkpoint_push_verified": {
+    "local_head": "9bd28f82da9151086b1e2b6963cb7c515c403512",
+    "remote_main": "9bd28f82da9151086b1e2b6963cb7c515c403512",
+    "main_clean": true
+  },
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "snapshot_git_object_matches": {
+    "crates/prodex-runtime-proxy/src/lib.rs": {
+      "sha256": "8277d689828a3936e15a5d9f94c4818cc2e13e57b882f53898e54fca4b6d7630",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite.rs": {
+      "sha256": "42065bceab70e1e4fec25d2414308c30abf23374e8eed85b4803e8991f9879e9",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_pipeline_dispatch.rs": {
+      "sha256": "877b5f07da1d502ed4fdc379ce14081469774916bf54c619e1c51cba7edc16e7",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_upstream.rs": {
+      "sha256": "21dc20de1a0321957683418241a86e2b2a98f01de3d7554132d6506fa28e57d1",
+      "matches_pinned_git_object": true
+    }
+  },
+  "owned_production_slice": {
+    "files": [
+      "src/modex/runtime_local_rewrite.mojo"
+    ],
+    "trace": "native Super -> run_local_rewrite_child -> serve_local_rewrite -> _serve -> _continuation_identity_valid -> _request_session; the internal _namespace resolver uses the same selection",
+    "baseline_trace": "runtime_proxy/lib.rs::runtime_proxy_request_header_value selects the first matching header, trims it and filters blank values. runtime_request_explicit_session_id chains session_id/session-id/x-session-id with or_else; only then does runtime_request_session_id fall back to turn metadata and body. local_rewrite_pipeline_dispatch validates the resolved hard-binding identity before provider dispatch.",
+    "change": "Remove found-state; return the first nonblank alias instead of stopping on a blank earlier name. Preserve first occurrence within duplicate header names, nonblank alias priority, trim rules and metadata/body fallback.",
+    "source_correction": "The earlier native assertion that blank session_id suppresses a later alias was inaccurate. It is corrected to pinned source and live behavior; no broad exact session-precedence claim relies on that old assertion."
+  },
+  "production_differential": {
+    "test": "tests/test_deepseek_continuation.py::test_blank_session_headers_fall_through_aliases_before_metadata",
+    "independent_vectors": 6,
+    "expected_statuses": [
+      503,
+      200,
+      503,
+      200,
+      200,
+      200
+    ],
+    "previous_modex_statuses": [
+      200,
+      200,
+      200,
+      200,
+      200,
+      503
+    ],
+    "upstream_posts_per_binary": 4,
+    "zero_side_effects": "Two resolved oversized aliases reject with the pinned 503 JSON/cache/nosniff response and no provider POSTs. Four accepted independent identities each send one POST with authoritative synthetic credentials.",
+    "isolation": "Valid session identifiers are distinct across turns so ownership acquired by an earlier accepted request cannot change a later alias-selection observation."
+  },
+  "validation": {
+    "command": "rtk proxy make test",
+    "exit_code": 0,
+    "elapsed_seconds": 732.001,
+    "artifact_sha256_at_python_discovery": "bfd56b783f54c8e1ee72c34d11fe65c5b7495b95d771c679b865fee6a352d180",
+    "artifact_sha256_after": "bfd56b783f54c8e1ee72c34d11fe65c5b7495b95d771c679b865fee6a352d180",
+    "native_unit_executables": 45,
+    "python_methods": 348,
+    "python_seconds": 587.096,
+    "skips": 0,
+    "focused_python_methods": 29,
+    "focused_python_seconds": 49.412,
+    "pinned_recovery_policy_vectors": 407
+  },
+  "model_provenance": {
+    "execution_owner": "sole shared-main parent",
+    "primary_requested_by_user": "gpt-6.1-sol / max",
+    "primary_runtime_selection_independently_exposed": false,
+    "new_workers": [],
+    "prior_worker_and_supplemental_model_details": "docs/evidence/checkpoint6-reference.json"
+  },
+  "remaining_limits": [
+    "Full binding acquisition/conflict/persistence/release and recovery remain unconnected; the checkpoint 4/6 two-turn mismatch is not repaired by this guard.",
+    "Native tests cover scoped namespace selection but production Super uses its source-traced unscoped history context.",
+    "Non-object SSE, lower-client binary header retention, broad transport/storage/security, JavaScript SDK and non-host qualification remain incomplete."
+  ],
+  "unchanged_denominator": {
+    "contracts": 71,
+    "platform_obligations": 426,
+    "release_targets_blocked": 6,
+    "inventory_complete": false
+  }
+}

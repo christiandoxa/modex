@@ -313,6 +313,35 @@ class DeepSeekContinuationTests(unittest.TestCase):
                         self.assertEqual(sent["x-codex-turn-state"], f"synthetic-client-turn-{index}")
                         self.assertFalse(any(name.startswith("x-prodex-internal-") for name in sent))
 
+    def test_blank_session_headers_fall_through_aliases_before_metadata(self):
+        invalid = "x" * 1025
+        cases = [({"session_id": " ", "x-session-id": invalid}, 503),
+                 ({"session_id": " ", "session-id": "synthetic-valid-second", "x-session-id": invalid}, 200),
+                 ({"session-id": "\t", "x-session-id": invalid}, 503),
+                 ({"session_id": "synthetic-valid-first", "session-id": invalid}, 200),
+                 ({"session_id": " ", "session-id": "\t", "x-session-id": " "}, 200),
+                 ({"session_id": " ", "x-session-id": "synthetic-valid-last",
+                   "x-codex-turn-metadata": json.dumps({"session_id": invalid})}, 200)]
+        turns = [{"model": "deepseek-chat", "input": "synthetic alias priority",
+                  "session_id": "synthetic-body", "_headers": headers} for headers, _ in cases]
+        expected = [status for _, status in cases]
+        error = {"error": {"code": "bound_continuation_unavailable",
+                           "message": "bound continuation provider is unavailable"}}
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(binary, turns, [buffered_reply(index, created=42)
+                                                                   for index in range(len(turns))])
+                self.assertEqual([row["status"] for row in responses], expected)
+                self.assertEqual(len(upstream), expected.count(200), "rejected identities must send zero POSTs")
+                for response in responses:
+                    if response["status"] == 503:
+                        self.assertEqual(json.loads(bytes.fromhex(response["body"])), error)
+                        headers = {name.lower(): value for name, value in response["headers"].items()}
+                        self.assertEqual(headers["cache-control"], "no-store")
+                        self.assertEqual(headers["x-content-type-options"], "nosniff")
+                for record in upstream:
+                    self.assertEqual(record["headers"]["authorization"], "Bearer " + SYNTHETIC_API_KEY)
+
     def test_valid_identity_boundaries_and_header_precedence_match_release(self):
         variants = [{"previous_response_id": "é" * 512}, {"session_id": "s" * 1024},
                     {"previous_response_id": " \t \n "},

@@ -47,7 +47,10 @@
         "docs/evidence/checkpoint6-dependencies.txt",
         "docs/evidence/checkpoint7-reference.json",
         "docs/evidence/checkpoint7-tests.txt",
-        "docs/evidence/checkpoint7-dependencies.txt"
+        "docs/evidence/checkpoint7-dependencies.txt",
+        "docs/evidence/checkpoint8-reference.json",
+        "docs/evidence/checkpoint8-tests.txt",
+        "docs/evidence/checkpoint8-dependencies.txt"
       ],
       "proven": [
         "numeric IPv4/IPv6 loopback bind/listen/accept and ephemeral port discovery using existing official wrappers",
@@ -64,7 +67,8 @@
         "eight simple combo selectors and seven buffered created-value categories match pinned production observations; missing timestamps are taken after delayed body receipt",
         "non-ASCII upstream base paths use UTF-8 percent encoding without double-encoding existing escapes; eight live production path/route comparisons include combining text, emoji, trailing slashes and Chat Completions queries",
         "Checkpoint 6: live release comparisons preserve native Super history context across sessions, accept equal comma-list Content-Length, map first-present call IDs, and retain decoded usage keys and strict format validation.",
-        "Checkpoint 7: ten live production buffered metadata vectors preserve ASCII/HTAB turn state and request IDs, discard non-ASCII values, keep binary bodies exact and issue one POST per request."
+        "Checkpoint 7: ten live production buffered metadata vectors preserve ASCII/HTAB turn state and request IDs, discard non-ASCII values, keep binary bodies exact and issue one POST per request.",
+        "Checkpoint 8: first nonblank session-header alias takes precedence over turn metadata/body; six independent live vectors retain four valid POSTs and reject two oversized resolved identities without provider side effects."
       ],
       "not_proven": [
         "public operational gateway/provider parity and startup side effects",

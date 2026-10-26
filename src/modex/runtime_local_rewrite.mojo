@@ -168,16 +168,13 @@ def _session(doc: JsonDocument) -> String:
 
 
 def _request_session(headers: List[Tuple[String, String]], doc: JsonDocument) -> String:
-    var found = False
     var explicit = String()
     for expected in ["session_id", "session-id", "x-session-id"]:
         for name, value in headers:
             if name.lower() == expected:
-                found = True
                 explicit = trim_text(value)
                 break
-        if found: break
-    if explicit: return explicit
+        if explicit: return explicit
     for name, value in headers:
         if name.lower() == "x-codex-turn-metadata":
             try:

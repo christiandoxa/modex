@@ -1,3 +1,43 @@
+# Checkpoint 8: native session-header alias fallback
+
+Checkpoint 7 was normally committed and pushed as
+`9bd28f82da9151086b1e2b6963cb7c515c403512`; local HEAD, remote main and clean
+worktree were verified. Its 45 native units, 347 Python methods and 407 pinned
+policy vectors passed before the immediate continuation.
+
+An adjacent pinned-source trace found an inaccurate older native expectation:
+a blank `session_id` must not suppress a nonblank `session-id` or `x-session-id`.
+The frozen helper trims the first matching header per name and chains aliases
+before turn metadata/body fallback. The sole main owner removed the redundant
+`found` flag from the shared native resolver. Existing namespace and identity guards
+now consume the same corrected selection; no API, import or dependency is added.
+
+Six independent real Super/release vectors pass: two oversized resolved aliases
+return exact 503 error JSON/cache/nosniff without provider POSTs; four valid
+precedence/all-blank/body/metadata cases each dispatch once. The earlier Modex
+sent both rejected requests and falsely rejected a valid alias when later turn
+metadata was invalid. Valid session IDs are unique per turn so the release's
+acquired ownership cannot confound alias precedence. Native tests also preserve
+first-occurrence handling of duplicate header names and scoped namespace lookup.
+
+Validation: `make build`, 45 native units, 29 focused Python methods
+in 49.412 seconds, then final serial `rtk proxy make test`: 348
+Python methods in 587.096 seconds, no skips, and 407 pinned policy vectors.
+The artifact hash stayed fixed throughout Python discovery and sandbox/link
+checks. Four immutable reference files matched Git objects; production imports,
+67-file source inventory, native linkage and synthetic credential review pass.
+No additional workers were launched; checkpoint 6 records actual model provenance.
+
+Full binding ownership/release/persistence and production recovery remain gaps;
+this is identifier selection and validation only. The release 200/503 one-POST
+versus Modex 200/200 two-POST continuation mismatch remains visible. Non-object
+SSE, lower-client binary header retention, broad transport/storage/security,
+JavaScript SDK and non-host qualification are unfinished. P/Q source files and
+external worktrees are unchanged. All 71 contracts, 426 platform obligations,
+capability statuses and six BLOCKED release qualifications are preserved.
+Evidence: `docs/evidence/checkpoint8-reference.json`, `checkpoint8-tests.txt`,
+`checkpoint8-dependencies.txt` and `checkpoint8-before.txt` in that directory.
+
 # Checkpoint 7: native buffered transport metadata
 
 Checkpoint 6 was normally committed and pushed as

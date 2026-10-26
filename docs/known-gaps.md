@@ -6,6 +6,13 @@ Complete parity remains unfinished against Prodex 0.439.1 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 8 corrects blank explicit session-header alias fallback in the
+shared native resolver. Six live independent production vectors confirm later
+alias priority over turn metadata/body, rejection of oversized resolved aliases
+before any provider POST, and retained valid fallback behavior. This corrects an
+older native assertion; it does not establish full affinity ownership or recovery.
+See `docs/evidence/checkpoint8-reference.json`.
+
 Checkpoint 7 extends the existing native header filter to buffered passthrough,
 matching the frozen TinyHTTP ASCII constructor. Ten live production metadata
 vectors cover successful Chat Completions and Responses errors, unchanged binary

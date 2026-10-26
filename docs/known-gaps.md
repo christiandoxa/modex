@@ -18,9 +18,13 @@ The reference dispatches non-2xx responses through passthrough without derived
 quota headers, including auth errors; a 200 SSE provider error retains the
 projection sent in its successful HTTP headers. Native tests preserve that
 distinction and verify no replay. Invalid non-ASCII quota values are rejected
-before parsing. Modex still buffers non-2xx SSE within its 4 MiB error cap,
-whereas the reference streams error SSE; timing/large-error parity remains
-unfinished. See `docs/evidence/checkpoint2-reference.json`.
+before parsing. Follow-up caller tracing corrects the original checkpoint 2
+gap note:
+DeepSeek statuses >=400 are buffered before dispatch in both products, with
+a 4 MiB cap. Checkpoint 3 connects 3xx Responses SSE to native passthrough and
+filters non-ASCII stream headers as the release does. Redirect streams retain
+an extra 4 MiB guard; larger-redirect behavior remains unqualified. See
+`docs/evidence/checkpoint3-reference.json`.
 
 Super has a guarded production clean-home DeepSeek exec path with explicit
 loopback URL/model/key, `--no-presidio`, `--no-sub-agent` and absolute

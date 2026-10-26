@@ -1,3 +1,53 @@
+# Checkpoint 3: verified native redirect SSE
+
+Checkpoint 2 was committed and normally pushed as
+`1f5a68252c7600c5d09eb1ea99e79eff02ad45e4`. `git ls-remote origin
+refs/heads/main` matched that local SHA; main was clean after the push. It
+contains all four reviewed Luna source commits, native token-limit overrides,
+44 native units and the complete 328-method Python passing run.
+
+Sol continued immediately in `/tmp/modex-sol-error-sse-20261026`, then
+integrated only the owned relay and new `tests/test_relay_streams.py`. The
+provisional early >=400 SSE change was rejected: live 429 buffering and the
+pinned upstream caller establish that such errors are buffered before
+response dispatch. This corrects the earlier gap note rather than claiming
+an incompatible change as parity.
+
+The reachable runtime fix routes 3xx Responses SSE through a shared native
+passthrough writer, preserving raw status/body/quota headers and no replay.
+Text stream headers now discard non-ASCII values as `HeaderValue::to_str()`
+does in the release. Native tests cover 302/307/308 on both routes, successful
+Chat SSE, early chunks, downstream-reset cleanup, Connection filtering and
+retained 4 MiB truncation. A live 307 through the actual Super CLI compares a
+64 KiB prefix before EOF against the pinned release. The tested 3xx responses
+have no Location header; redirect-following behavior is unqualified. The same
+tests failed before the change (five failing assertions and three timeouts).
+
+Seven source files were verified against immutable pinned Git objects.
+Buffered >=400 errors retain the pinned 4 MiB cap. Streamed redirects retain
+an additional 4 MiB Modex guard, so larger-redirect parity is still a visible
+gap. The combined focused run passed all 31 methods in 53.518 seconds.
+The final serial `rtk proxy make build unit test` exited 0: all 44 native
+unit executables and 331 Python methods passed, with no skips; Python
+discovery took 556.775 seconds. The 407 pinned recovery-policy vectors still
+pass as a foundation check. The artifact hash stayed fixed throughout Python
+discovery and sandbox link checks. Dependency/import/link and credential-shaped
+diff review found no new implementation dependency, binding, product helper,
+Python interop, generator, real credential or paid provider traffic.
+The checkpoint uses explicit staged paths and a normal Sol-owned push. Evidence:
+`docs/evidence/checkpoint3-reference.json`,
+`docs/evidence/checkpoint3-tests.txt`, and
+`docs/evidence/checkpoint3-dependencies.txt`.
+
+All six release qualifications, the JavaScript SDK and production recovery
+remain BLOCKED/unconnected as previously recorded. No broad parity status is
+promoted. The external worker worktrees remain intact. The newly completed
+combo-model worker commit `bc072760c93f86d8090953b911363fab868d7052` was
+inspected but is not integrated or counted in this run. The isolated Sol
+checkout retains its experimental diff; the reviewed final source is on main.
+Continue with independently verified request/conversation runtime slices or
+owned progress-aware recovery transport, preserving the checkpoint cadence.
+
 # Checkpoint 2: verified native token limits and CLI fixes
 
 Starting main and origin/main were clean/equal at
@@ -21,8 +71,10 @@ cases now compare 401/403/429/503, non-2xx SSE and a provider error inside a
 200 SSE stream, checking quota semantics and exactly one upstream POST.
 Native quota extraction now matches the reference's HTAB/visible-ASCII
 validation. Bounded error tests cover chunk framing, nominated hop-header
-removal and sanitized oversized-body failure. Non-2xx SSE buffering versus
-reference streaming remains a recorded timing/size gap.
+removal and sanitized oversized-body failure. Follow-up checkpoint 3 caller
+tracing corrects the initial gap description:
+>=400 SSE is buffered before dispatch in both products; the actual stream
+gap is 3xx Responses, with larger-redirect behavior still unqualified.
 
 Sol's production fallback connects `--context-window` and
 `--auto-compact-token-limit`, including their local aliases, through native
@@ -46,12 +98,10 @@ paths and credential-shaped diff review passed before the checkpoint commit. Evi
 No complete contract/platform status changed. All six release qualifications
 remain BLOCKED; the JavaScript SDK, broad security/storage/lifecycle behavior,
 worker lanes and unconnected production recovery remain in the denominator.
-Next runtime work is already implemented and under isolated validation at
-`/tmp/modex-sol-error-sse-20261026`: bounded non-2xx SSE passthrough, early
-chunk delivery, downstream-reset cleanup and stream-header ASCII validation.
-Its original production regression failed before the change and focused
-checks now pass; integrate only after pinned-release comparison and review.
-Preserve isolated worker boundaries and verified commit/push cadence.
+The immediate continuation used `/tmp/modex-sol-error-sse-20261026` for
+redirect SSE passthrough and stream-header validation. Its final scope,
+caller-trace correction and integrated validation are recorded in checkpoint 3
+above. Isolated worker boundaries and verified commit/push cadence continue.
 
 # Previous checkpoint: native Super
 

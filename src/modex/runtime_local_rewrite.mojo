@@ -10,11 +10,11 @@ from std.time import perf_counter
 from std.time.time import _realtime_nanoseconds
 
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument
-from .loopback_http import LoopbackHTTPStream, _number
+from .loopback_http import HTTP_HEADER_LIMIT, LoopbackHTTPStream, _number
 from .loopback_server import LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
 from .provider_conversations import ProviderConversationStore
-from .provider_passthrough import deepseek_chat_completions_path, deepseek_chat_completions_stream
+from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
 from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
 from .text import trim_text, unsigned_value
@@ -97,7 +97,7 @@ def _route_error(mut connection: LoopbackHTTPConnection) raises:
     connection.respond(404, [("content-type", "application/json"), ("cache-control", "no-store"), ("x-content-type-options", "nosniff")], _bytes('{"error":{"code":"unsupported_provider_route","message":"provider route is not supported"}}'), 30000)
 
 
-def _response_headers(headers: List[Tuple[String, String]]) -> List[Tuple[String, String]]:
+def _response_headers(headers: List[Tuple[String, String]], text_only: Bool = False) -> List[Tuple[String, String]]:
     var tokens = List[String]()
     for name, value in headers:
         if name.lower() == "connection":
@@ -107,8 +107,51 @@ def _response_headers(headers: List[Tuple[String, String]]) -> List[Tuple[String
         var lower = name.lower()
         if lower in tokens or lower in ["connection", "content-length", "transfer-encoding", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "upgrade"]:
             continue
+        if text_only:
+            var valid = True
+            for byte in value.as_bytes():
+                if byte > 126 or byte < 32 and byte != 9:
+                    valid = False
+                    break
+            if not valid:
+                continue
         output.append((name, value))
     return output^
+
+
+def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: LoopbackHTTPStream) raises:
+    # shortcut: non-2xx SSE keeps the 4 MiB cap until large-response resource/cancellation parity is verified.
+    if stream.status < 200 or stream.status >= 300:
+        stream.max_body_bytes = DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES
+        stream.max_wire_bytes = HTTP_HEADER_LIMIT * 2 + 65536 + DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES * 8
+        if stream.length > DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES:
+            stream.close()
+            _reply(connection, 502, "upstream request failed")
+            return
+    var streaming = stream.status < 400 and stream.status != 204 and stream.status != 304 and deepseek_event_stream(stream.headers)
+    var response_headers = _response_headers(stream.headers.copy(), streaming)
+    if not streaming:
+        var body = List[UInt8]()
+        try:
+            while not stream.done:
+                var chunk = stream.read_chunk()
+                body.extend(chunk^)
+        except:
+            stream.close()
+            _reply(connection, 502, "upstream request failed")
+            return
+        connection.respond(stream.status, response_headers, body, 30000)
+        return
+    try:
+        connection.start_stream(stream.status, response_headers, 30000)
+        while not stream.done:
+            var chunk = stream.read_chunk()
+            if chunk:
+                connection.write_chunk(chunk, 30000)
+        connection.finish_stream(30000)
+    except:
+        stream.close()
+        connection.close()
 
 
 def _session(doc: JsonDocument) -> String:
@@ -183,30 +226,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         except:
             _reply(connection, 502, "upstream request failed")
             return
-        var status = stream.status
-        var response_headers = _response_headers(stream.headers.copy())
-        if status >= 400 or status == 204 or status == 304 or not deepseek_event_stream(stream.headers):
-            var body = List[UInt8]()
-            try:
-                while not stream.done:
-                    var chunk = stream.read_chunk()
-                    body.extend(chunk^)
-            except:
-                stream.close()
-                _reply(connection, 502, "upstream request failed")
-                return
-            connection.respond(status, response_headers, body, 30000)
-            return
-        try:
-            connection.start_stream(status, response_headers, 30000)
-            while not stream.done:
-                var chunk = stream.read_chunk()
-                if chunk:
-                    connection.write_chunk(chunk, 30000)
-            connection.finish_stream(30000)
-        except:
-            stream.close()
-            connection.close()
+        _passthrough_response(connection, stream)
         return
     if request.method != "POST" or target != "/v1/responses":
         _route_error(connection)
@@ -243,11 +263,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         return
     if not exchange.successful():
         # Frozen dispatch keeps non-2xx quota headers raw, without Codex projection.
-        try:
-            var body = exchange.read_body()
-            connection.respond(exchange.status(), _response_headers(exchange.headers()), body, 30000)
-        except:
-            _reply(connection, 502, "upstream request failed")
+        _passthrough_response(connection, exchange.http)
         return
     if not deepseek_event_stream(exchange.headers()):
         var body: String

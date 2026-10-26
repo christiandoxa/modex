@@ -1,0 +1,94 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "starting_main": "1f5a68252c7600c5d09eb1ea99e79eff02ad45e4",
+  "previous_checkpoint_push_verified": {
+    "local_head": "1f5a68252c7600c5d09eb1ea99e79eff02ad45e4",
+    "remote_main": "1f5a68252c7600c5d09eb1ea99e79eff02ad45e4",
+    "worktree_state": "clean"
+  },
+  "snapshot_git_object_matches": {
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_search_fallback.rs": {
+      "git_blob": "3949e4b61ef6a6122b7658396e807687668bbc02",
+      "sha256": "fe3210869746f8bd37d6a0bab731e5a22bd9cb7bb84349b99c5ca237920c148e",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_deepseek_send.rs": {
+      "git_blob": "bb7330a4bdebf88297217c6914ab87ae83829464",
+      "sha256": "808c8d2e0881e9a8ee32de476b6a73293562774e6c1e35a9f85d7f69eb52c6e3",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_dispatch.rs": {
+      "git_blob": "4c17decb044c2098d7e4bd61dbe2ae10dc843115",
+      "sha256": "fd74afb623fde8b52595ee49d5714bd994e1214dd4f7d5da62789a8bde7fb224",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_passthrough.rs": {
+      "git_blob": "c499e6f1f08360c4d26beb4686eb937448470075",
+      "sha256": "a89151ca9d58d614b47f8d5ebc7af150366b1e0294d25a89902b6479e6c9e0e8",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response.rs": {
+      "git_blob": "15b7e31b267942bf8dbcd3e067bc86a6536724b1",
+      "sha256": "dacb6b073c272fe7d97da5a381d0a25b82f330d2d59d656cc863a04ff1c290fa",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-runtime-proxy/src/response_forwarding.rs": {
+      "git_blob": "7310693780856b7852be71de3d4443a19db06b17",
+      "sha256": "3b4b42ee17f2f7f1c29636c9fc1645bff52d776b1098d8dd904dc42b08cc1926",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/core_constants.rs": {
+      "sha256": "f62e14e0f619e5da5fae7b226bbfbbaf06c3a1cff7940ec946a2bc3ee1c20775",
+      "matches_pinned_git_object": true
+    }
+  },
+  "findings": [
+    "Follow-up caller tracing corrects the checkpoint2 gap note: DeepSeek >=400 is buffered in local_rewrite_search_fallback before response dispatch. Non-2xx SSE is not uniformly streamed by the pinned reference.",
+    "Statuses below 400 reach Live(response); only 2xx Responses invoke chat-compatible translation. A 3xx SSE response reaches raw passthrough with no derived quota projection.",
+    "The pinned streamed response dispatcher filters HeaderValue::to_str failures before forwarding text headers. Modex now drops non-ASCII values on passthrough streams while retaining valid ASCII/HTAB and Connection-nominated header filtering.",
+    "A shared native passthrough response function now serves Chat Completions and early Responses status paths, preserving buffered >=400 behavior and 204/304 body suppression.",
+    "Synthetic 307 prefix comparison through the real Super CLI matches the checksum-pinned release: receive 64 KiB before EOF with a 1-second client read timeout and a 3-second held-open upstream. Exactly one upstream POST; malformed non-ASCII stream header omitted by both.",
+    "Native tests cover 302/307/308 on both routes, successful Chat SSE, early chunk delivery, downstream RST cleanup, no POST replay and truncation after the retained 4 MiB unknown-length redirect cap.",
+    "Pinned core_constants.rs also sets the buffered error response cap to 4 MiB; that existing Modex cap is retained. Redirect streaming retains an extra 4 MiB guard not established as reference-equivalent."
+  ],
+  "before_change_regression": {
+    "command": "New relay-stream tests with MODEX set to checkpoint2 build/modex",
+    "raw_log": "/tmp/modex-redirect-sse-before.txt",
+    "sha256": "7b339bb6809b134391eb4a6a4f01def8f7eeff6c73dcc06f56540fbf6d6b896d",
+    "outcome": "3 methods failed with 5 assertion subcase failures and 3 timeout errors; no passing claim."
+  },
+  "rejected_proposal": {
+    "behavior": "Stream >=400 errors before EOF",
+    "reason": "Pinned source and live held-open 429 oracle show buffering before dispatch. The proposed behavior was discarded; not integrated.",
+    "raw_log_sha256": "191ff92667d67819c0287ad3a0a8493181196ca6e89739bf90649363a25e44e2"
+  },
+  "scope": "Sol-owned continuation after checkpoint2 push, developed in an isolated checkout and deliberately integrated. Synthetic credentials, external fake Codex/provider peers, isolated HOME/config/env/storage and ephemeral loopback only. No worker runtime delegation, real credentials or paid traffic.",
+  "limitations": [
+    "Buffered errors retain the pinned 4 MiB cap. Modex also retains that guard for non-2xx streamed redirects; larger-redirect parity remains unqualified.",
+    "Only named stream observations are compared. Full envelopes, header-byte tolerance, signals/process-tree cleanup, existing state, worker lanes and production recovery remain incomplete.",
+    "All six release qualifications and the JavaScript SDK remain BLOCKED. No status promotion.",
+    "The tested 3xx responses have no Location header. Actual redirect following, cross-origin credentials and Location processing are not qualified by these status/stream tests."
+  ],
+  "focused_validation": {
+    "command": "PYTHONPATH=tests python3 -m unittest test_relay_streams test_local_rewrite test_super_launch test_provider_rate_limits -v",
+    "exit_status": 0,
+    "python_methods": 31,
+    "seconds": 53.518,
+    "skips": 0,
+    "raw_output_sha256": "f7fdc9c9f1e798138d358c121e8f38bc9a6d3ecf2e0f9d3dc1d4db95a0cb7e8b"
+  },
+  "native_sha256_during_final_python_suite": "860988cac91c97ae50ea8904da787c14273ce9348603cc9c60eee96fcf6acfca",
+  "validation": {
+    "command": "rtk proxy make build unit test",
+    "exit_status": 0,
+    "native_unit_executables": 44,
+    "python_methods": 331,
+    "python_seconds": 556.775,
+    "skips": 0,
+    "recovery_policy_vectors": 407,
+    "raw_output_sha256": "972e9714fd91822772b633d54a82aac85927dc914b962d343b1ec3bf4661d809",
+    "artifact_stable_during_python_discovery": true
+  }
+}

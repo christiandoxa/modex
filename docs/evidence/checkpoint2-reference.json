@@ -75,7 +75,7 @@
   ],
   "limitations": [
     "Synthetic external Codex/provider peers and isolated HOME/config/env/storage with ephemeral numeric loopback ports only; no real credentials, account login or paid traffic.",
-    "Non-2xx SSE is still buffered with the 4 MiB error cap in Modex; the pinned passthrough dispatcher streams SSE errors. Large or timing-sensitive error streams remain a visible mismatch.",
+    "Correction from checkpoint3 source/live caller tracing: >=400 DeepSeek SSE is buffered before response dispatch in both baseline and Modex. The timing gap is 3xx Responses SSE, fixed separately; larger body-limit equivalence remains unqualified.",
     "A provisional catalog rewrite failed five live comparison subcases and was removed; final evidence must come from the corrected combined rerun.",
     "No full contract or release platform status is promoted. All six release targets, the JavaScript SDK and unconnected production recovery obligations remain in the denominator."
   ],
@@ -101,5 +101,6 @@
     "skips": 0,
     "recovery_policy_vectors": 407,
     "raw_output_sha256": "a4a0f98d64e5b42e1c2d8a73a15f38687b7bb9c59a7471be959a336ed9360552"
-  }
+  },
+  "followup_correction": "See checkpoint3-reference.json: the dispatch helper alone did not establish upstream error buffering. local_rewrite_search_fallback.rs supplies the >=400 buffer guard."
 }

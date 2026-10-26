@@ -19,6 +19,10 @@
     {
       "date": "2026-10-26",
       "change": "Checkpoint 2 integrates four reviewed Luna worker slices and connects native DeepSeek Super context/compaction overrides. Pinned source and live release comparisons reject the proposed non-2xx quota projection: the baseline uses passthrough there. Numeric Codex overrides retain default catalog budgets as observed. No contract/platform status or denominator changes."
+    },
+    {
+      "date": "2026-10-26",
+      "change": "Checkpoint 3 follows checkpoint2 push with native 3xx Responses SSE passthrough and ASCII text-header filtering. Full caller tracing corrects the earlier non-2xx streaming gap description: >=400 DeepSeek errors are buffered before dispatch in both products. No denominator or status changes."
     }
   ],
   "contracts": [
@@ -1228,7 +1232,8 @@
         "tests/test_super_hooks_runtime.py",
         "tests/test_app_server_args.py",
         "tests/test_super_launch.py",
-        "tests/test_process_capture.mojo"
+        "tests/test_process_capture.mojo",
+        "tests/test_relay_streams.py"
       ],
       "evidence": [
         "docs/evidence/checkpoint-04391-tests.txt",
@@ -1238,7 +1243,10 @@
         "docs/evidence/native-super-dependencies.txt",
         "docs/evidence/checkpoint2-reference.json",
         "docs/evidence/checkpoint2-tests.txt",
-        "docs/evidence/checkpoint2-dependencies.txt"
+        "docs/evidence/checkpoint2-dependencies.txt",
+        "docs/evidence/checkpoint3-reference.json",
+        "docs/evidence/checkpoint3-tests.txt",
+        "docs/evidence/checkpoint3-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -1286,7 +1294,8 @@
         "tests/capture_gateway.py",
         "tests/capture_gateway_mismatches.py",
         "tests/capture_gateway_permissions.py",
-        "tests/test_gateway_cli.py"
+        "tests/test_gateway_cli.py",
+        "tests/test_relay_streams.py"
       ],
       "evidence": [
         "tests/fixtures/gateway/cases.json",
@@ -1296,7 +1305,10 @@
         "docs/evidence/gateway-permissions-mismatch.json",
         "docs/evidence/checkpoint2-reference.json",
         "docs/evidence/checkpoint2-tests.txt",
-        "docs/evidence/checkpoint2-dependencies.txt"
+        "docs/evidence/checkpoint2-dependencies.txt",
+        "docs/evidence/checkpoint3-reference.json",
+        "docs/evidence/checkpoint3-tests.txt",
+        "docs/evidence/checkpoint3-dependencies.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -2195,7 +2207,7 @@
       "prerequisites": [
         "DeepSeek services"
       ],
-      "implementation": "Native request/response translation, scoped conversation continuation, rate-limit headers and raw Chat Completions passthrough are connected through a guarded production Super launch. Quota values require HTAB/visible ASCII; early non-2xx responses preserve raw quota headers without projection, while 200 SSE provider errors retain projected quotas. Synthetic production comparisons verify one upstream POST per request.",
+      "implementation": "Native request/response translation, scoped conversation continuation, rate-limit headers and raw Chat Completions passthrough are connected through a guarded production Super launch. Quota values require HTAB/visible ASCII; early non-2xx responses preserve raw quota headers without projection, while 200 SSE provider errors retain projected quotas. Synthetic production comparisons verify one upstream POST per request. Raw 3xx Responses SSE now uses the shared native passthrough writer and text-only header validation, with production before/after regressions and a held-open 307 live oracle comparison.",
       "tests": [
         "tests/test_provider_chat_chunk.mojo",
         "tests/provider_chat_chunk_driver.mojo",
@@ -2233,7 +2245,8 @@
         "tests/test_super_launch.py",
         "tests/test_provider_passthrough.py",
         "tests/test_provider_rate_limits.mojo",
-        "tests/test_provider_rate_limits.py"
+        "tests/test_provider_rate_limits.py",
+        "tests/test_relay_streams.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
@@ -2260,7 +2273,10 @@
         "docs/evidence/native-super-dependencies.txt",
         "docs/evidence/checkpoint2-reference.json",
         "docs/evidence/checkpoint2-tests.txt",
-        "docs/evidence/checkpoint2-dependencies.txt"
+        "docs/evidence/checkpoint2-dependencies.txt",
+        "docs/evidence/checkpoint3-reference.json",
+        "docs/evidence/checkpoint3-tests.txt",
+        "docs/evidence/checkpoint3-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2274,7 +2290,7 @@
       "blockers": [
         "The production slice requires a clean base and explicit loopback/model/key/options. Complete provider preset routing and custom catalog/config options, real Codex distributions, native Messages, account rotation, TLS and general provider launch remain unverified or unfinished.",
         "All six complete release obligations remain blocked; focused host observations do not qualify a release target.",
-        "Non-2xx SSE is buffered with a 4 MiB cap in Modex; the pinned passthrough path streams it. Large or timing-sensitive error streams remain unqualified."
+        "Buffered >=400 errors share the pinned 4 MiB cap. Non-2xx streamed redirects retain an additional 4 MiB Modex cap; larger redirect streams and complete resource/cancellation parity remain unqualified."
       ]
     },
     {

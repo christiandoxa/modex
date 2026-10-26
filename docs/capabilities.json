@@ -16,7 +16,8 @@
         "tests/test_local_rewrite.py",
         "tests/test_provider_conversations.mojo",
         "tests/test_super_launch.py",
-        "tests/test_provider_passthrough.py"
+        "tests/test_provider_passthrough.py",
+        "tests/test_relay_streams.py"
       ],
       "evidence": [
         "docs/evidence/runtime-local-tests.txt",
@@ -27,7 +28,10 @@
         "docs/evidence/native-super-dependencies.txt",
         "docs/evidence/checkpoint2-reference.json",
         "docs/evidence/checkpoint2-tests.txt",
-        "docs/evidence/checkpoint2-dependencies.txt"
+        "docs/evidence/checkpoint2-dependencies.txt",
+        "docs/evidence/checkpoint3-reference.json",
+        "docs/evidence/checkpoint3-tests.txt",
+        "docs/evidence/checkpoint3-dependencies.txt"
       ],
       "proven": [
         "numeric IPv4/IPv6 loopback bind/listen/accept and ephemeral port discovery using existing official wrappers",
@@ -38,14 +42,16 @@
         "native in-memory scope/count/sequence/retention rules and known-empty history distinction",
         "native relay driver in a restricted filesystem without implementation helpers",
         "production CLI clean-home DeepSeek exec reaches native Responses SSE/JSON and binary passthrough through synthetic Codex/provider integration peers",
-        "production non-2xx auth/rate/server passthrough keeps raw quota headers without derived projection; successful HTTP SSE errors retain projected quotas, with no request replay in tested cases"
+        "production non-2xx auth/rate/server passthrough keeps raw quota headers without derived projection; successful HTTP SSE errors retain projected quotas, with no request replay in tested cases",
+        "3xx Responses and Chat Completions SSE deliver chunks before EOF, filter non-ASCII text-header values and close upstream on downstream reset; >=400 errors remain buffered"
       ],
       "not_proven": [
         "public operational gateway/provider parity and startup side effects",
         "graceful FIN cancellation, signals and worker/admission concurrency",
         "configured incoming limits above 64 MiB and arbitrary-length SSE",
         "actual artifact Serde accounting boundaries and other platform layouts",
-        "general HTTP tolerance, TLS/DNS/proxies/retries and non-host targets"
+        "general HTTP tolerance, TLS/DNS/proxies/retries and non-host targets",
+        "unbounded non-2xx redirect SSE beyond the retained 4 MiB body cap"
       ],
       "assessment": "Guarded production Super integration is exercised on the host; complete gateway/provider, concurrent admission, security and non-host obligations remain blocked."
     },

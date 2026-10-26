@@ -1796,9 +1796,16 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": null,
-      "tests": [],
-      "evidence": [],
+      "implementation": "Responses input boundary validation rejects malformed or oversized hard-binding components. Binding acquisition, conflict resolution, identity lifetime and affinity release are not implemented; contract status is unchanged.",
+      "tests": [
+        "tests/test_gateway_cli.mojo",
+        "tests/test_deepseek_continuation.py"
+      ],
+      "evidence": [
+        "docs/evidence/checkpoint4-reference.json",
+        "docs/evidence/checkpoint4-tests.txt",
+        "docs/evidence/checkpoint4-dependencies.txt"
+      ],
       "status": "NOT_STARTED",
       "platform_status": {
         "x86_64-unknown-linux-gnu": "NOT_STARTED",
@@ -1809,7 +1816,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Full hard-binding ownership remains unimplemented. The connected input guard does not qualify session affinity or production recovery."
       ]
     },
     {
@@ -2207,7 +2215,7 @@
       "prerequisites": [
         "DeepSeek services"
       ],
-      "implementation": "Native request/response translation, scoped conversation continuation, rate-limit headers and raw Chat Completions passthrough are connected through a guarded production Super launch. Quota values require HTAB/visible ASCII; early non-2xx responses preserve raw quota headers without projection, while 200 SSE provider errors retain projected quotas. Synthetic production comparisons verify one upstream POST per request. Raw 3xx Responses SSE now uses the shared native passthrough writer and text-only header validation, with production before/after regressions and a held-open 307 live oracle comparison.",
+      "implementation": "Native request/response translation, scoped conversation continuation, rate-limit headers and raw Chat Completions passthrough are connected through a guarded production Super launch. Quota values require HTAB/visible ASCII; early non-2xx responses preserve raw quota headers without projection, while 200 SSE provider errors retain projected quotas. Synthetic production comparisons verify one upstream POST per request. Raw 3xx Responses SSE now uses the shared native passthrough writer and text-only header validation, with production before/after regressions and a held-open 307 live oracle comparison. Checkpoint 4 rejects invalid Responses continuation identifiers before provider dispatch: resolved response/session/turn-state values use the pinned 1,024 UTF-8 byte and C0/C1 control rules. Live production comparisons cover 12 rejection vectors, five valid boundary/precedence vectors, eight simple combo-model selectors and buffered translation-time timestamp fallback. Full affinity ownership and recovery remain unfinished.",
       "tests": [
         "tests/test_provider_chat_chunk.mojo",
         "tests/provider_chat_chunk_driver.mojo",
@@ -2246,7 +2254,10 @@
         "tests/test_provider_passthrough.py",
         "tests/test_provider_rate_limits.mojo",
         "tests/test_provider_rate_limits.py",
-        "tests/test_relay_streams.py"
+        "tests/test_relay_streams.py",
+        "tests/test_provider_request_prepare.py",
+        "tests/test_deepseek_continuation.py",
+        "tests/test_gateway_cli.mojo"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
@@ -2276,7 +2287,10 @@
         "docs/evidence/checkpoint2-dependencies.txt",
         "docs/evidence/checkpoint3-reference.json",
         "docs/evidence/checkpoint3-tests.txt",
-        "docs/evidence/checkpoint3-dependencies.txt"
+        "docs/evidence/checkpoint3-dependencies.txt",
+        "docs/evidence/checkpoint4-reference.json",
+        "docs/evidence/checkpoint4-tests.txt",
+        "docs/evidence/checkpoint4-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2290,7 +2304,8 @@
       "blockers": [
         "The production slice requires a clean base and explicit loopback/model/key/options. Complete provider preset routing and custom catalog/config options, real Codex distributions, native Messages, account rotation, TLS and general provider launch remain unverified or unfinished.",
         "All six complete release obligations remain blocked; focused host observations do not qualify a release target.",
-        "Buffered >=400 errors share the pinned 4 MiB cap. Non-2xx streamed redirects retain an additional 4 MiB Modex cap; larger redirect streams and complete resource/cancellation parity remain unqualified."
+        "Buffered >=400 errors share the pinned 4 MiB cap. Non-2xx streamed redirects retain an additional 4 MiB Modex cap; larger redirect streams and complete resource/cancellation parity remain unqualified.",
+        "The identifier guard does not implement hard binding acquisition/conflict resolution or model/credential/session affinity. A synthetic two-turn buffered continuation still differs from the pinned release; see checkpoint4-reference.json. Serialized conversation memory is charged using frozen decoded-value weights; physical retained-byte accounting remains unqualified."
       ]
     },
     {

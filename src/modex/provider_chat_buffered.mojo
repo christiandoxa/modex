@@ -1,5 +1,7 @@
 """Buffered DeepSeek chat completions translated into Responses JSON."""
 
+from std.time.time import _realtime_nanoseconds
+
 from .json import JSON_ARRAY, JSON_NULL, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
 from .json_float import json_float
 from .provider_chat_items import wrap_tool_arguments
@@ -25,7 +27,7 @@ def deepseek_buffered_response(
     var id = _string_member(doc, doc.root, "id")
     var response_id = id.value() if id else fallback_response_id
     var created = json_unsigned(doc, doc.get(doc.root, "created"))
-    var created_at = created.value() if created else fallback_created_at
+    var created_at = created.value() if created else UInt64(max(0, _realtime_nanoseconds() // 1000000000))
     var model = _string_member(doc, doc.root, "model")
 
     var output = "["

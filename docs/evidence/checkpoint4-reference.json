@@ -1,0 +1,281 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "starting_main": "338626fcd515be7cc33597e8d783062cae63dbdd",
+  "previous_checkpoint_push_verified": {
+    "local_head": "338626fcd515be7cc33597e8d783062cae63dbdd",
+    "remote_main": "338626fcd515be7cc33597e8d783062cae63dbdd",
+    "worktree_state": "clean"
+  },
+  "snapshot_git_object_matches": {
+    "mojo/prodex_core/deepseek.mojo": {
+      "git_blob": "47d240dfbe2b23467d48b8363d2de1dfe040d8d2",
+      "sha256": "15fb0e83167fd78b7627859343fe7c6703ab0471a33ab48f0a351c01296eda58",
+      "matches_pinned_git_object": true
+    },
+    "mojo/prodex_core/rich_fallback.mojo": {
+      "git_blob": "e20b12cd69ea912ff559d23d922a8ac8183437b2",
+      "sha256": "7364d222b530a30e62e2f38ae1d935da8f9d81b0888c8b18a92f7045f3508eb1",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/fallback/chains.rs": {
+      "git_blob": "1b20b6bc792c8ad882ecaa176da9c858bf94d874",
+      "sha256": "7b70d1a5fc8744e6df342e8202810f1f32a4ad17be08c87152b6d6858bf41efe",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_deepseek_send.rs": {
+      "git_blob": "bb7330a4bdebf88297217c6914ab87ae83829464",
+      "sha256": "808c8d2e0881e9a8ee32de476b6a73293562774e6c1e35a9f85d7f69eb52c6e3",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_rewrite/response.rs": {
+      "git_blob": "44800c6a7401f6608bf65cf3236090338cc5e376",
+      "sha256": "27c702580cc3e9eaa88a1062e91b67040e7425b68165d3191fbc7112bb1140e3",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/translators/deepseek/response.rs": {
+      "git_blob": "420e0df5ab52f3cbac7bc2751725f79122bde992",
+      "sha256": "d26e2ebdc1323e9e6eb3c035b843c55dfbb775290cd9195bf55e47fdcea1493f",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/bridge/chat_compat.rs": {
+      "git_blob": "1aa7f0f33e02fe4a19615709655b0f6ebdeea6ec",
+      "sha256": "f62016df5dec4b6893be363e82c8385a0b4752c8fbac5e377e74c58e9e8e8fac",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/bridge/chat_compat/response.rs": {
+      "git_blob": "efd676ecccca4d158045444202e2d939a90917df",
+      "sha256": "4067cea668b6f4355b311d8ac6df26f63166adce906441fe65cfcb0d0fc1cddd",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/conversation_memory.rs": {
+      "git_blob": "26f4efceeee73cc717bd768d42a9a53b5d9acdba",
+      "sha256": "a3963933b43c8321d84fe82ccf5c897e610eeea4caa3ab31dd9772f8c4301c44",
+      "matches_pinned_git_object": true
+    },
+    "mojo/prodex_core/provider_conversation_memory.mojo": {
+      "git_blob": "a10d37c4c8073e36b1212d32f863008822bee6b4",
+      "sha256": "66df179b9e0b2dd724c9d1746d3bcd2a14ae3cfe63a13023de6d07fe30ff694a",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_rewrite/conversation_store.rs": {
+      "git_blob": "6a20e6a3c68a2464e96019e1863abb15dc0e8f8f",
+      "sha256": "591dcaebac951fff24cc2c4b5adb26dd50d84505602e19140a09c6f432b0ced2",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_pipeline_dispatch.rs": {
+      "git_blob": "26b76b218f1a327e190052a01229099965c4dff3",
+      "sha256": "877b5f07da1d502ed4fdc379ce14081469774916bf54c619e1c51cba7edc16e7",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_upstream.rs": {
+      "git_blob": "4cef3cc32c68bf8201ce669b672c3b72c1327455",
+      "sha256": "21dc20de1a0321957683418241a86e2b2a98f01de3d7554132d6506fa28e57d1",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-runtime-state/src/lineage.rs": {
+      "git_blob": "8244b46fa8b7c6292afd21acc36587d976859187",
+      "sha256": "752d30f0ab5ba4abd3d3c0e7eee995b00de98381af7bbbd4486b0bd206453c85",
+      "matches_pinned_git_object": true
+    },
+    "mojo/prodex_core/runtime_lineage.mojo": {
+      "git_blob": "6d90bb488ec1f52a529326d70027a36bf051b44f",
+      "sha256": "0a9447b486d5940b4efef708f1aa5aded691e6cc91ae71462305557dd8980ba7",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-runtime-proxy/src/lib.rs": {
+      "git_blob": "79313ab427e0d6318d2e908a7a9ca32e98466023",
+      "sha256": "8277d689828a3936e15a5d9f94c4818cc2e13e57b882f53898e54fca4b6d7630",
+      "matches_pinned_git_object": true
+    },
+    "mojo/prodex_core/runtime_proxy_request.mojo": {
+      "git_blob": "1bbc794fbb20cee8976d2f315573343f432b1524",
+      "sha256": "2f689817bf765256ebd9bf12f91677501d8d16864e13c20d02d3dee368963058",
+      "matches_pinned_git_object": true
+    }
+  },
+  "worker_review": {
+    "H": {
+      "commit": "bc072760c93f86d8090953b911363fab868d7052",
+      "decision": "integrated; exact production patch, strengthened test",
+      "production_path": "prepare_request_body -> _core_body -> _native_model; translate_deepseek_request -> DeepSeekExchange -> production relay"
+    },
+    "I": {
+      "commit": "39363c8766e4a013a606fefda82533ac6a369c87",
+      "decision": "integrated; exact production patch, additional live 0.439.1 comparisons",
+      "production_path": "DeepSeekExchange.read_buffered reads complete HTTP body before deepseek_buffered_response takes missing/invalid timestamp fallback"
+    },
+    "J": {
+      "commit": "27cd3186c1bfed81c2917aea396ced14f729864e",
+      "decision": "rejected; not integrated",
+      "reason": "Frozen cache charges decoded values, excluding the synthetic root. max(logical, serialized) causes earlier eviction, and its production test asserts the change without invoking the oracle. Empty array/key é changes 2 to 4 bytes. Physical retained-memory accounting remains unqualified."
+    },
+    "header_cap": {
+      "commit": "bf80ee85d871191804b46355ac52fb9108a68c15",
+      "decision": "still excluded; no verified compatibility rationale"
+    },
+    "model_provenance": "H/I/J were supplied by the user as Luna/MAX. The extra official read-only launcher used its immutable gpt-6.1-sol/effort-none default, exit 0; not claimed as Luna/MAX validation. Parent owns integration/tests/commit/push.",
+    "independent_stdout_sha256": "52a8004bb51cff3aad5cfe744a1acfbebf55167506a591bfb50f7b7780abe88f",
+    "independent_stderr_sha256": "e64276cc077e9ae9f33be5e3e6dedde9ecf27c9803049d59d16fe4ca72faf4e5",
+    "full_structured_report": "docs/evidence/checkpoint4-worker-review.txt",
+    "caller_trace_correction": "Production replaces combo models with fallback-chain components before simple-request alias expansion; the raw transformer alone is not the production call path."
+  },
+  "owned_production_slice": {
+    "path": "src/modex/runtime_local_rewrite.mojo",
+    "behavior": "Resolved previous-response/session/header turn-state values reject >1024 UTF-8 bytes or C0/C1 controls after pinned trimming, before conversation lookup/translation/provider dispatch. Invalid inputs return pinned 503 JSON and cache/nosniff headers. Existing namespace resolution is shared. No retry or recovery dispatch was added.",
+    "test_vectors": {
+      "invalid_no_upstream_post": 12,
+      "valid_boundary_and_precedence": 5,
+      "simple_combo_models": 8,
+      "buffered_created_categories": 7,
+      "delayed_created": 1
+    },
+    "before_change_regressions": "docs/evidence/checkpoint4-before.txt",
+    "security": "Explicit synthetic environment, isolated HOME/config/storage, prefilled update cache and ephemeral numeric loopback. Valid vectors send one upstream POST each; invalid vectors send none. No real credentials, account login or paid provider traffic."
+  },
+  "findings": [
+    "Buffered invalid/missing created values now use translation-time realtime seconds; valid unsigned 0 and 42 remain unchanged. Existing timestamp parameter is retained for caller compatibility.",
+    "Historical 0.439.0 fixture provenance is retained; new production differential tests verify checksum-pinned 0.439.1 separately.",
+    "Rejected conversation accounting and header cap are not counted as parity. No reader/usage or experimental-worktree files were modified."
+  ],
+  "unresolved_binding_mismatch": {
+    "status": "REPRODUCIBLE_MISMATCH; full affinity not implemented",
+    "fixture": "tests/test_deepseek_continuation.py observe_turns and buffered_reply(0/1, created=42)",
+    "turns": [
+      {
+        "model": "deepseek-chat",
+        "input": "synthetic first"
+      },
+      {
+        "model": "deepseek-chat",
+        "input": "synthetic next",
+        "use_previous": true
+      }
+    ],
+    "observations": {
+      "prodex_04391": {
+        "statuses": [
+          200,
+          503
+        ],
+        "upstream_posts": 1,
+        "response_bodies": [
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-0",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          },
+          {
+            "error": {
+              "code": "bound_continuation_unavailable",
+              "message": "bound continuation provider is unavailable"
+            }
+          }
+        ]
+      },
+      "modex_checkpoint4": {
+        "statuses": [
+          200,
+          200
+        ],
+        "upstream_posts": 2,
+        "response_bodies": [
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-0",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          },
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-1",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "scope": "same synthetic key/model, first response success then valid previous-response continuation; profile/credential hard-binding resolution is unconnected in Modex"
+  },
+  "focused_validation": {
+    "command": "PYTHONPATH=tests rtk proxy python3 -m unittest test_provider_request_prepare test_deepseek_continuation test_provider_chat_buffered test_local_rewrite test_relay_streams -v",
+    "exit_status": 0,
+    "python_methods": 29,
+    "seconds": 23.221,
+    "skips": 0,
+    "raw_output_sha256": "103eb4a42de750f79a3a0c2507e699efdaecfd497fd8b7e00422258ab0105f1d"
+  },
+  "validation": {
+    "initial_build_command": "rtk proxy make build",
+    "command": "rtk proxy make test",
+    "exit_status": 0,
+    "native_unit_executables": 44,
+    "python_methods": 337,
+    "python_seconds": 572.229,
+    "skips": 0,
+    "recovery_policy_vectors": 407,
+    "raw_output_sha256": "f8709d9634dd1ddb20d4e879a80b8a0e5758edb09c20bd0843c83ca76b52c8dc",
+    "artifact_stable_during_python_discovery": true,
+    "native_sha256": "a6852131c3ce8a48b9f87b7f735b41593f08d96f7e0ba8088ce58c9686fba9d0"
+  },
+  "limitations": [
+    "Only the named native host observations are verified; complete feature parity remains unfinished.",
+    "All six release qualifications and the JavaScript SDK remain BLOCKED. Contract/capability/platform statuses are unchanged; 71 contracts / 426 obligations remain an incomplete inventory.",
+    "Production recovery monitor/control ownership/affinity release/exactly-once dispatch and ambiguous outcomes remain unconnected. RPC acceptance is not progress.",
+    "Full binding acquisition and continuation ownership remain a reproducible mismatch. The new guard is input validation only.",
+    "Serialized conversation physical-memory accounting, concurrent per-account bounded admission and all previously listed security/storage/lifecycle gaps remain unqualified."
+  ]
+}

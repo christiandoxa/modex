@@ -1,3 +1,74 @@
+# Checkpoint 4: verified native DeepSeek boundaries
+
+Checkpoint 3 was committed and normally pushed as
+`338626fcd515be7cc33597e8d783062cae63dbdd`. Main started clean and equal to
+origin/main. The three supplied Luna/MAX commits were inspected by exact diff,
+with production callers and frozen sources traced before integration. Only H
+`bc072760c93f86d8090953b911363fab868d7052` and I
+`39363c8766e4a013a606fefda82533ac6a369c87` were applied with no-commit
+cherry-picks. Their production source changes remain exact; H's Python test
+now compares eight selectors through both real CLIs and fails if the oracle
+is missing, and new 0.439.1 comparisons supplement I's older fixture evidence.
+
+J `27cd3186c1bfed81c2917aea396ced14f729864e` is rejected. Its
+`max(decoded weight, serialized bytes)` changes the frozen retention policy:
+the pinned empty-array example weighs 2 bytes for key `é`, while J requires
+4; escaped histories also evict sooner. Its relay test asserts that earlier
+eviction without invoking the oracle. The physical-memory accounting concern
+remains open, rather than counting the incompatible change as parity. The
+separate `bf80ee8` header cap is still excluded. Reader/usage ownership and all
+external worktrees, including the dirty experimental Sol checkout, are intact.
+
+Sol's owned production slice rejects invalid Responses continuation identity
+components before provider dispatch. It reuses the exact existing session
+precedence for body, headers and turn metadata, then enforces the pinned
+1,024 UTF-8 byte limit and C0/C1 control rejection on resolved response,
+session and header turn-state identifiers. Twelve live invalid vectors return
+the pinned 503 JSON/cache headers with zero upstream POSTs; five valid
+boundary/precedence vectors still reach the provider exactly once. Before the
+change all twelve invalid requests reached the provider. H's combo alias and
+I's delayed timestamp regressions also failed against the previous checkpoint.
+
+The full serial `rtk proxy make test` exited 0: 44 native unit executables,
+337 Python methods in 572.229 seconds, no skips, and all 407 pinned
+recovery-policy vectors. The earlier `make build`, three focused native units
+and 29-method production/relay run also passed. No concurrent production
+rebuild ran beside Python discovery or isolation/link checks; the artifact
+hash stayed fixed. Seventeen reference files matched immutable Git objects.
+Only existing local modules and official Mojo 1.2.0 stdlib are used. Tests
+use isolated homes/config/storage, explicit synthetic environments and
+ephemeral loopback peers, with no real credentials or paid provider traffic.
+
+The added independent read-only review used the official launcher, whose
+immutable configuration selected `gpt-6.1-sol` with effort `none`; it is not
+claimed as Luna/MAX validation. Its complete structured report and the parent
+caller-trace correction are retained. Integration, execution checks, staging,
+commit and push remain main-owner operations. Evidence:
+`docs/evidence/checkpoint4-reference.json`,
+`docs/evidence/checkpoint4-tests.txt`,
+`docs/evidence/checkpoint4-dependencies.txt`,
+`docs/evidence/checkpoint4-before.txt`, and
+`docs/evidence/checkpoint4-worker-review.txt`.
+
+Full affinity remains a reproducible mismatch. With two buffered turns using
+the same synthetic model/key, the release returns 200 then
+503 `bound_continuation_unavailable` with one provider POST; Modex returns
+two 200 responses with two POSTs. Reproduce using `observe_turns` in
+`tests/test_deepseek_continuation.py`, turns
+`[{"model":"deepseek-chat","input":"synthetic first"},
+{"model":"deepseek-chat","input":"synthetic next","use_previous":true}]`
+and two `buffered_reply(index, created=42)` responses, once for each of
+`test_cli.ORACLE` and `test_cli.MODEX`. Exact observations are retained in the
+reference evidence. The new guard does not implement binding acquisition,
+credential/profile conflict resolution, targeted release or recovery.
+
+All 71 contract statuses, 426 platform obligations, capability statuses and
+six BLOCKED release qualifications are retained. The JavaScript SDK remains
+BLOCKED; full feature parity and production recovery remain incomplete.
+Continue with a verified native production slice or the separately owned
+reader/usage workers after their deliverables are available. Preserve the
+normal main commit/push cadence and do not count accepted RPCs as progress.
+
 # Checkpoint 3: verified native redirect SSE
 
 Checkpoint 2 was committed and normally pushed as

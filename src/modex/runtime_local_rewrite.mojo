@@ -161,7 +161,7 @@ def _session(doc: JsonDocument) -> String:
     return trim_text(doc.string(node))
 
 
-def _namespace(headers: List[Tuple[String, String]], doc: JsonDocument) -> String:
+def _request_session(headers: List[Tuple[String, String]], doc: JsonDocument) -> String:
     var found = False
     var explicit = String()
     for expected in ["session_id", "session-id", "x-session-id"]:
@@ -181,11 +181,29 @@ def _namespace(headers: List[Tuple[String, String]], doc: JsonDocument) -> Strin
             except:
                 pass
             break
-    var session = _session(doc)
+    return _session(doc)
+
+
+def _namespace(headers: List[Tuple[String, String]], doc: JsonDocument) -> String:
+    var session = _request_session(headers, doc)
     if session: return session
     for name, value in headers:
         if name.lower() == "x-prodex-internal-conversation-namespace": return value
     return "gateway"
+
+
+def _continuation_identity_valid(headers: List[Tuple[String, String]], doc: JsonDocument) -> Bool:
+    var parts: List[String] = [trim_text(doc.string(doc.get(doc.root, "previous_response_id"))), _request_session(headers, doc)]
+    for name, value in headers:
+        if name.lower() == "x-codex-turn-state":
+            parts.append(trim_text(value))
+            break
+    for part in parts:
+        if part.byte_length() > 1024: return False
+        for character in part.codepoints():
+            var codepoint = Int(character)
+            if codepoint <= 31 or 127 <= codepoint <= 159: return False
+    return True
 
 
 def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: String) raises -> String:
@@ -238,6 +256,9 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     try:
         source = String(from_utf8=Span(request.body))
         var doc = JsonDocument(source)
+        if not _continuation_identity_valid(request.headers, doc):
+            connection.respond(503, [("content-type", "application/json"), ("cache-control", "no-store"), ("x-content-type-options", "nosniff")], _bytes('{"error":{"code":"bound_continuation_unavailable","message":"bound continuation provider is unavailable"}}'), 30000)
+            return
         namespace = _namespace(request.headers, doc)
         previous_found = conversations.contains(doc.string(doc.get(doc.root, "previous_response_id")), namespace)
         history = _history(doc, conversations, namespace)

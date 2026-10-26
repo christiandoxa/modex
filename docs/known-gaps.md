@@ -6,6 +6,26 @@ Complete parity remains unfinished against Prodex 0.439.1 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 4 connects the pinned Responses continuation-identifier boundary:
+resolved previous-response, session and header turn-state values reject C0/C1
+controls and values above 1,024 UTF-8 bytes before provider dispatch. Twelve
+invalid vectors, five valid boundary/precedence vectors, eight simple combo
+selectors and buffered timestamp fallback have live 0.439.1 comparisons.
+This guard does not implement hard-binding ownership or recovery. In an isolated
+two-turn buffered probe using the same synthetic key and model, the release
+returns 200 then 503 `bound_continuation_unavailable` with one upstream POST;
+Modex returns two 200 responses and sends two POSTs. Full binding identity
+resolution, including the release's profile/credential identity interaction,
+remains a reproducible gap. See `docs/evidence/checkpoint4-reference.json`.
+
+Worker J's `27cd318` is rejected: replacing decoded-value cache weights with
+the larger serialized size evicts escaped histories earlier than the frozen
+store. Its production test asserts earlier eviction without an oracle
+comparison. The existing logical retention rule is unchanged; physical memory
+accounting for Modex's serialized history representation remains unqualified.
+The separate `bf80ee8` header-count cap is also still excluded. Worker-owned
+reader/usage files and the experimental Sol worktree remain untouched.
+
 Checkpoint 2 connects explicit context/compaction limits and their visible
 aliases to the guarded native DeepSeek Super path. Nine live 0.439.1
 comparisons cover fallback/clamping and UInt64 boundaries. Codex receives the
@@ -280,9 +300,9 @@ and strict diagnostic parsing. A malformed literal/escape inside an ordinary
 function-call argument string can remain a string in the release; a raw
 tool-search argument must form valid output JSON. Captured examples document
 that behavior without treating it as execution or validation readiness.
-Missing call IDs use UUIDv7; explicit empty IDs remain present. Response ID
-and time fallback are supplied by the component caller; production runtime
-generation still needs wiring at the CLI path.
+Missing call IDs use UUIDv7; explicit empty IDs remain present. The production
+relay supplies response-ID fallbacks. Missing/invalid buffered creation times
+now use translation time; supplied unsigned timestamps remain unchanged.
 
 The exchange exposes pending plus normalized assistant messages only for
 nonfailed translated responses with a nonblank response ID. No persistent

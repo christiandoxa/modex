@@ -4,7 +4,9 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
+import time
 import unittest
 import uuid
 
@@ -14,6 +16,9 @@ REQUEST_FIXTURE = ROOT / "tests/fixtures/provider-requests/cases.json"
 DRIVER = ROOT / "build/tests/provider_chat_buffered_driver"
 ORACLE_SHA256 = "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a"
 BASELINE_COMMIT = "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
+
+sys.path.insert(0, str(ROOT / "tests"))
+from test_local_rewrite import RunningLocalRewrite, json_bytes, post_relay, serving
 
 
 class ProviderChatBufferedTests(unittest.TestCase):
@@ -210,6 +215,43 @@ class ProviderChatBufferedTests(unittest.TestCase):
                     self.run_native(upstream, case["expected_response_metadata"]),
                     json.loads(case["local_response"]["body"]),
                 )
+
+    def test_missing_created_uses_response_translation_time_through_relay(self):
+        upstream = {
+            "id": "chatcmpl-delayed",
+            "object": "chat.completion",
+            "model": "deepseek-chat",
+            "ignored": "x" * 80,
+            "choices": [{
+                "index": 0,
+                "message": {"role": "assistant", "content": "synthetic delayed reply"},
+                "finish_reason": "stop",
+            }],
+        }
+        body = json_bytes(upstream)
+        with serving([{
+            "status": 200,
+            "content_type": "application/json",
+            "body": body,
+            "chunk_size": (len(body) + 1) // 2,
+            "delay": 1.2,
+        }]) as server:
+            with RunningLocalRewrite(server.server_port) as relay:
+                request_started = int(time.time())
+                status, headers, response_body = post_relay(
+                    relay.address,
+                    json_bytes({"model": "deepseek-chat", "input": "synthetic delayed request"}),
+                )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(headers.get("content-type"), "application/json; charset=utf-8")
+        response = json.loads(response_body)
+        self.assertGreater(response["created_at"], request_started)
+        self.assertLessEqual(response["created_at"], int(time.time()))
+        self.assertEqual(response["output"][0]["content"][0]["text"], "synthetic delayed reply")
+        self.assertEqual(len(server.records), 1)
+        self.assertEqual(server.records[0]["path"], "/v1/chat/completions")
+        self.assertEqual(server.records[0]["headers"].get("authorization"), "Bearer synthetic-provider-key")
 
     def test_provider_request_fixture_has_oracle_buffered_text_and_metadata_cases(self):
         for name in ("defaults", "metadata"):

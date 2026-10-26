@@ -1,0 +1,65 @@
+Checkpoint 4 before-change regressions. Failures are retained as evidence, not passing parity.
+
+$ rtk proxy python3 -m unittest discover -s tests -p test_provider_request_prepare.py -v (worker H test; checkpoint3 native driver)
+test_combo_model_matches_release_on_synthetic_loopback (test_provider_request_prepare.ProviderRequestPrepareTests.test_combo_model_matches_release_on_synthetic_loopback) ... FAIL
+
+======================================================================
+FAIL: test_combo_model_matches_release_on_synthetic_loopback (test_provider_request_prepare.ProviderRequestPrepareTests.test_combo_model_matches_release_on_synthetic_loopback)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_provider_request_prepare.py", line 82, in test_combo_model_matches_release_on_synthetic_loopback
+    self.assertEqual(server.records[0]["body"].decode(), release_body)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '{"me[44 chars]r","role":"user"}],"model":"combo:flash,auto","stream":false}' != '{"me[44 chars]r","role":"user"}],"model":"deepseek-v4-flash","stream":false}'
+- {"messages":[{"content":"synthetic model selector","role":"user"}],"model":"combo:flash,auto","stream":false}
+?                                                                             ^^^^^^     -----
++ {"messages":[{"content":"synthetic model selector","role":"user"}],"model":"deepseek-v4-flash","stream":false}
+?                                                                             ^^^^^^^^^^^^
+
+
+----------------------------------------------------------------------
+Ran 1 test in 2.156s
+
+FAILED (failures=1)
+combo_model: HTTP request captured (110 bytes)
+
+$ rtk proxy python3 -m unittest discover -s tests -p test_provider_chat_buffered.py -k test_missing_created_uses_response_translation_time_through_relay -v (worker I test; checkpoint3 native driver)
+test_missing_created_uses_response_translation_time_through_relay (test_provider_chat_buffered.ProviderChatBufferedTests.test_missing_created_uses_response_translation_time_through_relay) ... FAIL
+
+======================================================================
+FAIL: test_missing_created_uses_response_translation_time_through_relay (test_provider_chat_buffered.ProviderChatBufferedTests.test_missing_created_uses_response_translation_time_through_relay)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_provider_chat_buffered.py", line 249, in test_missing_created_uses_response_translation_time_through_relay
+    self.assertGreater(response["created_at"], request_started)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1792992216 not greater than 1792992216
+
+----------------------------------------------------------------------
+Ran 1 test in 1.516s
+
+FAILED (failures=1)
+
+$ PYTHONPATH=tests rtk proxy python3 -m unittest test_deepseek_continuation.DeepSeekContinuationTests.test_invalid_continuation_identities_fail_before_provider_side_effects -v (checkpoint3 production binary)
+test_invalid_continuation_identities_fail_before_provider_side_effects (test_deepseek_continuation.DeepSeekContinuationTests.test_invalid_continuation_identities_fail_before_provider_side_effects) ...
+  test_invalid_continuation_identities_fail_before_provider_side_effects (test_deepseek_continuation.DeepSeekContinuationTests.test_invalid_continuation_identities_fail_before_provider_side_effects) (binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+
+======================================================================
+FAIL: test_invalid_continuation_identities_fail_before_provider_side_effects (test_deepseek_continuation.DeepSeekContinuationTests.test_invalid_continuation_identities_fail_before_provider_side_effects) (binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 104, in test_invalid_continuation_identities_fail_before_provider_side_effects
+    self.assertEqual(upstream, [])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+AssertionError: Lists differ: [{'method': 'POST', 'path': '/v1/chat/comp[7227 chars]e}'}] != []
+
+First list contains 12 additional elements.
+First extra element 0:
+{'method': 'POST', 'path': '/v1/chat/completions', 'headers': {'host': '127.0.0.1:39177', 'connection': 'close', 'content-length': '108', 'content-type': 'application/json', 'accept-encoding': 'identity', 'accept': 'text/event-stream, application/json', 'authorization': 'Bearer synthetic-provider-key'}, 'body': b'{"messages":[{"content":"synthetic invalid identity","role":"user"}],"model":"deepseek-chat","stream":false}'}
+
+Diff is 8851 characters long. Set self.maxDiff to None to see it.
+
+----------------------------------------------------------------------
+Ran 1 test in 1.211s
+
+FAILED (failures=1)

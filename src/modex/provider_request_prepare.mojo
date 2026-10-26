@@ -425,9 +425,16 @@ def _reasoning(doc: JsonDocument) -> Int:
 
 
 def _native_model(value: String) -> String:
-    var trimmed = trim_text(value)
-    if trimmed.startswith("combo:"): return trimmed
-    var model = trimmed
+    var model = trim_text(value)
+    if model.startswith("combo:"):
+        var start = 6
+        for index in range(6, model.byte_length() + 1):
+            if index == model.byte_length() or model.as_bytes()[index] == 44 or model.as_bytes()[index] == 59 or model.as_bytes()[index] == 124 or model.as_bytes()[index] == 62:
+                var component = trim_text(String(model[byte=start:index]))
+                if component:
+                    model = component
+                    break
+                start = index + 1
     if model.lower() == "auto" or model.lower() == "pro": return "deepseek-v4-pro"
     if model.lower() == "flash": return "deepseek-v4-flash"
     return model

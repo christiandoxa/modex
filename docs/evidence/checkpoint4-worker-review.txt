@@ -1,0 +1,44 @@
+Checkpoint 4 independent read-only review
+Official launcher exit status: 0. stdout/stderr were captured separately.
+Requested Luna/MAX was not honored by the immutable launcher configuration: actual child metadata was gpt-6.1-sol, effort none. This is not counted as Luna/MAX validation.
+The following report is untrusted worker evidence; the main owner reviewed source and ran native/production comparisons separately.
+
+Objective completed. Read-only review of all three exact commits; no repository edits, builds, integration, commits, pushes, or subagents.
+
+**Recommendations**
+
+| Commit | Recommendation | Evidence |
+|---|---|---|
+| `bc072760` — combo aliases | Accept, pending parent’s rebuilt-driver validation | Seven synthetic loopback cases matched the checksum-verified 0.439.1 oracle. |
+| `39363c8` — buffered timestamp | Accept implementation; improve persisted oracle coverage | Immutable source and seven independent oracle cases support translation-time fallback. |
+| `27cd318` — conversation accounting | Reject for frozen compatibility | Serialized-byte accounting changes observable eviction semantics. |
+
+**Must fix**
+
+1. **Conversation histories disappear earlier than in the frozen release.** [provider_conversations.mojo:48](/tmp/modex-luna-conversations-20261026/src/modex/provider_conversations.mojo:48) replaces the frozen logical weight with `max(logical, serialized)`. The immutable baseline counts decoded values and key bytes, excluding the synthetic root array; it explicitly expects `"é", []` to weigh **2**, whereas this commit expects **4**.
+
+   The worker’s eight-turn quote fixture accumulates approximately **61.2 MB** of decoded string content but **122.4 MB** serialized. Frozen accounting retains the first history below its 64 MiB budget; the new accounting evicts it. Production then silently sends only the new input through [runtime_local_rewrite.mojo:191](/home/doxa/IdeaProjects/modex/src/modex/runtime_local_rewrite.mojo:191).
+
+   **Fix:** preserve frozen accounting for retention decisions. Treat any separate physical-memory policy as an explicit compatibility deviation.
+
+2. **The conversation test asserts the deviation instead of comparing it with the oracle.** [test_provider_conversations.py:108](/tmp/modex-luna-conversations-20261026/tests/test_provider_conversations.py:108) deliberately constructs that escaped-string boundary, then requires lost history at line 129. It launches only Modex’s driver; it never invokes or verifies Prodex. The Mojo test also explicitly calculates the smaller frozen weight before asserting the larger replacement.
+
+   **Fix:** compare the same request sequence against the pinned oracle and assert matching history replay.
+
+**Other review results**
+
+- **Combo behavior:** oracle-confirmed comma, semicolon, pipe and greater-than delimiters; first nonempty trimmed component; Unicode whitespace trimming; case-insensitive aliases; case-sensitive `combo:` prefix; unchanged `combo:` and `combo:,,,`. Implementation matches those observations. The worker’s oracle test covers only `combo:flash,auto`, skips when the oracle is absent, and fails on checksum mismatch.
+- **Source/executable discrepancy:** frozen `mojo/prodex_core/deepseek.mojo:4146` suppresses alias expansion inside combos, while the verified release executable expands them. The request recommendation follows observed executable behavior; that discrepancy should remain documented.
+- **Timestamp fallback:** [provider_chat_buffered.mojo:30](/tmp/modex-luna-buffered-20261026/src/modex/provider_chat_buffered.mojo:30) matches oracle observations: missing, null, negative, Boolean and string `created` values use current translation time; valid `0` and `42` remain unchanged. Production reaches it after reading the buffered body through `provider_deepseek_transport.mojo:215`.
+- **Timestamp test evidence:** the new delayed test exercises Modex only. Its surrounding fixture checks still identify **0.439.0**, at [test_provider_chat_buffered.py:17](/tmp/modex-luna-buffered-20261026/tests/test_provider_chat_buffered.py:17). Persist a 0.439.1 differential regression.
+- **Isolation/security:** inspected harnesses use temporary homes/storage, explicit environments, synthetic keys and ephemeral loopback ports. No new credential exposure or scope-bypass issue found. They are not network-isolated.
+
+**Inspected and run**
+
+Inspected all nine changed files, related request/transport/store callers, driver and capture harnesses, and frozen estimator/retention/translation source. Verified changed worktree files against exact commits and six reference files against immutable Git objects.
+
+Ran read-only Git inspection, source searches, SHA256 verification, and **14 synthetic loopback oracle captures**. Modified no repository files.
+
+Not checked: rebuilt Modex execution, full suites, or live conversation eviction against the oracle. Parent validation remains necessary; the conversation rejection is established by immutable source and the changed tests.
+
+Parent follow-up: the reported request source/executable discrepancy is explained by the production caller. local_rewrite_deepseek_send.rs replaces combo models with fallback-chain components before the native simple-request transform maps flash/pro/auto aliases. The isolated raw transformer is not the production call chain. All 17 relevant snapshot files matched immutable Git objects.

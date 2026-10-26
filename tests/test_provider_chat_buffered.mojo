@@ -1,7 +1,9 @@
 from std.testing import assert_equal, assert_true
+from std.time.time import _realtime_nanoseconds
 
 from modex.json import JSON_BOOL, JsonDocument, quote_json
 from modex.provider_chat_buffered import deepseek_buffered_assistant_messages, deepseek_buffered_response
+from modex.provider_chat_usage import json_unsigned
 
 
 def tool_error(arguments: String, expected: String, name: String = "lookup") raises:
@@ -33,9 +35,14 @@ def main() raises:
         '{"created_at":42,"error":{"code":"invalid_tool_call_arguments","message":"DeepSeek returned malformed JSON arguments for tool call `lookup`: key must be a string at line 1 column 2"},"id":"resp_fallback","model":"deepseek-chat","object":"response","output":[{"content":[{"text":"before error","type":"output_text"}],"role":"assistant","type":"message"}],"status":"failed"}',
     )
 
+    var defaults_before = UInt64(max(0, _realtime_nanoseconds() // 1000000000))
     var defaults = JsonDocument(deepseek_buffered_response("{\"choices\":[]}", 23, "resp_test", "{\"request\":true}"))
+    var defaults_after = UInt64(max(0, _realtime_nanoseconds() // 1000000000))
     assert_equal(defaults.string(defaults.get(defaults.root, "id")), "resp_test")
-    assert_equal(defaults.nodes[defaults.get(defaults.root, "created_at")].text, "23")
+    var default_created_at = json_unsigned(defaults, defaults.get(defaults.root, "created_at"))
+    assert_true(default_created_at)
+    assert_true(default_created_at.value() >= defaults_before)
+    assert_true(default_created_at.value() <= defaults_after)
     assert_equal(defaults.string(defaults.get(defaults.root, "model")), "deepseek-chat")
     assert_equal(len(defaults.nodes[defaults.get(defaults.root, "output")].children), 0)
     var merged_request_metadata = defaults.get(defaults.get(defaults.root, "metadata"), "request")
@@ -66,7 +73,9 @@ def main() raises:
     assert_equal(blank_metadata.get(blank_metadata.root, "metadata"), -1)
     var wrong_types = JsonDocument(deepseek_buffered_response('{"id":false,"created":-1,"model":7,"usage":null,"choices":[{"message":{"content":[],"tool_calls":[{"id":"call-wrong","function":{"name":"  lookup  ","arguments":{"ignored":true}}}]}}]}', 2, "resp_types"))
     assert_equal(wrong_types.string(wrong_types.get(wrong_types.root, "id")), "resp_types")
-    assert_equal(wrong_types.nodes[wrong_types.get(wrong_types.root, "created_at")].text, "2")
+    var wrong_created_at = json_unsigned(wrong_types, wrong_types.get(wrong_types.root, "created_at"))
+    assert_true(wrong_created_at)
+    assert_true(wrong_created_at.value() > 2)
     var wrong_output = wrong_types.get(wrong_types.root, "output")
     var wrong_call = wrong_types.nodes[wrong_output].children[0]
     assert_equal(wrong_types.string(wrong_types.get(wrong_call, "name")), "lookup")

@@ -1,9 +1,9 @@
 from std.collections import List
 from std.testing import assert_equal, assert_true
 
-from modex.runtime_local_rewrite import _history, _namespace, local_rewrite_upstream
+from modex.runtime_local_rewrite import _continuation_identity_valid, _history, _namespace, local_rewrite_upstream
 from modex.gateway_cli import gateway_help, parse_gateway_arguments
-from modex.json import JsonDocument
+from modex.json import JsonDocument, quote_json
 from modex.provider_conversations import ProviderConversationStore
 
 
@@ -51,6 +51,20 @@ def main() raises:
     var blocked_nested = JsonDocument('{"session_id":false,"client_metadata":{"session_id":"ignored"}}')
     assert_equal(_namespace([("x-prodex-internal-conversation-namespace", " raw ")], blocked_nested), " raw ")
     assert_equal(_namespace([], blocked_nested), "gateway")
+    for identity in [String("a\0b"), "a\x1fb", "a\x7fb", "a\u0080b", "a\u009fb", String("x") * 1025, String("é") * 513]:
+        var invalid_identity = JsonDocument('{"previous_response_id":' + quote_json(identity) + "}")
+        assert_equal(_continuation_identity_valid([], invalid_identity), False)
+        invalid_identity = JsonDocument('{"client_metadata":{"session_id":' + quote_json(identity) + "}}")
+        assert_equal(_continuation_identity_valid([], invalid_identity), False)
+        assert_equal(_continuation_identity_valid([("session_id", identity)], document), False)
+        assert_equal(_continuation_identity_valid([("x-codex-turn-state", identity)], document), False)
+    var boundary = JsonDocument('{"previous_response_id":' + quote_json(String("é") * 512) + "}")
+    assert_equal(_continuation_identity_valid([], boundary), True)
+    var trimmed_identity = JsonDocument('{"previous_response_id":" \\t valid \\n ","session_id":" \\r\\n "}')
+    assert_equal(_continuation_identity_valid([], trimmed_identity), True)
+    assert_equal(_continuation_identity_valid([("session_id", "valid"), ("x-session-id", String("x") * 1025)], document), True)
+    assert_equal(_continuation_identity_valid([("x-codex-turn-metadata", '{"session_id":"bad\\u0000id"}')], document), False)
+    assert_equal(_continuation_identity_valid([("x-prodex-internal-conversation-namespace", String("x") * 1025)], document), True)
     var store = ProviderConversationStore()
     store.insert("saved", '[{"tool_calls":[{"id":"call-synthetic"}]}]', "a")
     var blank_call = JsonDocument('{"input":[{"type":"function_call_output","call_id":"","tool_call_id":"call-synthetic"}]}')

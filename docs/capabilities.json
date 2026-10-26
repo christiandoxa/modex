@@ -17,7 +17,9 @@
         "tests/test_provider_conversations.mojo",
         "tests/test_super_launch.py",
         "tests/test_provider_passthrough.py",
-        "tests/test_relay_streams.py"
+        "tests/test_relay_streams.py",
+        "tests/test_provider_request_prepare.py",
+        "tests/test_deepseek_continuation.py"
       ],
       "evidence": [
         "docs/evidence/runtime-local-tests.txt",
@@ -31,7 +33,10 @@
         "docs/evidence/checkpoint2-dependencies.txt",
         "docs/evidence/checkpoint3-reference.json",
         "docs/evidence/checkpoint3-tests.txt",
-        "docs/evidence/checkpoint3-dependencies.txt"
+        "docs/evidence/checkpoint3-dependencies.txt",
+        "docs/evidence/checkpoint4-reference.json",
+        "docs/evidence/checkpoint4-tests.txt",
+        "docs/evidence/checkpoint4-dependencies.txt"
       ],
       "proven": [
         "numeric IPv4/IPv6 loopback bind/listen/accept and ephemeral port discovery using existing official wrappers",
@@ -43,7 +48,9 @@
         "native relay driver in a restricted filesystem without implementation helpers",
         "production CLI clean-home DeepSeek exec reaches native Responses SSE/JSON and binary passthrough through synthetic Codex/provider integration peers",
         "production non-2xx auth/rate/server passthrough keeps raw quota headers without derived projection; successful HTTP SSE errors retain projected quotas, with no request replay in tested cases",
-        "3xx Responses and Chat Completions SSE deliver chunks before EOF, filter non-ASCII text-header values and close upstream on downstream reset; >=400 errors remain buffered"
+        "3xx Responses and Chat Completions SSE deliver chunks before EOF, filter non-ASCII text-header values and close upstream on downstream reset; >=400 errors remain buffered",
+        "production Responses identifier validation rejects 12 malformed/oversized identity vectors before upstream side effects, retaining five valid byte-boundary/header-precedence cases against pinned 0.439.1",
+        "eight simple combo selectors and seven buffered created-value categories match pinned production observations; missing timestamps are taken after delayed body receipt"
       ],
       "not_proven": [
         "public operational gateway/provider parity and startup side effects",
@@ -51,7 +58,9 @@
         "configured incoming limits above 64 MiB and arbitrary-length SSE",
         "actual artifact Serde accounting boundaries and other platform layouts",
         "general HTTP tolerance, TLS/DNS/proxies/retries and non-host targets",
-        "unbounded non-2xx redirect SSE beyond the retained 4 MiB body cap"
+        "unbounded non-2xx redirect SSE beyond the retained 4 MiB body cap",
+        "complete continuation binding resolution: a two-turn buffered case remains a pinned-release mismatch",
+        "physical byte equivalence of serialized conversation retention; the incompatible worker estimator change is rejected"
       ],
       "assessment": "Guarded production Super integration is exercised on the host; complete gateway/provider, concurrent admission, security and non-host obligations remain blocked."
     },

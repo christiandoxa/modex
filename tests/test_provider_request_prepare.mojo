@@ -8,7 +8,11 @@ def main() raises:
     var basic = JsonDocument('{"model":"flash","input":"hello","stream":true,"stream_options":{"include_usage":true},"text":{"format":{"type":"json_object"}}}')
     assert_equal(prepare_request_body(basic, '{"runtime":true}'), '{"model":"deepseek-v4-flash","stream":true,"messages":[{"role":"user","content":"hello"}]}')
     var combo_model = JsonDocument('{"model":"combo:flash,auto","input":"x"}')
-    assert_equal(prepare_request_body(combo_model, '{"runtime":true}'), '{"model":"combo:flash,auto","stream":false,"messages":[{"role":"user","content":"x"}]}')
+    assert_equal(prepare_request_body(combo_model, '{"runtime":true}'), '{"model":"deepseek-v4-flash","stream":false,"messages":[{"role":"user","content":"x"}]}')
+    var combo_pro = JsonDocument('{"model":"combo:pro,flash","input":"x"}')
+    assert_equal(prepare_request_body(combo_pro, '{"runtime":true}'), '{"model":"deepseek-v4-pro","stream":false,"messages":[{"role":"user","content":"x"}]}')
+    var combo_model_with_empty_first = JsonDocument('{"model":"combo: , custom-model","input":"x"}')
+    assert_equal(prepare_request_body(combo_model_with_empty_first, '{"runtime":true}'), '{"model":"custom-model","stream":false,"messages":[{"role":"user","content":"x"}]}')
 
     var missing = JsonDocument('{"model":"deepseek-chat"}')
     var known_empty = JsonDocument('{"input":"next","previous_response_id":"saved"}')

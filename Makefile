@@ -65,6 +65,8 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_chat_buffered_driver.mojo -o build/tests/provider_chat_buffered_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_deepseek_transport.mojo -o build/tests/test_provider_deepseek_transport
 	build/tests/test_provider_deepseek_transport
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_rate_limits.mojo -o build/tests/test_provider_rate_limits
+	build/tests/test_provider_rate_limits
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_deepseek_transport_driver.mojo -o build/tests/provider_deepseek_transport_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_conversations.mojo -o build/tests/test_provider_conversations
 	build/tests/test_provider_conversations
@@ -91,6 +93,8 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/loopback_server_driver.mojo -o build/tests/loopback_server_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_sessions.mojo -o build/tests/test_sessions
 	build/tests/test_sessions
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_session_cli.mojo -o build/tests/test_session_cli
+	build/tests/test_session_cli
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_local_time.mojo -o build/tests/test_local_time
 	build/tests/test_local_time
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/json_driver.mojo -o build/tests/json_driver

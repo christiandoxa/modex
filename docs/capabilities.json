@@ -24,7 +24,10 @@
         "docs/evidence/native-super-reference.json",
         "docs/evidence/native-super-data-plane.json",
         "docs/evidence/native-super-tests.txt",
-        "docs/evidence/native-super-dependencies.txt"
+        "docs/evidence/native-super-dependencies.txt",
+        "docs/evidence/checkpoint2-reference.json",
+        "docs/evidence/checkpoint2-tests.txt",
+        "docs/evidence/checkpoint2-dependencies.txt"
       ],
       "proven": [
         "numeric IPv4/IPv6 loopback bind/listen/accept and ephemeral port discovery using existing official wrappers",
@@ -34,7 +37,8 @@
         "downstream reset cancellation during upstream waits while preserving valid request half-close",
         "native in-memory scope/count/sequence/retention rules and known-empty history distinction",
         "native relay driver in a restricted filesystem without implementation helpers",
-        "production CLI clean-home DeepSeek exec reaches native Responses SSE/JSON and binary passthrough through synthetic Codex/provider integration peers"
+        "production CLI clean-home DeepSeek exec reaches native Responses SSE/JSON and binary passthrough through synthetic Codex/provider integration peers",
+        "production non-2xx auth/rate/server passthrough keeps raw quota headers without derived projection; successful HTTP SSE errors retain projected quotas, with no request replay in tested cases"
       ],
       "not_proven": [
         "public operational gateway/provider parity and startup side effects",
@@ -273,6 +277,28 @@
       "not_proven": [
         "production event monitor, owned RPC transport, session affinity release and live goal recovery",
         "accepted RPCs are never claimed as actual goal progress"
+      ]
+    },
+    {
+      "id": "NATIVE-SUPER-TOKEN-LIMITS",
+      "status": "PROVEN_LOCAL_SLICE",
+      "source": "src/modex/super_cli.mojo; src/modex/super_launch.mojo",
+      "tests": [
+        "tests/test_super_launch.py::SuperLaunchTests.test_context_and_compaction_limits_match_release_config_and_catalog"
+      ],
+      "evidence": [
+        "docs/evidence/checkpoint2-reference.json",
+        "docs/evidence/checkpoint2-tests.txt",
+        "docs/evidence/checkpoint2-dependencies.txt"
+      ],
+      "proven": [
+        "context/compaction flags and visible aliases reach Codex through the actual native Super exec path",
+        "nine live pinned-release cases cover defaults, zero/one fallback, context-minus-one clamping, plus/leading zeros and UInt64 maximum",
+        "complete generated catalog equality is checked; numeric -c budgets leave its frozen defaults intact"
+      ],
+      "not_proven": [
+        "arbitrary Codex argv/config precedence, persistent shared state, Smart Context and real Codex distributions",
+        "complete Super/provider parity and all six release qualifications"
       ]
     }
   ],

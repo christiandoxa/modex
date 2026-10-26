@@ -30,6 +30,18 @@ def main() raises:
         except:
             rejected = True
         assert_true(rejected)
+    var smart_context_error = String()
+    try:
+        _ = parse_gateway_arguments(["modex", "gateway", "--smart-context=true"], "modex")
+    except error:
+        smart_context_error = String(error)
+    assert_equal(smart_context_error, "error: unexpected value 'true' for '--smart-context' found; no more were expected\n\nUsage: modex gateway --smart-context\n\nFor more information, try '--help'.\n")
+    var presidio_error = String()
+    try:
+        _ = parse_gateway_arguments(["modex", "gateway", "--presidio=false"], "modex")
+    except error:
+        presidio_error = String(error)
+    assert_equal(presidio_error, "error: unexpected value 'false' for '--presidio' found; no more were expected\n\nUsage: modex gateway --presidio\n\nFor more information, try '--help'.\n")
     var document = JsonDocument('{"session_id":" body ","client_metadata":{"session_id":"nested"}}')
     assert_equal(_namespace([], document), "body")
     assert_equal(_namespace([("session_id", " header "), ("x-session-id", "ignored")], document), "header")

@@ -75,7 +75,7 @@ def parse_gateway_arguments(args: List[String], executable: String) raises -> Ga
                 options.provider = provider
         else:
             if "=" in argument:
-                raise session_cli_error("unexpected value '" + String(argument.split("=", maxsplit=1)[1]) + "' for '" + name + "' found; no more were expected", executable + " gateway [OPTIONS]")
+                raise session_cli_error("unexpected value '" + String(argument.split("=", maxsplit=1)[1]) + "' for '" + name + "' found; no more were expected", executable + " gateway " + name)
             if name == "--smart-context": options.smart_context = True
             elif name == "--presidio": options.presidio = True
             else: options.no_presidio = True

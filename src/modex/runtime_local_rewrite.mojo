@@ -242,6 +242,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         _reply(connection, 502, "upstream request failed")
         return
     if not exchange.successful():
+        # Frozen dispatch keeps non-2xx quota headers raw, without Codex projection.
         try:
             var body = exchange.read_body()
             connection.respond(exchange.status(), _response_headers(exchange.headers()), body, 30000)

@@ -6,6 +6,22 @@ Complete parity remains unfinished against Prodex 0.439.1 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 2 connects explicit context/compaction limits and their visible
+aliases to the guarded native DeepSeek Super path. Nine live 0.439.1
+comparisons cover fallback/clamping and UInt64 boundaries. Codex receives the
+normalized numeric overrides, while model-catalog rows retain default budgets:
+the pinned exact-value scanner reads only TOML strings. Other configuration
+precedence and real Codex interpretation remain unverified.
+
+The proposed early-error quota projection is not a pinned-reference gap.
+The reference dispatches non-2xx responses through passthrough without derived
+quota headers, including auth errors; a 200 SSE provider error retains the
+projection sent in its successful HTTP headers. Native tests preserve that
+distinction and verify no replay. Invalid non-ASCII quota values are rejected
+before parsing. Modex still buffers non-2xx SSE within its 4 MiB error cap,
+whereas the reference streams error SSE; timing/large-error parity remains
+unfinished. See `docs/evidence/checkpoint2-reference.json`.
+
 Super has a guarded production clean-home DeepSeek exec path with explicit
 loopback URL/model/key, `--no-presidio`, `--no-sub-agent` and absolute
 `PRODEX_CODEX_BIN`. It reaches real native HTTP/SSE/JSON and binary Chat

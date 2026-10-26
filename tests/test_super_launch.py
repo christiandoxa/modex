@@ -74,7 +74,7 @@ connection = http.client.HTTPConnection(target.hostname,target.port,timeout=10)
 connection.request("POST",target.path+("?"+target.query if target.query else ""),body,
                    {"Content-Type":"application/x-synthetic" if passthrough else "application/json","Authorization":"Bearer synthetic-codex-key","Connection":"close"})
 response=connection.getresponse()
-save({"kind":"response","status":response.status,"body":response.read().hex()})
+save({"kind":"response","status":response.status,"headers":{name.lower():value for name,value in response.getheaders()},"body":response.read().hex()})
 connection.close()
 print("synthetic-client-complete")
 raise SystemExit(0 if response.status == 200 else 1)
@@ -86,7 +86,7 @@ def event_names(payload):
 
 
 class SuperLaunchTests(unittest.TestCase):
-    def run_launch(self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat"):
+    def run_launch(self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat", super_arguments=()):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-") as directory:
             root = Path(directory)
             for name in ("home", "state", "shared", "work"):
@@ -104,7 +104,18 @@ class SuperLaunchTests(unittest.TestCase):
                 def do_POST(peer):
                     body = peer.rfile.read(int(peer.headers["Content-Length"]))
                     observed.append({"path": peer.path, "headers": dict(peer.headers), "body": body.hex()})
-                    if scenario == "passthrough":
+                    status = 200
+                    if scenario.startswith("error-"):
+                        status = int(scenario.rsplit("-", 1)[1])
+                        payload = b'{"error":{"type":"synthetic_error","message":"synthetic upstream failure"}}'
+                        content_type = "application/json"
+                        if scenario.startswith("error-stream-"):
+                            payload = b"data: " + payload + b"\n\n"
+                            content_type = "text/event-stream"
+                    elif scenario == "stream-error":
+                        payload = b'data: {"error":{"message":"synthetic upstream failure","type":"rate_limit_exceeded"}}\n\n'
+                        content_type = "text/event-stream"
+                    elif scenario == "passthrough":
                         payload, content_type = b"\x00synthetic upstream\xff", "application/x-synthetic"
                     elif scenario == "stream":
                         chunk = {"id": "synthetic-chat", "model": "deepseek-chat", "choices": [{"index": 0, "delta": {"content": "synthetic greeting"}, "finish_reason": None}]}
@@ -114,9 +125,15 @@ class SuperLaunchTests(unittest.TestCase):
                     else:
                         payload = json.dumps({"id": "synthetic-chat", "model": "deepseek-chat", "choices": [{"index": 0, "message": {"role": "assistant", "content": "synthetic greeting"}, "finish_reason": "stop"}]}).encode()
                         content_type = "application/json"
-                    peer.send_response(200)
+                    peer.send_response(status)
                     peer.send_header("Content-Type", content_type)
                     peer.send_header("Content-Length", str(len(payload)))
+                    for name, value in (("limit-requests", "100"), ("remaining-requests", "40"),
+                                        ("limit-tokens", "80"), ("remaining-tokens", "60"),
+                                        ("reset-requests", "1700000000000"), ("reset-tokens", "1700000000000")):
+                        peer.send_header("x-ratelimit-" + name, value)
+                    peer.send_header("Connection", "X-Synthetic-Hop, close")
+                    peer.send_header("X-Synthetic-Hop", "synthetic-private-hop")
                     peer.end_headers()
                     peer.wfile.write(payload)
 
@@ -132,7 +149,8 @@ class SuperLaunchTests(unittest.TestCase):
                            **{key: str(root / "home") for key in ("XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME")}}
             command = [str(binary), "super", "--provider", "deepseek", "--api-key", "synthetic-provider-key",
                        "--base-url", f"http://127.0.0.1:{server.server_port}/v1", "--model", model,
-                       "--no-presidio", "--no-sub-agent", "--skip-quota-check", "exec", "--", "synthetic prompt"]
+                       "--no-presidio", "--no-sub-agent", "--skip-quota-check", *super_arguments,
+                       "exec", "--", "synthetic prompt"]
             try:
                 result = subprocess.run(command, env=environment, cwd=root / "work", capture_output=True, timeout=40)
             finally:
@@ -271,6 +289,63 @@ class SuperLaunchTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn(b"model identifier exceeds 4096 bytes", result.stderr)
         self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+
+    def test_error_quota_headers_match_pinned_dispatch_without_post_replay(self):
+        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        for scenario in ("error-401", "error-403", "error-429", "error-503", "error-stream-429", "stream-error"):
+            with self.subTest(scenario=scenario):
+                responses = []
+                for binary in (ORACLE, MODEX):
+                    result, records, upstream, _ = self.run_launch(binary, scenario)
+                    self.assertEqual(result.returncode, 0 if scenario == "stream-error" else 1, result.stderr)
+                    self.assertEqual(len(upstream), 1)
+                    response = next(record for record in records if record["kind"] == "response")
+                    self.assertNotIn("x-synthetic-hop", response["headers"])
+                    self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                    responses.append(response)
+                baseline, actual = responses
+                self.assertEqual(actual["status"], baseline["status"])
+                self.assertEqual(actual["headers"]["content-type"], baseline["headers"]["content-type"])
+                for name in ("x-deepseek-requests-primary-used-percent", "x-deepseek-tokens-primary-used-percent",
+                             "x-deepseek-requests-primary-reset-at", "x-deepseek-tokens-primary-reset-at"):
+                    self.assertEqual(actual["headers"].get(name), baseline["headers"].get(name))
+                    self.assertEqual(name in actual["headers"], scenario == "stream-error")
+                if scenario == "stream-error":
+                    self.assertEqual(event_names(actual["body"]), event_names(baseline["body"]))
+                    self.assertIn("response.failed", event_names(actual["body"]))
+                else:
+                    self.assertEqual(actual["body"], baseline["body"])
+                    self.assertEqual(actual["headers"].get("x-ratelimit-limit-requests"), "100")
+
+    def test_context_and_compaction_limits_match_release_config_and_catalog(self):
+        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        cases = (
+            (("--context-window", "32768"), 32768, 32767),
+            (("--auto-compact-token-limit", "12000"), 1048576, 12000),
+            (("--local-context-window", "+00032768", "--local-auto-compact-token-limit", "999999"), 32768, 32767),
+            (("--context-window", "0", "--auto-compact-token-limit", "0"), 1048576, 900000),
+            (("--context-window", "1"), 1048576, 900000),
+            (("--context-window", "2"), 2, 1),
+            (("--context-window", "3"), 3, 2),
+            (("--auto-compact-token-limit", "1"), 1048576, 1),
+            (("--context-window", "18446744073709551615", "--auto-compact-token-limit", "18446744073709551615"),
+             18446744073709551615, 18446744073709551614),
+        )
+        for arguments, context, compact in cases:
+            with self.subTest(arguments=arguments):
+                launches = []
+                for binary in (ORACLE, MODEX):
+                    result, records, upstream, _ = self.run_launch(binary, "buffered", super_arguments=arguments)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(len(upstream), 1)
+                    launch = next(record for record in records if record["kind"] == "launch")
+                    self.assertEqual(launch["config"]["model_context_window"], context)
+                    self.assertEqual(launch["config"]["model_auto_compact_token_limit"], compact)
+                    launches.append(launch)
+                self.assertEqual(launches[0]["catalog"], launches[1]["catalog"])
+                for row in launches[1]["catalog"]["models"]:
+                    self.assertEqual((row["context_window"], row["max_context_window"], row["auto_compact_token_limit"]),
+                                     (1048576, 1048576, 900000))
 
 
 if __name__ == "__main__": unittest.main()

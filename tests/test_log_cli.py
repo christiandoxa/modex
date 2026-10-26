@@ -22,6 +22,11 @@ CASES = [
     ["log", "--jso"], ["log", "--jso", "last"], ["log", "-j"],
     ["log", "last", "stream"], ["log", "wat", "extra"],
     ["log", "--", "last"], ["log", "--", "--help"], ["log", "--", "--json"],
+    ["log", "--help", "--verbose"], ["log", "--help", "--json=bad"],
+    ["log", "last", "--help", "extra"], ["log", "--json", "--help", "--json"],
+    ["log", "--help", "-h"], ["log", "-h", "--help"],
+    ["log", "--json=bad", "--help"], ["log", "--help=bad"],
+    ["log", "--json", "--help=bad"],
 ]
 
 # Fixed, bounded argv coverage for option ordering and clap's short-help parsing.

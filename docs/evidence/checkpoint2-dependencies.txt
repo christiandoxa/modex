@@ -1,0 +1,24 @@
+Checkpoint 2 dependency and provenance review
+No new application dependencies, native declarations/bindings, Python product interop, production generators or runtime delegation.
+All production from-imports resolve to local modex modules or official stdlib; 67 native source files inspected.
+Mojo std.ffi names are existing bundled CStringSpan/c_pid_t types for posix_spawnp; no new binding or FFI implementation helper was added.
+$ mojo --version
+Mojo 1.2.0 (2016d0cd)
+$ sha256sum build/modex
+d457d01003e9825fd2f2451b04e2c8c0b6f50f65ca839dbc14b61b778a86b495  build/modex
+$ ldd build/modex
+	linux-vdso.so.1 (0x00007d61826bb000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007d6182368000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007d6182000000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007d618225e000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007d6181c00000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007d618224e000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007d6181000000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007d6182220000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007d61826bd000)
+$ readelf -d build/modex
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+Validation scope: synthetic credentials, isolated HOME/config/storage and ephemeral numeric loopback peers only.
+No platform or full parity promotion; compiler private APIs, older host compatibility, all non-host targets and unconnected recovery remain gaps.

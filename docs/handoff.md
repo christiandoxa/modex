@@ -1,4 +1,59 @@
-# Current work
+# Checkpoint 2: verified native token limits and CLI fixes
+
+Starting main and origin/main were clean/equal at
+`f5973a27c64c33f9f17eabbec160822e0f95595a`. Sol reviewed the exact worker
+patches and applied focused no-commit cherry-picks: log help
+`0862e19f5d076a2055df9cf97a9850cfce6afb0f`, gateway switch diagnostics
+`0624a066220819cb7ee2c8b8e1905e6f22ac61b2`, quota ASCII validation
+`211cc940f92e55fdcb60d720d0bc37ceba7d99f0`, and, after its worktree was clean
+and deliverable reviewed, session delimiter diagnostics
+`4c8d9b2014f62f9bdd2767919e2358dba0a2099b`. The user supplied these workers
+as Luna/MAX; this checkpoint spawned no new workers. Main integration, tests,
+commit and push remain Sol-owned. Admission worker G's
+`bf80ee85d871191804b46355ac52fb9108a68c15` is not integrated: its arbitrary
+128-header cap intentionally differs from the pinned baseline and requires
+separate consideration. Its isolated worktree remains intact.
+
+Nine source files were verified byte-for-byte against pinned Git objects.
+The requested non-2xx quota projection would diverge: the reference only
+projects after successful Responses dispatch. Six live synthetic production
+cases now compare 401/403/429/503, non-2xx SSE and a provider error inside a
+200 SSE stream, checking quota semantics and exactly one upstream POST.
+Native quota extraction now matches the reference's HTAB/visible-ASCII
+validation. Bounded error tests cover chunk framing, nominated hop-header
+removal and sanitized oversized-body failure. Non-2xx SSE buffering versus
+reference streaming remains a recorded timing/size gap.
+
+Sol's production fallback connects `--context-window` and
+`--auto-compact-token-limit`, including their local aliases, through native
+Super launch. Nine live comparisons cover zero/one fallback, clamping,
+plus/leading-zero values and UInt64 maximum. The first provisional catalog
+rewrite failed five live subcases; it was removed. The pinned exact-value
+lookup accepts TOML strings only, so numeric budgets reach Codex while the
+catalog retains its original defaults. No failed run is counted as passing.
+
+The corrected focused run passed all 10 Python methods in 40.777 seconds.
+The final serial `rtk proxy make build unit test` exited 0: all 44 native
+unit executables completed, all 328 Python methods passed in 551.394 seconds,
+with no skips, and the 407 recovery-policy differential vectors still passed.
+The dependency/import/link review found no new application dependency, native
+binding, Python production code, generator or runtime delegation. Explicit
+paths and credential-shaped diff review passed before the checkpoint commit. Evidence:
+`docs/evidence/checkpoint2-reference.json`,
+`docs/evidence/checkpoint2-tests.txt`, and
+`docs/evidence/checkpoint2-dependencies.txt`.
+
+No complete contract/platform status changed. All six release qualifications
+remain BLOCKED; the JavaScript SDK, broad security/storage/lifecycle behavior,
+worker lanes and unconnected production recovery remain in the denominator.
+Next runtime work is already implemented and under isolated validation at
+`/tmp/modex-sol-error-sse-20261026`: bounded non-2xx SSE passthrough, early
+chunk delivery, downstream-reset cleanup and stream-header ASCII validation.
+Its original production regression failed before the change and focused
+checks now pass; integrate only after pinned-release comparison and review.
+Preserve isolated worker boundaries and verified commit/push cadence.
+
+# Previous checkpoint: native Super
 
 Target: Prodex 0.439.1 at `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`.
 The reference repository remains unchanged. Sixteen relevant snapshot files were

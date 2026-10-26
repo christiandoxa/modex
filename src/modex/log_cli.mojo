@@ -16,6 +16,10 @@ def log_error(message: String, usage: String) -> Error:
 
 def log_short_help(args: List[String]) -> Bool:
     for arg in args:
+        if arg == "--":
+            return False
+        if arg == "--help":
+            return False
         if arg.startswith("-h") and not arg.startswith("--"):
             return True
     return False
@@ -32,7 +36,6 @@ def log_value_error(value: String, executable: String) -> Error:
 def parse_log_arguments(args: List[String], executable: String) raises -> Tuple[String, Bool, Bool]:
     var mode = String()
     var json = False
-    var help = False
     var literal = False
     var seen_json = False
     var index = 2
@@ -41,9 +44,7 @@ def parse_log_arguments(args: List[String], executable: String) raises -> Tuple[
         if not literal and (arg == "--help" or (arg.startswith("-h") and not arg.startswith("--"))):
             if mode and mode != "stream" and mode != "last" and mode != "upstream":
                 raise log_value_error(mode, executable)
-            help = True
-            index += 1
-            continue
+            return mode^, json, True
         if not literal and arg == "--":
             literal = True
             index += 1
@@ -61,6 +62,12 @@ def parse_log_arguments(args: List[String], executable: String) raises -> Tuple[
             if seen_json:
                 usage = executable + " log <MODE|--json>"
             raise log_error("unexpected value '" + value + "' for '--json' found; no more were expected", usage)
+        elif not literal and arg.startswith("--help="):
+            var value = String(arg[byte=7:])
+            var usage = executable + " log --help [MODE]"
+            if seen_json:
+                usage = executable + " log --help <MODE|--json>"
+            raise log_error("unexpected value '" + value + "' for '--help' found; no more were expected", usage)
         elif not literal and arg.startswith("-") and arg != "-":
             if arg.startswith("--"):
                 var option = String(arg.split("=", maxsplit=1)[0])
@@ -89,8 +96,6 @@ def parse_log_arguments(args: List[String], executable: String) raises -> Tuple[
         else:
             raise log_error("unexpected argument '" + arg + "' found", executable + " log [OPTIONS] [MODE]")
         index += 1
-    if help:
-        return mode^, json, True
     if mode and mode != "stream" and mode != "last" and mode != "upstream":
         raise log_value_error(mode, executable)
     return mode^, json, False

@@ -57,6 +57,9 @@ def _append_openai_limit(
 def _header_value(headers: List[Tuple[String, String]], expected: String) -> Optional[String]:
     for name, value in headers:
         if name.lower() == expected:
+            for byte in value.as_bytes():
+                if byte > 126 or byte < 32 and byte != 9:
+                    return Optional[String]()
             return Optional[String](value)
     return Optional[String]()
 

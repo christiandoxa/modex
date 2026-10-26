@@ -180,7 +180,7 @@ def _config(mut args: List[String], key: String, value: String):
     args.append(key + "=" + value)
 
 
-def _exec(binary: String, home: String, model: String, upstream: String, key: String, prompt: List[String]) raises -> Int:
+def _exec(binary: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64) raises -> Int:
     var environment = _child_environment(home)
     var version = capture_with_env(binary, [String("--version")], environment, "Codex version probe")
     if not version.status.exit_code or version.status.exit_code.value() != 0 or not String(from_utf8=Span(version.stdout)).startswith("codex-cli "):
@@ -207,8 +207,8 @@ def _exec(binary: String, home: String, model: String, upstream: String, key: St
         _config(args, "model_providers.prodex-deepseek.wire_api", "\"responses\"")
         _config(args, "model_providers.prodex-deepseek.requires_openai_auth", "true")
         _config(args, "model_providers.prodex-deepseek.supports_websockets", "false")
-        _config(args, "model_context_window", "1048576")
-        _config(args, "model_auto_compact_token_limit", "900000")
+        _config(args, "model_context_window", String(context_window))
+        _config(args, "model_auto_compact_token_limit", String(compact_limit))
         _config(args, "model_reasoning_summary", "\"none\"")
         _config(args, "web_search", "\"live\"")
         for feature in [String("apps"), String("js_repl"), String("image_generation")]:
@@ -242,9 +242,11 @@ def _exec(binary: String, home: String, model: String, upstream: String, key: St
         raise
 
 
-def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String]) raises -> Int:
+def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64 = 0, compact_limit: UInt64 = 0) raises -> Int:
     _ = local_rewrite_upstream(upstream)
     _ = deepseek_request_headers([], key)
+    var launch_context = context_window if context_window > 1 else UInt64(1048576)
+    var launch_compact = min(compact_limit if compact_limit > 0 else UInt64(900000), launch_context - 1)
     var launch_model = trim_text(model)
     if not launch_model:
         launch_model = "deepseek-v4-pro"
@@ -276,8 +278,9 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
         with open(home + "/auth.json", "w") as auth:
             auth.write("{\"OPENAI_API_KEY\":\"prodex-runtime-provider\",\"agent_identity\":null,\"auth_mode\":\"apikey\",\"last_refresh\":null,\"tokens\":null}")
         with open(home + "/prodex-deepseek-model-catalog.json", "w") as catalog:
+            # Frozen exact-value lookup ignores numeric -c overrides when building the catalog.
             catalog.write(deepseek_model_catalog(catalog_model))
-        var result = _exec(binary, home, launch_model, upstream, key, prompt)
+        var result = _exec(binary, home, launch_model, upstream, key, prompt, launch_context, launch_compact)
         _remove_overlay(home)
         return result
     except:

@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import unittest
 
-from session_oracle import sandbox_command
+from session_oracle import fixture, sandbox_command
 import test_cli
 from test_cli import MODEX, ORACLE, ORACLE_SHA256, ROOT
 from capture_session_cli import map_executable
@@ -40,6 +40,35 @@ class SessionCliTests(unittest.TestCase):
                         created = sorted(str(path.relative_to(root)) for path in root.rglob("*")
                                          if path not in (root / "home", root / "workspace"))
                         self.assertEqual(created, [])
+
+    def test_root_delimiter_errors_match_release_with_isolated_session_fixture(self):
+        cases = [
+            ["session", "--", "--help"],
+            ["session", "--", "--json"],
+            ["session", "--", "-h"],
+            ["session", "--", "lits"],
+            ["session", "--", "list"],
+        ]
+        with tempfile.TemporaryDirectory(prefix="modex-session-root-cli-check-") as directory:
+            for index, arguments in enumerate(cases):
+                with self.subTest(arguments=arguments):
+                    outputs = []
+                    for label, binary, argv0 in (("baseline", ORACLE, "prodex"),
+                                                  ("modex", MODEX, "modex")):
+                        root = Path(directory) / f"{index}-{label}"
+                        root.mkdir()
+                        fixture(root)
+                        before = {str(path.relative_to(root)): path.read_bytes() if path.is_file() else None
+                                  for path in root.rglob("*")}
+                        result = subprocess.run(sandbox_command(binary, root, arguments, argv0=argv0),
+                                                capture_output=True, timeout=10, check=False)
+                        stdout = result.stdout.decode().replace(str(root), "<FIXTURE_ROOT>")
+                        stderr = result.stderr.decode().replace(str(root), "<FIXTURE_ROOT>")
+                        outputs.append((result.returncode, map_executable(stdout), map_executable(stderr)))
+                        after = {str(path.relative_to(root)): path.read_bytes() if path.is_file() else None
+                                 for path in root.rglob("*")}
+                        self.assertEqual(after, before)
+                    self.assertEqual(outputs[1], outputs[0])
 
     def test_generated_argument_sequences(self):
         generator = random.Random(439)

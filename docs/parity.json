@@ -15,6 +15,10 @@
     {
       "date": "2026-10-26",
       "change": "Verified 0.439.1 tag, commit, official checksum manifest and Linux artifact. Retained earlier evidence provenance; shared live differential tests now use 0.439.1. Added separately tracked worker-lane/admission/recovery/tunnel/Kiro/release obligations; all six targets remain required and the inventory remains incomplete."
+    },
+    {
+      "date": "2026-10-26",
+      "change": "Checkpoint 2 integrates four reviewed Luna worker slices and connects native DeepSeek Super context/compaction overrides. Pinned source and live release comparisons reject the proposed non-2xx quota projection: the baseline uses passthrough there. Numeric Codex overrides retain default catalog budgets as observed. No contract/platform status or denominator changes."
     }
   ],
   "contracts": [
@@ -645,7 +649,10 @@
         "docs/evidence/log-foundations-link.txt",
         "docs/evidence/log-live-mismatch.json",
         "docs/evidence/inspection-policy-tests.txt",
-        "docs/evidence/inspection-policy-link.txt"
+        "docs/evidence/inspection-policy-link.txt",
+        "docs/evidence/checkpoint2-reference.json",
+        "docs/evidence/checkpoint2-tests.txt",
+        "docs/evidence/checkpoint2-dependencies.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -700,7 +707,8 @@
         "tests/test_unicode_width.py",
         "tests/text_driver.mojo",
         "tests/test_text_memory.py",
-        "tests/width_memory_driver.mojo"
+        "tests/width_memory_driver.mojo",
+        "tests/test_session_cli.mojo"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -717,7 +725,10 @@
         "docs/evidence/baseline/session-zstd-errors.json",
         "docs/evidence/unicode-width-tests.txt",
         "docs/evidence/text-memory-tests.txt",
-        "docs/evidence/text-memory.json"
+        "docs/evidence/text-memory.json",
+        "docs/evidence/checkpoint2-reference.json",
+        "docs/evidence/checkpoint2-tests.txt",
+        "docs/evidence/checkpoint2-dependencies.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -772,7 +783,8 @@
         "tests/test_unicode_width.py",
         "tests/text_driver.mojo",
         "tests/test_text_memory.py",
-        "tests/width_memory_driver.mojo"
+        "tests/width_memory_driver.mojo",
+        "tests/test_session_cli.mojo"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -789,7 +801,10 @@
         "docs/evidence/baseline/session-zstd-errors.json",
         "docs/evidence/unicode-width-tests.txt",
         "docs/evidence/text-memory-tests.txt",
-        "docs/evidence/text-memory.json"
+        "docs/evidence/text-memory.json",
+        "docs/evidence/checkpoint2-reference.json",
+        "docs/evidence/checkpoint2-tests.txt",
+        "docs/evidence/checkpoint2-dependencies.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -831,8 +846,14 @@
         "Codex"
       ],
       "implementation": null,
-      "tests": [],
-      "evidence": [],
+      "tests": [
+        "tests/test_session_cli.mojo"
+      ],
+      "evidence": [
+        "docs/evidence/checkpoint2-reference.json",
+        "docs/evidence/checkpoint2-tests.txt",
+        "docs/evidence/checkpoint2-dependencies.txt"
+      ],
       "status": "NOT_STARTED",
       "platform_status": {
         "x86_64-unknown-linux-gnu": "NOT_STARTED",
@@ -1199,7 +1220,7 @@
       "prerequisites": [
         "selected supported upstream CLI/tools"
       ],
-      "implementation": "src/main.mojo -> super_cli.mojo -> super_launch.mojo implements a guarded clean-home DeepSeek exec launch with private overlay, explicit environment, Codex version/hook preflight, native self-process relay, exit propagation and direct-child cleanup. Existing CLI validation/passthrough WIP is retained. The selected model plus bundled preset catalog, metadata/ordering/ASCII case rules, and default provider/context/compaction settings are native and compared with the release.",
+      "implementation": "src/main.mojo -> super_cli.mojo -> super_launch.mojo implements a guarded clean-home DeepSeek exec launch with private overlay, explicit environment, Codex version/hook preflight, native self-process relay, exit propagation and direct-child cleanup. Existing CLI validation/passthrough WIP is retained. The selected model plus bundled preset catalog, metadata/ordering/ASCII case rules, and default provider/context/compaction settings are native and compared with the release. Explicit --context-window/--auto-compact-token-limit and their local aliases now reach the actual native launch with pinned fallback/clamping rules; numeric -c limits reach Codex while catalog rows retain the frozen default budgets.",
       "tests": [
         "tests/test_super_cli.mojo",
         "tests/test_super_cli.py",
@@ -1214,7 +1235,10 @@
         "docs/evidence/native-super-reference.json",
         "docs/evidence/native-super-data-plane.json",
         "docs/evidence/native-super-tests.txt",
-        "docs/evidence/native-super-dependencies.txt"
+        "docs/evidence/native-super-dependencies.txt",
+        "docs/evidence/checkpoint2-reference.json",
+        "docs/evidence/checkpoint2-tests.txt",
+        "docs/evidence/checkpoint2-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -1255,20 +1279,24 @@
       "prerequisites": [
         "configured provider endpoint"
       ],
-      "implementation": "src/modex/gateway_cli.mojo; src/main.mojo (help, sampled argument diagnostics and two captured DeepSeek startup-output cases; operational gateway still unfinished)",
+      "implementation": "src/modex/gateway_cli.mojo; src/main.mojo (help, sampled argument diagnostics and two captured DeepSeek startup-output cases; operational gateway still unfinished); boolean switch value-error Usage is verified against 0.439.1",
       "tests": [
         "tests/test_gateway_cli.mojo",
         "tests/test_gateway.py",
         "tests/capture_gateway.py",
         "tests/capture_gateway_mismatches.py",
-        "tests/capture_gateway_permissions.py"
+        "tests/capture_gateway_permissions.py",
+        "tests/test_gateway_cli.py"
       ],
       "evidence": [
         "tests/fixtures/gateway/cases.json",
         "docs/evidence/gateway-mismatch.json",
         "docs/evidence/runtime-local-tests.txt",
         "docs/evidence/runtime-local-link.txt",
-        "docs/evidence/gateway-permissions-mismatch.json"
+        "docs/evidence/gateway-permissions-mismatch.json",
+        "docs/evidence/checkpoint2-reference.json",
+        "docs/evidence/checkpoint2-tests.txt",
+        "docs/evidence/checkpoint2-dependencies.txt"
       ],
       "status": "FAIL",
       "platform_status": {
@@ -2167,7 +2195,7 @@
       "prerequisites": [
         "DeepSeek services"
       ],
-      "implementation": "Native request/response translation, scoped conversation continuation, rate-limit headers and raw Chat Completions passthrough are connected through a guarded production Super launch.",
+      "implementation": "Native request/response translation, scoped conversation continuation, rate-limit headers and raw Chat Completions passthrough are connected through a guarded production Super launch. Quota values require HTAB/visible ASCII; early non-2xx responses preserve raw quota headers without projection, while 200 SSE provider errors retain projected quotas. Synthetic production comparisons verify one upstream POST per request.",
       "tests": [
         "tests/test_provider_chat_chunk.mojo",
         "tests/provider_chat_chunk_driver.mojo",
@@ -2203,7 +2231,9 @@
         "tests/local_rewrite_driver.mojo",
         "tests/test_local_rewrite.py",
         "tests/test_super_launch.py",
-        "tests/test_provider_passthrough.py"
+        "tests/test_provider_passthrough.py",
+        "tests/test_provider_rate_limits.mojo",
+        "tests/test_provider_rate_limits.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
@@ -2227,7 +2257,10 @@
         "docs/evidence/native-super-reference.json",
         "docs/evidence/native-super-data-plane.json",
         "docs/evidence/native-super-tests.txt",
-        "docs/evidence/native-super-dependencies.txt"
+        "docs/evidence/native-super-dependencies.txt",
+        "docs/evidence/checkpoint2-reference.json",
+        "docs/evidence/checkpoint2-tests.txt",
+        "docs/evidence/checkpoint2-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2240,7 +2273,8 @@
       },
       "blockers": [
         "The production slice requires a clean base and explicit loopback/model/key/options. Complete provider preset routing and custom catalog/config options, real Codex distributions, native Messages, account rotation, TLS and general provider launch remain unverified or unfinished.",
-        "All six complete release obligations remain blocked; focused host observations do not qualify a release target."
+        "All six complete release obligations remain blocked; focused host observations do not qualify a release target.",
+        "Non-2xx SSE is buffered with a 4 MiB cap in Modex; the pinned passthrough path streams it. Large or timing-sensitive error streams remain unqualified."
       ]
     },
     {

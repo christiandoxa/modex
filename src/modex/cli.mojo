@@ -180,6 +180,20 @@ def unknown_argument(argument: String, usage: String, command: String, seen: Lis
     return session_cli_error(detail, formatted)
 
 
+def unrecognized_subcommand(command: String, usage: String, commands: List[String]) -> Error:
+    var detail = String("unrecognized subcommand '") + command + "'"
+    var matches = similar_names(command, commands)
+    if len(matches) == 1:
+        detail += "\n\n  tip: a similar subcommand exists: '" + matches[0] + "'"
+    elif matches:
+        detail += "\n\n  tip: some similar subcommands exist: "
+        for index in range(len(matches)):
+            if index:
+                detail += ", "
+            detail += "'" + matches[index] + "'"
+    return session_cli_error(detail, usage + " <COMMAND>")
+
+
 def conflicting(left: String, right: String) -> Bool:
     if left == right:
         return False
@@ -207,7 +221,8 @@ def parse_session_options(args: List[String]) raises -> SessionOptions:
         var detail = String("unexpected argument '") + args[3] + "' found"
         if args[3] in commands:
             detail += "\n\n  tip: subcommand '" + args[3] + "' exists; to use it, remove the '--' before it"
-        raise session_cli_error(detail, usage + " <COMMAND>")
+            raise session_cli_error(detail, usage + " <COMMAND>")
+        raise unrecognized_subcommand(args[3], usage, commands)
     if args[2] == "--help" or args[2].startswith("-h"):
         return SessionOptions(False, "help", None, "", None, None, False)
     if args[2].startswith("--help="):
@@ -222,17 +237,7 @@ def parse_session_options(args: List[String]) raises -> SessionOptions:
                         if suggestion:
                             raise session_cli_error("unexpected argument '" + name + "' found\n\n  tip: '" + args[index] + " " + suggestion + "' exists", usage + " <COMMAND>")
             raise unknown_argument(args[2], usage, "", [])
-        var detail = String("unrecognized subcommand '") + args[2] + "'"
-        var matches = similar_names(args[2], commands)
-        if len(matches) == 1:
-            detail += "\n\n  tip: a similar subcommand exists: '" + matches[0] + "'"
-        elif matches:
-            detail += "\n\n  tip: some similar subcommands exist: "
-            for index in range(len(matches)):
-                if index:
-                    detail += ", "
-                detail += "'" + matches[index] + "'"
-        raise session_cli_error(detail, usage + " <COMMAND>")
+        raise unrecognized_subcommand(args[2], usage, commands)
     var command = args[2]
     usage += " " + command
     var output = String("resume" if command == "resume" else "text")

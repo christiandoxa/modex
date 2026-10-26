@@ -192,7 +192,7 @@ def run_super(options: SuperOptions) raises -> Int:
     validate_super_options(options)
     var supported = options.value("--provider") == "deepseek" and options.has("--no-presidio") and options.has("--no-sub-agent") and options.has("--base-url") and options.has("--api-key") and options.has("--model")
     for name in options.names:
-        supported = supported and name in ["--provider", "--no-presidio", "--no-sub-agent", "--base-url", "--api-key", "--model", "--skip-quota-check"]
+        supported = supported and name in ["--provider", "--no-presidio", "--no-sub-agent", "--base-url", "--api-key", "--model", "--skip-quota-check", "--context-window", "--auto-compact-token-limit"]
     var simple_exec = options.codex_args and options.codex_args[0] == "exec"
     if simple_exec and len(options.codex_args) > 1 and options.codex_args[1] != "--":
         simple_exec = len(options.codex_args) == 2 and not options.codex_args[1].startswith("-")
@@ -200,5 +200,7 @@ def run_super(options: SuperOptions) raises -> Int:
         var prompt = List[String]()
         for index in range(1, len(options.codex_args)):
             prompt.append(options.codex_args[index])
-        return run_clean_deepseek_super(options.value("--model"), options.value("--base-url"), options.value("--api-key"), prompt)
+        var context_window = unsigned_value(options.value("--context-window")) if options.has("--context-window") else UInt64(0)
+        var compact_limit = unsigned_value(options.value("--auto-compact-token-limit")) if options.has("--auto-compact-token-limit") else UInt64(0)
+        return run_clean_deepseek_super(options.value("--model"), options.value("--base-url"), options.value("--api-key"), prompt, context_window, compact_limit)
     raise Error("Super startup is not implemented: secure temporary overlays, Smart Context initialization, and Codex launch supervision remain unavailable")

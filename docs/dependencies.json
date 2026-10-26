@@ -190,7 +190,7 @@
   "provider_buffered_implementation": "Native Mojo buffered chat JSON mapping reuses local JSON/usage/metadata/tool/UUID helpers and only official stdlib. A separately authored bounded diagnostic scanner reproduces source-derived Serde-style error categories/byte positions only when the frozen structural fragment scanner rejects or tool-search output requires strict JSON. Ordinary argument strings preserve the frozen structural acceptance behavior; exact captures retain that boundary. Missing call IDs use existing UUIDv7; supplied response-ID/time fallbacks remain the caller responsibility. A pure assistant-message extractor preserves original tool-call IDs/provider fields and normalizes tool content for the conversation result; no store is written. Python only captures/replays checksum-pinned synthetic oracle fixtures and serves test peers. No application dependency, binding, helper, runtime data loader or production generator is added. Native mapper and real HTTP tests do not establish full provider/CLI, parser/resource, persistent state or non-host parity.",
   "runtime_local_foundation": "Guarded production Super reaches the real native relay. Numeric loopback HTTP buffered/SSE Responses and binary/query Chat Completions passthrough are tested through the actual CLI and checksum-verified 0.439.1 oracle. The relay is serial; worker lanes, admission, TLS, DNS, general cancellation and non-host behavior remain gaps.",
   "super_preflight_foundation": "Production clean-home launch runs native hook-trust JSON-RPC. Request writes use bundled socketpair/send(MSG_NOSIGNAL), keeping closed-peer errors recoverable without global signal changes. Twelve-second per-RPC deadline, 16 MiB stdout-line guard and direct-child cleanup remain. Full launch/config/storage/companion parity is blocked.",
-  "provider_rate_limit_foundation": "Native DeepSeek request/token header projection reuses local time parsers and bundled official numeric/time APIs. Native tests and real relay fixtures cover both SSE/buffered headers, rounded utilization and numeric/RFC3339/compound-duration reset values. Frozen source was traced at 0.439.1; relay validation and guarded production CLI checks still do not establish a complete provider contract.",
+  "provider_rate_limit_foundation": "Native DeepSeek request/token header projection reuses local time parsers and bundled official numeric/time APIs. Native tests and real relay fixtures cover both SSE/buffered headers, rounded utilization and numeric/RFC3339/compound-duration reset values. Frozen source was traced at 0.439.1; relay validation and guarded production CLI checks still do not establish a complete provider contract. Checkpoint 2 adds HeaderValue::to_str-equivalent HTAB/visible-ASCII validation and production non-2xx/stream-error comparisons; projection remains confined to successful Responses rewrites as in the pinned dispatcher.",
   "connected_native_runtime": {
     "modules": [
       "src/modex/loopback_http.mojo",
@@ -247,7 +247,10 @@
       "docs/evidence/native-super-reference.json",
       "docs/evidence/native-super-data-plane.json",
       "docs/evidence/native-super-tests.txt",
-      "docs/evidence/native-super-dependencies.txt"
+      "docs/evidence/native-super-dependencies.txt",
+      "docs/evidence/checkpoint2-reference.json",
+      "docs/evidence/checkpoint2-tests.txt",
+      "docs/evidence/checkpoint2-dependencies.txt"
     ]
   },
   "runtime_recovery_foundation": "NativeRecoveryRetry and owned-thread/goal wire policy have native assertions and 407 pinned Mojo policy differential vectors. Accepted mutations do not become progress. Monitor, owned transport, affinity release, ambiguous outcome handling and mutation dispatch are unconnected; no live recovery PASS is claimed.",
@@ -257,5 +260,16 @@
     "docs/evidence/native-super-tests.txt",
     "docs/evidence/native-super-dependencies.txt"
   ],
-  "super_launch_implementation": "Native clean-home overlay, selected plus bundled DeepSeek model catalog/metadata/default budgets, explicit config/environment, version/hook preflight, supervised same-image relay and Codex exec. Existing state and complete storage/config/companion behavior remain blocked."
+  "super_launch_implementation": "Native clean-home overlay, selected plus bundled DeepSeek model catalog/metadata/default budgets, explicit config/environment, version/hook preflight, supervised same-image relay and Codex exec. Existing state and complete storage/config/companion behavior remain blocked. Context/compaction CLI overrides now use the pinned UInt64 fallback/clamping rules and reach native Codex argv; catalog defaults retain the baseline string-only exact-value lookup behavior.",
+  "checkpoint2_dependency_audit": {
+    "new_application_dependencies": [],
+    "new_native_bindings": [],
+    "production_python_or_codegen": false,
+    "scope": "Log/gateway/session CLI fixes, quota ASCII validation and native Super token-limit configuration reuse existing local modules and official stdlib. Synthetic Python stdlib harnesses remain test-only. No runtime delegation, FFI implementation helper or paid provider request was introduced.",
+    "evidence": [
+      "docs/evidence/checkpoint2-reference.json",
+      "docs/evidence/checkpoint2-tests.txt",
+      "docs/evidence/checkpoint2-dependencies.txt"
+    ]
+  }
 }

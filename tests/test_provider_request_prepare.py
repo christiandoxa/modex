@@ -1,4 +1,4 @@
-"""Compare combo-model production requests with pinned Prodex 0.439.1."""
+"""Compare combo-model production requests with the checksum-pinned Prodex release."""
 
 import hashlib
 import json

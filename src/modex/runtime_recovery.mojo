@@ -7,6 +7,64 @@ comptime RECOVERY_DEFER = 0
 comptime RECOVERY_STOP = 1
 comptime RECOVERY_RESUME_GOAL = 2
 comptime RECOVERY_CONTINUE_TURN = 3
+comptime QUOTA_WINDOW_EXHAUSTED = 3
+comptime QUOTA_HANDOFF_PROCEED = 0
+comptime QUOTA_HANDOFF_RETRY_FULL_HISTORY = 1
+
+# shortcut: no production recovery caller, connect after account/affinity ownership exists.
+
+
+def _quota_windows_valid(five_hour_status: Int, weekly_status: Int) -> Bool:
+    return 0 <= five_hour_status <= 4 and 0 <= weekly_status <= 4
+
+
+def _quota_window_exhausted(status: Int) -> Bool:
+    # Match the pinned Mojo WINDOW_GUARD: exhausted is status 3.
+    return status == QUOTA_WINDOW_EXHAUSTED
+
+
+def quota_recovery_alternate_eligible(
+    context_allowed: Bool,
+    auth_compatible: Bool,
+    supports_runtime: Bool,
+    auth_failure_active: Bool,
+    quota_quarantined: Bool,
+    five_hour_status: Int,
+    weekly_status: Int,
+) raises -> Bool:
+    """A recoverable alternate may still wait on capacity or cooldown."""
+    if not _quota_windows_valid(five_hour_status, weekly_status):
+        raise Error("invalid quota window status")
+    return (
+        context_allowed and auth_compatible and supports_runtime
+        and not auth_failure_active and not quota_quarantined
+        and not _quota_window_exhausted(five_hour_status)
+        and not _quota_window_exhausted(weekly_status)
+    )
+
+
+def quota_recovery_decision(
+    hard_affinity: Bool,
+    owner_matches: Bool,
+    full_history_reconstructable: Bool,
+    retry_available: Bool,
+    alternate_recoverable: Bool,
+    owner_five_hour_status: Int,
+    owner_weekly_status: Int,
+) raises -> Int:
+    """Unconnected signal policy; PROCEED grants neither admission nor replay."""
+    if not _quota_windows_valid(owner_five_hour_status, owner_weekly_status):
+        raise Error("invalid quota window status")
+    if (
+        hard_affinity and owner_matches and full_history_reconstructable
+        and retry_available and alternate_recoverable
+        and (
+            _quota_window_exhausted(owner_five_hour_status)
+            or _quota_window_exhausted(owner_weekly_status)
+        )
+    ):
+        return QUOTA_HANDOFF_RETRY_FULL_HISTORY
+    return QUOTA_HANDOFF_PROCEED
 
 
 def recovery_retry_delay_ms(attempts: UInt32) -> UInt64:

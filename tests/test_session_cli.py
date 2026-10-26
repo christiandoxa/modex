@@ -9,7 +9,7 @@ import unittest
 
 from session_oracle import fixture, sandbox_command
 import test_cli
-from test_cli import MODEX, ORACLE, ORACLE_SHA256, ROOT
+from test_cli import HISTORICAL_04391_ORACLE_SHA256, MODEX, ORACLE, ROOT
 from capture_session_cli import map_executable
 
 
@@ -20,26 +20,27 @@ class SessionCliTests(unittest.TestCase):
 
     def test_release_help_and_argument_diagnostics(self):
         captured = json.loads((ROOT / "docs/evidence/baseline/session-cli.json").read_text())
-        self.assertEqual(captured["oracle_sha256"], ORACLE_SHA256)
+        self.assertEqual(captured["oracle_sha256"], HISTORICAL_04391_ORACLE_SHA256)
         with tempfile.TemporaryDirectory(prefix="modex-session-cli-check-") as directory:
             for index, case in enumerate(captured["cases"]):
                 with self.subTest(arguments=case["arguments"]):
-                    root = Path(directory) / str(index)
-                    root.mkdir()
-                    (root / "home").mkdir(mode=0o700)
-                    (root / "workspace").mkdir()
-                    result = subprocess.run(sandbox_command(MODEX, root, case["arguments"], argv0="modex"),
-                                            capture_output=True, timeout=10, check=False)
-                    expected_stdout = map_executable(case["stdout"]).encode()
-                    expected_stderr = map_executable(case["stderr"]).encode()
-                    stdout = result.stdout.replace(str(root).encode(), b"<FIXTURE_ROOT>")
-                    stderr = result.stderr.replace(str(root).encode(), b"<FIXTURE_ROOT>")
-                    self.assertEqual((result.returncode, stdout, stderr),
-                                     (case["exit_code"], expected_stdout, expected_stderr))
-                    if not case["new_paths"]:
-                        created = sorted(str(path.relative_to(root)) for path in root.rglob("*")
-                                         if path not in (root / "home", root / "workspace"))
-                        self.assertEqual(created, [])
+                    for name, binary in (("prodex", ORACLE), ("modex", MODEX)):
+                        root = Path(directory) / f"{index}-{name}"
+                        root.mkdir()
+                        (root / "home").mkdir(mode=0o700)
+                        (root / "workspace").mkdir()
+                        result = subprocess.run(sandbox_command(binary, root, case["arguments"], argv0=name),
+                                                capture_output=True, timeout=10, check=False)
+                        expected_stdout = case["stdout"] if name == "prodex" else map_executable(case["stdout"])
+                        expected_stderr = case["stderr"] if name == "prodex" else map_executable(case["stderr"])
+                        stdout = result.stdout.replace(str(root).encode(), b"<FIXTURE_ROOT>")
+                        stderr = result.stderr.replace(str(root).encode(), b"<FIXTURE_ROOT>")
+                        self.assertEqual((result.returncode, stdout, stderr),
+                                         (case["exit_code"], expected_stdout.encode(), expected_stderr.encode()))
+                        if not case["new_paths"]:
+                            created = sorted(str(path.relative_to(root)) for path in root.rglob("*")
+                                             if path not in (root / "home", root / "workspace"))
+                            self.assertEqual(created, [])
 
     def test_root_delimiter_errors_match_release_with_isolated_session_fixture(self):
         cases = [

@@ -1,10 +1,30 @@
 # Verified gaps
 
-Complete parity remains unfinished against Prodex 0.439.1 at
-`81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`. The incomplete inventory retains
+Complete parity remains unfinished against officially released Prodex 0.439.2 at
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9`. The incomplete inventory retains
 71 contracts and 426 platform obligations. All six complete release
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
+
+Checkpoint 13 targets 0.439.2. Earlier 0.439.1 and 0.439.0 evidence below
+retains historical provenance and is not automatically current-target evidence.
+Known five-hour or weekly exhaustion, pre-I/O hard-owner HTTP/WebSocket recovery
+and busy/cooling recoverable alternatives are new explicit obligations. Modex
+still has no real account pool, WebSocket transport or connected native recovery
+owner; production quota handoff and all six release qualifications remain BLOCKED.
+No opaque continuation-delta transfer or POST replay is permitted. Optional RTK
+1.1.0 and Presidio 2.2.365 qualification is also unfinished.
+
+Checkpoint 13 fixes only inspection help/error usage for empty argv0, with
+four live regressions through actual native CLI dispatch. Standalone quota
+signal policy has 1,600 current-source comparisons but remains unconnected.
+New live 0.439.2 checks reject proposed earlier-slot tool replacement and a
+4 MiB merged-metadata cap. Oversized hook trust still differs in panic/exit
+behavior; changing its diagnostic alone is excluded. Fresh binding and
+bodyless/oversized-redirect probes retain the documented runtime gaps.
+Hook initialization still advertises historical 0.439.1; fresh captures
+and the production client-version correction are the next native slice.
+See `docs/evidence/checkpoint13-reference.json`.
 
 Checkpoint 12 closes whole-dot normalization for admitted numeric-loopback
 HTTP upstream paths, including literal/encoded dots, repeated separators,

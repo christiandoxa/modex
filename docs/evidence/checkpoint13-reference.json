@@ -1,0 +1,90 @@
+{
+  "checkpoint": 13,
+  "parent_base_commit": "47a86e1ce5be8d64b7cff0aaba1c37699aae8ae3",
+  "baseline_version": "0.439.2",
+  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "reference_evidence": "docs/evidence/baseline-0.439.2/reference-verification.json",
+  "owned_source_sha256": {
+    "src/modex/inspection_cli.mojo": "555578e2ee09b09f4006fbae8c5b783774487dd334fe900a6089f2e006987ce5",
+    "src/modex/runtime_recovery.mojo": "1020c0ca69a4052c6544f0e8aeb8323d5b72793d8c6f0e668468ee9e7dab5c3f",
+    "Makefile": "ac7805901de431ba93cc0807296731999e51ebf73b880a60351a695a0679b62d",
+    "tests/test_inspection_cli.py": "0cbaa8db035cecd7977d68811adadcd55fd88a62759894391864384165292882",
+    "tests/test_quota_handoff_04392.py": "977047401bbf92457aa091463662f5b650ebcc59a91878af77347b995e00147b",
+    "tests/test_release_04392.py": "33a2c78476e12bd9cf6ccd43c0ac817a422ab79bf610d8b86c9669f700c56756",
+    "tests/test_compressed_sessions.py": "71df76071946825ae3ab0f76be5c7d2af9cdfeafe71f607fb772995c812734c0",
+    "tests/test_session_cli.py": "e39d5136446066fee778590fe50cc631234c336d7ee3fa62647d0e04dca36cca",
+    "tests/test_super_cli.py": "c640765d4eb8660ae510082ab52058d2a5bea818ae6d84253e46fa593d0a1ba3"
+  },
+  "production_slice": {
+    "source": "src/modex/inspection_cli.mojo",
+    "callers": "src/main.mojo inspection and root-help dispatch",
+    "behavior": "Empty argv0 produces current/info/status usage without a leading space. Nonempty executable names retain existing output.",
+    "previous_production_failures": 4,
+    "upstream_effects": "None; isolated help/error cases create no paths."
+  },
+  "quota_policy_foundation": {
+    "source": "src/modex/runtime_recovery.mojo",
+    "production_connected": false,
+    "current_source_comparisons": 1600,
+    "busy_cooling_source_vectors": 4,
+    "method": "800 candidate decisions execute current-pinned WINDOW_GUARD and RetryablePool kernels; 800 signal decisions combine the current pinned retry-signal kernel with the reviewed 0.439.2 Rust pre-I/O gate conditions. This is synthetic policy evidence only.",
+    "does_not_establish": [
+      "real account pool/admission",
+      "HTTP or WebSocket owner I/O suppression",
+      "binding/affinity release",
+      "original deadline or session owner",
+      "full-history reconstruction/dispatch",
+      "no replay after committed output",
+      "actual workflow/goal progress"
+    ]
+  },
+  "historical_recovery_policy_vectors": {
+    "count": 407,
+    "source_version": "0.439.1",
+    "role": "historical regression, not automatically current-target evidence"
+  },
+  "historical_fixture_revalidation": {
+    "fixture_version": "0.439.1",
+    "fixture_files_unchanged": true,
+    "cases": 307,
+    "current_release_version": "0.439.2",
+    "method": "271 session CLI, 25 compressed diagnostics and 11 Super argv cases retain historical checksums and compare both actual current binaries to the recorded outputs."
+  },
+  "worker_reviews": "docs/evidence/checkpoint13-worker-review.json",
+  "validation": {
+    "exit_code": 0,
+    "elapsed_seconds": 812.435,
+    "python_started": true,
+    "test_progress_lines": 362,
+    "artifact_sha256_samples": [
+      "d707979d1a25cf9520dfa75ed37aeb43e458d92beec70b689652bc0f08319b06",
+      "d707979d1a25cf9520dfa75ed37aeb43e458d92beec70b689652bc0f08319b06",
+      "d707979d1a25cf9520dfa75ed37aeb43e458d92beec70b689652bc0f08319b06",
+      "d707979d1a25cf9520dfa75ed37aeb43e458d92beec70b689652bc0f08319b06",
+      "d707979d1a25cf9520dfa75ed37aeb43e458d92beec70b689652bc0f08319b06",
+      "d707979d1a25cf9520dfa75ed37aeb43e458d92beec70b689652bc0f08319b06",
+      "d707979d1a25cf9520dfa75ed37aeb43e458d92beec70b689652bc0f08319b06",
+      "d707979d1a25cf9520dfa75ed37aeb43e458d92beec70b689652bc0f08319b06",
+      "d707979d1a25cf9520dfa75ed37aeb43e458d92beec70b689652bc0f08319b06"
+    ],
+    "artifact_stable_during_python": true,
+    "native_unit_executables": 48,
+    "python_methods": 362,
+    "python_seconds": 656.825,
+    "focused_python_methods": 11,
+    "focused_python_seconds": 27.853,
+    "skips": 0
+  },
+  "protected_gap_rechecks": "docs/evidence/checkpoint13-protected-probes.json",
+  "denominator": {
+    "contracts": 71,
+    "platform_obligations": 426,
+    "release_targets_blocked": 6,
+    "inventory_complete": false
+  },
+  "review_audit": {
+    "credential_pattern_findings": 0,
+    "historical_fixtures_unchanged": true,
+    "diff_check": "PASS"
+  }
+}

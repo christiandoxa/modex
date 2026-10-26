@@ -1,3 +1,62 @@
+# Checkpoint 13: released Prodex 0.439.2 and native inspection usage
+
+The active target is officially released Prodex 0.439.2 at `72b77478a5198fc5da6b4d2253137f9cdbf43be9`,
+superseding 0.439.1. The read-only remote tag, official manifests, Linux binary
+checksum and all 3,280 cached Git-tree blobs are reverified. All prior checkpoint
+evidence keeps its original version/commit. All 71 contracts, 426 six-platform
+obligations and six BLOCKED release qualifications remain unchanged.
+
+Main began clean at verified pushed `47a86e1ce5be8d64b7cff0aaba1c37699aae8ae3`. The sole integrator reviewed
+the existing parallel worker commits against the new source and release.
+Inspection `37c9b74` is connected through actual current/info/status/root-help
+dispatch. Its shared prefix removes the leading space for empty argv0; four
+new release comparisons fail on checkpoint 12 and pass now. Normal executable
+names and the existing fixed/384 seeded diagnostics remain covered, without
+state mutations or backend-parity claims.
+
+Quota `59815a4` adds only an explicitly unconnected signal foundation. The parent
+replaces old-source/string-only checks with execution of current-pinned Mojo
+window/candidate/retry-signal policy plus reviewed Rust gate composition:
+1,600 comparisons and four busy/cooling source vectors. Synthetic checks keep
+unknown and weekly-only quota distinct from exhaustion and retain auth/context/
+runtime/quarantine eligibility. No account pool, HTTP/WS owner I/O suppression,
+binding release, original deadline, full-history dispatch or live recovery is
+proved. Zero signal grants no admission or replay. Accepted RPC is not progress.
+
+Reject `6c4b21b`: current source and both real CLIs keep the specific duplicate
+tool in its later slot. Reject `6d0fc33`: both real CLIs accept 4,200,071 merged
+metadata bytes, retaining both synthetic values with one POST. Exclude
+`624372c`: text replacement leaves the release's 101 panic versus native exit 1
+mismatch for 65,537 hooks. Worker branches and all later dirty work remain intact;
+chat-item/chunk proposals are not integrated. Process argv confirms the primary
+GPT-6.1 Sol/MAX selection and concurrently existing GPT-6 Luna/MAX children.
+Run IDs and exact reviewed commits are in checkpoint13-worker-review.json.
+
+Validation: serial `make build`, all 48 native units, 11 focused Python
+methods in 27.853s, then serial `rtk proxy make test`: 362 Python methods in
+656.825s, no skips. The 1,600 current-source policy checks and 407 historical
+0.439.1 wire-policy vectors pass. The production hash remains fixed throughout
+Python discovery/linkage/sandbox checks. The source/import inventory remains
+67 files, with no new application dependency, binding, runtime helper, interop,
+production generator, real credential, paid traffic or account login.
+The first full run failed three provenance assertions. Their historical fixture
+bytes remain unchanged; 307 cases now also run against actual 0.439.2. The focused
+three-method correction gate passes before the final full rerun.
+
+Fresh 0.439.2 protected probes retain binding ownership (release 200/503 and one
+POST versus native 200/200 and two), bodyless Content-Length omission and
+oversized-302 diagnostics. SDK, account pools, worker lanes, active recovery,
+security/storage/lifecycle and complete six-target qualification remain BLOCKED.
+The immediate next production slice is the shared bodyless response-header
+writer and hook initialization's still-historical 0.439.1 client version, after
+this verified normal main push. Fresh hook captures are required; no release/tag
+is published.
+
+Evidence: `docs/evidence/checkpoint13-reference.json`, `checkpoint13-tests.txt`,
+`checkpoint13-dependencies.txt`, `checkpoint13-before.txt`,
+`checkpoint13-worker-review.json`, `checkpoint13-protected-probes.json` and
+`docs/evidence/baseline-0.439.2/`.
+
 # Checkpoint 12: native upstream dot segments
 
 Checkpoint 11 was normally committed and pushed as

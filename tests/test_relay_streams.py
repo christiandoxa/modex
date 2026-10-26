@@ -62,7 +62,7 @@ class RelayStreamTests(unittest.TestCase):
                     root = Path(temporary)
                     for name in ("home", "state", "shared", "work"):
                         (root / name).mkdir(mode=0o700)
-                    (root / "state/update-check.json").write_text('{"source":"GitHub","latest_version":"0.439.1","checked_at":4102444800}')
+                    (root / "state/update-check.json").write_text('{"source":"GitHub","latest_version":"0.439.2","checked_at":4102444800}')
                     codex = root / "codex"
                     codex.write_text("#!" + sys.executable + "\n" + script)
                     codex.chmod(0o700)

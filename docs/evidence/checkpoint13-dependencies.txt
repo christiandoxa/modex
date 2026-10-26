@@ -1,0 +1,323 @@
+Checkpoint 13 dependency audit. Product uses only existing official Mojo 1.2.0 stdlib/local modules. 67 production sources and all import/dependency inventories are unchanged. Inspection adds no import; quota policy adds no import. No new native binding, application library, production Python/Node/Rust runtime, implementation helper, interop, generator or Prodex runtime delegation is introduced. Pinned Prodex code is compiled only in isolated test adapters outside the product graph. Native quota signal policy remains unconnected; it grants no production admission or recovery. Tests use synthetic credentials, isolated HOME/config/storage and loopback; no paid traffic or login.
+
+$ ldd build/modex
+	linux-vdso.so.1 (0x0000744c9334d000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x0000744c92ff8000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x0000744c92c00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x0000744c92eee000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x0000744c92800000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x0000744c92ede000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x0000744c91c00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x0000744c92eb0000)
+	/lib64/ld-linux-x86-64.so.2 (0x0000744c9334f000)
+
+Production source imports:
+src/main.mojo:from std.collections import List
+src/main.mojo:from std.sys import argv, exit, stderr
+src/main.mojo:from modex.cli import parse_session_options, session_help
+src/main.mojo:from modex.gateway_cli import GatewayOptions, gateway_help, parse_gateway_arguments, run_gateway
+src/main.mojo:from modex.inspection_cli import inspection_help, inspection_help_requested, inspection_usage
+src/main.mojo:from modex.log_cli import log_help, log_short_help, parse_log_arguments
+src/main.mojo:from modex.logs import log_last
+src/main.mojo:from modex.log_upstream_follow import follow_upstream
+src/main.mojo:from modex.log_stream import follow_stream
+src/main.mojo:from modex.root_help import root_help
+src/main.mojo:from modex.sessions import inspect_sessions
+src/main.mojo:from modex.super_cli import parse_super_arguments, run_super
+src/main.mojo:from modex.super_help import super_help
+src/main.mojo:from modex.super_launch import run_local_rewrite_child
+src/modex/app_server_args.mojo:from std.collections import List
+src/modex/app_server_rpc.mojo:from std.collections import Array, List, Span
+src/modex/app_server_rpc.mojo:from std.io import RawFileDescriptor
+src/modex/app_server_rpc.mojo:from std.net._sys.unix import AF_UNIX, F_GETFL, F_SETFL, MSG_NOSIGNAL, O_NONBLOCK, SOCK_STREAM, send, socketpair
+src/modex/app_server_rpc.mojo:from std.os.process import Pipe, Process
+src/modex/app_server_rpc.mojo:from std.pathlib import cwd
+src/modex/app_server_rpc.mojo:from std.sys._libc import close, fcntl, FcntlCommands, FcntlFDFlags
+src/modex/app_server_rpc.mojo:from std.sys._libc_errno import ErrNo, get_errno
+src/modex/app_server_rpc.mojo:from std.time import perf_counter, sleep
+src/modex/app_server_rpc.mojo:from .app_server_args import project_app_server_config_args
+src/modex/app_server_rpc.mojo:from .process_spawn import spawn_with_env_stdio
+src/modex/app_server_rpc.mojo:from .super_hooks import HOOK_TRUST_MAX_RPC_LINE_BYTES, HOOK_TRUST_RPC_TIMEOUT_MS, HookTrustSession
+src/modex/cli.mojo:from std.collections import List, Optional
+src/modex/cli.mojo:from .sessions import SessionOptions
+src/modex/cli.mojo:from .text import unsigned_value
+src/modex/gateway_cli.mojo:from std.collections import List, Span
+src/modex/gateway_cli.mojo:from std.io import RawFileDescriptor
+src/modex/gateway_cli.mojo:from std.os import getuid, listdir, lstat, stat
+src/modex/gateway_cli.mojo:from std.os.path import exists
+src/modex/gateway_cli.mojo:from .cli import argument_name, session_cli_error
+src/modex/gateway_cli.mojo:from .paths import ensure_app_root, shared_root
+src/modex/gateway_cli.mojo:from .sessions import checked_session_file
+src/modex/gateway_cli.mojo:from .text import trim_text
+src/modex/gateway_cli.mojo:from .toml import TOMLDocument
+src/modex/inspection_cli.mojo:from std.collections import List
+src/modex/inspection_cli.mojo:from .cli import argument_name, session_cli_error, similar_names
+src/modex/inspection_cli.mojo:from .text import unsigned_value
+src/modex/json.mojo:from std.collections import List, Span
+src/modex/json.mojo:from .json_float import json_float
+src/modex/json_float.mojo:from std.math import isfinite
+src/modex/local_time.mojo:from std.collections import List, Optional, Span
+src/modex/local_time.mojo:from std.os import getenv
+src/modex/local_time.mojo:from std.os.path import exists
+src/modex/log_cli.mojo:from std.collections import List
+src/modex/log_cli.mojo:from .cli import similar_names
+src/modex/log_follow.mojo:from std.collections import List, Optional, Span
+src/modex/log_follow.mojo:from std.io import FileHandle, RawFileDescriptor
+src/modex/log_follow.mojo:from std.os import stat
+src/modex/log_follow.mojo:from std.sys._libc_errno import ErrNo, get_errno
+src/modex/log_follow_paths.mojo:from std.collections import List, Span
+src/modex/log_follow_paths.mojo:from std.os import stat
+src/modex/log_follow_paths.mojo:from .logs import collect_files, file_newer
+src/modex/log_follow_paths.mojo:from .paths import shared_root
+src/modex/log_operational.mojo:from std.collections import List, Optional, Span
+src/modex/log_operational.mojo:from .log_redaction import redact_log_text
+src/modex/log_operational.mojo:from .log_time import local_log_timestamp
+src/modex/log_operational.mojo:from .logs import LogEvent, RuntimeRecord
+src/modex/log_payload.mojo:from std.collections import List, Span
+src/modex/log_payload.mojo:from .log_text import trim_unicode
+src/modex/log_payload.mojo:from .zstd import ZstdReader
+src/modex/log_payload_render.mojo:from std.collections import List
+src/modex/log_payload_render.mojo:from .json import JSON_ARRAY, JSON_BOOL, JSON_OBJECT, JSON_NUMBER, JSON_STRING, JsonDocument, serialize_json
+src/modex/log_payload_render.mojo:from .log_text import trim_unicode
+src/modex/log_payload_render.mojo:from .text import wrap_text
+src/modex/log_redaction.mojo:from .text import is_whitespace
+src/modex/log_stream.mojo:from std.collections import List, Optional
+src/modex/log_stream.mojo:from std.os import getenv, isatty
+src/modex/log_stream.mojo:from std.sys import stderr
+src/modex/log_stream.mojo:from std.time import perf_counter, sleep
+src/modex/log_stream.mojo:from .log_follow import FollowedLog, collect_new_followed_lines, retain_followed_paths
+src/modex/log_stream.mojo:from .log_follow_paths import bounded_follow_paths, recent_session_log_paths
+src/modex/log_stream.mojo:from .log_operational import operational_event
+src/modex/log_stream.mojo:from .log_redaction import redact_log_text
+src/modex/log_stream.mojo:from .log_text import trim_unicode
+src/modex/log_stream.mojo:from .log_time import local_log_timestamp
+src/modex/log_stream.mojo:from .log_transcript import transcript_events
+src/modex/log_stream.mojo:from .log_upstream_follow import print_upstream, require_file_log_sources
+src/modex/log_stream.mojo:from .logs import LogEvent, RUNTIME_TAIL_BYTES, RuntimeRecord, TokenEvent, UpstreamEvent, event_label, latest_transcript, read_tail, recent_runtime_log_paths, render_event, render_token, timestamp_wins, token_event, upstream_event
+src/modex/log_stream.mojo:from .paths import ensure_app_root
+src/modex/log_text.mojo:from .log_redaction import redact_log_text
+src/modex/log_text.mojo:from .text import is_whitespace
+src/modex/log_text.mojo:from .unicode_properties import is_alphanumeric
+src/modex/log_time.mojo:from .local_time import civil_days, format_local_epoch
+src/modex/log_time.mojo:from .session_time import timestamp_key
+src/modex/log_time.mojo:from .text import is_whitespace
+src/modex/log_transcript.mojo:from .json import JSON_ARRAY, JSON_BOOL, JSON_NULL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, serialize_json
+src/modex/log_transcript.mojo:from std.collections import List
+src/modex/log_transcript.mojo:from .log_text import operation_value, safe_text, tool_name, trim_unicode, visible_message, visible_tool_output
+src/modex/log_upstream_follow.mojo:from std.collections import List
+src/modex/log_upstream_follow.mojo:from std.os import getenv, isatty, listdir
+src/modex/log_upstream_follow.mojo:from std.sys import stderr
+src/modex/log_upstream_follow.mojo:from std.time import perf_counter, sleep
+src/modex/log_upstream_follow.mojo:from .log_follow import FollowedLog, collect_new_followed_lines, retain_followed_paths
+src/modex/log_upstream_follow.mojo:from .log_redaction import starts_ascii_case_insensitive
+src/modex/log_upstream_follow.mojo:from .log_text import trim_unicode
+src/modex/log_upstream_follow.mojo:from .logs import RUNTIME_TAIL_BYTES, RuntimeRecord, UpstreamEvent, read_tail, recent_runtime_log_paths, render_upstream, timestamp_wins, upstream_event
+src/modex/log_upstream_follow.mojo:from .paths import ensure_app_root
+src/modex/logs.mojo:from std.collections import List, Optional, Span
+src/modex/logs.mojo:from std.io import RawFileDescriptor
+src/modex/logs.mojo:from std.math import isfinite
+src/modex/logs.mojo:from std.memory import bitcast
+src/modex/logs.mojo:from std.os import getenv, lstat, listdir, stat
+src/modex/logs.mojo:from std.os.path import exists
+src/modex/logs.mojo:from .json import JSON_BOOL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_number
+src/modex/logs.mojo:from .log_payload import readable_upstream_payload
+src/modex/logs.mojo:from .log_payload_render import payload_lines
+src/modex/logs.mojo:from .log_redaction import redact_log_text
+src/modex/logs.mojo:from .log_time import local_log_timestamp as local_timestamp
+src/modex/logs.mojo:from .log_transcript import transcript_event as project_transcript
+src/modex/logs.mojo:from .paths import ensure_app_root, shared_root
+src/modex/logs.mojo:from .runtime_policy import runtime_log_dir
+src/modex/logs.mojo:from .text import cli_width, text_width, wrap_text
+src/modex/loopback_http.mojo:from std.bit import byte_swap
+src/modex/loopback_http.mojo:from std.collections import Array, List, Span
+src/modex/loopback_http.mojo:from std.net._sys.inet import in6_addr, in_addr
+src/modex/loopback_http.mojo:from std.memory import MaybeUninit
+src/modex/loopback_http.mojo:from std.net._sys.unix import (
+src/modex/loopback_http.mojo:from std.sys import Endian, size_of
+src/modex/loopback_http.mojo:from std.sys._libc import FcntlCommands, FcntlFDFlags, close, fcntl
+src/modex/loopback_http.mojo:from std.sys._libc_errno import ErrNo, get_errno
+src/modex/loopback_http.mojo:from std.time import perf_counter, sleep
+src/modex/loopback_server.mojo:from std.bit import byte_swap
+src/modex/loopback_server.mojo:from std.collections import Array, List, Span
+src/modex/loopback_server.mojo:from std.memory import MaybeUninit
+src/modex/loopback_server.mojo:from std.net._sys.inet import in6_addr, in_addr
+src/modex/loopback_server.mojo:from std.net._sys.unix import (
+src/modex/loopback_server.mojo:from std.sys import Endian, size_of
+src/modex/loopback_server.mojo:from std.sys._libc import FcntlCommands, FcntlFDFlags, close, fcntl
+src/modex/loopback_server.mojo:from std.sys._libc_errno import ErrNo, get_errno
+src/modex/loopback_server.mojo:from std.time import perf_counter, sleep
+src/modex/paths.mojo:from std.os import getenv, getuid, lstat, makedirs
+src/modex/paths.mojo:from std.os.path import exists, realpath
+src/modex/paths.mojo:from std.pathlib import Path, cwd
+src/modex/process_spawn.mojo:from std.collections import List, Optional, Span
+src/modex/process_spawn.mojo:from std.ffi import c_pid_t, CStringSpan, ErrNo, get_errno
+src/modex/process_spawn.mojo:from std.io import RawFileDescriptor
+src/modex/process_spawn.mojo:from std.net._sys.unix import F_GETFL, F_SETFL, O_NONBLOCK
+src/modex/process_spawn.mojo:from std.sys import CompilationTarget
+src/modex/process_spawn.mojo:from std.sys._libc import _get_environ, close, dup, dup2, fcntl, FcntlCommands, FcntlFDFlags, posix_spawnp
+src/modex/process_spawn.mojo:from std.os.process import Pipe, Process, ProcessStatus
+src/modex/process_spawn.mojo:from std.time import perf_counter, sleep
+src/modex/provider_chat_buffered.mojo:from std.time.time import _realtime_nanoseconds
+src/modex/provider_chat_buffered.mojo:from .json import JSON_ARRAY, JSON_NULL, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_chat_buffered.mojo:from .json_float import json_float
+src/modex/provider_chat_buffered.mojo:from .provider_chat_items import wrap_tool_arguments
+src/modex/provider_chat_buffered.mojo:from .provider_chat_metadata import merge_chat_metadata
+src/modex/provider_chat_buffered.mojo:from .provider_chat_usage import chat_usage, json_unsigned
+src/modex/provider_chat_buffered.mojo:from .text import trim_text
+src/modex/provider_chat_buffered.mojo:from .uuid7 import new_uuid7
+src/modex/provider_chat_chunk.mojo:from .json import JSON_ARRAY, JSON_NULL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json, serialize_number
+src/modex/provider_chat_items.mojo:from std.collections import List
+src/modex/provider_chat_items.mojo:from .json import JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_chat_items.mojo:from .rtk_command import prefixed_noisy_command
+src/modex/provider_chat_items.mojo:from .text import trim_text
+src/modex/provider_chat_metadata.mojo:from .json import JSON_OBJECT, JsonDocument, quote_json, serialize_json
+src/modex/provider_chat_reader.mojo:from std.collections import List
+src/modex/provider_chat_reader.mojo:from .provider_chat_stream import DeepSeekChatState
+src/modex/provider_chat_reader.mojo:from .provider_sse_json import ProviderSSEJSONAssembler
+src/modex/provider_chat_reader.mojo:from .provider_sse_wire import ProviderSSEFramer
+src/modex/provider_chat_stream.mojo:from std.collections import List
+src/modex/provider_chat_stream.mojo:from .json import JSON_ARRAY, JSON_NULL, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_chat_stream.mojo:from .provider_chat_chunk import chat_choice_delta, chat_choice_metadata, chat_first_choice, chat_stream_error
+src/modex/provider_chat_stream.mojo:from .provider_chat_items import tool_added_item, tool_output_item, wrap_tool_arguments
+src/modex/provider_chat_stream.mojo:from .provider_chat_metadata import merge_chat_metadata
+src/modex/provider_chat_stream.mojo:from .provider_chat_tools import chat_tool_delta, incremental_arguments
+src/modex/provider_chat_stream.mojo:from .provider_chat_usage import chat_usage, json_unsigned
+src/modex/provider_chat_stream.mojo:from .provider_sse_events import sse_event, sse_failed_event, sse_text_item_added, sse_text_item_done
+src/modex/provider_chat_stream.mojo:from .text import trim_text
+src/modex/provider_chat_stream.mojo:from .uuid7 import new_uuid7
+src/modex/provider_chat_tools.mojo:from .json import JSON_OBJECT, JSON_STRING, JsonDocument, quote_json
+src/modex/provider_chat_tools.mojo:from .provider_chat_usage import json_unsigned
+src/modex/provider_chat_tools.mojo:from .text import trim_text
+src/modex/provider_chat_usage.mojo:from .json import JSON_NUMBER, JSON_OBJECT, JsonDocument, quote_json, serialize_json, serialize_number
+src/modex/provider_chat_usage.mojo:from .text import unsigned_value
+src/modex/provider_conversations.mojo:from std.collections import List
+src/modex/provider_conversations.mojo:from .json import JSON_ARRAY, JSON_BOOL, JSON_NUMBER, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_conversations.mojo:from .provider_request_messages import _history_has_call
+src/modex/provider_deepseek_transport.mojo:from std.collections import List, Span
+src/modex/provider_deepseek_transport.mojo:from .json import JSON_STRING, JsonDocument, serialize_json
+src/modex/provider_deepseek_transport.mojo:from .provider_chat_buffered import deepseek_buffered_assistant_messages, deepseek_buffered_response
+src/modex/provider_deepseek_transport.mojo:from .loopback_http import LoopbackHTTPStream, _http_token_byte
+src/modex/provider_deepseek_transport.mojo:from .provider_chat_reader import DeepSeekChatReader
+src/modex/provider_deepseek_transport.mojo:from .provider_request import translate_deepseek_request
+src/modex/provider_deepseek_transport.mojo:from .text import is_whitespace, trim_text
+src/modex/provider_passthrough.mojo:from std.collections import List
+src/modex/provider_passthrough.mojo:from .loopback_http import HTTP_HEADER_LIMIT, LoopbackHTTPStream
+src/modex/provider_passthrough.mojo:from .provider_deepseek_transport import deepseek_request_headers, deepseek_event_stream
+src/modex/provider_rate_limits.mojo:from std.collections import List
+src/modex/provider_rate_limits.mojo:from std.math import ceil, isfinite
+src/modex/provider_rate_limits.mojo:from std.time.time import _realtime_nanoseconds
+src/modex/provider_rate_limits.mojo:from .session_time import integer_timestamp, timestamp_key
+src/modex/provider_rate_limits.mojo:from .log_time import valid_rfc3339
+src/modex/provider_rate_limits.mojo:from .text import trim_text
+src/modex/provider_request.mojo:from std.collections import List
+src/modex/provider_request.mojo:from .json import JSON_BOOL, JsonDocument, quote_json, serialize_json
+src/modex/provider_request.mojo:from .provider_request_messages import ensure_json_instruction, request_messages
+src/modex/provider_request.mojo:from .provider_request_params import fields_object, optional_request_fields, request_format, request_metadata, request_reasoning, reasoning_fields, thinking_enabled, validate_request_shape
+src/modex/provider_request.mojo:from .provider_request_prepare import prepare_request_body
+src/modex/provider_request.mojo:from .provider_request_tools import request_tool_fields
+src/modex/provider_request.mojo:from .text import trim_text
+src/modex/provider_request_messages.mojo:from std.collections import List
+src/modex/provider_request_messages.mojo:from .json import JSON_ARRAY, JSON_NULL, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_request_messages.mojo:from .text import trim_text
+src/modex/provider_request_params.mojo:from std.collections import List
+src/modex/provider_request_params.mojo:from .json import JSON_ARRAY, JSON_BOOL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json, serialize_number
+src/modex/provider_request_params.mojo:from .text import trim_text
+src/modex/provider_request_prepare.mojo:from std.collections import List
+src/modex/provider_request_prepare.mojo:from .json import JSON_ARRAY, JSON_BOOL, JSON_NULL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_request_prepare.mojo:from .text import trim_text
+src/modex/provider_request_tools.mojo:from std.collections import List
+src/modex/provider_request_tools.mojo:from .json import JSON_ARRAY, JSON_BOOL, JSON_NULL, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+src/modex/provider_request_tools.mojo:from .text import trim_text
+src/modex/provider_request_tools.mojo:from .json_float import json_float
+src/modex/provider_sse_events.mojo:from .json import JsonDocument, quote_json, serialize_json
+src/modex/provider_sse_events.mojo:from .log_redaction import redact_log_text
+src/modex/provider_sse_json.mojo:from std.collections import List
+src/modex/provider_sse_json.mojo:from .json import JsonDocument
+src/modex/provider_sse_json.mojo:from .text import trim_text
+src/modex/provider_sse_wire.mojo:from std.collections import List
+src/modex/rtk_command.mojo:from std.collections import List, Span
+src/modex/rtk_command.mojo:from .text import is_whitespace
+src/modex/runtime_local_rewrite.mojo:from std.collections import List, Span
+src/modex/runtime_local_rewrite.mojo:from std.io import RawFileDescriptor
+src/modex/runtime_local_rewrite.mojo:from std.net._sys.unix import F_GETFL, F_SETFL, O_NONBLOCK
+src/modex/runtime_local_rewrite.mojo:from std.sys._libc import fcntl
+src/modex/runtime_local_rewrite.mojo:from std.sys._libc_errno import ErrNo, get_errno
+src/modex/runtime_local_rewrite.mojo:from std.os import getenv
+src/modex/runtime_local_rewrite.mojo:from std.time import perf_counter
+src/modex/runtime_local_rewrite.mojo:from std.time.time import _realtime_nanoseconds
+src/modex/runtime_local_rewrite.mojo:from .json import JSON_ARRAY, JSON_STRING, JsonDocument
+src/modex/runtime_local_rewrite.mojo:from .loopback_http import HTTP_HEADER_LIMIT, LoopbackHTTPStream, _number
+src/modex/runtime_local_rewrite.mojo:from .loopback_server import LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest
+src/modex/runtime_local_rewrite.mojo:from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
+src/modex/runtime_local_rewrite.mojo:from .provider_conversations import ProviderConversationStore
+src/modex/runtime_local_rewrite.mojo:from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
+src/modex/runtime_local_rewrite.mojo:from .provider_rate_limits import deepseek_codex_rate_limit_headers
+src/modex/runtime_local_rewrite.mojo:from .provider_request import translate_deepseek_request
+src/modex/runtime_local_rewrite.mojo:from .text import trim_text, unsigned_value
+src/modex/runtime_local_rewrite.mojo:from .uuid7 import new_uuid7
+src/modex/runtime_policy.mojo:from std.collections import List, Span
+src/modex/runtime_policy.mojo:from std.os import getenv
+src/modex/runtime_policy.mojo:from std.os.path import exists
+src/modex/runtime_policy.mojo:from .toml import (
+src/modex/runtime_policy.mojo:from .text import is_whitespace
+src/modex/runtime_policy.mojo:from .log_text import trim_unicode
+src/modex/runtime_recovery.mojo:from .json import JsonDocument, JSON_NULL, JSON_BOOL, JSON_NUMBER
+src/modex/runtime_recovery.mojo:from std.collections import List
+src/modex/runtime_recovery.mojo:from std.os.path import realpath
+src/modex/session_time.mojo:from std.collections import List, Optional
+src/modex/sessions.mojo:from std.collections import List, Optional, Span
+src/modex/sessions.mojo:from std.io import FileHandle, RawFileDescriptor
+src/modex/sessions.mojo:from std.os import isatty, listdir, lstat, stat
+src/modex/sessions.mojo:from std.os.path import exists
+src/modex/sessions.mojo:from std.pathlib import cwd
+src/modex/sessions.mojo:from .json import JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json
+src/modex/sessions.mojo:from .local_time import format_local_epoch
+src/modex/sessions.mojo:from .paths import absolute_path, comparable_path, ensure_app_root, shared_root
+src/modex/sessions.mojo:from .session_time import integer_timestamp, timestamp_key
+src/modex/sessions.mojo:from .text import cli_width, pad_cell, section_header, status_panel, text_width, trim_text
+src/modex/sessions.mojo:from .zstd import ZstdReader
+src/modex/sha256.mojo:from std.collections import List
+src/modex/sha256.mojo:from std.collections import ImmSpan
+src/modex/super_cli.mojo:from std.collections import List
+src/modex/super_cli.mojo:from .cli import session_cli_error
+src/modex/super_cli.mojo:from .log_operational import valid_url_authority
+src/modex/super_cli.mojo:from .super_launch import run_clean_deepseek_super
+src/modex/super_cli.mojo:from .text import trim_text, unsigned_value
+src/modex/super_hooks.mojo:from std.collections import List, Span
+src/modex/super_hooks.mojo:from .json import JSON_ARRAY, JSON_NUMBER, JSON_STRING, JsonDocument, quote_json
+src/modex/super_launch.mojo:from std.collections import List, Span
+src/modex/super_launch.mojo:from std.io import RawFileDescriptor
+src/modex/super_launch.mojo:from std.net._sys.unix import F_GETFL, F_SETFL, O_NONBLOCK
+src/modex/super_launch.mojo:from std.os import getenv, getuid, listdir, lstat, mkdir, remove, rmdir, symlink
+src/modex/super_launch.mojo:from std.os.path import exists, lexists, realpath
+src/modex/super_launch.mojo:from std.os.process import Pipe, Process, ProcessStatus
+src/modex/super_launch.mojo:from std.pathlib import cwd
+src/modex/super_launch.mojo:from std.sys._libc import fcntl
+src/modex/super_launch.mojo:from std.sys._libc_errno import ErrNo, get_errno
+src/modex/super_launch.mojo:from std.sys import stderr
+src/modex/super_launch.mojo:from std.time import perf_counter, sleep
+src/modex/super_launch.mojo:from .app_server_rpc import run_super_hook_trust_preflight
+src/modex/super_launch.mojo:from .json import quote_json
+src/modex/super_launch.mojo:from .loopback_server import LoopbackHTTPListener
+src/modex/super_launch.mojo:from .paths import app_root, ensure_app_root, shared_root
+src/modex/super_launch.mojo:from .process_spawn import capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, wait_or_kill
+src/modex/super_launch.mojo:from .provider_deepseek_transport import deepseek_request_headers
+src/modex/super_launch.mojo:from .runtime_local_rewrite import local_rewrite_upstream, serve_local_rewrite
+src/modex/super_launch.mojo:from .text import trim_text
+src/modex/super_launch.mojo:from .uuid7 import new_uuid7
+src/modex/text.mojo:from std.collections import List
+src/modex/text.mojo:from std.os import getenv
+src/modex/text.mojo:from .unicode_width import character_width, text_width
+src/modex/toml.mojo:from std.collections import List, Span
+src/modex/toml.mojo:from std.math import isfinite
+src/modex/unicode_properties.mojo:from std.builtin.globals import global_constant
+src/modex/unicode_width.mojo:from std.builtin.globals import global_constant
+src/modex/unicode_width.mojo:from std.collections.string._grapheme_break import _gbp_lookup
+src/modex/uuid7.mojo:from std.collections import ImmSpan, List
+src/modex/uuid7.mojo:from std.time.time import _realtime_nanoseconds
+src/modex/xxhash.mojo:from std.collections import List
+src/modex/zstd.mojo:from std.collections import List
+src/modex/zstd.mojo:from std.io import FileHandle
+src/modex/zstd.mojo:from .xxhash import Xxh64
+src/modex/zstd.mojo:from .zstd_entropy import FseEntry, FseTable, HuffmanTable, ReverseBits, ZstdBytes, fse_table, huffman_stream, huffman_table, read_fse
+src/modex/zstd_entropy.mojo:from std.collections import List

@@ -1,0 +1,146 @@
+{
+  "artifact_sha256": "d707979d1a25cf9520dfa75ed37aeb43e458d92beec70b689652bc0f08319b06",
+  "oracle_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
+  "binding_mismatch": {
+    "prodex_04392": {
+      "statuses": [
+        200,
+        503
+      ],
+      "upstream_posts": 1,
+      "bodies": [
+        {
+          "created_at": 42,
+          "id": "synthetic-chat-0",
+          "metadata": {
+            "deepseek": {
+              "finish_reason": "stop"
+            }
+          },
+          "model": "deepseek-chat",
+          "object": "response",
+          "output": [
+            {
+              "content": [
+                {
+                  "text": "synthetic reply",
+                  "type": "output_text"
+                }
+              ],
+              "role": "assistant",
+              "type": "message"
+            }
+          ]
+        },
+        {
+          "error": {
+            "code": "bound_continuation_unavailable",
+            "message": "bound continuation provider is unavailable"
+          }
+        }
+      ]
+    },
+    "modex_checkpoint13": {
+      "statuses": [
+        200,
+        200
+      ],
+      "upstream_posts": 2,
+      "bodies": [
+        {
+          "created_at": 42,
+          "id": "synthetic-chat-0",
+          "metadata": {
+            "deepseek": {
+              "finish_reason": "stop"
+            }
+          },
+          "model": "deepseek-chat",
+          "object": "response",
+          "output": [
+            {
+              "content": [
+                {
+                  "text": "synthetic reply",
+                  "type": "output_text"
+                }
+              ],
+              "role": "assistant",
+              "type": "message"
+            }
+          ]
+        },
+        {
+          "created_at": 42,
+          "id": "synthetic-chat-1",
+          "metadata": {
+            "deepseek": {
+              "finish_reason": "stop"
+            }
+          },
+          "model": "deepseek-chat",
+          "object": "response",
+          "output": [
+            {
+              "content": [
+                {
+                  "text": "synthetic reply",
+                  "type": "output_text"
+                }
+              ],
+              "role": "assistant",
+              "type": "message"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "bodyless_headers": {
+    "prodex_04392": {
+      "upstream_posts": 1,
+      "status": 304,
+      "headers": {
+        "server": "BaseHTTP Python/3.16.0a1",
+        "date": "Mon, 26 Oct 2026 11:10:00 GMT",
+        "content-type": "application/json",
+        "Content-Length": "0"
+      },
+      "body": ""
+    },
+    "modex_checkpoint13": {
+      "upstream_posts": 1,
+      "status": 304,
+      "headers": {
+        "Connection": "close",
+        "Server": "BaseHTTP Python/3.16.0a1",
+        "Date": "Mon, 26 Oct 2026 11:10:02 GMT",
+        "Content-Type": "application/json"
+      },
+      "body": ""
+    }
+  },
+  "oversized_302": {
+    "prodex_04392": {
+      "upstream_posts": 1,
+      "status": 502,
+      "headers": {
+        "Server": "tiny-http (Rust)",
+        "Date": "Mon, 26 Oct 2026 11:10:00 GMT",
+        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Length": "40"
+      },
+      "body": "provider response could not be processed"
+    },
+    "modex_checkpoint13": {
+      "upstream_posts": 1,
+      "status": 502,
+      "headers": {
+        "Content-Length": "23",
+        "Connection": "close",
+        "content-type": "text/plain; charset=utf-8"
+      },
+      "body": "upstream request failed"
+    }
+  }
+}

@@ -77,7 +77,11 @@ unit: check-toolchain
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_passthrough_driver.mojo -o build/tests/provider_passthrough_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_runtime_recovery.mojo -o build/tests/test_runtime_recovery
 	build/tests/test_runtime_recovery
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_quota_handoff_04392.mojo -o build/tests/test_quota_handoff_04392
+	build/tests/test_quota_handoff_04392
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/runtime_recovery_driver.mojo -o build/tests/runtime_recovery_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_inspection_cli.mojo -o build/tests/test_inspection_cli
+	build/tests/test_inspection_cli
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_gateway_cli.mojo -o build/tests/test_gateway_cli
 	build/tests/test_gateway_cli
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_super_cli.mojo -o build/tests/test_super_cli

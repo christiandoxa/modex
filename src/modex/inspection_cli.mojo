@@ -6,8 +6,13 @@ from .cli import argument_name, session_cli_error, similar_names
 from .text import unsigned_value
 
 
+def _inspection_prefix(command: String, executable: String) -> String:
+    # shortcut: main drops trailing argv0 components; upgrade when it passes raw argv0.
+    return command if not executable else executable + " " + command
+
+
 def inspection_usage(command: String, executable: String) -> String:
-    return executable + " " + command + ("" if command == "current" else " [OPTIONS]")
+    return _inspection_prefix(command, executable) + ("" if command == "current" else " [OPTIONS]")
 
 
 def inspection_help(command: String, executable: String) -> String:
@@ -46,7 +51,7 @@ def inspection_unknown(argument: String, command: String, executable: String, se
             message += "\n\n  tip: a similar argument exists: '" + suggestion + "'"
     var usage = inspection_usage(command, executable)
     if flag and (seen or suggestion):
-        usage = executable + " " + command
+        usage = _inspection_prefix(command, executable)
         for option in seen:
             usage += " " + inspection_label(option)
         if suggestion and suggestion not in seen:
@@ -55,7 +60,7 @@ def inspection_unknown(argument: String, command: String, executable: String, se
 
 
 def inspection_value_error(name: String, value: String, command: String, executable: String, seen: List[String]) -> Error:
-    var usage = executable + " " + command
+    var usage = _inspection_prefix(command, executable)
     var boolean_seen = "--json" in seen or "--tokens" in seen or "--once" in seen
     if name == "--help" or not boolean_seen:
         usage += " " + name

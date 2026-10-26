@@ -13,9 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 MODEX = Path(os.environ.get("MODEX_GATEWAY_BINARY", ROOT / "build/modex"))
 ORACLE = Path(os.environ.get(
     "PRODEX_GATEWAY_ORACLE",
-    "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+    "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
 ))
-ORACLE_SHA256 = "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a"
+ORACLE_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 
 
 def run_cli(binary, executable_name, arguments):
@@ -58,7 +58,7 @@ def run_cli(binary, executable_name, arguments):
 
 
 def json_cache():
-    return '{"source":"GitHub","latest_version":"0.439.1","checked_at":' + str(int(time.time())) + '}\n'
+    return '{"source":"GitHub","latest_version":"0.439.2","checked_at":' + str(int(time.time())) + '}\n'
 
 
 @unittest.skipUnless(ORACLE.is_file(), f"pinned Prodex oracle unavailable: {ORACLE}")

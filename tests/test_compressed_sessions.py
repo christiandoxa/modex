@@ -9,7 +9,7 @@ import unittest
 from capture_session_zstd import install_case, observe
 from session_oracle import fixture
 import test_cli
-from test_cli import MODEX, ORACLE, ORACLE_SHA256, ROOT
+from test_cli import HISTORICAL_04391_ORACLE_SHA256, MODEX, ORACLE, ROOT
 from test_sessions import compare_outputs
 
 
@@ -55,16 +55,17 @@ class CompressedSessionTests(unittest.TestCase):
 
     def test_malformed_release_diagnostics(self):
         capture = json.loads((ROOT / "docs/evidence/baseline/session-zstd-errors.json").read_text())
-        self.assertEqual(capture["oracle_sha256"], ORACLE_SHA256)
+        self.assertEqual(capture["oracle_sha256"], HISTORICAL_04391_ORACLE_SHA256)
         with tempfile.TemporaryDirectory(prefix="modex-zstd-errors-") as directory:
             for expected in capture["cases"]:
                 with self.subTest(case=expected["case"]):
-                    root = Path(directory) / expected["case"]
-                    root.mkdir()
-                    fixture(root)
-                    install_case(root, expected["case"])
-                    self.assertEqual(observe(MODEX, root), {key: expected[key]
-                        for key in ("exit_code", "stdout", "stderr")})
+                    for label, binary in (("release04392", ORACLE), ("modex", MODEX)):
+                        root = Path(directory) / (expected["case"] + "-" + label)
+                        root.mkdir()
+                        fixture(root)
+                        install_case(root, expected["case"])
+                        self.assertEqual(observe(binary, root), {key: expected[key]
+                            for key in ("exit_code", "stdout", "stderr")})
 
     def test_noncanonical_differences_are_retained(self):
         # These preserve unapproved differences, not parity PASS results.

@@ -53,15 +53,41 @@ class InspectionCliTests(unittest.TestCase):
     def setUpClass(cls):
         test_cli.CliTests.setUpClass()
 
-    def assert_matches(self, arguments):
-        expected, expected_paths = isolated_run(ORACLE, arguments, "prodex", "inspection-oracle")
-        actual, actual_paths = isolated_run(MODEX, arguments, "modex", "inspection-modex")
+    def assert_matches(self, arguments, argv0=None):
+        oracle_argv0 = "prodex" if argv0 is None else argv0
+        modex_argv0 = "modex" if argv0 is None else argv0
+        expected, expected_paths = isolated_run(
+            ORACLE, arguments, oracle_argv0, "inspection-oracle")
+        actual, actual_paths = isolated_run(
+            MODEX, arguments, modex_argv0, "inspection-modex")
         self.assertIn(expected.returncode, (0, 2))
-        expected_stdout = expected.stdout.replace(b"Usage: prodex ", b"Usage: modex ")
-        expected_stderr = expected.stderr.replace(b"Usage: prodex ", b"Usage: modex ")
+        expected_stdout = expected.stdout
+        expected_stderr = expected.stderr
+        if argv0 is None:
+            expected_stdout = expected_stdout.replace(b"Usage: prodex ", b"Usage: modex ")
+            expected_stderr = expected_stderr.replace(b"Usage: prodex ", b"Usage: modex ")
         self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
                          (expected.returncode, expected_stdout, expected_stderr))
         self.assertEqual((actual_paths, expected_paths), ([], []))
+
+    def test_empty_argv0_usage_falls_back_to_command(self):
+        for arguments in (
+            ["current", "--help"],
+            ["info", "--json=true"],
+            ["status", "--once", "--unknown"],
+            ["help", "status", "extra"],
+        ):
+            with self.subTest(arguments=arguments):
+                self.assert_matches(arguments, argv0="")
+
+    def test_alternate_argv0_matches_release(self):
+        for arguments in (
+            ["current", "--help"],
+            ["info", "--json=true"],
+            ["status", "--once", "--unknown"],
+        ):
+            with self.subTest(arguments=arguments):
+                self.assert_matches(arguments, argv0="alternate-modex")
 
     def test_help_and_diagnostics_match_release_without_mutations(self):
         for arguments in cases():

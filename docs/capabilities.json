@@ -339,18 +339,26 @@
       "source": "src/modex/runtime_recovery.mojo",
       "tests": [
         "tests/test_runtime_recovery.mojo",
-        "tests/test_runtime_recovery.py"
+        "tests/test_runtime_recovery.py",
+        "tests/test_quota_handoff_04392.mojo",
+        "tests/test_quota_handoff_04392.py"
       ],
       "evidence": [
-        "docs/evidence/native-super-tests.txt"
+        "docs/evidence/native-super-tests.txt",
+        "docs/evidence/checkpoint13-reference.json",
+        "docs/evidence/checkpoint13-tests.txt",
+        "docs/evidence/checkpoint13-dependencies.txt",
+        "docs/evidence/checkpoint13-worker-review.json"
       ],
       "proven": [
         "saturating progress-aware retry schedule and ownership/budget/quiescence wire policy",
-        "407 differential vectors execute pinned reference Mojo policy outside the product graph"
+        "407 differential vectors execute pinned reference Mojo policy outside the product graph",
+        "Checkpoint 13: standalone native quota-window/candidate/signal decisions match 1,600 pinned 0.439.2 source comparisons. Unknown and weekly-only quota, auth/context/runtime/quarantine and busy/cooling recovery eligibility have synthetic coverage."
       ],
       "not_proven": [
         "production event monitor, owned RPC transport, session affinity release and live goal recovery",
-        "accepted RPCs are never claimed as actual goal progress"
+        "accepted RPCs are never claimed as actual goal progress",
+        "0.439.2 production HTTP/WebSocket pre-I/O quota handoff, real account pools/admission, affinity/session/deadline ownership, native full-history dispatch and committed-output no-replay remain BLOCKED; helpers are unconnected."
       ]
     },
     {
@@ -430,6 +438,10 @@
     "all non-host build/link/run targets"
   ],
   "compiler_diagnostic": "The installed compiler emits a nonfatal Crashpad handler discovery warning. It is preserved in raw evidence; all positive programs compile and run with exit 0.",
-  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
-  "evidence_policy": "Historical probes retain original provenance; current aggregate evidence is scoped to executed checks, not complete production or cross-platform parity."
+  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "evidence_policy": "Historical probes retain original provenance; current aggregate evidence is scoped to executed checks, not complete production or cross-platform parity. The current target is official 0.439.2; existing 0.439.1/0.439.0 evidence remains historical until rerun or explicitly verified against the new source. Repinning never promotes a status.",
+  "baseline_version": "0.439.2",
+  "target_evidence": [
+    "docs/evidence/baseline-0.439.2/reference-verification.json"
+  ]
 }

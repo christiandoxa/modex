@@ -9,7 +9,7 @@ import time
 import unittest
 
 from session_oracle import sandbox_command
-from test_cli import MODEX, ORACLE, ORACLE_SHA256, ROOT
+from test_cli import HISTORICAL_04391_ORACLE_SHA256, MODEX, ORACLE, ORACLE_SHA256, ROOT
 
 
 SUPER_ARGV_CAPTURE = ROOT / "tests/fixtures/super-argv/cases.json"
@@ -71,7 +71,7 @@ class SuperCliTests(unittest.TestCase):
     def test_credential_free_url_validation_matches_frozen_capture(self):
         capture = json.loads(SUPER_ARGV_CAPTURE.read_text())
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
-        self.assertEqual(capture["oracle_sha256"], ORACLE_SHA256)
+        self.assertEqual(capture["oracle_sha256"], HISTORICAL_04391_ORACLE_SHA256)
         self.assertTrue(capture["network_isolated"])
         for case in capture["cases"]:
             with self.subTest(name=case["name"]):

@@ -1,0 +1,214 @@
+{
+  "baseline_version": "0.439.2",
+  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "parent_base": "47a86e1ce5be8d64b7cff0aaba1c37699aae8ae3",
+  "decisions": [
+    {
+      "commit": "37c9b74a2e859e60b4b2359ae036b6242f743cba",
+      "decision": "integrate production source; simplify test configuration and register native unit",
+      "scope": "Empty argv0 prefix in current/info/status help, unknown-argument/value errors and root help routing. Production callers are in src/main.mojo. No stateful backend is claimed.",
+      "before": "Four live new-release cases fail against the saved checkpoint 12 native binary.",
+      "tests": [
+        "tests/test_inspection_cli.mojo",
+        "tests/test_inspection_cli.py"
+      ]
+    },
+    {
+      "commit": "59815a4bc3c68f0da5488fc556ba2ef3c0f26b9a",
+      "decision": "integrate as explicitly unconnected policy foundation; replace historical/string-only tests with current pinned-source execution",
+      "scope": "Two quota windows, candidate context/auth/runtime/quarantine and hard owner/full-history/retry eligibility. Zero grants neither admission nor POST replay.",
+      "tests": [
+        "tests/test_quota_handoff_04392.mojo",
+        "tests/test_quota_handoff_04392.py"
+      ],
+      "limits": "No production account pool, WebSocket, quota owner, binding release, original-deadline or recovery dispatch proof; all production handoff obligations remain BLOCKED.",
+      "followup_commit": "c856fe9a423bf06c893cf1f9f91a1c431decf39b",
+      "followup_disposition": "Inspected the documentation clarification and two status-4 assertions. No functional source change; the parent current-source execution matrix already covers status 4 for both policy functions. Additional source-string checks remain on the preserved worker branch."
+    },
+    {
+      "commit": "6c4b21bd3e00a6e22b42ac5eb1896ea8e0985fb5",
+      "decision": "reject",
+      "reason": "The new frozen kernel deactivates the earlier generic tool, retaining the later specific slot. The official 0.439.2 binary and checkpoint 12 native CLI both send middle,mcp__s__run,tail with one POST.",
+      "live_observation": {
+        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu": {
+          "names": [
+            "middle",
+            "mcp__s__run",
+            "tail"
+          ],
+          "statuses": [
+            200
+          ],
+          "posts": 1
+        },
+        "/tmp/modex-cp13-before-modex": {
+          "names": [
+            "middle",
+            "mcp__s__run",
+            "tail"
+          ],
+          "statuses": [
+            200
+          ],
+          "posts": 1
+        }
+      }
+    },
+    {
+      "commit": "6d0fc330bcf20d31b6bc85eb8a3d5eaa9ce9fc95",
+      "decision": "reject",
+      "reason": "The shared message metadata transformer has no proposed 4 MiB aggregate cap. Both real products return 200/one POST with 4,200,071 serialized metadata bytes, retaining both 2,100,000-byte values.",
+      "live_observation": {
+        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu": {
+          "status": 200,
+          "posts": 1,
+          "metadata_bytes": 4200071,
+          "metadata_keys": [
+            "deepseek",
+            "trace"
+          ],
+          "request_trace_bytes": 2100000,
+          "provider_reasoning_bytes": 2100000,
+          "elapsed_seconds": 0.99
+        },
+        "/home/doxa/IdeaProjects/modex/build/modex": {
+          "status": 200,
+          "posts": 1,
+          "metadata_bytes": 4200071,
+          "metadata_keys": [
+            "deepseek",
+            "trace"
+          ],
+          "request_trace_bytes": 2100000,
+          "provider_reasoning_bytes": 2100000,
+          "elapsed_seconds": 1.493
+        }
+      }
+    },
+    {
+      "commit": "624372cc73d34516bbef6cb207127946aee62d10",
+      "decision": "exclude as incomplete panic behavior",
+      "reason": "Source uses Rust expect. With 65,537 hooks the official release exits 101, while native exits 1, both before provider I/O. Replacing three strings would leave the process contract mismatched.",
+      "live_observation": {
+        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu": {
+          "returncode": 101,
+          "posts": 0,
+          "methods": [
+            "initialize",
+            "hooks/list"
+          ],
+          "stderr_lines": [
+            "compiled Mojo hook trust selection returned invalid output: InvalidInput"
+          ]
+        },
+        "/home/doxa/IdeaProjects/modex/build/modex": {
+          "returncode": 1,
+          "posts": 0,
+          "methods": [
+            "initialize",
+            "hooks/list"
+          ],
+          "stderr_lines": [
+            "Error: compiled Mojo hook trust selection rejected oversized input"
+          ]
+        }
+      }
+    }
+  ],
+  "worker_models": {
+    "observation": "Process argv records model selection; Git alone does not attest model identity. At the initial inspection three concurrent existing children selected gpt-6-luna/max (PIDs 3941577, 4114834, 4115640). The primary selected gpt-6.1-sol/max (PID 160472).",
+    "currently_running": [
+      {
+        "pid": 160472,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "max",
+        "child": false
+      },
+      {
+        "pid": 3941577,
+        "model": "gpt-6-luna",
+        "reasoning_effort": "max",
+        "child": true
+      },
+      {
+        "pid": 4114834,
+        "model": "gpt-6-luna",
+        "reasoning_effort": "max",
+        "child": true
+      }
+    ],
+    "existing_workers": [
+      {
+        "run_id": "spr_F1EiPszwtBTnrhqlFi_7BA",
+        "task": "quota 0.439.2",
+        "commit": "59815a4bc3c68f0da5488fc556ba2ef3c0f26b9a",
+        "worktree": "/tmp/modex-luna-quota04392-20261026"
+      },
+      {
+        "run_id": "spr_7MlyHoBjpCcUMGr2jTUrSQ",
+        "task": "inspection 0.439.2",
+        "commit": "37c9b74a2e859e60b4b2359ae036b6242f743cba",
+        "worktree": "/tmp/modex-luna-inspection04392-20261026"
+      }
+    ],
+    "new_workers_launched": 0,
+    "integration": "Parent integrates reviewed immutable commits only. Existing worker branches, later commits and dirty files remain intact."
+  },
+  "worktrees_preserved": {
+    "/tmp/modex-luna-quota04392-20261026": {
+      "head": "59815a4bc3c68f0da5488fc556ba2ef3c0f26b9a",
+      "status": [],
+      "head_at_final_review": "697f3d9e5fcb146e7a50225ac58f0ef6c4698f51",
+      "status_at_final_review": []
+    },
+    "/tmp/modex-luna-inspection04392-20261026": {
+      "head": "37c9b74a2e859e60b4b2359ae036b6242f743cba",
+      "status": [],
+      "head_at_final_review": "37c9b74a2e859e60b4b2359ae036b6242f743cba",
+      "status_at_final_review": []
+    },
+    "/tmp/modex-luna-request-tools-20261026": {
+      "head": "23a12bf0b1dfe2f118d0eb9a6ea5012e6975fced",
+      "status": [],
+      "head_at_final_review": "23a12bf0b1dfe2f118d0eb9a6ea5012e6975fced",
+      "status_at_final_review": []
+    },
+    "/tmp/modex-luna-hook-trust-20261026": {
+      "head": "eece7fb190c57f83a993b41e1303cd3ff86849f9",
+      "status": [],
+      "head_at_final_review": "eece7fb190c57f83a993b41e1303cd3ff86849f9",
+      "status_at_final_review": []
+    },
+    "/tmp/modex-luna-chatmetadata-20261026": {
+      "head": "6d0fc330bcf20d31b6bc85eb8a3d5eaa9ce9fc95",
+      "status": [],
+      "head_at_final_review": "6d0fc330bcf20d31b6bc85eb8a3d5eaa9ce9fc95",
+      "status_at_final_review": []
+    },
+    "/tmp/modex-luna-chatitems-20261026": {
+      "head": "13b45341dcfed7aab8ac0c655547530d8ad2d3e0",
+      "status": [],
+      "head_at_final_review": "13b45341dcfed7aab8ac0c655547530d8ad2d3e0",
+      "status_at_final_review": []
+    },
+    "/tmp/modex-luna-chatchunk-20261026": {
+      "head": "9d41f04e08112373d45a8a625adf23cd709cd973",
+      "status": [
+        " M src/modex/provider_chat_chunk.mojo",
+        " M tests/test_provider_chat_chunk.mojo",
+        " M tests/test_provider_chat_chunk.py"
+      ],
+      "head_at_final_review": "9caff0c85bc1a35302ba974d51a34dd0b6124361",
+      "status_at_final_review": []
+    }
+  },
+  "parent_owns": [
+    "integration",
+    "source review",
+    "combined builds and tests",
+    "evidence",
+    "staging",
+    "commit",
+    "push"
+  ]
+}

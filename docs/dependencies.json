@@ -107,7 +107,7 @@
       "src/modex/sha256.mojo",
       "src/modex/runtime_recovery.mojo"
     ],
-    "status": "SHA broker acquisition and native recovery policy are not connected to production broker/recovery entrypoints. Recovery has native and pinned-source differential tests only.",
+    "status": "SHA broker acquisition and native recovery policy are not connected to production broker/recovery entrypoints. Recovery has native and pinned-source differential tests only. Quota handoff policy remains unconnected after checkpoint 13; no production recovery or admission claim follows from its component tests.",
     "imports": [
       "official Mojo stdlib",
       "local modex JSON modules"
@@ -262,7 +262,7 @@
       "docs/evidence/checkpoint5-dependencies.txt"
     ]
   },
-  "runtime_recovery_foundation": "NativeRecoveryRetry and owned-thread/goal wire policy have native assertions and 407 pinned Mojo policy differential vectors. Accepted mutations do not become progress. Monitor, owned transport, affinity release, ambiguous outcome handling and mutation dispatch are unconnected; no live recovery PASS is claimed.",
+  "runtime_recovery_foundation": "NativeRecoveryRetry and owned-thread/goal wire policy have native assertions and 407 pinned Mojo policy differential vectors. Accepted mutations do not become progress. Monitor, owned transport, affinity release, ambiguous outcome handling and mutation dispatch are unconnected; no live recovery PASS is claimed. Checkpoint 13 adds explicitly unconnected 0.439.2 quota signal eligibility and 1,600 current-pinned source comparisons; the old 407 wire-policy checks retain 0.439.1 provenance. No account pool, WebSocket, transport/recovery owner or new dependency is added.",
   "native_super_evidence": [
     "docs/evidence/native-super-reference.json",
     "docs/evidence/native-super-data-plane.json",
@@ -389,5 +389,20 @@
       "docs/evidence/checkpoint12-tests.txt",
       "docs/evidence/checkpoint12-dependencies.txt"
     ]
+  },
+  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "baseline_version": "0.439.2",
+  "checkpoint13_dependency_audit": {
+    "new_application_dependencies": [],
+    "new_native_bindings": [],
+    "production_python_or_codegen": false,
+    "target": "0.439.2",
+    "evidence": [
+      "docs/evidence/checkpoint13-reference.json",
+      "docs/evidence/checkpoint13-tests.txt",
+      "docs/evidence/checkpoint13-dependencies.txt",
+      "docs/evidence/checkpoint13-worker-review.json"
+    ],
+    "historical_evidence_policy": "Descriptions naming 0.439.1 retain historical provenance; target repinning is not a new behavioral qualification."
   }
 }

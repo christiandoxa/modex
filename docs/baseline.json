@@ -4,17 +4,17 @@
   "repository": "https://github.com/christiandoxa/modex",
   "reference": {
     "repository": "https://github.com/christiandoxa/prodex",
-    "tag": "0.439.1",
-    "commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+    "tag": "0.439.2",
+    "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
     "tag_resolution_matches": true,
-    "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
-    "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.1",
+    "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+    "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.2",
     "release_features": [
       "mojo-core"
     ],
     "release_implementation": "mojo-compiled-in with Rust host; reference only",
-    "oracle": "~/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
-    "checksum_verification": "sha256sum --check --ignore-missing SHA256SUMS: Linux binary, release-manifest.json, release-manifest.tsv and release-sbom.spdx.json all OK",
+    "oracle": "~/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+    "checksum_verification": "Linux binary SHA-256 matches official SHA256SUMS; cached SHA256SUMS and release-manifest.json match newly downloaded official release assets. Entire frozen Git archive matches all 3,280 Git-tree blobs.",
     "release_targets": [
       "x86_64-unknown-linux-gnu",
       "aarch64-unknown-linux-gnu",
@@ -23,7 +23,7 @@
       "x86_64-pc-windows-msvc",
       "aarch64-pc-windows-msvc"
     ],
-    "evidence": "docs/evidence/baseline-0.439.1/reference-verification.json"
+    "evidence": "docs/evidence/baseline-0.439.2/reference-verification.json"
   },
   "toolchain": {
     "compiler": "Mojo",
@@ -57,7 +57,7 @@
       "modex": "modex"
     },
     "version": {
-      "baseline": "0.439.1",
+      "baseline": "0.439.2",
       "modex": "0.1.0-dev"
     },
     "distribution_repository": {
@@ -75,16 +75,16 @@
   },
   "previous_reference": {
     "repository": "https://github.com/christiandoxa/prodex",
-    "tag": "0.439.0",
-    "commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+    "tag": "0.439.1",
+    "commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
     "tag_resolution_matches": true,
-    "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-433aad44bb249d5c25a231a6b06c2fa522a39a1f",
-    "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.0",
+    "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+    "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.1",
     "release_features": [
       "mojo-core"
     ],
     "release_implementation": "mojo-compiled-in with Rust host; reference only",
-    "oracle": "~/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+    "oracle": "~/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
     "checksum_verification": "sha256sum --check --ignore-missing SHA256SUMS: Linux binary, release-manifest.json, release-manifest.tsv and release-sbom.spdx.json all OK",
     "release_targets": [
       "x86_64-unknown-linux-gnu",
@@ -93,7 +93,32 @@
       "aarch64-apple-darwin",
       "x86_64-pc-windows-msvc",
       "aarch64-pc-windows-msvc"
-    ]
+    ],
+    "evidence": "docs/evidence/baseline-0.439.1/reference-verification.json"
   },
-  "evidence_policy": "Historical 0.439.0 captures remain labeled with their original commit and checksum; they are not relabeled as 0.439.1 verification."
+  "evidence_policy": "Historical 0.439.1 and 0.439.0 captures retain their original commits/checksums. Target migration never relabels them as 0.439.2 behavioral verification.",
+  "historical_references": [
+    {
+      "repository": "https://github.com/christiandoxa/prodex",
+      "tag": "0.439.0",
+      "commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+      "tag_resolution_matches": true,
+      "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+      "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.0",
+      "release_features": [
+        "mojo-core"
+      ],
+      "release_implementation": "mojo-compiled-in with Rust host; reference only",
+      "oracle": "~/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+      "checksum_verification": "sha256sum --check --ignore-missing SHA256SUMS: Linux binary, release-manifest.json, release-manifest.tsv and release-sbom.spdx.json all OK",
+      "release_targets": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ]
+    }
+  ]
 }

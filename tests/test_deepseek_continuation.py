@@ -17,7 +17,7 @@ CLIENT = CODEX[:CODEX.index('passthrough = scenario')]
 CLIENT += r'''
 target = urlsplit(config["model_providers.prodex-deepseek.base_url"] + "/responses")
 previous = None
-for turn in json.loads(os.environ["MODEX_CONTINUATION_TURNS"]):
+for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()):
     path = turn.pop("_path", target.path)
     headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
                **turn.pop("_headers", {})}
@@ -50,17 +50,19 @@ def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=
         for name in ("home", "state", "shared", "work"):
             (root / name).mkdir(mode=0o700)
         (root / "state/update-check.json").write_text(
-            '{"source":"GitHub","latest_version":"0.439.1","checked_at":4102444800}'
+            '{"source":"GitHub","latest_version":"0.439.2","checked_at":4102444800}'
         )
         codex = root / "codex"
         codex.write_text("#!" + sys.executable + "\n" + CLIENT)
         codex.chmod(0o700)
         capture = root / "capture.jsonl"
+        turns_file = root / "turns.json"
+        turns_file.write_text(json.dumps(turns))
         environment = {
             "HOME": str(root / "home"), "TMPDIR": str(root), "PATH": "/usr/bin:/bin",
             "PRODEX_HOME": str(root / "state"), "PRODEX_SHARED_CODEX_HOME": str(root / "shared"),
             "PRODEX_CODEX_BIN": str(codex), "MODEX_LAUNCH_CAPTURE": str(capture),
-            "MODEX_LAUNCH_SCENARIO": "buffered", "MODEX_CONTINUATION_TURNS": json.dumps(turns),
+            "MODEX_LAUNCH_SCENARIO": "buffered", "MODEX_CONTINUATION_TURNS_FILE": str(turns_file),
             "TERM": "dumb", "NO_COLOR": "1", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
             **{key: str(root / "home") for key in ("XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HOME")},
         }
@@ -93,7 +95,7 @@ class DeepSeekContinuationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-            raise AssertionError("oracle does not match pinned Prodex 0.439.1")
+            raise AssertionError("oracle does not match pinned Prodex 0.439.2")
 
     def test_bodyless_passthrough_ignores_representation_length(self):
         cases = [("application/json", {"declared_length": 5 * 1024 * 1024 + 1}),

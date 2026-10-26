@@ -356,5 +356,16 @@
       "docs/evidence/checkpoint9-tests.txt",
       "docs/evidence/checkpoint9-dependencies.txt"
     ]
+  },
+  "checkpoint10_dependency_audit": {
+    "new_application_dependencies": [],
+    "new_native_bindings": [],
+    "production_python_or_codegen": false,
+    "scope": "One existing String.replace call normalizes HTTP path separators after raw slash trimming. Existing numeric-loopback/credential guards and dot-segment denial remain. No imports or dependencies added; Python stdlib peers remain test-only.",
+    "evidence": [
+      "docs/evidence/checkpoint10-reference.json",
+      "docs/evidence/checkpoint10-tests.txt",
+      "docs/evidence/checkpoint10-dependencies.txt"
+    ]
   }
 }

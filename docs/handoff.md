@@ -1,3 +1,60 @@
+# Checkpoint 10: native HTTP path separators
+
+Checkpoint 9 was normally committed and pushed as
+`66bd04e0fe78cde28b5631c9a6686df7929f38fe`; clean main and remote main
+were verified before immediate continuation. Both reviewed worker proposals
+remain excluded, with their source and worktrees unchanged.
+
+The owned native upstream resolver now treats admitted HTTP base-path
+backslashes as slash separators using existing `String.replace`. The frozen
+URL assembly trims raw trailing slash characters before parsing the resulting
+HTTP URL. Preserving that order retains a doubled separator after a trailing
+backslash; normalizing before trimming would lose a slash. Percent-encoded
+backslashes stay encoded, and existing UTF-8/six-ASCII escaping still applies.
+No import, dependency, binding, helper, option or public API is added.
+
+Twelve real Super/release path/route vectors cover single/repeated/trailing
+backslashes, mixed backslash/slash endings, encoded backslashes, mixed UTF-8
+and braces, Responses and Chat Completions query forwarding. Checkpoint 9
+Modex failed ten of those requests; the encoded control already matched.
+Both products now match the twelve paths, preserve authoritative synthetic
+auth and send one POST per accepted request. Native assertions retain the
+existing unsupported-dot guard after separator conversion. This stricter
+dot refusal is not a parity PASS; literal/encoded dot normalization, authority
+variants outside admitted numeric loopback and broader URL behavior remain
+unqualified.
+
+Validation: `make build`, all 45 native units, 16 focused Python methods in
+52.553 seconds, then serial `rtk proxy make test`: 351 Python methods in
+649.173 seconds, no skips, and 407 pinned recovery-policy vectors.
+The full gate took 798.850 seconds; the artifact hash stayed fixed throughout
+Python discovery and after completion. Final isolated live probes reproduce the
+protected binding mismatch. They also show release 200/one POST with normalized
+`/other/chat/completions` for `/v1\..\other`, while Modex exits 1 before any
+POST. The dot guard is explicitly an unapproved safe difference, not parity PASS.
+
+Three URL call-path snapshot files again match pinned Git objects. The
+archive-verified locked URL 2.5.8 parser hash remains identical to checkpoint 9.
+It is reference evidence, never a Modex dependency. All 67 production sources,
+imports, linkage, isolated synthetic credential checks and clean runtime checks
+remain accounted for. No new workers were launched; checkpoint 9 records
+actual supplemental launcher Sol/none and unexposed primary selection details.
+Requested primary Sol/MAX and original supplied Luna/MAX are not invented
+runtime attestations.
+
+Full binding identity/credential/profile ownership, conflict/acquisition,
+persistence/release, recovery and actual progress remain unfinished. The
+release 200/503 one-POST versus Modex 200/200 two-POST mismatch is retained.
+Super history remains unscoped; the internal driver remains scoped. Idle
+failure status/text, large-output kernels, non-object SSE, binary headers,
+transport/storage/security, JavaScript SDK and non-host qualification remain
+visible. Protected passthrough/SSE sources and tests are untouched. All 71
+contracts, 426 platform obligations and six BLOCKED release qualifications
+are preserved.
+
+Evidence: `docs/evidence/checkpoint10-reference.json`, `checkpoint10-tests.txt`,
+`checkpoint10-dependencies.txt` and `checkpoint10-before.txt` in that directory.
+
 # Checkpoint 9: native ASCII upstream paths and two worker reviews
 
 Main began clean at `21a15fcc9bda09d2c93b2436c8010843044d1bad`, matching

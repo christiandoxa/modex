@@ -47,6 +47,8 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
     while path.endswith("/"):
         var shorter = String(path[byte=:path.byte_length() - 1])
         path = shorter^
+    # Frozen URL assembly trims literal trailing slashes before parsing separators.
+    path = path.replace("\\", "/")
     if "/../" in path or "/./" in path or path.endswith("/..") or path.endswith("/."):
         raise Error("URL path normalization is not implemented by this Modex gateway")
     var encoded = String()

@@ -57,7 +57,10 @@
         "docs/evidence/checkpoint9-dependencies.txt",
         "docs/evidence/checkpoint9-worker-review.txt",
         "docs/evidence/checkpoint9-timeout-mismatch.json",
-        "docs/evidence/checkpoint9-state-review.json"
+        "docs/evidence/checkpoint9-state-review.json",
+        "docs/evidence/checkpoint10-reference.json",
+        "docs/evidence/checkpoint10-tests.txt",
+        "docs/evidence/checkpoint10-dependencies.txt"
       ],
       "proven": [
         "numeric IPv4/IPv6 loopback bind/listen/accept and ephemeral port discovery using existing official wrappers",
@@ -76,7 +79,8 @@
         "Checkpoint 6: live release comparisons preserve native Super history context across sessions, accept equal comma-list Content-Length, map first-present call IDs, and retain decoded usage keys and strict format validation.",
         "Checkpoint 7: ten live production buffered metadata vectors preserve ASCII/HTAB turn state and request IDs, discard non-ASCII values, keep binary bodies exact and issue one POST per request.",
         "Checkpoint 8: first nonblank session-header alias takes precedence over turn metadata/body; six independent live vectors retain four valid POSTs and reject two oversized resolved identities without provider side effects.",
-        "Checkpoint 9: native upstream base-path encoding matches ten live path/route vectors for quotes, angle brackets, backticks, braces, existing percent escapes and mixed UTF-8; 500,000 null annotations complete through five valid frames even though the worker accounting would exceed 16 MiB, disproving its proposed compatibility boundary."
+        "Checkpoint 9: native upstream base-path encoding matches ten live path/route vectors for quotes, angle brackets, backticks, braces, existing percent escapes and mixed UTF-8; 500,000 null annotations complete through five valid frames even though the worker accounting would exceed 16 MiB, disproving its proposed compatibility boundary.",
+        "Checkpoint 10: twelve live path/route vectors match native HTTP base-path backslash separators, including repeated separators, raw trailing-slash trim order, preserved percent-encoded backslashes and mixed UTF-8/ASCII escapes; each accepted request sends one POST."
       ],
       "not_proven": [
         "public operational gateway/provider parity and startup side effects",
@@ -87,7 +91,7 @@
         "unbounded non-2xx redirect SSE beyond the retained 4 MiB body cap",
         "complete continuation binding resolution: a two-turn buffered case remains a pinned-release mismatch",
         "physical byte equivalence of serialized conversation retention; the incompatible worker estimator change is rejected",
-        "complete upstream URL normalization beyond the tested UTF-8/six-ASCII subset, including the reproduced backslash separator mismatch",
+        "complete upstream URL normalization beyond the tested UTF-8/six-ASCII encoding and ordinary path-separator subset; literal/encoded dot segments remain unqualified and the existing dot guard also rejects separator-normalized dot paths",
         "Non-object SSE remains a mismatch: release synthetic clients time out while Modex emits response.failed; both proposed reader changes are rejected.",
         "General lower-client binary header retention outside the tested relay; lossy internal HTTP header storage remains.",
         "First-event idle response status and exact postcommit timeout text remain live mismatches; worker 9d05840 is excluded. The rejected partial 16 MiB cap does not establish retained-memory bounds."

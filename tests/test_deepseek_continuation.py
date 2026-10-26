@@ -118,6 +118,28 @@ class DeepSeekContinuationTests(unittest.TestCase):
                     for record in upstream:
                         self.assertEqual(record["headers"]["authorization"], "Bearer " + SYNTHETIC_API_KEY)
 
+    def test_upstream_backslash_separators_match_release(self):
+        cases = [("/v1/left\\right", "/v1/left/right/chat/completions"),
+                 ("/v1/left\\\\right", "/v1/left//right/chat/completions"),
+                 ("/v1/trailing\\", "/v1/trailing//chat/completions"),
+                 ("/v1/trailing\\/", "/v1/trailing//chat/completions"),
+                 ("/v1/%5Cescaped", "/v1/%5Cescaped/chat/completions"),
+                 ("/v1/é\\{東京}", "/v1/%C3%A9/%7B%E6%9D%B1%E4%BA%AC%7D/chat/completions")]
+        for path, target in cases:
+            turns = [{"model": "deepseek-chat", "input": "synthetic separator"},
+                     {"model": "deepseek-chat", "messages": [],
+                      "_path": "/v1/chat/completions?synthetic=%5C&keep=one"}]
+            replies = [buffered_reply(created=42), {"status": 201,
+                       "content_type": "application/json", "body": b"null"}]
+            for binary in (ORACLE, MODEX):
+                with self.subTest(path=path, binary=str(binary)):
+                    upstream, responses = observe_turns(binary, turns, replies, base_path=path)
+                    self.assertEqual([row["status"] for row in responses], [200, 201])
+                    self.assertEqual([row["path"] for row in upstream],
+                                     [target, target + "?synthetic=%5C&keep=one"])
+                    for record in upstream:
+                        self.assertEqual(record["headers"]["authorization"], "Bearer " + SYNTHETIC_API_KEY)
+
     def test_annotation_accounting_cap_is_not_release_boundary(self):
         count = 100_000
         frame = b'data: ' + json_bytes({"choices": [{"delta": {"annotations": [None] * count}}]}) + b"\n\n"

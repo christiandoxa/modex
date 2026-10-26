@@ -6,12 +6,26 @@ Complete parity remains unfinished against Prodex 0.439.1 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 10 fixes ordinary HTTP upstream path backslash separators in the
+shared native resolver. Twelve live path/route vectors preserve repeated
+separators, literal trailing-slash trim order, percent-encoded backslashes,
+queries, mixed UTF-8 and authoritative synthetic auth, with one POST per
+accepted request. Literal/encoded dot normalization and broader URL behavior
+remain unqualified. The existing dot-segment guard now also rejects normalized
+backslash-dot paths; its stricter refusal is not a parity PASS. Full binding,
+timeouts, aggregate retention and all six release qualifications remain blocked.
+See `docs/evidence/checkpoint10-reference.json`.
+A final live probe confirms `/v1\..\other`: release normalizes to
+`/other/chat/completions` and returns 200 with one POST; Modex exits 1 without
+a POST. This stricter guard is an unapproved safe difference, not parity PASS.
+The original two-turn binding mismatch is also reproduced in that evidence.
+
 Checkpoint 9 extends native upstream base-path encoding to quotes, angle
 brackets, backticks and braces. Ten live path/route vectors preserve existing
 percent escapes, ordinary punctuation, mixed UTF-8, queries, authoritative
-synthetic auth and one POST per request. Backslash separator normalization is
-still a reproduced mismatch; encoded dot segments and broader URL behavior
-remain unqualified. See `docs/evidence/checkpoint9-reference.json`.
+synthetic auth and one POST per request. Backslash separators were a reproduced mismatch at that
+checkpoint; checkpoint 10 fixes the tested ordinary subset. Encoded dot segments
+and broader URL behavior remain unqualified. See `docs/evidence/checkpoint9-reference.json`.
 
 Exactly two completed worker proposals were reviewed and excluded. `9d05840`
 changes one source-derived timeout message without reproducing the whole

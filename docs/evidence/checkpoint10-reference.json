@@ -1,0 +1,204 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "starting_main": "66bd04e0fe78cde28b5631c9a6686df7929f38fe",
+  "previous_checkpoint_push_verified": {
+    "local_head": "66bd04e0fe78cde28b5631c9a6686df7929f38fe",
+    "remote_main": "66bd04e0fe78cde28b5631c9a6686df7929f38fe",
+    "main_clean": true
+  },
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "snapshot_git_object_matches": {
+    "Cargo.lock": {
+      "sha256": "c5c9e80f925346ec065169be3c2d989a369c7dc8b86f279fc63809c8cebbb323",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_transport.rs": {
+      "sha256": "228628a129e64128ce4a6199d86f3ab2b392eec2f08e6bfa5606a5b7c3cd0e79",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_transport/urls.rs": {
+      "sha256": "ecd51b88222814eb2d1d6619af8fbc088bda8ba84fd41b0b41b9a407375a42fe",
+      "matches_pinned_git_object": true
+    }
+  },
+  "frozen_url_dependency_source": {
+    "version": "2.5.8",
+    "locked_archive_sha256": "ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed",
+    "parser_sha256": "2dd4210e1773fc5d3fdc15ce506ecff30dbf8eb358a79bbbc2835cc30d513c3a",
+    "registry_source_matches_locked_archive": true
+  },
+  "owned_production_slice": {
+    "file": "src/modex/runtime_local_rewrite.mojo",
+    "function": "local_rewrite_upstream",
+    "change": "Use existing String.replace to normalize HTTP path backslash separators after raw trailing-slash trimming and before the existing unsupported-dot guard. Preserve repeated separators, percent escapes and the previous UTF-8/six-ASCII path byte encoding. No import/dependency/API added.",
+    "baseline_trace": "local_rewrite_transport/urls.rs::runtime_local_rewrite_upstream_url trims raw trailing slash characters before joining the provider suffix. reqwest parses the resulting HTTP URL using locked URL 2.5.8 parser.rs::parse_path: the special-scheme backslash branch serializes one slash per separator. Trimming after replacement would incorrectly collapse the final doubled separator.",
+    "callers": "Native clean-home Super validation -> run_local_rewrite_child -> serve_local_rewrite -> _serve -> Responses exchange or Chat Completions passthrough. Readiness and internal driver share validation.",
+    "tests": [
+      "tests/test_gateway_cli.mojo",
+      "tests/test_deepseek_continuation.py::test_upstream_backslash_separators_match_release"
+    ]
+  },
+  "production_differential": {
+    "path_route_vectors_per_binary": 12,
+    "upstream_posts_per_binary": 12,
+    "previous_modex_mismatching_requests": 10,
+    "coverage": [
+      "literal single/repeated backslashes",
+      "trailing backslash and mixed backslash/slash trim ordering",
+      "preserved percent-encoded backslash control",
+      "mixed UTF-8 and ASCII path encoding",
+      "Responses and Chat Completions with unchanged query",
+      "authoritative synthetic auth and one POST per accepted request"
+    ]
+  },
+  "validation": {
+    "command": "rtk proxy make test",
+    "exit_code": 0,
+    "elapsed_seconds": 798.85,
+    "artifact_sha256_at_python_discovery": "476a3c50880b230cdbb7e62b0748f9b1e61861c3e856f1bcbc83343a291d9afd",
+    "artifact_sha256_after": "476a3c50880b230cdbb7e62b0748f9b1e61861c3e856f1bcbc83343a291d9afd",
+    "native_unit_executables": 45,
+    "python_methods": 351,
+    "python_seconds": 649.173,
+    "skips": 0,
+    "pinned_recovery_policy_vectors": 407,
+    "focused_python_methods": 16,
+    "focused_python_seconds": 52.553
+  },
+  "model_provenance": {
+    "execution_owner": "sole shared-main parent",
+    "primary_requested_by_user": "gpt-6.1-sol / max",
+    "primary_runtime_selection_independently_exposed": false,
+    "new_workers": [],
+    "previous_review_and_supplied_worker_provenance": "docs/evidence/checkpoint9-reference.json"
+  },
+  "remaining_limits": [
+    "Literal and encoded dot-segment normalization is not implemented. The pre-existing dot guard also rejects a path revealed by separator normalization; this stricter refusal is not a parity PASS.",
+    "Complete URL normalization, authority/backslash variants outside admitted numeric-loopback URLs, redirects and other transport/platform behavior remain unqualified.",
+    "Full binding identity/credential/profile ownership, persistence/release and production recovery remain protected gaps; the release 200/503 one-POST versus Modex 200/200 two-POST mismatch remains.",
+    "Native Super retains unscoped history; internal driver remains scoped. Timeout diagnostic/status, large-output kernel behavior, non-object SSE, binary headers, broad storage/security, JavaScript SDK and non-host qualification remain incomplete."
+  ],
+  "unchanged_denominator": {
+    "contracts": 71,
+    "platform_obligations": 426,
+    "release_targets_blocked": 6,
+    "inventory_complete": false
+  },
+  "protected_gap_rechecks": {
+    "artifact_sha256": "476a3c50880b230cdbb7e62b0748f9b1e61861c3e856f1bcbc83343a291d9afd",
+    "binding_mismatch": {
+      "prodex_04391": {
+        "statuses": [
+          200,
+          503
+        ],
+        "upstream_posts": 1,
+        "response_bodies": [
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-0",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          },
+          {
+            "error": {
+              "code": "bound_continuation_unavailable",
+              "message": "bound continuation provider is unavailable"
+            }
+          }
+        ]
+      },
+      "modex_checkpoint10": {
+        "statuses": [
+          200,
+          200
+        ],
+        "upstream_posts": 2,
+        "response_bodies": [
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-0",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          },
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-1",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "normalized_dot_guard": {
+      "base_path": "/v1\\..\\other",
+      "prodex_04391": {
+        "statuses": [
+          200
+        ],
+        "upstream_posts": 1,
+        "path": "/other/chat/completions"
+      },
+      "modex_checkpoint10": {
+        "exit_code": 1,
+        "upstream_posts": 0,
+        "stderr": "Error: URL path normalization is not implemented by this Modex gateway\n"
+      },
+      "status": "UNAPPROVED_SAFE_DIFFERENCE; dot normalization remains unsupported, never parity PASS"
+    },
+    "scope": "Isolated synthetic real Super probes after the full serial gate; intentional mismatches do not become parity PASS.",
+    "reproduce": "Use tests/test_deepseek_continuation.py::observe_turns and buffered_reply(0/1, created=42) with checkpoint4-reference.json unresolved_binding_mismatch.turns. For the dot guard, use base_path=/v1\\..\\other and one synthetic input turn; release dispatches /other/chat/completions, Modex exits 1 before a POST."
+  }
+}

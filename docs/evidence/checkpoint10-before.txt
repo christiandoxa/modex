@@ -1,0 +1,152 @@
+Pinned release passes all twelve path/route vectors. Checkpoint 9 Modex fails five path pairs (ten requests), forwarding backslashes literally. The percent-encoded backslash control already matches.
+test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) ...
+  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\right', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\\\right', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\/', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/é\\{東京}', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+
+======================================================================
+FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\right', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
+    self.assertEqual([row["path"] for row in upstream],
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     [target, target + "?synthetic=%5C&keep=one"])
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['/v1/left\\right/chat/completions', '/v1/left\\rig[39 chars]one'] != ['/v1/left/right/chat/completions', '/v1/left/right[37 chars]one']
+
+First differing element 0:
+'/v1/left\\right/chat/completions'
+'/v1/left/right/chat/completions'
+
+- ['/v1/left\\right/chat/completions',
+?           ^^
+
++ ['/v1/left/right/chat/completions',
+?           ^
+
+-  '/v1/left\\right/chat/completions?synthetic=%5C&keep=one']
+?           ^^
+
++  '/v1/left/right/chat/completions?synthetic=%5C&keep=one']
+?           ^
+
+
+======================================================================
+FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\\\right', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
+    self.assertEqual([row["path"] for row in upstream],
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     [target, target + "?synthetic=%5C&keep=one"])
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['/v1/left\\\\right/chat/completions', '/v1/left\\\[43 chars]one'] != ['/v1/left//right/chat/completions', '/v1/left//rig[39 chars]one']
+
+First differing element 0:
+'/v1/left\\\\right/chat/completions'
+'/v1/left//right/chat/completions'
+
+- ['/v1/left\\\\right/chat/completions',
+?           ^^^^
+
++ ['/v1/left//right/chat/completions',
+?           ^^
+
+-  '/v1/left\\\\right/chat/completions?synthetic=%5C&keep=one']
+?           ^^^^
+
++  '/v1/left//right/chat/completions?synthetic=%5C&keep=one']
+?           ^^
+
+
+======================================================================
+FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
+    self.assertEqual([row["path"] for row in upstream],
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     [target, target + "?synthetic=%5C&keep=one"])
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['/v1/trailing\\/chat/completions', '/v1/trailing\\/cha[33 chars]one'] != ['/v1/trailing//chat/completions', '/v1/trailing//chat/[31 chars]one']
+
+First differing element 0:
+'/v1/trailing\\/chat/completions'
+'/v1/trailing//chat/completions'
+
+- ['/v1/trailing\\/chat/completions',
+?               ^^
+
++ ['/v1/trailing//chat/completions',
+?               ^
+
+-  '/v1/trailing\\/chat/completions?synthetic=%5C&keep=one']
+?               ^^
+
++  '/v1/trailing//chat/completions?synthetic=%5C&keep=one']
+?               ^
+
+
+======================================================================
+FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\/', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
+    self.assertEqual([row["path"] for row in upstream],
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     [target, target + "?synthetic=%5C&keep=one"])
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['/v1/trailing\\/chat/completions', '/v1/trailing\\/cha[33 chars]one'] != ['/v1/trailing//chat/completions', '/v1/trailing//chat/[31 chars]one']
+
+First differing element 0:
+'/v1/trailing\\/chat/completions'
+'/v1/trailing//chat/completions'
+
+- ['/v1/trailing\\/chat/completions',
+?               ^^
+
++ ['/v1/trailing//chat/completions',
+?               ^
+
+-  '/v1/trailing\\/chat/completions?synthetic=%5C&keep=one']
+?               ^^
+
++  '/v1/trailing//chat/completions?synthetic=%5C&keep=one']
+?               ^
+
+
+======================================================================
+FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/é\\{東京}', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
+    self.assertEqual([row["path"] for row in upstream],
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     [target, target + "?synthetic=%5C&keep=one"])
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['/v1/%C3%A9\\%7B%E6%9D%B1%E4%BA%AC%7D/chat/completio[79 chars]one'] != ['/v1/%C3%A9/%7B%E6%9D%B1%E4%BA%AC%7D/chat/completion[77 chars]one']
+
+First differing element 0:
+'/v1/%C3%A9\\%7B%E6%9D%B1%E4%BA%AC%7D/chat/completions'
+'/v1/%C3%A9/%7B%E6%9D%B1%E4%BA%AC%7D/chat/completions'
+
+- ['/v1/%C3%A9\\%7B%E6%9D%B1%E4%BA%AC%7D/chat/completions',
+?             ^^
+
++ ['/v1/%C3%A9/%7B%E6%9D%B1%E4%BA%AC%7D/chat/completions',
+?             ^
+
+-  '/v1/%C3%A9\\%7B%E6%9D%B1%E4%BA%AC%7D/chat/completions?synthetic=%5C&keep=one']
+?             ^^
+
++  '/v1/%C3%A9/%7B%E6%9D%B1%E4%BA%AC%7D/chat/completions?synthetic=%5C&keep=one']
+?             ^
+
+
+----------------------------------------------------------------------
+Ran 1 test in 7.946s
+
+FAILED (failures=5)

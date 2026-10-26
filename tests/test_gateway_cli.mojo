@@ -89,7 +89,10 @@ def main() raises:
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/e\u0301")[1], "/v1/e%CC%81/chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/\"<>`{}^|[]")[1], "/v1/%22%3C%3E%60%7B%7D^|[]/chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/%22%7B%7D")[1], "/v1/%22%7B%7D/chat/completions")
-    for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://localhost:1", "http://127.0.0.1:0", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://127.0.0.1:1/v1/../other"]:
+    assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/left\\right")[1], "/v1/left/right/chat/completions")
+    assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/trailing\\/")[1], "/v1/trailing//chat/completions")
+    assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/%5Cescaped")[1], "/v1/%5Cescaped/chat/completions")
+    for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://localhost:1", "http://127.0.0.1:0", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://127.0.0.1:1/v1/../other", "http://127.0.0.1:1/v1\\..\\other"]:
         var rejected = False
         try:
             _ = local_rewrite_upstream(url)

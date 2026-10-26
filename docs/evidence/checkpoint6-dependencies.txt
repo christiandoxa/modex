@@ -1,0 +1,22 @@
+Checkpoint 6 dependency and credential review
+Four production source files change; imports are identical to the starting checkpoint. No new dependency, binding, app helper, Python interop, code generation or Prodex runtime delegation. Existing unscoped/scoped native store APIs are reused.
+Production source inventory matches docs/dependencies.json: 67 Mojo files.
+External test peers use isolated HOME/config/storage, explicit synthetic environments and loopback ports. No real credential, account login or paid provider request is used in tests.
+$ mojo --version
+Mojo 1.2.0 (2016d0cd)
+$ sha256sum build/modex
+e96c50f3da786019ca5db43396840775c55e1880aa6e80488db9f5c0ef27141b  build/modex
+$ ldd build/modex
+	linux-vdso.so.1 (0x000077af9714a000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x000077af96df6000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000077af96a00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000077af96cec000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x000077af96600000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x000077af96cdc000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x000077af95a00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000077af96cae000)
+	/lib64/ld-linux-x86-64.so.2 (0x000077af9714c000)
+$ readelf -d build/modex
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]

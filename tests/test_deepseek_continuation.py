@@ -33,7 +33,13 @@ for turn in json.loads(os.environ["MODEX_CONTINUATION_TURNS"]):
           "body": payload.hex(), "started": started, "finished": int(time.time())})
     connection.close()
     if response.status == 200:
-        previous = json.loads(payload)["id"]
+        if "text/event-stream" in response.getheader("Content-Type", ""):
+            for line in payload.splitlines():
+                if line.startswith(b"data: "):
+                    event = json.loads(line[6:])
+                    previous = event.get("response", {}).get("id", previous)
+        else:
+            previous = json.loads(payload)["id"]
 print("synthetic-continuation-complete")
 '''
 
@@ -109,6 +115,171 @@ class DeepSeekContinuationTests(unittest.TestCase):
                     headers = {name.lower(): value for name, value in response["headers"].items()}
                     self.assertEqual(headers["cache-control"], "no-store")
                     self.assertEqual(headers["x-content-type-options"], "nosniff")
+
+    def test_super_tool_history_uses_local_file_access_context(self):
+        call = {"id": "synthetic-scope-call", "type": "function",
+                "function": {"name": "lookup", "arguments": "{}"}}
+        message = {"role": "assistant", "content": "", "tool_calls": [call]}
+        chunk = {"id": "synthetic-scope-chat", "created": 42, "model": "deepseek-chat",
+                 "choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, **call}]}}]}
+        for streaming in (False, True):
+            first = {"status": 200, "content_type": "application/json", "body": json_bytes({
+                "id": "synthetic-scope-chat", "created": 42, "model": "deepseek-chat",
+                "choices": [{"index": 0, "message": message, "finish_reason": "tool_calls"}],
+            })}
+            if streaming:
+                first.update(content_type="text/event-stream", body=(
+                    b"data: " + json_bytes(chunk) + b'\n\ndata: {"choices":[{"delta":{},'
+                    b'"finish_reason":"tool_calls"}]}\n\ndata: [DONE]\n\n'
+                ))
+            turns = [
+                {"model": "deepseek-chat", "input": "synthetic history", "stream": streaming,
+                 "session_id": "synthetic-body-a", "_headers": {
+                     "session_id": "synthetic-header-a", "x-codex-turn-state": "synthetic-turn-a",
+                     "x-prodex-internal-conversation-namespace": "synthetic-namespace-a"}},
+                {"model": "deepseek-chat", "input": [{"type": "function_call_output",
+                    "call_id": call["id"], "output": "synthetic result"}],
+                 "safety_identifier": "synthetic-history-path",
+                 "session_id": "synthetic-body-b", "_headers": {
+                     "x-codex-turn-metadata": '{"session_id":"synthetic-metadata-b"}',
+                     "x-codex-turn-state": "synthetic-turn-b",
+                     "x-prodex-internal-conversation-namespace": "synthetic-namespace-b"}},
+            ]
+            observed = []
+            for binary in (ORACLE, MODEX):
+                with self.subTest(streaming=streaming, binary=str(binary)):
+                    upstream, responses = observe_turns(binary, turns, [first, buffered_reply(created=42)])
+                    self.assertEqual([record["status"] for record in responses], [200, 200])
+                    self.assertEqual(len(upstream), 2, "each accepted turn must send exactly one POST")
+                    messages = json.loads(upstream[1]["body"])["messages"]
+                    self.assertEqual([item["role"] for item in messages], ["user", "assistant", "tool"])
+                    self.assertEqual(messages[-1], {"role": "tool", "tool_call_id": call["id"],
+                                                    "content": "synthetic result"})
+                    self.assertEqual(messages[-2]["tool_calls"], [call])
+                    self.assertEqual(upstream[1]["headers"]["x-codex-turn-state"], "synthetic-turn-b")
+                    for record in upstream:
+                        self.assertEqual(record["headers"]["authorization"], "Bearer " + SYNTHETIC_API_KEY)
+                        self.assertFalse(any(name.startswith("x-prodex-internal-") for name in record["headers"]))
+                    observed.append([json.loads(record["body"]) for record in upstream])
+            if len(observed) == 2:
+                self.assertEqual(*observed)
+
+    def test_equal_comma_list_upstream_framing_matches_release(self):
+        for length, expected in (("4,4", 201), ("4, \t4", 201), ("4,5", 502), ("4,", 502)):
+            reply = {"status": 201, "content_type": "application/json", "body": b"null",
+                     "response_headers": [("Content-Type", "application/json"), ("Content-Length", length)]}
+            turn = {"_path": "/v1/chat/completions", "model": "deepseek-chat", "messages": []}
+            for binary in (ORACLE, MODEX):
+                with self.subTest(length=length, binary=str(binary)):
+                    upstream, responses = observe_turns(binary, [turn], [reply])
+                    self.assertEqual([record["status"] for record in responses], [expected])
+                    self.assertEqual(len(upstream), 1, "malformed framing must not replay a POST")
+                    if expected == 201:
+                        self.assertEqual(bytes.fromhex(responses[0]["body"]), b"null")
+
+    def test_call_id_field_priority_matches_release(self):
+        variants = [{"call_id": None, "tool_call_id": "synthetic-alias"},
+                    {"call_id": 7, "tool_call_id": "synthetic-alias"},
+                    {"tool_call_id": None, "id": "synthetic-alias"},
+                    {"call_id": "synthetic-primary", "tool_call_id": "synthetic-alias"},
+                    {"id": "synthetic-only"}]
+        turns = [{"model": "deepseek-chat", "input": [
+            {"type": "function_call", "name": "lookup", **fields},
+            {"type": "function_call_output", "output": "synthetic result", **fields},
+        ]} for fields in variants]
+        observed = []
+        for binary in (ORACLE, MODEX):
+            upstream, responses = observe_turns(binary, turns, [buffered_reply(index, created=42)
+                                                               for index in range(len(turns))])
+            self.assertEqual([record["status"] for record in responses], [200] * len(turns))
+            self.assertEqual(len(upstream), len(turns))
+            observed.append([json.loads(record["body"]) for record in upstream])
+        self.assertEqual(*observed)
+        self.assertEqual([body["messages"][0]["tool_calls"][0]["id"] for body in observed[0]],
+                         ["call_1", "call_1", "call_1", "synthetic-primary", "synthetic-only"])
+
+    def test_malformed_response_format_rejects_before_provider_dispatch(self):
+        variants = [{"response_format": value} for value in ({}, {"type": None}, {"type": 7},
+                    {"type": False}, {"type": []}, {"type": {}}, {"type": "text"},
+                    {"type": ""}, None, [], "text")]
+        variants += [{"text": {"format": {"type": None}}},
+                     {"response_format": {}, "text": {"format": {"type": "json_object"}}}]
+        turns = [{"model": "deepseek-chat", "input": "synthetic format", **value} for value in variants]
+        observed = []
+        for binary in (ORACLE, MODEX):
+            upstream, responses = observe_turns(binary, turns, [buffered_reply(index, created=42)
+                                                               for index in range(len(turns))])
+            observed.append(([record["status"] for record in responses],
+                             [json.loads(record["body"]) for record in upstream]))
+        self.assertEqual(*observed)
+        self.assertEqual(observed[0][0], [502] * 6 + [200] + [502] * 6)
+        self.assertEqual(len(observed[0][1]), 1, "only the valid text format may reach the provider")
+        self.assertNotIn("response_format", observed[0][1][0])
+
+    def test_usage_decodes_escaped_keys_before_mapping_on_both_paths(self):
+        usages = [
+            r'{"prompt\u005ftokens":11,"completion_tokens":7}',
+            r'{"prompt_tokens":1,"prompt\u005ftokens":2,"completion_tokens":3}',
+            r'{"prompt\u005ftokens":2,"prompt_tokens":1,"completion_tokens":3}',
+            r'{"prompt_tokens":5,"completion\u005ftokens_details":{"reasoning\u005ftokens":4}}',
+            r'{"prompt_cache_hit\u005ftokens":0,"prompt_cache_miss_tokens":2,"total_tokens":0}',
+            r'{"prompt_tokens":18446744073709551615,"completion_tokens":1}',
+            r'{"prompt_tokens":18446744073709551616,"completion_tokens":-0,"total_tokens":2.0}',
+            r'{"noise":[{"prompt_tokens":99,"text":"escaped \\\" brace }"}],"prompt_tokens":6}',
+        ]
+        for streaming in (False, True):
+            turns = [{"model": "deepseek-chat", "input": "synthetic usage", "stream": streaming}
+                     for _ in usages]
+            replies = []
+            for usage in usages:
+                body = (b'{"id":"synthetic-usage","created":42,"model":"deepseek-chat",'
+                        b'"choices":[],"usage":' + usage.encode() + b"}")
+                replies.append({"status": 200,
+                    "content_type": "text/event-stream" if streaming else "application/json",
+                    "body": b"data: " + body + b"\n\ndata: [DONE]\n\n" if streaming else body})
+            observed = []
+            for binary in (ORACLE, MODEX):
+                with self.subTest(streaming=streaming, binary=str(binary)):
+                    upstream, responses = observe_turns(binary, turns, replies)
+                    self.assertEqual(len(upstream), len(turns))
+                    mapped = []
+                    for response in responses:
+                        self.assertEqual(response["status"], 200)
+                        body = bytes.fromhex(response["body"])
+                        if streaming:
+                            data = [json.loads(line[6:]) for line in body.splitlines()
+                                    if line.startswith(b"data: ")]
+                            value = data[-1]["response"]
+                        else:
+                            value = json.loads(body)
+                        mapped.append(value["usage"])
+                    self.assertEqual([item["input_tokens"] for item in mapped],
+                                     [11, 2, 1, 5, 0, 18446744073709551615, 0, 6])
+                    self.assertEqual(mapped[3]["output_tokens_details"], {"reasoning_tokens": 4})
+                    observed.append(mapped)
+            if len(observed) == 2:
+                self.assertEqual(*observed)
+
+    def test_reader_preserves_events_before_provider_error_in_one_frame(self):
+        reply = {"status": 200, "content_type": "text/event-stream", "body": (
+            b'data: {"id":"synthetic-reader","created":42,"choices":[{"delta":{"content":"kept"}}]}\n'
+            b'data: {"error":{"message":"synthetic failure"}}\n\ndata: [DONE]\n\n'
+        )}
+        observed = []
+        for binary in (ORACLE, MODEX):
+            upstream, responses = observe_turns(binary, [{"model": "deepseek-chat", "input": "synthetic",
+                                                        "stream": True}], [reply])
+            self.assertEqual(len(upstream), 1)
+            self.assertEqual([record["status"] for record in responses], [200])
+            body = bytes.fromhex(responses[0]["body"])
+            names = [line[7:] for line in body.splitlines() if line.startswith(b"event: ")]
+            self.assertEqual(names, [b"response.created", b"response.output_item.added",
+                                     b"response.output_text.delta", b"response.failed"])
+            self.assertIn(b'"delta":"kept"', body)
+            self.assertIn(b"synthetic failure", body)
+            data = [json.loads(line[6:]) for line in body.splitlines() if line.startswith(b"data: ")]
+            observed.append((data[2]["delta"], data[3]["response"]["error"]))
+        self.assertEqual(*observed)
 
     def test_valid_identity_boundaries_and_header_precedence_match_release(self):
         variants = [{"previous_response_id": "é" * 512}, {"session_id": "s" * 1024},

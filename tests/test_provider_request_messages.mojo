@@ -13,6 +13,10 @@ def main() raises:
     assert_equal(request_messages(replay, '[{"role":"user","content":"prior"},{"role":"assistant","tool_calls":[{"id":"old"}]},{"role":"tool","tool_call_id":"old","content":"old result"}]'), '[{"content":"prior","role":"user"},{"role":"assistant","tool_calls":[{"id":"old"}],"content":""},{"content":"old result","role":"tool","tool_call_id":"old"}]')
     var calls = JsonDocument('{"input":[{"type":"function_call","call_id":"c","name":"lookup","arguments":"{\\"q\\":1}"},{"type":"function_call_output","call_id":"c","output":"ok"}]}')
     assert_equal(request_messages(calls), '[{"role":"assistant","content":"","tool_calls":[{"function":{"arguments":"{\\"q\\":1}","name":"lookup"},"id":"c","type":"function"}]},{"role":"tool","tool_call_id":"c","content":"ok"}]')
+    var fallback_call_ids = JsonDocument('{"input":[{"type":"function_call","call_id":null,"tool_call_id":"call_alias","name":"lookup"},{"type":"function_call_output","call_id":null,"tool_call_id":"call_alias","output":"ok"}]}')
+    assert_equal(request_messages(fallback_call_ids), '[{"role":"assistant","content":"","tool_calls":[{"function":{"arguments":"{}","name":"lookup"},"id":"call_1","type":"function"}]},{"role":"tool","tool_call_id":"call_1","content":"ok"}]')
+    var continuation_output = JsonDocument('{"input":[{"type":"function_call_output","call_id":null,"tool_call_id":"call_alias","output":"ok"}]}')
+    assert_equal(request_messages(continuation_output, '[{"role":"assistant","content":"","tool_calls":[{"id":"call_1","type":"function","function":{"name":"lookup","arguments":"{}"}}]}]'), '[{"content":"","role":"assistant","tool_calls":[{"function":{"arguments":"{}","name":"lookup"},"id":"call_1","type":"function"}]},{"role":"tool","tool_call_id":"call_1","content":"ok"}]')
 
     var malformed_id = JsonDocument('{"input":[{"type":"function_call","call_id":" ","id":"valid","name":"lookup"}]}')
     var raised = False

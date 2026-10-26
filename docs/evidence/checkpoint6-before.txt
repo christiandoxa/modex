@@ -1,0 +1,169 @@
+Proven native context regression: oracle passes; previous Modex fails both buffered and streamed cases.
+test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context) ...
+  test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context) (streaming=False, binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context) (streaming=True, binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+
+======================================================================
+FAIL: test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context) (streaming=False, binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 155, in test_super_tool_history_uses_local_file_access_context
+    self.assertEqual([item["role"] for item in messages], ["user", "assistant", "tool"])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['user'] != ['user', 'assistant', 'tool']
+
+Second list contains 2 additional elements.
+First extra element 1:
+'assistant'
+
+- ['user']
++ ['user', 'assistant', 'tool']
+
+======================================================================
+FAIL: test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context) (streaming=True, binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 155, in test_super_tool_history_uses_local_file_access_context
+    self.assertEqual([item["role"] for item in messages], ["user", "assistant", "tool"])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['user'] != ['user', 'assistant', 'tool']
+
+Second list contains 2 additional elements.
+First extra element 1:
+'assistant'
+
+- ['user']
++ ['user', 'assistant', 'tool']
+
+----------------------------------------------------------------------
+Ran 1 test in 2.759s
+
+FAILED (failures=2)
+
+Initial review probes (include incorrect provisional expectations subsequently corrected against the release; these are not PASS evidence):
+test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context) ...
+  test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context) (streaming=False, binary='/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu') ... FAIL
+  test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context) (streaming=False, binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context) ... ERROR
+test_equal_comma_list_upstream_framing_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_equal_comma_list_upstream_framing_matches_release) ...
+  test_equal_comma_list_upstream_framing_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_equal_comma_list_upstream_framing_matches_release) (length='4,4', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_equal_comma_list_upstream_framing_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_equal_comma_list_upstream_framing_matches_release) (length='4, \t4', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+test_call_id_field_priority_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_call_id_field_priority_matches_release) ... FAIL
+test_malformed_response_format_fallback_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_malformed_response_format_fallback_matches_release) ... FAIL
+
+======================================================================
+ERROR: test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 163, in test_super_tool_history_uses_local_file_access_context
+    self.assertEqual(*observed)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^
+TypeError: TestCase.assertEqual() missing 2 required positional arguments: 'first' and 'second'
+
+======================================================================
+FAIL: test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context) (streaming=False, binary='/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 154, in test_super_tool_history_uses_local_file_access_context
+    self.assertEqual([item["role"] for item in messages], ["user", "assistant", "tool"])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['tool'] != ['user', 'assistant', 'tool']
+
+First differing element 0:
+'tool'
+'user'
+
+Second list contains 2 additional elements.
+First extra element 1:
+'assistant'
+
+- ['tool']
++ ['user', 'assistant', 'tool']
+
+======================================================================
+FAIL: test_super_tool_history_uses_local_file_access_context (test_deepseek_continuation.DeepSeekContinuationTests.test_super_tool_history_uses_local_file_access_context) (streaming=False, binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 154, in test_super_tool_history_uses_local_file_access_context
+    self.assertEqual([item["role"] for item in messages], ["user", "assistant", "tool"])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['tool'] != ['user', 'assistant', 'tool']
+
+First differing element 0:
+'tool'
+'user'
+
+Second list contains 2 additional elements.
+First extra element 1:
+'assistant'
+
+- ['tool']
++ ['user', 'assistant', 'tool']
+
+======================================================================
+FAIL: test_equal_comma_list_upstream_framing_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_equal_comma_list_upstream_framing_matches_release) (length='4,4', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 173, in test_equal_comma_list_upstream_framing_matches_release
+    self.assertEqual([record["status"] for record in responses], [expected])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [502] != [201]
+
+First differing element 0:
+502
+201
+
+- [502]
++ [201]
+
+======================================================================
+FAIL: test_equal_comma_list_upstream_framing_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_equal_comma_list_upstream_framing_matches_release) (length='4, \t4', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 173, in test_equal_comma_list_upstream_framing_matches_release
+    self.assertEqual([record["status"] for record in responses], [expected])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [502] != [201]
+
+First differing element 0:
+502
+201
+
+- [502]
++ [201]
+
+======================================================================
+FAIL: test_call_id_field_priority_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_call_id_field_priority_matches_release)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 195, in test_call_id_field_priority_matches_release
+    self.assertEqual(*observed)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^
+AssertionError: Lists differ: [{'me[116 chars]d': 'call_1', 'type': 'function'}]}, {'content[1251 chars]lse}] != [{'me[116 chars]d': 'synthetic-alias', 'type': 'function'}]}, [1464 chars]lse}]
+
+First differing element 0:
+{'mes[115 chars]d': 'call_1', 'type': 'function'}]}, {'content[104 chars]alse}
+{'mes[115 chars]d': 'synthetic-alias', 'type': 'function'}]}, [122 chars]alse}
+
+Diff is 3662 characters long. Set self.maxDiff to None to see it.
+
+======================================================================
+FAIL: test_malformed_response_format_fallback_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_malformed_response_format_fallback_matches_release)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 213, in test_malformed_response_format_fallback_matches_release
+    self.assertEqual(observed[0][0], [200] * 7 + [502] * 4 + [200, 200])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [502, 502, 502, 502, 502, 502, 200, 502, 502, 502, 502, 502, 502] != [200, 200, 200, 200, 200, 200, 200, 502, 502, 502, 502, 200, 200]
+
+First differing element 0:
+502
+200
+
+- [502, 502, 502, 502, 502, 502, 200, 502, 502, 502, 502, 502, 502]
++ [200, 200, 200, 200, 200, 200, 200, 502, 502, 502, 502, 200, 200]
+
+----------------------------------------------------------------------
+Ran 4 tests in 9.317s
+
+FAILED (failures=6, errors=1)

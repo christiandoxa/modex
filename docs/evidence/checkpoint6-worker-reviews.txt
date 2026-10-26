@@ -1,0 +1,104 @@
+Supplemental official-launcher reviews: observed gpt-6.1-sol, reasoning effort none. Requested Luna/MAX was not selected by the immutable launcher defaults. Full stderr streams remain separately retained under /tmp; they include launcher account labels and are not committed.
+
+=== Full usage review stdout ===
+What this change does: Commit `86b5d08` replaces decoded usage-key lookup with raw-byte scanning and changes output field order. Review completed; **reject the scanner change because it breaks Prodex production behavior.**
+
+**Must fix**
+
+1. **Escaped keys and duplicate priority differ from frozen Prodex.** Worker lines 91–176 match raw keys, but Prodex parses incoming JSON into `serde_json::Value`, then serializes usage before calling the raw kernel.
+
+   Concrete native results:
+
+   | Usage input | Worker input tokens | Prodex production expectation |
+   |---|---:|---:|
+   | `{"prompt\u005ftokens":11,"completion_tokens":7}` | 0 | 11 |
+   | `{"prompt_tokens":1,"prompt\u005ftokens":2}` | 1 | 2 |
+   | `{"prompt\u005ftokens":2,"prompt_tokens":1}` | 1 | 1 |
+
+   Escaping `completion_tokens_details` or nested `reasoning_tokens` also drops reasoning usage incorrectly.
+
+   **Minimal correction:** remove the scanner and restore `doc.get` lookups. Correct the escaped-key expectations in both tests. The worker comment and Python test’s “expected raw-key projection from pinned source” claim confuse the internal kernel contract with the production path.
+
+**Frozen-source evidence**
+
+All paths below are under `/home/doxa/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3/`. Ten inspected snapshot files matched the exact immutable Git objects.
+
+- `crates/prodex-provider-core/src/translators/deepseek/response_transform.rs:33–45`: buffered input is parsed into `Value`.
+- `crates/prodex-provider-core/src/translators/deepseek/response.rs:69–74,101–121`: usage is taken from that value, serialized, passed to `ResponseUsage`, and parsed again.
+- `crates/prodex-app/src/runtime_launch/proxy_startup/provider_sse_reader.rs:170–202,218–244`: production SSE parses JSON before observing chunks.
+- `crates/prodex-provider-core/src/translators/deepseek/stream/shaping.rs:231–252`: stream usage reaches the same usage mapper.
+- `mojo/prodex_core/json_view.mojo:109–166`: the internal kernel uses raw-key equality and the last matching raw member.
+- `mojo/prodex_core/deepseek.mojo:3413–3435,3439–3525`: unsigned integer validation, saturating totals, optional details, and output ordering.
+- `crates/prodex-app/src/core_constants.rs:132` and `runtime_launch/proxy_startup/provider_sse_reader.rs:7–10`: production body and SSE limits are 4 MiB.
+
+**Tests and commands run**
+
+Built exact-commit sources with **Mojo 1.2.0 (`2016d0cd`)**, exclusively in a new private directory.
+
+- Native worker unit program: `Provider chat usage checks: PASS`.
+- Worker Python stream suite, pointed at private binary: **1 test, OK**. Its incorrect escaped-key expectation passes.
+- **3,004 deterministic native cases:** **0** mismatches against the source-derived raw-kernel model; **557** against the decoded production model.
+- **1,000 additional cases:** nested objects/arrays, Unicode, whitespace, escaped strings and unrelated keys—all passed.
+- **7 malformed inputs:** all rejected, including invalid escapes, unpaired surrogate, malformed containers, trailing input and `1e400`.
+- **10 cases through both native stream and buffered paths:** outputs agreed. Covered duplicates, escaped keys, `UInt64.MAX`, overflow, negative zero, floats, null and nested noise.
+- Depth checks: 125 nested arrays inside root/usage accepted; 126, 127, 128 and 256 rejected.
+- Buffered body: **4,194,304 bytes accepted; 4,194,305 rejected**. Oversized SSE lines emitted `response.failed`.
+- Direct-module payloads of 100 KB, 1 MB and approximately 4 MiB completed without crashes.
+
+**Files inspected or modified**
+
+Inspected the exact three-file commit diff, JSON parser, both production callers, test drivers and frozen sources above. **No repository or existing worktree files modified; no commits or shared builds.**
+
+Private harnesses, binaries and captured outputs: [/tmp/modex-usage-review-axUiEt0Z](/tmp/modex-usage-review-axUiEt0Z).
+
+**Unresolved risks / recommendation**
+
+No additional traversal defect or obvious quadratic scanner path was found. The scanner is iterative; malformed-input protection and depth limits come from the preceding `JsonDocument` parse.
+
+**Verdict: reject the raw scanner and incorrect parity assertions.** Parent retains integration ownership. Exact selected model and effort were not exposed; Luna/MAX is unverified.
+
+Not checked: native Prodex execution, all six release targets, exhaustive event/accumulation caps, or peak memory. Fuzz expectations were source-derived models, not a live baseline executable.
+
+=== Full reader review stdout ===
+**Objective completed:** reviewed the exact combined diff through `0663146` and traced the frozen Prodex source. **Reject the combined change as demonstrated parity.**
+
+**Findings**
+
+1. **Non-object handling still differs from Prodex.** The frozen metadata kernel rejects `null`, arrays and scalars. Rust turns that rejection into a panic—not an empty chunk or graceful `response.failed`.
+
+   Exact frozen source locations, relative to `/home/doxa/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`:
+
+   - `mojo/prodex_core/deepseek.mojo:876`: requires an object.
+   - `mojo/prodex_core/deepseek.mojo:940`: metadata projection rejects other roots.
+   - `mojo/prodex_core/deepseek.mojo:3967`: returns invalid-input status.
+   - `crates/prodex-provider-core/src/translators/deepseek.rs:55`: panics on kernel error.
+
+   Thus `5a14f47`’s acceptance was incorrect; `0663146` replaces it with a different, also non-parity behavior.
+
+2. **The preservation test proves only Modex behavior.** In `provider_chat_reader.mojo:43`, the new catch preserves locally accumulated events before a later observer exception. Frozen `provider_sse_reader.rs:199` collects separate values before publishing their events; a panic during the later value prevents that event’s collected output from being returned. Output already delivered from earlier SSE events remains delivered.
+
+**Established semantics**
+
+- Multiple values are accepted when each separate `data:` line parses completely (`provider_sse_reader.rs:170–227`).
+- Valid value followed by malformed JSON **within one event**: neither is observed; the combined text accumulates and ultimately fails as incomplete JSON.
+- `[DONE]` anywhere among the event’s data lines takes precedence over its other values (`:109`).
+- `[DONE]` flushes accumulated JSON, then completes; invalid accumulated JSON fails (`:151`).
+- EOF without completion fails with `unexpected end of stream`; invalid accumulated JSON yields `incomplete JSON segment` (`:125`).
+- After completion/failure, another failure event is suppressed; reader I/O errors propagate when `failed_event` returns none (`:71`; `deepseek_sse/completion.rs:79`).
+
+**Files inspected or modified**
+
+Inspected both commits, both worker tests, reader, assembler, framer, chat state/helpers, transport caller, and frozen Rust/Mojo paths above. No repository files modified. Private artifacts: `/tmp/modex-reader-review-v5mzyxr_/`.
+
+**Tests and commands**
+
+- Mojo version: `1.2.0 (2016d0cd)`.
+- Worker native test: `Provider chat reader checks: PASS`.
+- Seven Modex probe cases: five non-object values failed gracefully; text-plus-null preserved three events then failed; text-plus-malformed emitted only failure.
+- Frozen native kernel probe: five non-object inputs returned status `1`, zero bytes; `{}` control returned status `0`, two bytes.
+- `git diff --check`: clean. Repository status remained clean.
+- Initial harness compile errors were corrected; compiler emitted Crashpad and frozen-source warnings.
+
+**Recommendation:** replace the parity claim and hardcoded null-error expectation with an explicit recorded mismatch. Parent should decide the intended Modex behavior before integration; neither acceptance nor graceful failure matches the traced baseline.
+
+Not checked: live release differential, Python loopback suite, or shared builds. Selected model/effort was not exposed; no Luna/MAX claim.

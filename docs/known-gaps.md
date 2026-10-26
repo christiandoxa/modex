@@ -6,6 +6,23 @@ Complete parity remains unfinished against Prodex 0.439.1 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 6 connects Super's source-traced unscoped history context while
+retaining scoped internal relays. Buffered and streamed tool follow-ups across
+different sessions/turn states match the real release on its history-aware path.
+Equal comma-list Content-Length and first-present call-ID mapping are integrated;
+reader, raw usage scanner and malformed-format fallback worker changes are
+rejected. The production boundary decodes usage keys before mapping and rejects
+missing/non-string format types before fallback. Native and live regressions
+retain those distinctions. See `docs/evidence/checkpoint6-reference.json`.
+
+Non-object SSE remains a reproduced mismatch: null, array, and text-then-null
+within one event time out in the pinned release's synthetic client; Modex emits
+`response.failed`. The source metadata kernel rejects non-objects and its Rust
+wrapper panics. No empty-chunk or graceful-failure parity is claimed. The full
+binding mismatch below is also reproduced unchanged. Buffered passthrough
+non-ASCII turn-state metadata is the next observed gap: the release drops the
+header while Modex forwards replacement/UTF-8 bytes.
+
 Checkpoint 5 fixes non-ASCII upstream base-path bytes: native dispatch now
 matches the release's UTF-8 percent encoding. Existing percent escapes and
 combining sequences are preserved; eight production path/route comparisons

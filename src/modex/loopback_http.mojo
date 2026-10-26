@@ -269,10 +269,11 @@ def _response_head(bytes: List[UInt8], end: Int) raises -> Tuple[Int, Int, Bool]
                 raise Error("malformed HTTP response header")
         var value = raw_value.strip(" \t")
         if name == "content-length":
-            var parsed_length = _number(value)
-            if length >= 0 and length != parsed_length:
-                raise Error("conflicting HTTP content lengths")
-            length = parsed_length
+            for raw_length in value.split(","):
+                var parsed_length = _number(raw_length.strip(" \t"))
+                if length >= 0 and length != parsed_length:
+                    raise Error("conflicting HTTP content lengths")
+                length = parsed_length
         elif name == "transfer-encoding":
             if chunked or length >= 0 or value.lower() != "chunked":
                 raise Error("unsupported or ambiguous HTTP transfer encoding")

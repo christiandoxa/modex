@@ -1,3 +1,66 @@
+# Checkpoint 6: native Super history context and reviewed workers
+
+Main started clean at `db9a78e0d4649538ccb5967b6dd7fb4a00a5844e`.
+Fetch and `git ls-remote origin refs/heads/main` verified that same remote SHA
+before the checkpoint commit.
+The sole main owner traced and reviewed all six supplied Luna/MAX commits.
+Only HTTP client `5a1d105d22d06307f82a9ec9e71b66b00ee08fca` and history
+`9fe33a5deec24eba341164f99acaa93df3e1e6f3` were applied with no-commit
+cherry-picks; both production sources remain exact. Their tests use isolated
+synthetic peers; the history harness reuses existing transport helpers.
+
+The owned reachable production change selects the frozen unscoped conversation
+context for Super, while the internal driver's default still uses session scopes.
+Both buffered and streamed tool-call follow-ups now preserve history across
+different session/turn/namespace metadata, matching actual 0.439.1 Super runs.
+The tests deliberately select the history-aware request path with
+`safety_identifier`; the simple conformance override can bypass that history.
+Each accepted turn sends one POST. No file access, public option or dependency
+is added. Native scoped/unscoped checks protect the internal boundary.
+
+Reject reader `5a14f47` plus `0663146`, usage `86b5d08`, and params `725c342`.
+The release parses and reserializes JSON before its raw usage kernel; escaped
+keys and duplicate priority must be decoded. Parent replay of 3,004 exact-worker
+cases found 557 differences from the source-derived production model, plus
+malformed/depth/size checks. Sixteen live usage vectors confirm decoded behavior.
+Malformed response-format types are rejected before the historical raw fallback:
+13 live cases retain strict validation and only the valid text case reaches the
+provider. Non-object SSE is not an empty chunk: the pinned metadata kernel
+rejects it and its Rust caller panics. Three live probes time out in the synthetic
+release client; Modex emits `response.failed`. Both reader proposals remain
+excluded. A registered native reader unit and a live ordered-event regression
+cover ordinary provider-reported errors without claiming non-object parity.
+
+Full hard-binding ownership remains unfinished. A fresh two-turn probe still
+observes release 200/503 with one POST versus Modex 200/200 with two. Source
+tracing separates dispatch profile identity, accepted raw credential identity,
+response/session/turn binding acquisition, persistence and release from history.
+No response-ID-only rejection or fake recovery progress was introduced.
+
+Validation: `make build`, all 45 native units, 70 focused Python methods
+in 63.978 seconds, then final serial `rtk proxy make test`: 346 Python
+methods in 592.411 seconds, no skips, and 407 pinned recovery-policy vectors.
+The artifact hash stayed fixed throughout Python discovery and sandbox/link
+checks. Twenty-six reference files match immutable pinned Git objects. Imports,
+source inventory and native linkage contain only existing local/official stdlib
+dependencies. No real credentials, paid test traffic or account login were used.
+
+The two supplemental reviews used the mandatory official launcher; its defaults
+selected `gpt-6.1-sol` with effort `none`, not requested Luna/MAX. Full stdout
+reports and separate private stream hashes/paths are retained. The parent
+verified their source claims and replayed key probes; integration, tests,
+staging, commit and push remain main-owned. Worker worktrees remain clean;
+P/Q's `provider_sse_json.mojo` and `provider_chat_stream.mojo` are unchanged.
+
+All 71 contract statuses, 426 obligations, capability statuses and six BLOCKED
+release qualifications are retained. Evidence: `docs/evidence/checkpoint6-reference.json`,
+`checkpoint6-tests.txt`, `checkpoint6-dependencies.txt`, `checkpoint6-before.txt`,
+and `checkpoint6-worker-reviews.txt` in the same directory. The next reproduced
+production gap is buffered passthrough's non-ASCII turn-state metadata: the
+release drops it while Modex forwards replacement/UTF-8 bytes. Continue after
+the normal checkpoint push; broad binding, recovery, transport and platform
+qualification remain incomplete.
+
 # Checkpoint 5: verified native UTF-8 upstream paths
 
 Checkpoint 4 was committed and normally pushed as

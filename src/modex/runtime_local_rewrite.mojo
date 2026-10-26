@@ -213,7 +213,7 @@ def _continuation_identity_valid(headers: List[Tuple[String, String]], doc: Json
     return True
 
 
-def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: String) raises -> String:
+def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Optional[String]) raises -> String:
     var previous = doc.string(doc.get(doc.root, "previous_response_id"))
     var saved = store.history(previous, namespace)
     if saved: return saved.value()
@@ -232,7 +232,7 @@ def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Str
     return "[]"
 
 
-def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, connect_ms: UInt64, idle_ms: UInt64) raises:
+def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, connect_ms: UInt64, idle_ms: UInt64, allow_local_file_access: Bool) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
     if request.method == "POST" and target == "/v1/chat/completions":
         var stream: LoopbackHTTPStream
@@ -258,7 +258,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         return
     var source: String
     var history: String
-    var namespace: String
+    var namespace = Optional[String]()
     var previous_found: Bool
     try:
         source = String(from_utf8=Span(request.body))
@@ -266,7 +266,8 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         if not _continuation_identity_valid(request.headers, doc):
             connection.respond(503, [("content-type", "application/json"), ("cache-control", "no-store"), ("x-content-type-options", "nosniff")], _bytes('{"error":{"code":"bound_continuation_unavailable","message":"bound continuation provider is unavailable"}}'), 30000)
             return
-        namespace = _namespace(request.headers, doc)
+        if not allow_local_file_access:
+            namespace = Optional[String](_namespace(request.headers, doc))
         previous_found = conversations.contains(doc.string(doc.get(doc.root, "previous_response_id")), namespace)
         history = _history(doc, conversations, namespace)
         var tools = doc.get(doc.root, "tools")
@@ -325,7 +326,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         connection.close()
 
 
-def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, key: String, parent_fd: Int32 = -1) raises:
+def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, key: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False) raises:
     var upstream = local_rewrite_upstream(upstream_url)
     _ = deepseek_request_headers([], key)
     var connect_ms = _timeout("PRODEX_RUNTIME_PROXY_HTTP_CONNECT_TIMEOUT_MS", 5000)
@@ -354,7 +355,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         request_id = request_id + 1 if request_id < UInt64.MAX else request_id
         try:
             var request = connection.read_request(120000)
-            _serve(connection, request, upstream[0], upstream[1], key, request_id, conversations, connect_ms, idle_ms)
+            _serve(connection, request, upstream[0], upstream[1], key, request_id, conversations, connect_ms, idle_ms, allow_local_file_access)
         except error:
             var message = String(error)
             var too_large = "oversized" in message or "exceeds wire limit" in message

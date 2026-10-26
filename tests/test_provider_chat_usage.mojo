@@ -13,6 +13,8 @@ def main() raises:
     var usage_doc = JsonDocument("{\"usage\":{\"prompt_tokens\":18446744073709551615,\"completion_tokens\":1,\"prompt_cache_hit_tokens\":0,\"completion_tokens_details\":{\"reasoning_tokens\":3}}}")
     var usage = usage_doc.get(usage_doc.root, "usage")
     assert_equal(chat_usage(usage_doc, usage, "deepseek"), '{"input_tokens":18446744073709551615,"input_tokens_details":{"cached_tokens":0},"metadata":{"deepseek":{"prompt_cache_hit_tokens":0,"prompt_cache_miss_tokens":0}},"output_tokens":1,"output_tokens_details":{"reasoning_tokens":3},"total_tokens":18446744073709551615}')
+    var escaped = JsonDocument('{"usage":{"prompt_tokens":1,"prompt\\u005ftokens":11,"completion_tokens":7,"completion_tokens_details":{"reasoning\\u005ftokens":4}}}')
+    assert_equal(chat_usage(escaped, escaped.get(escaped.root, "usage"), "deepseek"), '{"input_tokens":11,"output_tokens":7,"output_tokens_details":{"reasoning_tokens":4},"total_tokens":18}')
 
     var nums = JsonDocument("[0,-0,1.0,1e0,18446744073709551615,18446744073709551616,-1,null]")
     assert_equal(json_unsigned(nums, nums.nodes[nums.root].children[0]).value(), UInt64(0))

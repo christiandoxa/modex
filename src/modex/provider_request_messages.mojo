@@ -161,6 +161,17 @@ def _first_string(doc: JsonDocument, node: Int, names: List[String]) -> String:
     return ""
 
 
+def _mapped_call_id(doc: JsonDocument, item: Int) -> String:
+    # Mapping defaults a present non-string primary ID instead of trying the next field.
+    for key in ["call_id", "tool_call_id", "id"]:
+        var child = doc.get(item, key)
+        if child >= 0:
+            if doc.nodes[child].kind == JSON_STRING:
+                return doc.nodes[child].text
+            return "call_1"
+    return "call_1"
+
+
 def _first_string_node(doc: JsonDocument, node: Int, names: List[String]) -> Int:
     for name in names:
         var child = doc.get(node, name)
@@ -207,8 +218,7 @@ def _text_part(doc: JsonDocument, node: Int) -> Optional[String]:
 def _map_item(doc: JsonDocument, item: Int, mut mapped: List[String]):
     var kind = doc.string(doc.get(item, "type"))
     if kind == "local_shell_call":
-        var call_id = _first_string(doc, item, ["call_id", "tool_call_id", "id"])
-        if not call_id: call_id = "call_1"
+        var call_id = _mapped_call_id(doc, item)
         var action = doc.get(item, "action")
         var command = doc.get(item, "command")
         if command < 0: command = doc.get(action, "command")
@@ -229,8 +239,7 @@ def _map_item(doc: JsonDocument, item: Int, mut mapped: List[String]):
         mapped.append('{"role":"assistant","content":"","tool_calls":[{"id":' + quote_json(call_id) + ',"type":"function","function":{"name":"shell_command","arguments":' + quote_json(args) + "}}]}")
         return
     if kind == "function_call" or kind == "mcp_call" or kind == "custom_tool_call" or kind == "local_shell_call":
-        var call_id = _first_string(doc, item, ["call_id", "tool_call_id", "id"])
-        if not call_id: call_id = "call_1"
+        var call_id = _mapped_call_id(doc, item)
         var name = _first_string(doc, item, ["name", "tool_name"])
         if not name: name = _first_string(doc, doc.get(item, "function"), ["name"])
         if kind == "custom_tool_call":
@@ -254,8 +263,7 @@ def _map_item(doc: JsonDocument, item: Int, mut mapped: List[String]):
         mapped.append('{"role":"assistant","content":"","tool_calls":[' + call + "]}")
         if kind == "mcp_call" and _has_result(doc, item): _map_mcp_output(doc, item, mapped)
     elif kind == "function_call_output" or kind == "custom_tool_call_output" or kind == "mcp_tool_result" or kind == "mcp_call_output":
-        var call_id = _first_string(doc, item, ["call_id", "tool_call_id", "id"])
-        if not call_id: call_id = "call_1"
+        var call_id = _mapped_call_id(doc, item)
         var value = -1
         for key in ["output", "content", "result", "error"]:
             value = doc.get(item, key)
@@ -319,8 +327,7 @@ def _has_result(doc: JsonDocument, item: Int) -> Bool:
 
 
 def _map_mcp_output(doc: JsonDocument, item: Int, mut mapped: List[String]):
-    var call_id = _first_string(doc, item, ["call_id", "tool_call_id", "id"])
-    if not call_id: call_id = "call_1"
+    var call_id = _mapped_call_id(doc, item)
     var value = -1
     for key in ["output", "content", "result", "error"]:
         value = doc.get(item, key)

@@ -1,0 +1,374 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "starting_main": "db9a78e0d4649538ccb5967b6dd7fb4a00a5844e",
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "snapshot_git_object_matches": {
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_constraints.rs": {
+      "sha256": "10d6708daa282be564f1f3f7d1fbada56c3a79399ed3e6298d11bdc6cfdf89e4",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite.rs": {
+      "sha256": "42065bceab70e1e4fec25d2414308c30abf23374e8eed85b4803e8991f9879e9",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_pipeline_dispatch.rs": {
+      "sha256": "877b5f07da1d502ed4fdc379ce14081469774916bf54c619e1c51cba7edc16e7",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_upstream.rs": {
+      "sha256": "21dc20de1a0321957683418241a86e2b2a98f01de3d7554132d6506fa28e57d1",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_upstream/binding_identity.rs": {
+      "sha256": "c903a7d937f8524331d4f3dc5a11242f8fda4889a634fcf86a68e733c99e568a",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_upstream/binding_candidate.rs": {
+      "sha256": "4e01229c68c1a5bd1a95cad181bddd1af9c1afb32f9dd40f9107d1cf45c71a6c",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/binding_identity.rs": {
+      "sha256": "d4af827ff73bab562962fe26c226b0eace9d274e1431a4c9fe3ceca29dcbcaa7",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_proxy/lineage/remember.rs": {
+      "sha256": "798e2277c8991ea32e6b95f68d156013408d3b2968a0c783352e6b07517c2cda",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_deepseek_send.rs": {
+      "sha256": "808c8d2e0881e9a8ee32de476b6a73293562774e6c1e35a9f85d7f69eb52c6e3",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_dispatch.rs": {
+      "sha256": "fd74afb623fde8b52595ee49d5714bd994e1214dd4f7d5da62789a8bde7fb224",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_chat_compatible.rs": {
+      "sha256": "163568f042c573a71dc2a98ce8a4499dec9abcdf2a57ac47286d705248d10d60",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_rewrite/conversation_store.rs": {
+      "sha256": "591dcaebac951fff24cc2c4b5adb26dd50d84505602e19140a09c6f432b0ced2",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_rewrite/input_items.rs": {
+      "sha256": "7d0474efd2bc9d65ee856ddd9b4accb2812038385c77b0bc626f068c3dee9938",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/chat_compatible_request.rs": {
+      "sha256": "b259cd29897e305ad594d51c4fa21d47d5da76148d73a4af682bbe8c6932abde",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/deepseek_bridge/request_params/metadata.rs": {
+      "sha256": "b1da2b956a007728d0a6651195124c0e4397ec6d9098fcd8828b41e33496e96b",
+      "matches_pinned_git_object": true
+    },
+    "mojo/prodex_core/deepseek.mojo": {
+      "sha256": "15fb0e83167fd78b7627859343fe7c6703ab0471a33ab48f0a351c01296eda58",
+      "matches_pinned_git_object": true
+    },
+    "mojo/prodex_core/json_view.mojo": {
+      "sha256": "b8ecacd994d1f782b0dfa57e09dfcc971481cd2ad209e21d7c56925e5245437e",
+      "matches_pinned_git_object": true
+    },
+    "mojo/prodex_core/runtime_lineage.mojo": {
+      "sha256": "0a9447b486d5940b4efef708f1aa5aded691e6cc91ae71462305557dd8980ba7",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/provider_sse_reader.rs": {
+      "sha256": "f491e6e3fb1fdddbbd5724011ce76ac582fb2105280daf488f0a334062cac3ae",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/translators/deepseek.rs": {
+      "sha256": "ef00a0b25cc68b453c9fdaf2cf7e381e61b23ee2b3614931081ad4bdf532ae44",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/translators/deepseek/response.rs": {
+      "sha256": "d26e2ebdc1323e9e6eb3c035b843c55dfbb775290cd9195bf55e47fdcea1493f",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/translators/deepseek/response_transform.rs": {
+      "sha256": "9312c3eb8bda8229a7cd2fde7a9c0ac679d3d01c2309c7563d71c24d0a8cd6b4",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/translators/deepseek/stream/shaping.rs": {
+      "sha256": "53e48a0a8ec80c2df17eb1e32286ca27a2a1dd205c8cac111ec337b992de3425",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-runtime-proxy/src/lib.rs": {
+      "sha256": "8277d689828a3936e15a5d9f94c4818cc2e13e57b882f53898e54fca4b6d7630",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-mojo-core/src/runtime_lineage/binding_candidate.rs": {
+      "sha256": "fbe49b1b1abc2c61bf181648ac396240c37f3a6a33e692c800b4f81be3da70b2",
+      "matches_pinned_git_object": true
+    },
+    "Cargo.lock": {
+      "sha256": "c5c9e80f925346ec065169be3c2d989a369c7dc8b86f279fc63809c8cebbb323",
+      "matches_pinned_git_object": true
+    }
+  },
+  "contributions": [
+    {
+      "commit": "5a1d105d22d06307f82a9ec9e71b66b00ee08fca",
+      "decision": "integrated exact production source",
+      "reason": "Equal comma-separated and repeated Content-Length values match live 0.439.1; conflicts, empty entries and malformed digits remain rejected."
+    },
+    {
+      "commit": "9fe33a5deec24eba341164f99acaa93df3e1e6f3",
+      "decision": "integrated exact production source; test harness reused and reduced",
+      "reason": "The first present ID field controls mapping even when non-string; validation independently permits a later string. Five live production priority vectors match."
+    },
+    {
+      "commit": "5a14f47ac532ef48925eeb64d529991d8f3b7004",
+      "decision": "rejected",
+      "reason": "Non-object SSE acceptance is not the pinned behavior; frozen metadata kernel rejects non-objects and the Rust wrapper panics."
+    },
+    {
+      "commit": "06631463d769eed5336ab9f038666fc953540a43",
+      "decision": "rejected",
+      "reason": "The catch preserves events before an observer exception but its non-object error expectation is not release parity. The live synthetic release client times out for null, array and text-then-null in one event."
+    },
+    {
+      "commit": "86b5d0867d10cd2f2cf3cd1cd3add0c765f70a6a",
+      "decision": "rejected",
+      "reason": "Raw-key matching bypasses the production Serde decode/reserialize boundary. Escaped keys and decoded duplicate priority regress. Parent replay: 3004 cases, 557 mismatches against the source-derived production model; live buffered and SSE production regressions protect decoded handling."
+    },
+    {
+      "commit": "725c34218bae1cdd559f85aadf84e3de535dab23",
+      "decision": "rejected",
+      "reason": "Historical raw transform fallback is preceded by full request format validation. Live production missing/non-string types return 502 with zero POSTs; the patch would incorrectly accept them."
+    }
+  ],
+  "model_provenance": {
+    "primary_requested_by_user": "gpt-6.1-sol / max; sole shared-main integrator and pusher",
+    "primary_runtime_selection_independently_exposed": false,
+    "supplied_workers_user_identification": "GPT-6 Luna / MAX",
+    "supplemental_official_launcher": {
+      "observed_model": "gpt-6.1-sol",
+      "observed_effort": "none",
+      "config_model": null,
+      "config_effort": null,
+      "streams": {
+        "usage": {
+          "stdout": {
+            "path": "/tmp/modex-cp6-usage-review.stdout",
+            "bytes": 4564,
+            "sha256": "f05e3fe09d14fb713150418d5dc48f3272b5f8fcf8f4e01767460b10a8b5e9c9"
+          },
+          "stderr": {
+            "path": "/tmp/modex-cp6-usage-review.stderr",
+            "bytes": 186860,
+            "sha256": "fecf568e9a5bf21a8443b66859465fdb8977d2eb12ba619c0ae0cffd04549d05"
+          }
+        },
+        "reader": {
+          "stdout": {
+            "path": "/tmp/modex-cp6-reader-review.stdout",
+            "bytes": 3429,
+            "sha256": "4f3351a7d541478b1f86678eae34e3be347ef205b52713e4f3a8e3e62537cdab"
+          },
+          "stderr": {
+            "path": "/tmp/modex-cp6-reader-review.stderr",
+            "bytes": 272380,
+            "sha256": "8270b0cb6f64d06dcf3c317855932d2c1fd60c5d37654cd2313fb20992c98aaf"
+          }
+        }
+      }
+    }
+  },
+  "owned_production_slice": {
+    "files": [
+      "src/modex/runtime_local_rewrite.mojo",
+      "src/modex/super_launch.mojo"
+    ],
+    "trace": "super launch -> run_local_rewrite_child -> serve_local_rewrite(allow_local_file_access=True) -> _serve -> Optional namespace -> ProviderConversationStore contains/history/find_tool_history/insert",
+    "baseline_trace": "local_rewrite_constraints.rs passes true; RuntimeLocalRewriteRequestContext::conversation_store_for_request returns the unscoped store for that context. Other contexts retain explicit/session/metadata/namespace scopes.",
+    "change": "Use the existing unscoped native history store in the production Super context; the default internal driver remains scoped. No public option or filesystem access is added.",
+    "production_regression": "Buffered and streamed tool calls continue through call-ID history lookup across different body/header/metadata session IDs, turn states and internal namespace headers. safety_identifier selects the release history-aware request path instead of its simple conformance body override.",
+    "no_replay": "Exactly two provider POSTs for two accepted turns; authoritative synthetic credential, forwarded turn-state header and stripped internal namespace headers are asserted.",
+    "before": "Both Modex variants failed against the pinned oracle; full retained output is checkpoint6-before.txt."
+  },
+  "production_differential_vectors": {
+    "shared_history_context": 2,
+    "equal_or_malformed_content_lengths": 4,
+    "call_id_field_priority": 5,
+    "malformed_or_text_response_formats": 13,
+    "decoded_usage_across_buffered_and_sse": 16,
+    "events_before_provider_reported_error": 1
+  },
+  "comparison_limits": "Usage compares mapped usage JSON. Reader error test compares ordered event names, retained delta and error object; request-derived item IDs differ and are not claimed byte-equal. Other prior path/identity/timestamp tests retain their own precise assertions.",
+  "retained_mismatches": {
+    "prodex_04391": {
+      "known_binding_gap": {
+        "statuses": [
+          200,
+          503
+        ],
+        "upstream_posts": 1,
+        "responses": [
+          {
+            "kind": "response",
+            "status": 200,
+            "headers": {
+              "Server": "tiny-http (Rust)",
+              "Date": "Mon, 26 Oct 2026 07:19:18 GMT",
+              "content-type": "application/json; charset=utf-8",
+              "Content-Length": "243"
+            },
+            "body": "7b22637265617465645f6174223a34322c226964223a2273796e7468657469632d636861742d30222c226d65746164617461223a7b22646565707365656b223a7b2266696e6973685f726561736f6e223a2273746f70227d7d2c226d6f64656c223a22646565707365656b2d63686174222c226f626a656374223a22726573706f6e7365222c226f7574707574223a5b7b22636f6e74656e74223a5b7b2274657874223a2273796e746865746963207265706c79222c2274797065223a226f75747075745f74657874227d5d2c22726f6c65223a22617373697374616e74222c2274797065223a226d657373616765227d5d7d",
+            "started": 1792999158,
+            "finished": 1792999158
+          },
+          {
+            "kind": "response",
+            "status": 503,
+            "headers": {
+              "Server": "tiny-http (Rust)",
+              "Date": "Mon, 26 Oct 2026 07:19:18 GMT",
+              "Content-Type": "application/json",
+              "cache-control": "no-store",
+              "x-content-type-options": "nosniff",
+              "Content-Length": "106"
+            },
+            "body": "7b226572726f72223a7b22636f6465223a22626f756e645f636f6e74696e756174696f6e5f756e617661696c61626c65222c226d657373616765223a22626f756e6420636f6e74696e756174696f6e2070726f766964657220697320756e617661696c61626c65227d7d",
+            "started": 1792999158,
+            "finished": 1792999158
+          }
+        ]
+      },
+      "null": {
+        "capture_error": "(1, b'', b'Prodex launch: preparing runtime launch...\\nProdex launch: Smart Context runtime proxy requested.\\nProdex launch: local provider bridge requested.\\n[ Runtime Provider ] =========================================================================================\\nUsing provider \\'deepseek\\' through the local compatibility proxy. Smart Context rewrites require a proven\\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\\nProdex launch: starting child process...\\nTraceback (most recent call last):\\n  File \"/tmp/modex-continuation-o381jken/codex\", line 70, in <module>\\n    payload = response.read()\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 496, in read\\n    return self._read_chunked(amt)\\n           ~~~~~~~~~~~~~~~~~~^^^^^\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 634, in _read_chunked\\n    while (chunk_left := self._get_chunk_left()) is not None:\\n                         ~~~~~~~~~~~~~~~~~~~~^^\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 616, in _get_chunk_left\\n    chunk_left = self._read_next_chunk_size()\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 562, in _read_next_chunk_size\\n    line = self.fp.readline(_MAXLINE + 1)\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/socket.py\", line 749, in readinto\\n    return self._sock.recv_into(b)\\n           ~~~~~~~~~~~~~~~~~~~~^^^\\nTimeoutError: timed out\\n', [], [{'method': 'POST', 'path': '/v1/chat/completions', 'headers': {'content-type': 'application/json', 'accept-encoding': 'identity', 'accept': 'text/event-stream, application/json', 'authorization': 'Bearer synthetic-provider-key', 'host': '127.0.0.1:43103', 'content-length': '90'}, 'body': b'{\"messages\":[{\"content\":\"synthetic\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":true}'}])"
+      },
+      "array": {
+        "capture_error": "(1, b'', b'Prodex launch: preparing runtime launch...\\nProdex launch: Smart Context runtime proxy requested.\\nProdex launch: local provider bridge requested.\\n[ Runtime Provider ] =========================================================================================\\nUsing provider \\'deepseek\\' through the local compatibility proxy. Smart Context rewrites require a proven\\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\\nProdex launch: starting child process...\\nTraceback (most recent call last):\\n  File \"/tmp/modex-continuation-04dnh30t/codex\", line 70, in <module>\\n    payload = response.read()\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 496, in read\\n    return self._read_chunked(amt)\\n           ~~~~~~~~~~~~~~~~~~^^^^^\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 634, in _read_chunked\\n    while (chunk_left := self._get_chunk_left()) is not None:\\n                         ~~~~~~~~~~~~~~~~~~~~^^\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 616, in _get_chunk_left\\n    chunk_left = self._read_next_chunk_size()\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 562, in _read_next_chunk_size\\n    line = self.fp.readline(_MAXLINE + 1)\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/socket.py\", line 749, in readinto\\n    return self._sock.recv_into(b)\\n           ~~~~~~~~~~~~~~~~~~~~^^^\\nTimeoutError: timed out\\n', [], [{'method': 'POST', 'path': '/v1/chat/completions', 'headers': {'content-type': 'application/json', 'accept-encoding': 'identity', 'accept': 'text/event-stream, application/json', 'authorization': 'Bearer synthetic-provider-key', 'host': '127.0.0.1:46457', 'content-length': '90'}, 'body': b'{\"messages\":[{\"content\":\"synthetic\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":true}'}])"
+      },
+      "text_then_null_same_event": {
+        "capture_error": "(1, b'', b'Prodex launch: preparing runtime launch...\\nProdex launch: Smart Context runtime proxy requested.\\nProdex launch: local provider bridge requested.\\n[ Runtime Provider ] =========================================================================================\\nUsing provider \\'deepseek\\' through the local compatibility proxy. Smart Context rewrites require a proven\\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\\nProdex launch: starting child process...\\nTraceback (most recent call last):\\n  File \"/tmp/modex-continuation-ziqw95tf/codex\", line 70, in <module>\\n    payload = response.read()\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 496, in read\\n    return self._read_chunked(amt)\\n           ~~~~~~~~~~~~~~~~~~^^^^^\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 634, in _read_chunked\\n    while (chunk_left := self._get_chunk_left()) is not None:\\n                         ~~~~~~~~~~~~~~~~~~~~^^\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 616, in _get_chunk_left\\n    chunk_left = self._read_next_chunk_size()\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/http/client.py\", line 562, in _read_next_chunk_size\\n    line = self.fp.readline(_MAXLINE + 1)\\n  File \"/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/socket.py\", line 749, in readinto\\n    return self._sock.recv_into(b)\\n           ~~~~~~~~~~~~~~~~~~~~^^^\\nTimeoutError: timed out\\n', [], [{'method': 'POST', 'path': '/v1/chat/completions', 'headers': {'content-type': 'application/json', 'accept-encoding': 'identity', 'accept': 'text/event-stream, application/json', 'authorization': 'Bearer synthetic-provider-key', 'host': '127.0.0.1:44653', 'content-length': '90'}, 'body': b'{\"messages\":[{\"content\":\"synthetic\",\"role\":\"user\"}],\"model\":\"deepseek-chat\",\"stream\":true}'}])"
+      }
+    },
+    "modex_checkpoint6": {
+      "known_binding_gap": {
+        "statuses": [
+          200,
+          200
+        ],
+        "upstream_posts": 2,
+        "responses": [
+          {
+            "kind": "response",
+            "status": 200,
+            "headers": {
+              "Content-Length": "243",
+              "Connection": "close",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "body": "7b22637265617465645f6174223a34322c226964223a2273796e7468657469632d636861742d30222c226d65746164617461223a7b22646565707365656b223a7b2266696e6973685f726561736f6e223a2273746f70227d7d2c226d6f64656c223a22646565707365656b2d63686174222c226f626a656374223a22726573706f6e7365222c226f7574707574223a5b7b22636f6e74656e74223a5b7b2274657874223a2273796e746865746963207265706c79222c2274797065223a226f75747075745f74657874227d5d2c22726f6c65223a22617373697374616e74222c2274797065223a226d657373616765227d5d7d",
+            "started": 1792999206,
+            "finished": 1792999206
+          },
+          {
+            "kind": "response",
+            "status": 200,
+            "headers": {
+              "Content-Length": "243",
+              "Connection": "close",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "body": "7b22637265617465645f6174223a34322c226964223a2273796e7468657469632d636861742d31222c226d65746164617461223a7b22646565707365656b223a7b2266696e6973685f726561736f6e223a2273746f70227d7d2c226d6f64656c223a22646565707365656b2d63686174222c226f626a656374223a22726573706f6e7365222c226f7574707574223a5b7b22636f6e74656e74223a5b7b2274657874223a2273796e746865746963207265706c79222c2274797065223a226f75747075745f74657874227d5d2c22726f6c65223a22617373697374616e74222c2274797065223a226d657373616765227d5d7d",
+            "started": 1792999206,
+            "finished": 1792999206
+          }
+        ]
+      },
+      "null": {
+        "statuses": [
+          200
+        ],
+        "upstream_posts": 1,
+        "responses": [
+          {
+            "kind": "response",
+            "status": 200,
+            "headers": {
+              "Transfer-Encoding": "chunked",
+              "Connection": "close",
+              "content-type": "text/event-stream; charset=utf-8"
+            },
+            "body": "6576656e743a20726573706f6e73652e6661696c65640d0a646174613a207b22637265617465645f6174223a313739323939393230362c22726573706f6e7365223a7b226572726f72223a7b22636f6465223a2270726f76696465725f73747265616d5f6572726f72222c226d657373616765223a22636861742073747265616d206368756e6b206973206e6f7420616e206f626a656374227d2c226964223a22726573705f646565707365656b5f30316131373731342d616565642d376264312d393531392d613636316563333366396461227d2c2273657175656e63655f6e756d626572223a302c2274797065223a22726573706f6e73652e6661696c6564227d0d0a0d0a",
+            "started": 1792999206,
+            "finished": 1792999206
+          }
+        ]
+      },
+      "array": {
+        "statuses": [
+          200
+        ],
+        "upstream_posts": 1,
+        "responses": [
+          {
+            "kind": "response",
+            "status": 200,
+            "headers": {
+              "Transfer-Encoding": "chunked",
+              "Connection": "close",
+              "content-type": "text/event-stream; charset=utf-8"
+            },
+            "body": "6576656e743a20726573706f6e73652e6661696c65640d0a646174613a207b22637265617465645f6174223a313739323939393230372c22726573706f6e7365223a7b226572726f72223a7b22636f6465223a2270726f76696465725f73747265616d5f6572726f72222c226d657373616765223a22636861742073747265616d206368756e6b206973206e6f7420616e206f626a656374227d2c226964223a22726573705f646565707365656b5f30316131373731342d623135622d373338362d626364612d333665363931323932643238227d2c2273657175656e63655f6e756d626572223a302c2274797065223a22726573706f6e73652e6661696c6564227d0d0a0d0a",
+            "started": 1792999207,
+            "finished": 1792999207
+          }
+        ]
+      },
+      "text_then_null_same_event": {
+        "statuses": [
+          200
+        ],
+        "upstream_posts": 1,
+        "responses": [
+          {
+            "kind": "response",
+            "status": 200,
+            "headers": {
+              "Transfer-Encoding": "chunked",
+              "Connection": "close",
+              "content-type": "text/event-stream; charset=utf-8"
+            },
+            "body": "6576656e743a20726573706f6e73652e6661696c65640d0a646174613a207b22637265617465645f6174223a313739323939393230372c22726573706f6e7365223a7b226572726f72223a7b22636f6465223a2270726f76696465725f73747265616d5f6572726f72222c226d657373616765223a22636861742073747265616d206368756e6b206973206e6f7420616e206f626a656374227d2c226964223a22726573705f646565707365656b5f30316131373731342d623363372d373131392d616463362d346237613166316136373764227d2c2273657175656e63655f6e756d626572223a332c2274797065223a22726573706f6e73652e6661696c6564227d0d0a0d0a",
+            "started": 1792999207,
+            "finished": 1792999207
+          }
+        ]
+      }
+    }
+  },
+  "binding_trace_and_decision": "Do not substitute conversation history for ownership. Dispatch selects a profile identity, the DeepSeek send path accepts a raw-credential identity, and accepted response/session/turn bindings are separately merged, pruned and persisted before/while reading responses. Full ownership, release, persistence and recovery remain unconnected; the 200/503 versus 200/200 mismatch remains.",
+  "validation": {
+    "command": "rtk proxy make test",
+    "exit_code": 0,
+    "elapsed_seconds": 741.68,
+    "artifact_sha256_at_python_discovery": "e96c50f3da786019ca5db43396840775c55e1880aa6e80488db9f5c0ef27141b",
+    "artifact_sha256_after": "e96c50f3da786019ca5db43396840775c55e1880aa6e80488db9f5c0ef27141b",
+    "native_unit_executables": 45,
+    "python_methods": 346,
+    "python_seconds": 592.411,
+    "skips": 0,
+    "focused_python_methods": 70,
+    "focused_python_seconds": 63.978,
+    "additional_native_framing_vectors": 11,
+    "pinned_recovery_policy_vectors": 407
+  },
+  "unchanged_denominator": {
+    "contracts": 71,
+    "platform_obligations": 426,
+    "release_targets_blocked": 6,
+    "inventory_complete": false
+  },
+  "previous_checkpoint_push_verified": {
+    "local_head": "db9a78e0d4649538ccb5967b6dd7fb4a00a5844e",
+    "remote_main": "db9a78e0d4649538ccb5967b6dd7fb4a00a5844e",
+    "verification": "git fetch origin; git merge --ff-only origin/main; git ls-remote origin refs/heads/main"
+  }
+}

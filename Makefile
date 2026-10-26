@@ -48,6 +48,8 @@ unit: check-toolchain
 	build/tests/test_provider_chat_metadata
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_chat_stream.mojo -o build/tests/test_provider_chat_stream
 	build/tests/test_provider_chat_stream
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_chat_reader.mojo -o build/tests/test_provider_chat_reader
+	build/tests/test_provider_chat_reader
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/provider_chat_stream_driver.mojo -o build/tests/provider_chat_stream_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_provider_request_messages.mojo -o build/tests/test_provider_request_messages
 	build/tests/test_provider_request_messages

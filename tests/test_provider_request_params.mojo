@@ -34,6 +34,8 @@ def main() raises:
     reject('{"reasoning":{"summary":true,"effort":null}}', 1, "DeepSeek reasoning.summary is not supported by this Responses adapter")
     reject('{"reasoning":{"effort":null},"reasoning_effort":"high"}', 1, "DeepSeek reasoning.effort must be a string")
     reject('{"response_format":null,"text":{"format":{"type":"json"}}}', 2, "DeepSeek response_format must include a type")
+    for format in [String("{}"), '{"type":null}', '{"type":7}', '{"type":false}', '{"type":[]}', '{"type":{}}']:
+        reject('{"response_format":' + format + "}", 2, "DeepSeek response_format must include a type")
     reject('{"metadata":{"deepseek":null},"client_metadata":false}', 3, "DeepSeek request metadata.deepseek must be an object")
     reject('{"temperature":null,"frequency_penalty":1}', 4, "DeepSeek temperature must be a number")
     reject('{"frequency_penalty":null,"presence_penalty":0}', 4, "DeepSeek frequency_penalty is deprecated and is not forwarded by Prodex")

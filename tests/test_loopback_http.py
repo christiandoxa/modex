@@ -3,6 +3,7 @@
 import os
 import socket
 import subprocess
+import tempfile
 import threading
 import time
 import unittest
@@ -62,12 +63,15 @@ class LoopbackHTTPTests(unittest.TestCase):
         return f"[{host}]:{port}" if family == socket.AF_INET6 else f"{host}:{port}", observed, thread
 
     def call(self, address, path="/logs?after=5", name="X-Admin", value="secret"):
-        return subprocess.run(
-            [str(DRIVER), address, path, name, value],
-            cwd=ROOT,
-            capture_output=True,
-            timeout=3,
-        )
+        with tempfile.TemporaryDirectory(prefix="modex-http-client-") as directory:
+            return subprocess.run(
+                [str(DRIVER), address, path, name, value],
+                cwd=directory,
+                env={"HOME": directory, "TMPDIR": directory, "PATH": "/usr/bin:/bin",
+                     "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+                capture_output=True,
+                timeout=3,
+            )
 
     def test_content_length_and_sensitive_header_request(self):
         address, observed, thread = self.serve(
@@ -81,6 +85,15 @@ class LoopbackHTTPTests(unittest.TestCase):
         self.assertIn(b"X-Admin: secret\r\n", observed[0])
         self.assertIn(b"Connection: close\r\n", observed[0])
         self.assertIn(b"Host: " + address.encode() + b"\r\n", observed[0])
+
+    def test_equal_comma_and_repeated_content_lengths(self):
+        address, _, thread = self.serve(
+            b"HTTP/1.1 200 OK\r\nContent-Length: 2, \t2\r\nContent-Length: 2\r\n\r\nok"
+        )
+        result = self.call(address)
+        thread.join(1)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, b"200\nok")
 
     def test_chunked_with_extension_and_trailer(self):
         address, _, thread = self.serve(
@@ -146,6 +159,9 @@ class LoopbackHTTPTests(unittest.TestCase):
         responses = [
             b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhi",
             b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nContent-Length: 3\r\n\r\nab",
+            b"HTTP/1.1 200 OK\r\nContent-Length: 2, 3\r\n\r\nab",
+            b"HTTP/1.1 200 OK\r\nContent-Length: 2,\r\n\r\nab",
+            b"HTTP/1.1 200 OK\r\nContent-Length: 2x, 2\r\n\r\nab",
             b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n",
         ]
         for response in responses:

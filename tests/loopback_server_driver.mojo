@@ -71,7 +71,12 @@ def run(mode: String, mut output: RawFileDescriptor) raises:
         return
     emit(output, "REQUEST " + request_line(request))
 
-    if mode == "stream":
+    if mode == "bodyless-sse-204" or mode == "bodyless-sse-304":
+        var headers = List[Tuple[String, String]]()
+        headers.append(("Content-Type", "text/event-stream"))
+        connection.respond(204 if mode == "bodyless-sse-204" else 304, headers, List[UInt8](), 1000, False, True)
+        emit(output, "BODYLESS_SENT")
+    elif mode == "stream":
         var headers = List[Tuple[String, String]]()
         headers.append(("Content-Type", "text/event-stream"))
         connection.start_stream(200, headers, 1000)

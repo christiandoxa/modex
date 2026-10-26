@@ -97,6 +97,69 @@ class DeepSeekContinuationTests(unittest.TestCase):
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("oracle does not match pinned Prodex 0.439.2")
 
+    def test_oversized_buffered_provider_error_boundary_matches_release(self):
+        # 2xx and 3xx buffered responses fail after provider response handoff;
+        # >=400 bodies fail in the upstream request path instead.
+        oversized = b"x" * (4 * 1024 * 1024 + 1)
+        for route in ("chat/completions", "responses"):
+            for status in (200, 302, 399, 400):
+                for binary in (ORACLE, MODEX):
+                    with self.subTest(route=route, status=status, binary=str(binary)):
+                        upstream, responses = observe_turns(
+                            binary,
+                            [{"model": "deepseek-chat", "messages": [],
+                              "_path": "/v1/" + route}],
+                            [{"status": status, "content_type": "application/json",
+                              "body": oversized}],
+                        )
+                        self.assertEqual(len(upstream), 1)
+                        self.assertEqual(len(responses), 1)
+                        self.assertEqual(responses[0]["status"], 502)
+                        expected = (b"upstream request failed" if status >= 400 else
+                                    b"provider response could not be processed")
+                        self.assertEqual(bytes.fromhex(responses[0]["body"]), expected)
+                        self.assertEqual(upstream[0]["headers"]["authorization"],
+                                         "Bearer " + SYNTHETIC_API_KEY)
+
+    def test_oversized_chunked_buffered_provider_error_matches_release(self):
+        # Chunked bodies cross the same boundary incrementally, not only via
+        # a declared Content-Length check in the response head.
+        oversized = b"x" * (4 * 1024 * 1024 + 1)
+        for route in ("chat/completions", "responses"):
+            for status in (200, 302, 400):
+                for binary in (ORACLE, MODEX):
+                    with self.subTest(route=route, status=status, binary=str(binary)):
+                        upstream, responses = observe_turns(
+                            binary,
+                            [{"model": "deepseek-chat", "messages": [],
+                              "_path": "/v1/" + route}],
+                            [{"status": status, "content_type": "application/json",
+                              "body": oversized, "chunked": True, "chunk_size": 713}],
+                        )
+                        self.assertEqual(len(upstream), 1)
+                        self.assertEqual(responses[0]["status"], 502)
+                        expected = (b"upstream request failed" if status >= 400 else
+                                    b"provider response could not be processed")
+                        self.assertEqual(bytes.fromhex(responses[0]["body"]), expected)
+
+    def test_oversized_redirect_sse_stays_streaming(self):
+        oversized = b"x" * (4 * 1024 * 1024 + 1)
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary,
+                    [{"model": "deepseek-chat", "messages": [],
+                      "_path": "/v1/chat/completions"}],
+                    [{"status": 302, "content_type": "text/event-stream",
+                      "body": oversized}],
+                )
+                self.assertEqual(len(upstream), 1)
+                self.assertEqual(responses[0]["status"], 302)
+                self.assertEqual(bytes.fromhex(responses[0]["body"]), oversized)
+                headers = {name.lower(): value for name, value in responses[0]["headers"].items()}
+                self.assertNotIn("content-length", headers)
+                self.assertEqual(headers.get("transfer-encoding"), "chunked")
+
     def test_bodyless_passthrough_ignores_representation_length(self):
         cases = [("application/json", {"declared_length": 5 * 1024 * 1024 + 1}),
                  ("text/event-stream", {"declared_length": 5 * 1024 * 1024 + 1}),
@@ -114,14 +177,42 @@ class DeepSeekContinuationTests(unittest.TestCase):
                         headers = {key.lower(): value for key, value in responses[0]["headers"].items()}
                         self.assertEqual(headers.get("content-length"),
                                          None if content_type == "text/event-stream" else "0")
-                        # Retain the known bodyless SSE framing difference.
                         self.assertEqual(headers.get("transfer-encoding"),
-                                         "chunked" if content_type == "text/event-stream" and binary == ORACLE else None)
+                                         "chunked" if content_type == "text/event-stream" else None)
                         self.assertEqual(len(upstream), 1)
                         self.assertEqual(upstream[0]["path"], "/v1/chat/completions" +
                                          ("?synthetic=%2B" if route == "chat/completions" else ""))
                         self.assertEqual(upstream[0]["headers"]["authorization"],
                                          "Bearer " + SYNTHETIC_API_KEY)
+
+    def test_bodyless_sse_chunked_headers_match_release(self):
+        # Frozen 0.439.2 omits a body and Content-Length while retaining TE.
+        for status in (204, 304):
+            # A 204 Responses message takes the separate response.failed path.
+            routes = ("chat/completions",) if status == 204 else ("responses", "chat/completions")
+            for route in routes:
+                for framing in ({"declared_length": 5 * 1024 * 1024 + 1},
+                                {"chunked": True, "hold_open": True}):
+                    for binary in (ORACLE, MODEX):
+                        with self.subTest(status=status, route=route, framing=framing,
+                                          binary=str(binary)):
+                            upstream, responses = observe_turns(
+                                binary,
+                                [{"model": "deepseek-chat", "input": "synthetic empty SSE",
+                                  "_path": "/v1/" + route}],
+                                [{"status": status, "content_type": "text/event-stream",
+                                  "body": b"", **framing}],
+                            )
+                            self.assertEqual(len(upstream), 1)
+                            self.assertEqual(len(responses), 1)
+                            self.assertEqual(responses[0]["status"], status)
+                            self.assertEqual(responses[0]["body"], "")
+                            headers = {name.lower(): value
+                                       for name, value in responses[0]["headers"].items()}
+                            self.assertNotIn("content-length", headers)
+                            self.assertEqual(headers.get("transfer-encoding"), "chunked")
+                            self.assertEqual(upstream[0]["headers"]["authorization"],
+                                             "Bearer " + SYNTHETIC_API_KEY)
 
     def test_upstream_dot_segments_match_release(self):
         cases = [('/v1/./keep', '/v1/keep/chat/completions'),

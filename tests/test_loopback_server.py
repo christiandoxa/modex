@@ -25,6 +25,14 @@ def read_until(sock, marker):
     return bytes(data)
 
 
+def read_header_with_tail(sock):
+    wire = read_until(sock, b"\r\n\r\n")
+    head, separator, tail = wire.partition(b"\r\n\r\n")
+    if not separator:
+        raise AssertionError("HTTP response headers were truncated")
+    return head + separator, tail
+
+
 def read_exact(sock, size):
     data = bytearray()
     while len(data) < size:
@@ -229,13 +237,41 @@ class LoopbackHTTPServerTests(unittest.TestCase):
                 self.assertEqual(response, b"")
                 self.assertIn("RESPONSE_REJECTED ", stdout)
 
+    def test_bodyless_sse_header_and_empty_chunk_terminator(self):
+        for response_status in (204, 304):
+            with self.subTest(status=response_status):
+                process, client = start(f"bodyless-sse-{response_status}")
+                client.sendall(request(body=b""))
+                response, stdout = finish(process, client)
+                headers, separator, payload = response.partition(b"\r\n\r\n")
+                self.assertEqual(separator, b"\r\n\r\n")
+                self.assertEqual(status(response), response_status)
+                self.assertIn(b"Transfer-Encoding: chunked\r\n", headers + b"\r\n")
+                self.assertNotIn(b"Content-Length:", headers)
+                self.assertEqual(payload, b"0\r\n\r\n")
+                self.assertIn("BODYLESS_SENT", stdout)
+
+    def test_header_reader_keeps_coalesced_first_chunk(self):
+        sender, client = socket.socketpair()
+        try:
+            first = b"6\r\nfirst\n\r\n"
+            sender.sendall(b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n" + first)
+            head, prefetched = read_header_with_tail(client)
+            self.assertIn(b"Transfer-Encoding: chunked", head)
+            self.assertEqual(prefetched, first)
+        finally:
+            sender.close()
+            client.close()
+
     def test_chunked_stream_delivers_first_chunk_before_finish(self):
         process, client = start("stream")
         client.sendall(request(body=b""))
-        header = read_until(client, b"\r\n\r\n")
+        header, prefetched = read_header_with_tail(client)
         self.assertIn(b"Transfer-Encoding: chunked\r\n", header)
-        first = read_exact(client, len(b"6\r\nfirst\n\r\n"))
-        self.assertEqual(first, b"6\r\nfirst\n\r\n")
+        expected_first = b"6\r\nfirst\n\r\n"
+        self.assertLessEqual(len(prefetched), len(expected_first))
+        first = prefetched + read_exact(client, len(expected_first) - len(prefetched))
+        self.assertEqual(first, expected_first)
         client.settimeout(0.08)
         with self.assertRaises(socket.timeout):
             client.recv(1)
@@ -258,8 +294,11 @@ class LoopbackHTTPServerTests(unittest.TestCase):
     def test_peer_reset_is_detected_and_connection_move_keeps_ownership(self):
         process, client = start("cancel")
         client.sendall(request(body=b""))
-        self.assertIn(b"Transfer-Encoding: chunked", read_until(client, b"\r\n\r\n"))
-        self.assertEqual(read_exact(client, len(b"6\r\nfirst\n\r\n")), b"6\r\nfirst\n\r\n")
+        header, prefetched = read_header_with_tail(client)
+        self.assertIn(b"Transfer-Encoding: chunked", header)
+        expected_first = b"6\r\nfirst\n\r\n"
+        self.assertLessEqual(len(prefetched), len(expected_first))
+        self.assertEqual(prefetched + read_exact(client, len(expected_first) - len(prefetched)), expected_first)
         client.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
         client.close()
         stdout = process.stdout.read()

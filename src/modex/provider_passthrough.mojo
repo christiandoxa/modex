@@ -39,11 +39,14 @@ def deepseek_chat_completions_stream(
         downstream_fd,
         True,
     )
-    # Only successful SSE is streamed without an aggregate body limit.
-    if stream.status < 200 or stream.status >= 300 or not deepseek_event_stream(stream.headers):
+    # The frozen passthrough streams SSE on 2xx/3xx, and buffers non-SSE.
+    # Keep >=400 rejection in the send path, before response dispatch; a
+    # successful or redirect buffered response fails in its reader instead.
+    var streaming = 200 <= stream.status < 400 and stream.status != 204 and stream.status != 304 and deepseek_event_stream(stream.headers)
+    if not streaming:
         stream.max_body_bytes = DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES
         stream.max_wire_bytes = HTTP_HEADER_LIMIT * 2 + 65536 + DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES * 8
-        if stream.length > DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES:
+        if stream.status >= 400 and stream.length > DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES:
             stream.close()
             raise Error("oversized HTTP response body")
     return stream^

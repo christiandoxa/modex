@@ -1,0 +1,89 @@
+{
+  "checkpoint": 15,
+  "baseline_version": "0.439.2",
+  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "source_base_commit": "e0a29c5025560b18c75970ba38c47df7c69438d0",
+  "reference_sources_sha256": {
+    "Cargo.toml": "1bc93ca941b976f6fc206c70b6431b24bdb36130da6079738357f262930d7c1c",
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response.rs": "dacb6b073c272fe7d97da5a381d0a25b82f330d2d59d656cc863a04ff1c290fa",
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_passthrough.rs": "a89151ca9d58d614b47f8d5ebc7af150366b1e0294d25a89902b6479e6c9e0e8",
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_dispatch.rs": "fd74afb623fde8b52595ee49d5714bd994e1214dd4f7d5da62789a8bde7fb224",
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_deepseek_send.rs": "808c8d2e0881e9a8ee32de476b6a73293562774e6c1e35a9f85d7f69eb52c6e3",
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_pipeline_dispatch.rs": "877b5f07da1d502ed4fdc379ce14081469774916bf54c619e1c51cba7edc16e7",
+    "vendor/tiny_http/src/response.rs": "946c4aa551b7a16cc2ea5f86f8ae2ce9b9bda3faecb2f9d1057d5bc17cb2dbdc"
+  },
+  "production_sources_sha256": {
+    "src/modex/loopback_http.mojo": "13c333f27799262b95b6e094d4f4fa862bdd121d0ddea429f96e8786023226d6",
+    "src/modex/loopback_server.mojo": "e033bcff158b883d1bbc6f5a5b385fdcb1057f43fea1b4a789cb96f67d893ca1",
+    "src/modex/provider_passthrough.mojo": "1d02a2f932a036b4dc7b0ce25df4f63473e4dbc0d527104c89a20c867f467724",
+    "src/modex/runtime_local_rewrite.mojo": "7d1f570b98a101ea120383ba064187773683f115b34cba93745fa08bf5c33a96"
+  },
+  "production_paths": [
+    "Super -> native DeepSeek relay -> buffered or streaming passthrough -> downstream owned response writer",
+    "LoopbackHTTPStream fixed-length bounded reader shared by local transport"
+  ],
+  "changes": [
+    "Bodyless 204/304 SSE uses Transfer-Encoding: chunked and zero-length final chunk, preserving no Content-Length and no extra POST",
+    "Buffered 2xx/3xx oversize and read failures use post-accept provider processing 502, while >=400 send errors retain upstream-request 502",
+    "Fixed-length reader checks a cap installed after upstream headers, including incremental reads",
+    "Redirect 3xx SSE stays streaming for 4MiB+ accepted bodies, including both known-length and chunked unknown-length 302/307"
+  ],
+  "differential": {
+    "buffered_oversize_test_observations_per_two_binaries": 16,
+    "chunked_oversize_test_observations_per_two_binaries": 12,
+    "sse_redirect_test_observations_per_two_binaries": 2,
+    "chunked_unknown_length_3xx_observations_per_two_binaries": 8,
+    "bodyless_raw_wire_statuses": [
+      204,
+      304
+    ],
+    "independent_protected_cases": 7,
+    "all_protected_selected_status_body_hash_header_and_post_fields_match": true,
+    "raw_wire_final_chunk_hex": "300d0a0d0a",
+    "protected_binding_ownership_still_mismatched": true
+  },
+  "validation": {
+    "command": "make test",
+    "exit_code": 0,
+    "elapsed_seconds": 843.704,
+    "python_methods": 370,
+    "python_seconds": 691.887,
+    "native_unit_executables": 48,
+    "previous_cp15_nonintegrated_python_methods": 367,
+    "first_combined_gate_failed_stale_assertions": 2,
+    "combined_focused_python_methods": 7,
+    "artifact_sha256": "01ef000f0d4aba56c8a9cc21b8b5688cdfffbf2ce484db20ca9c710306c4c7f8",
+    "artifact_hash_samples": [
+      "01ef000f0d4aba56c8a9cc21b8b5688cdfffbf2ce484db20ca9c710306c4c7f8",
+      "01ef000f0d4aba56c8a9cc21b8b5688cdfffbf2ce484db20ca9c710306c4c7f8",
+      "01ef000f0d4aba56c8a9cc21b8b5688cdfffbf2ce484db20ca9c710306c4c7f8",
+      "01ef000f0d4aba56c8a9cc21b8b5688cdfffbf2ce484db20ca9c710306c4c7f8",
+      "01ef000f0d4aba56c8a9cc21b8b5688cdfffbf2ce484db20ca9c710306c4c7f8",
+      "01ef000f0d4aba56c8a9cc21b8b5688cdfffbf2ce484db20ca9c710306c4c7f8",
+      "01ef000f0d4aba56c8a9cc21b8b5688cdfffbf2ce484db20ca9c710306c4c7f8",
+      "01ef000f0d4aba56c8a9cc21b8b5688cdfffbf2ce484db20ca9c710306c4c7f8"
+    ],
+    "artifact_stable_during_python": true,
+    "skips": 0
+  },
+  "source_inventory": {
+    "count": 67,
+    "matches_manifest": true,
+    "new_dependencies": 0,
+    "new_imports": 0
+  },
+  "remaining_gaps": [
+    "Account and provider binding ownership, conflicting credential/profile, persistence/release",
+    "Active HTTP/WebSocket pre-send recovery, quota-aware full history recovery, admission/lanes",
+    "Full transport, storage, security, process lifecycle and SDK parity",
+    "Six full platform release qualifications remain BLOCKED; broader parity inventory not complete"
+  ],
+  "evidence_files": [
+    "docs/evidence/checkpoint15-before.txt",
+    "docs/evidence/checkpoint15-tests.txt",
+    "docs/evidence/checkpoint15-dependencies.txt",
+    "docs/evidence/checkpoint15-protected-probes.json",
+    "docs/evidence/checkpoint15-bodyless-wire.json",
+    "docs/evidence/checkpoint15-original-gate.txt"
+  ]
+}

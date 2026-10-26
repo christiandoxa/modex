@@ -1,0 +1,40 @@
+{
+  "target": "0.439.2",
+  "oracle_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
+  "artifact_sha256": "01ef000f0d4aba56c8a9cc21b8b5688cdfffbf2ce484db20ca9c710306c4c7f8",
+  "capture": "isolated real Super CLI synthetic downstream socket recv until headers, then timeout-bound raw tail",
+  "cases": {
+    "chat_completions_sse_204": {
+      "prodex_04392": {
+        "status": 204,
+        "upstream_posts": 1,
+        "transfer_encoding": "chunked",
+        "content_length": null,
+        "raw_tail_hex": "300d0a0d0a"
+      },
+      "modex_combined": {
+        "status": 204,
+        "upstream_posts": 1,
+        "transfer_encoding": "chunked",
+        "content_length": null,
+        "raw_tail_hex": "300d0a0d0a"
+      }
+    },
+    "chat_completions_sse_304": {
+      "prodex_04392": {
+        "status": 304,
+        "upstream_posts": 1,
+        "transfer_encoding": "chunked",
+        "content_length": null,
+        "raw_tail_hex": "300d0a0d0a"
+      },
+      "modex_combined": {
+        "status": 304,
+        "upstream_posts": 1,
+        "transfer_encoding": "chunked",
+        "content_length": null,
+        "raw_tail_hex": "300d0a0d0a"
+      }
+    }
+  }
+}

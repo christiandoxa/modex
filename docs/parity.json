@@ -59,6 +59,10 @@
     {
       "date": "2026-10-26",
       "change": "Checkpoint 14 follows the verified checkpoint 13 push with production buffered bodyless Content-Length: 0 and the source-backed 0.439.2 hook initialization version. Fourteen hook scenarios are freshly recaptured; the 0.439.1 fixture is preserved. Six before failures are fixed; bodyless SSE Transfer-Encoding remains a recorded mismatch. No contract/platform status or denominator changes."
+    },
+    {
+      "date": "2026-10-26",
+      "change": "Checkpoint 15 integrates bodyless SSE 204/304 chunked wire framing and phase-correct bounded buffered 2xx/3xx versus >=400 processing diagnostics. Selected current-oracle synthetic probes plus raw socket and protected comparisons; 370 Python tests pass. Hard binding ownership still mismatches; all 71 contracts, 426 obligations and six blocked release qualifications remain unchanged."
     }
   ],
   "contracts": [

@@ -1,3 +1,53 @@
+# Checkpoint 15: bodyless SSE wire and bounded buffered response paths
+
+The 0.439.2 source oracle remains immutable at `72b77478a5198fc5da6b4d2253137f9cdbf43be9`. Checkpoint 14
+was previously committed on main as `e0a29c502556`; no Prodex source was edited.
+The initial existing checkpoint 15 worktree's bodyless SSE framing changes
+were preserved and integrated with the separately tested buffered-response fix
+(`445cfd7`, isolated worktree). The previous checkpoint 15 full gate passed 367
+Python methods with a stable production hash before integration.
+
+The real native Super DeepSeek relay now emits chunked headers for bodyless
+204/304 SSE and the same final `0\r\n\r\n` raw wire sequence as the official
+release. Two isolated real-Super raw socket checks compare the 204 and 304
+headers, final bytes and exactly one provider POST. Buffered 2xx/3xx oversized
+responses now take the post-accept provider-processing 502 error, whereas >=400
+retains the upstream-send 502. The shared fixed-length reader now enforces the
+4 MiB bound even when installed after the upstream header was parsed. Redirect
+3xx SSE stays streamed, including tested bodies above 4 MiB with both known
+Content-Length and unknown-length chunked framing. The first combined full
+gate identified two obsolete native-only expectations of a cap on chunked
+307 SSE. Fresh 0.439.2 oracle observations disproved that assumption, so the
+old test was replaced with eight oracle/native route/status checks without
+further changes to production code. Seven protected live outcome/header/post
+cases and 30 other differential oversized/SSE observations also match the
+checksum-verified release in their selected scope. No payload replay, extra
+POST or credential change was introduced.
+
+Validation: serial `make build`, seven combined focused Python methods, native
+units and the full `make test` gate passed 370 Python methods in
+843.704s (691.887s Python), no skips. The final
+production hash `01ef000f0d4aba56c8a9cc21b8b5688cdfffbf2ce484db20ca9c710306c4c7f8` is stable across all Python-phase samples.
+All 67 production sources and imports remain inventoried with no new library,
+native binding, implementation helper, interop or generator. Tests used
+synthetic isolated config, homes, loopback upstream peers and credentials only.
+The historical 0.439.1 policy vectors and current quota-policy checks remain
+narrow policy evidence, not connected live recovery.
+
+The protected two-turn continuation still differs: official 200/503 and one
+upstream POST versus native 200/200 and two. Account/profile/binding ownership,
+active recovery, WebSocket, admission/lanes, storage/lifecycle/security, SDK and
+six release-target qualifications remain unfinished. Keep all 71 contract
+statuses, 426 platform obligations and six BLOCKED release qualifications;
+no full parity or broad transport/security equivalence is claimed. Continue
+with source-traced ownership/acquisition/rejection before implementing any
+quota handoff; do not emulate failure by rejecting arbitrary continuations.
+
+Evidence: `docs/evidence/checkpoint15-reference.json`, `checkpoint15-before.txt`,
+`checkpoint15-tests.txt`, `checkpoint15-dependencies.txt`,
+`checkpoint15-protected-probes.json`, `checkpoint15-bodyless-wire.json`,
+`checkpoint15-original-gate.txt` (superseded test assumptions retained).
+
 # Checkpoint 14: native buffered framing and current hook initialization
 
 Checkpoint 13 was normally pushed as `67bef94c305bf6e4147fb0297e0a6eee0ccc7697`. Local HEAD,

@@ -141,15 +141,16 @@ def _response_headers(headers: List[Tuple[String, String]]) -> List[Tuple[String
 
 
 def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: LoopbackHTTPStream) raises:
-    # shortcut: non-2xx SSE keeps the 4 MiB cap until large-response resource/cancellation parity is verified.
-    if stream.status < 200 or stream.status >= 300:
+    var streaming = 200 <= stream.status < 400 and stream.status != 204 and stream.status != 304 and deepseek_event_stream(stream.headers)
+    if not streaming and (stream.status < 200 or stream.status >= 300):
         stream.max_body_bytes = DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES
         stream.max_wire_bytes = HTTP_HEADER_LIMIT * 2 + 65536 + DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES * 8
         if stream.length > DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES:
             stream.close()
-            _reply(connection, 502, "upstream request failed")
+            # The frozen >=400 send fails before dispatch; 3xx buffering fails
+            # after its response is accepted, as a provider processing error.
+            _reply(connection, 502, "provider response could not be processed" if 300 <= stream.status < 400 else "upstream request failed")
             return
-    var streaming = stream.status < 400 and stream.status != 204 and stream.status != 304 and deepseek_event_stream(stream.headers)
     var response_headers = _response_headers(stream.headers.copy())
     if not streaming:
         var body = List[UInt8]()
@@ -159,10 +160,13 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
                 body.extend(chunk^)
         except:
             stream.close()
-            _reply(connection, 502, "upstream request failed")
+            # A buffered <400 response reached downstream response processing;
+            # >=400 was already an upstream send-path failure in the release.
+            _reply(connection, 502, "provider response could not be processed" if 200 <= stream.status < 400 else "upstream request failed")
             return
         # TinyHTTP's buffered path retains Content-Length: 0 for bodyless replies.
-        connection.respond(stream.status, response_headers, body, 30000, not deepseek_event_stream(stream.headers))
+        var sse = deepseek_event_stream(stream.headers)
+        connection.respond(stream.status, response_headers, body, 30000, not sse, sse and (stream.status == 204 or stream.status == 304))
         return
     try:
         connection.start_stream(stream.status, response_headers, 30000)

@@ -50,7 +50,7 @@ class Release04392Tests(unittest.TestCase):
                                      None if content_type == 'text/event-stream' else str(len(body)))
                     # Retain the known SSE framing difference; it is not a parity PASS.
                     self.assertEqual(headers.get('transfer-encoding'),
-                                     'chunked' if content_type == 'text/event-stream' and binary == ORACLE else None)
+                                     'chunked' if content_type == 'text/event-stream' else None)
                     self.assertEqual(upstream[0]['headers']['authorization'], 'Bearer ' + SYNTHETIC_API_KEY)
 
     def test_specific_replacement_retains_its_later_tool_position(self):

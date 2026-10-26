@@ -1,0 +1,23 @@
+Checkpoint 15 dependency audit: official Mojo 1.2.0 standard library only. All 67 production sources match the retained manifest; no new source/import, application library, runtime helper, binding, Python/Rust/Node implementation, interop or generator. No real credentials, paid provider traffic or account login; all upstream observations use loopback synthetic peers. Baseline source was read from immutable Git objects only.
+
+$ ldd build/modex
+	linux-vdso.so.1 (0x000075e169f85000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x000075e169c30000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000075e169800000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000075e169b26000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x000075e169400000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x000075e169b16000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x000075e168800000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000075e169ae8000)
+	/lib64/ld-linux-x86-64.so.2 (0x000075e169f87000)
+
+Frozen source SHA256:
+{
+  "Cargo.toml": "1bc93ca941b976f6fc206c70b6431b24bdb36130da6079738357f262930d7c1c",
+  "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response.rs": "dacb6b073c272fe7d97da5a381d0a25b82f330d2d59d656cc863a04ff1c290fa",
+  "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_passthrough.rs": "a89151ca9d58d614b47f8d5ebc7af150366b1e0294d25a89902b6479e6c9e0e8",
+  "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_dispatch.rs": "fd74afb623fde8b52595ee49d5714bd994e1214dd4f7d5da62789a8bde7fb224",
+  "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_deepseek_send.rs": "808c8d2e0881e9a8ee32de476b6a73293562774e6c1e35a9f85d7f69eb52c6e3",
+  "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_pipeline_dispatch.rs": "877b5f07da1d502ed4fdc379ce14081469774916bf54c619e1c51cba7edc16e7",
+  "vendor/tiny_http/src/response.rs": "946c4aa551b7a16cc2ea5f86f8ae2ce9b9bda3faecb2f9d1057d5bc17cb2dbdc"
+}

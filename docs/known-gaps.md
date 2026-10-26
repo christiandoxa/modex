@@ -6,6 +6,21 @@ Complete parity remains unfinished against officially released Prodex 0.439.2 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 15 matches the official 0.439.2 bodyless SSE chunked header
+and final raw wire chunk `0\r\n\r\n` on 204/304, and corrects the buffered
+oversized 2xx/3xx versus >=400 error classification. The fixed-length reader
+now enforces its bound when configured after the upstream header, and admitted
+3xx SSE remains streamed beyond 4 MiB, including chunked unknown-length
+302/307 responses. Two older native-only cap assertions conflicted with the
+current source oracle and were replaced with eight release/native checks.
+This is verified through real Super synthetic peers, selected route/status
+controls and isolated raw socket probes;
+it is not broad streaming, cancellation, timeout, HTTP binary metadata,
+security or SDK parity. The protected two-turn binding mismatch persists:
+Prodex 200/503 and one POST versus Modex 200/200 and two. All release targets
+remain blocked. Earlier checkpoint mismatch paragraphs below are historical.
+See `checkpoint15-reference.json` and `checkpoint15-protected-probes.json`.
+
 Checkpoint 14 fixes buffered bodyless Content-Length: 0 and the hook initialize
 version through actual native dispatch. Fourteen hook scenarios are freshly
 captured from 0.439.2; the original 0.439.1 fixture remains intact. Bodyless

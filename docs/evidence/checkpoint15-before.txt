@@ -1,0 +1,8 @@
+Reproduced differences preceding the combined checkpoint 15 changes, compared against frozen Prodex 0.439.2 with synthetic upstream and one POST per request:
+- Buffered 302 application/json, Content-Length 4,194,305: Prodex 502 provider response could not be processed; previous Modex 502 upstream request failed.
+- Buffered 399 application/json, Content-Length 4,194,305: same differing error classification.
+- Buffered 200 application/json, Content-Length 4,194,305: same differing error classification.
+- Bodyless 204/304 text/event-stream: Prodex sends Transfer-Encoding: chunked, previous native checkpoint 14 omitted it. Both current products emit the raw 0\r\n\r\n final chunk after the headers.
+- Protected two-turn binding mismatch remains after this change: Prodex [200,503] and one upstream POST; native [200,200] and two POSTs.
+The independent interim worktree initially failed the oversized 200 fixed-length check: the cap was configured after response headers and was not enforced in the fixed-length reader. The integrated shared reader fix passed the final differential and full gates.
+- First combined full gate executed 370 Python methods, with two failures from an older native-only test asserting a 4 MiB cap on unknown-length 307 SSE. A fresh official-release comparison showed that 302/307 SSE chunked >4MiB completes on both routes; the stale cap test was replaced with eight release-versus-native assertions without changing runtime code. See the retained first-gate log in checkpoint15-original-gate.txt.

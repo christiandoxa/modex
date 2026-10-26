@@ -850,6 +850,9 @@ struct LoopbackHTTPStream(Movable):
                     if self.phase == 6:
                         raise Error("truncated HTTP response body")
                     var take = min(8192, min(len(self.buffer), self.remaining))
+                    # Passthrough can set this cap after upstream header parsing.
+                    if self.max_body_bytes >= 0 and take > self.max_body_bytes - self.body_bytes:
+                        raise Error("oversized HTTP response body")
                     var out = List[UInt8]()
                     for i in range(take):
                         out.append(self.buffer[i])

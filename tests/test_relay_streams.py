@@ -1,7 +1,7 @@
 """Redirect SSE and text-header filtering through the actual production relay."""
 
 from contextlib import contextmanager
-from http.client import HTTPConnection, IncompleteRead
+from http.client import HTTPConnection
 import hashlib
 import json
 from pathlib import Path
@@ -16,6 +16,7 @@ import unittest
 from test_cli import MODEX, ORACLE, ORACLE_SHA256
 from test_local_rewrite import SYNTHETIC_API_KEY, json_bytes, serving
 from test_super_launch import CODEX
+from test_deepseek_continuation import observe_turns
 
 
 @contextmanager
@@ -132,26 +133,32 @@ class RelayStreamTests(unittest.TestCase):
                                 connection.close()
                     self.assertEqual(len(server.records), 1)
 
-    def test_unknown_length_redirect_stream_keeps_existing_body_cap(self):
-        for path in ("/v1/responses", "/v1/chat/completions"):
-            with self.subTest(path=path):
-                with serving([{"status": 307, "content_type": "text/event-stream",
-                               "body": b"x" * (4 * 1024 * 1024 + 1), "chunked": True,
-                               "chunk_size": 65536}]) as server:
-                    with production_relay(server.server_port) as address:
-                        connection = HTTPConnection(*address, timeout=5)
-                        try:
-                            connection.request("POST", path, json_bytes({"model": "deepseek-chat", "input": "synthetic"}),
-                                               {"Content-Type": "application/json"})
-                            response = connection.getresponse()
-                            self.assertEqual(response.status, 307)
-                            with self.assertRaises(IncompleteRead) as error:
-                                response.read()
-                            self.assertGreater(len(error.exception.partial), 0)
-                            self.assertLessEqual(len(error.exception.partial), 4 * 1024 * 1024)
-                        finally:
-                            connection.close()
-                self.assertEqual(len(server.records), 1)
+    def test_unknown_length_redirect_sse_above_four_mib_matches_release(self):
+        # The released 0.439.2 streams redirect SSE past the buffered cap
+        # even when Transfer-Encoding: chunked hides representation length.
+        # The historical native-only cap assertion was incompatible with
+        # the current binary on both Responses and Chat Completions routes.
+        payload = b"x" * (4 * 1024 * 1024 + 1)
+        for route in ("responses", "chat/completions"):
+            for status in (302, 307):
+                for binary in (ORACLE, MODEX):
+                    with self.subTest(route=route, status=status, binary=str(binary)):
+                        upstream, responses = observe_turns(
+                            binary,
+                            [{"model": "deepseek-chat", "input": "synthetic redirect",
+                              "_path": "/v1/" + route}],
+                            [{"status": status, "content_type": "text/event-stream",
+                              "body": payload, "chunked": True, "chunk_size": 65536}],
+                        )
+                        self.assertEqual(len(upstream), 1)
+                        self.assertEqual(responses[0]["status"], status)
+                        self.assertEqual(bytes.fromhex(responses[0]["body"]), payload)
+                        headers = {name.lower(): value
+                                   for name, value in responses[0]["headers"].items()}
+                        self.assertEqual(headers.get("transfer-encoding"), "chunked")
+                        self.assertNotIn("content-length", headers)
+                        self.assertEqual(upstream[0]["headers"]["authorization"],
+                                         "Bearer " + SYNTHETIC_API_KEY)
 
 
 if __name__ == "__main__":

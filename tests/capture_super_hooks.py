@@ -14,9 +14,9 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-ORACLE = Path("/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu")
-ORACLE_SHA256 = "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a"
-BASELINE_COMMIT = "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+ORACLE = Path("/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu")
+ORACLE_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
+BASELINE_COMMIT = "72b77478a5198fc5da6b4d2253137f9cdbf43be9"
 OUTPUT = ROOT / "tests/fixtures/super_hooks/cases.json"
 
 FAKE_CODEX = r'''#!__PYTHON__
@@ -273,7 +273,7 @@ def run_case(case):
         config_path.chmod(0o600)
         cache_path = prodex_home / "update-check.json"
         cache_path.write_text(json.dumps({
-            "source": "GitHub", "latest_version": "0.439.1", "checked_at": int(time.time()),
+            "source": "GitHub", "latest_version": "0.439.2", "checked_at": int(time.time()),
         }, separators=(",", ":")) + "\n", encoding="utf-8")
         cache_path.chmod(0o600)
         codex_path = root / "codex"
@@ -346,15 +346,15 @@ def main():
     document = {
         "schema_version": 1,
         "baseline_commit": BASELINE_COMMIT,
-        "oracle_version": "0.439.1",
+        "oracle_version": "0.439.2",
         "oracle_sha256": oracle_sha256,
         "capture_harness": "tests/capture_super_hooks.py",
         "scope": "Frozen Super hook-trust JSON-RPC behavior against isolated synthetic Codex app-server peers.",
         "protocol_sources": [
-            "Frozen Prodex 0.439.1 crates/prodex-app/src/runtime_tools/hook_trust.rs:27-90",
-            "Frozen Prodex 0.439.1 crates/prodex-app/src/runtime_tools/hook_trust.rs:92-176",
-            "Frozen Prodex 0.439.1 crates/prodex-app/src/runtime_tools/hook_trust.rs:178-252",
-            "Frozen Prodex 0.439.1 crates/prodex-app/src/runtime_tools/hook_trust.rs:264-349",
+            "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs:27-90",
+            "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs:92-176",
+            "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs:178-252",
+            "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs:264-349",
             "Codex app-server/tests/suite/v2/hooks_list.rs:77-113, 190-237",
             "Codex app-server-protocol/src/protocol/v2/plugin.rs:52-64, 512-575",
             "Codex app-server-protocol/src/protocol/v2/config.rs:337-357",

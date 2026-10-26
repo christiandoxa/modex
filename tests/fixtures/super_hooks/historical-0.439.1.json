@@ -1,0 +1,2498 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "oracle_version": "0.439.1",
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "capture_harness": "tests/capture_super_hooks.py",
+  "scope": "Frozen Super hook-trust JSON-RPC behavior against isolated synthetic Codex app-server peers.",
+  "protocol_sources": [
+    "Frozen Prodex 0.439.1 crates/prodex-app/src/runtime_tools/hook_trust.rs:27-90",
+    "Frozen Prodex 0.439.1 crates/prodex-app/src/runtime_tools/hook_trust.rs:92-176",
+    "Frozen Prodex 0.439.1 crates/prodex-app/src/runtime_tools/hook_trust.rs:178-252",
+    "Frozen Prodex 0.439.1 crates/prodex-app/src/runtime_tools/hook_trust.rs:264-349",
+    "Codex app-server/tests/suite/v2/hooks_list.rs:77-113, 190-237",
+    "Codex app-server-protocol/src/protocol/v2/plugin.rs:52-64, 512-575",
+    "Codex app-server-protocol/src/protocol/v2/config.rs:337-357"
+  ],
+  "runtime_claim": "Synthetic Codex child implements app-server --stdio and records each actual request/reply. All launches use isolated storage, a synthetic provider key, and an ephemeral loopback endpoint; the endpoint receives no traffic. The synthetic peer computes a stable test currentHash from its fixture config and models config/batchWrite in memory. Captures do not verify production Codex hook execution.",
+  "cases": [
+    {
+      "name": "empty_hooks",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nProdex launch: starting child process...\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/shared-codex/config.toml",
+          "config_text": "[features]\nhooks = true\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 4,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 4,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "mode": "runtime",
+          "argv": [
+            "--dangerously-bypass-approvals-and-sandbox",
+            "exec",
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "--",
+            "synthetic hook trust fixture"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "bypass_hook_trust": false
+        }
+      ]
+    },
+    {
+      "name": "untrusted_hook_write",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nProdex launch: starting child process...\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "key": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0",
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "untrusted"
+                        }
+                      ],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 3,
+                "jsonrpc": "2.0",
+                "method": "config/batchWrite",
+                "params": {
+                  "edits": [
+                    {
+                      "keyPath": "hooks.state",
+                      "mergeStrategy": "upsert",
+                      "value": {
+                        "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0": {
+                          "trusted_hash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f"
+                        }
+                      }
+                    }
+                  ],
+                  "expectedVersion": null,
+                  "filePath": null,
+                  "reloadUserConfig": true
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 3,
+                "result": {
+                  "status": "ok",
+                  "version": "sha256:synthetic-config-v1",
+                  "filePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                  "overriddenMetadata": null
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 4,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 4,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "key": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0",
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "trusted"
+                        }
+                      ],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "mode": "runtime",
+          "argv": [
+            "--dangerously-bypass-approvals-and-sandbox",
+            "exec",
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "--",
+            "synthetic hook trust fixture"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "bypass_hook_trust": false
+        }
+      ]
+    },
+    {
+      "name": "already_trusted",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nProdex launch: starting child process...\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "key": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0",
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "trusted"
+                        }
+                      ],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 4,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 4,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "key": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0",
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "trusted"
+                        }
+                      ],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "mode": "runtime",
+          "argv": [
+            "--dangerously-bypass-approvals-and-sandbox",
+            "exec",
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "--",
+            "synthetic hook trust fixture"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "bypass_hook_trust": false
+        }
+      ]
+    },
+    {
+      "name": "batch_write_ok_overridden",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nProdex launch: starting child process...\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "key": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0",
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "untrusted"
+                        }
+                      ],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 3,
+                "jsonrpc": "2.0",
+                "method": "config/batchWrite",
+                "params": {
+                  "edits": [
+                    {
+                      "keyPath": "hooks.state",
+                      "mergeStrategy": "upsert",
+                      "value": {
+                        "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0": {
+                          "trusted_hash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f"
+                        }
+                      }
+                    }
+                  ],
+                  "expectedVersion": null,
+                  "filePath": null,
+                  "reloadUserConfig": true
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 3,
+                "result": {
+                  "status": "okOverridden",
+                  "version": "sha256:synthetic-config-v1",
+                  "filePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                  "overriddenMetadata": null
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 4,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 4,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "key": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0",
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "trusted"
+                        }
+                      ],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "mode": "runtime",
+          "argv": [
+            "--dangerously-bypass-approvals-and-sandbox",
+            "exec",
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "--",
+            "synthetic hook trust fixture"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "bypass_hook_trust": false
+        }
+      ]
+    },
+    {
+      "name": "legacy_hooks_list",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nProdex launch: starting child process...\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "error": {
+                  "code": -32601,
+                  "message": "Method not found: hooks/list"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "mode": "runtime",
+          "argv": [
+            "--dangerously-bypass-hook-trust",
+            "--dangerously-bypass-approvals-and-sandbox",
+            "exec",
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "--",
+            "synthetic hook trust fixture"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "bypass_hook_trust": true
+        }
+      ]
+    },
+    {
+      "name": "legacy_batch_write",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nProdex launch: starting child process...\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "key": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0",
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "untrusted"
+                        }
+                      ],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 3,
+                "jsonrpc": "2.0",
+                "method": "config/batchWrite",
+                "params": {
+                  "edits": [
+                    {
+                      "keyPath": "hooks.state",
+                      "mergeStrategy": "upsert",
+                      "value": {
+                        "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0": {
+                          "trusted_hash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f"
+                        }
+                      }
+                    }
+                  ],
+                  "expectedVersion": null,
+                  "filePath": null,
+                  "reloadUserConfig": true
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 3,
+                "error": {
+                  "code": -32601,
+                  "message": "Method not found: config/batchWrite"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "mode": "runtime",
+          "argv": [
+            "--dangerously-bypass-hook-trust",
+            "--dangerously-bypass-approvals-and-sandbox",
+            "exec",
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "--",
+            "synthetic hook trust fixture"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "bypass_hook_trust": true
+        }
+      ]
+    },
+    {
+      "name": "initialize_method_not_found",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust initialize failed (-32601): Method not found: initialize\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "error": {
+                  "code": -32601,
+                  "message": "Method not found: initialize"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "hooks_list_error",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust hooks/list failed (-32000): Synthetic hook discovery failed\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "error": {
+                  "code": -32000,
+                  "message": "Synthetic hook discovery failed"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "verification_method_not_found",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust hooks/list verification failed (-32601): Method not found: hooks/list\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 4,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 4,
+                "error": {
+                  "code": -32601,
+                  "message": "Method not found: hooks/list"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "batch_write_error_status",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust config write did not report a successful status: error\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "key": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0",
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "untrusted"
+                        }
+                      ],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 3,
+                "jsonrpc": "2.0",
+                "method": "config/batchWrite",
+                "params": {
+                  "edits": [
+                    {
+                      "keyPath": "hooks.state",
+                      "mergeStrategy": "upsert",
+                      "value": {
+                        "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0": {
+                          "trusted_hash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f"
+                        }
+                      }
+                    }
+                  ],
+                  "expectedVersion": null,
+                  "filePath": null,
+                  "reloadUserConfig": true
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 3,
+                "result": {
+                  "status": "error"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "verification_untrusted",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook remained untrusted after Super preflight: <ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "key": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0",
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "untrusted"
+                        }
+                      ],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 3,
+                "jsonrpc": "2.0",
+                "method": "config/batchWrite",
+                "params": {
+                  "edits": [
+                    {
+                      "keyPath": "hooks.state",
+                      "mergeStrategy": "upsert",
+                      "value": {
+                        "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0": {
+                          "trusted_hash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f"
+                        }
+                      }
+                    }
+                  ],
+                  "expectedVersion": null,
+                  "filePath": null,
+                  "reloadUserConfig": true
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 3,
+                "result": {
+                  "status": "ok",
+                  "version": "sha256:synthetic-config-v1",
+                  "filePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                  "overriddenMetadata": null
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 4,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 4,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "key": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0",
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "untrusted"
+                        }
+                      ],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "diagnostics_warning",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hooks/list reported warnings: Synthetic hook warning\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "key": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml:pre_tool_use:0:0",
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "untrusted"
+                        }
+                      ],
+                      "warnings": [
+                        "Synthetic hook warning"
+                      ],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "missing_hook_key",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hooks/list returned a trustable hook without key\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                  "userAgent": "codex-cli 0.153.2 (synthetic)",
+                  "codexHome": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+                  "platformFamily": "unix",
+                  "platformOs": "linux"
+                }
+              }
+            },
+            {
+              "request": {
+                "id": 2,
+                "jsonrpc": "2.0",
+                "method": "hooks/list",
+                "params": {
+                  "cwds": [
+                    "<ROOT>/workspace"
+                  ]
+                }
+              },
+              "response": {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": {
+                  "data": [
+                    {
+                      "cwd": "<ROOT>/workspace",
+                      "hooks": [
+                        {
+                          "eventName": "preToolUse",
+                          "handlerType": "command",
+                          "command": "synthetic-hook-command",
+                          "async": true,
+                          "matcher": "Bash",
+                          "timeoutSec": 5,
+                          "statusMessage": "synthetic hook fixture",
+                          "additionalContextLimit": 4096,
+                          "sourcePath": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+                          "source": "user",
+                          "pluginId": null,
+                          "displayOrder": 0,
+                          "enabled": true,
+                          "isManaged": false,
+                          "currentHash": "sha256:48d24c8519cdc77e2a4779e0953876b4436f4e49bf7626f69a312af91286bc1f",
+                          "trustStatus": "untrusted"
+                        }
+                      ],
+                      "warnings": [],
+                      "errors": []
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rpc_timeout",
+      "argv": [
+        "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+        "super",
+        "--provider",
+        "deepseek",
+        "--api-key",
+        "synthetic-provider-key",
+        "--base-url",
+        "http://127.0.0.1:<PORT>/v1",
+        "--skip-quota-check",
+        "--no-presidio",
+        "--model",
+        "synthetic-hook-model",
+        "exec",
+        "--",
+        "synthetic hook trust fixture"
+      ],
+      "synthetic_config": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Prodex launch: preparing runtime launch...\nProdex launch: Smart Context runtime proxy requested.\nProdex launch: local provider bridge requested.\n[ Runtime Provider ] =========================================================================================\nUsing provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven\ntokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.\nError: Codex hook-trust preflight initialize failed: timed out waiting on channel\n",
+      "upstream_requests": [],
+      "child_invocations": [
+        {
+          "mode": "app_server",
+          "argv": [
+            "-c",
+            "model_catalog_json=\"<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/prodex-deepseek-model-catalog.json\"",
+            "-c",
+            "projects={\"<ROOT>/workspace\"={trust_level=\"trusted\"}}",
+            "-c",
+            "model_provider=\"prodex-deepseek\"",
+            "-c",
+            "model=\"synthetic-hook-model\"",
+            "-c",
+            "model_providers.prodex-deepseek.name=\"DeepSeek\"",
+            "-c",
+            "model_providers.prodex-deepseek.base_url=\"http://127.0.0.1:<PORT>/v1\"",
+            "-c",
+            "model_providers.prodex-deepseek.wire_api=\"responses\"",
+            "-c",
+            "model_providers.prodex-deepseek.requires_openai_auth=true",
+            "-c",
+            "model_providers.prodex-deepseek.supports_websockets=false",
+            "-c",
+            "model_context_window=1048576",
+            "-c",
+            "model_auto_compact_token_limit=900000",
+            "-c",
+            "model_reasoning_summary=\"none\"",
+            "-c",
+            "web_search=\"live\"",
+            "-c",
+            "features.apps=false",
+            "-c",
+            "features.js_repl=false",
+            "-c",
+            "features.image_generation=false",
+            "app-server",
+            "--stdio"
+          ],
+          "cwd": "<ROOT>/workspace",
+          "codex_home": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0",
+          "config_path": "<ROOT>/prodex/profiles/.prodex-overlay-<ID>-0/config.toml",
+          "config_text": "[features]\nhooks = true\n\n[[hooks.PreToolUse]]\nmatcher = \"Bash\"\n\n[[hooks.PreToolUse.hooks]]\ntype = \"command\"\ncommand = \"synthetic-hook-command\"\ntimeout = 5\nasync = true\nstatusMessage = \"synthetic hook fixture\"\nadditionalContextLimit = 4096\n",
+          "trace": [
+            {
+              "request": {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "params": {
+                  "capabilities": {
+                    "experimentalApi": true
+                  },
+                  "clientInfo": {
+                    "name": "prodex-hook-trust",
+                    "version": "0.439.1"
+                  }
+                }
+              },
+              "response": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

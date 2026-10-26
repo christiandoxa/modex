@@ -55,6 +55,10 @@
     {
       "date": "2026-10-26",
       "change": "Checkpoint 13 supersedes 0.439.1 with officially released 0.439.2 at 72b77478a5198fc5da6b4d2253137f9cdbf43be9. Verified the remote tag, entire cached source tree, official manifests and Linux binary. Preserved all 71 contracts, 426 platform obligations and six BLOCKED release qualifications. Expanded quota/continuation requirements without promoting statuses. Old release comparisons remain historical."
+    },
+    {
+      "date": "2026-10-26",
+      "change": "Checkpoint 14 follows the verified checkpoint 13 push with production buffered bodyless Content-Length: 0 and the source-backed 0.439.2 hook initialization version. Fourteen hook scenarios are freshly recaptured; the 0.439.1 fixture is preserved. Six before failures are fixed; bodyless SSE Transfer-Encoding remains a recorded mismatch. No contract/platform status or denominator changes."
     }
   ],
   "contracts": [
@@ -1455,7 +1459,7 @@
       "prerequisites": [
         "selected supported upstream CLI/tools"
       ],
-      "implementation": "src/main.mojo -> super_cli.mojo -> super_launch.mojo implements a guarded clean-home DeepSeek exec launch with private overlay, explicit environment, Codex version/hook preflight, native self-process relay, exit propagation and direct-child cleanup. Existing CLI validation/passthrough WIP is retained. The selected model plus bundled preset catalog, metadata/ordering/ASCII case rules, and default provider/context/compaction settings are native and compared with the release. Explicit --context-window/--auto-compact-token-limit and their local aliases now reach the actual native launch with pinned fallback/clamping rules; numeric -c limits reach Codex while catalog rows retain the frozen default budgets. Checkpoint 6 selects the frozen unscoped history context for native Super while retaining scoped internal relays; equal comma-list HTTP lengths and first-present tool-ID mapping match focused 0.439.1 production checks. Binding ownership remains a visible mismatch. Checkpoint 7 applies the existing ASCII response-header validation to buffered passthrough, matching the pinned TinyHTTP constructor without altering binary bodies or replaying requests. Checkpoint 8 resolves the first nonblank explicit session-header alias before metadata/body fallback, with six live 0.439.1 vectors and zero POSTs for oversized resolved identities. Checkpoint 9 extends the existing upstream path byte encoder to quotes, angle brackets, backticks and braces, preserving existing percent escapes and tested unescaped punctuation. The timeout and aggregate-state worker proposals are excluded; broader transport and resource parity remains unqualified. Checkpoint 10 converts admitted base-path backslashes to HTTP URL separators after literal trailing-slash trimming, preserving repeated separators and encoded backslashes in twelve live path/route vectors. Checkpoint 12 subsequently implements admitted literal/encoded whole-dot segments; broader URL behavior remains unqualified.",
+      "implementation": "src/main.mojo -> super_cli.mojo -> super_launch.mojo implements a guarded clean-home DeepSeek exec launch with private overlay, explicit environment, Codex version/hook preflight, native self-process relay, exit propagation and direct-child cleanup. Existing CLI validation/passthrough WIP is retained. The selected model plus bundled preset catalog, metadata/ordering/ASCII case rules, and default provider/context/compaction settings are native and compared with the release. Explicit --context-window/--auto-compact-token-limit and their local aliases now reach the actual native launch with pinned fallback/clamping rules; numeric -c limits reach Codex while catalog rows retain the frozen default budgets. Checkpoint 6 selects the frozen unscoped history context for native Super while retaining scoped internal relays; equal comma-list HTTP lengths and first-present tool-ID mapping match focused 0.439.1 production checks. Binding ownership remains a visible mismatch. Checkpoint 7 applies the existing ASCII response-header validation to buffered passthrough, matching the pinned TinyHTTP constructor without altering binary bodies or replaying requests. Checkpoint 8 resolves the first nonblank explicit session-header alias before metadata/body fallback, with six live 0.439.1 vectors and zero POSTs for oversized resolved identities. Checkpoint 9 extends the existing upstream path byte encoder to quotes, angle brackets, backticks and braces, preserving existing percent escapes and tested unescaped punctuation. The timeout and aggregate-state worker proposals are excluded; broader transport and resource parity remains unqualified. Checkpoint 10 converts admitted base-path backslashes to HTTP URL separators after literal trailing-slash trimming, preserving repeated separators and encoded backslashes in twelve live path/route vectors. Checkpoint 12 subsequently implements admitted literal/encoded whole-dot segments; broader URL behavior remains unqualified. Checkpoint 14 uses the actual 0.439.2 hook initialize version and fresh release captures. Buffered bodyless relay replies now retain zero Content-Length; the distinct bodyless SSE Transfer-Encoding mismatch remains.",
       "tests": [
         "tests/test_super_cli.mojo",
         "tests/test_super_cli.py",
@@ -1501,7 +1505,10 @@
         "docs/evidence/checkpoint12-reference.json",
         "docs/evidence/checkpoint12-tests.txt",
         "docs/evidence/checkpoint12-dependencies.txt",
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/checkpoint14-reference.json",
+        "docs/evidence/checkpoint14-tests.txt",
+        "docs/evidence/checkpoint14-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2296,7 +2303,10 @@
         "docs/evidence/native-super-data-plane.json",
         "docs/evidence/native-super-tests.txt",
         "docs/evidence/native-super-dependencies.txt",
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/checkpoint14-reference.json",
+        "docs/evidence/checkpoint14-tests.txt",
+        "docs/evidence/checkpoint14-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2747,7 +2757,10 @@
         "docs/evidence/checkpoint12-reference.json",
         "docs/evidence/checkpoint12-tests.txt",
         "docs/evidence/checkpoint12-dependencies.txt",
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/checkpoint14-reference.json",
+        "docs/evidence/checkpoint14-tests.txt",
+        "docs/evidence/checkpoint14-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -3149,7 +3162,10 @@
       ],
       "evidence": [
         "docs/evidence/checkpoint-04391-tests.txt",
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/checkpoint14-reference.json",
+        "docs/evidence/checkpoint14-tests.txt",
+        "docs/evidence/checkpoint14-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {

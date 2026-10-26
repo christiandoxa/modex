@@ -111,6 +111,12 @@ class DeepSeekContinuationTests(unittest.TestCase):
                             "content_type": content_type, "body": b"", **framing}])
                         self.assertEqual([row["status"] for row in responses], [304])
                         self.assertEqual(bytes.fromhex(responses[0]["body"]), b"")
+                        headers = {key.lower(): value for key, value in responses[0]["headers"].items()}
+                        self.assertEqual(headers.get("content-length"),
+                                         None if content_type == "text/event-stream" else "0")
+                        # Retain the known bodyless SSE framing difference.
+                        self.assertEqual(headers.get("transfer-encoding"),
+                                         "chunked" if content_type == "text/event-stream" and binary == ORACLE else None)
                         self.assertEqual(len(upstream), 1)
                         self.assertEqual(upstream[0]["path"], "/v1/chat/completions" +
                                          ("?synthetic=%2B" if route == "chat/completions" else ""))

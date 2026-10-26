@@ -63,7 +63,10 @@
         "docs/evidence/checkpoint10-dependencies.txt",
         "docs/evidence/checkpoint12-reference.json",
         "docs/evidence/checkpoint12-tests.txt",
-        "docs/evidence/checkpoint12-dependencies.txt"
+        "docs/evidence/checkpoint12-dependencies.txt",
+        "docs/evidence/checkpoint14-reference.json",
+        "docs/evidence/checkpoint14-tests.txt",
+        "docs/evidence/checkpoint14-dependencies.txt"
       ],
       "proven": [
         "numeric IPv4/IPv6 loopback bind/listen/accept and ephemeral port discovery using existing official wrappers",
@@ -84,7 +87,8 @@
         "Checkpoint 8: first nonblank session-header alias takes precedence over turn metadata/body; six independent live vectors retain four valid POSTs and reject two oversized resolved identities without provider side effects.",
         "Checkpoint 9: native upstream base-path encoding matches ten live path/route vectors for quotes, angle brackets, backticks, braces, existing percent escapes and mixed UTF-8; 500,000 null annotations complete through five valid frames even though the worker accounting would exceed 16 MiB, disproving its proposed compatibility boundary.",
         "Checkpoint 10: twelve live path/route vectors match native HTTP base-path backslash separators, including repeated separators, raw trailing-slash trim order, preserved percent-encoded backslashes and mixed UTF-8/ASCII escapes; each accepted request sends one POST.",
-        "Checkpoint 12: 46 live path/route vectors match upstream whole-dot normalization for admitted numeric-loopback HTTP bases, including encoded dots, root clamp, empty segments, backslashes, existing escapes, UTF-8 and unchanged query forwarding; one POST per accepted request."
+        "Checkpoint 12: 46 live path/route vectors match upstream whole-dot normalization for admitted numeric-loopback HTTP bases, including encoded dots, root clamp, empty segments, backslashes, existing escapes, UTF-8 and unchanged query forwarding; one POST per accepted request.",
+        "Checkpoint 14: six live buffered bodyless/ordinary length vectors per real binary match 0.439.2; three SSE controls preserve Content-Length omission. Each accepted request sends one POST with synthetic authoritative auth. The bodyless SSE Transfer-Encoding difference is retained, not qualified."
       ],
       "not_proven": [
         "public operational gateway/provider parity and startup side effects",
@@ -98,7 +102,8 @@
         "complete upstream URL behavior beyond the admitted numeric-loopback HTTP path subset; broader schemes/authorities, TLS, DNS, proxies, redirects, security/resource equivalence and non-host behavior remain unqualified",
         "Non-object SSE remains a mismatch: release synthetic clients time out while Modex emits response.failed; both proposed reader changes are rejected.",
         "General lower-client binary header retention outside the tested relay; lossy internal HTTP header storage remains.",
-        "First-event idle response status and exact postcommit timeout text remain live mismatches; worker 9d05840 is excluded. The rejected partial 16 MiB cap does not establish retained-memory bounds."
+        "First-event idle response status and exact postcommit timeout text remain live mismatches; worker 9d05840 is excluded. The rejected partial 16 MiB cap does not establish retained-memory bounds.",
+        "Bodyless SSE Transfer-Encoding remains a current-release mismatch: release emits chunked while native omits it. Full HTTP/WS/transport and all six release qualifications remain unfinished."
       ],
       "assessment": "Guarded production Super integration is exercised on the host; complete gateway/provider, concurrent admission, security and non-host obligations remain blocked."
     },

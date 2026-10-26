@@ -1,0 +1,193 @@
+{
+  "checkpoint": 14,
+  "parent_base_commit": "67bef94c305bf6e4147fb0297e0a6eee0ccc7697",
+  "prior_push_verified": true,
+  "baseline_version": "0.439.2",
+  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "source_sha256": {
+    "Cargo.toml": "1bc93ca941b976f6fc206c70b6431b24bdb36130da6079738357f262930d7c1c",
+    "crates/prodex-app/src/runtime_tools/hook_trust.rs": "6904e600057c3d19f1313b03c485cb38eb0edd33b0fbe9f1a3cc0db73f8c9bc8",
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_dispatch.rs": "fd74afb623fde8b52595ee49d5714bd994e1214dd4f7d5da62789a8bde7fb224",
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_passthrough.rs": "a89151ca9d58d614b47f8d5ebc7af150366b1e0294d25a89902b6479e6c9e0e8",
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response.rs": "dacb6b073c272fe7d97da5a381d0a25b82f330d2d59d656cc863a04ff1c290fa",
+    "crates/prodex-app/src/runtime_proxy/response_forwarding/streaming_writer.rs": "f053c81b90c339d7416bac9ba112784f9f2537b96c94cf28dee081be23cf9fe0",
+    "vendor/tiny_http/src/response.rs": "946c4aa551b7a16cc2ea5f86f8ae2ce9b9bda3faecb2f9d1057d5bc17cb2dbdc"
+  },
+  "production_source_sha256": {
+    "src/modex/loopback_server.mojo": "1d7f0d8d06f855c79758233c508821880ceebe17de8daf4e58cba933809898a0",
+    "src/modex/runtime_local_rewrite.mojo": "819e21de48919076bef737cfff4a283a5ddede33c500c616b7609faea770621d",
+    "src/modex/super_hooks.mojo": "1bd2bb5c0c906e472aa11e2dbd7733118c8baec1493aee350f3ab290845ba8b5"
+  },
+  "production_paths": [
+    "Super -> native relay -> passthrough -> owned response header writer",
+    "Super launch -> owned RPC preflight -> HookTrustSession initialize"
+  ],
+  "bodyless_framing": {
+    "vectors_per_binary": 9,
+    "buffered_vectors_per_binary": 6,
+    "sse_controls_per_binary": 3,
+    "change": "Buffered bodyless replies retain computed Content-Length: 0. SSE replies retain omission of Content-Length.",
+    "validation_preserved": [
+      "status/body prohibition",
+      "caller framing/header injection rejection",
+      "body/header caps",
+      "timeouts and owned close paths",
+      "one upstream POST and synthetic authoritative auth"
+    ],
+    "remaining_mismatch": "The official bodyless SSE writer emits Transfer-Encoding: chunked while native omits it. This is explicitly retained, not a parity PASS."
+  },
+  "hook_initialization": {
+    "version": "0.439.2",
+    "fresh_release_cases": 14,
+    "capture_upstream_posts": 0,
+    "historical_fixture": "tests/fixtures/super_hooks/historical-0.439.1.json",
+    "historical_sha256": "3a36f846ddfb2f717838f049c06e9df27f3b90ecda9aa1b91abb87d28c261c05",
+    "current_fixture_sha256": "948720784376a4a3d13aa7d40d1d741cbe894f3df9bf26843ac914b2d39dbac9",
+    "trace_review": {
+      "historical_fixture_preserved": true,
+      "frame_differences": "Only initialize clientInfo.version changes from 0.439.1 to 0.439.2.",
+      "cases": [
+        {
+          "case": "empty_hooks",
+          "rpc_frames": 3,
+          "status": 0,
+          "upstream_posts": 0
+        },
+        {
+          "case": "untrusted_hook_write",
+          "rpc_frames": 4,
+          "status": 0,
+          "upstream_posts": 0
+        },
+        {
+          "case": "already_trusted",
+          "rpc_frames": 3,
+          "status": 0,
+          "upstream_posts": 0
+        },
+        {
+          "case": "batch_write_ok_overridden",
+          "rpc_frames": 4,
+          "status": 0,
+          "upstream_posts": 0
+        },
+        {
+          "case": "legacy_hooks_list",
+          "rpc_frames": 2,
+          "status": 0,
+          "upstream_posts": 0
+        },
+        {
+          "case": "legacy_batch_write",
+          "rpc_frames": 3,
+          "status": 0,
+          "upstream_posts": 0
+        },
+        {
+          "case": "initialize_method_not_found",
+          "rpc_frames": 1,
+          "status": 1,
+          "upstream_posts": 0
+        },
+        {
+          "case": "hooks_list_error",
+          "rpc_frames": 2,
+          "status": 1,
+          "upstream_posts": 0
+        },
+        {
+          "case": "verification_method_not_found",
+          "rpc_frames": 3,
+          "status": 1,
+          "upstream_posts": 0
+        },
+        {
+          "case": "batch_write_error_status",
+          "rpc_frames": 3,
+          "status": 1,
+          "upstream_posts": 0
+        },
+        {
+          "case": "verification_untrusted",
+          "rpc_frames": 4,
+          "status": 1,
+          "upstream_posts": 0
+        },
+        {
+          "case": "diagnostics_warning",
+          "rpc_frames": 2,
+          "status": 1,
+          "upstream_posts": 0
+        },
+        {
+          "case": "missing_hook_key",
+          "rpc_frames": 2,
+          "status": 1,
+          "upstream_posts": 0
+        },
+        {
+          "case": "rpc_timeout",
+          "rpc_frames": 1,
+          "status": 1,
+          "upstream_posts": 0
+        }
+      ]
+    },
+    "real_super_differential": "Both real CLIs send exact initialize capabilities/clientInfo, complete the synthetic child and send one provider POST."
+  },
+  "before_failures": 6,
+  "validation": {
+    "exit_code": 0,
+    "elapsed_seconds": 806.727,
+    "python_started": true,
+    "test_progress_lines": 364,
+    "artifact_sha256_samples": [
+      "8a895539e4e83fdbde90c8d2c3cd3a22cbd4fde565b3b2cdd2b851a95d83d5dd",
+      "8a895539e4e83fdbde90c8d2c3cd3a22cbd4fde565b3b2cdd2b851a95d83d5dd",
+      "8a895539e4e83fdbde90c8d2c3cd3a22cbd4fde565b3b2cdd2b851a95d83d5dd",
+      "8a895539e4e83fdbde90c8d2c3cd3a22cbd4fde565b3b2cdd2b851a95d83d5dd",
+      "8a895539e4e83fdbde90c8d2c3cd3a22cbd4fde565b3b2cdd2b851a95d83d5dd",
+      "8a895539e4e83fdbde90c8d2c3cd3a22cbd4fde565b3b2cdd2b851a95d83d5dd",
+      "8a895539e4e83fdbde90c8d2c3cd3a22cbd4fde565b3b2cdd2b851a95d83d5dd",
+      "8a895539e4e83fdbde90c8d2c3cd3a22cbd4fde565b3b2cdd2b851a95d83d5dd",
+      "8a895539e4e83fdbde90c8d2c3cd3a22cbd4fde565b3b2cdd2b851a95d83d5dd"
+    ],
+    "artifact_stable_during_python": true,
+    "native_unit_executables": 48,
+    "python_methods": 364,
+    "python_seconds": 658.422,
+    "focused_python_methods": 31,
+    "focused_python_seconds": 43.006,
+    "skips": 0,
+    "current_quota_policy_vectors": 1600,
+    "historical_04391_recovery_vectors": 407
+  },
+  "raw_log_sha256": {
+    "build": "98c05502ecf648790b041db7bced854b6ca68efe5bc283faeddea0ca7134b952",
+    "unit": "c5ad9bfe363252d343193d743d9045eef245a560052430ed1bd409d6eb4e3ed9",
+    "focused": "6fabffc16cdf7ed2a9c53ca381ddf12fd447004a54d6e7a7da62b246ed2f4efc",
+    "full": "f60ed6c67364c6caea145169180156a4d472b584b9b4592aa064544025365cf4",
+    "hook-capture": "c09b3446fbf187d8f365341941cf975bfc1635ffccb97b3def8cc867889ec733",
+    "before": "67b623567d9c3565993c1b5d1e63ca7e607ef4dbef0f44df45df214ddae345bc"
+  },
+  "evidence_format": "Raw logs remain at the recorded /tmp paths; checked-in readable logs trim trailing whitespace.",
+  "protected_gaps": "docs/evidence/checkpoint14-protected-probes.json",
+  "models": {
+    "primary": "gpt-6.1-sol / max, selection verified in checkpoint13-worker-review.json",
+    "previous_parallel_workers": "gpt-6-luna / max, quota and inspection",
+    "new_workers": [],
+    "preservation": "Existing branches and dirty worker files are untouched; checkpoint 13 rejections remain excluded."
+  },
+  "unchanged_denominator": {
+    "contracts": 71,
+    "platform_obligations": 426,
+    "release_targets_blocked": 6,
+    "inventory_complete": false
+  },
+  "review_audit": {
+    "credential_pattern_findings": 0,
+    "historical_hook_fixture_preserved": true,
+    "status_and_denominator_unchanged": true,
+    "diff_check": "PASS"
+  }
+}

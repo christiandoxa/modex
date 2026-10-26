@@ -212,13 +212,13 @@ struct LoopbackHTTPConnection(Movable):
         self.request_read = True
         return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
 
-    def respond(mut self, status: Int, headers: List[Tuple[String, String]], body: List[UInt8], timeout_ms: UInt64) raises:
+    def respond(mut self, status: Int, headers: List[Tuple[String, String]], body: List[UInt8], timeout_ms: UInt64, include_bodyless_length: Bool = False) raises:
         try:
             if len(body) > HTTP_MAX_RESPONSE_BODY_BYTES:
                 raise Error("oversized HTTP response body")
             if (status == 204 or status == 304) and len(body) != 0:
                 raise Error("HTTP response status forbids a body")
-            var response = _response_head(status, headers, len(body), False)
+            var response = _response_head(status, headers, len(body), False, include_bodyless_length)
             var deadline = _deadline(timeout_ms)
             _send_all(self.fd, response, deadline)
             _send_all(self.fd, body, deadline)
@@ -471,14 +471,14 @@ def _ascii(bytes: List[UInt8], start: Int, end: Int) raises -> String:
     return String(from_utf8=Span(value))
 
 
-def _response_head(status: Int, headers: List[Tuple[String, String]], body_length: Int, chunked: Bool) raises -> List[UInt8]:
+def _response_head(status: Int, headers: List[Tuple[String, String]], body_length: Int, chunked: Bool, include_bodyless_length: Bool = False) raises -> List[UInt8]:
     if status < 200 or status > 599:
         raise Error("invalid final HTTP response status")
     var output = List[UInt8]()
     var text = "HTTP/1.1 " + String(status) + " " + _reason(status) + "\r\n"
     for byte in text.as_bytes():
         output.append(byte)
-    if not chunked and status != 204 and status != 304:
+    if not chunked and (status != 204 and status != 304 or include_bodyless_length):
         text = "Content-Length: " + String(body_length) + "\r\n"
         for byte in text.as_bytes():
             output.append(byte)

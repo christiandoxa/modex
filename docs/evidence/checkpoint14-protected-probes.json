@@ -1,0 +1,197 @@
+{
+  "artifact_sha256": "8a895539e4e83fdbde90c8d2c3cd3a22cbd4fde565b3b2cdd2b851a95d83d5dd",
+  "oracle_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
+  "binding_mismatch": {
+    "prodex_04392": {
+      "statuses": [
+        200,
+        503
+      ],
+      "upstream_posts": 1,
+      "bodies": [
+        {
+          "created_at": 42,
+          "id": "synthetic-chat-0",
+          "metadata": {
+            "deepseek": {
+              "finish_reason": "stop"
+            }
+          },
+          "model": "deepseek-chat",
+          "object": "response",
+          "output": [
+            {
+              "content": [
+                {
+                  "text": "synthetic reply",
+                  "type": "output_text"
+                }
+              ],
+              "role": "assistant",
+              "type": "message"
+            }
+          ]
+        },
+        {
+          "error": {
+            "code": "bound_continuation_unavailable",
+            "message": "bound continuation provider is unavailable"
+          }
+        }
+      ]
+    },
+    "modex_checkpoint14": {
+      "statuses": [
+        200,
+        200
+      ],
+      "upstream_posts": 2,
+      "bodies": [
+        {
+          "created_at": 42,
+          "id": "synthetic-chat-0",
+          "metadata": {
+            "deepseek": {
+              "finish_reason": "stop"
+            }
+          },
+          "model": "deepseek-chat",
+          "object": "response",
+          "output": [
+            {
+              "content": [
+                {
+                  "text": "synthetic reply",
+                  "type": "output_text"
+                }
+              ],
+              "role": "assistant",
+              "type": "message"
+            }
+          ]
+        },
+        {
+          "created_at": 42,
+          "id": "synthetic-chat-1",
+          "metadata": {
+            "deepseek": {
+              "finish_reason": "stop"
+            }
+          },
+          "model": "deepseek-chat",
+          "object": "response",
+          "output": [
+            {
+              "content": [
+                {
+                  "text": "synthetic reply",
+                  "type": "output_text"
+                }
+              ],
+              "role": "assistant",
+              "type": "message"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "bodyless_headers": {
+    "prodex_04392": {
+      "upstream_posts": 1,
+      "status": 304,
+      "headers": {
+        "server": "BaseHTTP Python/3.16.0a1",
+        "date": "Mon, 26 Oct 2026 11:46:36 GMT",
+        "content-type": "application/json",
+        "Content-Length": "0"
+      },
+      "body": ""
+    },
+    "modex_checkpoint14": {
+      "upstream_posts": 1,
+      "status": 304,
+      "headers": {
+        "Content-Length": "0",
+        "Connection": "close",
+        "Server": "BaseHTTP Python/3.16.0a1",
+        "Date": "Mon, 26 Oct 2026 11:46:39 GMT",
+        "Content-Type": "application/json"
+      },
+      "body": ""
+    }
+  },
+  "bodyless_sse_304": {
+    "prodex_04392": {
+      "upstream_posts": 1,
+      "status": 304,
+      "headers": {
+        "Transfer-Encoding": "chunked",
+        "Connection": "close",
+        "server": "BaseHTTP Python/3.16.0a1",
+        "date": "Mon, 26 Oct 2026 11:46:37 GMT",
+        "content-type": "text/event-stream"
+      },
+      "body": ""
+    },
+    "modex_checkpoint14": {
+      "upstream_posts": 1,
+      "status": 304,
+      "headers": {
+        "Connection": "close",
+        "Server": "BaseHTTP Python/3.16.0a1",
+        "Date": "Mon, 26 Oct 2026 11:46:40 GMT",
+        "Content-Type": "text/event-stream"
+      },
+      "body": ""
+    }
+  },
+  "bodyless_sse_204": {
+    "prodex_04392": {
+      "upstream_posts": 1,
+      "status": 204,
+      "headers": {
+        "Transfer-Encoding": "chunked",
+        "Connection": "close",
+        "server": "BaseHTTP Python/3.16.0a1",
+        "date": "Mon, 26 Oct 2026 11:46:38 GMT",
+        "content-type": "text/event-stream"
+      },
+      "body": ""
+    },
+    "modex_checkpoint14": {
+      "upstream_posts": 1,
+      "status": 204,
+      "headers": {
+        "Connection": "close",
+        "Server": "BaseHTTP Python/3.16.0a1",
+        "Date": "Mon, 26 Oct 2026 11:46:41 GMT",
+        "Content-Type": "text/event-stream"
+      },
+      "body": ""
+    }
+  },
+  "oversized_302": {
+    "prodex_04392": {
+      "upstream_posts": 1,
+      "status": 502,
+      "headers": {
+        "Server": "tiny-http (Rust)",
+        "Date": "Mon, 26 Oct 2026 11:46:38 GMT",
+        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Length": "40"
+      },
+      "body": "provider response could not be processed"
+    },
+    "modex_checkpoint14": {
+      "upstream_posts": 1,
+      "status": 502,
+      "headers": {
+        "Content-Length": "23",
+        "Connection": "close",
+        "content-type": "text/plain; charset=utf-8"
+      },
+      "body": "upstream request failed"
+    }
+  }
+}

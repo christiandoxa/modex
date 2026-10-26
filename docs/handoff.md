@@ -1,3 +1,51 @@
+# Checkpoint 14: native buffered framing and current hook initialization
+
+Checkpoint 13 was normally pushed as `67bef94c305bf6e4147fb0297e0a6eee0ccc7697`. Local HEAD,
+remote main and clean main worktree were verified before immediate continuation.
+The target remains released Prodex 0.439.2 at `72b77478a5198fc5da6b4d2253137f9cdbf43be9`.
+
+The native relay now carries its existing buffered/SSE dispatch choice into the
+owned response writer. Buffered bodyless JSON retains Content-Length: 0; SSE
+retains omission of that header. Status/body prohibition, header/framing and
+size guards, deadlines, socket ownership and no-replay behavior stay intact.
+Nine live path/framing vectors per binary cover both 304 routes, oversized
+representation lengths, held-open chunked input, JSON/SSE 204 Chat responses and
+an ordinary 200 control. All send one POST with authoritative synthetic auth.
+The release's separate bodyless SSE Transfer-Encoding: chunked versus native
+omission is explicitly retained as a mismatch, not counted as parity PASS.
+
+Hook initialization now advertises the frozen Cargo package version 0.439.2.
+Fourteen fresh official-release hook scenarios have zero upstream requests;
+their RPC traces differ from the preserved 0.439.1 fixture only in that version.
+The actual native/release Super entrypoints also compare exact initialization
+parameters, successful synthetic client completion and one provider POST.
+Oversized-hook panic/exit behavior and checkpoint 13's rejected tool/metadata
+proposals remain unchanged. Existing worker branches and dirty files are intact.
+Primary integration remains Sol/MAX; existing Luna/MAX worker provenance is
+recorded in checkpoint 13. No new worker session is launched for this slice.
+
+The corrected before-test fails six native cases and no oracle cases. The first
+test expectation was too broad for SSE and is preserved separately in evidence.
+Validation: serial `make build`, 48 native units, 31 focused Python methods
+in 43.006s, then serial `rtk proxy make test`: 364 Python methods in
+658.422s, no skips. Current quota policy's 1,600 source comparisons and the
+407 historical 0.439.1 recovery vectors pass. The production hash is stable
+during Python discovery/linkage/sandbox checks. Seven source call-path files
+match immutable Git objects; all 67 production sources/imports remain accounted
+for with no new dependency, binding, implementation helper, interop or generator.
+No real credentials, paid provider traffic or account login are used.
+
+Fresh protected probes still retain the binding ownership mismatch (release
+200/503 and one POST versus native 200/200 and two), oversized-302 diagnostics
+and bodyless SSE framing. Account pools, WebSocket, worker lanes, native active
+recovery, security/storage/lifecycle, SDK and six-target qualification remain
+BLOCKED. All 71 coarse contracts, 426 platform obligations and six blocked
+release qualifications remain; no full parity or live recovery progress is claimed.
+
+Evidence: `docs/evidence/checkpoint14-reference.json`, `checkpoint14-tests.txt`,
+`checkpoint14-dependencies.txt`, `checkpoint14-before.txt` and
+`checkpoint14-protected-probes.json`.
+
 # Checkpoint 13: released Prodex 0.439.2 and native inspection usage
 
 The active target is officially released Prodex 0.439.2 at `72b77478a5198fc5da6b4d2253137f9cdbf43be9`,

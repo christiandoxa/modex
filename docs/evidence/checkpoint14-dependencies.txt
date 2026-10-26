@@ -1,0 +1,23 @@
+Checkpoint 14 dependency audit: all 67 production source paths and imports remain unchanged. No new application dependency, native binding, implementation helper, product Python/Node/Rust runtime, interop or generator. The internal bodyless-length flag carries the existing dispatch decision into the owned header writer; body/size/header validation and close/error handling stay intact. Hook initialization changes only its frozen version literal. Synthetic peers and oracle capture remain test-only, with isolated HOME/config/storage and loopback. No real credentials, paid provider traffic or account login.
+
+$ ldd build/modex
+	linux-vdso.so.1 (0x000078cb66d73000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x000078cb66a1e000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000078cb66600000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000078cb66914000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x000078cb66200000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x000078cb66904000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x000078cb65600000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000078cb668d6000)
+	/lib64/ld-linux-x86-64.so.2 (0x000078cb66d75000)
+
+Current-source Git-object checksums:
+{
+  "Cargo.toml": "1bc93ca941b976f6fc206c70b6431b24bdb36130da6079738357f262930d7c1c",
+  "crates/prodex-app/src/runtime_tools/hook_trust.rs": "6904e600057c3d19f1313b03c485cb38eb0edd33b0fbe9f1a3cc0db73f8c9bc8",
+  "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_dispatch.rs": "fd74afb623fde8b52595ee49d5714bd994e1214dd4f7d5da62789a8bde7fb224",
+  "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_passthrough.rs": "a89151ca9d58d614b47f8d5ebc7af150366b1e0294d25a89902b6479e6c9e0e8",
+  "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response.rs": "dacb6b073c272fe7d97da5a381d0a25b82f330d2d59d656cc863a04ff1c290fa",
+  "crates/prodex-app/src/runtime_proxy/response_forwarding/streaming_writer.rs": "f053c81b90c339d7416bac9ba112784f9f2537b96c94cf28dee081be23cf9fe0",
+  "vendor/tiny_http/src/response.rs": "946c4aa551b7a16cc2ea5f86f8ae2ce9b9bda3faecb2f9d1057d5bc17cb2dbdc"
+}

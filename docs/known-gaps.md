@@ -6,6 +6,14 @@ Complete parity remains unfinished against officially released Prodex 0.439.2 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 14 fixes buffered bodyless Content-Length: 0 and the hook initialize
+version through actual native dispatch. Fourteen hook scenarios are freshly
+captured from 0.439.2; the original 0.439.1 fixture remains intact. Bodyless
+SSE omits Content-Length in both products, but release emits chunked transfer
+encoding while native omits it; that framing mismatch remains visible.
+Binding ownership, oversized-302 diagnostics and broad transport/security
+qualification remain unfinished. See checkpoint14-reference.json.
+
 Checkpoint 13 targets 0.439.2. Earlier 0.439.1 and 0.439.0 evidence below
 retains historical provenance and is not automatically current-target evidence.
 Known five-hour or weekly exhaustion, pre-I/O hard-owner HTTP/WebSocket recovery
@@ -22,8 +30,8 @@ New live 0.439.2 checks reject proposed earlier-slot tool replacement and a
 4 MiB merged-metadata cap. Oversized hook trust still differs in panic/exit
 behavior; changing its diagnostic alone is excluded. Fresh binding and
 bodyless/oversized-redirect probes retain the documented runtime gaps.
-Hook initialization still advertises historical 0.439.1; fresh captures
-and the production client-version correction are the next native slice.
+At checkpoint 13 hook initialization still advertised historical 0.439.1;
+checkpoint 14 corrects it after fresh release capture.
 See `docs/evidence/checkpoint13-reference.json`.
 
 Checkpoint 12 closes whole-dot normalization for admitted numeric-loopback

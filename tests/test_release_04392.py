@@ -8,12 +8,50 @@ import test_cli
 from test_cli import MODEX, ORACLE
 from test_deepseek_continuation import buffered_reply, observe_turns
 from test_local_rewrite import SYNTHETIC_API_KEY
+import test_super_launch
 
 
 class Release04392Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         test_cli.CliTests.setUpClass()
+
+    def test_hook_initialize_uses_current_release_client_version(self):
+        probe = test_super_launch.SuperLaunchTests('runTest')
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                result, records, upstream, _ = probe.run_launch(binary=binary, scenario='buffered')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(len(upstream), 1)
+                initialize = next(record for record in records
+                                  if record['kind'] == 'request' and record['method'] == 'initialize')
+                self.assertEqual(initialize['params'], {
+                    'capabilities': {'experimentalApi': True},
+                    'clientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.2'},
+                })
+
+    def test_bodyless_chat_and_ordinary_response_lengths(self):
+        for status, content_type, body in (
+            (204, 'application/json', b''),
+            (204, 'text/event-stream', b''),
+            (200, 'application/json', b'{"id":"synthetic-body"}'),
+        ):
+            for binary in (ORACLE, MODEX):
+                with self.subTest(status=status, content_type=content_type, binary=str(binary)):
+                    upstream, responses = observe_turns(binary, [{
+                        'model': 'deepseek-chat', 'messages': [],
+                        '_path': '/v1/chat/completions?synthetic=%2B',
+                    }], [{'status': status, 'content_type': content_type, 'body': body}])
+                    self.assertEqual(len(upstream), 1)
+                    self.assertEqual(responses[0]['status'], status)
+                    self.assertEqual(bytes.fromhex(responses[0]['body']), body)
+                    headers = {key.lower(): value for key, value in responses[0]['headers'].items()}
+                    self.assertEqual(headers.get('content-length'),
+                                     None if content_type == 'text/event-stream' else str(len(body)))
+                    # Retain the known SSE framing difference; it is not a parity PASS.
+                    self.assertEqual(headers.get('transfer-encoding'),
+                                     'chunked' if content_type == 'text/event-stream' and binary == ORACLE else None)
+                    self.assertEqual(upstream[0]['headers']['authorization'], 'Bearer ' + SYNTHETIC_API_KEY)
 
     def test_specific_replacement_retains_its_later_tool_position(self):
         turn = {"model": "deepseek-chat", "input": "synthetic", "tools": [

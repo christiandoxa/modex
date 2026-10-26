@@ -31,7 +31,7 @@ if "app-server" in args and "--stdio" in args:
     for line in sys.stdin:
         request = json.loads(line)
         if "id" not in request: continue
-        save({"kind":"request", "method":request["method"]})
+        save({"kind":"request", "method":request["method"], "params":request.get("params")})
         if os.environ["MODEX_LAUNCH_SCENARIO"] == "legacy" and request["method"] == "hooks/list":
             print(json.dumps({"id":request["id"],"error":{"code":-32601,"message":"Method not found"}}),flush=True)
             time.sleep(30)

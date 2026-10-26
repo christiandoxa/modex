@@ -1,0 +1,259 @@
+Initial overly broad header expectation, corrected before implementation:
+test_hook_initialize_uses_current_release_client_version (test_release_04392.Release04392Tests.test_hook_initialize_uses_current_release_client_version) ...
+  test_hook_initialize_uses_current_release_client_version (test_release_04392.Release04392Tests.test_hook_initialize_uses_current_release_client_version) (binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+test_bodyless_chat_and_ordinary_response_lengths_match_release (test_release_04392.Release04392Tests.test_bodyless_chat_and_ordinary_response_lengths_match_release) ...
+  test_bodyless_chat_and_ordinary_response_lengths_match_release (test_release_04392.Release04392Tests.test_bodyless_chat_and_ordinary_response_lengths_match_release) (status=204, content_type='application/json', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_chat_and_ordinary_response_lengths_match_release (test_release_04392.Release04392Tests.test_bodyless_chat_and_ordinary_response_lengths_match_release) (status=204, content_type='text/event-stream', binary='/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu') ... FAIL
+  test_bodyless_chat_and_ordinary_response_lengths_match_release (test_release_04392.Release04392Tests.test_bodyless_chat_and_ordinary_response_lengths_match_release) (status=204, content_type='text/event-stream', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) ...
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'chunked': True, 'hold_open': True}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'chunked': True, 'hold_open': True}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+
+======================================================================
+FAIL: test_hook_initialize_uses_current_release_client_version (test_release_04392.Release04392Tests.test_hook_initialize_uses_current_release_client_version) (binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_release_04392.py", line 28, in test_hook_initialize_uses_current_release_client_version
+    self.assertEqual(initialize['params'], {
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+        'capabilities': {'experimentalApi': True},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'clientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.2'},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    })
+    ^^
+AssertionError: {'cap[42 chars]ientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.1'}} != {'cap[42 chars]ientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.2'}}
+  {'capabilities': {'experimentalApi': True},
+-  'clientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.1'}}
+?                                                                ^
+
++  'clientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.2'}}
+?                                                                ^
+
+
+======================================================================
+FAIL: test_bodyless_chat_and_ordinary_response_lengths_match_release (test_release_04392.Release04392Tests.test_bodyless_chat_and_ordinary_response_lengths_match_release) (status=204, content_type='application/json', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_release_04392.py", line 49, in test_bodyless_chat_and_ordinary_response_lengths_match_release
+    self.assertEqual(headers.get('content-length'), str(len(body)))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_chat_and_ordinary_response_lengths_match_release (test_release_04392.Release04392Tests.test_bodyless_chat_and_ordinary_response_lengths_match_release) (status=204, content_type='text/event-stream', binary='/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_release_04392.py", line 49, in test_bodyless_chat_and_ordinary_response_lengths_match_release
+    self.assertEqual(headers.get('content-length'), str(len(body)))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_chat_and_ordinary_response_lengths_match_release (test_release_04392.Release04392Tests.test_bodyless_chat_and_ordinary_response_lengths_match_release) (status=204, content_type='text/event-stream', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_release_04392.py", line 49, in test_bodyless_chat_and_ordinary_response_lengths_match_release
+    self.assertEqual(headers.get('content-length'), str(len(body)))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"), "0")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"), "0")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"), "0")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"), "0")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"), "0")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"), "0")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'chunked': True, 'hold_open': True}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"), "0")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'chunked': True, 'hold_open': True}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"), "0")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+----------------------------------------------------------------------
+Ran 3 tests in 13.216s
+
+FAILED (failures=12)
+
+Corrected current-release expectations against checkpoint 13; six native failures:
+test_hook_initialize_uses_current_release_client_version (test_release_04392.Release04392Tests.test_hook_initialize_uses_current_release_client_version) ...
+  test_hook_initialize_uses_current_release_client_version (test_release_04392.Release04392Tests.test_hook_initialize_uses_current_release_client_version) (binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+test_bodyless_chat_and_ordinary_response_lengths (test_release_04392.Release04392Tests.test_bodyless_chat_and_ordinary_response_lengths) ...
+  test_bodyless_chat_and_ordinary_response_lengths (test_release_04392.Release04392Tests.test_bodyless_chat_and_ordinary_response_lengths) (status=204, content_type='application/json', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) ...
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'chunked': True, 'hold_open': True}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'chunked': True, 'hold_open': True}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+
+======================================================================
+FAIL: test_hook_initialize_uses_current_release_client_version (test_release_04392.Release04392Tests.test_hook_initialize_uses_current_release_client_version) (binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_release_04392.py", line 28, in test_hook_initialize_uses_current_release_client_version
+    self.assertEqual(initialize['params'], {
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+        'capabilities': {'experimentalApi': True},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'clientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.2'},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    })
+    ^^
+AssertionError: {'cap[42 chars]ientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.1'}} != {'cap[42 chars]ientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.2'}}
+  {'capabilities': {'experimentalApi': True},
+-  'clientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.1'}}
+?                                                                ^
+
++  'clientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.2'}}
+?                                                                ^
+
+
+======================================================================
+FAIL: test_bodyless_chat_and_ordinary_response_lengths (test_release_04392.Release04392Tests.test_bodyless_chat_and_ordinary_response_lengths) (status=204, content_type='application/json', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_release_04392.py", line 49, in test_bodyless_chat_and_ordinary_response_lengths
+    self.assertEqual(headers.get('content-length'),
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     None if content_type == 'text/event-stream' else str(len(body)))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"),
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     None if content_type == "text/event-stream" else "0")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"),
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     None if content_type == "text/event-stream" else "0")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'chunked': True, 'hold_open': True}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"),
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     None if content_type == "text/event-stream" else "0")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'chunked': True, 'hold_open': True}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 114, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual({key.lower(): value for key, value in
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      responses[0]["headers"].items()}.get("content-length"),
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     None if content_type == "text/event-stream" else "0")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != '0'
+
+----------------------------------------------------------------------
+Ran 3 tests in 13.161s
+
+FAILED (failures=6)

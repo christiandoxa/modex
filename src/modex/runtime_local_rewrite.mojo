@@ -161,7 +161,8 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
             stream.close()
             _reply(connection, 502, "upstream request failed")
             return
-        connection.respond(stream.status, response_headers, body, 30000)
+        # TinyHTTP's buffered path retains Content-Length: 0 for bodyless replies.
+        connection.respond(stream.status, response_headers, body, 30000, not deepseek_event_stream(stream.headers))
         return
     try:
         connection.start_stream(stream.status, response_headers, 30000)

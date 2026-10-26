@@ -178,7 +178,10 @@
         "docs/evidence/native-super-reference.json",
         "docs/evidence/native-super-data-plane.json",
         "docs/evidence/native-super-tests.txt",
-        "docs/evidence/native-super-dependencies.txt"
+        "docs/evidence/native-super-dependencies.txt",
+        "docs/evidence/checkpoint11-reference.json",
+        "docs/evidence/checkpoint11-tests.txt",
+        "docs/evidence/checkpoint11-dependencies.txt"
       ],
       "proven": [
         "absolute executable path and exact argv through the bundled posix_spawnp wrapper",
@@ -191,7 +194,8 @@
         "descriptor and FD_CLOEXEC restoration on success/spawn failure, synthetic pipe echo and explicitly isolated environment",
         "native hook-trust RPC against synthetic app-server peers, per-RPC deadline, line-size guard and stderr suppression",
         "socketpair MSG_NOSIGNAL hook request channel handles closed stdin without killing parent; synthetic child is killed/reaped",
-        "production clean-home launch exit 0/7, hook failure and relay death cleanup; private overlays preserve shared sessions and retain unexpected state; idle relay exits on parent-channel EOF"
+        "production clean-home launch exit 0/7, hook failure and relay death cleanup; private overlays preserve shared sessions and retain unexpected state; idle relay exits on parent-channel EOF",
+        "Checkpoint 11: hook-trust receive checks an expired deadline before consuming buffered input and uses the pinned pre-receive diagnostic; registered native unit and isolated RPC integration tests pass. This does not establish actual goal progress."
       ],
       "not_proven": [
         "safe concurrent spawning or parent stdio I/O during descriptor transaction",
@@ -233,7 +237,10 @@
         "docs/evidence/checkpoint6-dependencies.txt",
         "docs/evidence/checkpoint7-reference.json",
         "docs/evidence/checkpoint7-tests.txt",
-        "docs/evidence/checkpoint7-dependencies.txt"
+        "docs/evidence/checkpoint7-dependencies.txt",
+        "docs/evidence/checkpoint11-reference.json",
+        "docs/evidence/checkpoint11-tests.txt",
+        "docs/evidence/checkpoint11-dependencies.txt"
       ],
       "proven": [
         "numeric IPv4 127/8 and compressed IPv6 ::1 client connections through official socket wrappers",
@@ -250,7 +257,8 @@
         "incremental SSE over 4 MiB aggregate with bounded HTTP chunks plus retained line/event/accumulation limits",
         "DeepSeek request/token rate-limit header projection on buffered and SSE relay responses",
         "Checkpoint 6: live release comparisons preserve native Super history context across sessions, accept equal comma-list Content-Length, map first-present call IDs, and retain decoded usage keys and strict format validation.",
-        "Checkpoint 7: ten live production buffered metadata vectors preserve ASCII/HTAB turn state and request IDs, discard non-ASCII values, keep binary bodies exact and issue one POST per request."
+        "Checkpoint 7: ten live production buffered metadata vectors preserve ASCII/HTAB turn state and request IDs, discard non-ASCII values, keep binary bodies exact and issue one POST per request.",
+        "Checkpoint 11: shared bodyless 204/304 effective length is zero before cap checks. Bounded native assertions and six live 304 route/framing vectors retain empty bodies without waiting for upstream EOF; downstream header equivalence remains a gap."
       ],
       "not_proven": [
         "complete production CLI/provider parity and registry/capability/process admission",

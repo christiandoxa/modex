@@ -779,7 +779,8 @@ struct LoopbackHTTPStream(Movable):
             self.header_scan = 0
             return
         self.status = parsed[0]
-        self.length = parsed[1]
+        # A 304 length describes the representation; bodyless statuses consume no bytes.
+        self.length = 0 if self.status == 204 or self.status == 304 else parsed[1]
         if self.max_body_bytes >= 0 and self.length > self.max_body_bytes:
             raise Error("oversized HTTP response body")
         var lines = _ascii(self.buffer, 0, end).split("\r\n")

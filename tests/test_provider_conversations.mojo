@@ -1,6 +1,6 @@
 from std.testing import assert_equal, assert_true
 
-from modex.provider_conversations import ProviderConversation, ProviderConversationStore, conversation_estimated_bytes, conversation_key
+from modex.provider_conversations import ProviderConversation, ProviderConversationStore, _saturating_estimate_add, conversation_estimated_bytes, conversation_key
 
 
 def main() raises:
@@ -13,6 +13,12 @@ def main() raises:
     assert_equal(store.history("response", "a:b").value(), '[{"content":"other"}]')
     assert_true(not store.contains("response", "absent"))
     assert_equal(conversation_key("response", "é"), "\0prodex:2:é:response")
+    assert_equal(_saturating_estimate_add(UInt64.MAX - 3, 4), UInt64.MAX)
+    assert_equal(_saturating_estimate_add(UInt64.MAX - 3, 3), UInt64.MAX)
+    assert_equal(_saturating_estimate_add(UInt64.MAX, UInt64.MAX), UInt64.MAX)
+    assert_equal(_saturating_estimate_add(0, UInt64.MAX), UInt64.MAX)
+    assert_equal(_saturating_estimate_add(UInt64.MAX, 0), UInt64.MAX)
+    assert_equal(_saturating_estimate_add(7, 4), UInt64(11))
     assert_equal(conversation_estimated_bytes("é", "[]"), UInt64(2))
     assert_equal(conversation_estimated_bytes("resp-", '[null,false,true,-42,"é",[null,{"鍵":"値","x":[]}]]'), UInt64(5 + 10 * 32 + 2 + 16 + 2 + 3 + 3 + 1))
     store.insert("response", '[{"nested":[true,null,"é"]}]')

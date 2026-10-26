@@ -6,6 +6,20 @@ Complete parity remains unfinished against Prodex 0.439.1 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 11 corrects bodyless effective length in the shared native HTTP
+reader. Six live 304 route/framing vectors match status/empty body, with one
+POST each; raw header/constructor equivalence remains incomplete. The release
+emits Content-Length: 0 for 304 while native omits it. Oversized 302 returns
+502 in both but different error bodies; exact worker observations are retained
+in `docs/evidence/checkpoint11-worker-bodyless.json`. Reproduce with a synthetic
+Chat Completions POST and 302 application/json upstream body of 4,194,305 `x`
+bytes with the same Content-Length through observe_turns. No POST replay is used.
+Corrected RPC pre-receive timing and source-equivalent estimator saturation are
+narrow changes; full lifecycle/progress and physical memory parity remain gaps.
+The SSE constructor override proposal is excluded because production defaults
+already match and the frozen private constructor has no matching restriction.
+See `docs/evidence/checkpoint11-reference.json` for all four worker decisions.
+
 Checkpoint 10 fixes ordinary HTTP upstream path backslash separators in the
 shared native resolver. Twelve live path/route vectors preserve repeated
 separators, literal trailing-slash trim order, percent-encoded backslashes,

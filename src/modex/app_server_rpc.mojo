@@ -63,6 +63,8 @@ struct _RpcReader:
         self.eof = False
 
     def next_line(mut self, fd: Int32, deadline: Float64, method: String) raises -> String:
+        if perf_counter() >= deadline:
+            raise Error("Codex hook-trust preflight timed out waiting for " + method)
         while True:
             while self.offset < self.count:
                 var byte = self.bytes[self.offset]

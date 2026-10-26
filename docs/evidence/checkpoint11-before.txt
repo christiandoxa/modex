@@ -1,0 +1,125 @@
+Checkpoint 10 artifact failed the new expired-buffered-RPC unit (exit 1). Four real Super/304 length vectors return native 502 versus release 304; two bounded native bodyless vectors reject representation length. These are before-fix observations, not parity PASS.
+{
+  "main": "85bb5540784ea27263f6abc21812071a7d8065ed",
+  "origin_main": "85bb5540784ea27263f6abc21812071a7d8065ed",
+  "source_pin": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "artifact_sha256": "476a3c50880b230cdbb7e62b0748f9b1e61861c3e856f1bcbc83343a291d9afd",
+  "before_failures": {
+    "expired_buffered_rpc_unit": 1,
+    "bodyless_real_super_length_vectors": 4,
+    "bounded_stream_bodyless_vectors": 2
+  }
+}
+
+$ python3 -m unittest discover -s tests -p test_deepseek_continuation.py -k test_bodyless_passthrough_ignores_representation_length -v
+test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) ...
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 110, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual([row["status"] for row in responses], [304])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [502] != [304]
+
+First differing element 0:
+502
+304
+
+- [502]
++ [304]
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 110, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual([row["status"] for row in responses], [304])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [502] != [304]
+
+First differing element 0:
+502
+304
+
+- [502]
++ [304]
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='responses', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 110, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual([row["status"] for row in responses], [304])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [502] != [304]
+
+First differing element 0:
+502
+304
+
+- [502]
++ [304]
+
+======================================================================
+FAIL: test_bodyless_passthrough_ignores_representation_length (test_deepseek_continuation.DeepSeekContinuationTests.test_bodyless_passthrough_ignores_representation_length) (framing={'declared_length': 5242881}, route='chat/completions', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 110, in test_bodyless_passthrough_ignores_representation_length
+    self.assertEqual([row["status"] for row in responses], [304])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [502] != [304]
+
+First differing element 0:
+502
+304
+
+- [502]
++ [304]
+
+----------------------------------------------------------------------
+Ran 1 test in 8.777s
+
+FAILED (failures=4)
+
+exit_code=1
+$ python3 -m unittest discover -s tests -p test_loopback_http_stream.py -k test_bodyless_status_skips_length_cap_and_body_read -v
+test_bodyless_status_skips_length_cap_and_body_read (test_loopback_http_stream.LoopbackHTTPStreamTests.test_bodyless_status_skips_length_cap_and_body_read) ...
+  test_bodyless_status_skips_length_cap_and_body_read (test_loopback_http_stream.LoopbackHTTPStreamTests.test_bodyless_status_skips_length_cap_and_body_read) (status=204) ... FAIL
+  test_bodyless_status_skips_length_cap_and_body_read (test_loopback_http_stream.LoopbackHTTPStreamTests.test_bodyless_status_skips_length_cap_and_body_read) (status=304) ... FAIL
+
+======================================================================
+FAIL: test_bodyless_status_skips_length_cap_and_body_read (test_loopback_http_stream.LoopbackHTTPStreamTests.test_bodyless_status_skips_length_cap_and_body_read) (status=204)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_loopback_http_stream.py", line 138, in test_bodyless_status_skips_length_cap_and_body_read
+    self.assertEqual(result.returncode, 0, result.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 0 : b'stack trace was not collected. Enable stack trace collection with environment variable `MODULAR_DEBUG=stack-trace-on-error`\nUnhandled exception caught during execution: oversized HTTP response body\n'
+
+======================================================================
+FAIL: test_bodyless_status_skips_length_cap_and_body_read (test_loopback_http_stream.LoopbackHTTPStreamTests.test_bodyless_status_skips_length_cap_and_body_read) (status=304)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_loopback_http_stream.py", line 138, in test_bodyless_status_skips_length_cap_and_body_read
+    self.assertEqual(result.returncode, 0, result.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 0 : b'stack trace was not collected. Enable stack trace collection with environment variable `MODULAR_DEBUG=stack-trace-on-error`\nUnhandled exception caught during execution: oversized HTTP response body\n'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.025s
+
+FAILED (failures=2)
+
+exit_code=1
+
+$ /tmp/modex-cp11-before/test_app_server_rpc (compiled with pre-fix main source)
+stack trace was not collected. Enable stack trace collection with environment variable `MODULAR_DEBUG=stack-trace-on-error`
+Unhandled exception caught during execution: expired deadline did not reject an already-buffered RPC line
+
+exit_code=1

@@ -1,3 +1,61 @@
+# Checkpoint 11: reviewed worker integration and bodyless HTTP
+
+Main began clean at verified pushed `85bb5540784ea27263f6abc21812071a7d8065ed`;
+fetch and independent ls-remote confirmed origin/main. The sole main owner
+reviewed every source and test patch in all four supplied completed commits.
+
+Integrate `ff2d0d1` production arithmetic exactly, retaining decoded-value
+weights and excluding its duplicate Python scope model. The pinned UInt128
+sum is clamped to 64-bit usize::MAX; repeated nonnegative saturation is equal.
+This does not establish physical cache memory or artifact eviction boundaries.
+The rejected serialized-weight proposal `27cd318` remains excluded.
+
+Adapt `40114bd0`: check the deadline before consuming buffered input, with
+frozen `timed out waiting for <method>` text rather than its channel-timeout
+assertion. Keep in-receive timeout handling. Register the new native unit.
+Adapt `85e8550a` at the shared LoopbackHTTPStream root: zero effective length
+for 204/304 before any cap check. The worker's passthrough-only wrapper leaves
+Responses affected and is removed; raw headers and bodyless phase stay intact.
+Its test reuses the existing fixture. Six live 304 status/body vectors cover
+JSON/SSE declared lengths above 4 MiB and held-open chunked responses on both
+routes, with authoritative synthetic auth and one POST each. Previous Modex
+failed four of these; bounded native 204/304 and expired-buffer unit also fail
+before the fixes and pass after them.
+
+Reject `20b6ae2a`: the frozen private limit constructor permits arbitrary
+limits, while production already supplies 4 MiB defaults. Its new restriction
+and both tests remain on the unchanged worker branch. All four worktrees remain
+untouched. W/X/Y's request-tools, hooks and metadata sources/tests are unchanged.
+
+Validation: `make build`, all 46 native units, 31 focused Python
+methods in 24.676 seconds, then serial `rtk proxy make test`: 354 Python
+methods in 627.898 seconds, no skips, and 407 pinned policy vectors. The
+artifact hash stayed fixed through Python discovery and after completion.
+Ten reference snapshot files match pinned Git objects. Locked Hyper 1.12.0
+and URL 2.5.8 source files match checksum-verified archives; both remain only
+reference evidence. Imports, 67-file source inventory and native linkage add
+no dependencies, bindings, helpers, interop, real credentials or paid traffic.
+
+Supplied workers are user-reported Luna/MAX, not independently attested by Git.
+Both supplemental official-launcher sessions actually selected gpt-6.1-sol
+with effort none; exact parent selection is not exposed. No requested-model
+claim replaces actual metadata. Full stdout and hashed separate stderr
+provenance are retained; parent verified their source claims and assertions.
+
+Remaining reproducible gaps include 304 downstream Content-Length: 0 omission
+and oversized-302 error text (release `provider response could not be processed`
+versus native `upstream request failed`, both 502/one POST). The worker probe
+records fixture and response details. Full profile/credential/binding ownership,
+acquisition/conflict/persistence/release, actual progress/recovery, dot paths,
+non-object SSE, idle timeouts, broad transport/storage/security, JavaScript SDK
+and non-host qualification remain unfinished. All 71 contracts, 426 obligations
+and six BLOCKED release qualifications are retained. Continue next with the
+owned native upstream dot-segment normalization slice after this verified push.
+
+Evidence: `docs/evidence/checkpoint11-reference.json`, `checkpoint11-tests.txt`,
+`checkpoint11-dependencies.txt`, `checkpoint11-before.txt`,
+`checkpoint11-worker-review.txt`, `checkpoint11-worker-bodyless.json`.
+
 # Checkpoint 10: native HTTP path separators
 
 Checkpoint 9 was normally committed and pushed as

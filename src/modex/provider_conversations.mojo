@@ -24,26 +24,33 @@ def _in_scope(key: String, namespace: Optional[String]) -> Bool:
     return not key.startswith(CONVERSATION_SCOPE_PREFIX)
 
 
+def _saturating_estimate_add(total: UInt64, extra: UInt64) -> UInt64:
+    if total > UInt64.MAX - extra:
+        return UInt64.MAX
+    return total + extra
+
+
 def conversation_estimated_bytes(key: String, messages: String) raises -> UInt64:
     var original = JsonDocument(messages)
     var doc = JsonDocument(serialize_json(original, original.root))
     if doc.nodes[doc.root].kind != JSON_ARRAY:
         raise Error("provider conversation messages must be an array")
     # Infer logical cache weights from frozen 64-bit Serde types; artifact eviction boundaries still need checking.
+    # The frozen estimator clamps to usize::MAX instead of allowing overflow.
     var estimated = UInt64(key.byte_length())
     for index in range(len(doc.nodes)):
         if index == doc.root:
             continue
-        estimated += 32
+        estimated = _saturating_estimate_add(estimated, 32)
         var node = doc.nodes[index].copy()
         if node.kind == JSON_BOOL:
-            estimated += 1
+            estimated = _saturating_estimate_add(estimated, 1)
         elif node.kind == JSON_NUMBER:
-            estimated += 16
+            estimated = _saturating_estimate_add(estimated, 16)
         elif node.kind == JSON_STRING:
-            estimated += UInt64(node.text.byte_length())
+            estimated = _saturating_estimate_add(estimated, UInt64(node.text.byte_length()))
         for name in node.names:
-            estimated += UInt64(name.byte_length())
+            estimated = _saturating_estimate_add(estimated, UInt64(name.byte_length()))
     return estimated
 
 

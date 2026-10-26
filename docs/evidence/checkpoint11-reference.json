@@ -1,0 +1,345 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "starting_main": "85bb5540784ea27263f6abc21812071a7d8065ed",
+  "previous_checkpoint_push_verified": {
+    "local_head": "85bb5540784ea27263f6abc21812071a7d8065ed",
+    "remote_main": "85bb5540784ea27263f6abc21812071a7d8065ed",
+    "main_clean": true
+  },
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "snapshot_git_object_matches": {
+    "Cargo.lock": {
+      "sha256": "c5c9e80f925346ec065169be3c2d989a369c7dc8b86f279fc63809c8cebbb323",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_tools/hook_trust.rs": {
+      "sha256": "6904e600057c3d19f1313b03c485cb38eb0edd33b0fbe9f1a3cc0db73f8c9bc8",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/conversation_memory.rs": {
+      "sha256": "a3963933b43c8321d84fe82ccf5c897e610eeea4caa3ab31dd9772f8c4301c44",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-mojo-core/src/json/provider_conversation_memory.rs": {
+      "sha256": "674a1e71d87d7deca5fe56d9ac965bb22006bcdd137e5c4103bf8b560f2be2f5",
+      "matches_pinned_git_object": true
+    },
+    "mojo/prodex_core/provider_conversation_memory.mojo": {
+      "sha256": "66df179b9e0b2dd724c9d1746d3bcd2a14ae3cfe63a13023de6d07fe30ff694a",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_rewrite/conversation_store.rs": {
+      "sha256": "591dcaebac951fff24cc2c4b5adb26dd50d84505602e19140a09c6f432b0ced2",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/provider_sse_reader.rs": {
+      "sha256": "f491e6e3fb1fdddbbd5724011ce76ac582fb2105280daf488f0a334062cac3ae",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_passthrough.rs": {
+      "sha256": "a89151ca9d58d614b47f8d5ebc7af150366b1e0294d25a89902b6479e6c9e0e8",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/core_constants.rs": {
+      "sha256": "f62e14e0f619e5da5fae7b226bbfbbaf06c3a1cff7940ec946a2bc3ee1c20775",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_transport/urls.rs": {
+      "sha256": "ecd51b88222814eb2d1d6619af8fbc088bda8ba84fd41b0b41b9a407375a42fe",
+      "matches_pinned_git_object": true
+    }
+  },
+  "frozen_dependency_source": {
+    "hyper": {
+      "version": "1.12.0",
+      "locked_archive_sha256": "2c3e324da4c95177d6291d4c8730197c0d1822f8a9766814a4a44fa5ab797c9c",
+      "source_file": "src/proto/h1/role.rs",
+      "source_sha256": "ee27600c6d7ae2f23e148af5cef02fa029def6ea5999cce84af4aac058ceb03e",
+      "registry_source_matches_locked_archive": true,
+      "scope": "Inspected frozen reference dependency only; never a Modex dependency."
+    },
+    "url": {
+      "version": "2.5.8",
+      "locked_archive_sha256": "ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed",
+      "source_file": "src/parser.rs",
+      "source_sha256": "2dd4210e1773fc5d3fdc15ce506ecff30dbf8eb358a79bbbc2835cc30d513c3a",
+      "registry_source_matches_locked_archive": true,
+      "scope": "Inspected frozen reference dependency only; never a Modex dependency."
+    }
+  },
+  "worker_reviews": [
+    {
+      "commit": "40114bd0bf0122f12ac3856562e34737b27e8e22",
+      "decision": "INTEGRATED_WITH_CORRECTION",
+      "change": "Reject expired buffered RPC input before receive. Main moves the guard to the receive entry and uses the exact frozen pre-receive timeout diagnostic; existing in-receive timeout text stays separate. Register new native unit in make unit, check the buffer remains unconsumed and a valid deadline still consumes it.",
+      "trace": "runtime_tools/hook_trust.rs::rpc_request checks remaining.is_zero before mpsc recv_timeout; the worker asserted the channel-timeout diagnostic at this earlier guard.",
+      "all_changed_paths_reviewed": [
+        "src/modex/app_server_rpc.mojo",
+        "tests/test_app_server_rpc.mojo"
+      ],
+      "exact_patch_sha256": "6c25fcb14485a2a6d21e799097699e9cdc84ed76a6d27be6cf7e70e6113e0f3f"
+    },
+    {
+      "commit": "ff2d0d10b7cf8ad84143cc8b6f84a925240f2cb7",
+      "decision": "SOURCE_AND_NATIVE_TESTS_INTEGRATED",
+      "change": "Production source exactly matches worker. Keep logical cache weights; saturate each nonnegative sum at UInt64.MAX, equivalent to pinned UInt128 sum clamped to 64-bit usize::MAX. Extend arithmetic boundaries. Exclude the duplicate 67-line Python scope model: existing buffered/streamed internal-scope tests cover that behavior and the new model is not an artifact differential.",
+      "trace": "provider_core conversation_memory.rs acquires size_of Value/bool/Number; json/provider_conversation_memory.rs passes usize::MAX; mojo/prodex_core/provider_conversation_memory.mojo clamps a nonnegative UInt128 total. No serialized-weight change from rejected 27cd318 is included.",
+      "limit": "Arithmetic overflow is not exercised through an allocatable production history. Logical estimator weights and physical Modex allocation/eviction boundaries remain distinct; no full memory parity claim.",
+      "all_changed_paths_reviewed": [
+        "src/modex/provider_conversations.mojo",
+        "tests/test_provider_conversations.mojo",
+        "tests/test_provider_conversations.py"
+      ],
+      "exact_patch_sha256": "72d8271ef31cc98edab19148cb311798b4746f419e927c547abdb44f87795e9d"
+    },
+    {
+      "commit": "85e8550a07c9885617eceda2bbaa32facb4f45c7",
+      "decision": "INTEGRATED_AT_SHARED_ROOT",
+      "change": "Worker passthrough-only length normalization leaves Responses and bounded stream construction affected. Main normalizes the effective length in LoopbackHTTPStream before any body cap, retaining raw headers. No wrapper is added to passthrough. Adapt worker loopback test to the existing bounded fixture and add real Super/release comparisons for both routes.",
+      "trace": "Pinned Hyper 1.12.0 Client::decoder returns zero body length for 204/304 before content-length or chunk decoding. Existing native phase=6 already terminates without reading a body.",
+      "all_changed_paths_reviewed": [
+        "src/modex/provider_passthrough.mojo",
+        "tests/test_provider_passthrough.mojo",
+        "tests/test_provider_passthrough.py"
+      ],
+      "exact_patch_sha256": "958717939c77e2ad6005f5cf1cdd20630eb3e87d0c5c3f6b2c910406059e660d"
+    },
+    {
+      "commit": "20b6ae2a1634181b0b666113b378486497ce61da",
+      "decision": "REJECTED",
+      "change": "Private constructor override rejection above 4 MiB is an extra restriction absent from pinned new_with_limits. Production callers already use 4 MiB defaults. All three proposed source/test files remain excluded; no new cap parity claim.",
+      "all_changed_paths_reviewed": [
+        "src/modex/provider_sse_wire.mojo",
+        "tests/test_provider_sse_wire.mojo",
+        "tests/test_provider_sse_wire.py"
+      ],
+      "exact_patch_sha256": "f84a74c7c1af1ff839f9706abf65247f8317165756b9ad55081307d85c46c788"
+    }
+  ],
+  "owned_integration": {
+    "production_files": [
+      "src/modex/app_server_rpc.mojo",
+      "src/modex/loopback_http.mojo",
+      "src/modex/provider_conversations.mojo"
+    ],
+    "reachable_bodyless_path": "Native clean-home Super -> same-image local rewrite -> Chat Completions passthrough or Responses DeepSeekExchange -> shared LoopbackHTTPStream header parsing. Effective zero length precedes both local cap checks; raw headers remain retained.",
+    "rpc_path": "Native clean-home Super -> hook-trust preflight -> _run_session -> _RpcReader.next_line. Control success is not goal progress or credential/profile binding ownership."
+  },
+  "production_differential": {
+    "test": "tests/test_deepseek_continuation.py::test_bodyless_passthrough_ignores_representation_length",
+    "vectors_per_binary": 6,
+    "upstream_posts_per_binary": 6,
+    "previous_modex_mismatches": 4,
+    "coverage": [
+      "304 JSON with representation length above cap",
+      "304 SSE with representation length above cap",
+      "304 chunked held open without a terminator",
+      "Responses and Chat Completions routes",
+      "authoritative synthetic auth and at most one POST per request"
+    ],
+    "comparison_scope": "Exact tested status/empty body and upstream target/auth; general downstream header equivalence is not established."
+  },
+  "validation": {
+    "command": "rtk proxy make test",
+    "exit_code": 0,
+    "elapsed_seconds": 807.096,
+    "artifact_sha256_at_python_discovery": "9fb833d639a15fee4af2946ca2aa0f8ff16020659e5d36ce62d4e2ff106d5637",
+    "artifact_sha256_after": "9fb833d639a15fee4af2946ca2aa0f8ff16020659e5d36ce62d4e2ff106d5637",
+    "native_unit_executables": 46,
+    "python_methods": 354,
+    "python_seconds": 627.898,
+    "skips": 0,
+    "focused_python_methods": 31,
+    "focused_python_seconds": 24.676,
+    "pinned_recovery_policy_vectors": 407
+  },
+  "model_provenance": {
+    "primary_requested_by_user": "gpt-6.1-sol / max",
+    "primary_runtime_selection_independently_exposed": false,
+    "supplied_completed_workers": "User reports GPT-6 Luna/MAX; commit objects do not attest model/effort.",
+    "supplemental_official_launcher_runs": [
+      {
+        "task": "rpc-memory",
+        "exit_code": 0,
+        "actual_model": "gpt-6.1-sol",
+        "actual_effort": "none",
+        "stdout_path": "/tmp/modex-cp11-rpc-memory-review.stdout",
+        "stdout_sha256": "95d22164a6c27fdc3de91a2d2716f0211699b5ce19d8642e182008882b4bf677",
+        "stderr_path": "/tmp/modex-cp11-rpc-memory-review.stderr",
+        "stderr_sha256": "2765de2d504c1f58b7281faf11e23b4b0c31089f9bf3874ed0db341e35046c21",
+        "task_file": "/home/doxa/.prodex/profiles/.prodex-overlay-3a2eb7-0/sub-agent-tasks/checkpoint11-rpc-memory-review.txt"
+      },
+      {
+        "task": "wire-bodyless",
+        "exit_code": 0,
+        "actual_model": "gpt-6.1-sol",
+        "actual_effort": "none",
+        "stdout_path": "/tmp/modex-cp11-wire-bodyless-review.stdout",
+        "stdout_sha256": "93b7f0ebbb923e0e1851547cab840e3d320d5b575a084046705b12c819394daf",
+        "stderr_path": "/tmp/modex-cp11-wire-bodyless-review.stderr",
+        "stderr_sha256": "c0916b3cbdf1045a52f074d73a379d701fc4b3c73b893ba2bdcd5796b9b74e65",
+        "task_file": "/home/doxa/.prodex/profiles/.prodex-overlay-3a2eb7-0/sub-agent-tasks/checkpoint11-wire-bodyless-review.txt"
+      }
+    ],
+    "launcher_config_unchanged": true
+  },
+  "remaining_limits": [
+    "Full profile/credential/binding identity, acquisition/conflict, persistence/release and production recovery/progress remain incomplete; prior release 200/503 one-POST versus Modex 200/200 two-POST mismatch remains.",
+    "Literal/encoded dot normalization and broad URL/authority/TLS behavior remain unqualified at this checkpoint.",
+    "304 downstream headers differ: frozen TinyHTTP emits Content-Length: 0 while native response constructor omits it. Oversized 302 returns 502 in both but the release says provider response could not be processed and native says upstream request failed; adjacent worker artifact observations retained separately.",
+    "Estimator overflow arithmetic is source-tested but unallocatable through ordinary production inputs. Physical memory bounds, non-object SSE, idle timeout behavior, binary lower-client header retention, storage/security, JavaScript SDK and non-host qualification remain unfinished."
+  ],
+  "unchanged_denominator": {
+    "contracts": 71,
+    "platform_obligations": 426,
+    "release_targets_blocked": 6,
+    "inventory_complete": false
+  },
+  "protected_gap_rechecks": {
+    "artifact_sha256": "9fb833d639a15fee4af2946ca2aa0f8ff16020659e5d36ce62d4e2ff106d5637",
+    "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+    "binding_mismatch": {
+      "prodex_04391": {
+        "statuses": [
+          200,
+          503
+        ],
+        "upstream_posts": 1,
+        "bodies": [
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-0",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          },
+          {
+            "error": {
+              "code": "bound_continuation_unavailable",
+              "message": "bound continuation provider is unavailable"
+            }
+          }
+        ]
+      },
+      "modex_checkpoint11": {
+        "statuses": [
+          200,
+          200
+        ],
+        "upstream_posts": 2,
+        "bodies": [
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-0",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          },
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-1",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "bodyless_headers": {
+      "prodex_04391": {
+        "upstream_posts": 1,
+        "status": 304,
+        "headers": {
+          "server": "BaseHTTP Python/3.16.0a1",
+          "date": "Mon, 26 Oct 2026 09:51:33 GMT",
+          "content-type": "application/json",
+          "Content-Length": "0"
+        },
+        "body": ""
+      },
+      "modex_checkpoint11": {
+        "upstream_posts": 1,
+        "status": 304,
+        "headers": {
+          "Connection": "close",
+          "Server": "BaseHTTP Python/3.16.0a1",
+          "Date": "Mon, 26 Oct 2026 09:51:35 GMT",
+          "Content-Type": "application/json"
+        },
+        "body": ""
+      }
+    },
+    "oversized_302": {
+      "prodex_04391": {
+        "upstream_posts": 1,
+        "status": 502,
+        "headers": {
+          "Server": "tiny-http (Rust)",
+          "Date": "Mon, 26 Oct 2026 09:51:33 GMT",
+          "Content-Type": "text/plain; charset=utf-8",
+          "Content-Length": "40"
+        },
+        "body": "provider response could not be processed"
+      },
+      "modex_checkpoint11": {
+        "upstream_posts": 1,
+        "status": 502,
+        "headers": {
+          "Content-Length": "23",
+          "Connection": "close",
+          "content-type": "text/plain; charset=utf-8"
+        },
+        "body": "upstream request failed"
+      }
+    }
+  }
+}

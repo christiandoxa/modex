@@ -130,6 +130,8 @@ unit: check-toolchain
 	build/tests/test_app_server_args
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/app_server_args_driver.mojo -o build/tests/app_server_args_driver
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/app_server_rpc_driver.mojo -o build/tests/app_server_rpc_driver
+	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_app_server_rpc.mojo -o build/tests/test_app_server_rpc
+	build/tests/test_app_server_rpc
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/test_super_hooks.mojo -o build/tests/test_super_hooks
 	build/tests/test_super_hooks
 	$(MOJO) build $(MOJO_FLAGS) -I src tests/super_hooks_driver.mojo -o build/tests/super_hooks_driver

@@ -74,7 +74,7 @@ class UpstreamHandler(BaseHTTPRequestHandler):
             self.send_header("Transfer-Encoding", "chunked")
             self.send_header("Connection", "keep-alive")
         else:
-            self.send_header("Content-Length", str(len(response["body"])))
+            self.send_header("Content-Length", str(response.get("declared_length", len(response["body"]))))
             self.send_header("Connection", "close")
         self.end_headers()
         body = response["body"]

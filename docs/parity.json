@@ -43,6 +43,10 @@
     {
       "date": "2026-10-26",
       "change": "Checkpoint 10 follows verified checkpoint 9 push with native HTTP base-path backslash separators. Twelve live path/route vectors preserve raw trailing-slash assembly order, repeated separators, encoded backslashes, mixed UTF-8 and queries. Existing dot-segment refusal remains a gap. No contract/platform status or denominator changes."
+    },
+    {
+      "date": "2026-10-26",
+      "change": "Checkpoint 11 reviews all four completed worker commits, integrates corrected RPC deadline behavior and unchanged logical-weight saturating arithmetic, and moves bodyless length handling to the shared native HTTP reader. Six live 304 route/framing vectors match status/empty body without replay. SSE override restriction and duplicate scope-model test excluded. No contract/platform status or denominator changes."
     }
   ],
   "contracts": [
@@ -1254,7 +1258,8 @@
         "tests/test_super_launch.py",
         "tests/test_process_capture.mojo",
         "tests/test_relay_streams.py",
-        "tests/test_deepseek_continuation.py"
+        "tests/test_deepseek_continuation.py",
+        "tests/test_app_server_rpc.mojo"
       ],
       "evidence": [
         "docs/evidence/checkpoint-04391-tests.txt",
@@ -1282,7 +1287,10 @@
         "docs/evidence/checkpoint9-dependencies.txt",
         "docs/evidence/checkpoint10-reference.json",
         "docs/evidence/checkpoint10-tests.txt",
-        "docs/evidence/checkpoint10-dependencies.txt"
+        "docs/evidence/checkpoint10-dependencies.txt",
+        "docs/evidence/checkpoint11-reference.json",
+        "docs/evidence/checkpoint11-tests.txt",
+        "docs/evidence/checkpoint11-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2294,7 +2302,8 @@
         "tests/test_provider_request_prepare.py",
         "tests/test_deepseek_continuation.py",
         "tests/test_gateway_cli.mojo",
-        "tests/capture_stream_timeout_mismatch.py"
+        "tests/capture_stream_timeout_mismatch.py",
+        "tests/test_loopback_http_stream.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
@@ -2348,7 +2357,10 @@
         "docs/evidence/checkpoint9-state-review.json",
         "docs/evidence/checkpoint10-reference.json",
         "docs/evidence/checkpoint10-tests.txt",
-        "docs/evidence/checkpoint10-dependencies.txt"
+        "docs/evidence/checkpoint10-dependencies.txt",
+        "docs/evidence/checkpoint11-reference.json",
+        "docs/evidence/checkpoint11-tests.txt",
+        "docs/evidence/checkpoint11-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {

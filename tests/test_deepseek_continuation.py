@@ -95,6 +95,26 @@ class DeepSeekContinuationTests(unittest.TestCase):
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("oracle does not match pinned Prodex 0.439.1")
 
+    def test_bodyless_passthrough_ignores_representation_length(self):
+        cases = [("application/json", {"declared_length": 5 * 1024 * 1024 + 1}),
+                 ("text/event-stream", {"declared_length": 5 * 1024 * 1024 + 1}),
+                 ("application/json", {"chunked": True, "hold_open": True})]
+        for content_type, framing in cases:
+            for route in ("responses", "chat/completions"):
+                for binary in (ORACLE, MODEX):
+                    with self.subTest(framing=framing, route=route, binary=str(binary)):
+                        upstream, responses = observe_turns(binary, [{"model": "deepseek-chat",
+                            "input": "synthetic bodyless response", "messages": [],
+                            "_path": "/v1/" + route + "?synthetic=%2B"}], [{"status": 304,
+                            "content_type": content_type, "body": b"", **framing}])
+                        self.assertEqual([row["status"] for row in responses], [304])
+                        self.assertEqual(bytes.fromhex(responses[0]["body"]), b"")
+                        self.assertEqual(len(upstream), 1)
+                        self.assertEqual(upstream[0]["path"], "/v1/chat/completions" +
+                                         ("?synthetic=%2B" if route == "chat/completions" else ""))
+                        self.assertEqual(upstream[0]["headers"]["authorization"],
+                                         "Bearer " + SYNTHETIC_API_KEY)
+
     def test_upstream_ascii_path_encoding_matches_release(self):
         paths = ['/v1/"<>`{}', '/v1/{}^|[]', '/v1/%22%3C%3E%60%7B%7D',
                  '/v1/é{"東京"}/', '/v1/a!$&\'()+,;=:_~-']

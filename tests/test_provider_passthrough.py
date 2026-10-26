@@ -102,6 +102,18 @@ class ProviderPassthroughTests(unittest.TestCase):
     def test_loopback_framing_auth_and_bounded_streaming(self):
         main()
 
+    def test_chat_completions_304_ignores_large_representation_length(self):
+        from test_local_rewrite import RunningLocalRewrite, post_relay, serving
+        with serving([{"status": 304, "content_type": "application/json", "body": b"",
+                       "declared_length": 5242881}]) as server:
+            with RunningLocalRewrite(server.server_port) as relay:
+                status, _, body = post_relay(relay.address,
+                    b'{"model":"deepseek-chat","messages":[]}',
+                    path="/v1/chat/completions?trace=synthetic")
+        self.assertEqual((status, body), (304, b""))
+        self.assertEqual(len(server.records), 1)
+        self.assertEqual(server.records[0]["path"], "/v1/chat/completions?trace=synthetic")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,262 @@
+{
+  "oracle": "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "worker": "/tmp/modex-cp11-wire-bodyless-review/modex",
+  "worker_sha256": "752b403b32ce06eb1b04813e162483d0f35c0f21832c26b90503f267ee3dca2e",
+  "cases": [
+    {
+      "case": "304_huge_length",
+      "observations": {
+        "oracle": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 304,
+              "headers": {
+                "Server": "tiny-http (Rust)",
+                "Date": "Mon, 26 Oct 2026 09:30:03 GMT",
+                "content-type": "application/json",
+                "Content-Length": "0"
+              },
+              "body": "",
+              "started": 1793007003,
+              "finished": 1793007003
+            }
+          ],
+          "seconds": 0.696
+        },
+        "worker": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 304,
+              "headers": {
+                "Connection": "close",
+                "Content-Type": "application/json"
+              },
+              "body": "",
+              "started": 1793007004,
+              "finished": 1793007004
+            }
+          ],
+          "seconds": 0.622
+        }
+      },
+      "match_status_body": true
+    },
+    {
+      "case": "304_chunked",
+      "observations": {
+        "oracle": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 304,
+              "headers": {
+                "Server": "tiny-http (Rust)",
+                "Date": "Mon, 26 Oct 2026 09:30:04 GMT",
+                "content-type": "application/json",
+                "Content-Length": "0"
+              },
+              "body": "",
+              "started": 1793007004,
+              "finished": 1793007004
+            }
+          ],
+          "seconds": 0.724
+        },
+        "worker": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 304,
+              "headers": {
+                "Connection": "close",
+                "Content-Type": "application/json"
+              },
+              "body": "",
+              "started": 1793007005,
+              "finished": 1793007005
+            }
+          ],
+          "seconds": 0.622
+        }
+      },
+      "match_status_body": true
+    },
+    {
+      "case": "204_huge_length",
+      "observations": {
+        "oracle": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 204,
+              "headers": {
+                "Server": "tiny-http (Rust)",
+                "Date": "Mon, 26 Oct 2026 09:30:06 GMT",
+                "content-type": "application/json",
+                "Content-Length": "0"
+              },
+              "body": "",
+              "started": 1793007006,
+              "finished": 1793007006
+            }
+          ],
+          "seconds": 0.695
+        },
+        "worker": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 204,
+              "headers": {
+                "Connection": "close",
+                "Content-Type": "application/json"
+              },
+              "body": "",
+              "started": 1793007006,
+              "finished": 1793007006
+            }
+          ],
+          "seconds": 0.623
+        }
+      },
+      "match_status_body": true
+    },
+    {
+      "case": "204_chunked",
+      "observations": {
+        "oracle": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 204,
+              "headers": {
+                "Server": "tiny-http (Rust)",
+                "Date": "Mon, 26 Oct 2026 09:30:07 GMT",
+                "content-type": "application/json",
+                "Content-Length": "0"
+              },
+              "body": "",
+              "started": 1793007007,
+              "finished": 1793007007
+            }
+          ],
+          "seconds": 0.695
+        },
+        "worker": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 204,
+              "headers": {
+                "Connection": "close",
+                "Content-Type": "application/json"
+              },
+              "body": "",
+              "started": 1793007007,
+              "finished": 1793007007
+            }
+          ],
+          "seconds": 0.625
+        }
+      },
+      "match_status_body": true
+    },
+    {
+      "case": "302_cap",
+      "observations": {
+        "oracle": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 502,
+              "headers": {
+                "Server": "tiny-http (Rust)",
+                "Date": "Mon, 26 Oct 2026 09:30:08 GMT",
+                "Content-Type": "text/plain; charset=utf-8",
+                "Content-Length": "40"
+              },
+              "body": "70726f766964657220726573706f6e736520636f756c64206e6f742062652070726f636573736564",
+              "started": 1793007008,
+              "finished": 1793007008
+            }
+          ],
+          "seconds": 0.722
+        },
+        "worker": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 502,
+              "headers": {
+                "Content-Length": "23",
+                "Connection": "close",
+                "content-type": "text/plain; charset=utf-8"
+              },
+              "body": "757073747265616d2072657175657374206661696c6564",
+              "started": 1793007009,
+              "finished": 1793007009
+            }
+          ],
+          "seconds": 0.627
+        }
+      },
+      "match_status_body": false
+    },
+    {
+      "case": "302_normal",
+      "observations": {
+        "oracle": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 302,
+              "headers": {
+                "Server": "tiny-http (Rust)",
+                "Date": "Mon, 26 Oct 2026 09:30:10 GMT",
+                "content-type": "application/json",
+                "Content-Length": "4"
+              },
+              "body": "6e756c6c",
+              "started": 1793007010,
+              "finished": 1793007010
+            }
+          ],
+          "seconds": 0.751
+        },
+        "worker": {
+          "posts": 1,
+          "responses": [
+            {
+              "kind": "response",
+              "status": 302,
+              "headers": {
+                "Content-Length": "4",
+                "Connection": "close",
+                "Content-Type": "application/json"
+              },
+              "body": "6e756c6c",
+              "started": 1793007010,
+              "finished": 1793007010
+            }
+          ],
+          "seconds": 0.65
+        }
+      },
+      "match_status_body": true
+    }
+  ]
+}

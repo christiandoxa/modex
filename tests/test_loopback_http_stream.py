@@ -122,6 +122,24 @@ class LoopbackHTTPStreamTests(unittest.TestCase):
         self.assertIn(b"S 201\nH X-Trace: one\nH X-Trace: two\nH X.Foo: a\tb\nH Content-Length: 2\n\nok", result.stdout)
         self.assertEqual(errors, [])
 
+    def test_bodyless_status_skips_length_cap_and_body_read(self):
+        for status in (204, 304):
+            with self.subTest(status=status):
+                closed = []
+                def respond(conn, _request):
+                    conn.sendall(f"HTTP/1.1 {status} Bodyless\r\nContent-Length: 5242881\r\n\r\n".encode())
+                    closed.append(conn.recv(1))
+
+                address, accepted, errors, thread = self.serve(respond)
+                result = self.call(address)
+                thread.join(3)
+                self.assertFalse(thread.is_alive())
+                self.assertEqual(errors, [])
+                self.assertEqual(accepted, [True])
+                self.assertEqual(closed, [b""])
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, f"S {status}\nH Content-Length: 5242881\n\n".encode())
+
     def test_connect_errno_survives_downstream_probe(self):
         left, right = socket.socketpair()
         try:

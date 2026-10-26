@@ -367,5 +367,16 @@
       "docs/evidence/checkpoint10-tests.txt",
       "docs/evidence/checkpoint10-dependencies.txt"
     ]
+  },
+  "checkpoint11_dependency_audit": {
+    "new_application_dependencies": [],
+    "new_native_bindings": [],
+    "production_python_or_codegen": false,
+    "scope": "Existing native RPC/time, HTTP length and nonnegative 64-bit estimator operations only. No import or dependency changes; test-only Python peers and frozen-source Rust/Mojo checks do not implement Modex.",
+    "evidence": [
+      "docs/evidence/checkpoint11-reference.json",
+      "docs/evidence/checkpoint11-tests.txt",
+      "docs/evidence/checkpoint11-dependencies.txt"
+    ]
   }
 }

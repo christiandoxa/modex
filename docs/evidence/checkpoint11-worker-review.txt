@@ -1,0 +1,35 @@
+Supplemental official-launcher results, retained in full. Parent independently checked source, corrected incomplete conclusions and reran focused assertions. Child output is evidence, not approval.
+
+rpc-memory stdout:
+**Objective completed.** Reviewed exact commits `40114bd0bf0122f12ac3856562e34737b27e8e22` and `ff2d0d10b7cf8ad84143cc8b6f84a925240f2cb7` against frozen `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`.
+
+**Findings**
+- RPC: the pinned `rpc_request` checks expiry **before** receiving (`crates/prodex-app/src/runtime_tools/hook_trust.rs:207–216`). An expired guard rejects even queued responses. Bare `recv_timeout` accepts queued data at zero timeout; expiry after a positive-duration check can also still accept it. The added Mojo check preserves the pinned guard order.
+- Estimator: repeated saturating additions equal the pinned nonnegative `UInt128` sum clamped to 64-bit maximum (`mojo/prodex_core/provider_conversation_memory.mojo:29–43`; Rust boundary passes `usize::MAX` at `crates/prodex-mojo-core/src/json/provider_conversation_memory.rs:67`). Weights remain unchanged: 32 per value, 1 per boolean, 16 per number, UTF-8 string/key bytes; synthetic root excluded.
+- No blocking defect found in the scoped changes. Rejected serialized-weight proposal was not reapplied.
+
+**Files inspected or created**
+- Inspected both complete changed production modules, their tests, the launch caller, conversation insertion/retention path, and pinned RPC/estimator/store functions.
+- Created only [test_rpc_deadline.rs](/tmp/modex-cp11-rpc-memory-review/test_rpc_deadline.rs) and [test_estimator.mojo](/tmp/modex-cp11-rpc-memory-review/test_estimator.mojo), plus their binaries.
+- Imported estimator source matches the exact reviewed commit by SHA-256.
+
+**Tests/commands**
+- `rustc …/test_rpc_deadline.rs -o …/test_rpc_deadline`; execution: **PASS**.
+- `mojo build -I /tmp/modex-luna-conversations2-20261026/src …/test_estimator.mojo -o …/test_estimator`; execution: **PASS**, nine arithmetic boundaries and three weight fixtures.
+- Initial duplicate-key fixture incorrectly expected 97; corrected test expectation to 81, then passed.
+- Toolchains: Mojo `1.2.0 (2016d0cd)`; Rust `1.99.1`. Mojo emitted a nonfatal missing Crashpad-handler warning.
+- Runtime model/effort not exposed; Luna MAX could not be verified.
+
+Not checked: main build, full integration suite, six-target parity, or real allocation limits. No repository edits, commits, pushes, agent children, provider traffic, or protected-file changes. Risk: these focused tests do not establish full parity.
+
+wire-bodyless stdout:
+Objective completed. Full results, commands, inspected files, and source lines are in [report.json](/tmp/modex-cp11-wire-bodyless-review/report.json), also printed to stdout.
+
+- **Bodyless fix validated:** four 204/304 cases match the checksum-verified oracle in status/body, without waiting for EOF or chunk terminators.
+- **302 gap found:** oversized responses produce 502 in both, but error bodies differ. Normal 302 matches.
+- **SSE checks pass:** `20b6ae2` adds internal override restrictions; production already uses 4 MiB defaults. This does not establish additional production parity.
+- Every successful test request made exactly one upstream POST; no replay.
+
+Created [check_bodyless.py](/tmp/modex-cp11-wire-bodyless-review/check_bodyless.py) and separate native SSE checks only under the owned directory. No repository edits, commits, pushes, or child agents. Actual model/effort selection could not be verified.
+
+Skipped peak-memory measurement and other release targets. Header differences and the 302 error-body mismatch remain; no general parity claim.

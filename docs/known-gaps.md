@@ -6,6 +6,17 @@ Complete parity remains unfinished against Prodex 0.439.1 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 12 closes whole-dot normalization for admitted numeric-loopback
+HTTP upstream paths, including literal/encoded dots, repeated separators,
+root clamp and suffix assembly. Forty-six real Super/release route vectors
+match exact paths and retain authoritative synthetic auth and one POST each.
+Checkpoint 11 failed 20 of 23 base-path cases. The historical checkpoint 10
+backslash-dot refusal below is resolved for this subset; general schemes,
+authorities, transport/security/resources and non-host behavior remain gaps.
+See `docs/evidence/checkpoint12-reference.json`. Final binding and adjacent
+transport probes retain the known mismatches; this path fix does not implement
+credential/profile ownership, recovery or actual goal progress.
+
 Checkpoint 11 corrects bodyless effective length in the shared native HTTP
 reader. Six live 304 route/framing vectors match status/empty body, with one
 POST each; raw header/constructor equivalence remains incomplete. The release
@@ -24,22 +35,22 @@ Checkpoint 10 fixes ordinary HTTP upstream path backslash separators in the
 shared native resolver. Twelve live path/route vectors preserve repeated
 separators, literal trailing-slash trim order, percent-encoded backslashes,
 queries, mixed UTF-8 and authoritative synthetic auth, with one POST per
-accepted request. Literal/encoded dot normalization and broader URL behavior
-remain unqualified. The existing dot-segment guard now also rejects normalized
-backslash-dot paths; its stricter refusal is not a parity PASS. Full binding,
+accepted request. At checkpoint 10, literal/encoded dots and broader URL
+behavior were unqualified; its stricter backslash-dot refusal was not a parity
+PASS. Checkpoint 12 closes the admitted whole-dot subset. Full binding,
 timeouts, aggregate retention and all six release qualifications remain blocked.
 See `docs/evidence/checkpoint10-reference.json`.
-A final live probe confirms `/v1\..\other`: release normalizes to
-`/other/chat/completions` and returns 200 with one POST; Modex exits 1 without
-a POST. This stricter guard is an unapproved safe difference, not parity PASS.
+The checkpoint 10 probe observed `/v1\..\other`: release normalized to
+`/other/chat/completions` and returned 200/one POST, while that native artifact
+exited 1 without a POST. Checkpoint 12 now matches the admitted path.
 The original two-turn binding mismatch is also reproduced in that evidence.
 
 Checkpoint 9 extends native upstream base-path encoding to quotes, angle
 brackets, backticks and braces. Ten live path/route vectors preserve existing
 percent escapes, ordinary punctuation, mixed UTF-8, queries, authoritative
 synthetic auth and one POST per request. Backslash separators were a reproduced mismatch at that
-checkpoint; checkpoint 10 fixes the tested ordinary subset. Encoded dot segments
-and broader URL behavior remain unqualified. See `docs/evidence/checkpoint9-reference.json`.
+checkpoint; checkpoints 10/12 cover admitted separators and whole-dot segments.
+Broader URL behavior remains unqualified. See `docs/evidence/checkpoint9-reference.json`.
 
 Exactly two completed worker proposals were reviewed and excluded. `9d05840`
 changes one source-derived timeout message without reproducing the whole
@@ -94,10 +105,12 @@ implement general lower-client binary header retention.
 Checkpoint 5 fixes non-ASCII upstream base-path bytes: native dispatch now
 matches the release's UTF-8 percent encoding. Existing percent escapes and
 combining sequences are preserved; eight production path/route comparisons
-cover Responses and Chat Completions, including query forwarding. Full URL
-normalization, encoded dot segments, ASCII punctuation, redirects and non-host
-behavior remain unqualified. The model `default` probe matched the release,
-so no alias change was made. See `docs/evidence/checkpoint5-reference.json`.
+cover Responses and Chat Completions, including query forwarding. ASCII
+punctuation, separators and whole-dot segments were unqualified there;
+checkpoints 9/10/12 now cover the admitted path subset. Full URL behavior,
+redirects and non-host qualification remain unfinished. The model `default`
+probe matched the release, so no alias change was made. See
+`docs/evidence/checkpoint5-reference.json`.
 
 Checkpoint 4 connects the pinned Responses continuation-identifier boundary:
 resolved previous-response, session and header turn-state values reject C0/C1

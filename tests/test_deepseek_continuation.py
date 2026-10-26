@@ -115,6 +115,45 @@ class DeepSeekContinuationTests(unittest.TestCase):
                         self.assertEqual(upstream[0]["headers"]["authorization"],
                                          "Bearer " + SYNTHETIC_API_KEY)
 
+    def test_upstream_dot_segments_match_release(self):
+        cases = [('/v1/./keep', '/v1/keep/chat/completions'),
+                 ('/v1/%2e/keep', '/v1/keep/chat/completions'),
+                 ('/v1/%2E/keep', '/v1/keep/chat/completions'),
+                 ('/v1/.', '/v1/chat/completions'),
+                 ('/v1/%2E/', '/v1/chat/completions'),
+                 ('/v1/left/../right', '/v1/right/chat/completions'),
+                 ('/v1/left/.%2e/right', '/v1/right/chat/completions'),
+                 ('/v1/left/%2E./right', '/v1/right/chat/completions'),
+                 ('/v1/left/%2e%2E/right', '/v1/right/chat/completions'),
+                 ('/v1/..', '/chat/completions'),
+                 ('/v1/%2E%2e', '/chat/completions'),
+                 ('/../../other', '/other/chat/completions'),
+                 ('/v1//../other', '/v1/other/chat/completions'),
+                 ('/v1/left/..//right', '/v1//right/chat/completions'),
+                 ('/v1\\..\\other', '/other/chat/completions'),
+                 ('/v1/left\\.%2E\\right', '/v1/right/chat/completions'),
+                 ('/v1/left\\..\\\\right', '/v1//right/chat/completions'),
+                 ('/v1/./trail\\', '/v1/trail//chat/completions'),
+                 ('/v1/%252e/%252E%252e', '/v1/%252e/%252E%252e/chat/completions'),
+                 ('/v1/%2e%2Fkeep/%5C', '/v1/%2e%2Fkeep/%5C/chat/completions'),
+                 ('/v1/é/{東京}/..', '/v1/%C3%A9/chat/completions'),
+                 ('/v1/é/../{東京}', '/v1/%7B%E6%9D%B1%E4%BA%AC%7D/chat/completions'),
+                 ('/v1/part..part/.../.hidden', '/v1/part..part/.../.hidden/chat/completions')]
+        query = "?keep=%2e%2E&encoded=%2F%5C"
+        for path, target in cases:
+            turns = [{"model": "deepseek-chat", "input": "synthetic dot normalization"},
+                     {"model": "deepseek-chat", "messages": [],
+                      "_path": "/v1/chat/completions" + query}]
+            replies = [buffered_reply(created=42), {"status": 201,
+                       "content_type": "application/json", "body": b"null"}]
+            for binary in (ORACLE, MODEX):
+                with self.subTest(path=path, binary=str(binary)):
+                    upstream, responses = observe_turns(binary, turns, replies, base_path=path)
+                    self.assertEqual([row["status"] for row in responses], [200, 201])
+                    self.assertEqual([row["path"] for row in upstream], [target, target + query])
+                    for record in upstream:
+                        self.assertEqual(record["headers"]["authorization"], "Bearer " + SYNTHETIC_API_KEY)
+
     def test_upstream_ascii_path_encoding_matches_release(self):
         paths = ['/v1/"<>`{}', '/v1/{}^|[]', '/v1/%22%3C%3E%60%7B%7D',
                  '/v1/é{"東京"}/', '/v1/a!$&\'()+,;=:_~-']

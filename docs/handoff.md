@@ -1,3 +1,53 @@
+# Checkpoint 12: native upstream dot segments
+
+Checkpoint 11 was normally committed and pushed as
+`3cacd5b01a64cb514035e54b11b949e5d399bd04`. Local HEAD, independent remote main
+and clean worktree were verified before immediate continuation. Its reviewed
+worker decisions and source/test integrations remain intact; W/X/Y's files
+and all worker worktrees remain untouched.
+
+The owned native resolver now removes literal and percent-encoded whole-dot
+segments after raw trailing-slash trimming, backslash conversion and provider
+suffix assembly. It preserves empty segments and original escape spelling,
+clamps traversal at the authority root, and applies the existing UTF-8/six-ASCII
+encoder. The validated numeric loopback address is kept separate from path
+normalization; existing scheme/userinfo/query/fragment/control-byte guards are
+byte-identical. No import, dependency, helper, native binding or option is added.
+
+The new real Super/release regression covers 23 base paths and both provider
+routes, totaling 46 paths/POSTs per binary. All compare exact expected paths,
+statuses, authoritative synthetic auth and unchanged Chat query escapes.
+Checkpoint 11 fails 20 base-path cases; the three existing escape/ordinary
+controls already match. Native assertions cover all three single-dot and nine
+double-dot spellings, eleven edge paths, an IPv6 retained-address tuple and
+eleven invalid URL boundaries. The checkpoint 10 `/v1\..\other` refusal is resolved
+within this admitted subset; it is not a broad URL or transport parity claim.
+
+Validation: `make build`, all 46 native units, 18 focused Python
+methods in 90.448 seconds, then serial `rtk proxy make test`: 355 Python
+methods in 651.506 seconds, no skips, and 407 pinned recovery-policy vectors.
+The full gate took 801.077 seconds. The production artifact
+hash remained fixed through Python discovery, linkage/sandbox checks and after
+completion. Three URL call-path snapshot files still match pinned Git objects;
+locked URL 2.5.8 source/archive checksums retain checkpoint 11 provenance.
+All 67 production sources, imports, linkage and isolated synthetic credential
+checks remain accounted for. No real credentials, paid provider traffic or
+account login were used. No new workers were launched; checkpoint 11 records
+actual Sol/none supplemental runs and unverified requested Luna/MAX provenance.
+
+Final live probes retain full binding and adjacent transport mismatches:
+release 200/503 with one POST versus native 200/200 with two; 304 header
+Content-Length: 0 omission; oversized-302 error text. Profile/credential/binding
+identity, ownership/conflict/acquisition/persistence/release and actual recovery/
+goal progress remain unfinished. Super history stays unscoped; the internal
+driver remains scoped. Idle errors, non-object SSE, large output kernels,
+physical cache memory, binary lower-client headers, broad storage/security,
+JavaScript SDK and non-host qualification remain gaps. All 71 contracts,
+426 platform obligations and six BLOCKED release qualifications are preserved.
+
+Evidence: `docs/evidence/checkpoint12-reference.json`, `checkpoint12-tests.txt`,
+`checkpoint12-dependencies.txt` and `checkpoint12-before.txt`.
+
 # Checkpoint 11: reviewed worker integration and bodyless HTTP
 
 Main began clean at verified pushed `85bb5540784ea27263f6abc21812071a7d8065ed`;

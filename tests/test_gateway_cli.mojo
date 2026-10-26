@@ -92,7 +92,26 @@ def main() raises:
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/left\\right")[1], "/v1/left/right/chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/trailing\\/")[1], "/v1/trailing//chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/%5Cescaped")[1], "/v1/%5Cescaped/chat/completions")
-    for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://localhost:1", "http://127.0.0.1:0", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://127.0.0.1:1/v1/../other", "http://127.0.0.1:1/v1\\..\\other"]:
+    for dot in [".", "%2e", "%2E"]:
+        assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/" + dot + "/keep")[1], "/v1/keep/chat/completions")
+    for dot in ["..", ".%2e", ".%2E", "%2e.", "%2E.", "%2e%2e", "%2e%2E", "%2E%2e", "%2E%2E"]:
+        assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/left/" + dot + "/right")[1], "/v1/right/chat/completions")
+    for path, target in [
+        ("/v1/.", "/v1/chat/completions"),
+        ("/v1/..", "/chat/completions"),
+        ("/../../other", "/other/chat/completions"),
+        ("/v1//../other", "/v1/other/chat/completions"),
+        ("/v1/left/..//right", "/v1//right/chat/completions"),
+        ("/v1\\..\\other", "/other/chat/completions"),
+        ("/v1/.\\", "/v1//chat/completions"),
+        ("/v1/..\\", "//chat/completions"),
+        ("//v1/../keep", "//keep/chat/completions"),
+        ("/v1/%252e/%2e%2Fkeep/%5C", "/v1/%252e/%2e%2Fkeep/%5C/chat/completions"),
+        ("/v1/%2efoo/.%2ex", "/v1/%2efoo/.%2ex/chat/completions"),
+    ]:
+        assert_equal(local_rewrite_upstream("http://127.0.0.1:1234" + path)[1], target)
+    assert_equal(local_rewrite_upstream("http://[::1]:1234/../../other"), (String("[::1]:1234"), String("/other/chat/completions")))
+    for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://localhost:1", "http://127.0.0.1:0", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://user:secret@127.0.0.1:1/v1/../other", "http://user%3Asecret%40127.0.0.1:1/v1/../other", "http://127.0.0.1:1/v1/../other?secret", "http://127.0.0.1:1/v1/../other#fragment", "http://127.0.0.1:1\\v1/../other"]:
         var rejected = False
         try:
             _ = local_rewrite_upstream(url)

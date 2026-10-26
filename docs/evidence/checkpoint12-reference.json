@@ -1,0 +1,337 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "starting_main": "3cacd5b01a64cb514035e54b11b949e5d399bd04",
+  "previous_checkpoint_push_verified": {
+    "checkpoint": 11,
+    "local_head": "3cacd5b01a64cb514035e54b11b949e5d399bd04",
+    "remote_main": "3cacd5b01a64cb514035e54b11b949e5d399bd04",
+    "worktree_clean": true
+  },
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "snapshot_git_object_matches": {
+    "Cargo.lock": {
+      "sha256": "c5c9e80f925346ec065169be3c2d989a369c7dc8b86f279fc63809c8cebbb323",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_transport.rs": {
+      "sha256": "228628a129e64128ce4a6199d86f3ab2b392eec2f08e6bfa5606a5b7c3cd0e79",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_transport/urls.rs": {
+      "sha256": "ecd51b88222814eb2d1d6619af8fbc088bda8ba84fd41b0b41b9a407375a42fe",
+      "matches_pinned_git_object": true
+    }
+  },
+  "frozen_url_dependency_source": {
+    "version": "2.5.8",
+    "locked_archive_sha256": "ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed",
+    "source_file": "src/parser.rs",
+    "source_sha256": "2dd4210e1773fc5d3fdc15ce506ecff30dbf8eb358a79bbbc2835cc30d513c3a",
+    "registry_source_matches_locked_archive": true,
+    "scope": "Inspected frozen reference dependency only; never a Modex dependency."
+  },
+  "owned_production_slice": {
+    "file": "src/modex/runtime_local_rewrite.mojo",
+    "function": "local_rewrite_upstream",
+    "change": "Normalize the assembled provider path by whole-dot segments, preserving empty segments, percent-escape spelling and UTF-8/six-ASCII encoding. Recognize the three single-dot and nine double-dot spellings with ASCII-case-insensitive percent markers. Root sentinel prevents traversal above the authority root; return address remains separate and unchanged. No signature, import or public option changes.",
+    "assembly_order": "Validate admitted HTTP numeric-loopback URL and credentials/control bytes first; trim only raw literal trailing slashes; convert path backslashes; append provider suffix; remove whole-dot segments; encode the resulting path.",
+    "baseline_trace": "local_rewrite_transport/urls.rs::runtime_local_rewrite_upstream_url trims raw trailing slashes before adding the provider suffix. reqwest parses the assembled HTTP URL with locked URL 2.5.8 parser.rs::parse_path: literal backslashes delimit segments, the whole-dot match lists all three/nine spellings, and shorten_path removes one segment without leaving the authority root. Native lower() is used only for matching; retained values preserve original bytes.",
+    "callers": "Native clean-home Super validation and child startup -> run_local_rewrite_child -> serve_local_rewrite -> _serve -> Responses DeepSeekExchange or Chat Completions passthrough. Readiness and internal native driver share the same resolver.",
+    "security_and_memory_scope": "Existing scheme/authority/userinfo/query/fragment/control guards are byte-identical. List/String ownership stays local to this synchronous call and the socket address cannot be changed by normalized path segments. Broader URL/security/RSS/large-input behavior is not qualified."
+  },
+  "production_differential": {
+    "test": "tests/test_deepseek_continuation.py::test_upstream_dot_segments_match_release",
+    "base_path_cases": 23,
+    "path_route_vectors_per_binary": 46,
+    "upstream_posts_per_binary": 46,
+    "previous_modex_failing_base_cases": 20,
+    "previous_modex_artifact_sha256": "9fb833d639a15fee4af2946ca2aa0f8ff16020659e5d36ce62d4e2ff106d5637",
+    "cases": [
+      [
+        "/v1/./keep",
+        "/v1/keep/chat/completions"
+      ],
+      [
+        "/v1/%2e/keep",
+        "/v1/keep/chat/completions"
+      ],
+      [
+        "/v1/%2E/keep",
+        "/v1/keep/chat/completions"
+      ],
+      [
+        "/v1/.",
+        "/v1/chat/completions"
+      ],
+      [
+        "/v1/%2E/",
+        "/v1/chat/completions"
+      ],
+      [
+        "/v1/left/../right",
+        "/v1/right/chat/completions"
+      ],
+      [
+        "/v1/left/.%2e/right",
+        "/v1/right/chat/completions"
+      ],
+      [
+        "/v1/left/%2E./right",
+        "/v1/right/chat/completions"
+      ],
+      [
+        "/v1/left/%2e%2E/right",
+        "/v1/right/chat/completions"
+      ],
+      [
+        "/v1/..",
+        "/chat/completions"
+      ],
+      [
+        "/v1/%2E%2e",
+        "/chat/completions"
+      ],
+      [
+        "/../../other",
+        "/other/chat/completions"
+      ],
+      [
+        "/v1//../other",
+        "/v1/other/chat/completions"
+      ],
+      [
+        "/v1/left/..//right",
+        "/v1//right/chat/completions"
+      ],
+      [
+        "/v1\\..\\other",
+        "/other/chat/completions"
+      ],
+      [
+        "/v1/left\\.%2E\\right",
+        "/v1/right/chat/completions"
+      ],
+      [
+        "/v1/left\\..\\\\right",
+        "/v1//right/chat/completions"
+      ],
+      [
+        "/v1/./trail\\",
+        "/v1/trail//chat/completions"
+      ],
+      [
+        "/v1/%252e/%252E%252e",
+        "/v1/%252e/%252E%252e/chat/completions"
+      ],
+      [
+        "/v1/%2e%2Fkeep/%5C",
+        "/v1/%2e%2Fkeep/%5C/chat/completions"
+      ],
+      [
+        "/v1/é/{東京}/..",
+        "/v1/%C3%A9/chat/completions"
+      ],
+      [
+        "/v1/é/../{東京}",
+        "/v1/%7B%E6%9D%B1%E4%BA%AC%7D/chat/completions"
+      ],
+      [
+        "/v1/part..part/.../.hidden",
+        "/v1/part..part/.../.hidden/chat/completions"
+      ]
+    ],
+    "coverage": [
+      "literal and encoded whole single/double dots, mixed percent-marker case",
+      "trailing dots and above-root traversal clamp",
+      "empty path segments and repeated slash/backslash separators",
+      "raw trailing-backslash/suffix ordering",
+      "existing percent escapes, encoded slashes/backslashes and double-encoded dot controls",
+      "ordinary non-dot substrings and mixed UTF-8/braces",
+      "Responses and Chat Completions, unchanged Chat query percent escapes",
+      "authoritative synthetic authorization and one POST per accepted request"
+    ],
+    "native_boundary_assertions": "Three single-dot and nine double-dot spellings, eleven path controls, IPv6 retained-address tuple and eleven invalid URL boundaries."
+  },
+  "validation": {
+    "command": "rtk proxy make test",
+    "exit_code": 0,
+    "elapsed_seconds": 801.077,
+    "artifact_sha256_at_python_discovery": "5f23e13a43aee268c27895e9ac34273ae701ca771ad096f65ba92d5dac23ee6e",
+    "artifact_sha256_after": "5f23e13a43aee268c27895e9ac34273ae701ca771ad096f65ba92d5dac23ee6e",
+    "build_command": "rtk proxy make build",
+    "unit_command": "rtk proxy make unit",
+    "focused_command": "PYTHONPATH=tests rtk proxy python3 -m unittest -v test_deepseek_continuation",
+    "native_unit_executables": 46,
+    "python_methods": 355,
+    "python_seconds": 651.506,
+    "skips": 0,
+    "focused_python_methods": 18,
+    "focused_python_seconds": 90.448,
+    "pinned_recovery_policy_vectors": 407
+  },
+  "model_provenance": {
+    "execution_owner": "sole shared-main parent",
+    "primary_requested_by_user": "gpt-6.1-sol / max",
+    "primary_runtime_selection_independently_exposed": false,
+    "new_workers": [],
+    "previous_worker_review_provenance": "docs/evidence/checkpoint11-reference.json"
+  },
+  "protected_gap_rechecks": {
+    "artifact_sha256": "5f23e13a43aee268c27895e9ac34273ae701ca771ad096f65ba92d5dac23ee6e",
+    "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+    "binding_mismatch": {
+      "prodex_04391": {
+        "statuses": [
+          200,
+          503
+        ],
+        "upstream_posts": 1,
+        "bodies": [
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-0",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          },
+          {
+            "error": {
+              "code": "bound_continuation_unavailable",
+              "message": "bound continuation provider is unavailable"
+            }
+          }
+        ]
+      },
+      "modex_checkpoint12": {
+        "statuses": [
+          200,
+          200
+        ],
+        "upstream_posts": 2,
+        "bodies": [
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-0",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          },
+          {
+            "created_at": 42,
+            "id": "synthetic-chat-1",
+            "metadata": {
+              "deepseek": {
+                "finish_reason": "stop"
+              }
+            },
+            "model": "deepseek-chat",
+            "object": "response",
+            "output": [
+              {
+                "content": [
+                  {
+                    "text": "synthetic reply",
+                    "type": "output_text"
+                  }
+                ],
+                "role": "assistant",
+                "type": "message"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "bodyless_headers": {
+      "prodex_04391": {
+        "upstream_posts": 1,
+        "status": 304,
+        "headers": {
+          "server": "BaseHTTP Python/3.16.0a1",
+          "date": "Mon, 26 Oct 2026 10:15:26 GMT",
+          "content-type": "application/json",
+          "Content-Length": "0"
+        },
+        "body": ""
+      },
+      "modex_checkpoint12": {
+        "upstream_posts": 1,
+        "status": 304,
+        "headers": {
+          "Connection": "close",
+          "Server": "BaseHTTP Python/3.16.0a1",
+          "Date": "Mon, 26 Oct 2026 10:15:28 GMT",
+          "Content-Type": "application/json"
+        },
+        "body": ""
+      }
+    },
+    "oversized_302": {
+      "prodex_04391": {
+        "upstream_posts": 1,
+        "status": 502,
+        "headers": {
+          "Server": "tiny-http (Rust)",
+          "Date": "Mon, 26 Oct 2026 10:15:27 GMT",
+          "Content-Type": "text/plain; charset=utf-8",
+          "Content-Length": "40"
+        },
+        "body": "provider response could not be processed"
+      },
+      "modex_checkpoint12": {
+        "upstream_posts": 1,
+        "status": 502,
+        "headers": {
+          "Content-Length": "23",
+          "Connection": "close",
+          "content-type": "text/plain; charset=utf-8"
+        },
+        "body": "upstream request failed"
+      }
+    }
+  },
+  "remaining_limits": [
+    "General URL schemes/authorities, TLS, DNS, proxies, redirects, transport/security/resource equivalence and non-host behavior remain unqualified outside the admitted numeric-loopback HTTP slice.",
+    "Full credential/profile/binding identity and conflict/acquisition/persistence/release remain incomplete; the release 200/503 one-POST versus Modex 200/200 two-POST mismatch persists. Native Super history is unscoped and the internal driver remains scoped; accepted control RPCs are not actual goal progress.",
+    "304 downstream Content-Length: 0 omission and oversized-302 error text remain mismatches. Idle streaming status/text, non-object SSE, large output kernels, physical cache memory, binary lower-client header retention, broad storage/security and JavaScript SDK remain unfinished."
+  ],
+  "unchanged_denominator": {
+    "contracts": 71,
+    "platform_obligations": 426,
+    "release_targets_blocked": 6,
+    "inventory_complete": false
+  }
+}

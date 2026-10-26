@@ -49,8 +49,20 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
         path = shorter^
     # Frozen URL assembly trims literal trailing slashes before parsing separators.
     path = path.replace("\\", "/")
-    if "/../" in path or "/./" in path or path.endswith("/..") or path.endswith("/."):
-        raise Error("URL path normalization is not implemented by this Modex gateway")
+    var target = path + "/chat/completions"
+    var segments = List[String]()
+    # Normalize the assembled path, preserving empty segments and the authority root.
+    for segment in target.split("/"):
+        var value = String(segment)
+        var lower = value.lower()
+        if lower == "." or lower == "%2e":
+            continue
+        if lower in ["..", ".%2e", "%2e.", "%2e%2e"]:
+            if len(segments) > 1:
+                _ = segments.pop()
+            continue
+        segments.append(value^)
+    path = String("/").join(segments)
     var encoded = String()
     comptime HEX = StaticString("0123456789ABCDEF")
     for byte in path.as_bytes():
@@ -59,7 +71,7 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
             encoded += "%" + HEX[byte=Int(byte) // 16] + HEX[byte=Int(byte) % 16]
         else:
             encoded += chr(Int(byte))
-    return address, encoded + "/chat/completions"
+    return address, encoded
 
 
 def _bytes(text: String) -> List[UInt8]:

@@ -47,6 +47,10 @@
     {
       "date": "2026-10-26",
       "change": "Checkpoint 11 reviews all four completed worker commits, integrates corrected RPC deadline behavior and unchanged logical-weight saturating arithmetic, and moves bodyless length handling to the shared native HTTP reader. Six live 304 route/framing vectors match status/empty body without replay. SSE override restriction and duplicate scope-model test excluded. No contract/platform status or denominator changes."
+    },
+    {
+      "date": "2026-10-26",
+      "change": "Checkpoint 12 immediately follows verified checkpoint 11 push with native upstream whole-dot segment normalization after suffix assembly. Forty-six real Super/release path/route vectors preserve root bounds, empty segments, escapes, backslashes, UTF-8 and queries. No contract/platform status or denominator changes."
     }
   ],
   "contracts": [
@@ -1290,7 +1294,10 @@
         "docs/evidence/checkpoint10-dependencies.txt",
         "docs/evidence/checkpoint11-reference.json",
         "docs/evidence/checkpoint11-tests.txt",
-        "docs/evidence/checkpoint11-dependencies.txt"
+        "docs/evidence/checkpoint11-dependencies.txt",
+        "docs/evidence/checkpoint12-reference.json",
+        "docs/evidence/checkpoint12-tests.txt",
+        "docs/evidence/checkpoint12-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2360,7 +2367,10 @@
         "docs/evidence/checkpoint10-dependencies.txt",
         "docs/evidence/checkpoint11-reference.json",
         "docs/evidence/checkpoint11-tests.txt",
-        "docs/evidence/checkpoint11-dependencies.txt"
+        "docs/evidence/checkpoint11-dependencies.txt",
+        "docs/evidence/checkpoint12-reference.json",
+        "docs/evidence/checkpoint12-tests.txt",
+        "docs/evidence/checkpoint12-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2376,7 +2386,7 @@
         "All six complete release obligations remain blocked; focused host observations do not qualify a release target.",
         "Buffered >=400 errors share the pinned 4 MiB cap. Non-2xx streamed redirects retain an additional 4 MiB Modex cap; larger redirect streams and complete resource/cancellation parity remain unqualified.",
         "The identifier guard does not implement hard binding acquisition/conflict resolution or model/credential/session affinity. A synthetic two-turn buffered continuation still differs from the pinned release; see checkpoint4-reference.json. Serialized conversation memory is charged using frozen decoded-value weights; physical retained-byte accounting remains unqualified.",
-        "Checkpoints 5/9/10 qualify non-ASCII/six ASCII encoding and ordinary backslash path separators only. Literal and encoded dot-segment normalization, broader URL normalization, redirects and non-host behavior remain unqualified. The existing dot-segment refusal also applies after separator conversion; no parity PASS is claimed for that guard.",
+        "Checkpoints 5/9/10/12 qualify UTF-8/six-ASCII path encoding, ordinary backslash separators and whole-dot segments only within admitted numeric-loopback HTTP bases. Broader URL schemes/authorities, transport, redirects, security/resource and non-host behavior remain unqualified.",
         "Checkpoint 9 rejects the arbitrary aggregate 16 MiB stream-state cap. Response state can still grow with provider output. Idle failure before first output and exact postcommit timeout text differ from live 0.439.1; see checkpoint9-timeout-mismatch.json. Narrow source-derived timeout mapping alone is unproven compatibility."
       ]
     },

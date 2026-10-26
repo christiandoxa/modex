@@ -1,0 +1,66 @@
+Checkpoint 9: parent review of exactly two completed worker commits
+
+9d05840945d19e83cc3a58adcfe17bcae1f52053: EXCLUDED.
+The five-line transport patch recognizes exactly the native idle timeout string and substitutes the continuation-reader diagnostic. Source cleanup, other errors, completed-state rethrow and lack of replay are preserved. Worker tests are native component tests; no real 0.439.1 production differential was supplied. The supplemental review recommended shipping based on a valid narrow continuation-reader trace, but its existing main driver still emitted the old text and did not establish this commit's production behavior. Parent live execution overrides that recommendation.
+The frozen async client also has a read-idle deadline (proxy_config/client.rs:43-49), and local_rewrite_transport.rs uses that reqwest request. Its body error may reach the translated stream before the outer continuation deadline. Real Super returns 502 plain upstream request failed before any event; after a text delta it returns provider_stream_error with error decoding response body. Current Modex returns 200/response.failed before the first event and loopback HTTP stream timed out after a delta. The proposed replacement still does not match either whole path. Each binary sends one POST per case. Exact release error text can depend on deadline ordering; this evidence is an observation, not a universal replacement rule. See checkpoint9-timeout-mismatch.json and tests/capture_stream_timeout_mismatch.py (expected exit 1). The no-commit selection was completely reversed using only its exact three paths before the successful build; none of its changes are integrated.
+
+d127513f3e979421e1f5274dd5e6e2b38a690bdc: REJECTED.
+The partial 16 MiB retained-state counter is not the frozen production policy. Parent source review confirms uncounted response ID/model/fingerprint/logprobs/finish metadata and conversation snapshots; the counter is not a hard retained-memory ceiling. Failure leaves the connected reader consuming until DONE or another failure. Worker tests set the counter directly or assert new Modex failure without a frozen oracle.
+The decisive parent production differential sends five frames of 100,000 null annotations. Total framed bytes: 2,500,245; each frame and final response are below the relevant frozen kernel limits. Both real 0.439.1 and current Modex complete with all 500,000 annotations. Worker accounting charges 18,000,000 bytes before base metadata and would fail. A parent run of the existing worker binary returns exactly created/failed and the 16777216 accumulated bytes error. Binary hash/provenance limits and exact input recipe are recorded in checkpoint9-state-review.json. This establishes an incompatible early rejection, not a parity PASS for the cap.
+The supplemental review's unconditional statement that long refusal streams are accepted by the release is incomplete. A parent 17,500,000-byte refusal probe timed out in the release's synthetic client while Modex completed. Frozen rich/deepseek.rs::kernel_input_limit bounds ordinary StreamResponseMetadata/StreamResponseValue/ResponseCompletedEvent inputs at 4 MiB; selected buffered/tool/history operations have separate 16 MiB limits and ResponseMetadata extraction a 20 MiB limit. Rust deepseek_mojo_body panics on kernel rejection. No aggregate 16 MiB state limit follows from those per-operation boundaries. Large-output conformance remains a gap. No successful large-refusal parity is claimed. Reproduce the input with five data frames containing choices[0].delta.refusal = r repeated 3,500,000 times, then DONE, through observe_turns; the release client timed out after 15 seconds and outer launch exited 1, with one provider POST. Native-only success is not frozen proof.
+
+Parent integration and ownership
+Only the owned upstream path encoding fix and its tests are integrated. Shared main/index/build/test/commit/push remain parent-owned. provider_passthrough.mojo, provider_sse_wire.mojo and their tests are untouched; no worker branch/worktree/reference repository is modified. All 71 contracts, 426 platform obligations and six BLOCKED release qualifications remain.
+
+Supplemental execution
+Both official-launcher tasks exited 0. Their complete stdout results follow below; full stderr streams were read separately and remain in /tmp with byte counts/hashes in checkpoint9-reference.json. They contain launcher account labels and are not copied into public evidence. Launcher headers explicitly selected gpt-6.1-sol, reasoning effort none, despite the requested Luna/MAX reviewers. The immutable launch config has null model/effort and was not modified. Original supplied worker Luna/MAX identity is user-provided and not independently attested. Parent requested Sol/MAX selection is not independently exposed by available runtime metadata. No exact primary or original-worker model selection is invented.
+
+Complete supplemental timeout result (untrusted; parent corrections above apply):
+**Objective completed:** reviewed only commit `9d05840945d19e83cc3a58adcfe17bcae1f52053`. The exact timeout translation is compatible by source inspection; executable verification of this commit remains open.
+
+**Findings/changes**
+- No defect found in the change. Only the exact idle-timeout string is translated, before or after initial output. EOF, incomplete JSON, and HTTP truncation retain separate errors.
+- Cleanup closes the upstream socket before failure emission. An already completed/failed state rethrows rather than emitting a second failure. `[DONE]` stops reading. No retry or replay is introduced.
+- Added tests cover timeout before the first event, but do not establish the full production lifecycle.
+
+**Exact frozen caller trace**
+
+Under frozen `crates/prodex-app/src/runtime_launch/proxy_startup/`:
+
+`local_rewrite_response_dispatch.rs:64–66` (`body.into_reader`)
+→ `local_rewrite_response_chat_compatible.rs:96–123` (`RuntimeChatCompatibleSseReader`, production streaming response)
+→ `deepseek_sse_reader.rs:54–74,99–102`
+→ `provider_sse_reader.rs:94–103,71–81` (`fail_stream` preserves error text)
+→ `deepseek_sse/completion.rs:74–92` (suppresses duplicate failure)
+→ `provider_sse_events.rs:9–33` (serializes failure).
+
+Timeout originates in `local_rewrite_upstream.rs:502` or `:598`; cancellation/drop is at `:645–658`. Native first-event retry handling is separately gated by `native_messages` in `local_rewrite_deepseek_send.rs:634–665`.
+
+**Files inspected/modified**
+- Inspected commit objects for transport, HTTP reader, chat reader/state, production rewrite caller, drivers and tests; frozen files above.
+- Created only [probe.py](/tmp/modex-cp9-timeout-review/probe.py) and synthetic probe artifacts beneath its directory. No shared files, index, builds or worktrees changed.
+
+**Tests/commands run**
+- Read-only `git show`, `git grep`, `git ls-tree`, frozen-source `rg`/`sed`.
+- Ran the existing transport driver with isolated synthetic HOME/environment and loopback fixtures: first/later/partial idle, EOF, partial JSON EOF, truncation, `[DONE]`, and failure followed by idle.
+- All eight observed one request and peer closure. The binary emitted the **old timeout text**, failing exact translation verification; its provenance cannot establish this commit.
+
+**Recommendation:** ship the source change after the parent tests a commit-proven production binary through `/v1/responses` with that matrix, asserting exact error text, one terminal event, upstream closure and one upstream POST.
+
+Requested Luna MAX routing could not be verified; actual model/effort is not exposed. No agents were spawned.
+
+Not checked: a production binary proven to contain this commit or frozen executable comparison. No blanket parity claim.
+
+
+Complete supplemental state result (untrusted; parent corrections above apply):
+What this change does: Adds a 16 MiB budget for selected stream fields.
+
+- **Objective completed:** Rejected the retained-state cap claim. **Deviation; never parity PASS.**
+- **Findings:** Valid multi-frame streams fail early; uncounted metadata permits 18 MB of retained payload; snapshots add further uncounted state. Cap failure also leaves the reader consuming input.
+- **Files inspected/modified:** Reviewed commit `d127513` and frozen production state/callers. Created files only under `/tmp/modex-cp9-state-review`.
+- **Tests:** Three isolated worker-binary probes reproduced these findings. [Results](/tmp/modex-cp9-state-review/results.json) · [Probe](/tmp/modex-cp9-state-review/probe.py)
+- **Recommendations:** Fix accounting and early truncation before integration. [Full review](/tmp/modex-cp9-state-review/review.md)
+
+Routing discrepancy: GPT-6-based Codex is exposed; Luna/MAX cannot be attested.
+
+Not checked: frozen runtime execution or allocator-level memory bounds. Risk: valid streams truncate while retained state still exceeds the advertised cap.

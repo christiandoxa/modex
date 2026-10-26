@@ -345,5 +345,16 @@
       "docs/evidence/checkpoint8-tests.txt",
       "docs/evidence/checkpoint8-dependencies.txt"
     ]
+  },
+  "checkpoint9_dependency_audit": {
+    "new_application_dependencies": [],
+    "new_native_bindings": [],
+    "production_python_or_codegen": false,
+    "scope": "The existing native path byte loop adds six ASCII URL encoding bytes using current builtin Int/String operations. Both worker proposals are excluded. Python stdlib capture and synthetic peers remain test-only; URL 2.5.8 source is inspected only as a checksum-verified frozen-reference dependency, never linked into Modex.",
+    "evidence": [
+      "docs/evidence/checkpoint9-reference.json",
+      "docs/evidence/checkpoint9-tests.txt",
+      "docs/evidence/checkpoint9-dependencies.txt"
+    ]
   }
 }

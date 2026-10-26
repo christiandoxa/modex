@@ -1,0 +1,25 @@
+Checkpoint 9 dependency and credential audit
+Production change: the existing native upstream path encoder also escapes six ASCII path characters. No import, application dependency, native binding, helper, Python interop, code generation or Prodex runtime delegation is added. Both reviewed worker proposals are excluded from main. The inspected URL 2.5.8 crate is only frozen reference evidence, never a Modex dependency.
+All 67 production Mojo sources match the dependency inventory. Existing official stdlib/runtime dependencies only. Tests use fresh isolated HOME/config/storage, synthetic API keys and ephemeral 127.0.0.1 peers. No real credentials, paid provider traffic or account login. The mismatch capture is an external test-only Python stdlib harness. Tests for protected passthrough/SSE source files are unchanged.
+
+$ mojo --version
+Mojo 1.2.0 (2016d0cd)
+
+$ sha256sum build/modex
+efcfc651f83c47981b973817a63745393e1d7d27f3652422da084cc12af0cbd4  build/modex
+
+$ ldd build/modex
+	linux-vdso.so.1 (0x00007fe3d4366000)
+	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007fe3d4012000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fe3d3c00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fe3d3f08000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fe3d3800000)
+	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007fe3d3ef8000)
+	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007fe3d2c00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fe3d3eca000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fe3d4368000)
+
+$ readelf -d build/modex
+ 0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]

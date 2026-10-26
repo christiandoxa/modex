@@ -6,6 +6,32 @@ Complete parity remains unfinished against Prodex 0.439.1 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 9 extends native upstream base-path encoding to quotes, angle
+brackets, backticks and braces. Ten live path/route vectors preserve existing
+percent escapes, ordinary punctuation, mixed UTF-8, queries, authoritative
+synthetic auth and one POST per request. Backslash separator normalization is
+still a reproduced mismatch; encoded dot segments and broader URL behavior
+remain unqualified. See `docs/evidence/checkpoint9-reference.json`.
+
+Exactly two completed worker proposals were reviewed and excluded. `9d05840`
+changes one source-derived timeout message without reproducing the whole
+production transport: the release returns 502 before an idle first event,
+where Modex emits 200/failed. After a text delta the observed release message is
+`error decoding response body`; Modex emits its internal loopback timeout.
+Deadline ordering can affect the release diagnostic. Reproduce with
+`python3 tests/capture_stream_timeout_mismatch.py` (exit 1); the shared error
+code and source-level string substitution do not qualify the precommit path.
+
+`d127513` introduces an incompatible partial 16 MiB state counter. Both real
+products complete 500,000 null annotations that its allowances would charge
+at 18,000,000 bytes; the existing worker binary fails that input. Metadata and
+snapshots also escape its counter. The frozen per-operation kernel limits
+must be traced separately: a 17.5 MB refusal probe times out in the release's
+synthetic client while Modex completes. No large-refusal PASS or whole-response
+memory ceiling is claimed. See `docs/evidence/checkpoint9-worker-review.txt`
+and `checkpoint9-state-review.json` in that directory. Full binding and recovery
+remain protected gaps, and accepted control RPCs are not actual goal progress.
+
 Checkpoint 8 corrects blank explicit session-header alias fallback in the
 shared native resolver. Six live independent production vectors confirm later
 alias priority over turn metadata/body, rejection of oversized resolved aliases

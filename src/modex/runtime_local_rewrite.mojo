@@ -52,7 +52,8 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
     var encoded = String()
     comptime HEX = StaticString("0123456789ABCDEF")
     for byte in path.as_bytes():
-        if byte >= 128:
+        # Frozen URL path encoding also escapes "<>`{}; existing escapes stay intact.
+        if byte >= 128 or Int(byte) in [34, 60, 62, 96, 123, 125]:
             encoded += "%" + HEX[byte=Int(byte) // 16] + HEX[byte=Int(byte) % 16]
         else:
             encoded += chr(Int(byte))

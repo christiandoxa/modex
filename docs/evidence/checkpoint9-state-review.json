@@ -1,0 +1,17 @@
+{
+  "worker_commit": "d127513f3e979421e1f5274dd5e6e2b38a690bdc",
+  "driver_sha256": "61fb09f935bf9787a31edccfb209fd7633b58165ba9b75da864c1d6d55f95d49",
+  "provenance_limit": "Existing worker binary, no rebuild or embedded commit attestation. Source accounting independently confirms this result.",
+  "annotations": 500000,
+  "serialized_input_bytes": 2500245,
+  "worker_accounted_annotation_bytes": 18000000,
+  "worker_types": [
+    "response.created",
+    "response.failed"
+  ],
+  "worker_error": {
+    "code": "provider_stream_error",
+    "message": "DeepSeek stream state exceeds 16777216 accumulated bytes"
+  },
+  "pinned_release_and_main": "test_annotation_accounting_cap_is_not_release_boundary passes; both complete and retain all 500000 null annotations in real Super."
+}

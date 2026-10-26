@@ -1,3 +1,72 @@
+# Checkpoint 9: native ASCII upstream paths and two worker reviews
+
+Main began clean at `21a15fcc9bda09d2c93b2436c8010843044d1bad`, matching
+`origin/main`. The sole shared-main owner reviewed exactly the two supplied
+completed worker commits against immutable 0.439.1 source and real release
+behavior. Both proposals remain excluded, with branches/worktrees intact.
+
+The owned native upstream path encoder now percent-encodes quotes, angle
+brackets, backticks and braces using its existing byte loop. Ten real Super
+path/route vectors compare Responses and Chat Completions, mixed UTF-8,
+existing percent escapes, ordinary punctuation, queries and authoritative
+synthetic credentials. Previous Modex failed six of those requests; both
+products now match the tested paths with one POST each. No import, application
+dependency, native binding or public option is added.
+
+`9d05840` preserves a narrow continuation-reader diagnostic but does not prove
+production transport compatibility. Live first-event idle receives release
+502/plain error versus Modex 200/failed; after a text delta the observed
+release message is `error decoding response body`. The async client's own
+read-idle deadline and outer continuation timeout must be traced together;
+substitution alone is insufficient. `capture_stream_timeout_mismatch.py`
+reproduces both observations with one POST each and expected exit 1.
+
+Reject `d127513`: five frames of 100,000 null annotations complete in both real
+products, retaining all 500,000 values. The proposed allowance charges more
+than 16 MiB and the existing worker binary fails. It also omits metadata and
+snapshot retention and leaves the reader consuming after its cap failure.
+A separate 17.5 MB refusal probe times out in the release's synthetic client
+while Modex completes. Frozen kernel limits are per operation (ordinary stream
+inputs 4 MiB, selected large buffered/tool/history payloads 16 MiB), not the
+worker's aggregate state cap. No successful large-refusal parity or total
+memory bound is claimed. Parent source/live evidence overrides incomplete
+supplemental review conclusions; raw worker binary provenance limits remain.
+
+Validation: `make build`, 45 native units, 15 final focused Python methods
+in 44.446 seconds, then serial `rtk proxy make test`: 350 Python methods
+in 607.700 seconds, no skips, and 407 pinned recovery-policy vectors.
+The full gate took 780.277 seconds; the production artifact hash stayed
+fixed during Python discovery and after completion.
+
+Twenty relevant snapshot files match pinned Git objects. The inspected URL
+2.5.8 parser matches its checksum-verified locked crate archive; it is reference
+evidence only. The source/import inventory still has 67 production Mojo files,
+and clean runtime/link plus isolated synthetic credential checks pass.
+
+Requested primary execution is Sol/MAX; exact parent runtime selection is not
+independently exposed. Supplied worker Luna/MAX identity is user-provided.
+Two supplemental official-launcher reviews actually selected `gpt-6.1-sol`
+with effort `none`; the immutable null-model/effort launcher config was not
+modified. Their full stdout results and hashed separate stderr provenance
+are retained in checkpoint evidence. No Luna/MAX run is invented.
+
+Full binding identity/credential/profile ownership, conflicts, acquisition,
+persistence and release remain unfinished. The release 200/503 one-POST
+versus Modex 200/200 two-POST mismatch remains. Native Super still uses
+unscoped history and the internal driver remains scoped. Non-object SSE,
+large-output kernel boundaries, binary headers, transport/storage/security,
+production recovery/progress, JavaScript SDK and non-host qualification are
+unfinished. Accepted control RPCs are not progress. Protected passthrough/SSE
+source files and their tests are untouched. All 71 contracts, 426 platform
+obligations and six BLOCKED release qualifications are preserved.
+
+Evidence: `docs/evidence/checkpoint9-reference.json`, `checkpoint9-tests.txt`,
+`checkpoint9-dependencies.txt`, `checkpoint9-before.txt`,
+`checkpoint9-worker-review.txt`, `checkpoint9-state-review.json` and
+`checkpoint9-timeout-mismatch.json` in that directory. The adjacent backslash
+separator URL mismatch is the next reachable source-traced slice; general
+URL normalization and encoded dot segments remain unqualified.
+
 # Checkpoint 8: native session-header alias fallback
 
 Checkpoint 7 was normally committed and pushed as

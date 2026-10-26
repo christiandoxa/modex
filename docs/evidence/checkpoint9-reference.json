@@ -1,0 +1,261 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "starting_main": "21a15fcc9bda09d2c93b2436c8010843044d1bad",
+  "previous_checkpoint_push_verified": {
+    "local_head": "21a15fcc9bda09d2c93b2436c8010843044d1bad",
+    "remote_tracking_main": "21a15fcc9bda09d2c93b2436c8010843044d1bad",
+    "main_clean": true
+  },
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "snapshot_git_object_matches": {
+    "Cargo.lock": {
+      "sha256": "c5c9e80f925346ec065169be3c2d989a369c7dc8b86f279fc63809c8cebbb323",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-runtime-proxy/src/lib.rs": {
+      "sha256": "8277d689828a3936e15a5d9f94c4818cc2e13e57b882f53898e54fca4b6d7630",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/binding_identity.rs": {
+      "sha256": "d4af827ff73bab562962fe26c226b0eace9d274e1431a4c9fe3ceca29dcbcaa7",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/proxy_config/client.rs": {
+      "sha256": "9e28cb19ead667643ffcae38ce89b34fe767f9b973f3c302d7e29311ff919628",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_pipeline_dispatch.rs": {
+      "sha256": "877b5f07da1d502ed4fdc379ce14081469774916bf54c619e1c51cba7edc16e7",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_transport.rs": {
+      "sha256": "228628a129e64128ce4a6199d86f3ab2b392eec2f08e6bfa5606a5b7c3cd0e79",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_transport/urls.rs": {
+      "sha256": "ecd51b88222814eb2d1d6619af8fbc088bda8ba84fd41b0b41b9a407375a42fe",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_upstream.rs": {
+      "sha256": "21dc20de1a0321957683418241a86e2b2a98f01de3d7554132d6506fa28e57d1",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_upstream/binding_identity.rs": {
+      "sha256": "c903a7d937f8524331d4f3dc5a11242f8fda4889a634fcf86a68e733c99e568a",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_upstream/binding_candidate.rs": {
+      "sha256": "4e01229c68c1a5bd1a95cad181bddd1af9c1afb32f9dd40f9107d1cf45c71a6c",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_deepseek_send.rs": {
+      "sha256": "808c8d2e0881e9a8ee32de476b6a73293562774e6c1e35a9f85d7f69eb52c6e3",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_chat_compatible.rs": {
+      "sha256": "163568f042c573a71dc2a98ce8a4499dec9abcdf2a57ac47286d705248d10d60",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_sse.rs": {
+      "sha256": "871a385c756a7be7d6904af8d7b23cc30009bc686db0bec72584442126694827",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_sse/completion.rs": {
+      "sha256": "7fb29269819138cacb359c1f22745a7e23f3fa1566301711cba4e01dd14a5587",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_sse_reader.rs": {
+      "sha256": "09738218236a592a46a3a66374f0a3db1bd82f3726da1f81f8685a5106f1d325",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/provider_sse_reader.rs": {
+      "sha256": "f491e6e3fb1fdddbbd5724011ce76ac582fb2105280daf488f0a334062cac3ae",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-mojo-core/src/rich/deepseek.rs": {
+      "sha256": "0e02181be4c5b4178130df4c2cd90d5e98771f8312aeb3a1aee21298881b54f4",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/translators/deepseek.rs": {
+      "sha256": "ef00a0b25cc68b453c9fdaf2cf7e381e61b23ee2b3614931081ad4bdf532ae44",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/translators/deepseek/stream/shaping.rs": {
+      "sha256": "53e48a0a8ec80c2df17eb1e32286ca27a2a1dd205c8cac111ec337b992de3425",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-provider-core/src/translators/deepseek/stream/response_values.rs": {
+      "sha256": "1ed21ee06da8ec9e3fccad6a425ade273bb9e555204e9c065dd96bca2bbcaf47",
+      "matches_pinned_git_object": true
+    }
+  },
+  "frozen_url_dependency_source": {
+    "version": "2.5.8",
+    "locked_archive_sha256": "ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed",
+    "parser_sha256": "2dd4210e1773fc5d3fdc15ce506ecff30dbf8eb358a79bbbc2835cc30d513c3a",
+    "registry_source_matches_locked_archive": true
+  },
+  "owned_production_slice": {
+    "file": "src/modex/runtime_local_rewrite.mojo",
+    "function": "local_rewrite_upstream",
+    "change": "Extend the existing UTF-8 path byte encoder to ASCII bytes 34,60,62,96,123,125. Keep existing percent escapes, other admitted punctuation, query forwarding and numeric-loopback URL validation. No new import or dependency.",
+    "callers": [
+      "src/modex/super_cli.mojo: run_clean_deepseek_super validation",
+      "src/modex/super_launch.mojo: run_clean_deepseek_super and run_local_rewrite_child",
+      "src/modex/runtime_local_rewrite.mojo: serve_local_rewrite -> _serve, Responses exchange and Chat Completions passthrough"
+    ],
+    "baseline_trace": "local_rewrite_transport/urls.rs::runtime_deepseek_upstream_url builds the target; local_rewrite_transport.rs::send_runtime_local_rewrite_prepared_request passes it to reqwest async_client.request, whose locked URL 2.5.8 parser applies PATH percent encoding. Its checksum-verified PATH/FRAGMENT constants include these six admitted ASCII bytes. Modex sends the prepared path directly to its native loopback client.",
+    "tests": [
+      "tests/test_gateway_cli.mojo",
+      "tests/test_deepseek_continuation.py::test_upstream_ascii_path_encoding_matches_release"
+    ]
+  },
+  "production_differential": {
+    "path_route_vectors_per_binary": 10,
+    "upstream_posts_per_binary": 10,
+    "previous_modex_mismatching_requests": 6,
+    "changed_path_variants": 3,
+    "preserved_path_variants": 2,
+    "coverage": [
+      "quotes/angle brackets/backticks/braces",
+      "already escaped bytes without double encoding",
+      "mixed Unicode and trailing slash",
+      "unchanged admitted punctuation",
+      "Responses and Chat Completions with preserved query",
+      "authoritative synthetic auth and one POST per accepted request"
+    ],
+    "aggregate_annotation_test": {
+      "name": "test_annotation_accounting_cap_is_not_release_boundary",
+      "frames": 5,
+      "null_annotations_per_frame": 100000,
+      "framed_bytes_before_done": 2500245,
+      "worker_annotation_charge": 18000000,
+      "pinned_release_and_main": "both complete with all 500000 null annotations",
+      "worker_existing_binary": "created then failed; provenance limits recorded in checkpoint9-state-review.json"
+    }
+  },
+  "worker_reviews": [
+    {
+      "commit": "9d05840945d19e83cc3a58adcfe17bcae1f52053",
+      "decision": "excluded",
+      "reason": "Correct narrow source diagnostic, insufficient production compatibility. Live first-event status differs, and the async client body read-idle error in the tested postcommit case is error decoding response body. Do not substitute one outer-reader string for the whole transport.",
+      "selection": "No-commit cherry-pick fully reversed on its exact three paths before successful build. No selected source/test survives."
+    },
+    {
+      "commit": "d127513f3e979421e1f5274dd5e6e2b38a690bdc",
+      "decision": "rejected",
+      "reason": "Arbitrary partial 16 MiB aggregate counter rejects a real release-valid annotation stream, misses retained metadata/snapshots and does not propagate terminal cap failure into reader completion.",
+      "source_correction": "Frozen large-payload 16 MiB kernel limits are per operation, not an aggregate-state bound. Ordinary stream metadata/value/completed-event inputs are separately limited to 4 MiB. The 17.5 MB refusal live probe does not complete in the synthetic release client; no blanket large-output compatibility is claimed."
+    }
+  ],
+  "ownership": {
+    "main_start": "21a15fcc9bda09d2c93b2436c8010843044d1bad",
+    "worker_commits": {
+      "9d05840945d19e83cc3a58adcfe17bcae1f52053": [
+        "src/modex/provider_deepseek_transport.mojo",
+        "tests/test_provider_deepseek_transport.mojo",
+        "tests/test_provider_deepseek_transport.py"
+      ],
+      "d127513f3e979421e1f5274dd5e6e2b38a690bdc": [
+        "src/modex/provider_chat_stream.mojo",
+        "tests/test_provider_chat_stream.mojo",
+        "tests/test_provider_chat_stream.py"
+      ]
+    },
+    "protected_main_files": {
+      "src/modex/provider_passthrough.mojo": {
+        "sha256": "5d43986b165ef70d37fd4f1c8a77d00dbc457629014a285f1832296024c5e990",
+        "matches_starting_main": true
+      },
+      "src/modex/provider_sse_wire.mojo": {
+        "sha256": "ffee55edfb1a19d4cb520253c2b90987e4f79592ee60648e0c4b30faa03419e0",
+        "matches_starting_main": true
+      },
+      "src/modex/provider_deepseek_transport.mojo": {
+        "sha256": "57ea46146f2c23725e047f2c4f36c5458c8b617e0e723118b9e93ec5d2901334",
+        "matches_starting_main": true
+      },
+      "src/modex/provider_chat_stream.mojo": {
+        "sha256": "b357112a604bcb08cff4c6fa323eb10a6af8c570d57bd912e3b963f71d194673",
+        "matches_starting_main": true
+      }
+    },
+    "reference_repo_head": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+    "reference_baseline_object": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+  },
+  "model_provenance": {
+    "execution_owner": "sole shared-main parent",
+    "primary_requested_by_user": "gpt-6.1-sol / max",
+    "primary_runtime_selection_independently_exposed": false,
+    "supplied_workers_user_identification": "GPT-6 Luna / MAX; exact archived runtime selection not independently attested",
+    "supplemental_official_launcher": [
+      {
+        "review": "timeout",
+        "observed_launcher_model": "gpt-6.1-sol",
+        "observed_launcher_effort": "none",
+        "exit_code": 0,
+        "streams": {
+          "stdout": {
+            "path": "/tmp/modex-cp9-timeout-review.stdout",
+            "bytes": 2782,
+            "sha256": "d31f4a4195755368c4fa6876b62f95b556035e8801b6c28a60bbcf0877016c0f"
+          },
+          "stderr": {
+            "path": "/tmp/modex-cp9-timeout-review.stderr",
+            "bytes": 150684,
+            "sha256": "b42ff1484a0363b2f4de1eeef913f12d77720483e8506e5390687df28a88a5a8"
+          }
+        }
+      },
+      {
+        "review": "state",
+        "observed_launcher_model": "gpt-6.1-sol",
+        "observed_launcher_effort": "none",
+        "exit_code": 0,
+        "streams": {
+          "stdout": {
+            "path": "/tmp/modex-cp9-state-review.stdout",
+            "bytes": 1070,
+            "sha256": "3c88182c1c4295e120260613049a702e89780bce0ff6604143261fde589f2335"
+          },
+          "stderr": {
+            "path": "/tmp/modex-cp9-state-review.stderr",
+            "bytes": 287183,
+            "sha256": "89de8a5daf7a75bc808372449d1b09ba08a27da908deb1964d81b088e420ef2d"
+          }
+        }
+      }
+    ],
+    "routing_limit": "Required immutable official launcher config has null model/effort. Both supplemental headers select gpt-6.1-sol / none. Config/profile not changed; no Luna/MAX execution claim."
+  },
+  "validation": {
+    "command": "rtk proxy make test",
+    "exit_code": 0,
+    "elapsed_seconds": 780.277,
+    "artifact_sha256_at_python_discovery": "efcfc651f83c47981b973817a63745393e1d7d27f3652422da084cc12af0cbd4",
+    "artifact_sha256_after": "efcfc651f83c47981b973817a63745393e1d7d27f3652422da084cc12af0cbd4",
+    "native_unit_executables": 45,
+    "python_methods": 350,
+    "python_seconds": 607.7,
+    "skips": 0,
+    "pinned_recovery_policy_vectors": 407,
+    "focused_python_methods": 15,
+    "focused_python_seconds": 44.446,
+    "annotation_comparison_methods": 1,
+    "annotation_comparison_seconds": 1.931
+  },
+  "remaining_limits": [
+    "Full hard-binding identity/credential/profile ownership, conflict merge, acquisition, persistence and release remain unfinished; release 200/503 one POST versus Modex 200/200 two POSTs is not repaired.",
+    "Native Super retains unscoped conversation history; internal driver retains scoped history.",
+    "First-event idle response status and exact postcommit error remain mismatches; see checkpoint9-timeout-mismatch.json. Exact error can depend on transport deadline ordering.",
+    "Large-output kernel boundaries, aggregate retained memory, non-object SSE, lower-client binary headers, broad HTTP/storage/security/recovery, JavaScript SDK and non-host qualification remain unqualified.",
+    "Backslash separator normalization is reproduced as a remaining adjacent gap; dot segments and general URL normalization are not claimed."
+  ],
+  "unchanged_denominator": {
+    "contracts": 71,
+    "platform_obligations": 426,
+    "release_targets_blocked": 6,
+    "inventory_complete": false
+  }
+}

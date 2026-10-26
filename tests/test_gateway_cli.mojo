@@ -87,6 +87,8 @@ def main() raises:
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/é/東京🧭")[1], "/v1/%C3%A9/%E6%9D%B1%E4%BA%AC%F0%9F%A7%AD/chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/%C3%A9/%2f")[1], "/v1/%C3%A9/%2f/chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/e\u0301")[1], "/v1/e%CC%81/chat/completions")
+    assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/\"<>`{}^|[]")[1], "/v1/%22%3C%3E%60%7B%7D^|[]/chat/completions")
+    assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/%22%7B%7D")[1], "/v1/%22%7B%7D/chat/completions")
     for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://localhost:1", "http://127.0.0.1:0", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://127.0.0.1:1/v1/../other"]:
         var rejected = False
         try:

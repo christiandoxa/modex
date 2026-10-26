@@ -44,7 +44,7 @@ print("synthetic-continuation-complete")
 '''
 
 
-def observe_turns(binary, turns, responses, *, base_path="/v1"):
+def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None):
     with tempfile.TemporaryDirectory(prefix="modex-continuation-") as temporary:
         root = Path(temporary)
         for name in ("home", "state", "shared", "work"):
@@ -64,6 +64,8 @@ def observe_turns(binary, turns, responses, *, base_path="/v1"):
             "TERM": "dumb", "NO_COLOR": "1", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
             **{key: str(root / "home") for key in ("XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HOME")},
         }
+        if idle_timeout_ms is not None:
+            environment["PRODEX_RUNTIME_PROXY_STREAM_IDLE_TIMEOUT_MS"] = str(idle_timeout_ms)
         with serving(responses) as server:
             result = subprocess.run(
                 [str(binary), "super", "--provider", "deepseek", "--api-key", SYNTHETIC_API_KEY,
@@ -92,6 +94,50 @@ class DeepSeekContinuationTests(unittest.TestCase):
     def setUpClass(cls):
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("oracle does not match pinned Prodex 0.439.1")
+
+    def test_upstream_ascii_path_encoding_matches_release(self):
+        paths = ['/v1/"<>`{}', '/v1/{}^|[]', '/v1/%22%3C%3E%60%7B%7D',
+                 '/v1/é{"東京"}/', '/v1/a!$&\'()+,;=:_~-']
+        expected = ['/v1/%22%3C%3E%60%7B%7D/chat/completions',
+                    '/v1/%7B%7D^|[]/chat/completions',
+                    '/v1/%22%3C%3E%60%7B%7D/chat/completions',
+                    '/v1/%C3%A9%7B%22%E6%9D%B1%E4%BA%AC%22%7D/chat/completions',
+                    '/v1/a!$&\'()+,;=:_~-/chat/completions']
+        for path, target in zip(paths, expected):
+            turns = [{"model": "deepseek-chat", "input": "synthetic path encoding"},
+                     {"model": "deepseek-chat", "messages": [],
+                      "_path": "/v1/chat/completions?synthetic=path%22&keep=%7B"}]
+            reply = {"status": 201, "content_type": "application/json", "body": b"null"}
+            for binary in (ORACLE, MODEX):
+                with self.subTest(path=path, binary=str(binary)):
+                    upstream, responses = observe_turns(binary, turns, [buffered_reply(created=42), reply],
+                                                         base_path=path)
+                    self.assertEqual([row["status"] for row in responses], [200, 201])
+                    self.assertEqual([row["path"] for row in upstream],
+                                     [target, target + "?synthetic=path%22&keep=%7B"])
+                    for record in upstream:
+                        self.assertEqual(record["headers"]["authorization"], "Bearer " + SYNTHETIC_API_KEY)
+
+    def test_annotation_accounting_cap_is_not_release_boundary(self):
+        count = 100_000
+        frame = b'data: ' + json_bytes({"choices": [{"delta": {"annotations": [None] * count}}]}) + b"\n\n"
+        body = frame * 5 + b"data: [DONE]\n\n"
+        self.assertLess(len(body), 4 * 1024 * 1024)
+        self.assertGreater(count * 5 * (len("null") + 32), 16 * 1024 * 1024)
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(binary, [{"model": "deepseek-chat",
+                    "input": "synthetic annotation accounting", "stream": True}], [{"status": 200,
+                    "content_type": "text/event-stream", "body": body, "chunked": True,
+                    "chunk_size": 65536}])
+                self.assertEqual(len(upstream), 1)
+                self.assertEqual([row["status"] for row in responses], [200])
+                payload = bytes.fromhex(responses[0]["body"])
+                events = [json.loads(line[6:]) for line in payload.splitlines() if line.startswith(b"data: ")]
+                self.assertEqual([event["type"] for event in events], ["response.created", "response.completed"])
+                retained = events[-1]["response"]["metadata"]["deepseek"]["annotations"]
+                self.assertEqual(len(retained), count * 5)
+                self.assertTrue(all(item is None for item in retained))
 
     def test_invalid_continuation_identities_fail_before_provider_side_effects(self):
         invalid = ["a\0b", "a\x1fb", "a\x7fb", "a\x80b", "a\x9fb", "x" * 1025, "é" * 513]

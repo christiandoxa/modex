@@ -1,0 +1,83 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "idle_timeout_ms": 100,
+  "modex_sha256": "efcfc651f83c47981b973817a63745393e1d7d27f3652422da084cc12af0cbd4",
+  "status": "FAIL",
+  "limit": "Small synthetic idle probe; exact release error may depend on which transport deadline fires first.",
+  "cases": [
+    {
+      "name": "before_first_event",
+      "matches": false,
+      "observations": [
+        {
+          "binary": "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+          "status": 502,
+          "upstream_posts": 1,
+          "event_types": [],
+          "deltas": [],
+          "failure": null,
+          "plain_body": "upstream request failed"
+        },
+        {
+          "binary": "/home/doxa/IdeaProjects/modex/build/modex",
+          "status": 200,
+          "upstream_posts": 1,
+          "event_types": [
+            "response.failed"
+          ],
+          "deltas": [],
+          "failure": {
+            "code": "provider_stream_error",
+            "message": "loopback HTTP stream timed out"
+          },
+          "plain_body": null
+        }
+      ]
+    },
+    {
+      "name": "after_text_delta",
+      "matches": false,
+      "observations": [
+        {
+          "binary": "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+          "status": 200,
+          "upstream_posts": 1,
+          "event_types": [
+            "response.created",
+            "response.output_item.added",
+            "response.output_text.delta",
+            "response.failed"
+          ],
+          "deltas": [
+            "kept before idle"
+          ],
+          "failure": {
+            "code": "provider_stream_error",
+            "message": "error decoding response body"
+          },
+          "plain_body": null
+        },
+        {
+          "binary": "/home/doxa/IdeaProjects/modex/build/modex",
+          "status": 200,
+          "upstream_posts": 1,
+          "event_types": [
+            "response.created",
+            "response.output_item.added",
+            "response.output_text.delta",
+            "response.failed"
+          ],
+          "deltas": [
+            "kept before idle"
+          ],
+          "failure": {
+            "code": "provider_stream_error",
+            "message": "loopback HTTP stream timed out"
+          },
+          "plain_body": null
+        }
+      ]
+    }
+  ]
+}

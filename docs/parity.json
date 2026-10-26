@@ -2215,7 +2215,7 @@
       "prerequisites": [
         "DeepSeek services"
       ],
-      "implementation": "Native request/response translation, scoped conversation continuation, rate-limit headers and raw Chat Completions passthrough are connected through a guarded production Super launch. Quota values require HTAB/visible ASCII; early non-2xx responses preserve raw quota headers without projection, while 200 SSE provider errors retain projected quotas. Synthetic production comparisons verify one upstream POST per request. Raw 3xx Responses SSE now uses the shared native passthrough writer and text-only header validation, with production before/after regressions and a held-open 307 live oracle comparison. Checkpoint 4 rejects invalid Responses continuation identifiers before provider dispatch: resolved response/session/turn-state values use the pinned 1,024 UTF-8 byte and C0/C1 control rules. Live production comparisons cover 12 rejection vectors, five valid boundary/precedence vectors, eight simple combo-model selectors and buffered translation-time timestamp fallback. Full affinity ownership and recovery remain unfinished.",
+      "implementation": "Native request/response translation, scoped conversation continuation, rate-limit headers and raw Chat Completions passthrough are connected through a guarded production Super launch. Quota values require HTAB/visible ASCII; early non-2xx responses preserve raw quota headers without projection, while 200 SSE provider errors retain projected quotas. Synthetic production comparisons verify one upstream POST per request. Raw 3xx Responses SSE now uses the shared native passthrough writer and text-only header validation, with production before/after regressions and a held-open 307 live oracle comparison. Checkpoint 4 rejects invalid Responses continuation identifiers before provider dispatch: resolved response/session/turn-state values use the pinned 1,024 UTF-8 byte and C0/C1 control rules. Live production comparisons cover 12 rejection vectors, five valid boundary/precedence vectors, eight simple combo-model selectors and buffered translation-time timestamp fallback. Full affinity ownership and recovery remain unfinished. Checkpoint 5 percent-encodes non-ASCII UTF-8 upstream base-path bytes before native dispatch, preserving existing percent escapes, combining sequences and Chat Completions query forwarding; eight path/route cases match the pinned production release.",
       "tests": [
         "tests/test_provider_chat_chunk.mojo",
         "tests/provider_chat_chunk_driver.mojo",
@@ -2290,7 +2290,10 @@
         "docs/evidence/checkpoint3-dependencies.txt",
         "docs/evidence/checkpoint4-reference.json",
         "docs/evidence/checkpoint4-tests.txt",
-        "docs/evidence/checkpoint4-dependencies.txt"
+        "docs/evidence/checkpoint4-dependencies.txt",
+        "docs/evidence/checkpoint5-reference.json",
+        "docs/evidence/checkpoint5-tests.txt",
+        "docs/evidence/checkpoint5-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2305,7 +2308,8 @@
         "The production slice requires a clean base and explicit loopback/model/key/options. Complete provider preset routing and custom catalog/config options, real Codex distributions, native Messages, account rotation, TLS and general provider launch remain unverified or unfinished.",
         "All six complete release obligations remain blocked; focused host observations do not qualify a release target.",
         "Buffered >=400 errors share the pinned 4 MiB cap. Non-2xx streamed redirects retain an additional 4 MiB Modex cap; larger redirect streams and complete resource/cancellation parity remain unqualified.",
-        "The identifier guard does not implement hard binding acquisition/conflict resolution or model/credential/session affinity. A synthetic two-turn buffered continuation still differs from the pinned release; see checkpoint4-reference.json. Serialized conversation memory is charged using frozen decoded-value weights; physical retained-byte accounting remains unqualified."
+        "The identifier guard does not implement hard binding acquisition/conflict resolution or model/credential/session affinity. A synthetic two-turn buffered continuation still differs from the pinned release; see checkpoint4-reference.json. Serialized conversation memory is charged using frozen decoded-value weights; physical retained-byte accounting remains unqualified.",
+        "Only non-ASCII base-path encoding is qualified by checkpoint 5; complete URL normalization, encoded dot segments, ASCII punctuation, redirect handling and non-host behavior remain unqualified."
       ]
     },
     {

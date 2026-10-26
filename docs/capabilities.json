@@ -36,7 +36,10 @@
         "docs/evidence/checkpoint3-dependencies.txt",
         "docs/evidence/checkpoint4-reference.json",
         "docs/evidence/checkpoint4-tests.txt",
-        "docs/evidence/checkpoint4-dependencies.txt"
+        "docs/evidence/checkpoint4-dependencies.txt",
+        "docs/evidence/checkpoint5-reference.json",
+        "docs/evidence/checkpoint5-tests.txt",
+        "docs/evidence/checkpoint5-dependencies.txt"
       ],
       "proven": [
         "numeric IPv4/IPv6 loopback bind/listen/accept and ephemeral port discovery using existing official wrappers",
@@ -50,7 +53,8 @@
         "production non-2xx auth/rate/server passthrough keeps raw quota headers without derived projection; successful HTTP SSE errors retain projected quotas, with no request replay in tested cases",
         "3xx Responses and Chat Completions SSE deliver chunks before EOF, filter non-ASCII text-header values and close upstream on downstream reset; >=400 errors remain buffered",
         "production Responses identifier validation rejects 12 malformed/oversized identity vectors before upstream side effects, retaining five valid byte-boundary/header-precedence cases against pinned 0.439.1",
-        "eight simple combo selectors and seven buffered created-value categories match pinned production observations; missing timestamps are taken after delayed body receipt"
+        "eight simple combo selectors and seven buffered created-value categories match pinned production observations; missing timestamps are taken after delayed body receipt",
+        "non-ASCII upstream base paths use UTF-8 percent encoding without double-encoding existing escapes; eight live production path/route comparisons include combining text, emoji, trailing slashes and Chat Completions queries"
       ],
       "not_proven": [
         "public operational gateway/provider parity and startup side effects",
@@ -60,7 +64,8 @@
         "general HTTP tolerance, TLS/DNS/proxies/retries and non-host targets",
         "unbounded non-2xx redirect SSE beyond the retained 4 MiB body cap",
         "complete continuation binding resolution: a two-turn buffered case remains a pinned-release mismatch",
-        "physical byte equivalence of serialized conversation retention; the incompatible worker estimator change is rejected"
+        "physical byte equivalence of serialized conversation retention; the incompatible worker estimator change is rejected",
+        "complete upstream URL normalization beyond the tested UTF-8 path-byte subset"
       ],
       "assessment": "Guarded production Super integration is exercised on the host; complete gateway/provider, concurrent admission, security and non-host obligations remain blocked."
     },

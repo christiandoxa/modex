@@ -1,3 +1,49 @@
+# Checkpoint 5: verified native UTF-8 upstream paths
+
+Checkpoint 4 was committed and normally pushed as
+`591497c8439b5649106d868db9d6a21c2ce495b3`; `git ls-remote origin
+refs/heads/main` matched local HEAD and main was clean. Its 44 native units,
+337 Python methods and 407 policy vectors passed. H/I are integrated; J and
+the separate header cap remain excluded for the reasons below.
+
+Sol continued with another reachable production slice in the owned
+`runtime_local_rewrite.mojo`. The frozen HTTP client percent-encodes UTF-8
+upstream base-path bytes, while Modex sent raw bytes. Three new Responses
+path cases failed against checkpoint 4; an already escaped path matched.
+A small native byte loop now encodes non-ASCII bytes with uppercase hex,
+preserving existing escapes, combining sequences, trailing-slash handling,
+loopback/credential/control validation and request framing bounds. No import,
+dependency, binding, public option or implementation helper was added.
+
+The final production regression compares four base paths on both Responses
+and Chat Completions through the actual Modex and checksum-pinned 0.439.1
+CLIs. All eight path/route vectors match status, exact provider target and
+authoritative synthetic credentials, with one upstream POST each. Chat
+Completions query forwarding is retained. The `default` model probe already
+matched the release, so that provisional change was not implemented. Four
+source files were verified against immutable pinned Git objects.
+
+The focused run passed 22 methods in 32.064 seconds. The final serial
+`rtk proxy make test` exited 0: all 44 native unit executables, 338 Python
+methods in 579.123 seconds, no skips, and 407 pinned recovery-policy vectors.
+The production artifact hash stayed fixed throughout Python discovery and
+isolation/link checks; no concurrent production rebuild ran. Dependency and
+credential-shaped diff review found only existing official stdlib/runtime
+libraries and synthetic test peers. Evidence:
+`docs/evidence/checkpoint5-reference.json`,
+`docs/evidence/checkpoint5-tests.txt`,
+`docs/evidence/checkpoint5-dependencies.txt`, and
+`docs/evidence/checkpoint5-before.txt`.
+
+Full URL normalization, encoded dot segments, ASCII punctuation, redirects
+and non-host behavior remain unqualified. The checkpoint 4 binding mismatch
+and unconnected recovery/affinity owners are unchanged. Reader/usage worker
+files and the dirty experimental worktree remain untouched. All 71 contract
+statuses, 426 platform obligations, capability statuses and six BLOCKED
+release qualifications are retained; JavaScript SDK and full feature parity
+remain incomplete. Future work must keep actual progress ownership distinct
+from accepted control RPCs and preserve the verified main checkpoint cadence.
+
 # Checkpoint 4: verified native DeepSeek boundaries
 
 Checkpoint 3 was committed and normally pushed as

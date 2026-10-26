@@ -18,13 +18,14 @@ CLIENT += r'''
 target = urlsplit(config["model_providers.prodex-deepseek.base_url"] + "/responses")
 previous = None
 for turn in json.loads(os.environ["MODEX_CONTINUATION_TURNS"]):
+    path = turn.pop("_path", target.path)
     headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
                **turn.pop("_headers", {})}
     if turn.pop("use_previous", False):
         turn["previous_response_id"] = previous
     started = int(time.time())
     connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
-    connection.request("POST", target.path, json.dumps(turn, separators=(",", ":")).encode(),
+    connection.request("POST", path, json.dumps(turn, separators=(",", ":")).encode(),
                        headers)
     response = connection.getresponse()
     payload = response.read()
@@ -37,7 +38,7 @@ print("synthetic-continuation-complete")
 '''
 
 
-def observe_turns(binary, turns, responses):
+def observe_turns(binary, turns, responses, *, base_path="/v1"):
     with tempfile.TemporaryDirectory(prefix="modex-continuation-") as temporary:
         root = Path(temporary)
         for name in ("home", "state", "shared", "work"):
@@ -60,7 +61,7 @@ def observe_turns(binary, turns, responses):
         with serving(responses) as server:
             result = subprocess.run(
                 [str(binary), "super", "--provider", "deepseek", "--api-key", SYNTHETIC_API_KEY,
-                 "--base-url", f"http://127.0.0.1:{server.server_port}/v1", "--model", "deepseek-chat",
+                 "--base-url", f"http://127.0.0.1:{server.server_port}{base_path}", "--model", "deepseek-chat",
                  "--no-presidio", "--no-sub-agent", "--skip-quota-check", "exec", "--", "synthetic"],
                 cwd=root / "work", env=environment, capture_output=True, timeout=45,
             )
@@ -164,6 +165,24 @@ class DeepSeekContinuationTests(unittest.TestCase):
                 created = json.loads(bytes.fromhex(response["body"]))["created_at"]
                 self.assertGreater(created, response["started"])
                 self.assertLessEqual(created, response["finished"])
+
+    def test_unicode_upstream_base_paths_match_release_without_double_encoding(self):
+        cases = [("/v1/é/東京🧭", "/v1/%C3%A9/%E6%9D%B1%E4%BA%AC%F0%9F%A7%AD"),
+                 ("/v1/%C3%A9/%2f", "/v1/%C3%A9/%2f"),
+                 ("/v1/e\u0301", "/v1/e%CC%81"),
+                 ("/v1/%E6%9D%B1/🧭/", "/v1/%E6%9D%B1/%F0%9F%A7%AD")]
+        for base_path, encoded in cases:
+            for route in ("/v1/responses", "/v1/chat/completions?synthetic=1"):
+                turns = [{"model": "deepseek-chat", "input": "synthetic unicode base path", "_path": route}]
+                for binary in (ORACLE, MODEX):
+                    with self.subTest(base_path=base_path, route=route, binary=str(binary)):
+                        upstream, responses = observe_turns(binary, turns, [buffered_reply(created=42)],
+                                                            base_path=base_path)
+                        self.assertEqual([response["status"] for response in responses], [200])
+                        self.assertEqual(len(upstream), 1)
+                        query = "?synthetic=1" if "?" in route else ""
+                        self.assertEqual(upstream[0]["path"], encoded + "/chat/completions" + query)
+                        self.assertEqual(upstream[0]["headers"]["authorization"], "Bearer " + SYNTHETIC_API_KEY)
 
 
 if __name__ == "__main__":

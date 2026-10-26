@@ -1,0 +1,151 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "starting_main": "591497c8439b5649106d868db9d6a21c2ce495b3",
+  "previous_checkpoint_push_verified": {
+    "local_head": "591497c8439b5649106d868db9d6a21c2ce495b3",
+    "remote_main": "591497c8439b5649106d868db9d6a21c2ce495b3",
+    "worktree_state": "clean"
+  },
+  "snapshot_git_object_matches": {
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_transport/urls.rs": {
+      "sha256": "ecd51b88222814eb2d1d6619af8fbc088bda8ba84fd41b0b41b9a407375a42fe",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_transport.rs": {
+      "sha256": "228628a129e64128ce4a6199d86f3ab2b392eec2f08e6bfa5606a5b7c3cd0e79",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_deepseek_send.rs": {
+      "sha256": "808c8d2e0881e9a8ee32de476b6a73293562774e6c1e35a9f85d7f69eb52c6e3",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/quota_support.rs": {
+      "sha256": "72eda65c17da0f514e769c0df1af3259849951d7facfd029a45c64c347c881ac",
+      "matches_pinned_git_object": true
+    }
+  },
+  "production_trace": [
+    "super_launch.run_local_rewrite_child -> runtime_local_rewrite.serve_local_rewrite -> local_rewrite_upstream",
+    "The encoded path reaches DeepSeekExchange for Responses and deepseek_chat_completions_path for raw Chat Completions passthrough.",
+    "Pinned local_rewrite_transport/urls.rs appends the provider route, local_rewrite_transport.rs passes that URL to reqwest request construction, which encodes UTF-8 path bytes as observed in the actual release."
+  ],
+  "owned_change": {
+    "path": "src/modex/runtime_local_rewrite.mojo",
+    "behavior": "Percent-encode non-ASCII UTF-8 path bytes with uppercase hex before native HTTP dispatch; retain existing ASCII/percent bytes, trailing-slash behavior, numeric-loopback restriction, credential/control/query/fragment guards, dot-segment rejection and downstream request framing limits.",
+    "new_imports": [],
+    "native_tests": "tests/test_gateway_cli.mojo",
+    "production_tests": "tests/test_deepseek_continuation.py::test_unicode_upstream_base_paths_match_release_without_double_encoding",
+    "cases": [
+      {
+        "base_path": "/v1/é/東京🧭",
+        "encoded_prefix": "/v1/%C3%A9/%E6%9D%B1%E4%BA%AC%F0%9F%A7%AD"
+      },
+      {
+        "base_path": "/v1/%C3%A9/%2f",
+        "encoded_prefix": "/v1/%C3%A9/%2f"
+      },
+      {
+        "base_path": "/v1/é",
+        "encoded_prefix": "/v1/e%CC%81"
+      },
+      {
+        "base_path": "/v1/%E6%9D%B1/🧭/",
+        "encoded_prefix": "/v1/%E6%9D%B1/%F0%9F%A7%AD"
+      }
+    ],
+    "routes": [
+      "/v1/responses",
+      "/v1/chat/completions?synthetic=1"
+    ],
+    "production_path_route_vectors": 8,
+    "observations": "All eight vectors execute both real production CLIs with isolated synthetic Codex/provider peers; status 200, exact provider path, one upstream POST per vector and authoritative synthetic provider credential. Existing escapes are not double encoded and combining characters are not normalized."
+  },
+  "before_change": {
+    "command": "PYTHONPATH=tests rtk proxy python3 -m unittest test_deepseek_continuation.DeepSeekContinuationTests.test_unicode_upstream_base_paths_match_release_without_double_encoding -v",
+    "result": "Initial Responses-only test failed in three Modex path cases; all pinned-release cases and the existing-escape case passed. Final test also covers Chat Completions.",
+    "raw_output_sha256": "70144ac6f3e75cb95f075f3ceaff5bd7697936a0de1d0daa6c47059241e4a486",
+    "retained_output": "docs/evidence/checkpoint5-before.txt",
+    "single_probe": {
+      "prodex_04391": {
+        "statuses": [
+          200
+        ],
+        "paths": [
+          "/v1/%C3%A9/%E6%9D%B1%E4%BA%AC%F0%9F%A7%AD/chat/completions"
+        ],
+        "upstream_posts": 1
+      },
+      "modex_checkpoint4": {
+        "statuses": [
+          200
+        ],
+        "paths": [
+          "/v1/Ã©/æ±äº¬ð§­/chat/completions"
+        ],
+        "upstream_posts": 1
+      }
+    }
+  },
+  "rejected_unnecessary_change": {
+    "proposal": "Change default model alias normalization",
+    "decision": "No code change; three live production cases already match the release.",
+    "observations": {
+      "prodex_04391": {
+        "statuses": [
+          200,
+          200,
+          200
+        ],
+        "upstream_models": [
+          "default",
+          "DEFAULT",
+          "default"
+        ],
+        "upstream_posts": 3
+      },
+      "modex_checkpoint4": {
+        "statuses": [
+          200,
+          200,
+          200
+        ],
+        "upstream_models": [
+          "default",
+          "DEFAULT",
+          "default"
+        ],
+        "upstream_posts": 3
+      }
+    }
+  },
+  "focused_validation": {
+    "command": "PYTHONPATH=tests rtk proxy python3 -m unittest test_deepseek_continuation test_provider_request_prepare test_local_rewrite test_relay_streams -v",
+    "exit_status": 0,
+    "python_methods": 22,
+    "seconds": 32.064,
+    "skips": 0,
+    "raw_output_sha256": "0d6fa308ba4e260141a0b7836d7dcb20622494bc1a42f03610d225ac75d1dd0f"
+  },
+  "validation": {
+    "initial_build_command": "rtk proxy make build",
+    "command": "rtk proxy make test",
+    "exit_status": 0,
+    "native_unit_executables": 44,
+    "python_methods": 338,
+    "python_seconds": 579.123,
+    "skips": 0,
+    "recovery_policy_vectors": 407,
+    "raw_output_sha256": "6174ece92820f8f07117a000f6b082ea1765ae24a961330ae22d234c80c3321b",
+    "artifact_stable_during_python_discovery": true,
+    "native_sha256": "a1344d7ef3136c6630af57b9c50e6f42fdc54c18dd60d5178991931778d11186"
+  },
+  "security_and_dependencies": "Native String/StaticString/chr/byte iteration only; import set unchanged. Test peers use Python stdlib with synthetic credentials, isolated HOME/config/storage/env and ephemeral loopback only. No product helper, generator, new native binding, Python interop, real account login or paid provider traffic. No concurrent build/modex rebuild during Python discovery or isolation/link checks.",
+  "ownership": "Main-owned implementation/integration/validation/commit/push. No new worker session. Reader/usage files, rejected conversation/header changes and dirty experimental worktree are untouched.",
+  "limitations": [
+    "Only the tested UTF-8 path-byte subset is qualified. Complete URL normalization, ASCII punctuation, encoded dot segments, redirect behavior and non-host execution remain unqualified.",
+    "The checkpoint4 hard-binding mismatch remains open; full ownership, exactly-once recovery mutation dispatch, targeted affinity release and accepted-RPC/progress monitoring are unconnected.",
+    "71 contract statuses / 426 platform obligations and capability statuses are unchanged. All six release qualifications and JavaScript SDK remain BLOCKED; full feature parity remains incomplete."
+  ]
+}

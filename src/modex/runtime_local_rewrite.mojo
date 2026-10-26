@@ -49,7 +49,14 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
         path = shorter^
     if "/../" in path or "/./" in path or path.endswith("/..") or path.endswith("/."):
         raise Error("URL path normalization is not implemented by this Modex gateway")
-    return address, path + "/chat/completions"
+    var encoded = String()
+    comptime HEX = StaticString("0123456789ABCDEF")
+    for byte in path.as_bytes():
+        if byte >= 128:
+            encoded += "%" + HEX[byte=Int(byte) // 16] + HEX[byte=Int(byte) % 16]
+        else:
+            encoded += chr(Int(byte))
+    return address, encoded + "/chat/completions"
 
 
 def _bytes(text: String) -> List[UInt8]:

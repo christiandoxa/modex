@@ -6,6 +6,14 @@ Complete parity remains unfinished against Prodex 0.439.1 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 5 fixes non-ASCII upstream base-path bytes: native dispatch now
+matches the release's UTF-8 percent encoding. Existing percent escapes and
+combining sequences are preserved; eight production path/route comparisons
+cover Responses and Chat Completions, including query forwarding. Full URL
+normalization, encoded dot segments, ASCII punctuation, redirects and non-host
+behavior remain unqualified. The model `default` probe matched the release,
+so no alias change was made. See `docs/evidence/checkpoint5-reference.json`.
+
 Checkpoint 4 connects the pinned Responses continuation-identifier boundary:
 resolved previous-response, session and header turn-state values reject C0/C1
 controls and values above 1,024 UTF-8 bytes before provider dispatch. Twelve

@@ -1,0 +1,53 @@
+Checkpoint 5 before-change regression, production binary from 591497c8439b5649106d868db9d6a21c2ce495b3.
+Command: PYTHONPATH=tests rtk proxy python3 -m unittest test_deepseek_continuation.DeepSeekContinuationTests.test_unicode_upstream_base_paths_match_release_without_double_encoding -v
+This initial Responses-only test failed in three native path cases; the already escaped path and all pinned-release cases passed. Failures are not passing parity evidence.
+
+test_unicode_upstream_base_paths_match_release_without_double_encoding (test_deepseek_continuation.DeepSeekContinuationTests.test_unicode_upstream_base_paths_match_release_without_double_encoding) ...
+  test_unicode_upstream_base_paths_match_release_without_double_encoding (test_deepseek_continuation.DeepSeekContinuationTests.test_unicode_upstream_base_paths_match_release_without_double_encoding) (base_path='/v1/é/東京🧭', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_unicode_upstream_base_paths_match_release_without_double_encoding (test_deepseek_continuation.DeepSeekContinuationTests.test_unicode_upstream_base_paths_match_release_without_double_encoding) (base_path='/v1/é', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_unicode_upstream_base_paths_match_release_without_double_encoding (test_deepseek_continuation.DeepSeekContinuationTests.test_unicode_upstream_base_paths_match_release_without_double_encoding) (base_path='/v1/%E6%9D%B1/🧭/', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+
+======================================================================
+FAIL: test_unicode_upstream_base_paths_match_release_without_double_encoding (test_deepseek_continuation.DeepSeekContinuationTests.test_unicode_upstream_base_paths_match_release_without_double_encoding) (base_path='/v1/é/東京🧭', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 181, in test_unicode_upstream_base_paths_match_release_without_double_encoding
+    self.assertEqual(upstream[0]["path"], encoded + "/chat/completions")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '/v1/Ã©/æ\x9d±äº¬ð\x9f§\xad/chat/completions' != '/v1/%C3%A9/%E6%9D%B1%E4%BA%AC%F0%9F%A7%AD/chat/completions'
+- /v1/Ã©/æ±äº¬ð§­/chat/completions
++ /v1/%C3%A9/%E6%9D%B1%E4%BA%AC%F0%9F%A7%AD/chat/completions
+
+
+======================================================================
+FAIL: test_unicode_upstream_base_paths_match_release_without_double_encoding (test_deepseek_continuation.DeepSeekContinuationTests.test_unicode_upstream_base_paths_match_release_without_double_encoding) (base_path='/v1/é', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 181, in test_unicode_upstream_base_paths_match_release_without_double_encoding
+    self.assertEqual(upstream[0]["path"], encoded + "/chat/completions")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '/v1/eÌ\x81/chat/completions' != '/v1/e%CC%81/chat/completions'
+- /v1/eÌ/chat/completions
+?      ^^
++ /v1/e%CC%81/chat/completions
+?      ^^^^^^
+
+
+======================================================================
+FAIL: test_unicode_upstream_base_paths_match_release_without_double_encoding (test_deepseek_continuation.DeepSeekContinuationTests.test_unicode_upstream_base_paths_match_release_without_double_encoding) (base_path='/v1/%E6%9D%B1/🧭/', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 181, in test_unicode_upstream_base_paths_match_release_without_double_encoding
+    self.assertEqual(upstream[0]["path"], encoded + "/chat/completions")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '/v1/%E6%9D%B1/ð\x9f§\xad/chat/completions' != '/v1/%E6%9D%B1/%F0%9F%A7%AD/chat/completions'
+- /v1/%E6%9D%B1/ð§­/chat/completions
+?               ^^^^
++ /v1/%E6%9D%B1/%F0%9F%A7%AD/chat/completions
+?               ^^^^^^^^^^^^
+
+
+----------------------------------------------------------------------
+Ran 1 test in 5.337s
+
+FAILED (failures=3)

@@ -27,6 +27,10 @@
     {
       "date": "2026-10-26",
       "change": "Checkpoint 6 integrates only reviewed HTTP framing and call-ID worker sources and connects native Super history context. Rejects reader, raw usage scanner and malformed-format fallback claims after pinned source/live checks. Adds a native reader unit and production regressions without changing any contract, platform status or denominator."
+    },
+    {
+      "date": "2026-10-26",
+      "change": "Checkpoint 7 immediately follows the verified checkpoint 6 push with native buffered passthrough metadata filtering. Ten live production vectors match ASCII/HTAB retention, non-ASCII omission, binary body and no-replay behavior. No contract/platform status or denominator changes."
     }
   ],
   "contracts": [
@@ -1228,7 +1232,7 @@
       "prerequisites": [
         "selected supported upstream CLI/tools"
       ],
-      "implementation": "src/main.mojo -> super_cli.mojo -> super_launch.mojo implements a guarded clean-home DeepSeek exec launch with private overlay, explicit environment, Codex version/hook preflight, native self-process relay, exit propagation and direct-child cleanup. Existing CLI validation/passthrough WIP is retained. The selected model plus bundled preset catalog, metadata/ordering/ASCII case rules, and default provider/context/compaction settings are native and compared with the release. Explicit --context-window/--auto-compact-token-limit and their local aliases now reach the actual native launch with pinned fallback/clamping rules; numeric -c limits reach Codex while catalog rows retain the frozen default budgets. Checkpoint 6 selects the frozen unscoped history context for native Super while retaining scoped internal relays; equal comma-list HTTP lengths and first-present tool-ID mapping match focused 0.439.1 production checks. Binding ownership remains a visible mismatch.",
+      "implementation": "src/main.mojo -> super_cli.mojo -> super_launch.mojo implements a guarded clean-home DeepSeek exec launch with private overlay, explicit environment, Codex version/hook preflight, native self-process relay, exit propagation and direct-child cleanup. Existing CLI validation/passthrough WIP is retained. The selected model plus bundled preset catalog, metadata/ordering/ASCII case rules, and default provider/context/compaction settings are native and compared with the release. Explicit --context-window/--auto-compact-token-limit and their local aliases now reach the actual native launch with pinned fallback/clamping rules; numeric -c limits reach Codex while catalog rows retain the frozen default budgets. Checkpoint 6 selects the frozen unscoped history context for native Super while retaining scoped internal relays; equal comma-list HTTP lengths and first-present tool-ID mapping match focused 0.439.1 production checks. Binding ownership remains a visible mismatch. Checkpoint 7 applies the existing ASCII response-header validation to buffered passthrough, matching the pinned TinyHTTP constructor without altering binary bodies or replaying requests.",
       "tests": [
         "tests/test_super_cli.mojo",
         "tests/test_super_cli.py",
@@ -1254,7 +1258,10 @@
         "docs/evidence/checkpoint3-dependencies.txt",
         "docs/evidence/checkpoint6-reference.json",
         "docs/evidence/checkpoint6-tests.txt",
-        "docs/evidence/checkpoint6-dependencies.txt"
+        "docs/evidence/checkpoint6-dependencies.txt",
+        "docs/evidence/checkpoint7-reference.json",
+        "docs/evidence/checkpoint7-tests.txt",
+        "docs/evidence/checkpoint7-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2223,7 +2230,7 @@
       "prerequisites": [
         "DeepSeek services"
       ],
-      "implementation": "Native request/response translation, scoped conversation continuation, rate-limit headers and raw Chat Completions passthrough are connected through a guarded production Super launch. Quota values require HTAB/visible ASCII; early non-2xx responses preserve raw quota headers without projection, while 200 SSE provider errors retain projected quotas. Synthetic production comparisons verify one upstream POST per request. Raw 3xx Responses SSE now uses the shared native passthrough writer and text-only header validation, with production before/after regressions and a held-open 307 live oracle comparison. Checkpoint 4 rejects invalid Responses continuation identifiers before provider dispatch: resolved response/session/turn-state values use the pinned 1,024 UTF-8 byte and C0/C1 control rules. Live production comparisons cover 12 rejection vectors, five valid boundary/precedence vectors, eight simple combo-model selectors and buffered translation-time timestamp fallback. Full affinity ownership and recovery remain unfinished. Checkpoint 5 percent-encodes non-ASCII UTF-8 upstream base-path bytes before native dispatch, preserving existing percent escapes, combining sequences and Chat Completions query forwarding; eight path/route cases match the pinned production release. Checkpoint 6 selects the frozen unscoped history context for native Super while retaining scoped internal relays; equal comma-list HTTP lengths and first-present tool-ID mapping match focused 0.439.1 production checks. Binding ownership remains a visible mismatch.",
+      "implementation": "Native request/response translation, scoped conversation continuation, rate-limit headers and raw Chat Completions passthrough are connected through a guarded production Super launch. Quota values require HTAB/visible ASCII; early non-2xx responses preserve raw quota headers without projection, while 200 SSE provider errors retain projected quotas. Synthetic production comparisons verify one upstream POST per request. Raw 3xx Responses SSE now uses the shared native passthrough writer and text-only header validation, with production before/after regressions and a held-open 307 live oracle comparison. Checkpoint 4 rejects invalid Responses continuation identifiers before provider dispatch: resolved response/session/turn-state values use the pinned 1,024 UTF-8 byte and C0/C1 control rules. Live production comparisons cover 12 rejection vectors, five valid boundary/precedence vectors, eight simple combo-model selectors and buffered translation-time timestamp fallback. Full affinity ownership and recovery remain unfinished. Checkpoint 5 percent-encodes non-ASCII UTF-8 upstream base-path bytes before native dispatch, preserving existing percent escapes, combining sequences and Chat Completions query forwarding; eight path/route cases match the pinned production release. Checkpoint 6 selects the frozen unscoped history context for native Super while retaining scoped internal relays; equal comma-list HTTP lengths and first-present tool-ID mapping match focused 0.439.1 production checks. Binding ownership remains a visible mismatch. Checkpoint 7 applies the existing ASCII response-header validation to buffered passthrough, matching the pinned TinyHTTP constructor without altering binary bodies or replaying requests.",
       "tests": [
         "tests/test_provider_chat_chunk.mojo",
         "tests/provider_chat_chunk_driver.mojo",
@@ -2304,7 +2311,10 @@
         "docs/evidence/checkpoint5-dependencies.txt",
         "docs/evidence/checkpoint6-reference.json",
         "docs/evidence/checkpoint6-tests.txt",
-        "docs/evidence/checkpoint6-dependencies.txt"
+        "docs/evidence/checkpoint6-dependencies.txt",
+        "docs/evidence/checkpoint7-reference.json",
+        "docs/evidence/checkpoint7-tests.txt",
+        "docs/evidence/checkpoint7-dependencies.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {

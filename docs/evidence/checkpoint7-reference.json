@@ -1,0 +1,211 @@
+{
+  "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "starting_main": "27d0053cef6fe6e2f50f6bd40e7685662152e399",
+  "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+  "previous_checkpoint_push_verified": {
+    "local_head": "27d0053cef6fe6e2f50f6bd40e7685662152e399",
+    "remote_main": "27d0053cef6fe6e2f50f6bd40e7685662152e399",
+    "main_clean": true
+  },
+  "snapshot_git_object_matches": {
+    "Cargo.toml": {
+      "sha256": "06439274c52f2cd2a2560f3bb484e452e8918b3804503600410d79317e830f66",
+      "matches_pinned_git_object": true
+    },
+    "Cargo.lock": {
+      "sha256": "c5c9e80f925346ec065169be3c2d989a369c7dc8b86f279fc63809c8cebbb323",
+      "matches_pinned_git_object": true
+    },
+    "vendor/tiny_http/src/common.rs": {
+      "sha256": "5cae33d9517acdf3f559488acbd4fd727b565ac5e10234b060d37f6398ef2c7b",
+      "matches_pinned_git_object": true
+    },
+    "vendor/tiny_http/PRODEX-PATCH.json": {
+      "sha256": "c324e51042c2e2ac3f99fd3a8adb4e4bd904f85bee9e58dbadf9005e6682b50d",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_proxy/buffered_response.rs": {
+      "sha256": "35e683c426dc6113c6cefadfc46929fa1c7039640720896a4acd44990b6a4599",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_dispatch.rs": {
+      "sha256": "fd74afb623fde8b52595ee49d5714bd994e1214dd4f7d5da62789a8bde7fb224",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_passthrough.rs": {
+      "sha256": "a89151ca9d58d614b47f8d5ebc7af150366b1e0294d25a89902b6479e6c9e0e8",
+      "matches_pinned_git_object": true
+    },
+    "crates/prodex-runtime-proxy/src/response_forwarding.rs": {
+      "sha256": "3b4b42ee17f2f7f1c29636c9fc1645bff52d776b1098d8dd904dc42b08cc1926",
+      "matches_pinned_git_object": true
+    }
+  },
+  "owned_production_slice": {
+    "files": [
+      "src/modex/runtime_local_rewrite.mojo"
+    ],
+    "trace": "native Super CLI -> run_local_rewrite_child -> serve_local_rewrite -> _serve -> _passthrough_response -> _response_headers -> native HTTP response writer",
+    "change": "Reuse existing HTAB/visible-ASCII header filtering for buffered passthrough as well as SSE; remove the unused text_only selector. Invalid HTTP syntax, body framing/caps and hop-by-hop filtering remain in their existing owners.",
+    "baseline_trace": "local_rewrite_response_dispatch.rs collects binary headers; local_rewrite_response_passthrough.rs builds buffered parts; runtime_proxy/buffered_response.rs filters TinyHeader::from_bytes(...).ok(); vendored tiny_http/src/common.rs constructs value with AsciiString::from_ascii. Cargo.toml pins the local audited TinyHTTP fork.",
+    "no_imports_or_dependencies_added": true
+  },
+  "production_differential": {
+    "test": "tests/test_deepseek_continuation.py::test_buffered_passthrough_metadata_matches_release",
+    "vectors": 10,
+    "routes": [
+      {
+        "path": "/v1/chat/completions?synthetic=metadata",
+        "status": 201
+      },
+      {
+        "path": "/v1/responses",
+        "status": 503
+      }
+    ],
+    "upstream_header_wire_hex": [
+      "73796e7468657469632d6173636969",
+      "73796e746865746963096d65746164617461",
+      "73796e7468657469632d80",
+      "73796e7468657469632dff",
+      "73796e7468657469632dc3a9"
+    ],
+    "assertions": "ASCII/HTAB turn state survives, three non-ASCII spellings are omitted, x-request-id survives, nominated hop header is omitted, binary NUL/non-UTF8 response body is exact, each request sends one POST with authoritative synthetic credentials, inbound turn state survives and internal namespace headers never reach the provider."
+  },
+  "before_observations": {
+    "prodex_04391": {
+      "upstream_posts": 3,
+      "responses": [
+        {
+          "kind": "response",
+          "status": 201,
+          "headers": {
+            "server": "BaseHTTP Python/3.16.0a1",
+            "date": "Mon, 26 Oct 2026 07:20:50 GMT",
+            "content-type": "application/json",
+            "x-codex-turn-state": "synthetic-ascii",
+            "x-request-id": "synthetic-request",
+            "Content-Length": "2"
+          },
+          "body": "7b7d",
+          "started": 1792999250,
+          "finished": 1792999250
+        },
+        {
+          "kind": "response",
+          "status": 201,
+          "headers": {
+            "server": "BaseHTTP Python/3.16.0a1",
+            "date": "Mon, 26 Oct 2026 07:20:50 GMT",
+            "content-type": "application/json",
+            "x-request-id": "synthetic-request",
+            "Content-Length": "2"
+          },
+          "body": "7b7d",
+          "started": 1792999250,
+          "finished": 1792999250
+        },
+        {
+          "kind": "response",
+          "status": 201,
+          "headers": {
+            "server": "BaseHTTP Python/3.16.0a1",
+            "date": "Mon, 26 Oct 2026 07:20:50 GMT",
+            "content-type": "application/json",
+            "x-request-id": "synthetic-request",
+            "Content-Length": "2"
+          },
+          "body": "7b7d",
+          "started": 1792999250,
+          "finished": 1792999250
+        }
+      ]
+    },
+    "modex_checkpoint6": {
+      "upstream_posts": 3,
+      "responses": [
+        {
+          "kind": "response",
+          "status": 201,
+          "headers": {
+            "Content-Length": "2",
+            "Connection": "close",
+            "Server": "BaseHTTP Python/3.16.0a1",
+            "Date": "Mon, 26 Oct 2026 07:20:50 GMT",
+            "Content-Type": "application/json",
+            "x-codex-turn-state": "synthetic-ascii",
+            "x-request-id": "synthetic-request"
+          },
+          "body": "7b7d",
+          "started": 1792999250,
+          "finished": 1792999250
+        },
+        {
+          "kind": "response",
+          "status": 201,
+          "headers": {
+            "Content-Length": "2",
+            "Connection": "close",
+            "Server": "BaseHTTP Python/3.16.0a1",
+            "Date": "Mon, 26 Oct 2026 07:20:50 GMT",
+            "Content-Type": "application/json",
+            "x-codex-turn-state": "synthetic-ï¿½",
+            "x-request-id": "synthetic-request"
+          },
+          "body": "7b7d",
+          "started": 1792999250,
+          "finished": 1792999250
+        },
+        {
+          "kind": "response",
+          "status": 201,
+          "headers": {
+            "Content-Length": "2",
+            "Connection": "close",
+            "Server": "BaseHTTP Python/3.16.0a1",
+            "Date": "Mon, 26 Oct 2026 07:20:50 GMT",
+            "Content-Type": "application/json",
+            "x-codex-turn-state": "synthetic-Ã©",
+            "x-request-id": "synthetic-request"
+          },
+          "body": "7b7d",
+          "started": 1792999250,
+          "finished": 1792999250
+        }
+      ]
+    }
+  },
+  "validation": {
+    "command": "rtk proxy make test",
+    "exit_code": 0,
+    "elapsed_seconds": 736.882,
+    "artifact_sha256_at_python_discovery": "f4a59cc5045d0e1f536d4e50d4f6a6e61bac575f321bca489e60b0269e39be34",
+    "artifact_sha256_after": "f4a59cc5045d0e1f536d4e50d4f6a6e61bac575f321bca489e60b0269e39be34",
+    "native_unit_executables": 45,
+    "python_methods": 347,
+    "python_seconds": 590.347,
+    "skips": 0,
+    "focused_python_methods": 28,
+    "focused_python_seconds": 48.23,
+    "pinned_recovery_policy_vectors": 407
+  },
+  "model_provenance": {
+    "execution_owner": "sole shared-main parent",
+    "primary_requested_by_user": "gpt-6.1-sol / max",
+    "primary_runtime_selection_independently_exposed": false,
+    "new_workers": [],
+    "prior_worker_and_supplemental_model_details": "docs/evidence/checkpoint6-reference.json"
+  },
+  "remaining_limits": [
+    "The lower HTTP client still stores header text lossily; general binary header retention outside this relay is unqualified.",
+    "Full binding ownership and non-object SSE mismatches retained in checkpoint 6 remain.",
+    "No whole contract or platform qualification is established; all six targets remain BLOCKED."
+  ],
+  "unchanged_denominator": {
+    "contracts": 71,
+    "platform_obligations": 426,
+    "release_targets_blocked": 6,
+    "inventory_complete": false
+  }
+}

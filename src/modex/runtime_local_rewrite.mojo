@@ -104,7 +104,7 @@ def _route_error(mut connection: LoopbackHTTPConnection) raises:
     connection.respond(404, [("content-type", "application/json"), ("cache-control", "no-store"), ("x-content-type-options", "nosniff")], _bytes('{"error":{"code":"unsupported_provider_route","message":"provider route is not supported"}}'), 30000)
 
 
-def _response_headers(headers: List[Tuple[String, String]], text_only: Bool = False) -> List[Tuple[String, String]]:
+def _response_headers(headers: List[Tuple[String, String]]) -> List[Tuple[String, String]]:
     var tokens = List[String]()
     for name, value in headers:
         if name.lower() == "connection":
@@ -114,14 +114,13 @@ def _response_headers(headers: List[Tuple[String, String]], text_only: Bool = Fa
         var lower = name.lower()
         if lower in tokens or lower in ["connection", "content-length", "transfer-encoding", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "upgrade"]:
             continue
-        if text_only:
-            var valid = True
-            for byte in value.as_bytes():
-                if byte > 126 or byte < 32 and byte != 9:
-                    valid = False
-                    break
-            if not valid:
-                continue
+        var valid = True
+        for byte in value.as_bytes():
+            if byte > 126 or byte < 32 and byte != 9:
+                valid = False
+                break
+        if not valid:
+            continue
         output.append((name, value))
     return output^
 
@@ -136,7 +135,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
             _reply(connection, 502, "upstream request failed")
             return
     var streaming = stream.status < 400 and stream.status != 204 and stream.status != 304 and deepseek_event_stream(stream.headers)
-    var response_headers = _response_headers(stream.headers.copy(), streaming)
+    var response_headers = _response_headers(stream.headers.copy())
     if not streaming:
         var body = List[UInt8]()
         try:

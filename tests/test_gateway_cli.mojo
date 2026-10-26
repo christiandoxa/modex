@@ -1,7 +1,7 @@
 from std.collections import List
 from std.testing import assert_equal, assert_true
 
-from modex.runtime_local_rewrite import _continuation_identity_valid, _history, _namespace, local_rewrite_upstream
+from modex.runtime_local_rewrite import _continuation_identity_valid, _history, _namespace, _response_headers, local_rewrite_upstream
 from modex.gateway_cli import gateway_help, parse_gateway_arguments
 from modex.json import JsonDocument, quote_json
 from modex.provider_conversations import ProviderConversationStore
@@ -75,6 +75,10 @@ def main() raises:
     store.insert("unscoped", '[{"tool_calls":[{"id":"call-synthetic"}]}]')
     assert_equal(_history(typed_fallback, store, None), store.history("unscoped").value())
     assert_equal(_history(typed_fallback, store, "b"), "[]")
+    var response_headers = _response_headers([("x-codex-turn-state", "synthetic\tmetadata"), ("x-utf8", "é"), ("x-lossy", "\ufffd"), ("x-empty", ""), ("connection", "X-Synthetic-Hop"), ("X-Synthetic-Hop", "private")])
+    assert_equal(len(response_headers), 2)
+    assert_equal(response_headers[0], (String("x-codex-turn-state"), String("synthetic\tmetadata")))
+    assert_equal(response_headers[1], (String("x-empty"), String("")))
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/")[1], "/v1/chat/completions")
     assert_equal(local_rewrite_upstream("http://[::1]:1234")[0], "[::1]:1234")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/é/東京🧭")[1], "/v1/%C3%A9/%E6%9D%B1%E4%BA%AC%F0%9F%A7%AD/chat/completions")

@@ -44,7 +44,10 @@
         "docs/evidence/checkpoint5-dependencies.txt",
         "docs/evidence/checkpoint6-reference.json",
         "docs/evidence/checkpoint6-tests.txt",
-        "docs/evidence/checkpoint6-dependencies.txt"
+        "docs/evidence/checkpoint6-dependencies.txt",
+        "docs/evidence/checkpoint7-reference.json",
+        "docs/evidence/checkpoint7-tests.txt",
+        "docs/evidence/checkpoint7-dependencies.txt"
       ],
       "proven": [
         "numeric IPv4/IPv6 loopback bind/listen/accept and ephemeral port discovery using existing official wrappers",
@@ -60,7 +63,8 @@
         "production Responses identifier validation rejects 12 malformed/oversized identity vectors before upstream side effects, retaining five valid byte-boundary/header-precedence cases against pinned 0.439.1",
         "eight simple combo selectors and seven buffered created-value categories match pinned production observations; missing timestamps are taken after delayed body receipt",
         "non-ASCII upstream base paths use UTF-8 percent encoding without double-encoding existing escapes; eight live production path/route comparisons include combining text, emoji, trailing slashes and Chat Completions queries",
-        "Checkpoint 6: live release comparisons preserve native Super history context across sessions, accept equal comma-list Content-Length, map first-present call IDs, and retain decoded usage keys and strict format validation."
+        "Checkpoint 6: live release comparisons preserve native Super history context across sessions, accept equal comma-list Content-Length, map first-present call IDs, and retain decoded usage keys and strict format validation.",
+        "Checkpoint 7: ten live production buffered metadata vectors preserve ASCII/HTAB turn state and request IDs, discard non-ASCII values, keep binary bodies exact and issue one POST per request."
       ],
       "not_proven": [
         "public operational gateway/provider parity and startup side effects",
@@ -72,7 +76,8 @@
         "complete continuation binding resolution: a two-turn buffered case remains a pinned-release mismatch",
         "physical byte equivalence of serialized conversation retention; the incompatible worker estimator change is rejected",
         "complete upstream URL normalization beyond the tested UTF-8 path-byte subset",
-        "Non-object SSE remains a mismatch: release synthetic clients time out while Modex emits response.failed; both proposed reader changes are rejected."
+        "Non-object SSE remains a mismatch: release synthetic clients time out while Modex emits response.failed; both proposed reader changes are rejected.",
+        "General lower-client binary header retention outside the tested relay; lossy internal HTTP header storage remains."
       ],
       "assessment": "Guarded production Super integration is exercised on the host; complete gateway/provider, concurrent admission, security and non-host obligations remain blocked."
     },
@@ -208,7 +213,10 @@
         "docs/evidence/checkpoint-04391-tests.txt",
         "docs/evidence/checkpoint6-reference.json",
         "docs/evidence/checkpoint6-tests.txt",
-        "docs/evidence/checkpoint6-dependencies.txt"
+        "docs/evidence/checkpoint6-dependencies.txt",
+        "docs/evidence/checkpoint7-reference.json",
+        "docs/evidence/checkpoint7-tests.txt",
+        "docs/evidence/checkpoint7-dependencies.txt"
       ],
       "proven": [
         "numeric IPv4 127/8 and compressed IPv6 ::1 client connections through official socket wrappers",
@@ -224,7 +232,8 @@
         "standalone driver without helper executables in a bubblewrap filesystem sharing the host network for the synthetic loopback server",
         "incremental SSE over 4 MiB aggregate with bounded HTTP chunks plus retained line/event/accumulation limits",
         "DeepSeek request/token rate-limit header projection on buffered and SSE relay responses",
-        "Checkpoint 6: live release comparisons preserve native Super history context across sessions, accept equal comma-list Content-Length, map first-present call IDs, and retain decoded usage keys and strict format validation."
+        "Checkpoint 6: live release comparisons preserve native Super history context across sessions, accept equal comma-list Content-Length, map first-present call IDs, and retain decoded usage keys and strict format validation.",
+        "Checkpoint 7: ten live production buffered metadata vectors preserve ASCII/HTAB turn state and request IDs, discard non-ASCII values, keep binary bodies exact and issue one POST per request."
       ],
       "not_proven": [
         "complete production CLI/provider parity and registry/capability/process admission",
@@ -233,7 +242,8 @@
         "complete framing/error tolerance, output-state memory bounds and downstream backpressure equivalence",
         "WebSocket and other provider transports",
         "non-host targets or stable public networking API",
-        "Non-object SSE remains a mismatch: release synthetic clients time out while Modex emits response.failed; both proposed reader changes are rejected."
+        "Non-object SSE remains a mismatch: release synthetic clients time out while Modex emits response.failed; both proposed reader changes are rejected.",
+        "General lower-client binary header retention outside the tested relay; lossy internal HTTP header storage remains."
       ],
       "assessment": "An independently authored native Mojo protocol foundation using only bundled internal POSIX wrappers and types. No new binding or application dependency. Standalone checks establish a limited Linux capability, not runtime-broker parity.",
       "specification": "https://www.rfc-editor.org/rfc/rfc9112.html"

@@ -1,3 +1,46 @@
+# Checkpoint 7: native buffered transport metadata
+
+Checkpoint 6 was normally committed and pushed as
+`27d0053cef6fe6e2f50f6bd40e7685662152e399`; `git ls-remote origin refs/heads/main`
+matched local HEAD and main was clean before this continuation. Its 45 native
+units, 346 Python methods and 407 pinned recovery-policy vectors passed.
+
+The sole main owner immediately continued with the reproduced buffered metadata
+gap. The frozen dispatch preserves raw binary headers until the TinyHTTP
+constructor, which silently drops non-ASCII values. Modex instead forwarded
+UTF-8/replacement bytes from its lossy client header representation. The owned
+native relay now applies its existing ASCII/HTAB byte filter to buffered and SSE
+passthrough alike; the redundant private selector is removed. No import,
+dependency, binding, helper or public option is added.
+
+Before the change, the new live release differential failed only for Modex on
+both routes. Ten final vectors cover Chat Completions 201 and Responses 503,
+ASCII/HTAB retention, C1/invalid UTF-8/valid UTF-8 omission, retained request IDs,
+hop-header removal, exact NUL/non-UTF8 bodies, authoritative synthetic auth,
+forwarded inbound turn state and stripped internal namespace metadata. Each
+accepted request sends exactly one POST. Native header assertions and the
+existing history/redirect/cancellation regressions remain connected.
+
+Validation: `make build`, all 45 native units, 28 focused Python
+methods in 48.230 seconds, then final serial `rtk proxy make test`:
+347 Python methods in 590.347 seconds, no skips, and 407 pinned policy
+vectors. The artifact hash stayed fixed through Python discovery and sandbox/
+link checks. Eight source files match immutable pinned Git objects, including
+the vendored constructor and its Cargo patch registration. Import/source/link
+and synthetic credential review found only the existing official stdlib/runtime.
+No extra workers were launched; prior model provenance remains in checkpoint 6.
+
+The lower client still stores header text lossily; general binary header
+retention outside this relay remains unqualified. Full binding ownership,
+non-object SSE, recovery/progress owners, broad transport/storage/security,
+JavaScript SDK and non-host qualification remain unfinished. P/Q's source files
+and all other worktrees are untouched. All 71 contracts, 426 platform obligations,
+capability statuses and six BLOCKED release qualifications are retained.
+Evidence: `docs/evidence/checkpoint7-reference.json`, `checkpoint7-tests.txt`,
+`checkpoint7-dependencies.txt` and `checkpoint7-before.txt` in that directory.
+Continue from a verified main checkpoint; do not count narrow matches or
+accepted control RPCs as complete parity or actual goal progress.
+
 # Checkpoint 6: native Super history context and reviewed workers
 
 Main started clean at `db9a78e0d4649538ccb5967b6dd7fb4a00a5844e`.

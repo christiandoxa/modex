@@ -6,6 +6,13 @@ Complete parity remains unfinished against Prodex 0.439.1 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0 observations retain their provenance.
 
+Checkpoint 7 extends the existing native header filter to buffered passthrough,
+matching the frozen TinyHTTP ASCII constructor. Ten live production metadata
+vectors cover successful Chat Completions and Responses errors, unchanged binary
+bodies, isolated metadata and one POST per request. Lower-client header storage
+is still lossy; arbitrary binary metadata and other transport/platform behavior
+remain unqualified. See `docs/evidence/checkpoint7-reference.json`.
+
 Checkpoint 6 connects Super's source-traced unscoped history context while
 retaining scoped internal relays. Buffered and streamed tool follow-ups across
 different sessions/turn states match the real release on its history-aware path.
@@ -19,9 +26,9 @@ Non-object SSE remains a reproduced mismatch: null, array, and text-then-null
 within one event time out in the pinned release's synthetic client; Modex emits
 `response.failed`. The source metadata kernel rejects non-objects and its Rust
 wrapper panics. No empty-chunk or graceful-failure parity is claimed. The full
-binding mismatch below is also reproduced unchanged. Buffered passthrough
-non-ASCII turn-state metadata is the next observed gap: the release drops the
-header while Modex forwards replacement/UTF-8 bytes.
+binding mismatch below is also reproduced unchanged. Checkpoint 7 fixes the
+buffered non-ASCII metadata mismatch described in that checkpoint; it does not
+implement general lower-client binary header retention.
 
 Checkpoint 5 fixes non-ASCII upstream base-path bytes: native dispatch now
 matches the release's UTF-8 percent encoding. Existing percent escapes and

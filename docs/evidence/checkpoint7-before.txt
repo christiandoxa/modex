@@ -1,0 +1,37 @@
+Pinned release passes both routes; previous Modex fails non-ASCII turn-state metadata.
+test_buffered_passthrough_metadata_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_buffered_passthrough_metadata_matches_release) ...
+  test_buffered_passthrough_metadata_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_buffered_passthrough_metadata_matches_release) (route='/v1/chat/completions?synthetic=metadata', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_buffered_passthrough_metadata_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_buffered_passthrough_metadata_matches_release) (route='/v1/responses', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+
+======================================================================
+FAIL: test_buffered_passthrough_metadata_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_buffered_passthrough_metadata_matches_release) (route='/v1/chat/completions?synthetic=metadata', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 307, in test_buffered_passthrough_metadata_matches_release
+    self.assertEqual(headers.get("x-codex-turn-state"), values[index] if index < 2 else None)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'synthetic-ï¿½' != None
+
+======================================================================
+FAIL: test_buffered_passthrough_metadata_matches_release (test_deepseek_continuation.DeepSeekContinuationTests.test_buffered_passthrough_metadata_matches_release) (route='/v1/responses', binary='/home/doxa/IdeaProjects/modex/build/modex')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 307, in test_buffered_passthrough_metadata_matches_release
+    self.assertEqual(headers.get("x-codex-turn-state"), values[index] if index < 2 else None)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'synthetic-ï¿½' != None
+
+----------------------------------------------------------------------
+Ran 1 test in 2.719s
+
+FAILED (failures=2)
+
+Earlier isolated header observations:
+prodex_04391 posts 3
+201 {'x-codex-turn-state': 'synthetic-ascii', 'x-request-id': 'synthetic-request'}
+201 {'x-request-id': 'synthetic-request'}
+201 {'x-request-id': 'synthetic-request'}
+modex_checkpoint6 posts 3
+201 {'x-codex-turn-state': 'synthetic-ascii', 'x-request-id': 'synthetic-request'}
+201 {'x-codex-turn-state': 'synthetic-ï¿½', 'x-request-id': 'synthetic-request'}
+201 {'x-codex-turn-state': 'synthetic-Ã©', 'x-request-id': 'synthetic-request'}

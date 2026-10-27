@@ -67,4 +67,5 @@ printf 'source_sha=%s\nmojo=%s\npython=%s\nreference_oracle_sha256=%s\n' \
     "$(sha256sum "$PRODEX_ORACLE" | cut -d ' ' -f1)" >"$EVIDENCE_DIR/identity.txt"
 run_logged focused-build make build unit
 run_logged focused-python "$PYTHON" scripts/ci/run-unittest.py test_cli.py test_ci_private_tmp_super_04395.py test_ci_python_path_resolution.py test_ci_shard_runner.py test_ci_test_census.py test_ci_unit_build_cache.py test_provider_catalog_04395.py test_provider_nonstring_model_04395.py test_provider_request_tool_role_04395.py test_provider_request_untyped_role_04392.py test_provider_requests.py test_runtime.py test_runtime_binding_04395_slice.py test_session_04395_slice.py
+run_logged width-memory env MODEX_WIDTH_MEMORY_ARTIFACTS="$EVIDENCE_DIR/width-memory" MODEX_WIDTH_MEMORY_DRIVER="$ROOT/build/tests/width_memory_driver" "$PYTHON" scripts/ci/run-unittest.py test_text_memory.py
 echo 'Fast CI checks passed.' | tee -a "$EVIDENCE_DIR/summary.txt"

@@ -57,9 +57,14 @@
   pages and can undercount brief allocations; the hosted artifact has no RSS
   category data to identify the source. Source review and local allocator
   variations found no input-scaled Tifinagh allocation, but did not reproduce
-  the hosted environment. A same-process baseline and post-operation sample,
-  with a touched transient allocation control and fault diagnostics, is a
-  possible next experiment; it has not yet been implemented or validated.
+  the hosted environment. A follow-up same-process baseline and post-operation
+  harness with a touched and freed allocation control passed locally across
+  all five patterns, including with a 96 MiB parent. It records VmHWM, minor
+  faults and optional memory-map diagnostics; the allowance formula is
+  unchanged. An independent reuse probe showed that both VmHWM and minor
+  faults can miss allocations served from resident allocator pages. The test
+  measures additional resident high-water, not all allocations, and needs
+  hosted validation.
 - Exact-SHA Full run [40593599708](https://github.com/christiandoxa/modex/actions/runs/40593599708)
   on `b046394` also failed the earlier Tifinagh check, measuring 1,384,448
   bytes against 507,904 allowed; the other 427 tests passed.

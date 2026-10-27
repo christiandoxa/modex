@@ -33,8 +33,13 @@ for mixed and Kirat patterns. The other 428 tests passed. The cause remains
 under investigation; the uploaded `width-rss.json` contains all samples.
 The width source uses scalar counters and string views on this path; seven
 local trials and allocator-setting probes did not reproduce input-scaled
-growth, but do not explain the hosted spike. A proposed same-process,
-two-barrier measurement with a transient allocation control remains untested.
+growth, but do not explain the hosted spike. A follow-up harness measures
+before and after each operation in the same process and records VmHWM,
+minor faults and optional memory-map diagnostics. A touched 4-byte-per-unit
+control is freed before the second sample. In a clean local snapshot the
+control exceeded the unchanged bound for all five patterns, and width growth
+was zero; a 96 MiB-parent run also passed. These measures cannot detect
+allocations that reuse resident pages, and hosted stability remains unverified.
 Full run `40591839335` on `663926f` also failed the earlier Tifinagh check,
 measuring 3,125,248 bytes against a 2,658,304-byte bound.
 

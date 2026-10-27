@@ -892,7 +892,8 @@
         "tests/test_text_memory.py",
         "tests/width_memory_driver.mojo",
         "tests/test_session_cli.mojo",
-        "tests/test_session_04395_slice.py"
+        "tests/test_session_04395_slice.py",
+        "tests/test_session_state_backup_04395.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -927,6 +928,7 @@
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
         "Selected minimal resume metadata and ID fallbacks match 0.439.5. A non-object first JSONL record panics in the release and is omitted by Modex; this remains a mismatch.",
+        "An unrelated state.json.backup is ignored by the release but rejected by Modex's fail-closed state guard. Safe locking and recovery remain unimplemented.",
         "Machine-output comparisons, 324 synthetic leap-zone cases, dictionary-free compressed rollout cases, 239 detached text scenarios, every Unicode scalar against Unicode 17 UCD, and 3,026 actual release emoji rows plus 960 generated mixed sequences are covered. Unverified sequence cases remain. The baseline three-cell Khmer truncation and wrapping cases panic while Modex returns safe output; these are retained UNAPPROVED_SAFE_DIFFERENCE mismatches, not parity passes. Full contracts still fail on state locking/recovery, startup effects, incomplete terminal rendering and dimensions, remaining timezone file cases, baseline panic behavior, and unapproved noncanonical compressed-frame differences. UTF-8 width scanning now uses constant auxiliary state; Linux RSS regression checks, a 1,100,000-byte title, the exact 64 MiB line boundary and one-byte overflow, and 3,905 short Kirat vowel sequences are verified. Whole-command memory and other platforms remain unverified."
       ]
     },

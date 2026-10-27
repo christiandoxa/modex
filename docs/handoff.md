@@ -1,5 +1,20 @@
 # Current work: Prodex 0.439.5 and initial CI foundation
 
+An unrelated `.prodex/state.json.backup` exposes another session-list gap:
+0.439.5 lists the synthetic session, while Modex fails closed with its state
+recovery error. Both leave the backup unchanged. The guard remains unchanged
+until real locking and recovery semantics can be implemented safely. The
+clean-snapshot production build, import audit and characterization test pass;
+`tests/test_session_state_backup_04395.py` records the mismatch, not parity.
+
+Checkpoint `5e92613dea9e18b1587b6a1d9cde07b8b052a0b2` is verified on main.
+Fast CI run `40587184826` and exact-SHA Full CI run `40587202764` are in
+progress. The latest fully validated SHA is
+`ab2a8a734b1b9a47dfd190e64b6aeaee7e955a7e`: Fast run `40585320926` and Full
+run `40585335244` passed, with 403 Python tests in Full. Full run `40587024590`
+for `216d494` continues; its Fast run `40586989260` was cancelled by the
+newer push.
+
 DeepSeek model selection now falls back to `deepseek-v4-pro` for the tested
 numeric, boolean, array, object, null and blank values, and resolves tested
 combo aliases after selecting the first component. Previously these model
@@ -12,9 +27,8 @@ production build, three native request tests, import audit and 24 focused
 Python tests passed.
 
 Runner checkpoint `216d4941bc46cc4ff469e043b7ae3219bd379b91` was pushed
-and verified on main. Its Fast CI run `40586989260` and exact-SHA Full run
-`40587024590` are in progress. Exact-SHA Full run `40585335244` for the
-earlier cache checkpoint continues independently.
+and verified on main. Its Fast CI run `40586989260` was cancelled by the
+newer push; exact-SHA Full run `40587024590` continues independently.
 
 The strict Python runner now supports deterministic module-level shards and
 checks exactly-one ownership of discovered test IDs. Discovery import errors,
@@ -36,9 +50,9 @@ test records a gap, not a parity PASS.
 
 The native cache checkpoint `ab2a8a734b1b9a47dfd190e64b6aeaee7e955a7e` was
 pushed and verified on main. Its Fast run `40585320926` passed 29 focused
-Python tests; exact-SHA Full run `40585335244` is in progress. Exact `a5b727d` passed Full run
-`40580282085` attempt 1, including 388 Python tests; `969c828` passed Fast run
-`40581282383` attempt 1. The latest fully validated SHA is `a5b727d`.
+Python tests; exact-SHA Full run `40585335244` passed 403 Python tests.
+Exact `a5b727d` passed Full run `40580282085` attempt 1, including 388 Python
+tests; `969c828` passed Fast run `40581282383` attempt 1.
 
 The native unit build now compiles 79 programs with bounded parallelism and
 executes the same 48 native unit programs. Cached outputs require matching

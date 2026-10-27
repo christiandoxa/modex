@@ -28,6 +28,9 @@ it is not connected to production.
 The tested session metadata admission cases now match the frozen release.
 For a non-object first JSONL record, the release panics while Modex omits the
 session. Broader session behavior and security remain unqualified.
+With an unrelated `.prodex/state.json.backup`, the release lists sessions and
+Modex fails closed. `tests/test_session_state_backup_04395.py` captures both
+outcomes while preserving the backup; state locking and recovery remain open.
 
 Checkpoint 15 matches the official 0.439.2 bodyless SSE chunked header
 and final raw wire chunk `0\r\n\r\n` on 204/304, and corrects the buffered

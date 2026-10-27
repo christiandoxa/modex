@@ -52,5 +52,5 @@ printf 'source_sha=%s\nmojo=%s\npython=%s\nreference_oracle_sha256=%s\n' \
     "$(git rev-parse HEAD)" "$($MOJO --version)" "$($PYTHON --version 2>&1)" \
     "$(sha256sum "$PRODEX_ORACLE" | cut -d ' ' -f1)" >"$EVIDENCE_DIR/identity.txt"
 run_logged focused-build make build unit
-run_logged focused-python "$PYTHON" scripts/ci/run-unittest.py test_cli.py test_ci_private_tmp_super_04395.py test_ci_python_path_resolution.py test_provider_requests.py test_runtime.py
+run_logged focused-python "$PYTHON" scripts/ci/run-unittest.py test_cli.py test_ci_private_tmp_super_04395.py test_ci_python_path_resolution.py test_ci_test_census.py test_ci_unit_build_cache.py test_provider_catalog_04395.py test_provider_requests.py test_runtime.py test_session_04395_slice.py
 echo 'Fast CI checks passed.' | tee -a "$EVIDENCE_DIR/summary.txt"

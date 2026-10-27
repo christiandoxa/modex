@@ -18,6 +18,22 @@ check_platform() {
     }
 }
 
+check_flock() {
+    local flock_bin
+    flock_bin="$(command -v flock || true)"
+    [[ -n "$flock_bin" && -x "$flock_bin" ]] || {
+        echo 'util-linux flock is required to serialize cached unit builds.' >&2
+        return 1
+    }
+    local help
+    help="$("$flock_bin" --help 2>&1 || true)"
+    [[ "$help" == *"--close"* ]] || {
+        echo 'flock with --close support is required to prevent child processes from retaining the unit-build lock.' >&2
+        return 1
+    }
+    printf 'flock (%s); --close supported\n' "$(readlink -f -- "$flock_bin")"
+}
+
 check_python() {
     "$PYTHON" - "${MODEX_CI_PYTHON_VERSION:-}" <<'PY'
 import sys
@@ -80,6 +96,7 @@ write_evidence() {
         check_python
         check_mojo
         check_bwrap
+        check_flock
     } >"$evidence_dir/bootstrap.txt" 2>&1
 }
 
@@ -89,11 +106,13 @@ case "${1:---check}" in
         check_python
         check_mojo
         check_bwrap
+        check_flock
         write_evidence
         ;;
     --install-mojo)
         check_platform
         check_python
+        check_flock
         mkdir -p -- "$TOOLCHAIN_DIR"
         if [[ ! -x "$TOOLCHAIN_DIR/bin/python" ]]; then
             "$PYTHON" -m venv "$TOOLCHAIN_DIR"

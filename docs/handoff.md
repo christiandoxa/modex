@@ -1,5 +1,22 @@
 # Current work: Prodex 0.439.5 and initial CI foundation
 
+The native unit build now compiles 79 programs with bounded parallelism and
+executes the same 48 native unit programs. Cached outputs require matching
+source/toolchain/target fingerprints, executable checksums and file modes.
+Cooperating build, unit and test invocations share a per-build-directory lock;
+the lock covers the Python phase of `make test`. A clean snapshot built all
+79 programs and reused all 79 on the second unit run. After adding the current
+session change, production build and native units passed again, along with 17
+focused cache, census, provider and session Python tests. Workflow validation,
+the import audit, and cache corruption, invalidation, failed-output, locking,
+and child-lock regressions also passed. Cross-job artifact provenance and CI
+test sharding remain open.
+
+Session checkpoint `969c828bf842f1b06295828609edc78de0cdbc41` is on main.
+Its Fast CI run `40581282383` is in progress; the earlier `a5b727d` Fast run
+was cancelled by the newer push. Its exact-SHA Full run `40580282085` remains
+in progress. The latest fully validated SHA remains `62b554c`.
+
 Session listing now accepts the same tested minimal resume metadata as the
 frozen release, including legacy missing-type records and the four ID
 fallbacks. It still rejects unrelated string record types and blank IDs. The
@@ -12,8 +29,8 @@ release panics and Modex safely omits the session. Broader session parity is
 not established.
 
 DeepSeek checkpoint `a5b727debf707b1cf47a2f2f68c30c24d7f548fd` was pushed
-to main. Its Fast CI run `40580249376` and exact-SHA Full CI run `40580282085`
-are in progress. The latest fully validated SHA remains `62b554c` below.
+to main. Its Fast CI run `40580249376` was cancelled by the newer push; its
+exact-SHA Full CI run `40580282085` is in progress.
 
 The current DeepSeek request path preserves the resolved default model for
 simple requests with an absent or null model. Previously it sent

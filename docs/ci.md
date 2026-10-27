@@ -9,7 +9,8 @@ Engineering CI passing is not a parity verdict.
 
 The initial supported CI host is Linux x86-64. The bootstrap installs the
 SHA-256-pinned official Mojo 1.2.0 compiler and libraries, verifies Python
-3.14 with `compression.zstd`, and exercises the required bubblewrap namespaces.
+3.14 with `compression.zstd`, checks util-linux `flock --close`, and exercises
+the required bubblewrap namespaces.
 GitHub workflows pin Python 3.14.10. Other release targets remain in the
 inventory as unverified or blocked until their actual builds and tests run.
 
@@ -37,6 +38,14 @@ must match the pinned release. Tests use synthetic credentials and loopback
 peers. Required sandbox or reference checks fail if their prerequisites are
 missing; a skip is not a pass.
 
-Workflow evidence is uploaded as run artifacts. The current foundation runs
-native compilations serially; dependency-aware reuse, sharding, immutable
-cross-job artifacts, and timing-based balancing remain unfinished work.
+Native unit programs compile with bounded parallelism; set `MODEX_UNIT_JOBS`
+to override the default of four. Reuse requires a fingerprint of the Mojo
+sources, compiler and standard-library files, target flags, and host, plus a
+matching executable checksum and mode. Symlinks anywhere under `src/` or
+`tests/`, and inside the compiler packages, are rejected. Cooperating
+`make build`, `make unit`, and `make test` calls serialize
+on the canonical build directory; `make test` holds the lock through Python
+execution. Use separate build directories for independently running CI jobs.
+
+Workflow evidence is uploaded as run artifacts. Test sharding, verified
+immutable cross-job artifacts, and timing-based balancing remain unfinished.

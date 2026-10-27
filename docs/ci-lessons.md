@@ -35,7 +35,21 @@
 - Correction and regression: the test explicitly sets and asserts `0755`
   before invoking both real binaries. It passes under the private umask and
   continues to check the known Modex permission-repair gap.
-- Verification of the corrected commit's full suite is pending.
+- GitHub Full CI run [40566557490](https://github.com/christiandoxa/modex/actions/runs/40566557490),
+  attempt 1 on `8b15ace`, reproduced the same failure; the focused correction
+  was pushed as `c5cde1cd19bc2f0072b2f1f1507f429d61bf4593`. Its exact-SHA
+  Full CI run `40569480632` is in progress.
+
+## GitHub width-memory threshold
+
+- Source: Full CI run `40566557490`, attempt 1, Linux job, on `8b15ace`.
+  The width working-set test also failed: ASCII measured 1,572,864 bytes of
+  normalized growth against 193,331 allowed bytes. The detailed width RSS
+  JSON was not included in the uploaded evidence, but the failure summary and
+  samples are retained in the run log.
+- Classification, root cause, and correction are under investigation. No
+  assertion has been weakened or retried to conceal the failure. Add the
+  measurement artifact to failure evidence and follow the corrective commit.
 
 ## Initial 0.439.5 local full run
 

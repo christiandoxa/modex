@@ -19,8 +19,8 @@ from session_oracle import fixture, sandbox_command
 from test_cli import ORACLE, ROOT
 
 
-ARTIFACTS = ROOT / "test-results/text-memory"
-DRIVER = ROOT / "build/tests/width_memory_driver"
+ARTIFACTS = Path(os.environ.get("MODEX_WIDTH_MEMORY_ARTIFACTS", ROOT / "test-results/text-memory"))
+DRIVER = Path(os.environ.get("MODEX_WIDTH_MEMORY_DRIVER", ROOT / "build/tests/width_memory_driver"))
 MIB = 1024 * 1024
 SESSION_LINE_LIMIT = 64 * MIB
 MIXED = "A界e\u0301🙂"
@@ -38,14 +38,15 @@ def _input_bytes(mode, count):
     return 8 + count * 4
 
 
-def _measure_width_process(mode, count):
+def _measure_width_process(mode, count, input_only=False):
     # A fresh harness prevents fork's inherited RSS floor from masking driver growth.
-    result = subprocess.run([sys.executable, __file__, "--measure-width", mode, str(count)],
+    operation = "input-only" if input_only else "width"
+    result = subprocess.run([sys.executable, __file__, "--measure-width", mode, str(count), operation],
                             capture_output=True, text=True, timeout=130, check=True)
     return json.loads(result.stdout)
 
 
-def _wait4_width_process(mode, count):
+def _wait4_width_process(mode, count, input_only=False):
     """Return output and wait4 peak RSS for one isolated Mojo process."""
     read_fd, write_fd = os.pipe()
     pid = os.fork()
@@ -54,7 +55,10 @@ def _wait4_width_process(mode, count):
             os.close(read_fd)
             os.dup2(write_fd, 1)
             os.close(write_fd)
-            os.execv(str(DRIVER), [str(DRIVER), mode, str(count)])
+            arguments = [str(DRIVER), mode, str(count)]
+            if input_only:
+                arguments.append("input-only")
+            os.execv(str(DRIVER), arguments)
         except BaseException as error:
             try:
                 os.write(2, f"width driver exec failed: {error}\n".encode())
@@ -152,32 +156,46 @@ class WidthMemoryTests(unittest.TestCase):
         for mode, (small, large) in cases.items():
             points = []
             for count in (small, large):
-                peak_samples = []
-                overhead_samples = []
-                for _ in range(3):
-                    width, peak = _measure_width_process(mode, count)
-                    expected = (count if mode in ("ascii", "kirat") else count * 6 if mode == "mixed"
-                                else (count + 2) // 2 if mode == "tifinagh" else 2)
-                    if width != expected:
-                        failures.append(f"{mode}: got width {width}, expected {expected} for {count}")
-                    peak_samples.append(peak)
-                    overhead_samples.append(peak - _input_bytes(mode, count))
-                points.append({"count": count, "input_bytes": _input_bytes(mode, count),
-                               "peak_rss_samples_bytes": peak_samples,
-                               "median_peak_rss_bytes": statistics.median(peak_samples),
-                               "median_rss_over_input_bytes": statistics.median(overhead_samples),
-                               "overhead_sample_spread_bytes": max(overhead_samples) - min(overhead_samples)})
+                # Compare identical input construction so allocator pages and runtime setup cancel.
+                operations = {}
+                for input_only in (True, False):
+                    samples = []
+                    outputs = []
+                    for _ in range(3):
+                        result, peak = _measure_width_process(mode, count, input_only)
+                        outputs.append(result)
+                        samples.append(peak)
+                    expected = _input_bytes(mode, count) if input_only else (
+                        count if mode in ("ascii", "kirat") else count * 6 if mode == "mixed"
+                        else (count + 2) // 2 if mode == "tifinagh" else 2
+                    )
+                    if outputs != [expected] * 3:
+                        failures.append(
+                            f"{mode} {'input-only' if input_only else 'text_width'}: "
+                            f"got {outputs}, expected {expected} for {count}"
+                        )
+                    operations["input_only" if input_only else "width"] = {
+                        "peak_rss_samples_bytes": samples,
+                        "median_peak_rss_bytes": statistics.median(samples),
+                        "sample_spread_bytes": max(samples) - min(samples),
+                    }
+                points.append({"count": count, "input_bytes": _input_bytes(mode, count), **operations})
             input_growth = points[1]["input_bytes"] - points[0]["input_bytes"]
-            overhead_growth = (points[1]["median_rss_over_input_bytes"]
-                               - points[0]["median_rss_over_input_bytes"])
-            sample_noise = (points[0]["overhead_sample_spread_bytes"]
-                            + points[1]["overhead_sample_spread_bytes"])
+            width_growth = (points[1]["width"]["median_peak_rss_bytes"]
+                            - points[0]["width"]["median_peak_rss_bytes"])
+            input_only_growth = (points[1]["input_only"]["median_peak_rss_bytes"]
+                                 - points[0]["input_only"]["median_peak_rss_bytes"])
+            auxiliary_growth = width_growth - input_only_growth
+            sample_noise = sum(point[operation]["sample_spread_bytes"]
+                               for point in points for operation in ("width", "input_only"))
             tolerance = sample_noise + max(16 * measurements["host"]["page_size_bytes"], input_growth // 100)
-            points[1]["normalized_growth_bytes"] = overhead_growth
+            points[1]["normalized_growth_bytes"] = auxiliary_growth
             points[1]["allowed_growth_bytes"] = tolerance
-            if overhead_growth > tolerance:
+            if auxiliary_growth > tolerance:
                 failures.append(
-                    f"{mode} auxiliary RSS grew {overhead_growth} bytes over {tolerance}; points={points}"
+                    f"{mode} text_width auxiliary RSS grew {auxiliary_growth} bytes over "
+                    f"{tolerance}; width growth={width_growth}, input construction growth="
+                    f"{input_only_growth}, points={points}"
                 )
             measurements["patterns"][mode] = points
         (ARTIFACTS / "width-rss.json").write_text(json.dumps(measurements, indent=2) + "\n")
@@ -239,7 +257,7 @@ class SessionTextMemoryParityTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 4 and sys.argv[1] == "--measure-width":
-        print(json.dumps(_wait4_width_process(sys.argv[2], int(sys.argv[3]))))
+    if len(sys.argv) == 5 and sys.argv[1] == "--measure-width":
+        print(json.dumps(_wait4_width_process(sys.argv[2], int(sys.argv[3]), sys.argv[4] == "input-only")))
     else:
         unittest.main()

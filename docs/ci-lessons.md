@@ -47,9 +47,15 @@
   normalized growth against 193,331 allowed bytes. The detailed width RSS
   JSON was not included in the uploaded evidence, but the failure summary and
   samples are retained in the run log.
-- Classification, root cause, and correction are under investigation. No
-  assertion has been weakened or retried to conceal the failure. Add the
-  measurement artifact to failure evidence and follow the corrective commit.
+- Classification: measurement-harness error. The old check subtracted logical
+  string bytes from RSS, even though allocator residency can change with input
+  size. On a pinned optimized build, an input-construction-only control showed
+  the same growth without calling `text_width`.
+- Correction: the same native driver measures input construction alone and
+  compares its growth with the width run. Width and control results remain
+  asserted, with the original noise and 1% bound. Full CI now uploads the
+  detailed RSS JSON on failure. All five patterns and a current-oracle mixed
+  session comparison pass locally; GitHub verification remains pending.
 
 ## Initial 0.439.5 local full run
 

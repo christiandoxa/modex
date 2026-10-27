@@ -4,12 +4,21 @@ from std.sys import argv
 from modex.unicode_width import text_width
 
 
+def _report_width(value: String, measure: Bool) raises:
+    print(text_width(value) if measure else value.byte_length())
+
+
 def main() raises:
     var args = argv()
-    if len(args) != 3:
-        raise Error("usage: width_memory_driver MODE COUNT")
+    if len(args) != 3 and len(args) != 4:
+        raise Error("usage: width_memory_driver MODE COUNT [input-only]")
     var mode = args[1]
     var count = Int(args[2])
+    var measure = len(args) == 3
+    if len(args) == 4:
+        if args[3] != "input-only":
+            raise Error("unknown width memory operation: " + args[3])
+        measure = False
     if count < 0:
         raise Error("COUNT must be non-negative")
 
@@ -18,7 +27,7 @@ def main() raises:
         value.reserve_bytes(count)
         for _ in range(count):
             value.append(Codepoint.ord("A"))
-        print(text_width(value))
+        _report_width(value, measure)
         return
 
     if mode == "mixed":
@@ -27,7 +36,7 @@ def main() raises:
         for _ in range(count):
             for character in unit.codepoints():
                 value.append(character)
-        print(text_width(value))
+        _report_width(value, measure)
         return
 
     if mode == "tifinagh":
@@ -36,7 +45,7 @@ def main() raises:
         for _ in range(count):
             value.append(Codepoint.ord("\u200d"))
             value.append(Codepoint.ord("ⴱ"))
-        print(text_width(value))
+        _report_width(value, measure)
         return
 
     if mode == "kirat":
@@ -44,7 +53,7 @@ def main() raises:
         var vowel = Codepoint(unsafe_unchecked_codepoint=UInt32(0x16D69))
         for _ in range(count):
             value.append(vowel)
-        print(text_width(value))
+        _report_width(value, measure)
         return
 
     if mode == "emoji-tag":
@@ -54,7 +63,7 @@ def main() raises:
         for _ in range(count):
             value.append(tag)
         value.append(Codepoint(unsafe_unchecked_codepoint=UInt32(0xE007F)))
-        print(text_width(value))
+        _report_width(value, measure)
         return
 
     raise Error("unknown mode: " + mode)

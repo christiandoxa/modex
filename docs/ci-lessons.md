@@ -19,8 +19,23 @@
   filesystem and network namespace probes remain in place.
 - Regression: `tests/test_ci_sandbox_setup.py` checks setup order, literal
   commands, read-only permissions and the namespace probe. Actionlint and
-  the focused test pass locally. Verification on the corrective GitHub commit
-  is pending; the failed runs are not passes.
+  the focused test pass locally. GitHub Fast CI run
+  [40566529600](https://github.com/christiandoxa/modex/actions/runs/40566529600),
+  attempt 1, passed on corrective commit `8b15ace3593f6fc808ce23cbf2bbf9f32f6370fc`.
+  The exact-SHA Full CI run `40566557490` is still in progress.
+
+## Unsafe-directory fixture and private umask
+
+- Source: exact `d4a50b3c1822d189aba94d53ce4db24beefa75bd` in an isolated
+  worktree. Local full validation passed all native tests and 383 of 384
+  Python tests. `test_unsafe_existing_app_root_reports_known_repair_gap` failed.
+- Root cause: the new private scratch sets umask `077`, so a fixture requested
+  as mode `0755` was actually created as `0700` and did not exercise the
+  intended unsafe-directory case.
+- Correction and regression: the test explicitly sets and asserts `0755`
+  before invoking both real binaries. It passes under the private umask and
+  continues to check the known Modex permission-repair gap.
+- Verification of the corrected commit's full suite is pending.
 
 ## Initial 0.439.5 local full run
 

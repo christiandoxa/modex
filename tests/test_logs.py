@@ -107,6 +107,8 @@ class LogLastTests(unittest.TestCase):
                 root = Path(directory)
                 (root / "home").mkdir(mode=0o700)
                 (root / "home/.prodex").mkdir(mode=0o755)
+                (root / "home/.prodex").chmod(0o755)
+                self.assertEqual((root / "home/.prodex").stat().st_mode & 0o777, 0o755)
                 (root / "workspace").mkdir()
                 result = subprocess.run(sandbox_command(binary, root, ["log", "last", "--json"],
                                                         argv0="prodex" if binary == ORACLE else "modex",

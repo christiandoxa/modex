@@ -47,9 +47,13 @@ The first checkpoint `d4a50b3c1822d189aba94d53ce4db24beefa75bd` was normally
 pushed and verified on main. Its GitHub Fast run `40564880852` attempt 1 and
 manually dispatched Full run `40564952057` attempt 1 both failed their Linux
 bootstrap because Ubuntu's Bubblewrap AppArmor profile was not loaded. The
-focused workflow correction and regression are recorded in `docs/ci-lessons.md`;
-the corrective SHA still needs its own GitHub results. An independent local full
-run of exact `d4a50b3` is in progress; no 0.439.5 SHA is fully validated yet.
+workflow correction `8b15ace3593f6fc808ce23cbf2bbf9f32f6370fc` was pushed;
+its GitHub Fast run `40566529600` attempt 1 passed and exact-SHA Full run
+`40566557490` is in progress. An independent local full run of exact `d4a50b3`
+passed native checks and 383 of 384 Python tests; one fixture did not account
+for the private umask. Its focused correction passes, with exact-commit full
+validation still required. See `docs/ci-lessons.md`; no 0.439.5 SHA is fully
+validated yet.
 
 # Checkpoint 15: bodyless SSE wire and bounded buffered response paths
 

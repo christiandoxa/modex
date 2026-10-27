@@ -244,7 +244,10 @@ def _has_string_id(doc: JsonDocument, item: Int) -> Bool:
 
 def _native_body(doc: JsonDocument, default_model: String) raises -> String:
     var model = doc.get(doc.root, "model")
-    var model_text = default_model if model < 0 or doc.nodes[model].kind != JSON_STRING else _native_model(doc.nodes[model].text)
+    var model_text = default_model
+    if model >= 0 and doc.nodes[model].kind == JSON_STRING:
+        var selected_model = _native_model(doc.nodes[model].text)
+        if trim_text(selected_model): model_text = selected_model
     var out = '{"model":' + quote_json(model_text) + ',"stream":' + ("true" if _is_true(doc, doc.get(doc.root, "stream")) else "false") + ',"messages":' + _native_messages(doc)
     var tools = doc.get(doc.root, "tools")
     if tools >= 0:

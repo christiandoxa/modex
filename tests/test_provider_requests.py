@@ -109,8 +109,12 @@ class ProviderRequestTests(unittest.TestCase):
                     self.assertEqual(response_metadata["deepseek"][key], value)
 
     def test_native_rejections_cover_trust_boundaries(self):
+        accepted = self.run_native({"request": {"model": 7, "input": "synthetic"}})
+        self.assertEqual(accepted["ok"]["body"], {
+            "model": "deepseek-v4-pro", "stream": False,
+            "messages": [{"role": "user", "content": "synthetic"}],
+        })
         cases = [
-            ({"model": 7, "input": "synthetic"}, "DeepSeek model must be a string"),
             ({"model": "deepseek-chat", "input": "synthetic", "response_format": {"type": "xml"}}, "DeepSeek response_format type `xml` is not supported"),
             ({"model": "deepseek-chat", "input": "synthetic", "reasoning": {"effort": "unbounded"}}, "DeepSeek reasoning effort is not supported"),
             ({"model": "deepseek-chat", "input": [False]}, "DeepSeek input items must be objects"),

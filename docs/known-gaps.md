@@ -20,8 +20,8 @@ returns 200/200 and sends two. The 4 MiB observer limit remains in place until
 a bounded incremental parser can validate the entire event before binding.
 Reproduce with `tests/test_runtime_binding_04395_slice.py`.
 DeepSeek requests with a missing or null model now match the tested 0.439.5
-default; a numeric model still differs and other non-string values are
-unverified. The
+default; selected non-string, blank, and combo-alias cases now match as well.
+Broader provider model selection and fallback remain unverified. The
 read-only profile-list prototype cannot safely interoperate with the release's
 persistent `flock` files using the available Mojo standard-library APIs, so
 it is not connected to production.

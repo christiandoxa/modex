@@ -79,6 +79,10 @@
     {
       "date": "2026-10-28",
       "change": "A 0.439.5 real-process comparison characterizes the oversized SSE continuation-ID observer gap. The bounded observer remains unchanged and no contract or platform status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Selected non-string or blank DeepSeek model values and two combo aliases now match 0.439.5 process comparisons in simple and non-simple requests. Broader provider selection and fallback remain incomplete; no contract or platform status is promoted."
     }
   ],
   "contracts": [

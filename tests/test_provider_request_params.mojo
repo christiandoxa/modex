@@ -30,11 +30,9 @@ def main() raises:
     reject('{"prefix":null,"model":null}', 0, "DeepSeek chat prefix completion requires the beta chat endpoint, which is outside this Responses adapter")
     reject("[]", 0, "DeepSeek request body must be a JSON object")
     reject('{"stream":null}', 0, "DeepSeek stream must be a boolean")
-    reject('{"model":"  "}', 0, "DeepSeek model must not be empty")
-    var null_model = JsonDocument('{"model":null}')
-    validate_request_shape(null_model)
-    for model in [String("7"), "false"]:
-        reject('{"model":' + model + "}", 0, "DeepSeek model must be a string")
+    for model in [String("7"), "false", "true", "[]", "{}", "null", '""', '"  "', '"deepseek-flash"']:
+        var model_request = JsonDocument('{"model":' + model + "}")
+        validate_request_shape(model_request)
     reject('{"reasoning":{"summary":true,"effort":null}}', 1, "DeepSeek reasoning.summary is not supported by this Responses adapter")
     reject('{"reasoning":{"effort":null},"reasoning_effort":"high"}', 1, "DeepSeek reasoning.effort must be a string")
     reject('{"response_format":null,"text":{"format":{"type":"json"}}}', 2, "DeepSeek response_format must include a type")

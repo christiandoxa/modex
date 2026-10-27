@@ -1,5 +1,21 @@
 # Current work: Prodex 0.439.5 and initial CI foundation
 
+DeepSeek model selection now falls back to `deepseek-v4-pro` for the tested
+numeric, boolean, array, object, null and blank values, and resolves tested
+combo aliases after selecting the first component. Previously these model
+types were rejected and combo aliases could be sent as `flash` or `pro`.
+The frozen 0.439.5 oracle and Modex were compared through 24 synthetic
+real-process cases across simple and non-simple requests, with explicit
+model controls and one upstream POST each. This is a narrow routing slice,
+not complete provider catalog or retry parity. In a clean snapshot, the
+production build, three native request tests, import audit and 24 focused
+Python tests passed.
+
+Runner checkpoint `216d4941bc46cc4ff469e043b7ae3219bd379b91` was pushed
+and verified on main. Its Fast CI run `40586989260` and exact-SHA Full run
+`40587024590` are in progress. Exact-SHA Full run `40585335244` for the
+earlier cache checkpoint continues independently.
+
 The strict Python runner now supports deterministic module-level shards and
 checks exactly-one ownership of discovered test IDs. Discovery import errors,
 duplicate IDs, invalid shard arguments, empty selections, and forbidden skips
@@ -61,9 +77,8 @@ simple requests with an absent or null model. Previously it sent
 `deepseek-chat` for an absent model and rejected null; the frozen release sends
 `deepseek-v4-pro` for both. Six real-process synthetic loopback comparisons
 cover three launch models, null and absent request fields, an explicit model,
-and a non-simple request. A numeric model is a separate observed mismatch:
-Prodex dispatches the default while Modex rejects it before the upstream POST.
-Other non-string model values remain unverified.
+and a non-simple request. At checkpoint `a5b727d`, numeric models still
+differed; the newer slice above covers selected non-string and blank values.
 The source trace is `crates/prodex-app/src/runtime_launch/proxy_startup/`
 `local_rewrite_deepseek_send.rs` and `mojo/prodex_core/deepseek.mojo` in the
 verified 0.439.5 reference. The regression is

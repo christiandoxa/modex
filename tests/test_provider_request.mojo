@@ -27,7 +27,8 @@ def main() raises:
         ("Flash", "deepseek-flash"),
         (" default ", "default"),
         (" 東京🧭 ", "東京🧭"),
-        ("combo: , flash > pro", "flash"),
+        ("combo: , flash > pro", "deepseek-flash"),
+        ("combo:pro,flash", "deepseek-v4-pro"),
         ("combo: ;東京🧭|flash", "東京🧭"),
         ("COMBO:flash", "COMBO:flash"),
         (" combo: , ; ", " combo: , ; "),
@@ -37,7 +38,21 @@ def main() raises:
 
     check("{}", '{"body":{"model":"deepseek-v4-pro","stream":false,"messages":[{"role":"user","content":""}]},"messages":[{"role":"user","content":""}],"response_metadata":null}')
     check('{"input":"hello"}', '{"body":{"model":"deepseek-v4-pro","stream":false,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
-    check('{"model":"combo:flash>pro"}', '{"body":{"model":"flash","stream":false,"messages":[{"role":"user","content":""}]},"messages":[{"role":"user","content":""}],"response_metadata":null}')
+    var default_model_expected = '{"body":{"model":"deepseek-v4-pro","stream":false,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}'
+    for source in [
+        String('{"model":7,"input":"hello"}'),
+        '{"model":false,"input":"hello"}',
+        '{"model":true,"input":"hello"}',
+        '{"model":[],"input":"hello"}',
+        '{"model":{},"input":"hello"}',
+        '{"model":null,"input":"hello"}',
+        '{"model":"","input":"hello"}',
+        '{"model":"  ","input":"hello"}',
+    ]:
+        check(source, default_model_expected)
+    check('{"model":"combo:flash>pro"}', '{"body":{"model":"deepseek-flash","stream":false,"messages":[{"role":"user","content":""}]},"messages":[{"role":"user","content":""}],"response_metadata":null}')
+    check('{"model":"deepseek-flash","input":"hello"}', '{"body":{"model":"deepseek-flash","stream":false,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
+    check('{"model":"deepseek-v4-flash","input":"hello"}', '{"body":{"model":"deepseek-v4-flash","stream":false,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
 
     check('{"model":"pro","input":"hello","stream":true,"text":{"format":{"type":"json_object"}}}', '{"body":{"model":"deepseek-v4-pro","stream":true,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"system","content":"Respond with valid JSON only."},{"role":"user","content":"hello"}],"response_metadata":null}')
     check('{"input":"hello","messages":[{"role":"developer","content":"raw"}]}', '{"body":{"model":"deepseek-v4-pro","stream":false,"messages":[{"role":"developer","content":"raw"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
@@ -53,7 +68,7 @@ def main() raises:
     reject("{} trailing", "failed to parse Codex Responses request JSON")
     reject("[]", "DeepSeek request body must be a JSON object")
     reject('{"prefix":null,"model":false}', "DeepSeek chat prefix completion requires the beta chat endpoint, which is outside this Responses adapter")
-    reject('{"model":"","stream":null}', "DeepSeek model must not be empty")
+    reject('{"model":"","stream":null}', "DeepSeek stream must be a boolean")
     reject('{"reasoning":{"effort":null},"input":null}', "DeepSeek reasoning.effort must be a string")
     reject('{"reasoning":{"effort":"unknown"},"input":null}', "DeepSeek input must be a string or array of input items")
     reject('{"input":null,"response_format":null}', "DeepSeek input must be a string or array of input items")

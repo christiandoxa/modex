@@ -49,6 +49,7 @@ def canonical_deepseek_model(model: String) -> String:
     if value.startswith("combo:"):
         var start = 6
         var has_component = False
+        var found_component = False
         for index in range(6, value.byte_length() + 1):
             if index == value.byte_length() or value.as_bytes()[index] == 44 or value.as_bytes()[index] == 59 or value.as_bytes()[index] == 124 or value.as_bytes()[index] == 62:
                 var component = String(value[byte=start:index])
@@ -56,9 +57,11 @@ def canonical_deepseek_model(model: String) -> String:
                     has_component = has_component or (byte != 32 and byte != 9)
                 var option = trim_text(component)
                 if option:
-                    return option
+                    value = option
+                    found_component = True
+                    break
                 start = index + 1
-        if has_component:
+        if has_component and not found_component:
             return model
     var alias = value.lower()
     if not value or alias == "auto" or alias == "pro":

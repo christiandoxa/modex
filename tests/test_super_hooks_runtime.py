@@ -17,8 +17,8 @@ from session_oracle import sandbox_command
 
 DRIVER = Path(os.environ.get("MODEX_SUPER_HOOKS_DRIVER", ROOT / "build/tests/super_hooks_driver"))
 FIXTURE = ROOT / "tests/fixtures/super_hooks/cases.json"
-ORACLE_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
-BASELINE_COMMIT = "72b77478a5198fc5da6b4d2253137f9cdbf43be9"
+ORACLE_SHA256 = "96cef1bfea9cfd90b769d1d7854e88400beed151ad05c229facdd6d52a5d59c5"
+BASELINE_COMMIT = "ac9aad08f25d6dc8cda96463ce2045b40f35f510"
 
 EXPECTED = {
     "empty_hooks": (0, "Trusted"),

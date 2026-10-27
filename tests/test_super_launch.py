@@ -4,6 +4,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import signal
 import subprocess
 import sys
 import tempfile
@@ -14,7 +15,7 @@ import unittest
 from test_cli import MODEX, ORACLE, ORACLE_SHA256
 
 CODEX = r'''
-import http.client, json, os, pathlib, sys, time
+import http.client, json, os, pathlib, signal, sys, time
 from urllib.parse import urlsplit
 args = sys.argv[1:]
 capture = pathlib.Path(os.environ["MODEX_LAUNCH_CAPTURE"])
@@ -58,11 +59,16 @@ save({"kind":"launch","pid":os.getpid(),"mode":home.stat().st_mode & 0o777,"args
       "environment":{key:os.environ.get(key) for key in ("CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT","PRODEX_RUNTIME_LOCAL_KEY","CODEX_SANDBOX_SENTINEL")}})
 (home/"sessions"/"synthetic-session.jsonl").write_text('{"synthetic":true}\n')
 scenario = os.environ["MODEX_LAUNCH_SCENARIO"]
+if scenario in ("kill-relay", "kill-relay-ignores-term"):
+    def terminate(signum, frame):
+        save({"kind":"terminated", "pid":os.getpid(), "signal":signum})
+        if scenario == "kill-relay": raise SystemExit(0)
+    signal.signal(signal.SIGTERM, terminate)
 if scenario == "exit-seven": raise SystemExit(7)
 if scenario == "extra-state":
     (home/"synthetic-user-state").write_text("preserve this data")
     raise SystemExit(0)
-if scenario == "kill-relay":
+if scenario in ("kill-relay", "kill-relay-ignores-term"):
     for pid in children.read_text().split():
         if int(pid) != os.getpid(): os.kill(int(pid), 9)
     time.sleep(30)
@@ -91,7 +97,7 @@ class SuperLaunchTests(unittest.TestCase):
             root = Path(directory)
             for name in ("home", "state", "shared", "work"):
                 (root / name).mkdir(mode=0o700)
-            (root / "state/update-check.json").write_text(json.dumps({"source": "GitHub", "latest_version": "0.439.2", "checked_at": int(time.time())}))
+            (root / "state/update-check.json").write_text(json.dumps({"source": "GitHub", "latest_version": "0.439.5", "checked_at": int(time.time())}))
             codex = root / "codex"
             codex.write_text("#!" + sys.executable + "\n" + CODEX)
             codex.chmod(0o700)
@@ -207,11 +213,24 @@ class SuperLaunchTests(unittest.TestCase):
     def test_child_exit_and_preflight_failure_cleanup(self):
         for scenario, code in (("exit-seven", 7), ("closed-input", 1), ("kill-relay", 1)):
             with self.subTest(scenario=scenario):
-                result, _, upstream, state = self.run_launch(scenario=scenario)
+                result, records, upstream, state = self.run_launch(scenario=scenario)
                 self.assertEqual(result.returncode, code, result.stderr)
                 self.assertEqual(upstream, [])
                 self.assertEqual(state["leftovers"], [])
                 if scenario == "closed-input": self.assertIn(b"request write failed", result.stderr)
+                if scenario == "kill-relay":
+                    self.assertEqual([record["signal"] for record in records if record["kind"] == "terminated"], [signal.SIGTERM])
+
+    def test_relay_failure_escalates_after_grace_period_for_ignoring_child(self):
+        started = time.monotonic()
+        result, records, upstream, state = self.run_launch(scenario="kill-relay-ignores-term")
+        elapsed = time.monotonic() - started
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertEqual(upstream, [])
+        self.assertEqual(state["leftovers"], [])
+        self.assertGreaterEqual(elapsed, 1.5)
+        self.assertLess(elapsed, 12)
+        self.assertEqual([record["signal"] for record in records if record["kind"] == "terminated"], [signal.SIGTERM])
 
     def test_unexpected_codex_state_is_retained(self):
         result, _, upstream, state = self.run_launch(scenario="extra-state")
@@ -275,7 +294,7 @@ class SuperLaunchTests(unittest.TestCase):
                 if scenario == "passthrough": self.assertEqual(after["body"], before["body"])
 
     def test_model_catalog_selection_and_metadata_match_release(self):
-        for model in ("deepseek-v4-pro", "auto", "synthetic-model-\"quoted\"", "synthetic\\model", "DEEPSEEK-CHAT", "deepsee\u212a-chat"):
+        for model in ("deepseek-v4-pro", "deepseek-flash", "deepseek-v4-flash", "auto", "flash", "deepseek-chat", "deepseek-reasoner", "synthetic-model-\"quoted\"", "synthetic\\model", "DEEPSEEK-CHAT", "deepsee\u212a-chat"):
             with self.subTest(model=model):
                 baseline, before_records, _, _ = self.run_launch(ORACLE, "exit-seven", model=model)
                 native, after_records, _, _ = self.run_launch(MODEX, "exit-seven", model=model)
@@ -283,6 +302,23 @@ class SuperLaunchTests(unittest.TestCase):
                 before = next(record for record in before_records if record["kind"] == "launch")
                 after = next(record for record in after_records if record["kind"] == "launch")
                 self.assertEqual(after["catalog"], before["catalog"])
+
+    def test_04394_deepseek_flash_catalog_matches_provider_model(self):
+        result, records, upstream, _ = self.run_launch(scenario="exit-seven", model="deepseek-flash")
+        self.assertEqual(result.returncode, 7, result.stderr)
+        self.assertEqual(upstream, [])
+        launch = next(record for record in records if record["kind"] == "launch")
+        models = {row["slug"]: row for row in launch["catalog"]["models"]}
+        flash = models["deepseek-flash"]
+        self.assertEqual(flash["display_name"], "DeepSeek V4.1 Flash")
+        self.assertEqual(flash["description"], "Current DeepSeek Flash routed through the Prodex Responses adapter.")
+        self.assertEqual((flash["context_window"], flash["max_context_window"]), (1048576, 1048576))
+        self.assertEqual(flash["default_reasoning_level"], "high")
+        self.assertEqual([level["effort"] for level in flash["supported_reasoning_levels"]], ["none", "low", "high", "max"])
+        self.assertEqual(models["flash"]["description"], "Prodex DeepSeek Flash alias routed through current DeepSeek Flash.")
+        compatibility = models["deepseek-v4-flash"]
+        self.assertEqual(compatibility["description"], "DeepSeek V4 Flash routed through the Prodex Responses adapter.")
+        self.assertEqual(compatibility["supported_reasoning_levels"], flash["supported_reasoning_levels"])
 
     def test_oversized_model_fails_before_child_or_upstream(self):
         result, records, upstream, state = self.run_launch(model="m" * 4097)

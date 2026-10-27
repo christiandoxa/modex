@@ -21,9 +21,49 @@ class SessionCliTests(unittest.TestCase):
     def test_release_help_and_argument_diagnostics(self):
         captured = json.loads((ROOT / "docs/evidence/baseline/session-cli.json").read_text())
         self.assertEqual(captured["oracle_sha256"], HISTORICAL_04391_ORACLE_SHA256)
+        path_sensitive_cases = {
+            ("session", "current", option, value)
+            for option in ("--profile", "--query", "--cwd")
+            for value in ("-", "+")
+        }
         with tempfile.TemporaryDirectory(prefix="modex-session-cli-check-") as directory:
             for index, case in enumerate(captured["cases"]):
                 with self.subTest(arguments=case["arguments"]):
+                    if tuple(case["arguments"]) in path_sensitive_cases:
+                        with tempfile.TemporaryDirectory(prefix="ms-", dir="/tmp") as path_directory:
+                            for path_kind, path_name in (
+                                ("short", f"{index}-short"),
+                                ("long", f"{index}-" + "x" * 140),
+                            ):
+                                root = Path(path_directory) / path_name
+                                root.mkdir()
+                                (root / "home").mkdir(mode=0o700)
+                                (root / "workspace").mkdir()
+                                outputs = []
+                                for name, binary in (("prodex", ORACLE), ("modex", MODEX)):
+                                    result = subprocess.run(
+                                        sandbox_command(binary, root, case["arguments"], argv0=name),
+                                        capture_output=True, timeout=10, check=False)
+                                    stdout = result.stdout.decode()
+                                    stderr = result.stderr.decode()
+                                    if path_kind == "short":
+                                        stdout = stdout.replace(str(root), "<FIXTURE_ROOT>")
+                                        stderr = stderr.replace(str(root), "<FIXTURE_ROOT>")
+                                    if name == "modex":
+                                        stdout = map_executable(stdout)
+                                        stderr = map_executable(stderr)
+                                    output = (result.returncode, stdout, stderr)
+                                    outputs.append(output)
+                                    if path_kind == "short":
+                                        expected_stdout = case["stdout"] if name == "prodex" else map_executable(case["stdout"])
+                                        expected_stderr = case["stderr"] if name == "prodex" else map_executable(case["stderr"])
+                                        self.assertEqual(output, (case["exit_code"], expected_stdout, expected_stderr))
+                                    if not case["new_paths"]:
+                                        created = sorted(str(path.relative_to(root)) for path in root.rglob("*")
+                                                         if path not in (root / "home", root / "workspace"))
+                                        self.assertEqual(created, [])
+                                self.assertEqual(outputs[1], outputs[0])
+                        continue
                     for name, binary in (("prodex", ORACLE), ("modex", MODEX)):
                         root = Path(directory) / f"{index}-{name}"
                         root.mkdir()

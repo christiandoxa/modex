@@ -1,7 +1,7 @@
 # Modex
 
-Modex is a new Mojo implementation targeting officially released Prodex 0.439.2
-(`72b77478a5198fc5da6b4d2253137f9cdbf43be9`). It is under development and does
+Modex is a new Mojo implementation targeting officially released Prodex 0.439.5
+(`ac9aad08f25d6dc8cda96463ce2045b40f35f510`). It is under development and does
 not yet provide feature parity. Version output, development session inspection
 and detached `log last` snapshots are connected to the production CLI.
 An explicit clean-home DeepSeek `super ... exec` slice now launches Codex
@@ -43,3 +43,6 @@ The harness checks the pinned SHA-256 before using it. `bubblewrap` is a test
 prerequisite for filesystem/network isolation, never a product dependency.
 Output matches do not establish full session parity: reproducible failures
 are retained in [session mismatch evidence](docs/evidence/session-mismatches.json).
+
+The Linux CI bootstrap, focused and full validation commands, reference assets,
+and separate parity verdict are described in [CI and local reproduction](docs/ci.md).

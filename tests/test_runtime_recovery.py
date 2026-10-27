@@ -9,8 +9,14 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-DRIVER = ROOT / "build/tests/runtime_recovery_driver"
-REFERENCE = Path("/home/doxa/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3")
+BUILD_ROOT = Path(os.environ.get("BUILD_DIR", ROOT / "build"))
+DRIVER = BUILD_ROOT / "tests/runtime_recovery_driver"
+REFERENCE_COMMIT = "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3"
+REFERENCE_CACHE = Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
+REFERENCE = Path(os.environ.get(
+    "MODEX_REFERENCE_04391_DIR",
+    REFERENCE_CACHE / "references" / f"prodex-{REFERENCE_COMMIT}",
+))
 SESSION = "00000000-0000-0000-0000-000000000001"
 
 
@@ -19,7 +25,7 @@ class RuntimeRecoveryTests(unittest.TestCase):
     def setUpClass(cls):
         if not DRIVER.exists():
             raise RuntimeError("build tests/runtime_recovery_driver.mojo before running recovery tests")
-        cls.isolation = tempfile.TemporaryDirectory(dir=ROOT / "build/tests")
+        cls.isolation = tempfile.TemporaryDirectory(dir=BUILD_ROOT / "tests")
         cls.addClassCleanup(cls.isolation.cleanup)
         cls.env = {"PATH": os.environ.get("PATH", ""), "HOME": cls.isolation.name,
                    "XDG_CONFIG_HOME": cls.isolation.name, "XDG_CACHE_HOME": cls.isolation.name,
@@ -63,7 +69,7 @@ class RuntimeRecoveryTests(unittest.TestCase):
         self.assertEqual(self.plan(goal={"goal": {"threadId": "other", "status": "active"}}), 1)
 
     def test_path_identity_with_missing_children_and_symlinks(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / "build/tests") as temporary:
+        with tempfile.TemporaryDirectory(dir=BUILD_ROOT / "tests") as temporary:
             root = Path(temporary)
             (root / "actual").mkdir()
             (root / "link").symlink_to(root / "actual", target_is_directory=True)
@@ -96,7 +102,7 @@ class RuntimeRecoveryTests(unittest.TestCase):
     @unittest.skipUnless((REFERENCE / "mojo/prodex_core/launch_config.mojo").exists(), "pinned reference unavailable")
     def test_differential_pinned_mojo_policy(self):
         # Build a test-only adapter outside the read-only reference; product never links it.
-        source = ROOT / "build/tests/runtime_recovery_oracle.mojo"
+        source = BUILD_ROOT / "tests/runtime_recovery_oracle.mojo"
         source.write_text('''from std.sys import argv
 from std.memory.alloc import alloc, dealloc, Layout
 from launch_args_common import LaunchArgView

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "baseline_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
   "inventory_complete": false,
   "counting_policy": "Initial coarse contracts are not the final denominator. Each contract retains all applicable platform obligations. PASS requires reproducible evidence; compile-only, mock-only and unverified results never count. No full parity percentage until inventory completion.",
   "inventory_history": [
@@ -63,6 +63,10 @@
     {
       "date": "2026-10-26",
       "change": "Checkpoint 15 integrates bodyless SSE 204/304 chunked wire framing and phase-correct bounded buffered 2xx/3xx versus >=400 processing diagnostics. Selected current-oracle synthetic probes plus raw socket and protected comparisons; 370 Python tests pass. Hard binding ownership still mismatches; all 71 contracts, 426 obligations and six blocked release qualifications remain unchanged."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Target 0.439.5; preserve historical traces and expand the still-incomplete inventory with five model/authentication obligations. No historical evidence is promoted to current-target parity."
     }
   ],
   "contracts": [
@@ -3944,11 +3948,211 @@
       "blockers": [
         "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
       ]
+    },
+    {
+      "id": "MODEL-RETIREMENT-SCOPE",
+      "domain": "providers",
+      "baseline": {
+        "path": "crates/prodex-provider-core/catalog/retired-models.json",
+        "source_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+        "trace_verified": true
+      },
+      "required_behavior": "Apply frozen retirement rules per provider and authentication scope while retaining local and explicit custom independence.",
+      "input": "provider catalog or synthetic profile/login state",
+      "output": "source-equivalent behavior and preserved state",
+      "failure_modes": "Unverified or conflicting identity must not silently broaden membership or overwrite another account.",
+      "side_effects": "Only explicitly requested and validated state changes.",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet implemented end to end.",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.5/reference-verification.json"
+      ],
+      "status": "BLOCKED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "BLOCKED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production implementation and real-process current-reference verification remain incomplete."
+      ]
+    },
+    {
+      "id": "MODEL-ACCOUNT-AUTHORITY",
+      "domain": "providers",
+      "baseline": {
+        "path": "docs/release-notes/0.439.3.md",
+        "source_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+        "trace_verified": true
+      },
+      "required_behavior": "Use usable account catalogs as authoritative for both main and sub-agent membership without merging other accounts or restoring retired selections.",
+      "input": "provider catalog or synthetic profile/login state",
+      "output": "source-equivalent behavior and preserved state",
+      "failure_modes": "Unverified or conflicting identity must not silently broaden membership or overwrite another account.",
+      "side_effects": "Only explicitly requested and validated state changes.",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet implemented end to end.",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.5/reference-verification.json"
+      ],
+      "status": "BLOCKED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "BLOCKED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production implementation and real-process current-reference verification remain incomplete."
+      ]
+    },
+    {
+      "id": "MODEL-CATALOG-04394",
+      "domain": "providers",
+      "baseline": {
+        "path": "crates/prodex-provider-core/catalog/models.json",
+        "source_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+        "trace_verified": true
+      },
+      "required_behavior": "Use the frozen 0.439.4 provider wire IDs and account-specific model, context, effort, default and cache-precedence rules, including Gemini thinking levels and DeepSeek effort.",
+      "input": "provider catalog or synthetic profile/login state",
+      "output": "source-equivalent behavior and preserved state",
+      "failure_modes": "Unverified or conflicting identity must not silently broaden membership or overwrite another account.",
+      "side_effects": "Only explicitly requested and validated state changes.",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet implemented end to end.",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.5/reference-verification.json"
+      ],
+      "status": "BLOCKED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "BLOCKED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production implementation and real-process current-reference verification remain incomplete."
+      ]
+    },
+    {
+      "id": "LOGIN-CREDENTIAL-FINALIZATION",
+      "domain": "authentication",
+      "baseline": {
+        "path": "crates/prodex-app/src/profile_commands/login/identity_commit.rs",
+        "source_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+        "trace_verified": true
+      },
+      "required_behavior": "Commit new, existing, named and API-key credentials without scanning historical rollouts or repairing unrelated goals; prefer stored claims and usable cached identity and preserve private permissions, matching, journaling and cleanup.",
+      "input": "provider catalog or synthetic profile/login state",
+      "output": "source-equivalent behavior and preserved state",
+      "failure_modes": "Unverified or conflicting identity must not silently broaden membership or overwrite another account.",
+      "side_effects": "Only explicitly requested and validated state changes.",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet implemented end to end.",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.5/reference-verification.json"
+      ],
+      "status": "BLOCKED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "BLOCKED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production implementation and real-process current-reference verification remain incomplete."
+      ]
+    },
+    {
+      "id": "LOGIN-QUOTA-CONCURRENCY",
+      "domain": "authentication",
+      "baseline": {
+        "path": "crates/prodex-app/src/profile_commands/login/identity_commit.rs",
+        "source_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+        "trace_verified": true
+      },
+      "required_behavior": "Perform necessary automatic-login identity lookup outside the lifecycle lock; reload and revalidate profiles and on-disk account identities with bounded retry and preserve concurrent changes and named-profile remove/recreate protection.",
+      "input": "provider catalog or synthetic profile/login state",
+      "output": "source-equivalent behavior and preserved state",
+      "failure_modes": "Unverified or conflicting identity must not silently broaden membership or overwrite another account.",
+      "side_effects": "Only explicitly requested and validated state changes.",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet implemented end to end.",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.439.5/reference-verification.json"
+      ],
+      "status": "BLOCKED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "BLOCKED",
+        "aarch64-unknown-linux-gnu": "BLOCKED",
+        "x86_64-apple-darwin": "BLOCKED",
+        "aarch64-apple-darwin": "BLOCKED",
+        "x86_64-pc-windows-msvc": "BLOCKED",
+        "aarch64-pc-windows-msvc": "BLOCKED"
+      },
+      "blockers": [
+        "Production implementation and real-process current-reference verification remain incomplete."
+      ]
     }
   ],
-  "previous_baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
-  "baseline_version": "0.439.2",
-  "evidence_policy": "Every historical artifact retains its baseline commit/checksum. Older passing evidence is not proof against 0.439.1; revalidation is required before declaring new PASS obligations.",
+  "previous_baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "baseline_version": "0.439.5",
+  "evidence_policy": "Each trace and artifact retains its listed source commit and checksum. Existing 0.439.0–0.439.2 evidence is historical and is not proof of 0.439.5 behavior unless explicitly recaptured or reverified. Repinning does not promote any contract or platform status.",
   "release_qualification": {
     "x86_64-unknown-linux-gnu": {
       "status": "BLOCKED",
@@ -4000,6 +4204,12 @@
     }
   },
   "historical_baselines": [
+    {
+      "version": "0.439.2",
+      "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+      "evidence": "docs/evidence/baseline-0.439.2/reference-verification.json",
+      "role": "Historical regression; no automatic 0.439.5 qualification."
+    },
     {
       "version": "0.439.1",
       "commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",

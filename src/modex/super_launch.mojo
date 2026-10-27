@@ -16,7 +16,7 @@ from .app_server_rpc import run_super_hook_trust_preflight
 from .json import quote_json
 from .loopback_server import LoopbackHTTPListener
 from .paths import app_root, ensure_app_root, shared_root
-from .process_spawn import capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, wait_or_kill
+from .process_spawn import capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, terminate_child_gracefully, wait_or_kill
 from .provider_deepseek_transport import deepseek_request_headers
 from .runtime_local_rewrite import local_rewrite_upstream, serve_local_rewrite
 from .text import trim_text
@@ -71,11 +71,12 @@ def deepseek_model_catalog(launch_model: String) -> String:
     var presets: List[Tuple[String, String, String]] = [
         ("auto", "DeepSeek Auto", "Prodex DeepSeek fallback chain routed through current DeepSeek models."),
         ("pro", "DeepSeek Pro", "Prodex DeepSeek Pro alias routed through DeepSeek V4 Pro."),
-        ("flash", "DeepSeek Flash", "Prodex DeepSeek Flash alias routed through DeepSeek V4 Flash."),
+        ("flash", "DeepSeek Flash", "Prodex DeepSeek Flash alias routed through current DeepSeek Flash."),
         ("deepseek-v4-pro", "DeepSeek V4 Pro", "DeepSeek V4 Pro routed through the Prodex Responses adapter."),
         ("deepseek-v4-flash", "DeepSeek V4 Flash", "DeepSeek V4 Flash routed through the Prodex Responses adapter."),
         ("deepseek-chat", "DeepSeek Chat", "DeepSeek chat compatibility model routed through the Prodex Responses adapter."),
         ("deepseek-reasoner", "DeepSeek Reasoner", "DeepSeek reasoner compatibility model routed through the Prodex Responses adapter."),
+        ("deepseek-flash", "DeepSeek V4.1 Flash", "Current DeepSeek Flash routed through the Prodex Responses adapter."),
     ]
     var instructions = String("You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.")
     var models = List[String]()
@@ -83,11 +84,16 @@ def deepseek_model_catalog(launch_model: String) -> String:
     for preset in presets:
         slugs.append(preset[0])
     var seen = List[String]()
+    var priority = 0
     for slug in slugs:
         var folded = _ascii_lower(slug)
         if folded in seen:
             continue
         seen.append(folded)
+        priority += 1
+        # Preserve frozen priorities while omitting retired model IDs.
+        if folded == "deepseek-chat" or folded == "deepseek-reasoner":
+            continue
         var name = slug
         var description = String("DeepSeek model routed through the Prodex Responses adapter.")
         for preset in presets:
@@ -97,9 +103,12 @@ def deepseek_model_catalog(launch_model: String) -> String:
                 break
         var row = String('{"additional_speed_tiers":[],"apply_patch_tool_type":"freeform","auto_compact_token_limit":900000,"availability_nux":null,"base_instructions":') + quote_json(instructions)
         row += ',"context_window":1048576,"default_reasoning_level":"high","default_reasoning_summary":"none","default_service_tier":null,"default_verbosity":null,"description":' + quote_json(description)
-        row += ',"display_name":' + quote_json(name) + ',"effective_context_window_percent":95,"experimental_supported_tools":[],"input_modalities":["text"],"max_context_window":1048576,"priority":' + String(len(models) + 1)
+        row += ',"display_name":' + quote_json(name) + ',"effective_context_window_percent":95,"experimental_supported_tools":[],"input_modalities":["text"],"max_context_window":1048576,"priority":' + String(priority)
         row += ',"service_tiers":[],"shell_type":"shell_command","slug":' + quote_json(slug) + ',"support_verbosity":false,"supported_in_api":true,"supported_reasoning_levels":['
-        row += '{"description":"DeepSeek low reasoning effort","effort":"low"},{"description":"DeepSeek medium reasoning effort","effort":"medium"},{"description":"DeepSeek high reasoning effort","effort":"high"},{"description":"DeepSeek max reasoning effort","effort":"xhigh"}]'
+        if folded in ["auto", "pro", "flash", "deepseek-v4-pro", "deepseek-flash", "deepseek-v4-flash"]:
+            row += '{"description":"No reasoning effort","effort":"none"},{"description":"Low reasoning effort","effort":"low"},{"description":"High reasoning effort","effort":"high"},{"description":"Max reasoning effort","effort":"max"}]'
+        else:
+            row += '{"description":"DeepSeek low reasoning effort","effort":"low"},{"description":"DeepSeek medium reasoning effort","effort":"medium"},{"description":"DeepSeek high reasoning effort","effort":"high"},{"description":"DeepSeek max reasoning effort","effort":"xhigh"}]'
         row += ',"supports_image_detail_original":false,"supports_parallel_tool_calls":true,"supports_reasoning_summaries":false,"supports_reasoning_summary_parameter":false,"supports_search_tool":false,"truncation_policy":{"limit":10000,"mode":"tokens"},"upgrade":null,"visibility":"list","web_search_tool_type":"text"}'
         models.append(row)
     return '{"models":[' + String(",").join(models) + "]}"
@@ -230,8 +239,7 @@ def _exec(binary: String, home: String, model: String, upstream: String, key: St
                 sleep(0.005)
             result = child.wait()
         except:
-            _ = child.kill()
-            _ = wait_or_kill(child, 1)
+            _ = terminate_child_gracefully(child)
             raise
         _ = wait_or_kill(relay, 1)
         input.set_input_only()

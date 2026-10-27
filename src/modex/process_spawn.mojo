@@ -11,9 +11,11 @@ from std.ffi import c_pid_t, CStringSpan, ErrNo, get_errno
 from std.io import RawFileDescriptor
 from std.net._sys.unix import F_GETFL, F_SETFL, O_NONBLOCK
 from std.sys import CompilationTarget
-from std.sys._libc import _get_environ, close, dup, dup2, fcntl, FcntlCommands, FcntlFDFlags, posix_spawnp
+from std.sys._libc import _get_environ, close, dup, dup2, fcntl, kill, FcntlCommands, FcntlFDFlags, posix_spawnp
 from std.os.process import Pipe, Process, ProcessStatus
 from std.time import perf_counter, sleep
+
+comptime SIGTERM = 15
 
 
 @fieldwise_init
@@ -208,6 +210,20 @@ def wait_or_kill(mut child: Process, timeout_ms: UInt64) raises -> ProcessWaitOu
             return ProcessWaitOutcome(status, False)
         raise Error("process timed out and direct child could not be terminated")
     return ProcessWaitOutcome(child.wait(), True)
+
+
+def terminate_child_gracefully(mut child: Process, timeout_ms: UInt64 = 2000) raises -> ProcessWaitOutcome:
+    if timeout_ms == 0 or child.child_pid <= 0 or child.child_pid > Int(Int32.MAX):
+        raise Error("invalid graceful process termination limits or child id")
+    var status = child.poll()
+    if status.has_exited():
+        return ProcessWaitOutcome(status, False)
+    if kill(Int32(child.child_pid), SIGTERM) != 0:
+        status = child.poll()
+        if status.has_exited():
+            return ProcessWaitOutcome(status, False)
+        return wait_or_kill(child, 1)
+    return wait_or_kill(child, timeout_ms)
 
 
 @fieldwise_init

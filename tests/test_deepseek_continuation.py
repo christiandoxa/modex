@@ -50,7 +50,7 @@ def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=
         for name in ("home", "state", "shared", "work"):
             (root / name).mkdir(mode=0o700)
         (root / "state/update-check.json").write_text(
-            '{"source":"GitHub","latest_version":"0.439.2","checked_at":4102444800}'
+            '{"source":"GitHub","latest_version":"0.439.5","checked_at":4102444800}'
         )
         codex = root / "codex"
         codex.write_text("#!" + sys.executable + "\n" + CLIENT)
@@ -95,7 +95,42 @@ class DeepSeekContinuationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-            raise AssertionError("oracle does not match pinned Prodex 0.439.2")
+            raise AssertionError("oracle does not match pinned Prodex 0.439.5")
+
+    def test_characterize_bound_continuation_ownership_gap(self):
+        # This records a known mismatch; it does not qualify the contract as parity.
+        turns = [{"model": "deepseek-chat", "input": "first synthetic turn"},
+                 {"model": "deepseek-chat", "input": "second synthetic turn", "use_previous": True}]
+        replies = [buffered_reply(0, created=42), buffered_reply(1, created=43)]
+        baseline_posts, baseline = observe_turns(ORACLE, turns, replies)
+        modex_posts, modex = observe_turns(MODEX, turns, replies)
+        self.assertEqual([row["status"] for row in baseline], [200, 503])
+        self.assertEqual(len(baseline_posts), 1)
+        self.assertEqual(json.loads(bytes.fromhex(baseline[1]["body"])), {
+            "error": {"code": "bound_continuation_unavailable",
+                      "message": "bound continuation provider is unavailable"},
+        })
+        self.assertEqual([row["status"] for row in modex], [200, 200])
+        self.assertEqual(len(modex_posts), 2)
+
+    def test_malformed_quota_reset_is_not_projected(self):
+        reply = buffered_reply(created=42)
+        reply["response_headers"] = [
+            ("Content-Type", "application/json"),
+            ("x-ratelimit-limit-requests", "100"),
+            ("x-ratelimit-remaining-requests", "40"),
+            ("x-ratelimit-reset-requests", "1.2.3s"),
+        ]
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, [{"model": "deepseek-chat", "input": "synthetic quota reset"}], [reply],
+                )
+                self.assertEqual(len(upstream), 1)
+                self.assertEqual(responses[0]["status"], 200)
+                headers = {key.lower(): value for key, value in responses[0]["headers"].items()}
+                self.assertEqual(headers.get("x-deepseek-requests-primary-used-percent"), "60")
+                self.assertNotIn("x-deepseek-requests-primary-reset-at", headers)
 
     def test_oversized_buffered_provider_error_boundary_matches_release(self):
         # 2xx and 3xx buffered responses fail after provider response handoff;

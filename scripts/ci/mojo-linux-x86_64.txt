@@ -1,0 +1,7 @@
+# Official Modular PyPI wheels, pinned to the Mojo 1.2.0 release.
+# PyPI lists Modular as the owner: https://pypi.org/project/mojo-compiler/1.2.0/
+# SHA-256 values are the PyPI file digests for the Linux x86-64 wheels.
+mojo-compiler==1.2.0 \\
+    --hash=sha256:3ee34a3b26c6cccaa9523a0e8db8f67bea954497d782d97c9e61c3c4ecbdac7b
+mojo-compiler-mojo-libs==1.2.0 \\
+    --hash=sha256:3d631f7e798c11d0029c4a892ebae1f5742751fac0c526af74b45a8ae07c3acb

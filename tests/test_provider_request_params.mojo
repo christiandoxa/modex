@@ -115,11 +115,14 @@ def main() raises:
     for effort, expected in [
         (String("max"), String('{"thinking":{"type":"enabled"},"reasoning_effort":"max"}')),
         ("XHIGH", '{"thinking":{"type":"enabled"},"reasoning_effort":"max"}'),
-        ("low", '{"thinking":{"type":"enabled"},"reasoning_effort":"high"}'),
+        ("low", '{"thinking":{"type":"enabled"},"reasoning_effort":"low"}'),
+        (" LoW ", '{"thinking":{"type":"enabled"},"reasoning_effort":"low"}'),
         ("none", '{"thinking":{"type":"disabled"}}'),
         (" minimal ", '{"thinking":{"type":"disabled"}}'),
     ]:
         assert_equal(reasoning_fields(Optional[String](effort)), expected)
+    assert_true(thinking_enabled(Optional[String]("low")))
+    assert_true(thinking_enabled(Optional[String]("  LOW  ")))
     assert_equal(reasoning_fields(Optional[String]()), "{}")
     var fallback = JsonDocument('{"reasoning":{},"reasoning_effort":"none"}')
     assert_equal(request_reasoning(fallback).value(), "none")

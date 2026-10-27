@@ -8,7 +8,12 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE_COMMIT = "72b77478a5198fc5da6b4d2253137f9cdbf43be9"
-REFERENCE = Path('/home/doxa/.cache/modex/references/prodex-' + REFERENCE_COMMIT)
+BUILD_ROOT = Path(os.environ.get("BUILD_DIR", ROOT / "build"))
+REFERENCE_CACHE = Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
+REFERENCE = Path(os.environ.get(
+    "MODEX_REFERENCE_04392_DIR",
+    REFERENCE_CACHE / "references" / f"prodex-{REFERENCE_COMMIT}",
+))
 SOURCE_HASHES = {
     'mojo/prodex_core/candidate_decision.mojo': 'bd3a8176425a29c8937e8c63dd8aae3cf585bed9be8827dd6558247d3a1a6fe0',
     'mojo/prodex_core/runtime_responses_attempt.mojo': 'b07576c76cc518f1df38a222f5895bb0a5729ed55d04d7425fadc56a691c5861',
@@ -65,7 +70,7 @@ class QuotaHandoffTests(unittest.TestCase):
             path = REFERENCE / relative
             if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
                 raise AssertionError(f'0.439.2 source checksum mismatch: {relative}')
-        build_dir = ROOT / "build/tests"
+        build_dir = BUILD_ROOT / "tests"
         build_dir.mkdir(parents=True, exist_ok=True)
         cls.isolation = tempfile.TemporaryDirectory(dir=build_dir)
         cls.addClassCleanup(cls.isolation.cleanup)

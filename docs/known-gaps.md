@@ -1,10 +1,16 @@
 # Verified gaps
 
-Complete parity remains unfinished against officially released Prodex 0.439.2 at
-`72b77478a5198fc5da6b4d2253137f9cdbf43be9`. The incomplete inventory retains
-71 contracts and 426 platform obligations. All six complete release
+Complete parity remains unfinished against officially released Prodex 0.439.5 at
+`ac9aad08f25d6dc8cda96463ce2045b40f35f510`. The incomplete inventory retains
+76 contracts and 456 platform obligations. All six complete release
 qualifications are explicitly BLOCKED; focused host tests do not establish a
-release PASS. Historical 0.439.0 observations retain their provenance.
+release PASS. Historical 0.439.0–0.439.2 observations retain their provenance.
+
+The 0.439.5 two-turn continuation probe still returns 200/503 with one upstream
+POST for Prodex and 200/200 with two POSTs for Modex. Binding acquisition and
+identity validation, account/profile lifecycle, credential finalization and
+login/quota concurrency remain unimplemented. The 0.439.3–0.439.5 catalog and
+authentication additions are explicit incomplete obligations, not inferred passes.
 
 Checkpoint 15 matches the official 0.439.2 bodyless SSE chunked header
 and final raw wire chunk `0\r\n\r\n` on 204/304, and corrects the buffered

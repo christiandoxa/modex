@@ -390,8 +390,8 @@
       "docs/evidence/checkpoint12-dependencies.txt"
     ]
   },
-  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
-  "baseline_version": "0.439.2",
+  "baseline_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+  "baseline_version": "0.439.5",
   "checkpoint13_dependency_audit": {
     "new_application_dependencies": [],
     "new_native_bindings": [],
@@ -414,5 +414,6 @@
       "docs/evidence/checkpoint14-tests.txt",
       "docs/evidence/checkpoint14-dependencies.txt"
     ]
-  }
+  },
+  "baseline_evidence_policy": "Descriptions and evidence from earlier checkpoints retain their original version and are not automatically 0.439.5 behavioral verification."
 }

@@ -1,3 +1,52 @@
+# Current work: Prodex 0.439.5 and initial CI foundation
+
+The active reference is official Prodex 0.439.5 at
+`ac9aad08f25d6dc8cda96463ce2045b40f35f510`. Its separate Linux binary,
+manifests, checksums, clean source checkout, and signed GitHub/Sigstore
+provenance are recorded in `docs/evidence/baseline-0.439.5/`. Prior
+0.439.0–0.439.2 captures retain their original versions and checksums.
+Modex still identifies itself as `modex 0.1.0-dev`.
+
+The production DeepSeek path now uses the 0.439.5 Flash catalog and alias,
+preserves low reasoning effort on the translated wire, and gives an owned
+Codex child a bounded graceful shutdown before direct-child escalation if
+the relay fails. The 14 hook-preflight scenarios were recaptured from the
+new oracle; the old fixture is preserved. Focused native, synthetic
+loopback, process, and real-oracle checks cover these changes. A proposed
+quota-duration parser edit was rejected after the original source passed the
+same new malformed-input tests; the useful edge checks remain.
+
+Three concurrent worker sessions were launched with `gpt-6-luna` and `max`
+as explicit tool arguments: CI/bootstrap, DeepSeek catalog/alias, and
+process/low-effort implementation. Their changes were reviewed and tested in
+combination. The collaboration status API does not independently expose the
+workers' effective model or effort, so that runtime identity is not claimed
+as separately verified.
+
+The new fast, scheduled/dispatch full, and separate parity-verdict workflows
+are Linux x86-64 only and use pinned actions and an official pinned compiler.
+The first local full run passed bootstrap, reference, platform and native
+checks but failed the Python suite: an unsafe inherited temporary ancestor
+blocked the oracle before provider dispatch, and six historical session cases
+depended on path wrapping. Focused fixes pass; see `docs/ci-lessons.md`.
+The corrected local fast entrypoint passes production build, native units,
+workflow/dependency checks, and 13 focused Python tests. The corrected full
+exact-commit validation and GitHub run are still required.
+Build reuse, sharding, artifact provenance across jobs, and timing remain open.
+
+The fresh two-turn continuation still differs: Prodex returns 200/503 and
+performs one upstream POST; Modex returns 200/200 and performs two. Its
+binding acquisition, persistence and identity checks remain unfinished; the
+characterization test records the mismatch without promoting it to a pass.
+Profile/login finalization, account-replacement and login/quota concurrency,
+other provider catalogs, SDK, storage/security and the six release-target
+qualifications remain open. The incomplete inventory now contains 76
+contracts and 456 platform obligations, with no complete contract PASS.
+
+This integration began on clean main at `0eacd2cb8da155a4bf418186e1bcdac5f27d4138`.
+The initial checkpoint and its GitHub run identity will be recorded after push;
+prior validated evidence applies only to its original source and reference.
+
 # Checkpoint 15: bodyless SSE wire and bounded buffered response paths
 
 The 0.439.2 source oracle remains immutable at `72b77478a5198fc5da6b4d2253137f9cdbf43be9`. Checkpoint 14

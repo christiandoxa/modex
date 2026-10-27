@@ -11,7 +11,7 @@ from test_local_rewrite import SYNTHETIC_API_KEY
 import test_super_launch
 
 
-class Release04392Tests(unittest.TestCase):
+class Release04395Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         test_cli.CliTests.setUpClass()
@@ -27,7 +27,7 @@ class Release04392Tests(unittest.TestCase):
                                   if record['kind'] == 'request' and record['method'] == 'initialize')
                 self.assertEqual(initialize['params'], {
                     'capabilities': {'experimentalApi': True},
-                    'clientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.2'},
+                    'clientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.5'},
                 })
 
     def test_bodyless_chat_and_ordinary_response_lengths(self):
@@ -74,7 +74,8 @@ class Release04392Tests(unittest.TestCase):
                 self.assertEqual(tools[1]["function"]["parameters"]["properties"],
                                  {"q": {"type": "string"}})
                 observations.append(tools)
-        self.assertEqual(*observations)
+        self.assertEqual(len(observations), 2)
+        self.assertEqual(observations[0], observations[1])
 
     def test_merged_response_metadata_can_exceed_four_mib(self):
         turn = {"model": "deepseek-chat", "input": "synthetic",
@@ -96,7 +97,8 @@ class Release04392Tests(unittest.TestCase):
                 encoded = json.dumps(metadata, sort_keys=True, separators=(",", ":")).encode()
                 self.assertGreater(len(encoded), 4 * 1024 * 1024)
                 digests.append(hashlib.sha256(encoded).hexdigest())
-        self.assertEqual(*digests)
+        self.assertEqual(len(digests), 2)
+        self.assertEqual(digests[0], digests[1])
 
 
 if __name__ == "__main__":

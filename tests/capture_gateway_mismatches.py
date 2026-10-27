@@ -4,6 +4,7 @@
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 
 from test_gateway import (
@@ -17,7 +18,10 @@ from test_gateway import (
     run_case,
 )
 
-ORACLE = Path("/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu")
+ORACLE = Path(os.environ.get(
+    "PRODEX_HISTORICAL_04390_ORACLE",
+    Path.home() / ".cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+))
 OUTPUT = ROOT / "docs/evidence/gateway-mismatch.json"
 
 

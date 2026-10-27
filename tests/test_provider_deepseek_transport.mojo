@@ -72,6 +72,9 @@ def rate_limits() raises:
     assert_true(overflow and overflow.value() == Int.MAX)
     var underflow = _reset_epoch("0." + String("0") * 330 + "1ms", 1234)
     assert_true(underflow and underflow.value() == 1234)
+    assert_true(not _reset_epoch("1.2.3s", 1234))
+    assert_true(not _reset_epoch("1..2s", 1234))
+    assert_true(not _reset_epoch(".s", 1234))
     var many_segments = _reset_epoch(String("0s") * 65537, 1234)
     assert_true(many_segments and many_segments.value() == 1234)
 

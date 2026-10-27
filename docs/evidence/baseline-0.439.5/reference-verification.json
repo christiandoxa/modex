@@ -1,0 +1,44 @@
+{
+  "version": "0.439.5",
+  "commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+  "tag": "refs/tags/0.439.5",
+  "tag_verified_read_only_remote": true,
+  "source_snapshot": "/home/doxa/.cache/modex/references/prodex-ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+  "source_checkout_clean": true,
+  "source_sha256": {
+    "crates/prodex-app/src/profile_commands/login/identity_commit.rs": "18c3e397fd95a019a9f0118f0284df4f52f297a65a5839dd80e054f9a39d4ed6",
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_pipeline_dispatch.rs": "877b5f07da1d502ed4fdc379ce14081469774916bf54c619e1c51cba7edc16e7",
+    "crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_upstream.rs": "21dc20de1a0321957683418241a86e2b2a98f01de3d7554132d6506fa28e57d1",
+    "mojo/prodex_core/runtime_lineage.mojo": "0a9447b486d5940b4efef708f1aa5aded691e6cc91ae71462305557dd8980ba7",
+    "mojo/prodex_core/deepseek.mojo": "971a67e2e1069b6bd41e686267489b91e15b4112fdb5efb13eac207af91e8089",
+    "crates/prodex-provider-core/catalog/retired-models.json": "c569b13bcb4e5ebc6cb6937a5f57689e4b3f76ba1a7615a2671cb980711c907b",
+    "crates/prodex-provider-core/catalog/models.json": "249d9fac4e9b79ebbc5aa2f9754e326ec7542baad61f309eeae51931fdf42f03"
+  },
+  "source_repository_modified": false,
+  "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.5",
+  "published_at": "2026-10-27T16:05:30Z",
+  "linux_oracle": "/home/doxa/.cache/modex/oracles/0.439.5/prodex-x86_64-unknown-linux-gnu",
+  "linux_oracle_sha256": "96cef1bfea9cfd90b769d1d7854e88400beed151ad05c229facdd6d52a5d59c5",
+  "sha256sums_sha256": "b3bf336511f314f9bca585aff110aed09d7c6d41d44db68fedb46c40cf52106d",
+  "release_manifest_sha256": "4a75b377a2bb909c2f63a135646dd6000e837ebeb00a34b1fd33910abc8d3c8b",
+  "release_manifest_tsv_sha256": "df638865e4572971f4e4a19e81320d678d50f6cc383df62d616bf736c5e5f926",
+  "release_sbom_sha256": "70a29c18c408393bf0cf4d1e03cd071f9819b12b87091baf5e956deccdb471b6",
+  "checksum_verification": "All four available assets match official SHA256SUMS; SHA256SUMS and each asset also match GitHub release API asset digests.",
+  "attestation": {
+    "verified": true,
+    "verifier": "GitHub CLI 2.76.2 gh attestation verify --repo christiandoxa/prodex",
+    "certificate_issuer": "https://token.actions.githubusercontent.com",
+    "workflow": "https://github.com/christiandoxa/prodex/.github/workflows/standalone-release.yml@refs/heads/main",
+    "source_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+    "run": "https://github.com/christiandoxa/prodex/actions/runs/40533648780/attempts/2",
+    "transparency_log": "https://rekor.sigstore.dev"
+  },
+  "release_targets": [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+    "aarch64-pc-windows-msvc"
+  ]
+}

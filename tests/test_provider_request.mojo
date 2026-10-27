@@ -24,7 +24,7 @@ def main() raises:
     for model, expected in [
         (String(" pro "), String("deepseek-v4-pro")),
         ("AUTO", "deepseek-v4-pro"),
-        ("Flash", "deepseek-v4-flash"),
+        ("Flash", "deepseek-flash"),
         (" default ", "default"),
         (" 東京🧭 ", "東京🧭"),
         ("combo: , flash > pro", "flash"),

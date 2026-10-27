@@ -14,10 +14,10 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-ORACLE = Path("/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu")
-ORACLE_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
-BASELINE_COMMIT = "72b77478a5198fc5da6b4d2253137f9cdbf43be9"
-OUTPUT = ROOT / "tests/fixtures/super_hooks/cases.json"
+from test_cli import ORACLE, ORACLE_SHA256
+
+BASELINE_COMMIT = "ac9aad08f25d6dc8cda96463ce2045b40f35f510"
+OUTPUT = Path(os.environ.get("MODEX_HOOK_CAPTURE_OUTPUT", ROOT / "tests/fixtures/super_hooks/cases.json"))
 
 FAKE_CODEX = r'''#!__PYTHON__
 import hashlib
@@ -248,7 +248,7 @@ class LoopbackHandler(BaseHTTPRequestHandler):
 
 def normalized(value, root):
     if isinstance(value, str):
-        value = value.replace(str(root), "<ROOT>")
+        value = value.replace(str(root), "<ROOT>").replace(str(ORACLE), "<ORACLE>")
         value = re.sub(r"\.prodex-overlay-[0-9a-f]+-0", ".prodex-overlay-<ID>-0", value)
         return re.sub(r"http://127\.0\.0\.1:[0-9]+/v1", "http://127.0.0.1:<PORT>/v1", value)
     if isinstance(value, list):
@@ -273,7 +273,7 @@ def run_case(case):
         config_path.chmod(0o600)
         cache_path = prodex_home / "update-check.json"
         cache_path.write_text(json.dumps({
-            "source": "GitHub", "latest_version": "0.439.2", "checked_at": int(time.time()),
+            "source": "GitHub", "latest_version": "0.439.5", "checked_at": int(time.time()),
         }, separators=(",", ":")) + "\n", encoding="utf-8")
         cache_path.chmod(0o600)
         codex_path = root / "codex"
@@ -346,15 +346,12 @@ def main():
     document = {
         "schema_version": 1,
         "baseline_commit": BASELINE_COMMIT,
-        "oracle_version": "0.439.2",
+        "oracle_version": "0.439.5",
         "oracle_sha256": oracle_sha256,
         "capture_harness": "tests/capture_super_hooks.py",
         "scope": "Frozen Super hook-trust JSON-RPC behavior against isolated synthetic Codex app-server peers.",
         "protocol_sources": [
-            "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs:27-90",
-            "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs:92-176",
-            "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs:178-252",
-            "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs:264-349",
+            "Frozen Prodex 0.439.5 crates/prodex-app/src/runtime_tools/hook_trust.rs",
             "Codex app-server/tests/suite/v2/hooks_list.rs:77-113, 190-237",
             "Codex app-server-protocol/src/protocol/v2/plugin.rs:52-64, 512-575",
             "Codex app-server-protocol/src/protocol/v2/config.rs:337-357",
@@ -369,7 +366,7 @@ def main():
     }
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"captured {len(cases)} Super hook-trust cases into {OUTPUT.relative_to(ROOT)}")
+    print(f"captured {len(cases)} Super hook-trust cases into {OUTPUT}")
     failed = []
     for case in cases:
         app_servers = [item for item in case["child_invocations"] if item["mode"] == "app_server"]

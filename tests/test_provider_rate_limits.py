@@ -117,6 +117,33 @@ class ProviderRateLimitDifferentialTests(unittest.TestCase):
         self.assertEqual(headers.get("x-deepseek-tokens-primary-reset-at"), "1700000000")
         self.assertEqual(json.loads(response)["output"][0]["content"][0]["text"], "ok")
 
+    def test_malformed_reset_duration_is_not_projected_by_production_relay(self):
+        body = (
+            b'{"id":"chatcmpl_limits","model":"deepseek-chat",'
+            b'"created":1700000000,"choices":[{"message":{"content":"ok"},'
+            b'"finish_reason":"stop"}]}'
+        )
+        with serving([{
+            "status": 200,
+            "body": body,
+            "response_headers": [
+                ("Content-Type", "application/json"),
+                ("x-ratelimit-limit-requests", "100"),
+                ("x-ratelimit-remaining-requests", "40"),
+                ("x-ratelimit-reset-requests", "1.2.3s"),
+            ],
+        }]) as server:
+            with RunningLocalRewrite(server.server_port) as relay:
+                status, headers, response = post_relay(
+                    relay.address,
+                    json_bytes({"model": "deepseek-chat", "input": "synthetic request"}),
+                )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(headers.get("x-deepseek-requests-primary-used-percent"), "60")
+        self.assertIsNone(headers.get("x-deepseek-requests-primary-reset-at"))
+        self.assertEqual(json.loads(response)["output"][0]["content"][0]["text"], "ok")
+
 
 if __name__ == "__main__":
     unittest.main()

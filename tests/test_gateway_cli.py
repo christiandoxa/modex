@@ -1,6 +1,7 @@
 """Differential checks for Gateway's frozen Clap argument behavior."""
 
 import hashlib
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -10,12 +11,16 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODEX = Path(os.environ.get("MODEX_GATEWAY_BINARY", ROOT / "build/modex"))
-ORACLE = Path(os.environ.get(
-    "PRODEX_GATEWAY_ORACLE",
-    "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
-))
-ORACLE_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
+from test_cli import ORACLE as ACTIVE_ORACLE, ORACLE_SHA256 as ACTIVE_ORACLE_SHA256
+
+BUILD_ROOT = Path(os.environ.get("BUILD_DIR", ROOT / "build"))
+MODEX = Path(os.environ.get("MODEX_GATEWAY_BINARY", BUILD_ROOT / "modex"))
+ORACLE = Path(os.environ.get("PRODEX_GATEWAY_ORACLE", ACTIVE_ORACLE))
+ORACLE_SHA256 = ACTIVE_ORACLE_SHA256
+MODEX_REFERENCE_VERSION = os.environ.get(
+    "MODEX_REFERENCE_VERSION",
+    json.loads((ROOT / "docs/baseline.json").read_text(encoding="utf-8"))["reference"]["tag"],
+)
 
 
 def run_cli(binary, executable_name, arguments):
@@ -58,7 +63,8 @@ def run_cli(binary, executable_name, arguments):
 
 
 def json_cache():
-    return '{"source":"GitHub","latest_version":"0.439.2","checked_at":' + str(int(time.time())) + '}\n'
+    return ('{"source":"GitHub","latest_version":"' + MODEX_REFERENCE_VERSION
+            + '","checked_at":' + str(int(time.time())) + '}\n')
 
 
 @unittest.skipUnless(ORACLE.is_file(), f"pinned Prodex oracle unavailable: {ORACLE}")

@@ -1,14 +1,15 @@
 from std.testing import assert_equal
 
 from modex.json import JsonDocument
+from modex.provider_request import canonical_deepseek_model
 from modex.provider_request_prepare import prepare_request_body
 
 
 def main() raises:
     var basic = JsonDocument('{"model":"flash","input":"hello","stream":true,"stream_options":{"include_usage":true},"text":{"format":{"type":"json_object"}}}')
-    assert_equal(prepare_request_body(basic, '{"runtime":true}'), '{"model":"deepseek-v4-flash","stream":true,"messages":[{"role":"user","content":"hello"}]}')
+    assert_equal(prepare_request_body(basic, '{"runtime":true}'), '{"model":"deepseek-flash","stream":true,"messages":[{"role":"user","content":"hello"}]}')
     var combo_model = JsonDocument('{"model":"combo:flash,auto","input":"x"}')
-    assert_equal(prepare_request_body(combo_model, '{"runtime":true}'), '{"model":"deepseek-v4-flash","stream":false,"messages":[{"role":"user","content":"x"}]}')
+    assert_equal(prepare_request_body(combo_model, '{"runtime":true}'), '{"model":"deepseek-flash","stream":false,"messages":[{"role":"user","content":"x"}]}')
     var combo_pro = JsonDocument('{"model":"combo:pro,flash","input":"x"}')
     assert_equal(prepare_request_body(combo_pro, '{"runtime":true}'), '{"model":"deepseek-v4-pro","stream":false,"messages":[{"role":"user","content":"x"}]}')
     var combo_model_with_empty_first = JsonDocument('{"model":"combo: , custom-model","input":"x"}')
@@ -42,11 +43,15 @@ def main() raises:
     assert_equal(prepare_request_body(schema, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"hello"}],"response_format":{"type":"json_object"}}')
 
     var optional = JsonDocument('{"model":"flash","input":"x","temperature":0.2,"top_p":0.9,"max_output_tokens":11,"max_tokens":22,"max_completion_tokens":33,"logprobs":true,"top_logprobs":5,"stop":["a"],"stop_sequences":["b"],"stopSequences":["c"],"user_id":" user_1 ","reasoning_effort":"high","response_format":{"type":"json_schema"}}')
-    assert_equal(prepare_request_body(optional, '{"runtime":true}'), '{"model":"deepseek-v4-flash","stream":false,"messages":[{"role":"user","content":"x"}],"temperature":0.2,"top_p":0.9,"max_tokens":33,"logprobs":true,"top_logprobs":5,"stop":["a"],"user_id":"user_1","thinking":{"type":"enabled"},"reasoning_effort":"high","response_format":{"type":"json_object"}}')
+    assert_equal(prepare_request_body(optional, '{"runtime":true}'), '{"model":"deepseek-flash","stream":false,"messages":[{"role":"user","content":"x"}],"temperature":0.2,"top_p":0.9,"max_tokens":33,"logprobs":true,"top_logprobs":5,"stop":["a"],"user_id":"user_1","thinking":{"type":"enabled"},"reasoning_effort":"high","response_format":{"type":"json_object"}}')
     var choice_with_max_reasoning = JsonDocument('{"input":"x","tool_choice":"required","reasoning_effort":"max"}')
     assert_equal(prepare_request_body(choice_with_max_reasoning, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}],"thinking":{"type":"enabled"},"reasoning_effort":"max"}')
     var choice_with_high_reasoning = JsonDocument('{"input":"x","tool_choice":"required","reasoning_effort":"high"}')
     assert_equal(prepare_request_body(choice_with_high_reasoning, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}],"thinking":{"type":"enabled"},"reasoning_effort":"high"}')
+    var choice_with_low_reasoning = JsonDocument('{"input":"x","tool_choice":"required","reasoning_effort":"low"}')
+    assert_equal(prepare_request_body(choice_with_low_reasoning, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}],"thinking":{"type":"enabled"},"reasoning_effort":"low"}')
+    var nested_low_reasoning = JsonDocument('{"input":"x","tool_choice":"required","reasoning_effort":"high","reasoning":{"effort":"  LoW "}}')
+    assert_equal(prepare_request_body(nested_low_reasoning, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}],"thinking":{"type":"enabled"},"reasoning_effort":"low"}')
 
     var null_choice = JsonDocument('{"input":"x","tool_choice":null}')
     assert_equal(prepare_request_body(null_choice, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}]}')
@@ -56,6 +61,10 @@ def main() raises:
     assert_equal(prepare_request_body(text_format, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}]}')
     var text_modality = JsonDocument('{"input":"x","modalities":["text"]}')
     assert_equal(prepare_request_body(text_modality, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}]}')
+
+    assert_equal(canonical_deepseek_model("flash"), "deepseek-flash")
+    assert_equal(canonical_deepseek_model("deepseek-flash"), "deepseek-flash")
+    assert_equal(canonical_deepseek_model("deepseek-v4-flash"), "deepseek-v4-flash")
 
     var incompatible = JsonDocument('{"input":[{"type":"message","role":"user","content":[{"type":"input_image","image_url":"x"}]}]}')
     assert_equal(prepare_request_body(incompatible, '{"runtime":true}'), '{"runtime":true}')

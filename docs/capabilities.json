@@ -23,7 +23,9 @@
         "tests/test_provider_chat_reader.mojo",
         "tests/test_provider_request_messages.py",
         "tests/capture_stream_timeout_mismatch.py",
-        "tests/test_continuation_binding_04395.py"
+        "tests/test_continuation_binding_04395.py",
+        "tests/test_provider_catalog_04395.py",
+        "tests/test_runtime_binding_04395_slice.py"
       ],
       "evidence": [
         "docs/evidence/runtime-local-tests.txt",
@@ -108,7 +110,9 @@
       ],
       "assessment": "Guarded production Super integration is exercised on the host; complete gateway/provider, concurrent admission, security and non-host obligations remain blocked.",
       "notes": [
-        "Current DeepSeek relay tracks bounded in-memory response/session/turn ownership and validates credential/endpoint identity before the next POST; persistent and multi-account affinity remain open."
+        "Current DeepSeek relay tracks bounded in-memory response/session/turn ownership and validates credential/endpoint identity before the next POST; persistent and multi-account affinity remain open.",
+        "Six 0.439.5 real-process comparisons cover missing/null model fallback, explicit model selection and a non-simple request; numeric model fallback remained a mismatch at checkpoint a5b727d.",
+        "A real-process oversized accepted SSE event exposes an unbound response-ID gap: release 200/503 with one POST versus Modex 200/200 with two."
       ]
     },
     {

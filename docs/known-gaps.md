@@ -14,6 +14,11 @@ bindings, multi-account ownership, affinity release, oversized passthrough SSE
 identifier observation, account/profile lifecycle, credential finalization and
 login/quota concurrency remain incomplete. The 0.439.3–0.439.5 catalog and
 authentication additions are explicit incomplete obligations, not inferred passes.
+For an accepted SSE event slightly above 4 MiB containing a response ID, the
+0.439.5 release returns 200/503 for a follow-up with one upstream POST; Modex
+returns 200/200 and sends two. The 4 MiB observer limit remains in place until
+a bounded incremental parser can validate the entire event before binding.
+Reproduce with `tests/test_runtime_binding_04395_slice.py`.
 DeepSeek requests with a missing or null model now match the tested 0.439.5
 default; a numeric model still differs and other non-string values are
 unverified. The

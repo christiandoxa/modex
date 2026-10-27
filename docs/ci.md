@@ -47,5 +47,10 @@ matching executable checksum and mode. Symlinks anywhere under `src/` or
 on the canonical build directory; `make test` holds the lock through Python
 execution. Use separate build directories for independently running CI jobs.
 
-Workflow evidence is uploaded as run artifacts. Test sharding, verified
-immutable cross-job artifacts, and timing-based balancing remain unfinished.
+The strict Python runner can partition discovered tests by module with
+`--shard-index N --shard-count M` (zero-based). It validates test IDs and
+exactly-one ownership and rejects discovery errors, empty shards, invalid
+skips, and fixture/class-wide skips. These options do not launch parallel jobs
+or verify artifacts; shared
+state isolation, cross-job provenance, and timing-based balancing remain open.
+Workflow evidence is uploaded as run artifacts.

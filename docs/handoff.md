@@ -1,5 +1,29 @@
 # Current work: Prodex 0.439.5 and initial CI foundation
 
+The strict Python runner now supports deterministic module-level shards and
+checks exactly-one ownership of discovered test IDs. Discovery import errors,
+duplicate IDs, invalid shard arguments, empty selections, and forbidden skips
+fail. In a clean snapshot, 420 discovered tests partitioned 116/161/82/61
+across four shards; 31 focused runner/cache/census and oversized-SSE checks
+and both shards of a 20-test focused set passed. Fixture-level and class-level
+skips fail even when their reason resembles a platform exception. Actual
+parallel CI jobs, isolation, immutable
+artifact sharing and cross-job completeness verification remain open.
+
+The oversized accepted-SSE continuation mismatch is reproducible with
+`tests/test_runtime_binding_04395_slice.py`: 0.439.5 returns 200/503 with one
+upstream POST while Modex returns 200/200 with two. The 4 MiB observer limit
+is retained; increasing it would raise memory consumption without handling
+arbitrarily large events. A safe fix needs bounded incremental validation of
+the full SSE/JSON event before committing the identifier. The characterization
+test records a gap, not a parity PASS.
+
+The native cache checkpoint `ab2a8a734b1b9a47dfd190e64b6aeaee7e955a7e` was
+pushed and verified on main. Its Fast run `40585320926` passed 29 focused
+Python tests; exact-SHA Full run `40585335244` is in progress. Exact `a5b727d` passed Full run
+`40580282085` attempt 1, including 388 Python tests; `969c828` passed Fast run
+`40581282383` attempt 1. The latest fully validated SHA is `a5b727d`.
+
 The native unit build now compiles 79 programs with bounded parallelism and
 executes the same 48 native unit programs. Cached outputs require matching
 source/toolchain/target fingerprints, executable checksums and file modes.
@@ -13,9 +37,9 @@ and child-lock regressions also passed. Cross-job artifact provenance and CI
 test sharding remain open.
 
 Session checkpoint `969c828bf842f1b06295828609edc78de0cdbc41` is on main.
-Its Fast CI run `40581282383` is in progress; the earlier `a5b727d` Fast run
-was cancelled by the newer push. Its exact-SHA Full run `40580282085` remains
-in progress. The latest fully validated SHA remains `62b554c`.
+Its Fast CI run `40581282383` passed; the earlier `a5b727d` Fast run was
+cancelled by the newer push. Exact-SHA Full run `40580282085` passed for
+`a5b727d`.
 
 Session listing now accepts the same tested minimal resume metadata as the
 frozen release, including legacy missing-type records and the four ID
@@ -30,7 +54,7 @@ not established.
 
 DeepSeek checkpoint `a5b727debf707b1cf47a2f2f68c30c24d7f548fd` was pushed
 to main. Its Fast CI run `40580249376` was cancelled by the newer push; its
-exact-SHA Full CI run `40580282085` is in progress.
+exact-SHA Full CI run `40580282085` passed.
 
 The current DeepSeek request path preserves the resolved default model for
 simple requests with an absent or null model. Previously it sent

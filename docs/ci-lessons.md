@@ -45,6 +45,19 @@
 
 ## GitHub width-memory threshold
 
+- Follow-up: exact-SHA Full run
+  [40587024590](https://github.com/christiandoxa/modex/actions/runs/40587024590)
+  attempt 1 on `216d494` failed `test_auxiliary_rss_does_not_scale_with_non_ascii_input`.
+  Tifinagh normalized auxiliary growth was 1,048,576 bytes against 544,768
+  allowed. The uploaded `width-rss.json` records all samples; sanitized logs
+  and the artifact are preserved locally under `/tmp/modex-ci-failure-40587024590/`.
+  Five isolated local runs with the same pinned compiler and driver passed;
+  Tifinagh normalized growth ranged from -90,112 to 102,400 bytes. The result
+  is under investigation; a later pass does not resolve it.
+- Exact-SHA Fast run `40587184826` and Full run `40587202764` passed on
+  `5e92613dea9e18b1587b6a1d9cde07b8b052a0b2`, with 421 Python tests in Full.
+  This confirms that commit's run, not the cause of the earlier RSS failure.
+
 - Source: Full CI run `40566557490`, attempt 1, Linux job, on `8b15ace`.
   The width working-set test also failed: ASCII measured 1,572,864 bytes of
   normalized growth against 193,331 allowed bytes. The detailed width RSS

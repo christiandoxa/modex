@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.5 and initial CI foundation
 
+Exact `5e92613dea9e18b1587b6a1d9cde07b8b052a0b2` passed Fast run `40587184826`
+and Full run `40587202764` attempt 1; Full ran 421 Python tests. It is the
+latest fully validated SHA. The current main `d9cd6c9` passed Fast run
+`40588571260`; its exact-SHA Full run `40588594792` is in progress. The earlier
+Full run `40587024590` on `216d494` failed the Tifinagh RSS threshold; logs
+and measurement artifacts were retained and the cause is under investigation.
+The later pass does not by itself resolve that failure; see `docs/ci-lessons.md`.
+
 An unrelated `.prodex/state.json.backup` exposes another session-list gap:
 0.439.5 lists the synthetic session, while Modex fails closed with its state
 recovery error. Both leave the backup unchanged. The guard remains unchanged
@@ -8,12 +16,9 @@ clean-snapshot production build, import audit and characterization test pass;
 `tests/test_session_state_backup_04395.py` records the mismatch, not parity.
 
 Checkpoint `5e92613dea9e18b1587b6a1d9cde07b8b052a0b2` is verified on main.
-Fast CI run `40587184826` and exact-SHA Full CI run `40587202764` are in
-progress. The latest fully validated SHA is
-`ab2a8a734b1b9a47dfd190e64b6aeaee7e955a7e`: Fast run `40585320926` and Full
-run `40585335244` passed, with 403 Python tests in Full. Full run `40587024590`
-for `216d494` continues; its Fast run `40586989260` was cancelled by the
-newer push.
+Fast CI run `40587184826` and exact-SHA Full CI run `40587202764` passed.
+The preceding `ab2a8a7` also passed Fast and Full; the separate `216d494`
+Full run failed the RSS check described above.
 
 DeepSeek model selection now falls back to `deepseek-v4-pro` for the tested
 numeric, boolean, array, object, null and blank values, and resolves tested
@@ -28,7 +33,7 @@ Python tests passed.
 
 Runner checkpoint `216d4941bc46cc4ff469e043b7ae3219bd379b91` was pushed
 and verified on main. Its Fast CI run `40586989260` was cancelled by the
-newer push; exact-SHA Full run `40587024590` continues independently.
+newer push; exact-SHA Full run `40587024590` failed the RSS check above.
 
 The strict Python runner now supports deterministic module-level shards and
 checks exactly-one ownership of discovered test IDs. Discovery import errors,

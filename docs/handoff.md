@@ -26,8 +26,21 @@ barrier, avoiding the inherited `wait4` peak floor observed with a 96 MiB
 Python parent. A 4-byte-per-unit positive control exceeded the unchanged RSS
 bound for all five local patterns, including a high-parent-memory run. This
 demonstrates coarse sensitivity; hosted stability and smaller allocations are
-not yet verified. Full run `40591839335` on `663926f` also failed the earlier
-Tifinagh check, measuring 3,125,248 bytes against a 2,658,304-byte bound.
+not yet verified. Exact-SHA Full run `40597916331` on `610236a` failed the
+revised check: Tifinagh width growth was 3,342,336 bytes against a 2,392,064
+bound, and the 4-byte positive control did not exceed the sample-noise bound
+for mixed and Kirat patterns. The other 428 tests passed. The cause remains
+under investigation; the uploaded `width-rss.json` contains all samples.
+The width source uses scalar counters and string views on this path; seven
+local trials and allocator-setting probes did not reproduce input-scaled
+growth, but do not explain the hosted spike. A proposed same-process,
+two-barrier measurement with a transient allocation control remains untested.
+Full run `40591839335` on `663926f` also failed the earlier Tifinagh check,
+measuring 3,125,248 bytes against a 2,658,304-byte bound.
+
+Fast CI run `40597893098` passed on `610236a`. An initial Full dispatch
+`40597905649` failed before checkout because the source SHA was abbreviated;
+`40597916331` above used the full commit ID.
 
 The profile-list and CI artifact-manifest prototypes remain workspace-only
 work in progress. Prodex 0.439.2 normally creates persistent state and

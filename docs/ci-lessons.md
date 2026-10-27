@@ -45,6 +45,21 @@
 
 ## GitHub width-memory threshold
 
+- The revised `/proc` harness failed Full run
+  [40597916331](https://github.com/christiandoxa/modex/actions/runs/40597916331)
+  on `610236a`. Tifinagh width growth was 3,342,336 bytes against a 2,392,064
+  bound; the 4-byte-per-unit control was below the sample-noise bounds for
+  mixed and Kirat. All other 428 tests passed. Samples are preserved in the
+  uploaded `width-rss.json` and locally under
+  `/tmp/modex-ci-failure-40597916331/`. This does not establish the cause or
+  rule out a real production allocation.
+- Local probes show that VmHWM can include 2 MiB huge-page steps and file-backed
+  pages and can undercount brief allocations; the hosted artifact has no RSS
+  category data to identify the source. Source review and local allocator
+  variations found no input-scaled Tifinagh allocation, but did not reproduce
+  the hosted environment. A same-process baseline and post-operation sample,
+  with a touched transient allocation control and fault diagnostics, is a
+  possible next experiment; it has not yet been implemented or validated.
 - Exact-SHA Full run [40593599708](https://github.com/christiandoxa/modex/actions/runs/40593599708)
   on `b046394` also failed the earlier Tifinagh check, measuring 1,384,448
   bytes against 507,904 allowed; the other 427 tests passed.

@@ -1,5 +1,27 @@
 # CI lessons
 
+## GitHub Ubuntu sandbox setup
+
+- Source: `d4a50b3c1822d189aba94d53ce4db24beefa75bd`. Fast CI run
+  [40564880852](https://github.com/christiandoxa/modex/actions/runs/40564880852),
+  attempt 1, job `122403376018`, and Full CI run
+  [40564952057](https://github.com/christiandoxa/modex/actions/runs/40564952057),
+  attempt 1, job `122403639164`, failed during bootstrap. Both reported
+  `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted`; sanitized
+  evidence was uploaded by each run.
+- Classification: runner sandbox setup. Ubuntu 24.04 mediates unprivileged
+  user namespaces through AppArmor; extracting the Bubblewrap binary did not
+  install or load its restricted profile.
+- Correction: before checkout, both workflows install Ubuntu's Bubblewrap and
+  AppArmor profiles and load `bwrap-userns-restrict`, following the
+  [documented Ubuntu sandbox setup](https://github.com/openai/codex-security/blob/main/github-action/README.md#ubuntu-sandbox-setup).
+  The profile retains child capability restrictions and the mandatory
+  filesystem and network namespace probes remain in place.
+- Regression: `tests/test_ci_sandbox_setup.py` checks setup order, literal
+  commands, read-only permissions and the namespace probe. Actionlint and
+  the focused test pass locally. Verification on the corrective GitHub commit
+  is pending; the failed runs are not passes.
+
 ## Initial 0.439.5 local full run
 
 - Source: uncommitted integration work based on `0eacd2cb8da155a4bf418186e1bcdac5f27d4138`;

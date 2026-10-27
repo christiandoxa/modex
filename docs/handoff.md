@@ -43,9 +43,13 @@ other provider catalogs, SDK, storage/security and the six release-target
 qualifications remain open. The incomplete inventory now contains 76
 contracts and 456 platform obligations, with no complete contract PASS.
 
-This integration began on clean main at `0eacd2cb8da155a4bf418186e1bcdac5f27d4138`.
-The initial checkpoint and its GitHub run identity will be recorded after push;
-prior validated evidence applies only to its original source and reference.
+The first checkpoint `d4a50b3c1822d189aba94d53ce4db24beefa75bd` was normally
+pushed and verified on main. Its GitHub Fast run `40564880852` attempt 1 and
+manually dispatched Full run `40564952057` attempt 1 both failed their Linux
+bootstrap because Ubuntu's Bubblewrap AppArmor profile was not loaded. The
+focused workflow correction and regression are recorded in `docs/ci-lessons.md`;
+the corrective SHA still needs its own GitHub results. An independent local full
+run of exact `d4a50b3` is in progress; no 0.439.5 SHA is fully validated yet.
 
 # Checkpoint 15: bodyless SSE wire and bounded buffered response paths
 

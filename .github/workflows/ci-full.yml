@@ -37,6 +37,11 @@ jobs:
             exit 1
           fi
           printf 'sha=%s\n' "$source_sha" >> "$GITHUB_OUTPUT"
+      - name: Set up the Ubuntu sandbox
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes bubblewrap apparmor-profiles
+          sudo apparmor_parser -r /usr/share/apparmor/extra-profiles/bwrap-userns-restrict
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: ${{ steps.source.outputs.sha }}

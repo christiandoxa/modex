@@ -1,9 +1,21 @@
 # Current work: Prodex 0.439.5 and initial CI foundation
 
+Session query comparisons expose three Unicode lowercase mismatches: the
+release expands dotted capital I and applies contextual final sigma, while
+Mojo's simple lowercase mapping does neither. Ordinary query, duplicate-key,
+and later-metadata controls match. `tests/test_session_query_04395.py` records
+the differences; a full Unicode-casing implementation remains open. Four
+focused query/state tests and the production import audit passed in a clean
+snapshot. No partial casing fix was connected.
+
+Exact `d9cd6c990912407137bdc64285fb974243f59f64` passed Fast run `40588571260`
+and Full run `40588594792` attempt 1; Full ran 422 Python tests. It is the
+latest fully validated SHA. Current main `7519342` passed Fast run
+`40590594088`; its exact-SHA Full run `40590628143` is in progress. The
+separate `216d494` RSS failure remains under investigation.
+
 Exact `5e92613dea9e18b1587b6a1d9cde07b8b052a0b2` passed Fast run `40587184826`
-and Full run `40587202764` attempt 1; Full ran 421 Python tests. It is the
-latest fully validated SHA. The current main `d9cd6c9` passed Fast run
-`40588571260`; its exact-SHA Full run `40588594792` is in progress. The earlier
+and Full run `40587202764` attempt 1; Full ran 421 Python tests. The earlier
 Full run `40587024590` on `216d494` failed the Tifinagh RSS threshold; logs
 and measurement artifacts were retained and the cause is under investigation.
 The later pass does not by itself resolve that failure; see `docs/ci-lessons.md`.

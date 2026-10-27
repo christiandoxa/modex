@@ -31,6 +31,9 @@ session. Broader session behavior and security remain unqualified.
 With an unrelated `.prodex/state.json.backup`, the release lists sessions and
 Modex fails closed. `tests/test_session_state_backup_04395.py` captures both
 outcomes while preserving the backup; state locking and recovery remain open.
+Session query matching also differs for Unicode lowercase expansion and final
+sigma; `tests/test_session_query_04395.py` captures the release and Modex
+outputs alongside matching ordinary-query and metadata controls.
 
 Checkpoint 15 matches the official 0.439.2 bodyless SSE chunked header
 and final raw wire chunk `0\r\n\r\n` on 204/304, and corrects the buffered

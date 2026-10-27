@@ -56,7 +56,8 @@
   is under investigation; a later pass does not resolve it.
 - Exact-SHA Fast run `40587184826` and Full run `40587202764` passed on
   `5e92613dea9e18b1587b6a1d9cde07b8b052a0b2`, with 421 Python tests in Full.
-  This confirms that commit's run, not the cause of the earlier RSS failure.
+  Exact-SHA Full run `40588594792` also passed on `d9cd6c9` with 422 Python
+  tests. These passes confirm their runs, not the cause of the RSS failure.
 
 - Source: Full CI run `40566557490`, attempt 1, Linux job, on `8b15ace`.
   The width working-set test also failed: ASCII measured 1,572,864 bytes of

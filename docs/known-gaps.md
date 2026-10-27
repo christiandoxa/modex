@@ -6,10 +6,13 @@ Complete parity remains unfinished against officially released Prodex 0.439.5 at
 qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. Historical 0.439.0–0.439.2 observations retain their provenance.
 
-The 0.439.5 two-turn continuation probe still returns 200/503 with one upstream
-POST for Prodex and 200/200 with two POSTs for Modex. Binding acquisition and
-identity validation, account/profile lifecycle, credential finalization and
-login/quota concurrency remain unimplemented. The 0.439.3–0.439.5 catalog and
+The 0.439.5 two-turn continuation probe now returns 200/503 with one upstream
+POST for both products. The native relay records accepted in-memory ownership
+and compares provider/credential/endpoint identity before another dispatch;
+unknown identifiers and failed upstream requests remain eligible. Persistent
+bindings, multi-account ownership, affinity release, oversized passthrough SSE
+identifier observation, account/profile lifecycle, credential finalization and
+login/quota concurrency remain incomplete. The 0.439.3–0.439.5 catalog and
 authentication additions are explicit incomplete obligations, not inferred passes.
 
 Checkpoint 15 matches the official 0.439.2 bodyless SSE chunked header

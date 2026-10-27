@@ -17,6 +17,8 @@ from .provider_conversations import ProviderConversationStore
 from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
 from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
+from .provider_sse_wire import ProviderSSEFramer
+from .runtime_binding import RuntimeBindings
 from .text import trim_text, unsigned_value
 from .uuid7 import new_uuid7
 
@@ -140,7 +142,29 @@ def _response_headers(headers: List[Tuple[String, String]]) -> List[Tuple[String
     return output^
 
 
-def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: LoopbackHTTPStream) raises:
+def _binding_response_id(body: String) -> String:
+    try:
+        var doc = JsonDocument(body)
+        var node = doc.get(doc.get(doc.root, "response"), "id")
+        if node < 0 or doc.nodes[node].kind != JSON_STRING:
+            node = doc.get(doc.root, "id")
+        if node < 0 or doc.nodes[node].kind != JSON_STRING:
+            node = doc.get(doc.root, "response_id")
+        if node >= 0 and doc.nodes[node].kind == JSON_STRING:
+            return trim_text(doc.string(node))
+        node = doc.get(doc.root, "responseId")
+        if node >= 0 and doc.nodes[node].kind == JSON_STRING:
+            return trim_text(doc.string(node))
+        return trim_text(doc.string(doc.get(doc.get(doc.root, "message"), "id")))
+    except:
+        return ""
+
+
+def _binding_event(mut bindings: RuntimeBindings, data: List[String]):
+    bindings.remember(0, _binding_response_id(String("\n").join(data)))
+
+
+def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: LoopbackHTTPStream, mut bindings: RuntimeBindings) raises:
     var streaming = 200 <= stream.status < 400 and stream.status != 204 and stream.status != 304 and deepseek_event_stream(stream.headers)
     if not streaming and (stream.status < 200 or stream.status >= 300):
         stream.max_body_bytes = DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES
@@ -164,16 +188,41 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
             # >=400 was already an upstream send-path failure in the release.
             _reply(connection, 502, "provider response could not be processed" if 200 <= stream.status < 400 else "upstream request failed")
             return
+        if 200 <= stream.status < 400:
+            try:
+                bindings.remember(0, _binding_response_id(String(from_utf8=Span(body))))
+            except:
+                pass
         # TinyHTTP's buffered path retains Content-Length: 0 for bodyless replies.
         var sse = deepseek_event_stream(stream.headers)
         connection.respond(stream.status, response_headers, body, 30000, not sse, sse and (stream.status == 204 or stream.status == 304))
         return
     try:
         connection.start_stream(stream.status, response_headers, 30000)
+        var observer = ProviderSSEFramer()
+        var observing = True
         while not stream.done:
             var chunk = stream.read_chunk()
             if chunk:
+                if observing:
+                    try:
+                        var offset = 0
+                        while offset < len(chunk):
+                            var observed = observer.consume(Span(chunk)[offset:])
+                            offset += observed[0]
+                            if observed[1]:
+                                _binding_event(bindings, observed[1].value())
+                    except:
+                        # shortcut: oversized SSE events are not indexed; add incremental ID extraction for them.
+                        observing = False
                 connection.write_chunk(chunk, 30000)
+        if observing:
+            try:
+                var final_event = observer.finish()
+                if final_event:
+                    _binding_event(bindings, final_event.value())
+            except:
+                pass
         connection.finish_stream(30000)
     except:
         stream.close()
@@ -205,6 +254,17 @@ def _request_session(headers: List[Tuple[String, String]], doc: JsonDocument) ->
                 pass
             break
     return _session(doc)
+
+
+def _request_turn_state(headers: List[Tuple[String, String]]) -> String:
+    for name, value in headers:
+        if name.lower() == "x-codex-turn-state":
+            return trim_text(value)
+    return ""
+
+
+def _binding_error(mut connection: LoopbackHTTPConnection) raises:
+    connection.respond(503, [("content-type", "application/json"), ("cache-control", "no-store"), ("x-content-type-options", "nosniff")], _bytes('{"error":{"code":"bound_continuation_unavailable","message":"bound continuation provider is unavailable"}}'), 30000)
 
 
 def _namespace(headers: List[Tuple[String, String]], doc: JsonDocument) -> String:
@@ -248,8 +308,26 @@ def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Opt
     return "[]"
 
 
-def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, connect_ms: UInt64, idle_ms: UInt64, allow_local_file_access: Bool) raises:
+def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, mut bindings: RuntimeBindings, connect_ms: UInt64, idle_ms: UInt64, allow_local_file_access: Bool) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
+    if request.method != "POST" or (target != "/v1/chat/completions" and target != "/v1/responses"):
+        _route_error(connection)
+        return
+    var source = String()
+    var doc = JsonDocument("{}")
+    try:
+        source = String(from_utf8=Span(request.body))
+        doc = JsonDocument(source)
+    except:
+        if target == "/v1/responses":
+            _reply(connection, 502, "upstream request failed")
+            return
+    var previous = trim_text(doc.string(doc.get(doc.root, "previous_response_id")))
+    var turn = _request_turn_state(request.headers)
+    var session = _request_session(request.headers, doc)
+    if not _continuation_identity_valid(request.headers, doc) or not bindings.permits(previous, turn, session):
+        _binding_error(connection)
+        return
     if request.method == "POST" and target == "/v1/chat/completions":
         var stream: LoopbackHTTPStream
         try:
@@ -267,21 +345,14 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         except:
             _reply(connection, 502, "upstream request failed")
             return
-        _passthrough_response(connection, stream)
+        if 200 <= stream.status < 400:
+            bindings.remember_request(previous, turn, session)
+        _passthrough_response(connection, stream, bindings)
         return
-    if request.method != "POST" or target != "/v1/responses":
-        _route_error(connection)
-        return
-    var source: String
     var history: String
     var namespace = Optional[String]()
     var previous_found: Bool
     try:
-        source = String(from_utf8=Span(request.body))
-        var doc = JsonDocument(source)
-        if not _continuation_identity_valid(request.headers, doc):
-            connection.respond(503, [("content-type", "application/json"), ("cache-control", "no-store"), ("x-content-type-options", "nosniff")], _bytes('{"error":{"code":"bound_continuation_unavailable","message":"bound continuation provider is unavailable"}}'), 30000)
-            return
         if not allow_local_file_access:
             namespace = Optional[String](_namespace(request.headers, doc))
         previous_found = conversations.contains(doc.string(doc.get(doc.root, "previous_response_id")), namespace)
@@ -306,9 +377,11 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     except:
         _reply(connection, 502, "upstream request failed")
         return
+    if 200 <= exchange.status() < 400:
+        bindings.remember_request(previous, turn, session)
     if not exchange.successful():
         # Frozen dispatch keeps non-2xx quota headers raw, without Codex projection.
-        _passthrough_response(connection, exchange.http)
+        _passthrough_response(connection, exchange.http, bindings)
         return
     if not deepseek_event_stream(exchange.headers()):
         var body: String
@@ -318,6 +391,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             _reply(connection, 502, "provider response could not be processed")
             return
         var response = JsonDocument(body)
+        bindings.remember(0, _binding_response_id(body))
         if response.string(response.get(response.root, "status")) != "failed" and trim_text(response.string(response.get(response.root, "id"))):
             conversations.insert(response.string(response.get(response.root, "id")), exchange.conversation_messages, namespace)
         var response_headers = List[Tuple[String, String]]()
@@ -332,6 +406,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         connection.start_stream(exchange.status(), response_headers, 30000)
         while not exchange.done:
             var events = exchange.read_events()
+            bindings.remember(0, exchange.reader.state.response_id)
             for event in events:
                 if event.startswith("event: response.completed\r\n") and trim_text(exchange.reader.state.response_id):
                     conversations.insert(exchange.reader.state.response_id, _stream_history(exchange), namespace)
@@ -349,6 +424,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
     var idle_ms = _timeout("PRODEX_RUNTIME_PROXY_STREAM_IDLE_TIMEOUT_MS", 300000)
     var request_id = UInt64(0)
     var conversations = ProviderConversationStore()
+    var bindings = RuntimeBindings(key, upstream_url)
     var parent_bytes = List[UInt8](length=1, fill=0)
     if parent_fd >= 0:
         var flags = fcntl(parent_fd, F_GETFL, 0)
@@ -371,7 +447,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         request_id = request_id + 1 if request_id < UInt64.MAX else request_id
         try:
             var request = connection.read_request(120000)
-            _serve(connection, request, upstream[0], upstream[1], key, request_id, conversations, connect_ms, idle_ms, allow_local_file_access)
+            _serve(connection, request, upstream[0], upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, allow_local_file_access)
         except error:
             var message = String(error)
             var too_large = "oversized" in message or "exceeds wire limit" in message

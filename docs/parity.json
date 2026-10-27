@@ -67,6 +67,10 @@
     {
       "date": "2026-10-28",
       "change": "Target 0.439.5; preserve historical traces and expand the still-incomplete inventory with five model/authentication obligations. No historical evidence is promoted to current-target parity."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Connected bounded in-memory DeepSeek ownership for accepted response/session/turn identifiers; oracle-backed controls preserve unknown and failed requests. Full affinity, persistence and release remain incomplete."
     }
   ],
   "contracts": [
@@ -2153,10 +2157,12 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "Responses input boundary validation rejects malformed or oversized hard-binding components. Binding acquisition, conflict resolution, identity lifetime and affinity release are not implemented; contract status is unchanged.",
+      "implementation": "The native DeepSeek relay validates accepted in-memory response, session and turn ownership against selected provider identity before dispatch. Credential and endpoint are hashed, and owned mismatches send no upstream POST. Persistent bindings, account pools and affinity release remain unfinished.",
       "tests": [
         "tests/test_gateway_cli.mojo",
-        "tests/test_deepseek_continuation.py"
+        "tests/test_deepseek_continuation.py",
+        "tests/test_continuation_binding_04395.py",
+        "tests/test_gateway_cli.mojo"
       ],
       "evidence": [
         "docs/evidence/checkpoint4-reference.json",
@@ -2164,9 +2170,9 @@
         "docs/evidence/checkpoint4-dependencies.txt",
         "docs/evidence/baseline-0.439.2/reference-verification.json"
       ],
-      "status": "NOT_STARTED",
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -2176,7 +2182,8 @@
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
         "Full hard-binding ownership remains unimplemented. The connected input guard does not qualify session affinity or production recovery.",
-        "0.439.2 quota-handoff production integration is BLOCKED: Modex has a single DeepSeek credential, no real account pool or WebSocket route, and unconnected native recovery policy. Synthetic account checks establish policy only."
+        "0.439.2 quota-handoff production integration is BLOCKED: Modex has a single DeepSeek credential, no real account pool or WebSocket route, and unconnected native recovery policy. Synthetic account checks establish policy only.",
+        "In-memory single-provider ownership is a partial slice only: persistence, multi-account identity, opaque-delta recovery, release and large passthrough SSE observation remain unverified."
       ],
       "target_obligations": [
         "Known five-hour OR weekly exhaustion excludes owners and candidates even when positive quota evidence is optional. Missing five-hour data on weekly-only Prolite is not exhaustion; unknown quota and expired holds retain their source-defined treatment.",
@@ -2704,7 +2711,8 @@
         "tests/test_deepseek_continuation.py",
         "tests/test_gateway_cli.mojo",
         "tests/capture_stream_timeout_mismatch.py",
-        "tests/test_loopback_http_stream.py"
+        "tests/test_loopback_http_stream.py",
+        "tests/test_continuation_binding_04395.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
@@ -2785,7 +2793,8 @@
         "Buffered >=400 errors share the pinned 4 MiB cap. Non-2xx streamed redirects retain an additional 4 MiB Modex cap; larger redirect streams and complete resource/cancellation parity remain unqualified.",
         "The identifier guard does not implement hard binding acquisition/conflict resolution or model/credential/session affinity. A synthetic two-turn buffered continuation still differs from the pinned release; see checkpoint4-reference.json. Serialized conversation memory is charged using frozen decoded-value weights; physical retained-byte accounting remains unqualified.",
         "Checkpoints 5/9/10/12 qualify UTF-8/six-ASCII path encoding, ordinary backslash separators and whole-dot segments only within admitted numeric-loopback HTTP bases. Broader URL schemes/authorities, transport, redirects, security/resource and non-host behavior remain unqualified.",
-        "Checkpoint 9 rejects the arbitrary aggregate 16 MiB stream-state cap. Response state can still grow with provider output. Idle failure before first output and exact postcommit timeout text differ from live 0.439.1; see checkpoint9-timeout-mismatch.json. Narrow source-derived timeout mapping alone is unproven compatibility."
+        "Checkpoint 9 rejects the arbitrary aggregate 16 MiB stream-state cap. Response state can still grow with provider output. Idle failure before first output and exact postcommit timeout text differ from live 0.439.1; see checkpoint9-timeout-mismatch.json. Narrow source-derived timeout mapping alone is unproven compatibility.",
+        "The 0.439.5 single-process synthetic two-turn ownership mismatch is resolved by credential/endpoint identity checks; persistent and multi-account ownership remain unimplemented."
       ]
     },
     {

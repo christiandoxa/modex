@@ -69,7 +69,8 @@
     "src/modex/provider_rate_limits.mojo",
     "src/modex/provider_passthrough.mojo",
     "src/modex/super_launch.mojo",
-    "src/modex/runtime_recovery.mojo"
+    "src/modex/runtime_recovery.mojo",
+    "src/modex/runtime_binding.mojo"
   ],
   "production_imports": [
     "std.collections",
@@ -100,7 +101,8 @@
     "std.sys._libc.dup",
     "std.sys._libc.dup2",
     "std.os.process.Pipe",
-    "std.io.RawFileDescriptor"
+    "std.io.RawFileDescriptor",
+    "std.sys._libc.kill"
   ],
   "unconnected_foundations": {
     "modules": [
@@ -415,5 +417,16 @@
       "docs/evidence/checkpoint14-dependencies.txt"
     ]
   },
-  "baseline_evidence_policy": "Descriptions and evidence from earlier checkpoints retain their original version and are not automatically 0.439.5 behavioral verification."
+  "baseline_evidence_policy": "Descriptions and evidence from earlier checkpoints retain their original version and are not automatically 0.439.5 behavioral verification.",
+  "continuation_binding_foundation": {
+    "implementation": "In-process DeepSeek relay hashes credential and endpoint identity, remembers accepted response/session/turn bindings with bounded in-memory maps, and validates them before subsequent dispatch.",
+    "new_application_dependencies": [],
+    "new_native_bindings": [],
+    "evidence": [
+      "tests/test_continuation_binding_04395.py",
+      "tests/test_gateway_cli.mojo"
+    ],
+    "limitations": "Persistence, multi-profile/account identity, full release/recovery semantics, and oversized passthrough SSE indexing remain unfinished."
+  },
+  "process_shutdown_foundation": "The official std.sys._libc.kill wrapper signals only the owned direct Codex child on relay failure; wait is bounded and escalates through the existing direct-child kill/reap path. Descendant process-tree termination remains unverified."
 }

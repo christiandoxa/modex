@@ -411,29 +411,26 @@ class LocalRewriteTests(unittest.TestCase):
         self.assertIn(b"event: response.completed", body)
         self.assertEqual(len(server.records), 1)
 
-    def test_empty_cached_history_is_distinct_from_an_unknown_response(self):
+    def test_bound_empty_history_is_rejected_before_an_unknown_followup(self):
         empty = {"id": "chat-empty", "created": 1, "model": "deepseek-chat", "choices": []}
         answer = {"id": "chat-next", "created": 1, "model": "deepseek-chat", "choices": [{"message": {"content": "next"}}]}
-        responses = [
-            {"status": 200, "content_type": "application/json", "body": json_bytes(value)}
-            for value in (empty, answer, answer)
-        ]
+        responses = [{"status": 200, "content_type": "application/json", "body": json_bytes(value)}
+                     for value in (empty, answer)]
         with serving(responses) as server:
             with RunningLocalRewrite(server.server_port) as relay:
                 first = {"model": "deepseek-chat", "input": []}
                 follow = {"model": "deepseek-chat", "input": "next", "previous_response_id": "chat-empty", "stream": True, "text": {"format": {"type": "json_object"}}}
                 self.assertEqual(post_relay(relay.address, json_bytes(first), headers={"session_id": "a"})[0], 200)
-                self.assertEqual(post_relay(relay.address, json_bytes(follow), headers={"session_id": "a"})[0], 200)
-                self.assertEqual(post_relay(relay.address, json_bytes(follow), headers={"session_id": "b"})[0], 200)
-        self.assertEqual(len(server.records), 3)
-        found = json.loads(server.records[1]["body"])
-        missing = json.loads(server.records[2]["body"])
-        self.assertEqual(found["response_format"], {"type": "json_object"})
-        self.assertEqual(found["stream_options"], {"include_usage": True})
-        self.assertNotIn("response_format", missing)
-        self.assertNotIn("stream_options", missing)
+                self.assertEqual(post_relay(relay.address, json_bytes(follow), headers={"session_id": "a"})[0], 503)
+                self.assertEqual(post_relay(relay.address, json_bytes(follow), headers={"session_id": "b"})[0], 503)
+                unknown = {**follow, "previous_response_id": "unknown"}
+                self.assertEqual(post_relay(relay.address, json_bytes(unknown), headers={"session_id": "b"})[0], 200)
+        self.assertEqual(len(server.records), 2)
+        fresh = json.loads(server.records[1]["body"])
+        self.assertNotIn("response_format", fresh)
+        self.assertNotIn("stream_options", fresh)
 
-    def test_buffered_and_streamed_continuations_are_session_scoped(self):
+    def test_buffered_and_streamed_response_ownership_precedes_history(self):
         buffered = self.buffered_cases["text_tool_usage_metadata"]
         streamed = self.stream_cases["function_namespace_dot"]
         follow = self.buffered_cases["blank_provider_metadata"]
@@ -469,11 +466,9 @@ class LocalRewriteTests(unittest.TestCase):
                     first_request["stream"] = True
                 responses = [
                     mode["response"],
-                    *[{
-                        "status": follow_upstream["status"],
-                        "content_type": follow_upstream["content_type"],
-                        "body": follow_upstream["body"].encode("utf-8"),
-                    } for _ in range(2)],
+                    {"status": follow_upstream["status"],
+                     "content_type": follow_upstream["content_type"],
+                     "body": follow_upstream["body"].encode("utf-8")},
                 ]
                 with serving(responses) as server:
                     with RunningLocalRewrite(server.server_port) as relay:
@@ -513,27 +508,19 @@ class LocalRewriteTests(unittest.TestCase):
                             ],
                         }
                         status, _, _ = post_relay(relay.address, json_bytes(follow_request))
-                        self.assertEqual(status, 200)
+                        self.assertEqual(status, 503)
                         isolated_request = {
                             "model": "deepseek-chat",
                             "previous_response_id": first_response_id,
                             "session_id": "scope-b", "input": "fresh namespace",
                         }
                         status, _, _ = post_relay(relay.address, json_bytes(isolated_request))
-                        self.assertEqual(status, 200)
-                self.assertEqual(len(server.records), 3)
+                        self.assertEqual(status, 503)
+                        fresh_request = {"model": "deepseek-chat", "session_id": "scope-b", "input": "fresh namespace"}
+                        self.assertEqual(post_relay(relay.address, json_bytes(fresh_request))[0], 200)
+                self.assertEqual(len(server.records), 2)
                 self.assertEqual(server.records[0]["body"], mode["expected_request"])
-                continued = json.loads(server.records[1]["body"])
-                assistant_calls = [
-                    call
-                    for message in continued["messages"]
-                    if message.get("role") == "assistant"
-                    for call in message.get("tool_calls", [])
-                ]
-                self.assertIn(mode["call_id"], [call["id"] for call in assistant_calls])
-                tool_outputs = [message for message in continued["messages"] if message.get("role") == "tool"]
-                self.assertTrue(any(item.get("content") == "synthetic tool result" for item in tool_outputs))
-                isolated = json.loads(server.records[2]["body"])
+                isolated = json.loads(server.records[1]["body"])
                 self.assertEqual(isolated["messages"], [{"role": "user", "content": "fresh namespace"}])
 
     def test_invalid_and_oversized_requests_never_reach_upstream(self):

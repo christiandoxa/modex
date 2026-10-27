@@ -22,7 +22,8 @@
         "tests/test_deepseek_continuation.py",
         "tests/test_provider_chat_reader.mojo",
         "tests/test_provider_request_messages.py",
-        "tests/capture_stream_timeout_mismatch.py"
+        "tests/capture_stream_timeout_mismatch.py",
+        "tests/test_continuation_binding_04395.py"
       ],
       "evidence": [
         "docs/evidence/runtime-local-tests.txt",
@@ -105,7 +106,10 @@
         "First-event idle response status and exact postcommit timeout text remain live mismatches; worker 9d05840 is excluded. The rejected partial 16 MiB cap does not establish retained-memory bounds.",
         "Bodyless SSE Transfer-Encoding remains a current-release mismatch: release emits chunked while native omits it. Full HTTP/WS/transport and all six release qualifications remain unfinished."
       ],
-      "assessment": "Guarded production Super integration is exercised on the host; complete gateway/provider, concurrent admission, security and non-host obligations remain blocked."
+      "assessment": "Guarded production Super integration is exercised on the host; complete gateway/provider, concurrent admission, security and non-host obligations remain blocked.",
+      "notes": [
+        "Current DeepSeek relay tracks bounded in-memory response/session/turn ownership and validates credential/endpoint identity before the next POST; persistent and multi-account affinity remain open."
+      ]
     },
     {
       "id": "OS-PUBLIC",

@@ -34,10 +34,15 @@ workflow/dependency checks, and 13 focused Python tests. The corrected full
 exact-commit validation and GitHub run are still required.
 Build reuse, sharding, artifact provenance across jobs, and timing remain open.
 
-The fresh two-turn continuation still differs: Prodex returns 200/503 and
-performs one upstream POST; Modex returns 200/200 and performs two. Its
-binding acquisition, persistence and identity checks remain unfinished; the
-characterization test records the mismatch without promoting it to a pass.
+The fresh two-turn continuation now matches: both return 200/503 and perform
+one upstream POST. The relay records accepted response, session and turn
+ownership with hashed credential/endpoint identities and validates the selected
+identity before dispatch. Fresh controls cover unknown IDs, changed session or
+turn state, failed upstream responses, accepted invalid bodies, and both routes.
+Bindings remain in memory only; multi-account resolution, persistence, affinity
+release, large passthrough SSE identifier observation, and recovery remain open.
+The before/after production-path observations and artifact identity are in
+`docs/evidence/continuation-0.439.5/verification.json`.
 Profile/login finalization, account-replacement and login/quota concurrency,
 other provider catalogs, SDK, storage/security and the six release-target
 qualifications remain open. The incomplete inventory now contains 76

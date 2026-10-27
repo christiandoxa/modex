@@ -97,8 +97,7 @@ class DeepSeekContinuationTests(unittest.TestCase):
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("oracle does not match pinned Prodex 0.439.5")
 
-    def test_characterize_bound_continuation_ownership_gap(self):
-        # This records a known mismatch; it does not qualify the contract as parity.
+    def test_bound_continuation_ownership_matches_release(self):
         turns = [{"model": "deepseek-chat", "input": "first synthetic turn"},
                  {"model": "deepseek-chat", "input": "second synthetic turn", "use_previous": True}]
         replies = [buffered_reply(0, created=42), buffered_reply(1, created=43)]
@@ -110,8 +109,12 @@ class DeepSeekContinuationTests(unittest.TestCase):
             "error": {"code": "bound_continuation_unavailable",
                       "message": "bound continuation provider is unavailable"},
         })
-        self.assertEqual([row["status"] for row in modex], [200, 200])
-        self.assertEqual(len(modex_posts), 2)
+        self.assertEqual([row["status"] for row in modex], [200, 503])
+        self.assertEqual(len(modex_posts), 1)
+        self.assertEqual(json.loads(bytes.fromhex(modex[1]["body"])), {
+            "error": {"code": "bound_continuation_unavailable",
+                      "message": "bound continuation provider is unavailable"},
+        })
 
     def test_malformed_quota_reset_is_not_projected(self):
         reply = buffered_reply(created=42)

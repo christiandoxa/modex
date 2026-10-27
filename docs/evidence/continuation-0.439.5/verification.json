@@ -1,0 +1,24 @@
+{
+  "reference_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+  "oracle_sha256": "96cef1bfea9cfd90b769d1d7854e88400beed151ad05c229facdd6d52a5d59c5",
+  "native_artifact_sha256": "07352568f93562ff0c98c1955091cf0bd9ae9b581efb74645bc0c5e53b952cf0",
+  "prechange_commit": "c5cde1cd19bc2f0072b2f1f1507f429d61bf4593",
+  "production_entrypoint": "modex super --provider deepseek ... exec with isolated synthetic Codex and loopback provider",
+  "before": "7 of 11 differential scenarios failed on Modex; all oracle scenarios passed.",
+  "after": "11 ownership/control scenarios pass for both actual binaries, plus the original two-turn check; accepted bound continuations produce 503 and no additional POST, while unknown/changed identities and failed upstream responses retain dispatch.",
+  "test": "tests/test_continuation_binding_04395.py",
+  "other_checks": [
+    "13 local relay tests",
+    "7 continuation and redirect/stream comparisons",
+    "focused DeepSeek model and reasoning wire comparisons",
+    "native gateway ownership and SHA identity assertions",
+    "production build using Mojo 1.2.0 (2016d0cd)"
+  ],
+  "limits": [
+    "In-memory single-process ownership only; no persistent profile or multi-account owner, release or recovery.",
+    "Oversized passthrough SSE events are forwarded but not indexed after the bounded observer stops.",
+    "Canonical endpoint and external persisted identities require broader source-equivalent integration."
+  ],
+  "synthetic_credentials_only": true,
+  "paid_provider_traffic": false
+}

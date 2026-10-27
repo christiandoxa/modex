@@ -1,13 +1,32 @@
 from std.collections import List
 from std.testing import assert_equal, assert_true
 
-from modex.runtime_local_rewrite import _continuation_identity_valid, _history, _namespace, _response_headers, local_rewrite_upstream
+from modex.runtime_local_rewrite import _binding_response_id, _continuation_identity_valid, _history, _namespace, _response_headers, local_rewrite_upstream
 from modex.gateway_cli import gateway_help, parse_gateway_arguments
 from modex.json import JsonDocument, quote_json
 from modex.provider_conversations import ProviderConversationStore
+from modex.runtime_binding import RuntimeBindings
 
 
 def main() raises:
+    var bindings = RuntimeBindings("synthetic-provider-key", "http://127.0.0.1:1234/v1")
+    assert_true(bindings.accepted.credential.find("synthetic-provider-key") < 0)
+    assert_true(bindings.accepted.endpoint.find("127.0.0.1") < 0)
+    assert_true(bindings.permits("unknown", "", ""))
+    bindings.remember_request("response-a", "turn-a", "session-a")
+    assert_true(not bindings.permits("response-a", "", ""))
+    assert_true(not bindings.permits("", "turn-a", ""))
+    assert_true(not bindings.permits("", "", "session-a"))
+    assert_true(bindings.permits("response-b", "turn-b", "session-b"))
+    bindings.selected = bindings.accepted.copy()
+    assert_true(bindings.permits("response-a", "turn-a", "session-a"))
+    bindings.remember(0, "\x00invalid")
+    assert_equal(len(bindings.rows), 3)
+    assert_equal(_binding_response_id('{"response":{"id":" nested "},"id":"top"}'), "nested")
+    assert_equal(_binding_response_id('{"response":{"id":" "},"id":"top"}'), "")
+    assert_equal(_binding_response_id('{"response_id":"fallback"}'), "fallback")
+    assert_equal(_binding_response_id('{"message":{"id":"message"}}'), "message")
+    assert_equal(_binding_response_id("invalid"), "")
     var args: List[String] = ["modex", "gateway", "--provider", " DeepSeek ", "--url=http://127.0.0.1:10000/v1", "--api-key=synthetic", "--no-presidio"]
     var options = parse_gateway_arguments(args, "modex")
     assert_equal(options.listen, "127.0.0.1:0")
@@ -78,6 +97,10 @@ def main() raises:
     store.insert("unscoped", '[{"tool_calls":[{"id":"call-synthetic"}]}]')
     assert_equal(_history(typed_fallback, store, None), store.history("unscoped").value())
     assert_equal(_history(typed_fallback, store, "b"), "[]")
+    store.insert("empty", "[]", "a")
+    assert_true(store.contains("empty", "a"))
+    assert_equal(store.history("empty", "a").value(), "[]")
+    assert_true(not store.contains("empty", "b"))
     var response_headers = _response_headers([("x-codex-turn-state", "synthetic\tmetadata"), ("x-utf8", "é"), ("x-lossy", "\ufffd"), ("x-empty", ""), ("connection", "X-Synthetic-Hop"), ("X-Synthetic-Hop", "private")])
     assert_equal(len(response_headers), 2)
     assert_equal(response_headers[0], (String("x-codex-turn-state"), String("synthetic\tmetadata")))

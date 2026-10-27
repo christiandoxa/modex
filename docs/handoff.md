@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.5 and initial CI foundation
 
+Single-object `.json` session fallback now trims lines like the frozen
+0.439.5 release when the whole file is not valid JSON. JSONL first-record
+handling stays unchanged. Oracle controls cover Unicode and ASCII whitespace,
+internal string content, malformed lines, BOMs, and multiline fallback. A
+clean-snapshot production build, native session check, import audit and 25
+focused Python tests passed, including compressed-session cases. This does
+not complete session or storage parity.
+
 Session query comparisons expose three Unicode lowercase mismatches: the
 release expands dotted capital I and applies contextual final sigma, while
 Mojo's simple lowercase mapping does neither. Ordinary query, duplicate-key,

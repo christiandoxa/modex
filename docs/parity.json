@@ -83,6 +83,10 @@
     {
       "date": "2026-10-28",
       "change": "Selected non-string or blank DeepSeek model values and two combo aliases now match 0.439.5 process comparisons in simple and non-simple requests. Broader provider selection and fallback remain incomplete; no contract or platform status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Session .json fallback line trimming now matches selected 0.439.5 whitespace and malformed-input comparisons while preserving JSONL behavior; no session contract or platform status is promoted."
     }
   ],
   "contracts": [
@@ -894,7 +898,8 @@
         "tests/test_session_cli.mojo",
         "tests/test_session_04395_slice.py",
         "tests/test_session_state_backup_04395.py",
-        "tests/test_session_query_04395.py"
+        "tests/test_session_query_04395.py",
+        "tests/test_session_json_whitespace_04395.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",

@@ -250,7 +250,7 @@ def read_session(path: String) raises -> Optional[SessionReport]:
                     report.updated_at = format_local_epoch(report.sort_key)
                 return report^
             for line in text.split("\n"):
-                if not apply_line(report, String(line), started):
+                if not apply_line(report, trim_text(line), started):
                     return None
         else:
             var pending = List[UInt8]()

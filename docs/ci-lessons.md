@@ -45,6 +45,24 @@
 
 ## GitHub width-memory threshold
 
+- Exact-SHA Full run [40593599708](https://github.com/christiandoxa/modex/actions/runs/40593599708)
+  on `b046394` also failed the earlier Tifinagh check, measuring 1,384,448
+  bytes against 507,904 allowed; the other 427 tests passed.
+- Full run [40591839335](https://github.com/christiandoxa/modex/actions/runs/40591839335)
+  on `663926f` failed the same Tifinagh check: normalized growth was
+  3,125,248 bytes against 2,658,304 allowed. A later local probe showed that
+  Linux `wait4` can report a child's inherited Python-parent peak after exec.
+  A 96 MiB touched parent gave `/bin/sleep` a 104.5 MiB `wait4` peak while
+  its post-exec `/proc` VmHWM was 400 KiB. This mechanism can mask input-only
+  growth and distort the subtraction; it has not been proven to explain every
+  hosted sample.
+- The revised harness samples `/proc/<pid>/status` VmHWM after confirming the
+  driver executable and holds the driver until the sample is taken. A
+  4-byte-per-unit positive control exceeds the existing bound for all five
+  patterns locally, both normally and with a 96 MiB touched parent. The bound
+  is unchanged. The control demonstrates coarse sensitivity, not detection
+  of a 1% allocation; hosted stability remains to be verified.
+
 - Follow-up: exact-SHA Full run
   [40587024590](https://github.com/christiandoxa/modex/actions/runs/40587024590)
   attempt 1 on `216d494` failed `test_auxiliary_rss_does_not_scale_with_non_ascii_input`.

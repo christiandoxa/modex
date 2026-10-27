@@ -1,4 +1,51 @@
-# Current work: Prodex 0.439.5 and initial CI foundation
+# Current work: baseline reconciliation and CI
+
+The instructions supplied for this session designate official Prodex 0.439.2
+at `72b77478a5198fc5da6b4d2253137f9cdbf43be9` as the frozen reference.
+The checked-in `AGENTS.md`, `docs/baseline.json`, `docs/parity.json`, and
+existing CI still designate 0.439.5. Reconcile those files and their 0.439.5
+fixtures before claiming a complete 0.439.2 baseline; prior 0.439.5 results do
+not establish 0.439.2 parity. All six release targets remain in the incomplete
+denominator. One concrete mismatch is `src/modex/super_hooks.mojo`, which
+sends client version 0.439.5 while the 0.439.2 fixture records 0.439.2.
+Changing the active metadata alone would silently retarget shared-oracle tests;
+preserve and explicitly provision the 0.439.5 checks when reconciling it.
+
+Selected untyped DeepSeek role values now reach the mapper, which converts
+unsupported and non-string roles to `user`; explicit `type: message` role
+validation remains strict. Synthetic production loopback comparisons use the
+checksum-verified 0.439.2 release and its pinned source, with 20 cases across
+simple and non-simple request shapes. A clean snapshot passed the production
+build, four native request checks, two captured-request tests, the dependency
+audit, and the 0.439.2 and existing 0.439.5 loopback regressions. CI acquires
+the 0.439.2 oracle and source explicitly. This covers only the tested role
+cases, not broader request or provider parity.
+
+The width-memory harness now reads post-exec Linux `/proc` VmHWM with a child
+barrier, avoiding the inherited `wait4` peak floor observed with a 96 MiB
+Python parent. A 4-byte-per-unit positive control exceeded the unchanged RSS
+bound for all five local patterns, including a high-parent-memory run. This
+demonstrates coarse sensitivity; hosted stability and smaller allocations are
+not yet verified. Full run `40591839335` on `663926f` also failed the earlier
+Tifinagh check, measuring 3,125,248 bytes against a 2,658,304-byte bound.
+
+The profile-list and CI artifact-manifest prototypes remain workspace-only
+work in progress. Prodex 0.439.2 normally creates persistent state and
+lifecycle lock files and uses exclusive `flock`; the current read-only
+profile prototype rejects that normal storage and cannot safely coordinate
+with the baseline using the available Mojo standard-library locking APIs.
+Its existing `src/main.mojo` prototype connection is not included in the
+reviewed production change. Cross-job artifact provenance and sharding remain
+incomplete.
+
+Checkpoint `b0463949357c14620083e2558e3f94920c00ca0b` is verified on main;
+Fast run `40593578860` passed, but exact-SHA Full run `40593599708` failed
+the previous Tifinagh RSS check: 1,384,448 bytes against 507,904 allowed.
+The latest SHA with both Fast and Full passing is
+`75193427dc06541047195f976c48a404eba3deec`: Fast run `40590594088` and
+Full run `40590628143` passed, with 422 Python tests in Full. Full run
+`40593339273` also passed for `ee2d672`, whose Fast run was cancelled by the
+newer push. The revised harness needs its own hosted validation.
 
 DeepSeek accepts untyped `role: tool` input items like 0.439.5. The simple
 adapter preserves or defaults a supplied tool-call ID; the non-simple path
@@ -25,10 +72,8 @@ focused query/state tests and the production import audit passed in a clean
 snapshot. No partial casing fix was connected.
 
 Exact `d9cd6c990912407137bdc64285fb974243f59f64` passed Fast run `40588571260`
-and Full run `40588594792` attempt 1; Full ran 422 Python tests. It is the
-latest fully validated SHA. Current main `7519342` passed Fast run
-`40590594088`; its exact-SHA Full run `40590628143` is in progress. The
-separate `216d494` RSS failure remains under investigation.
+and Full run `40588594792` attempt 1; Full ran 422 Python tests. Its
+successor `7519342` also passed Fast and Full, as recorded above.
 
 Exact `5e92613dea9e18b1587b6a1d9cde07b8b052a0b2` passed Fast run `40587184826`
 and Full run `40587202764` attempt 1; Full ran 421 Python tests. The earlier

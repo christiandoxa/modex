@@ -5,11 +5,9 @@ import os
 from pathlib import Path
 import platform
 import select
-import signal
 import shutil
 import statistics
 import subprocess
-import sys
 import tempfile
 import time
 import unittest
@@ -23,6 +21,7 @@ ARTIFACTS = Path(os.environ.get("MODEX_WIDTH_MEMORY_ARTIFACTS", ROOT / "test-res
 DRIVER = Path(os.environ.get("MODEX_WIDTH_MEMORY_DRIVER", ROOT / "build/tests/width_memory_driver"))
 MIB = 1024 * 1024
 SESSION_LINE_LIMIT = 64 * MIB
+LINEAR_CONTROL_BYTES_PER_UNIT = 4
 MIXED = "A界e\u0301🙂"
 
 
@@ -38,67 +37,76 @@ def _input_bytes(mode, count):
     return 8 + count * 4
 
 
-def _measure_width_process(mode, count, input_only=False):
-    # A fresh harness prevents fork's inherited RSS floor from masking driver growth.
-    operation = "input-only" if input_only else "width"
-    result = subprocess.run([sys.executable, __file__, "--measure-width", mode, str(count), operation],
-                            capture_output=True, text=True, timeout=130, check=True)
-    return json.loads(result.stdout)
+def _process_peak_rss_bytes(pid, expected_executable):
+    try:
+        executable = Path(f"/proc/{pid}/exe").resolve()
+        if executable != expected_executable:
+            return None
+        for line in Path(f"/proc/{pid}/status").read_text().splitlines():
+            if line.startswith("VmHWM:"):
+                return int(line.split()[1]) * 1024
+    except FileNotFoundError:
+        pass
+    return None
 
 
-def _wait4_width_process(mode, count, input_only=False):
-    """Return output and wait4 peak RSS for one isolated Mojo process."""
-    read_fd, write_fd = os.pipe()
-    pid = os.fork()
-    if pid == 0:
-        try:
-            os.close(read_fd)
-            os.dup2(write_fd, 1)
-            os.close(write_fd)
-            arguments = [str(DRIVER), mode, str(count)]
-            if input_only:
-                arguments.append("input-only")
-            os.execv(str(DRIVER), arguments)
-        except BaseException as error:
-            try:
-                os.write(2, f"width driver exec failed: {error}\n".encode())
-            finally:
-                os._exit(127)
-
-    os.close(write_fd)
+def _measure_process_peak_rss(mode, count, operation="width"):
+    """Sample a direct-exec Mojo process's kernel peak RSS, excluding the Python parent."""
+    driver = DRIVER.resolve()
+    arguments = [str(driver), mode, str(count), operation, "hold"]
+    process = subprocess.Popen(arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
     deadline = time.monotonic() + 120
-    status = None
-    usage = None
-    eof = False
+    peak_rss = 0
+    expected_lines = 2 if operation == "linear-control" else 1
     output = bytearray()
     try:
-        while status is None or not eof:
-            if status is None:
-                waited, status, usage = os.wait4(pid, os.WNOHANG)
-                if waited == 0:
-                    status = None
+        while output.count(b"\n") < expected_lines:
+            peak = _process_peak_rss_bytes(process.pid, driver)
+            if peak is not None:
+                peak_rss = max(peak_rss, peak)
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                if status is None:
-                    try:
-                        os.kill(pid, signal.SIGKILL)
-                    except ProcessLookupError:
-                        pass
-                    _, status, usage = os.wait4(pid, 0)
                 raise TimeoutError(f"width driver exceeded 120 seconds: {mode}/{count}")
-            ready, _, _ = select.select([read_fd], [], [], min(0.05, remaining))
+            ready, _, _ = select.select([process.stdout], [], [], min(0.01, remaining))
             if ready:
-                chunk = os.read(read_fd, 4096)
-                if chunk:
-                    output.extend(chunk)
-                else:
-                    eof = True
+                chunk = os.read(process.stdout.fileno(), 4096)
+                if not chunk:
+                    break
+                output.extend(chunk)
+        peak = _process_peak_rss_bytes(process.pid, driver)
+        if peak is not None:
+            peak_rss = max(peak_rss, peak)
+        if output.count(b"\n") < expected_lines:
+            rest, error = process.communicate(timeout=max(1, deadline - time.monotonic()))
+            output.extend(rest)
+            if process.returncode != 0:
+                raise AssertionError(f"width driver failed for {mode}/{count}: {output!r} {error!r}")
+            raise AssertionError(f"width driver exited before complete output: {mode}/{count}")
+        if peak_rss == 0:
+            raise AssertionError(f"width driver exited before VmHWM could be sampled: {mode}/{count}")
+        process.stdin.write(b"\n")
+        process.stdin.flush()
+        rest, error = process.communicate(timeout=max(1, deadline - time.monotonic()))
+        output.extend(rest)
     finally:
-        os.close(read_fd)
+        if process.poll() is None:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
+            process.communicate()
+    if process.returncode != 0:
+        raise AssertionError(f"width driver failed for {mode}/{count}: {output!r} {error!r}")
     output = output.decode("ascii").strip()
-    if os.waitstatus_to_exitcode(status) != 0:
-        raise AssertionError(f"width driver failed for {mode}/{count}: {output!r}")
-    return int(output), usage.ru_maxrss * 1024
+    if operation == "linear-control":
+        lines = output.splitlines()
+        if len(lines) != 2:
+            raise AssertionError(f"linear control returned unexpected output: {output!r}")
+        output = [int(lines[0]), int(lines[1])]
+    else:
+        output = int(output)
+    return output, peak_rss
 
 
 def _record_host():
@@ -123,7 +131,9 @@ def _record_host():
         "page_size_bytes": os.sysconf("SC_PAGE_SIZE"),
         "mem_available_bytes_at_start": available,
         "cgroup_memory_limit_bytes": cgroup,
-        "ru_maxrss_unit": "KiB (Linux wait4)",
+        "peak_rss_source": "/proc/<pid>/status VmHWM after direct exec",
+        "vmhwm_unit": "KiB, converted to bytes in samples",
+        "peak_rss_sample_unit": "bytes",
     }
 
 
@@ -138,7 +148,12 @@ class WidthMemoryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if platform.system() != "Linux":
-            raise unittest.SkipTest("wait4 peak RSS measurement is Linux-only")
+            raise unittest.SkipTest("/proc VmHWM peak RSS measurement is Linux-only")
+        proc_status = Path("/proc/self/status")
+        if not proc_status.is_file():
+            raise unittest.SkipTest("Linux /proc status files are unavailable")
+        if not any(line.startswith("VmHWM:") for line in proc_status.read_text().splitlines()):
+            raise unittest.SkipTest("Linux /proc status files do not expose VmHWM")
         if not DRIVER.is_file():
             raise AssertionError("Build test driver at build/tests/width_memory_driver")
         ARTIFACTS.mkdir(parents=True, exist_ok=True)
@@ -158,23 +173,29 @@ class WidthMemoryTests(unittest.TestCase):
             for count in (small, large):
                 # Compare identical input construction so allocator pages and runtime setup cancel.
                 operations = {}
-                for input_only in (True, False):
+                for operation in ("input-only", "width", "linear-control"):
                     samples = []
                     outputs = []
                     for _ in range(3):
-                        result, peak = _measure_width_process(mode, count, input_only)
+                        result, peak = _measure_process_peak_rss(mode, count, operation)
                         outputs.append(result)
                         samples.append(peak)
-                    expected = _input_bytes(mode, count) if input_only else (
+                    expected_width = (
                         count if mode in ("ascii", "kirat") else count * 6 if mode == "mixed"
                         else (count + 2) // 2 if mode == "tifinagh" else 2
                     )
+                    if operation == "input-only":
+                        expected = _input_bytes(mode, count)
+                    elif operation == "linear-control":
+                        expected = [expected_width, count * LINEAR_CONTROL_BYTES_PER_UNIT]
+                    else:
+                        expected = expected_width
                     if outputs != [expected] * 3:
                         failures.append(
-                            f"{mode} {'input-only' if input_only else 'text_width'}: "
+                            f"{mode} {operation}: "
                             f"got {outputs}, expected {expected} for {count}"
                         )
-                    operations["input_only" if input_only else "width"] = {
+                    operations[operation.replace("-", "_")] = {
                         "peak_rss_samples_bytes": samples,
                         "median_peak_rss_bytes": statistics.median(samples),
                         "sample_spread_bytes": max(samples) - min(samples),
@@ -196,6 +217,16 @@ class WidthMemoryTests(unittest.TestCase):
                     f"{mode} text_width auxiliary RSS grew {auxiliary_growth} bytes over "
                     f"{tolerance}; width growth={width_growth}, input construction growth="
                     f"{input_only_growth}, points={points}"
+                )
+            control_growth = (points[1]["linear_control"]["median_peak_rss_bytes"]
+                              - points[0]["linear_control"]["median_peak_rss_bytes"])
+            control_auxiliary_growth = control_growth - input_only_growth
+            points[1]["linear_control_normalized_growth_bytes"] = control_auxiliary_growth
+            points[1]["linear_control_required_growth_bytes"] = tolerance
+            if control_auxiliary_growth <= tolerance:
+                failures.append(
+                    f"{mode} linear-control was not detected by the production RSS bound: "
+                    f"growth={control_auxiliary_growth}, required>{tolerance}, points={points}"
                 )
             measurements["patterns"][mode] = points
         (ARTIFACTS / "width-rss.json").write_text(json.dumps(measurements, indent=2) + "\n")
@@ -257,7 +288,4 @@ class SessionTextMemoryParityTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 5 and sys.argv[1] == "--measure-width":
-        print(json.dumps(_wait4_width_process(sys.argv[2], int(sys.argv[3]), sys.argv[4] == "input-only")))
-    else:
-        unittest.main()
+    unittest.main()

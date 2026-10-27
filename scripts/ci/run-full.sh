@@ -66,6 +66,13 @@ echo 'reference oracle: PASS' | tee -a "$EVIDENCE_DIR/summary.txt"
 export PRODEX_ORACLE="$(cat "$EVIDENCE_DIR/oracle-path.txt")"
 rm -- "$EVIDENCE_DIR/oracle-path.txt"
 export PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE"
+if ! "$PYTHON" scripts/ci/reference.py oracle 0.439.2 >"$EVIDENCE_DIR/oracle-path-04392.txt" 2>"$EVIDENCE_DIR/reference-04392.log"; then
+    cat "$EVIDENCE_DIR/reference-04392.log" >&2
+    exit 1
+fi
+cat "$EVIDENCE_DIR/reference-04392.log"
+export PRODEX_ORACLE_04392="$(cat "$EVIDENCE_DIR/oracle-path-04392.txt")"
+rm -- "$EVIDENCE_DIR/oracle-path-04392.txt"
 "$PYTHON" scripts/ci/reference.py identity active >"$EVIDENCE_DIR/reference.json"
 export MODEX_REFERENCE_VERSION="$("$PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag"])' "$EVIDENCE_DIR/reference.json")"
 if ! "$PYTHON" scripts/ci/reference.py source active >"$EVIDENCE_DIR/reference-source-active.txt" 2>"$EVIDENCE_DIR/reference-source-active.log"; then

@@ -11,6 +11,7 @@ PYTHON="$(realpath -e -- "$(command -v "$PYTHON")")"
 PYTHON_MINOR="$("$PYTHON" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
 TOOLCHAIN_DIR="${MODEX_TOOLCHAIN_DIR:-${HOME}/.cache/modex/toolchains/mojo-1.2.0/linux-x86_64-py${PYTHON_MINOR}}"
 EVIDENCE_DIR="${CI_EVIDENCE_DIR:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/modex-ci-evidence}"
+MODEX_REFERENCE_CACHE="${MODEX_REFERENCE_CACHE:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/modex-reference-cache}"
 mkdir -p -- "$EVIDENCE_DIR"
 cd -- "$ROOT"
 TOOLCHAIN_DIR="$(realpath -m -- "$TOOLCHAIN_DIR")"
@@ -31,6 +32,7 @@ BWRAP="$(scripts/ci/ensure-bwrap.sh)"
 export BWRAP
 export PATH="$(dirname -- "$BWRAP"):$PATH"
 export MODEX_TOOLCHAIN_DIR="$TOOLCHAIN_DIR"
+export MODEX_REFERENCE_CACHE
 export PYTHON
 run_logged bootstrap scripts/ci/bootstrap.sh --install-mojo
 export MOJO="$TOOLCHAIN_DIR/bin/mojo"
@@ -47,10 +49,22 @@ echo 'reference: PASS' | tee -a "$EVIDENCE_DIR/summary.txt"
 export PRODEX_ORACLE="$(cat "$EVIDENCE_DIR/oracle-path.txt")"
 rm -- "$EVIDENCE_DIR/oracle-path.txt"
 export PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE"
+if ! "$PYTHON" scripts/ci/reference.py oracle 0.439.2 >"$EVIDENCE_DIR/oracle-path-04392.txt" 2>"$EVIDENCE_DIR/reference-04392.log"; then
+    cat "$EVIDENCE_DIR/reference-04392.log" >&2
+    exit 1
+fi
+if ! "$PYTHON" scripts/ci/reference.py source 0.439.2 >"$EVIDENCE_DIR/reference-source-04392.txt" 2>"$EVIDENCE_DIR/reference-source-04392.log"; then
+    cat "$EVIDENCE_DIR/reference-source-04392.log" >&2
+    exit 1
+fi
+cat "$EVIDENCE_DIR/reference-04392.log" "$EVIDENCE_DIR/reference-source-04392.log"
+export PRODEX_ORACLE_04392="$(cat "$EVIDENCE_DIR/oracle-path-04392.txt")"
+export MODEX_REFERENCE_04392_DIR="$(cat "$EVIDENCE_DIR/reference-source-04392.txt")"
+rm -- "$EVIDENCE_DIR/oracle-path-04392.txt" "$EVIDENCE_DIR/reference-source-04392.txt"
 "$PYTHON" scripts/ci/reference.py identity active >"$EVIDENCE_DIR/reference.json"
 printf 'source_sha=%s\nmojo=%s\npython=%s\nreference_oracle_sha256=%s\n' \
     "$(git rev-parse HEAD)" "$($MOJO --version)" "$($PYTHON --version 2>&1)" \
     "$(sha256sum "$PRODEX_ORACLE" | cut -d ' ' -f1)" >"$EVIDENCE_DIR/identity.txt"
 run_logged focused-build make build unit
-run_logged focused-python "$PYTHON" scripts/ci/run-unittest.py test_cli.py test_ci_private_tmp_super_04395.py test_ci_python_path_resolution.py test_ci_shard_runner.py test_ci_test_census.py test_ci_unit_build_cache.py test_provider_catalog_04395.py test_provider_nonstring_model_04395.py test_provider_request_tool_role_04395.py test_provider_requests.py test_runtime.py test_runtime_binding_04395_slice.py test_session_04395_slice.py
+run_logged focused-python "$PYTHON" scripts/ci/run-unittest.py test_cli.py test_ci_private_tmp_super_04395.py test_ci_python_path_resolution.py test_ci_shard_runner.py test_ci_test_census.py test_ci_unit_build_cache.py test_provider_catalog_04395.py test_provider_nonstring_model_04395.py test_provider_request_tool_role_04395.py test_provider_request_untyped_role_04392.py test_provider_requests.py test_runtime.py test_runtime_binding_04395_slice.py test_session_04395_slice.py
 echo 'Fast CI checks passed.' | tee -a "$EVIDENCE_DIR/summary.txt"

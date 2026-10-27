@@ -131,13 +131,11 @@ def first_string(document: JsonDocument, paths: List[String]) -> String:
 def starts_session(document: JsonDocument) -> Bool:
     if document.nodes[document.root].kind != JSON_OBJECT:
         return False
-    if document.string(document.get(document.root, "type")) != "session_meta":
-        return False
-    for path in ["timestamp", "payload.id", "payload.timestamp", "payload.cwd", "payload.originator", "payload.cli_version"]:
-        var index = member_path(document, path)
-        if index < 0 or document.nodes[index].kind != JSON_STRING:
+    var type_index = document.get(document.root, "type")
+    if type_index >= 0 and document.nodes[type_index].kind == JSON_STRING:
+        if document.string(type_index) != "session_meta":
             return False
-    return True
+    return first_string(document, ["payload.id", "payload.session_id", "id", "session_id"]) != ""
 
 
 def session_paths(root: String, mut paths: List[String]) raises:

@@ -20,6 +20,9 @@ unverified. The
 read-only profile-list prototype cannot safely interoperate with the release's
 persistent `flock` files using the available Mojo standard-library APIs, so
 it is not connected to production.
+The tested session metadata admission cases now match the frozen release.
+For a non-object first JSONL record, the release panics while Modex omits the
+session. Broader session behavior and security remain unqualified.
 
 Checkpoint 15 matches the official 0.439.2 bodyless SSE chunked header
 and final raw wire chunk `0\r\n\r\n` on 204/304, and corrects the buffered

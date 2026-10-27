@@ -1,5 +1,20 @@
 # Current work: Prodex 0.439.5 and initial CI foundation
 
+Session listing now accepts the same tested minimal resume metadata as the
+frozen release, including legacy missing-type records and the four ID
+fallbacks. It still rejects unrelated string record types and blank IDs. The
+pinned source predicate is `crates/prodex-session-store/src/session_selector.rs`
+and its metadata extraction is `mojo/prodex_core/session_report.mojo`.
+An independent clean snapshot passed the production build, two native session
+checks, import audit, and 36 focused Python tests, including 0.439.5 oracle
+comparisons. A non-object first record remains an explicit mismatch: the
+release panics and Modex safely omits the session. Broader session parity is
+not established.
+
+DeepSeek checkpoint `a5b727debf707b1cf47a2f2f68c30c24d7f548fd` was pushed
+to main. Its Fast CI run `40580249376` and exact-SHA Full CI run `40580282085`
+are in progress. The latest fully validated SHA remains `62b554c` below.
+
 The current DeepSeek request path preserves the resolved default model for
 simple requests with an absent or null model. Previously it sent
 `deepseek-chat` for an absent model and rejected null; the frozen release sends

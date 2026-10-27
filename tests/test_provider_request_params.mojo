@@ -31,6 +31,10 @@ def main() raises:
     reject("[]", 0, "DeepSeek request body must be a JSON object")
     reject('{"stream":null}', 0, "DeepSeek stream must be a boolean")
     reject('{"model":"  "}', 0, "DeepSeek model must not be empty")
+    var null_model = JsonDocument('{"model":null}')
+    validate_request_shape(null_model)
+    for model in [String("7"), "false"]:
+        reject('{"model":' + model + "}", 0, "DeepSeek model must be a string")
     reject('{"reasoning":{"summary":true,"effort":null}}', 1, "DeepSeek reasoning.summary is not supported by this Responses adapter")
     reject('{"reasoning":{"effort":null},"reasoning_effort":"high"}', 1, "DeepSeek reasoning.effort must be a string")
     reject('{"response_format":null,"text":{"format":{"type":"json"}}}', 2, "DeepSeek response_format must include a type")
@@ -47,7 +51,7 @@ def main() raises:
     reject('{"top_logprobs":1}', 4, "DeepSeek top_logprobs requires logprobs=true")
     reject('{"stream_options":{}}', 4, "DeepSeek stream_options requires stream=true")
     reject('{"text":{"verbosity":"low"}}', 4, "DeepSeek text.verbosity is not supported by this Responses adapter")
-    for key, label in [(String("model"), String("string")), ("stream", "boolean"), ("instructions", "string"), ("previous_response_id", "string")]:
+    for key, label in [(String("stream"), String("boolean")), ("instructions", "string"), ("previous_response_id", "string")]:
         reject('{"' + key + '":null}', 0, "DeepSeek " + key + " must be a " + label)
     reject('{"suffix":null,"prompt":null}', 0, "DeepSeek FIM suffix completion requires the beta /completions endpoint, which is outside this Responses adapter")
     reject('{"prompt":null}', 0, "DeepSeek prompt completions require the beta /completions endpoint, which is outside this Responses adapter")

@@ -14,6 +14,12 @@ bindings, multi-account ownership, affinity release, oversized passthrough SSE
 identifier observation, account/profile lifecycle, credential finalization and
 login/quota concurrency remain incomplete. The 0.439.3–0.439.5 catalog and
 authentication additions are explicit incomplete obligations, not inferred passes.
+DeepSeek requests with a missing or null model now match the tested 0.439.5
+default; a numeric model still differs and other non-string values are
+unverified. The
+read-only profile-list prototype cannot safely interoperate with the release's
+persistent `flock` files using the available Mojo standard-library APIs, so
+it is not connected to production.
 
 Checkpoint 15 matches the official 0.439.2 bodyless SSE chunked header
 and final raw wire chunk `0\r\n\r\n` on 204/304, and corrects the buffered

@@ -6,12 +6,12 @@ from .json import JSON_ARRAY, JSON_BOOL, JSON_NULL, JSON_NUMBER, JSON_OBJECT, JS
 from .text import trim_text
 
 
-def prepare_request_body(doc: JsonDocument, runtime_body: String, history: String = "[]", previous_response_found: Bool = False) raises -> String:
+def prepare_request_body(doc: JsonDocument, runtime_body: String, history: String = "[]", previous_response_found: Bool = False, default_model: String = "deepseek-chat") raises -> String:
     if doc.nodes[doc.root].kind != JSON_OBJECT: return runtime_body
     var prior = JsonDocument(history)
     if prior.nodes[prior.root].kind != JSON_ARRAY: return runtime_body
     if not _simple_request(doc, prior, previous_response_found) or not _core_conforms(doc): return runtime_body
-    return _native_body(doc)
+    return _native_body(doc, default_model)
 
 
 def _simple_request(doc: JsonDocument, history: JsonDocument, previous_response_found: Bool) -> Bool:
@@ -242,9 +242,9 @@ def _has_string_id(doc: JsonDocument, item: Int) -> Bool:
     return False
 
 
-def _native_body(doc: JsonDocument) raises -> String:
+def _native_body(doc: JsonDocument, default_model: String) raises -> String:
     var model = doc.get(doc.root, "model")
-    var model_text = "deepseek-chat" if model < 0 or doc.nodes[model].kind != JSON_STRING else _native_model(doc.nodes[model].text)
+    var model_text = default_model if model < 0 or doc.nodes[model].kind != JSON_STRING else _native_model(doc.nodes[model].text)
     var out = '{"model":' + quote_json(model_text) + ',"stream":' + ("true" if _is_true(doc, doc.get(doc.root, "stream")) else "false") + ',"messages":' + _native_messages(doc)
     var tools = doc.get(doc.root, "tools")
     if tools >= 0:

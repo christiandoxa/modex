@@ -1,5 +1,34 @@
 # Current work: Prodex 0.439.5 and initial CI foundation
 
+The current DeepSeek request path preserves the resolved default model for
+simple requests with an absent or null model. Previously it sent
+`deepseek-chat` for an absent model and rejected null; the frozen release sends
+`deepseek-v4-pro` for both. Six real-process synthetic loopback comparisons
+cover three launch models, null and absent request fields, an explicit model,
+and a non-simple request. A numeric model is a separate observed mismatch:
+Prodex dispatches the default while Modex rejects it before the upstream POST.
+Other non-string model values remain unverified.
+The source trace is `crates/prodex-app/src/runtime_launch/proxy_startup/`
+`local_rewrite_deepseek_send.rs` and `mojo/prodex_core/deepseek.mojo` in the
+verified 0.439.5 reference. The regression is
+`tests/test_provider_catalog_04395.py`.
+In a clean snapshot, the production build, three native request checks, import
+audit and 23 focused Python tests passed. The first native gate exposed an
+outdated model-null rejection assertion; that assertion was corrected while
+keeping numeric and boolean rejection coverage.
+
+Exact commit `62b554cb93c477655581ea93d4f2d78a8b042fc4` passed GitHub Fast CI
+run `40570794170` and Full CI run `40570838793`, both attempt 1. Full CI ran
+387 Python tests and the capability probes. This engineering validation does
+not establish complete parity. The newer DeepSeek change requires its own
+exact-commit CI validation.
+
+The separate profile-list prototype remains uncommitted: normal Prodex use
+leaves persistent lock files, while Mojo's available standard-library APIs do
+not provide compatible cross-process `flock` exclusion. Observing Linux
+`/proc/locks` cannot prevent a race. Credential-writing profile prototypes also
+remain unconnected because private atomic writes and journaling are unresolved.
+
 The active reference is official Prodex 0.439.5 at
 `ac9aad08f25d6dc8cda96463ce2045b40f35f510`. Its separate Linux binary,
 manifests, checksums, clean source checkout, and signed GitHub/Sigstore
@@ -31,7 +60,7 @@ blocked the oracle before provider dispatch, and six historical session cases
 depended on path wrapping. Focused fixes pass; see `docs/ci-lessons.md`.
 The corrected local fast entrypoint passes production build, native units,
 workflow/dependency checks, and 13 focused Python tests. The corrected full
-exact-commit validation and GitHub run are still required.
+validation subsequently passed on `62b554c`, as recorded above.
 Build reuse, sharding, artifact provenance across jobs, and timing remain open.
 
 The fresh two-turn continuation now matches: both return 200/503 and perform
@@ -54,11 +83,11 @@ manually dispatched Full run `40564952057` attempt 1 both failed their Linux
 bootstrap because Ubuntu's Bubblewrap AppArmor profile was not loaded. The
 workflow correction `8b15ace3593f6fc808ce23cbf2bbf9f32f6370fc` was pushed;
 its GitHub Fast run `40566529600` attempt 1 passed and exact-SHA Full run
-`40566557490` is in progress. An independent local full run of exact `d4a50b3`
+`40566557490` failed on the private-umask fixture and width-memory measurement.
+An independent local full run of exact `d4a50b3`
 passed native checks and 383 of 384 Python tests; one fixture did not account
-for the private umask. Its focused correction passes, with exact-commit full
-validation still required. See `docs/ci-lessons.md`; no 0.439.5 SHA is fully
-validated yet.
+for the private umask. Both issues were corrected and verified in the
+`62b554c` full run above. See `docs/ci-lessons.md`.
 
 # Checkpoint 15: bodyless SSE wire and bounded buffered response paths
 

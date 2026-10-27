@@ -36,11 +36,11 @@ def main() raises:
         assert_equal(canonical_deepseek_model(model), expected)
 
     check("{}", '{"body":{"model":"deepseek-v4-pro","stream":false,"messages":[{"role":"user","content":""}]},"messages":[{"role":"user","content":""}],"response_metadata":null}')
-    check('{"input":"hello"}', '{"body":{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
+    check('{"input":"hello"}', '{"body":{"model":"deepseek-v4-pro","stream":false,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
     check('{"model":"combo:flash>pro"}', '{"body":{"model":"flash","stream":false,"messages":[{"role":"user","content":""}]},"messages":[{"role":"user","content":""}],"response_metadata":null}')
 
     check('{"model":"pro","input":"hello","stream":true,"text":{"format":{"type":"json_object"}}}', '{"body":{"model":"deepseek-v4-pro","stream":true,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"system","content":"Respond with valid JSON only."},{"role":"user","content":"hello"}],"response_metadata":null}')
-    check('{"input":"hello","messages":[{"role":"developer","content":"raw"}]}', '{"body":{"model":"deepseek-chat","stream":false,"messages":[{"role":"developer","content":"raw"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
+    check('{"input":"hello","messages":[{"role":"developer","content":"raw"}]}', '{"body":{"model":"deepseek-v4-pro","stream":false,"messages":[{"role":"developer","content":"raw"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
     check('{"stream":true,"text":{"format":{"type":"json"}},"instructions":"Return JsOn"}', '{"body":{"model":"deepseek-v4-pro","stream":true,"stream_options":{"include_usage":true},"response_format":{"type":"json_object"},"messages":[{"role":"system","content":"Return JsOn"}]},"messages":[{"role":"system","content":"Return JsOn"}],"response_metadata":null}')
 
     check('{"previous_response_id":"resp_1","input":"next","instructions":"rules","stream":true,"reasoning":{"effort":"minimal"}}', '{"body":{"model":"deepseek-v4-pro","stream":true,"stream_options":{"include_usage":true},"thinking":{"type":"disabled"},"messages":[{"role":"system","content":"rules"},{"role":"user","content":"old"},{"role":"user","content":"next"}]},"messages":[{"role":"system","content":"rules"},{"role":"user","content":"old"},{"role":"user","content":"next"}],"response_metadata":null}', '[{"role":"user","content":"old"}]')

@@ -2,7 +2,7 @@
 
 from std.collections import List
 
-from .json import JSON_ARRAY, JSON_BOOL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json, serialize_number
+from .json import JSON_ARRAY, JSON_BOOL, JSON_NULL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json, serialize_number
 from .text import trim_text
 
 
@@ -20,6 +20,8 @@ def validate_request_shape(doc: JsonDocument) raises:
             continue
         var expected = JSON_BOOL if key == "stream" else JSON_STRING
         if doc.nodes[node].kind != expected:
+            if key == "model" and doc.nodes[node].kind == JSON_NULL:
+                continue
             raise Error("DeepSeek " + key + " must be a " + ("boolean" if expected == JSON_BOOL else "string"))
         if key == "model" and not trim_text(doc.nodes[node].text):
             raise Error("DeepSeek model must not be empty")

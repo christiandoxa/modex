@@ -37,8 +37,11 @@
   continues to check the known Modex permission-repair gap.
 - GitHub Full CI run [40566557490](https://github.com/christiandoxa/modex/actions/runs/40566557490),
   attempt 1 on `8b15ace`, reproduced the same failure; the focused correction
-  was pushed as `c5cde1cd19bc2f0072b2f1f1507f429d61bf4593`. Its exact-SHA
-  Full CI run `40569480632` is in progress.
+  was pushed as `c5cde1cd19bc2f0072b2f1f1507f429d61bf4593`. The correction
+  passed in exact-SHA Full CI run
+  [40570838793](https://github.com/christiandoxa/modex/actions/runs/40570838793)
+  after the later width-memory measurement fix; the earlier exact-SHA run
+  `40569480632` failed only the width-memory check described below.
 
 ## GitHub width-memory threshold
 
@@ -54,8 +57,20 @@
 - Correction: the same native driver measures input construction alone and
   compares its growth with the width run. Width and control results remain
   asserted, with the original noise and 1% bound. Full CI now uploads the
-  detailed RSS JSON on failure. All five patterns and a current-oracle mixed
-  session comparison pass locally; GitHub verification remains pending.
+  detailed RSS JSON. The pre-correction Full CI run
+  [40569480632](https://github.com/christiandoxa/modex/actions/runs/40569480632)
+  on `c5cde1c` reproduced the old check's ASCII failure: 1,523,712 bytes of
+  normalized growth against 394,035 allowed. The input-only control was added
+  afterward.
+- Verification: exact-SHA Fast CI run
+  [40570794170](https://github.com/christiandoxa/modex/actions/runs/40570794170)
+  and Full CI run
+  [40570838793](https://github.com/christiandoxa/modex/actions/runs/40570838793)
+  passed on `62b554cb93c477655581ea93d4f2d78a8b042fc4`; Full CI passed all 387
+  tests. Its artifact includes `width-rss.json`: ASCII normalized auxiliary
+  growth was 172,032 bytes against 611,123 allowed, and all four other patterns
+  were within their recorded limits. All five patterns and a current-oracle
+  mixed session comparison also pass locally.
 
 ## Initial 0.439.5 local full run
 
@@ -77,7 +92,10 @@
   short and long paths, retaining the historical fixture. Two follow-on
   comparison errors now report an explicit missing observation count.
 - Verification: focused regressions passed locally. Full validation of the
-  corrected commit and the first GitHub run remain pending.
+  corrected checkpoint passed in Full CI run
+  [40570838793](https://github.com/christiandoxa/modex/actions/runs/40570838793)
+  on `62b554cb93c477655581ea93d4f2d78a8b042fc4`: all 387 tests and capability
+  probes passed.
 
 ## Fast bootstrap Python selection
 
@@ -89,4 +107,6 @@
   both entrypoints with a deliberately shadowing `python3`.
 - Verification: the shadowing regression and corrected local `make ci-fast`
   pass, including the production build, native units, and 13 focused Python
-  tests. GitHub verification of the checkpoint remains pending.
+  tests. Exact-SHA Fast CI run
+  [40570794170](https://github.com/christiandoxa/modex/actions/runs/40570794170)
+  passed on `62b554cb93c477655581ea93d4f2d78a8b042fc4`.

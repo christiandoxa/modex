@@ -38,7 +38,7 @@ def translate_deepseek_request(source: String, history: String = "[]", strict_to
         for index in range(len(parsed.nodes[parsed.root].children)):
             fields.append(quote_json(parsed.nodes[parsed.root].names[index]) + ":" + serialize_json(parsed, parsed.nodes[parsed.root].children[index]))
     var runtime_body = JsonDocument(fields_object(fields))
-    var prepared = prepare_request_body(doc, serialize_json(runtime_body, runtime_body.root), history, previous_response_found)
+    var prepared = prepare_request_body(doc, serialize_json(runtime_body, runtime_body.root), history, previous_response_found, model)
     # The frozen simple-request pass replaces the body while keeping pending runtime messages.
     var result = JsonDocument('{"body":' + prepared + ',"messages":' + messages + ',"response_metadata":' + metadata + "}")
     return serialize_json(result, result.root)

@@ -30,6 +30,17 @@ def main() raises:
     var calls = JsonDocument('{"input":[{"type":"function_call","call_id":"c","name":"lookup","arguments":{"q":1}},{"type":"function_call_output","call_id":"c","output":"ok"}]}')
     assert_equal(prepare_request_body(calls, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"assistant","content":"","tool_calls":[{"id":"c","type":"function","function":{"name":"lookup","arguments":"{\\\"q\\\":1}"}}]},{"role":"tool","tool_call_id":"c","content":"ok"}]}')
 
+    var bare_tool = JsonDocument('{"input":[{"role":"tool","content":"synthetic output"}]}')
+    assert_equal(prepare_request_body(bare_tool, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"tool","content":"synthetic output"}]}')
+    var bare_tool_empty_id = JsonDocument('{"input":[{"role":"tool","tool_call_id":"","content":"synthetic output"}]}')
+    assert_equal(prepare_request_body(bare_tool_empty_id, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"tool","content":"synthetic output","tool_call_id":""}]}')
+    var bare_tool_non_string_id = JsonDocument('{"input":[{"role":"tool","tool_call_id":7,"content":"synthetic output"}]}')
+    assert_equal(prepare_request_body(bare_tool_non_string_id, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"tool","content":"synthetic output","tool_call_id":"call_1"}]}')
+    var bare_tool_valid_id = JsonDocument('{"input":[{"role":"tool","tool_call_id":"synthetic-call","content":"synthetic output"}]}')
+    assert_equal(prepare_request_body(bare_tool_valid_id, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"tool","content":"synthetic output","tool_call_id":"synthetic-call"}]}')
+    var bare_tool_paired = JsonDocument('{"input":[{"type":"function_call","call_id":"synthetic-call","name":"lookup","arguments":"{}"},{"role":"tool","tool_call_id":"synthetic-call","content":"synthetic output"}]}')
+    assert_equal(prepare_request_body(bare_tool_paired, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"assistant","content":"","tool_calls":[{"id":"synthetic-call","type":"function","function":{"name":"lookup","arguments":"{}"}}]},{"role":"tool","content":"synthetic output","tool_call_id":"synthetic-call"}]}')
+
     var mcp = JsonDocument('{"input":[{"type":"mcp_call","id":"m","name":"mcp__server__lookup","arguments":"{}","output":{"ok":true}}]}')
     assert_equal(prepare_request_body(mcp, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"assistant","content":"","tool_calls":[{"id":"m","type":"function","function":{"name":"mcp__server__lookup","arguments":"{}"}}]},{"role":"tool","tool_call_id":"m","content":{"ok":true}}]}')
 

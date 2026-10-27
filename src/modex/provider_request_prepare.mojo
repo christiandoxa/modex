@@ -363,7 +363,12 @@ def _native_item(doc: JsonDocument, item: Int) raises -> String:
     if role != "assistant" and role != "system" and role != "tool": role = "user"
     var content = doc.get(item, "content")
     if content < 0: content = doc.get(item, "text")
-    return '{"role":' + quote_json(role) + ',"content":' + quote_json(_content_text(doc, content)) + "}"
+    var message = '{"role":' + quote_json(role) + ',"content":' + quote_json(_content_text(doc, content))
+    if role == "tool" and doc.get(item, "type") < 0:
+        var id = doc.get(item, "tool_call_id")
+        if id >= 0:
+            message += ',"tool_call_id":' + quote_json(doc.nodes[id].text if doc.nodes[id].kind == JSON_STRING else "call_1")
+    return message + "}"
 
 
 def _native_output(doc: JsonDocument, item: Int, raw: Bool) raises -> String:

@@ -26,6 +26,7 @@
         "tests/test_continuation_binding_04395.py",
         "tests/test_provider_catalog_04395.py",
         "tests/test_provider_nonstring_model_04395.py",
+        "tests/test_provider_request_tool_role_04395.py",
         "tests/test_runtime_binding_04395_slice.py"
       ],
       "evidence": [
@@ -112,7 +113,7 @@
       "assessment": "Guarded production Super integration is exercised on the host; complete gateway/provider, concurrent admission, security and non-host obligations remain blocked.",
       "notes": [
         "Current DeepSeek relay tracks bounded in-memory response/session/turn ownership and validates credential/endpoint identity before the next POST; persistent and multi-account affinity remain open.",
-        "0.439.5 real-process comparisons cover missing/null and selected non-string or blank model fallbacks, combo aliases, explicit model selection and simple/non-simple requests.",
+        "0.439.5 real-process comparisons cover missing/null and selected non-string or blank model fallbacks, combo aliases, explicit model selection, and selected bare tool-role requests on simple/non-simple paths.",
         "A real-process oversized accepted SSE event exposes an unbound response-ID gap: release 200/503 with one POST versus Modex 200/200 with two."
       ]
     },

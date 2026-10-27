@@ -87,6 +87,10 @@
     {
       "date": "2026-10-28",
       "change": "Session .json fallback line trimming now matches selected 0.439.5 whitespace and malformed-input comparisons while preserving JSONL behavior; no session contract or platform status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Untyped DeepSeek tool-role inputs and selected tool-call IDs now match 0.439.5 simple and non-simple process comparisons. Broader provider/tool behavior remains incomplete; no contract or platform status is promoted."
     }
   ],
   "contracts": [

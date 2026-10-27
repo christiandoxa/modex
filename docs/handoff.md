@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.5 and initial CI foundation
 
+DeepSeek accepts untyped `role: tool` input items like 0.439.5. The simple
+adapter preserves or defaults a supplied tool-call ID; the non-simple path
+keeps the observed release behavior of omitting it. Eleven synthetic
+real-process cases cover missing, empty, invalid and paired IDs plus typed-role
+rejection. A clean-snapshot production build, three native request checks,
+import audit and 25 focused Python tests passed. Broader provider and tool
+semantics remain incomplete.
+
 Single-object `.json` session fallback now trims lines like the frozen
 0.439.5 release when the whole file is not valid JSON. JSONL first-record
 handling stays unchanged. Oracle controls cover Unicode and ASCII whitespace,

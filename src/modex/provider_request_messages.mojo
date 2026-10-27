@@ -97,7 +97,7 @@ def _validate_item(doc: JsonDocument, item: Int) raises:
             raise Error("DeepSeek message role must be a string")
         if role >= 0:
             var r = doc.nodes[role].text
-            if not (r == "system" or r == "developer" or r == "user" or r == "assistant"):
+            if not (r == "system" or r == "developer" or r == "user" or r == "assistant" or (kind_node < 0 and r == "tool")):
                 raise Error("DeepSeek message role `" + r + "` is not supported by this Responses adapter")
         _validate_content(doc, doc.get(item, "content"))
     elif kind == "function_call" or kind == "mcp_call" or kind == "custom_tool_call" or kind == "local_shell_call":

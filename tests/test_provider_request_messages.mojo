@@ -13,6 +13,10 @@ def main() raises:
     assert_equal(request_messages(replay, '[{"role":"user","content":"prior"},{"role":"assistant","tool_calls":[{"id":"old"}]},{"role":"tool","tool_call_id":"old","content":"old result"}]'), '[{"content":"prior","role":"user"},{"role":"assistant","tool_calls":[{"id":"old"}],"content":""},{"content":"old result","role":"tool","tool_call_id":"old"}]')
     var calls = JsonDocument('{"input":[{"type":"function_call","call_id":"c","name":"lookup","arguments":"{\\"q\\":1}"},{"type":"function_call_output","call_id":"c","output":"ok"}]}')
     assert_equal(request_messages(calls), '[{"role":"assistant","content":"","tool_calls":[{"function":{"arguments":"{\\"q\\":1}","name":"lookup"},"id":"c","type":"function"}]},{"role":"tool","tool_call_id":"c","content":"ok"}]')
+    var bare_tool = JsonDocument('{"input":[{"role":"tool","content":"synthetic output"}]}')
+    assert_equal(request_messages(bare_tool), '[{"role":"tool","content":"synthetic output"}]')
+    var bare_tool_with_id = JsonDocument('{"input":[{"role":"tool","tool_call_id":"call_1","content":"synthetic output"}],"safety_identifier":"synthetic-user"}')
+    assert_equal(request_messages(bare_tool_with_id), '[{"role":"tool","content":"synthetic output"}]')
     var fallback_call_ids = JsonDocument('{"input":[{"type":"function_call","call_id":null,"tool_call_id":"call_alias","name":"lookup"},{"type":"function_call_output","call_id":null,"tool_call_id":"call_alias","output":"ok"}]}')
     assert_equal(request_messages(fallback_call_ids), '[{"role":"assistant","content":"","tool_calls":[{"function":{"arguments":"{}","name":"lookup"},"id":"call_1","type":"function"}]},{"role":"tool","tool_call_id":"call_1","content":"ok"}]')
     var continuation_output = JsonDocument('{"input":[{"type":"function_call_output","call_id":null,"tool_call_id":"call_alias","output":"ok"}]}')
@@ -65,6 +69,11 @@ def main() raises:
     var invalid_role = JsonDocument('{"input":[{"type":"message","role":"critic","content":"no"}]}')
     raised = False
     try: _ = request_messages(invalid_role)
+    except: raised = True
+    assert_true(raised)
+    var typed_tool_role = JsonDocument('{"input":[{"type":"message","role":"tool","content":"no"}]}')
+    raised = False
+    try: _ = request_messages(typed_tool_role)
     except: raised = True
     assert_true(raised)
     var invalid_item = JsonDocument('{"input":[false]}')

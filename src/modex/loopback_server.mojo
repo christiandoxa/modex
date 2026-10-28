@@ -175,7 +175,7 @@ struct LoopbackHTTPConnection(Movable):
             return True
         raise Error("loopback HTTP peer check failed")
 
-    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_websocket_upgrade: Bool = False, validate_request_target: Bool = False) raises -> LoopbackHTTPRequest:
+    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False) raises -> LoopbackHTTPRequest:
         if self.fd < 0 or self.done or self.request_read:
             raise Error("loopback HTTP connection is closed")
         if max_body_bytes < 0 or max_body_bytes > HTTP_MAX_BODY_LIMIT:
@@ -194,7 +194,7 @@ struct LoopbackHTTPConnection(Movable):
             raise Error("HTTP request headers exceed limit")
         # The relay caps target bytes, so its request line also includes method and version bytes.
         var max_request_line_bytes = HTTP_HEADER_LIMIT if validate_request_target else 8192
-        var head = _parse_request_head(self.input, header_end, allow_websocket_upgrade, max_request_line_bytes)
+        var head = _parse_request_head(self.input, header_end, allow_upgrade_headers, max_request_line_bytes)
         self.head_request = head.method == "HEAD"
         if validate_request_target and not request_target_valid(head.target) and (head.expect_continue or head.length > max_body_bytes):
             raise Error("invalid HTTP request target")
@@ -383,7 +383,7 @@ struct ParsedRequestHead(Movable):
     var expect_continue: Bool
 
 
-def _parse_request_head(bytes: List[UInt8], end: Int, allow_websocket_upgrade: Bool, max_request_line_bytes: Int) raises -> ParsedRequestHead:
+def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Bool, max_request_line_bytes: Int) raises -> ParsedRequestHead:
     var head = _ascii(bytes, 0, end)
     var lines = head.split("\r\n")
     if not lines or lines[0].byte_length() > max_request_line_bytes:
@@ -410,6 +410,8 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_websocket_upgrade: B
     var chunked = False
     var has_host = False
     var expect_continue = False
+    var has_connection_upgrade = False
+    var has_non_websocket_upgrade = False
     var offset = lines[0].byte_length() + 2
     for index in range(1, len(lines)):
         var line = lines[index]
@@ -443,10 +445,19 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_websocket_upgrade: B
             if expect_continue or value.lower() != "100-continue":
                 raise Error("unsupported HTTP expectation")
             expect_continue = True
+        elif lower == "connection":
+            for token in value.split(","):
+                if String(token).strip(" \t").lower() == "upgrade":
+                    has_connection_upgrade = True
         elif lower == "upgrade":
-            if not allow_websocket_upgrade or value.lower() != "websocket":
+            if not allow_upgrade_headers:
                 raise Error("HTTP protocol upgrades are unsupported")
+            if value.lower() != "websocket":
+                has_non_websocket_upgrade = True
         headers.append((name, value))
+    # A protocol switch would use the raw stream through EOF, which this parser does not frame.
+    if has_connection_upgrade and has_non_websocket_upgrade:
+        raise Error("HTTP protocol upgrades are unsupported")
     if has_content_length and has_transfer_encoding:
         raise Error("ambiguous HTTP request framing")
     if version == "HTTP/1.1" and not has_host:

@@ -72,12 +72,35 @@ failed` at 65,537 bytes. These probes document selected boundaries; broader
 header framing remains unqualified.
 
 Validation for this slice: the production build passed; the 0.165.1 oracle
-matrix passed; all 19 shared loopback-server tests, 21 local-rewrite tests and
+matrix passed; all 20 shared loopback-server tests, 22 local-rewrite tests and
 26 provider transport tests passed. The provider native checks and production
 dependency audit passed. No real credentials or paid services were used.
 
 The relay remains serial; a separate two-request probe found Prodex accepts both
 upstream requests concurrently while Modex serializes them. WebSocket transport
-is not implemented; the 426 fallback is not WebSocket parity. Non-WebSocket
-upgrade handling and broader framing, timeout and
-security behavior remain unverified or different.
+is not implemented; the 426 fallback is not WebSocket parity.
+
+Production-path controls now cover `Upgrade: h2c` without `Connection: Upgrade`,
+mixed-case `H2C`, and `Upgrade: example/1`. Prodex and Modex return the same 200
+response and make one upstream POST for each; the upstream receives no `Upgrade`
+header. Modex treats these as ordinary framed HTTP requests and strips the
+hop-by-hop upgrade metadata.
+
+With both `Connection: Upgrade` and `Upgrade: h2c`, the pinned Prodex returns
+200 and makes one upstream POST after the synthetic client half-closes after its
+body. Modex keeps this case fail-closed: it returns 502 `gateway request capture
+failed` and makes no upstream request. The baseline reader consumes this
+connection as an upgraded stream through EOF; Modex's bounded HTTP parser does
+not implement that stream framing. This remains a documented transport
+mismatch. No h2c, HTTP/2 prior-knowledge, or other protocol upgrade transport is
+claimed. The regression also retains WebSocket fallback and duplicate Upgrade /
+Connection controls.
+
+Validation for the Upgrade-header change: the production build and both focused
+Mojo drivers compiled; the two-test 0.165.1 oracle suite passed, including its
+full raw HTTP matrix; all 22 local-rewrite tests and 20 shared loopback-server
+tests passed. The production dependency audit and `git diff --check` passed.
+These controls use synthetic loopback traffic and no real credentials or paid
+services.
+
+Broader framing, timeout and security behavior remain unverified or different.

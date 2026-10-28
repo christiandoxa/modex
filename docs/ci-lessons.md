@@ -17,7 +17,9 @@ The later `f386c7b` full run also passed the build, native suite and 613 Python
 tests; its log is `~/.cache/modex/ci-evidence/full-test-f386c7b.log`. Both
 results predate the current head. The `8f7c3c1` full run also passed the build,
 native suite and 616 Python tests; its log is
-`~/.cache/modex/ci-evidence/full-test-8f7c3c1.log`. These results are not
+`~/.cache/modex/ci-evidence/full-test-8f7c3c1.log`. The `fb9617f` run passed
+the build, native suite and 622 Python tests; its log is
+`~/.cache/modex/ci-evidence/full-test-fb9617f.log`. These results are not
 final-head validation.
 
 Fast run [40769127160](https://github.com/christiandoxa/modex/actions/runs/40769127160)

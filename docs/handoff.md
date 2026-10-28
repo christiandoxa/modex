@@ -129,14 +129,20 @@ The later `027fc48` full run executed 593 tests but failed two setup checks
 and rejected one skip because isolated HOME hid the historical source paths.
 The affected modules pass with the explicit pinned sources. A subsequent full
 run on `165dd15` passed 605 tests with both historical source paths supplied;
-the later `f386c7b` run passed 613 tests, and `8f7c3c1` passed 616 tests.
-All predate the current head. See `docs/ci-lessons.md`.
+the later `f386c7b` run passed 613 tests, `8f7c3c1` passed 616 tests, and
+`fb9617f` passed 622 tests. All predate the current head. See `docs/ci-lessons.md`.
 
 The local relay now matches selected 0.165.1 request-target admission, body
-limit, `Expect` and WebSocket fallback ordering. The shared parser keeps its
-default request-line limit and upgrade rejection. Large
-request heads still differ; the relay remains serial and does not implement
-WebSockets. See `docs/evidence/baseline-0.165.1/local-relay-http.md`.
+limit, `Expect` and WebSocket fallback ordering. It also accepts non-WebSocket
+`Upgrade` metadata as ordinary framed HTTP when `Connection` does not name
+`Upgrade`; h2c, mixed-case H2C and `example/1` production controls return 200,
+forward one POST and strip the hop-by-hop `Upgrade` header. The shared parser
+still rejects upgrade headers by default. With `Connection: Upgrade` plus
+`Upgrade: h2c`, Prodex returns 200 and forwards a POST after a half-close, while
+Modex returns 502 without an upstream request. Keep this fail-closed framing
+difference documented; Modex does not implement upgraded streams through EOF.
+Large request heads still differ; the relay remains serial and does not
+implement WebSockets. See `docs/evidence/baseline-0.165.1/local-relay-http.md`.
 
 The Anthropic text-block start now ignores initial text values like 0.165.1;
 nonempty, empty, missing and numeric initial fields match full production event

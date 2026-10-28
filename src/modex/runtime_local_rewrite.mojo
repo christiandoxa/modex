@@ -536,7 +536,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         var request = LoopbackHTTPRequest("", "", List[Tuple[String, String]](), List[UInt8]())
         var captured = False
         try:
-            request = connection.read_request(120000, allow_websocket_upgrade=True, validate_request_target=True)
+            request = connection.read_request(120000, allow_upgrade_headers=True, validate_request_target=True)
             captured = True
         except error:
             var message = String(error)

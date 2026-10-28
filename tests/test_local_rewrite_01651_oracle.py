@@ -332,6 +332,25 @@ def response_status_case(status, reason):
     }
 
 
+def ordinary_http_upgrade_case(name, value):
+    return {
+        "name": name,
+        "request": request_bytes((("Upgrade", value),)),
+        "expected_status": 200,
+        "expected_reason": "OK",
+        "expected_body": RESPONSES_RESPONSE,
+        "expected_headers": {
+            "content-type": "application/json; charset=utf-8",
+            "content-length": str(len(RESPONSES_RESPONSE)),
+        },
+        "compare_response_body": True,
+        "expected_upstream_method": "POST",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
+    }
+
+
 CASES = (
     {
         "name": "malformed_request_line_missing_version",
@@ -385,6 +404,9 @@ CASES = (
         "expected_body": WEBSOCKET_FALLBACK,
         "upstream": False,
     },
+    ordinary_http_upgrade_case("h2c_without_connection_upgrade", "h2c"),
+    ordinary_http_upgrade_case("mixed_case_h2c_without_connection_upgrade", "H2C"),
+    ordinary_http_upgrade_case("other_protocol_without_connection_upgrade", "example/1"),
     {
         "name": "truncated_declared_body",
         "request": b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 10\r\n\r\nx",
@@ -705,6 +727,41 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             upstream.shutdown()
             upstream.server_close()
             worker.join(timeout=2)
+
+    def test_non_websocket_connection_upgrade_remains_fail_closed(self):
+        case = {
+            "name": "h2c_with_connection_upgrade_half_closed",
+            "request": request_bytes((
+                ("Connection", "Upgrade"), ("Upgrade", "h2c"),
+            )),
+            "half_close": True,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            oracle_response, oracle_records = run_probe(ORACLE, case, upstream)
+            modex_response, modex_records = run_probe(MODEX, case, upstream)
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        self.assertEqual(oracle_response["process_exit"], 0, oracle_response["stderr"])
+        self.assertEqual((oracle_response["status"], oracle_response["body"]), (200, RESPONSES_RESPONSE))
+        self.assertEqual(len(oracle_records), 1)
+        self.assertNotIn("upgrade", oracle_records[0]["headers"])
+        self.assertEqual(oracle_records[0]["body"], json.dumps({
+            "messages": [{"content": "synthetic raw transport probe", "role": "user"}],
+            "model": "deepseek-chat",
+            "stream": False,
+        }, separators=(",", ":")).encode())
+
+        self.assertEqual(modex_response["process_exit"], 0, modex_response["stderr"])
+        self.assertEqual((modex_response["status"], modex_response["body"]), (
+            502, b"gateway request capture failed",
+        ))
+        self.assertEqual(modex_records, [])
 
 
 if __name__ == "__main__":

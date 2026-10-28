@@ -5,6 +5,7 @@ from std.time import perf_counter
 
 from .json import JSON_STRING, JsonDocument, serialize_json
 from .provider_chat_buffered import deepseek_buffered_assistant_messages, deepseek_buffered_response
+from .provider_anthropic_messages import anthropic_buffered_assistant_messages, anthropic_buffered_response, deepseek_anthropic_messages_body, validate_deepseek_anthropic_request
 from .loopback_http import LoopbackHTTPStream, _http_token_byte
 from .provider_chat_reader import DeepSeekChatReader
 from .provider_sse_wire import ProviderSSEFramer
@@ -40,7 +41,7 @@ def _header_token(value: String) -> Bool:
     return True
 
 
-def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: String, passthrough: Bool = False) raises -> List[Tuple[String, String]]:
+def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: String, passthrough: Bool = False, anthropic_messages: Bool = False) raises -> List[Tuple[String, String]]:
     if not api_key:
         raise Error("--api-key cannot be empty")
     for character in api_key.codepoints():
@@ -67,8 +68,12 @@ def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: Stri
         ("content-type", "application/json"),
         ("accept-encoding", "identity"),
         ("accept", "text/event-stream, application/json"),
-        ("authorization", "Bearer " + api_key),
     ]
+    if anthropic_messages:
+        output.append(("x-api-key", api_key))
+        output.append(("anthropic-version", "2023-06-01"))
+    else:
+        output.append(("authorization", "Bearer " + api_key))
     if passthrough:
         output = [("accept-encoding", "identity"), ("authorization", "Bearer " + api_key)]
     # The frozen auth pass adds the first user agent before copying inbound headers.
@@ -81,6 +86,8 @@ def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: Stri
         var skip = normalized in connection_tokens or normalized.startswith("sec-websocket-") or normalized.startswith("x-prodex-internal-")
         for local_name in ["connection", "content-length", "host", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade", "authorization", "chatgpt-account-id"]:
             skip = skip or normalized == local_name
+        if anthropic_messages and normalized in ["x-api-key", "anthropic-version"]:
+            skip = True
         if passthrough and normalized == "accept-encoding":
             skip = True
         if not skip:
@@ -113,15 +120,20 @@ struct DeepSeekExchange(Movable):
     var done: Bool
     var cancelled: Bool
 
-    def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, downstream_fd: Int32 = -1, previous_response_found: Bool = False) raises:
+    var native_messages: Bool
+
+    def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, downstream_fd: Int32 = -1, previous_response_found: Bool = False, native_messages: Bool = False) raises:
+        if native_messages: validate_deepseek_anthropic_request(request)
         var prepared = JsonDocument(translate_deepseek_request(request, history, strict_tools, web_search_mode, previous_response_found))
         if max_body_bytes < 0 or max_body_bytes > 4 * 1024 * 1024:
             raise Error("invalid or unsupported HTTP stream limits")
-        self.body = serialize_json(prepared, prepared.get(prepared.root, "body"))
+        var translated_body = serialize_json(prepared, prepared.get(prepared.root, "body"))
+        self.body = deepseek_anthropic_messages_body(serialize_json(prepared, prepared.root)) if native_messages else translated_body
         self.messages = serialize_json(prepared, prepared.get(prepared.root, "messages"))
         self.response_metadata = serialize_json(prepared, prepared.get(prepared.root, "response_metadata"))
         self.conversation_messages = "[]"
-        self.reader = DeepSeekChatReader(request_id, response_id, created_at, self.response_metadata, line_max_bytes, event_max_bytes, accumulated_max_bytes)
+        self.reader = DeepSeekChatReader(request_id, response_id, created_at, self.response_metadata, line_max_bytes, event_max_bytes, accumulated_max_bytes, native_messages)
+        self.native_messages = native_messages
         self.max_body_bytes = max_body_bytes
         self.pending = List[UInt8]()
         self.pending_offset = 0
@@ -132,7 +144,7 @@ struct DeepSeekExchange(Movable):
         var bytes = List[UInt8]()
         for byte in self.body.as_bytes():
             bytes.append(byte)
-        self.http = LoopbackHTTPStream(address, path, deepseek_request_headers(headers, api_key), bytes, connect_timeout_ms, request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd, True)
+        self.http = LoopbackHTTPStream(address, path, deepseek_request_headers(headers, api_key, anthropic_messages=native_messages), bytes, connect_timeout_ms, request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd, True)
 
     def status(self) -> Int:
         return self.http.status
@@ -269,11 +281,11 @@ struct DeepSeekExchange(Movable):
             source = String(from_utf8=Span(bytes))
         except:
             raise Error("failed to parse DeepSeek chat response JSON")
-        var response = deepseek_buffered_response(source, self.reader.state.created_at, self.reader.state.response_id, self.response_metadata)
+        var response = anthropic_buffered_response(source, self.reader.state.created_at, self.response_metadata) if self.native_messages else deepseek_buffered_response(source, self.reader.state.created_at, self.reader.state.response_id, self.response_metadata)
         var translated = JsonDocument(response)
         var id = translated.get(translated.root, "id")
         if translated.string(translated.get(translated.root, "status")) != "failed" and id >= 0 and translated.nodes[id].kind == JSON_STRING and trim_text(translated.nodes[id].text):
-            var assistant = deepseek_buffered_assistant_messages(source)
+            var assistant = anthropic_buffered_assistant_messages(source) if self.native_messages else deepseek_buffered_assistant_messages(source)
             self.conversation_messages = self.messages
             if assistant != "[]":
                 if self.messages == "[]":

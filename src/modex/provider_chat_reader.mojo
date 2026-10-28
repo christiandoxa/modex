@@ -11,12 +11,14 @@ struct DeepSeekChatReader:
     var framer: ProviderSSEFramer
     var assembler: ProviderSSEJSONAssembler
     var state: DeepSeekChatState
+    var native_messages: Bool
     var done: Bool
 
-    def __init__(out self, request_id: UInt64, response_id: String, created_at: UInt64, request_metadata: String = "null", line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304) raises:
+    def __init__(out self, request_id: UInt64, response_id: String, created_at: UInt64, request_metadata: String = "null", line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, native_messages: Bool = False) raises:
         self.framer = ProviderSSEFramer(line_max_bytes, event_max_bytes)
         self.assembler = ProviderSSEJSONAssembler(accumulated_max_bytes)
         self.state = DeepSeekChatState(request_id, response_id, created_at, request_metadata)
+        self.native_messages = native_messages
         self.done = False
 
     def consume(mut self, chunk: ImmSpan[UInt8, _]) raises -> Tuple[Int, List[String]]:
@@ -40,9 +42,15 @@ struct DeepSeekChatReader:
     def frame(mut self, lines: List[String]) raises -> List[String]:
         var output = List[String]()
         for value in self.assembler.push(lines):
-            output.extend(self.state.observe(value))
+            output.extend(self.state.observe_anthropic(value) if self.native_messages else self.state.observe(value))
+            if self.native_messages and self.state.completed:
+                self.done = True
+                return output^
         if self.assembler.done:
-            output.extend(self.state.complete())
+            if self.native_messages:
+                output.extend(self.state.fail("provider_stream_error", "unexpected end of stream"))
+            else:
+                output.extend(self.state.complete())
             self.done = True
         return output^
 
@@ -72,7 +80,7 @@ struct DeepSeekChatReader:
         self.done = True
         try:
             for value in self.assembler.finish():
-                output.extend(self.state.observe(value))
+                output.extend(self.state.observe_anthropic(value) if self.native_messages else self.state.observe(value))
         except error:
             output.extend(self.state.fail("provider_stream_error", String(error)))
             return output^

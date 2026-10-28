@@ -16,15 +16,41 @@ unverified. Persistent bindings, multi-account ownership, affinity release,
 account/profile lifecycle, credential finalization and login/quota concurrency
 remain incomplete.
 
-The 0.439.2 web-search route remains open: Prodex sends an Anthropic Messages
-request while Modex returns 501. Strict-tool environment settings now select
-the beta route and normalize supported runtime-path schemas for numeric-loopback
-HTTP. The baseline simple-request pass can preserve nested tools unchanged;
-config-only
-settings still fail closed, public beta TLS/DNS remains unsupported, and an
-invalid unused beta environment URL is ignored when strict mode is off while
-Prodex rejects it. `tests/test_provider_tools_04392_characterization.py`
-reproduces these gaps using synthetic loopback requests.
+Selected 0.439.2 DeepSeek web-search requests now reach Anthropic Messages on
+the production Super path. Synthetic release comparisons cover supported URL
+suffixes and prefixes, dot-segment normalization, request body/auth conversion,
+buffered text and search outputs, search sources, SSE ordering and stream
+truncation. It now rejects requests before upstream unless they use string
+input, one `web_search_preview` tool, optional `allowed_domains`, the default
+token limit and no other request fields. Message arrays/history and mixed
+function/web tools are fail-closed. Oracle controls record that the release
+coerces untyped roles, accepts mixed tools and combines same-role input
+messages into one content array; these differences remain explicit gaps.
+
+Buffered and SSE response conversion rejects unsupported content, citations,
+result fields and event shapes rather than returning successful partial output.
+Oracle controls record citation omission, reasoning conversion from a
+`thinking` block and completion after an image block without retaining its data.
+Successful handling remains limited to one tested search call/result with
+text. Broader request/message shapes, tool-result/history round trips, complete
+metadata/citation behavior, TLS/DNS/proxies, resource behavior and full
+stream/error equivalence remain open. Stream success requires the tested
+ordered search/result/text blocks with explicit stops and a final
+`message_delta`/`message_stop`; other valid Anthropic event orders remain
+unverified. The exact empty-string request is rejected with the observed 400
+before POST, while whitespace-only input is accepted. See
+`docs/evidence/anthropic-web-search-04392.md`.
+The release also completes streams with `stop_reason: stop_sequence`, a null
+`stop_reason`, a non-null stop sequence alongside `end_turn`, or no
+`message_delta`; Modex fails those four retained characterization cases. Other
+stream metadata and stop variants remain unverified.
+
+Strict-tool environment settings select the beta route and normalize supported
+runtime-path schemas for numeric-loopback HTTP. The baseline simple-request
+pass can preserve nested tools unchanged; config-only settings still fail
+closed, public beta TLS/DNS remains unsupported, and an invalid unused beta
+environment URL is ignored when strict mode is off while Prodex rejects it.
+`tests/test_provider_tools_04392_characterization.py` reproduces these gaps.
 
 DeepSeek requests with a missing, null, non-string or blank model match the
 tested 0.439.2 default. Selected combo aliases match the active release; its

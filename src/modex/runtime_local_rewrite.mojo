@@ -51,7 +51,31 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
         path = shorter^
     # Frozen URL assembly trims literal trailing slashes before parsing separators.
     path = path.replace("\\", "/")
-    var target = path + "/chat/completions"
+    return address, _normalize_upstream_path(path + "/chat/completions")
+
+
+def local_rewrite_anthropic_messages_upstream(url: String) raises -> Tuple[String, String]:
+    var route = local_rewrite_upstream(url)
+    var address = route[0]
+    var remaining = String(url[byte=7:])
+    var slash = remaining.find("/")
+    var path = String(remaining[byte=slash:]) if slash >= 0 else String()
+    while path.endswith("/"):
+        var shorter = String(path[byte=:path.byte_length() - 1])
+        path = shorter^
+    if path.endswith("/anthropic/v1"):
+        path += "/messages"
+    elif path.endswith("/anthropic"):
+        path += "/v1/messages"
+    elif path.endswith("/v1") or path.endswith("/beta"):
+        path = String(path[byte=:path.byte_length() - (3 if path.endswith("/v1") else 5)]) + "/anthropic/v1/messages"
+    else:
+        path += "/anthropic/v1/messages"
+    path = path.replace("\\", "/")
+    return address, _normalize_upstream_path(path)
+
+
+def _normalize_upstream_path(target: String) -> String:
     var segments = List[String]()
     # Normalize the assembled path, preserving empty segments and the authority root.
     for segment in target.split("/"):
@@ -64,7 +88,7 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
                 _ = segments.pop()
             continue
         segments.append(value^)
-    path = String("/").join(segments)
+    var path = String("/").join(segments)
     var encoded = String()
     comptime HEX = StaticString("0123456789ABCDEF")
     for byte in path.as_bytes():
@@ -73,7 +97,7 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
             encoded += "%" + HEX[byte=Int(byte) // 16] + HEX[byte=Int(byte) % 16]
         else:
             encoded += chr(Int(byte))
-    return address, encoded
+    return encoded
 
 
 def _strict_tools_value(name: String, value: String) raises -> Bool:
@@ -331,7 +355,7 @@ def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Opt
     return "[]"
 
 
-def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, mut bindings: RuntimeBindings, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String) raises:
+def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, messages_address: String, messages_path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, mut bindings: RuntimeBindings, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
     if request.method != "POST" or (target != "/v1/chat/completions" and target != "/v1/responses"):
         _route_error(connection)
@@ -375,20 +399,23 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     var history: String
     var namespace = Optional[String]()
     var previous_found: Bool
+    var web = False
     try:
         if not allow_local_file_access:
             namespace = Optional[String](_namespace(request.headers, doc))
         previous_found = conversations.contains(doc.string(doc.get(doc.root, "previous_response_id")), namespace)
         history = _history(doc, conversations, namespace)
         var tools = doc.get(doc.root, "tools")
-        var web = doc.get(doc.root, "web_search_options") >= 0
+        web = doc.get(doc.root, "web_search_options") >= 0
         if tools >= 0 and doc.nodes[tools].kind == JSON_ARRAY:
             for tool in doc.nodes[tools].children:
                 web = web or doc.string(doc.get(tool, "type")).startswith("web_search")
         if web:
+            var input = doc.get(doc.root, "input")
+            if input >= 0 and doc.nodes[input].kind == JSON_STRING and not doc.nodes[input].text:
+                connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
+                return
             _ = translate_deepseek_request(source, history, strict_tools)
-            _reply(connection, 501, "DeepSeek native web-search routing is not implemented")
-            return
     except:
         _reply(connection, 502, "upstream request failed")
         return
@@ -396,9 +423,9 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     if now < 0: raise Error("system clock returned a negative timestamp")
     var exchange: DeepSeekExchange
     try:
-        var exchange_address = beta_address if strict_tools else address
-        var exchange_path = beta_path if strict_tools else path
-        exchange = DeepSeekExchange(exchange_address, exchange_path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found)
+        var exchange_address = messages_address if web else (beta_address if strict_tools else address)
+        var exchange_path = messages_path if web else (beta_path if strict_tools else path)
+        exchange = DeepSeekExchange(exchange_address, exchange_path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web)
     except:
         _reply(connection, 502, "upstream request failed")
         return
@@ -450,6 +477,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
 
 def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, key: String, strict_tools: Bool, beta_address: String, beta_path: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False) raises:
     var upstream = local_rewrite_upstream(upstream_url)
+    var anthropic_upstream = local_rewrite_anthropic_messages_upstream(upstream_url)
     _ = deepseek_request_headers([], key)
     var connect_ms = _timeout("PRODEX_RUNTIME_PROXY_HTTP_CONNECT_TIMEOUT_MS", 5000)
     var idle_ms = _timeout("PRODEX_RUNTIME_PROXY_STREAM_IDLE_TIMEOUT_MS", 300000)
@@ -479,7 +507,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         request_id = request_id + 1 if request_id < UInt64.MAX else request_id
         try:
             var request = connection.read_request(120000)
-            _serve(connection, request, upstream[0], upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path)
+            _serve(connection, request, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path)
         except error:
             var message = String(error)
             var too_large = "oversized" in message or "exceeds wire limit" in message

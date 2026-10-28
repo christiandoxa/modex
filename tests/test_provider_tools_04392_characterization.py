@@ -1,4 +1,4 @@
-"""Characterize known DeepSeek web-search and config gaps plus env routing."""
+"""Compare DeepSeek web-search and config behavior with the pinned release."""
 
 import hashlib
 import json
@@ -28,7 +28,7 @@ def _codex_with_request(request):
 
 def _run(
     binary, request, strict_tools=False, strict_config=False, scenario="buffered",
-    beta_override=None,
+    beta_override=None, base_path="/v1",
 ):
     harness = test_super_launch.SuperLaunchTests()
     codex = _codex_with_request(request)
@@ -67,11 +67,11 @@ def _run(
                 test_super_launch.subprocess, "run", side_effect=run_with_strict_settings
             ):
                 result, records, upstream, state = harness.run_launch(
-                    binary=binary, scenario=scenario, model="deepseek-chat"
+                    binary=binary, scenario=scenario, model="deepseek-chat", base_path=base_path
                 )
         else:
             result, records, upstream, state = harness.run_launch(
-                binary=binary, scenario=scenario, model="deepseek-chat"
+                binary=binary, scenario=scenario, model="deepseek-chat", base_path=base_path
             )
 
     response = next((record for record in records if record["kind"] == "response"), None)
@@ -89,6 +89,32 @@ def _run(
         "upstream_body": upstream_body,
         "state": state,
     }
+
+
+def _normalized_events(payload):
+    def normalize(value):
+        if isinstance(value, list):
+            return [normalize(item) for item in value]
+        if isinstance(value, dict):
+            result = {}
+            for key, item in value.items():
+                if key == "created_at":
+                    result[key] = "<time>"
+                else:
+                    result[key] = normalize(item)
+            return result
+        if isinstance(value, str) and value.startswith(("resp_deepseek_", "msg_deepseek_")):
+            return "<generated-id>"
+        return value
+
+    events = []
+    event = None
+    for line in payload.decode().splitlines():
+        if line.startswith("event: "):
+            event = line[7:]
+        elif line.startswith("data: {"):
+            events.append((event, normalize(json.loads(line[6:]))))
+    return events
 
 
 class ProviderTool04392CharacterizationTests(unittest.TestCase):
@@ -123,12 +149,10 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
             "allowed_domains": ["example.test"],
         }])
 
-        self.assertEqual((modex["exit_code"], modex["status"]), (1, 501))
-        self.assertEqual(modex["upstream"], [])
-        self.assertEqual(
-            modex["response_body"],
-            b"DeepSeek native web-search routing is not implemented",
-        )
+        self.assertEqual((modex["exit_code"], modex["status"]), (1, 502))
+        self.assertEqual(len(modex["upstream"]), 1)
+        self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+        self.assertEqual(modex["upstream_body"], reference["upstream_body"])
         self.assertEqual(reference["state"]["leftovers"], [])
         self.assertEqual(modex["state"]["leftovers"], [])
         reference_headers = {
@@ -136,6 +160,13 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
             for name, value in reference["upstream"][0]["headers"].items()
         }
         self.assertEqual(reference_headers["x-api-key"], "synthetic-provider-key")
+        modex_headers = {
+            name.lower(): value
+            for name, value in modex["upstream"][0]["headers"].items()
+        }
+        self.assertEqual(modex_headers["x-api-key"], "synthetic-provider-key")
+        self.assertEqual(modex_headers["anthropic-version"], "2023-06-01")
+        self.assertNotIn("authorization", modex_headers)
 
         invalid_request = {
             "model": "deepseek-chat",
@@ -150,6 +181,247 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
         self.assertEqual(reference_invalid["upstream"], [])
         self.assertEqual(modex_invalid["upstream"], [])
         self.assertEqual(reference_invalid["response_body"], modex_invalid["response_body"])
+
+
+    def test_web_search_anthropic_path_preserves_prefix_suffix_and_dot_segments(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        cases = [
+            ("/prefix/v1", "/prefix/anthropic/v1/messages"),
+            ("/prefix/beta", "/prefix/anthropic/v1/messages"),
+            ("/prefix/anthropic", "/prefix/anthropic/v1/messages"),
+            ("/prefix/anthropic/v1", "/prefix/anthropic/v1/messages"),
+            ("/prefix", "/prefix/anthropic/v1/messages"),
+            ("/tenant/../evil/v1", "/evil/anthropic/v1/messages"),
+            ("/prefix\\v1", "/prefix/v1/anthropic/v1/messages"),
+            ("/tenant\\..\\evil\\v1", "/evil/v1/anthropic/v1/messages"),
+        ]
+        for base_path, expected_path in cases:
+            with self.subTest(base_path=base_path):
+                reference = _run(ORACLE_04392, request, scenario="anthropic-buffered", base_path=base_path)
+                modex = _run(MODEX, request, scenario="anthropic-buffered", base_path=base_path)
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+                self.assertEqual(reference["upstream"][0]["path"], expected_path)
+                self.assertEqual(modex["upstream"][0]["path"], expected_path)
+
+    def test_anthropic_messages_buffered_web_search_translation_matches_release(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview", "allowed_domains": ["example.test"]}],
+        }
+        reference = _run(ORACLE_04392, request, scenario="anthropic-buffered")
+        modex = _run(MODEX, request, scenario="anthropic-buffered")
+        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+        self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+        expected = json.loads(reference["response_body"])
+        actual = json.loads(modex["response_body"])
+        for key in ("id", "model", "output", "usage"):
+            self.assertEqual(actual.get(key), expected.get(key), key)
+        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_empty_input_matches_release_before_upstream(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_04392, request, scenario="anthropic-buffered")
+        modex = _run(MODEX, request, scenario="anthropic-buffered")
+        self.assertEqual((reference["exit_code"], reference["status"]), (1, 400))
+        self.assertEqual((modex["exit_code"], modex["status"]), (1, 400))
+        self.assertEqual(reference["upstream"], [])
+        self.assertEqual(modex["upstream"], [])
+        self.assertEqual(modex["response_body"], reference["response_body"])
+        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_messages_sse_events_and_failure_match_release(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": True,
+            "tools": [{"type": "web_search_preview", "allowed_domains": ["example.test"]}],
+        }
+        for scenario in ("anthropic-stream", "anthropic-stream-error"):
+            with self.subTest(scenario=scenario):
+                reference = _run(ORACLE_04392, request, scenario=scenario)
+                modex = _run(MODEX, request, scenario=scenario)
+                self.assertEqual((modex["exit_code"], modex["status"]), (reference["exit_code"], reference["status"]))
+                self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+                self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+                self.assertEqual(
+                    _normalized_events(modex["response_body"]),
+                    _normalized_events(reference["response_body"]),
+                )
+                self.assertEqual(reference["state"]["leftovers"], [])
+                self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_stream_stop_variants_remain_explicit_mismatches(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": True,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        cases = (
+            "anthropic-stop-sequence",
+            "anthropic-stop-null-reason",
+            "anthropic-stop-end-turn-sequence",
+            "anthropic-stop-missing-message-delta",
+        )
+        for scenario in cases:
+            with self.subTest(scenario=scenario):
+                reference = _run(ORACLE_04392, request, scenario=scenario)
+                modex = _run(MODEX, request, scenario=scenario)
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+                reference_events = _normalized_events(reference["response_body"])
+                modex_events = _normalized_events(modex["response_body"])
+                self.assertIn("response.completed", [name for name, _ in reference_events])
+                self.assertNotIn("response.failed", [name for name, _ in reference_events])
+                self.assertIn("response.failed", [name for name, _ in modex_events])
+                self.assertNotIn("response.completed", [name for name, _ in modex_events])
+                self.assertNotEqual(modex_events, reference_events)
+                self.assertEqual(reference["state"]["leftovers"], [])
+                self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_unsupported_anthropic_request_shapes_fail_before_upstream(self):
+        cases = [
+            (
+                "untyped_role",
+                {
+                    "model": "deepseek-chat",
+                    "input": [{"role": "critic", "content": "preserve this role content"}],
+                    "stream": False,
+                    "tools": [{"type": "web_search_preview"}],
+                },
+            ),
+            (
+                "multiple_message_history",
+                {
+                    "model": "deepseek-chat",
+                    "input": [
+                        {"type": "message", "role": "user", "content": "preserve prior text"},
+                        {"type": "message", "role": "user", "content": "preserve current text"},
+                    ],
+                    "stream": False,
+                    "tools": [{"type": "web_search_preview"}],
+                },
+            ),
+            (
+                "typed_text_content",
+                {
+                    "model": "deepseek-chat",
+                    "input": [{
+                        "type": "message",
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": "preserve typed text"}],
+                    }],
+                    "stream": False,
+                    "tools": [{"type": "web_search_preview"}],
+                },
+            ),
+            (
+                "mixed_function_and_web_tools",
+                {
+                    "model": "deepseek-chat",
+                    "input": "preserve every tool",
+                    "stream": False,
+                    "tools": [
+                        {
+                            "type": "function",
+                            "name": "lookup",
+                            "parameters": {"type": "object", "properties": {"query": {"type": "string"}}},
+                        },
+                        {"type": "web_search_preview"},
+                    ],
+                },
+            ),
+        ]
+        for name, request in cases:
+            with self.subTest(name=name):
+                reference = _run(ORACLE_04392, request, scenario="anthropic-buffered")
+                modex = _run(MODEX, request, scenario="anthropic-buffered")
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                self.assertEqual(len(reference["upstream"]), 1)
+                if name == "untyped_role":
+                    self.assertEqual(reference["upstream_body"]["messages"][0]["role"], "user")
+                    self.assertEqual(reference["upstream_body"]["messages"][0]["content"][0]["text"], "preserve this role content")
+                elif name == "multiple_message_history":
+                    self.assertEqual(
+                        [
+                            part["text"]
+                            for message in reference["upstream_body"]["messages"]
+                            for part in message["content"]
+                        ],
+                        ["preserve prior text", "preserve current text"],
+                    )
+                elif name == "typed_text_content":
+                    self.assertEqual(
+                        reference["upstream_body"]["messages"][0]["content"][0]["text"],
+                        "preserve typed text",
+                    )
+                else:
+                    self.assertEqual(len(reference["upstream_body"]["tools"]), 2)
+                    self.assertEqual(reference["upstream_body"]["tools"][0]["name"], "lookup")
+                self.assertEqual((modex["exit_code"], modex["status"]), (1, 502))
+                self.assertEqual(modex["upstream"], [])
+                self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_unsupported_anthropic_buffered_content_and_citations_fail_closed(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        for scenario in ("anthropic-buffered-citations", "anthropic-buffered-unknown-content"):
+            with self.subTest(scenario=scenario):
+                reference = _run(ORACLE_04392, request, scenario=scenario)
+                modex = _run(MODEX, request, scenario=scenario)
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                released = json.loads(reference["response_body"])
+                if scenario == "anthropic-buffered-citations":
+                    self.assertNotIn("citations", json.dumps(released["output"]))
+                    self.assertIn("Found it.", reference["response_body"].decode())
+                else:
+                    self.assertIn(
+                        "additional content",
+                        json.dumps(released["output"], ensure_ascii=False),
+                    )
+                self.assertEqual((modex["exit_code"], modex["status"]), (1, 502))
+                self.assertEqual(len(modex["upstream"]), 1)
+                self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_unsupported_anthropic_sse_content_fails_instead_of_completing(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": True,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_04392, request, scenario="anthropic-stream-unknown-content")
+        modex = _run(MODEX, request, scenario="anthropic-stream-unknown-content")
+        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        reference_names = [name for name, _ in _normalized_events(reference["response_body"])]
+        modex_names = [name for name, _ in _normalized_events(modex["response_body"])]
+        self.assertIn("response.completed", reference_names)
+        self.assertNotIn("synthetic", reference["response_body"].decode())
+        self.assertIn("response.failed", modex_names)
+        self.assertNotIn("response.completed", modex_names)
+        self.assertEqual(modex["state"]["leftovers"], [])
 
     def test_strict_tools_environment_routes_and_normalizes_like_pinned_release(self):
         request = {

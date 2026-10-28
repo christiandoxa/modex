@@ -94,7 +94,7 @@ def event_names(payload):
 class SuperLaunchTests(unittest.TestCase):
     def run_launch(
         self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat",
-        super_arguments=(), environment_overrides=None,
+        super_arguments=(), environment_overrides=None, base_path="/v1",
     ):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-") as directory:
             root = Path(directory)
@@ -123,6 +123,98 @@ class SuperLaunchTests(unittest.TestCase):
                             content_type = "text/event-stream"
                     elif scenario == "stream-error":
                         payload = b'data: {"error":{"message":"synthetic upstream failure","type":"rate_limit_exceeded"}}\n\n'
+                        content_type = "text/event-stream"
+                    elif scenario == "anthropic-buffered":
+                        payload = json.dumps({
+                            "id": "msg_search",
+                            "type": "message",
+                            "role": "assistant",
+                            "model": "deepseek-chat",
+                            "content": [
+                                {"type": "server_tool_use", "id": "search_1", "name": "web_search", "input": {"query": "current release"}},
+                                {"type": "web_search_tool_result", "tool_use_id": "search_1", "content": [{"type": "web_search_result", "url": "https://example.test/release", "title": "Release"}]},
+                                {"type": "text", "text": "Found it."},
+                            ],
+                            "stop_reason": "end_turn",
+                            "usage": {"input_tokens": 3, "output_tokens": 5},
+                        }, separators=(",", ":")).encode()
+                        content_type = "application/json"
+                    elif scenario == "anthropic-buffered-citations":
+                        payload = json.dumps({
+                            "id": "msg_citations", "type": "message", "role": "assistant",
+                            "model": "deepseek-chat",
+                            "content": [
+                                {"type": "server_tool_use", "id": "search_1", "name": "web_search", "input": {"query": "current release"}},
+                                {"type": "web_search_tool_result", "tool_use_id": "search_1", "content": [{"type": "web_search_result", "url": "https://example.test/release", "title": "Release"}]},
+                                {"type": "text", "text": "Found it.", "citations": [{"type": "web_search_result_location", "url": "https://example.test/release", "title": "Release", "cited_text": "Found it."}]},
+                            ],
+                            "stop_reason": "end_turn", "usage": {"input_tokens": 3, "output_tokens": 5},
+                        }, separators=(",", ":")).encode()
+                        content_type = "application/json"
+                    elif scenario == "anthropic-buffered-unknown-content":
+                        payload = json.dumps({
+                            "id": "msg_unknown", "type": "message", "role": "assistant",
+                            "model": "deepseek-chat",
+                            "content": [
+                                {"type": "server_tool_use", "id": "search_1", "name": "web_search", "input": {"query": "current release"}},
+                                {"type": "web_search_tool_result", "tool_use_id": "search_1", "content": [{"type": "web_search_result", "url": "https://example.test/release", "title": "Release"}]},
+                                {"type": "text", "text": "Found it."},
+                                {"type": "thinking", "thinking": "additional content"},
+                            ],
+                            "stop_reason": "end_turn", "usage": {"input_tokens": 3, "output_tokens": 5},
+                        }, separators=(",", ":")).encode()
+                        content_type = "application/json"
+                    elif scenario == "anthropic-stream":
+                        payload = b"".join((
+                            b'data: {"type":"message_start","message":{"id":"msg_search","role":"assistant","model":"deepseek-chat","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',
+                            b'event: ping\ndata: {"type":"ping"}\n\n',
+                            b'data: {"type":"content_block_start","index":0,"content_block":{"type":"server_tool_use","id":"search_1","name":"web_search","input":{}}}\n\n',
+                            b'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\\"query\\":\\"current release\\"}"}}\n\n',
+                            b'data: {"type":"content_block_stop","index":0}\n\n',
+                            b'data: {"type":"content_block_start","index":1,"content_block":{"type":"web_search_tool_result","tool_use_id":"search_1","content":[{"type":"web_search_result","url":"https://example.test/release","title":"Release"}]}}\n\n',
+                            b'data: {"type":"content_block_stop","index":1}\n\n',
+                            b'data: {"type":"content_block_start","index":2,"content_block":{"type":"text","text":""}}\n\n',
+                            b'data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"Found it."}}\n\n',
+                            b'data: {"type":"content_block_stop","index":2}\n\n',
+                            b'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":5}}\n\n',
+                            b'data: {"type":"message_stop"}\n\n',
+                        ))
+                        content_type = "text/event-stream"
+                    elif scenario == "anthropic-stream-unknown-content":
+                        payload = b"".join((
+                            b'data: {"type":"message_start","message":{"id":"msg_search","role":"assistant","model":"deepseek-chat","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',
+                            b'data: {"type":"content_block_start","index":0,"content_block":{"type":"server_tool_use","id":"search_1","name":"web_search","input":{"query":"current release"}}}\n\n',
+                            b'data: {"type":"content_block_stop","index":0}\n\n',
+                            b'data: {"type":"content_block_start","index":1,"content_block":{"type":"web_search_tool_result","tool_use_id":"search_1","content":[{"type":"web_search_result","url":"https://example.test/release","title":"Release"}]}}\n\n',
+                            b'data: {"type":"content_block_stop","index":1}\n\n',
+                            b'data: {"type":"content_block_start","index":2,"content_block":{"type":"image","source":{"type":"base64","data":"synthetic"}}}\n\n',
+                            b'data: {"type":"message_stop"}\n\n',
+                        ))
+                        content_type = "text/event-stream"
+                    elif scenario == "anthropic-stream-error":
+                        payload = b'data: {"type":"message_start","message":{"id":"msg_error","role":"assistant","model":"deepseek-chat","usage":{"input_tokens":3,"output_tokens":0}}}\n\ndata: {"type":"error","error":{"type":"rate_limit_error","message":"synthetic Anthropic failure"}}\n\n'
+                        content_type = "text/event-stream"
+                    elif scenario.startswith("anthropic-stop-"):
+                        chunks = [
+                            b'data: {"type":"message_start","message":{"id":"msg_search","role":"assistant","model":"deepseek-chat","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',
+                            b'data: {"type":"content_block_start","index":0,"content_block":{"type":"server_tool_use","id":"search_1","name":"web_search","input":{"query":"current release"}}}\n\n',
+                            b'data: {"type":"content_block_stop","index":0}\n\n',
+                            b'data: {"type":"content_block_start","index":1,"content_block":{"type":"web_search_tool_result","tool_use_id":"search_1","content":[{"type":"web_search_result","url":"https://example.test/release","title":"Release"}]}}\n\n',
+                            b'data: {"type":"content_block_stop","index":1}\n\n',
+                            b'data: {"type":"content_block_start","index":2,"content_block":{"type":"text","text":""}}\n\n',
+                            b'data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"Found it."}}\n\n',
+                            b'data: {"type":"content_block_stop","index":2}\n\n',
+                        ]
+                        if scenario != "anthropic-stop-missing-message-delta":
+                            variants = {
+                                "anthropic-stop-sequence": {"stop_reason": "stop_sequence", "stop_sequence": "synthetic"},
+                                "anthropic-stop-null-reason": {"stop_reason": None, "stop_sequence": None},
+                                "anthropic-stop-end-turn-sequence": {"stop_reason": "end_turn", "stop_sequence": "synthetic"},
+                            }
+                            delta = json.dumps({"type": "message_delta", "delta": variants[scenario], "usage": {"output_tokens": 5}}, separators=(",", ":"))
+                            chunks.append(("data: " + delta + "\n\n").encode())
+                        chunks.append(b'data: {"type":"message_stop"}\n\n')
+                        payload = b"".join(chunks)
                         content_type = "text/event-stream"
                     elif scenario == "passthrough":
                         payload, content_type = b"\x00synthetic upstream\xff", "application/x-synthetic"
@@ -158,7 +250,7 @@ class SuperLaunchTests(unittest.TestCase):
                            **{key: str(root / "home") for key in ("XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME")}}
             environment.update(environment_overrides or {})
             command = [str(binary), "super", "--provider", "deepseek", "--api-key", "synthetic-provider-key",
-                       "--base-url", f"http://127.0.0.1:{server.server_port}/v1", "--model", model,
+                       "--base-url", f"http://127.0.0.1:{server.server_port}{base_path}", "--model", model,
                        "--no-presidio", "--no-sub-agent", "--skip-quota-check", *super_arguments,
                        "exec", "--", "synthetic prompt"]
             try:

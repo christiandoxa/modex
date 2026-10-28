@@ -1,0 +1,52 @@
+{
+  "checked_at_utc": "2026-10-28",
+  "modex_base_commit": "cfa983c8f8ab58ea2591d7402d5739fb0e2577cc",
+  "repository": "https://github.com/christiandoxa/prodex",
+  "method": "Read-only exact-commit source acquisition using a temporary MODEX_REFERENCE_CACHE. No account credentials were used and no Prodex code was executed.",
+  "source_acquisitions": {
+    "0.439.2": {
+      "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+      "oracle_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
+      "sha256sums_sha256": "c0d810169f539e50b3eaf875d81b1eb510430cf691d228472d537b12d11822c6",
+      "tag_lookup_command": "git ls-remote https://github.com/christiandoxa/prodex refs/tags/0.439.2 'refs/tags/0.439.2^{}'",
+      "tag_lookup_exit_code": 0,
+      "tag_lookup_stdout": "",
+      "tag_lookup_stderr": "",
+      "acquisition_command": "MODEX_REFERENCE_CACHE=<empty temporary directory> python3 scripts/ci/reference.py source active",
+      "acquisition_exit_code": 0,
+      "result": "Fetched the exact commit, checked out the pinned HEAD, verified all tracked files against its Git tree, and re-verified the cache on a second invocation."
+    },
+    "0.439.1": {
+      "commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+      "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
+      "sha256sums_sha256": "f5f4269d90de95c1cde06043df21c00a253681fcc96a8589cae067beb2fb95d9",
+      "tag_lookup_command": "git ls-remote https://github.com/christiandoxa/prodex refs/tags/0.439.1 'refs/tags/0.439.1^{}'",
+      "tag_lookup_exit_code": 0,
+      "tag_lookup_stdout": "",
+      "tag_lookup_stderr": "",
+      "acquisition_command": "MODEX_REFERENCE_CACHE=<empty temporary directory> python3 scripts/ci/reference.py source 0.439.1",
+      "acquisition_exit_code": 0,
+      "result": "Fetched the exact commit, checked out the pinned HEAD, and verified all tracked files against its Git tree."
+    }
+  },
+  "focused_tests": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_ci_reference",
+    "result": "Ran 27 tests; OK",
+    "coverage": [
+      "Absent tags permit source acquisition only after pinned metadata validation.",
+      "Moved tags, network errors, duplicate refs, orphan peeled refs, and unexpected output fail closed.",
+      "Git replace refs cannot change the checked tree.",
+      "Cached fsmonitor and clean-filter commands are not run during verification.",
+      "Repository-local URL rewrites and SSH commands are excluded from remote tag lookup.",
+      "An unavailable oracle is never replaced by source acquisition."
+    ]
+  },
+  "oracle_attempt": {
+    "command": "MODEX_REFERENCE_CACHE=<empty temporary directory> python3 scripts/ci/reference.py oracle active",
+    "exit_code": 1,
+    "stderr": "official Prodex tag 0.439.2 is missing; expected frozen commit 72b77478a5198fc5da6b4d2253137f9cdbf43be9. The baseline reference is unavailable; refusing to substitute another version.",
+    "oracle_cache_created": false
+  },
+  "remaining_limitation": "This fallback recovers source only. The official release assets are absent, anonymous Actions-artifact download returns HTTP 401, and recovered workflow artifacts expire. No source-built executable has been verified against the pinned Linux oracle SHA-256; it cannot be used as the oracle. The cache verifier also conservatively rejects tracked symlinks to existing directories; neither recovered pinned snapshot exercised that case. Reference-dependent CI remains blocked.",
+  "related_evidence": "docs/evidence/reference-recovery-20261028.json"
+}

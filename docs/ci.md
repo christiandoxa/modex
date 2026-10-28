@@ -33,6 +33,11 @@ available. Set `PYTHON` when the required interpreter is not `python3`.
 The reference helper obtains the frozen active release and the explicitly
 historical source snapshots outside the repository, verifies release and
 source identities, and accepts `MODEX_REFERENCE_CACHE` for its cache location.
+If a successful official tag lookup returns no refs, source acquisition may
+fetch only the previously pinned commit and verifies its complete Git tree.
+Moved or malformed tags and lookup errors still fail. This recovers source
+only: oracle acquisition still requires the pinned release bytes, so missing
+release assets keep reference-dependent CI fail-closed.
 `PRODEX_ORACLE` can select an existing 0.439.2 active-release executable; its
 SHA-256 must match the pinned release. CI also acquires the checksum-pinned
 0.439.5 oracle separately for historical regressions, exposed to tests as

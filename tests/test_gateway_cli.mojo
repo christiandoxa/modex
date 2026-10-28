@@ -1,7 +1,7 @@
 from std.collections import List
 from std.testing import assert_equal, assert_true
 
-from modex.runtime_local_rewrite import _binding_response_id, _continuation_identity_valid, _history, _namespace, _response_headers, local_rewrite_upstream
+from modex.runtime_local_rewrite import _binding_response_id, _continuation_identity_valid, _history, _namespace, _response_headers, local_rewrite_anthropic_messages_upstream, local_rewrite_upstream
 from modex.gateway_cli import gateway_help, parse_gateway_arguments
 from modex.json import JsonDocument, quote_json
 from modex.provider_conversations import ProviderConversationStore
@@ -106,6 +106,16 @@ def main() raises:
     assert_equal(response_headers[0], (String("x-codex-turn-state"), String("synthetic\tmetadata")))
     assert_equal(response_headers[1], (String("x-empty"), String("")))
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/")[1], "/v1/chat/completions")
+    assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/v1"), (String("127.0.0.1:1234"), String("/anthropic/v1/messages")))
+    assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/proxy/v1" )[1], "/proxy/anthropic/v1/messages")
+    assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/beta")[1], "/anthropic/v1/messages")
+    assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/anthropic")[1], "/anthropic/v1/messages")
+    assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/proxy/anthropic")[1], "/proxy/anthropic/v1/messages")
+    assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/anthropic/v1")[1], "/anthropic/v1/messages")
+    assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/proxy/anthropic/v1")[1], "/proxy/anthropic/v1/messages")
+    assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/proxy/v1/../custom")[1], "/proxy/custom/anthropic/v1/messages")
+    assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/prefix\\v1")[1], "/prefix/v1/anthropic/v1/messages")
+    assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/tenant\\..\\evil\\v1")[1], "/evil/v1/anthropic/v1/messages")
     assert_equal(local_rewrite_upstream("http://[::1]:1234")[0], "[::1]:1234")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/é/東京🧭")[1], "/v1/%C3%A9/%E6%9D%B1%E4%BA%AC%F0%9F%A7%AD/chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/%C3%A9/%2f")[1], "/v1/%C3%A9/%2f/chat/completions")

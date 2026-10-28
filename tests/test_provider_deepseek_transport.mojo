@@ -194,6 +194,20 @@ def main() raises:
     check(headers, "x-prodex-internal", ["forward"])
     check(headers, "sec-websocket", ["forward"])
 
+    var anthropic_headers: List[Tuple[String, String]] = [
+        ("x-api-key", "caller-key"),
+        ("anthropic-version", "caller-version"),
+    ]
+    var ordinary = deepseek_request_headers(anthropic_headers, "synthetic-provider-key")
+    check(ordinary, "x-api-key", ["caller-key"])
+    check(ordinary, "anthropic-version", ["caller-version"])
+    var passthrough = deepseek_request_headers(anthropic_headers, "synthetic-provider-key", passthrough=True)
+    check(passthrough, "x-api-key", ["caller-key"])
+    check(passthrough, "anthropic-version", ["caller-version"])
+    var native_messages = deepseek_request_headers(anthropic_headers, "synthetic-provider-key", anthropic_messages=True)
+    check(native_messages, "x-api-key", ["synthetic-provider-key"])
+    check(native_messages, "anthropic-version", ["2023-06-01"])
+
     var nominated: List[Tuple[String, String]] = [("Connection", "User-Agent"), ("User-Agent", "synthetic-agent")]
     check(deepseek_request_headers(nominated, "synthetic"), "user-agent", ["synthetic-agent"])
     var rejected = False

@@ -115,6 +115,10 @@
     {
       "date": "2026-10-28",
       "change": "Connect environment-only strict function schemas and beta routing through the guarded Super relay for numeric-loopback HTTP. Reproduce config-only, non-strict invalid-beta and web-search gaps; no contract, platform or release status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Connect selected simple DeepSeek web-search requests to Anthropic Messages on production Super. Synthetic 0.439.2 process comparisons and focused native units pass; broader translation and transport remain open. No contract, platform or release status is promoted."
     }
   ],
   "contracts": [

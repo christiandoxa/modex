@@ -1,5 +1,29 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+An isolated combined build passed all native unit programs and 523 Python
+tests on Linux x86-64 using checksum-verified local 0.439.2 and 0.439.5
+oracles and pinned source checkouts. That full run preceded the final heartbeat
+and Git-configuration hardening; those changes were rebuilt and checked with
+the focused native, release-comparison and reference-helper suites. Hosted
+validation remains blocked by the unavailable 0.439.2 release binary.
+
+The source helper can now recover a reference snapshot after a successful
+official tag lookup returns no refs: it validates the recorded release
+evidence, fetches only the pinned source commit, and verifies the checkout
+against that commit's Git tree. On 2026-10-28 this recovered the exact
+0.439.2 commit `72b77478a5198fc5da6b4d2253137f9cdbf43be9` and historical
+0.439.1 commit `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`; a second 0.439.2
+source invocation verified the cache. This is source recovery only. The
+checksum-pinned release binaries still have no durable credential-free source,
+so the oracle helper fails closed and CI cannot run reference comparisons
+until those official bytes are available. Exact commands and results are in
+`docs/ci-lessons.md` and `docs/evidence/reference-source-fallback-20261028.json`.
+The cache verifier conservatively rejects tracked symlinks to directories;
+the two recovered source trees contain none.
+Fast run [40633014746](https://github.com/christiandoxa/modex/actions/runs/40633014746)
+on `cfa983c` failed while acquiring the oracle, before source acquisition. This
+worktree has not been validated by a hosted run.
+
 The Full run `40625731794` memory-control failure is corrected locally by
 disabling transparent huge pages in the isolated test children and verifying
 that state at both samples. The original 4-byte-per-unit control, noise
@@ -110,11 +134,26 @@ in hosted Fast run `40619037675` on `863585a`. The pre-change Fast run on `68446
 `40610499704` on `3f82f0d` failed their old memory assertion. Fault sensitivity,
 resident-page reuse and peaks below prior VmHWM remain limitations.
 
-The provider characterization retains the web-search mismatch: Prodex routes
-to Anthropic Messages while Modex returns 501. The environment-only strict
-route now matches selected loopback controls; TOML configuration remains
-unsupported. The preceding combined build, native units and 445 Python tests
-passed on Linux x86-64 before the strict-tools change. No paid traffic or real credentials were used.
+Selected DeepSeek web-search requests now reach Anthropic Messages through
+the production Super relay. Release comparisons cover request path suffixes,
+text input, web-search options, buffered search/text output and search/text SSE
+ordering, sources, and truncated error streams. Anthropic auth headers override
+client-supplied values. This is a selected local-loopback slice: broader input
+and tool conversion, Anthropic response semantics, HTTPS/DNS/proxies and
+complete error/backpressure behavior remain unqualified. The environment-only
+strict route matches selected loopback controls; TOML configuration remains
+unsupported. See `docs/evidence/anthropic-web-search-04392.md`. No paid traffic
+or real credentials were used. Backslash-containing base paths and exact empty
+input now match the pinned route behavior; empty input returns 400 without a
+POST. Native Messages headers replace caller auth only on that route, while
+DeepSeek and raw passthrough retain their previous forwarding. Native SSE now
+ignores the Anthropic `ping` heartbeat, matching the whole normalized stream
+from the release; unknown event types still fail closed. It fails closed
+unless the tested search/result/text blocks stop in order and end with
+`message_delta` and `message_stop`.
+Four stop-shape mismatches remain recorded: the release completes for null or
+`stop_sequence` stop reasons, `end_turn` with a non-null stop sequence, and a
+missing `message_delta`; Modex emits `response.failed` for each.
 
 The profile-list and artifact-manifest prototypes remain unrelated workspace
 work in progress. The profile prototype cannot safely coordinate with the
@@ -1933,6 +1972,15 @@ omission remains covered. The WHATWG-derived address validators are native
 Mojo; complete domain/IDNA and URL-parser equivalence remain unverified.
 Evidence: `docs/evidence/inspection-policy-tests.txt` and
 `docs/evidence/inspection-policy-link.txt`.
+
+Anthropic Messages web search stays in its proven request/response shape. The
+adapter rejects non-string or multiple-message input, mixed tools and extra
+request fields before the provider POST; it rejects unknown buffered blocks,
+citations, result fields and SSE event shapes instead of completing a partial
+response. Oracle controls document the release behaviors that differ, and the
+local rewrite driver verifies zero upstream requests for rejected requests.
+`docs/evidence/anthropic-web-search-04392.md` records those controls and the
+focused checks. No parity status was promoted.
 
 Use GPT-6 Luna agents in parallel for independent implementation, validation
 and review; file ownership must stay disjoint. This user preference is also

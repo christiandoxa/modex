@@ -8,6 +8,7 @@ from .provider_chat_items import tool_added_item, tool_output_item, wrap_tool_ar
 from .provider_chat_metadata import merge_chat_metadata
 from .provider_chat_tools import chat_tool_delta, incremental_arguments
 from .provider_chat_usage import chat_usage, json_unsigned
+from .provider_anthropic_messages import AnthropicWebSearch, _only_fields, _search_sources, _web_search_item
 from .provider_sse_events import sse_event, sse_failed_event, sse_text_item_added, sse_text_item_done
 from .text import trim_text
 from .uuid7 import new_uuid7
@@ -45,6 +46,13 @@ struct DeepSeekChatState:
     var refusal: String
     var annotations: List[String]
     var tools: List[ChatStreamTool]
+    var external_output_items: List[String]
+    var anthropic_searches: List[AnthropicWebSearch]
+    var anthropic_input_tokens: UInt64
+    var anthropic_output_tokens: UInt64
+    var anthropic_phase: Int
+    var anthropic_text_index: Optional[UInt64]
+    var anthropic_result_index: Optional[UInt64]
     var request_metadata: String
     var conversation_snapshot: Optional[String]
 
@@ -69,6 +77,13 @@ struct DeepSeekChatState:
         self.refusal = ""
         self.annotations = List[String]()
         self.tools = List[ChatStreamTool]()
+        self.external_output_items = List[String]()
+        self.anthropic_searches = List[AnthropicWebSearch]()
+        self.anthropic_input_tokens = 0
+        self.anthropic_output_tokens = 0
+        self.anthropic_phase = 0
+        self.anthropic_text_index = Optional[UInt64]()
+        self.anthropic_result_index = Optional[UInt64]()
         self.request_metadata = request_metadata
         self.conversation_snapshot = Optional[String]()
 
@@ -141,6 +156,215 @@ struct DeepSeekChatState:
                 if self.tools:
                     self.conversation_snapshot = self.assistant_message()
         return output^
+
+    def observe_anthropic(mut self, source: String) raises -> List[String]:
+        var doc = JsonDocument(source)
+        if doc.nodes[doc.root].kind != JSON_OBJECT:
+            raise Error("Anthropic stream event must be an object")
+        var kind = doc.string(doc.get(doc.root, "type"))
+        if kind == "ping":
+            _only_fields(doc, doc.root, ["type"], "ping event")
+            return List[String]()
+        if kind == "error":
+            _only_fields(doc, doc.root, ["type", "error"], "stream error event")
+            var error = doc.get(doc.root, "error")
+            _only_fields(doc, error, ["type", "message"], "stream error")
+            var code = doc.string(doc.get(error, "type"))
+            var message = doc.string(doc.get(error, "message"))
+            if not code or not message: raise Error("Anthropic stream error is incomplete")
+            return self.fail(code, message)
+        if kind == "message_start":
+            if self.anthropic_phase != 0:
+                raise Error("Anthropic message_start is out of order")
+            _only_fields(doc, doc.root, ["type", "message"], "message_start event")
+            var message = doc.get(doc.root, "message")
+            _only_fields(doc, message, ["id", "type", "role", "model", "usage"], "message_start message")
+            var message_type = doc.get(message, "type")
+            if message_type >= 0 and doc.string(message_type) != "message" or not doc.string(doc.get(message, "id")) or doc.string(doc.get(message, "role")) != "assistant" or not doc.string(doc.get(message, "model")):
+                raise Error("Anthropic message_start role must be assistant")
+            var usage = doc.get(message, "usage")
+            _only_fields(doc, usage, ["input_tokens", "output_tokens"], "message_start usage")
+            var input = json_unsigned(doc, doc.get(usage, "input_tokens"))
+            var output = json_unsigned(doc, doc.get(usage, "output_tokens"))
+            if not input or not output: raise Error("Anthropic message_start usage is invalid")
+            self.anthropic_phase = 1
+            return List[String]()
+        if kind == "content_block_start":
+            _only_fields(doc, doc.root, ["type", "index", "content_block"], "content_block_start event")
+            var block = doc.get(doc.root, "content_block")
+            if block < 0 or doc.nodes[block].kind != JSON_OBJECT:
+                raise Error("Anthropic content block is missing")
+            var index = json_unsigned(doc, doc.get(doc.root, "index"))
+            if not index: raise Error("Anthropic content block index is invalid")
+            var block_index = index.value()
+            var block_type = doc.string(doc.get(block, "type"))
+            if block_type == "server_tool_use" and doc.string(doc.get(block, "name")) == "web_search":
+                if self.anthropic_phase != 1 or block_index != 0:
+                    raise Error("Anthropic web-search block is out of order")
+                _only_fields(doc, block, ["type", "id", "name", "input"], "web-search tool use")
+                if len(self.anthropic_searches) != 0 or self.anthropic_text_index:
+                    raise Error("Anthropic stream has an unsupported tool-use order")
+                var input = doc.get(block, "input")
+                _only_fields(doc, input, ["query"], "web-search input")
+                var query = doc.get(input, "query")
+                if query >= 0 and (doc.nodes[query].kind != JSON_STRING or not doc.nodes[query].text):
+                    raise Error("Anthropic web-search query is invalid")
+                self.anthropic_phase = 2
+                return self.start_anthropic_search(doc, block, block_index)
+            if block_type == "web_search_tool_result":
+                if self.anthropic_phase != 3 or block_index != 1:
+                    raise Error("Anthropic web-search result block is out of order")
+                _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
+                self.anthropic_result_index = Optional[UInt64](block_index)
+                self.anthropic_phase = 4
+                return self.finish_anthropic_search(doc, block)
+            if block_type == "text":
+                if self.anthropic_phase != 5 or block_index != 2:
+                    raise Error("Anthropic text block is out of order")
+                _only_fields(doc, block, ["type", "text"], "text block")
+                var text = doc.get(block, "text")
+                if text < 0 or doc.nodes[text].kind != JSON_STRING or self.anthropic_text_index:
+                    raise Error("Anthropic text block is invalid or repeated")
+                if doc.nodes[text].text:
+                    raise Error("Anthropic text block start cannot contain unstreamed text")
+                self.anthropic_text_index = Optional[UInt64](block_index)
+                self.anthropic_phase = 6
+                return List[String]()
+            raise Error("Anthropic content block type is not supported")
+        if kind == "content_block_delta":
+            _only_fields(doc, doc.root, ["type", "index", "delta"], "content_block_delta event")
+            var index = json_unsigned(doc, doc.get(doc.root, "index"))
+            if not index: raise Error("Anthropic content delta index is invalid")
+            var block_index = index.value()
+            var delta = doc.get(doc.root, "delta")
+            if delta < 0 or doc.nodes[delta].kind != JSON_OBJECT:
+                raise Error("Anthropic content delta is missing")
+            var delta_type = doc.string(doc.get(delta, "type"))
+            if delta_type == "text_delta":
+                _only_fields(doc, delta, ["type", "text"], "text delta")
+                if self.anthropic_phase != 6 or not self.anthropic_text_index or self.anthropic_text_index.value() != block_index:
+                    raise Error("Anthropic text delta does not match its block")
+                var text = doc.string(doc.get(delta, "text"))
+                var text_value = doc.get(delta, "text")
+                if text_value < 0 or doc.nodes[text_value].kind != JSON_STRING:
+                    raise Error("Anthropic text delta must be a string")
+                return self.observe('{"choices":[{"delta":{"content":' + quote_json(text) + '},"finish_reason":null}]}')
+            if delta_type == "input_json_delta":
+                _only_fields(doc, delta, ["type", "partial_json"], "input JSON delta")
+                var fragment = doc.string(doc.get(delta, "partial_json"))
+                var search = self.anthropic_search_index(block_index)
+                if self.anthropic_phase != 2 or search < 0: raise Error("Anthropic input JSON delta has no supported tool use")
+                var fragment_value = doc.get(delta, "partial_json")
+                if fragment_value < 0 or doc.nodes[fragment_value].kind != JSON_STRING:
+                    raise Error("Anthropic input JSON delta must be a string")
+                self.anthropic_searches[search].input_json += fragment
+                return List[String]()
+            raise Error("Anthropic content delta type is not supported")
+        if kind == "content_block_stop":
+            _only_fields(doc, doc.root, ["type", "index"], "content_block_stop event")
+            var index = json_unsigned(doc, doc.get(doc.root, "index"))
+            if not index: raise Error("Anthropic content block stop index is invalid")
+            var block_index = index.value()
+            var search = self.anthropic_search_index(block_index)
+            if search >= 0:
+                if self.anthropic_phase != 2:
+                    raise Error("Anthropic web-search block stop is out of order")
+                _ = _web_search_item(self.anthropic_searches[search], False)
+                self.anthropic_phase = 3
+                return List[String]()
+            if self.anthropic_result_index and self.anthropic_result_index.value() == block_index and self.anthropic_phase == 4:
+                self.anthropic_phase = 5
+                return List[String]()
+            if self.anthropic_text_index and self.anthropic_text_index.value() == block_index and self.anthropic_phase == 6:
+                self.anthropic_phase = 7
+                return List[String]()
+            raise Error("Anthropic content block stop has no supported block")
+        if kind == "message_delta":
+            if self.anthropic_phase != 7:
+                raise Error("Anthropic message_delta is out of order")
+            _only_fields(doc, doc.root, ["type", "delta", "usage"], "message_delta event")
+            var delta = doc.get(doc.root, "delta")
+            _only_fields(doc, delta, ["stop_reason", "stop_sequence"], "message_delta")
+            if doc.string(doc.get(delta, "stop_reason")) != "end_turn":
+                raise Error("Anthropic stream stop reason is not supported")
+            var stop_sequence = doc.get(delta, "stop_sequence")
+            if stop_sequence >= 0 and doc.nodes[stop_sequence].kind != JSON_NULL:
+                raise Error("Anthropic stream stop sequence is not supported")
+            var usage = doc.get(doc.root, "usage")
+            _only_fields(doc, usage, ["output_tokens"], "message_delta usage")
+            var output = json_unsigned(doc, doc.get(usage, "output_tokens"))
+            if not output: raise Error("Anthropic message_delta usage is invalid")
+            self.anthropic_output_tokens = output.value()
+            self.anthropic_phase = 8
+            self.finish_reason = Optional[String]("stop")
+            var total = UInt64.MAX if self.anthropic_output_tokens > UInt64.MAX - self.anthropic_input_tokens else self.anthropic_input_tokens + self.anthropic_output_tokens
+            self.usage = Optional[String]('{"input_tokens":' + String(self.anthropic_input_tokens) + ',"output_tokens":' + String(self.anthropic_output_tokens) + ',"total_tokens":' + String(total) + '}')
+            return self.complete_tools()
+        if kind == "message_stop":
+            _only_fields(doc, doc.root, ["type"], "message_stop event")
+            if self.anthropic_phase != 8 or len(self.anthropic_searches) != 1 or not self.anthropic_searches[0].done or not self.anthropic_text_index:
+                raise Error("Anthropic stream ended outside the supported web-search response shape")
+            self.anthropic_phase = 9
+            var events = self.complete_anthropic_searches()
+            if not self.created:
+                self.created = True
+                events.insert(0, self.event("response.created", '"response":{"id":' + quote_json(self.response_id) + "}", True))
+            events.extend(self.complete())
+            return events^
+        raise Error("Anthropic stream event type is not supported")
+
+    def start_anthropic_search(mut self, doc: JsonDocument, block: Int, index: UInt64) raises -> List[String]:
+        var id = doc.string(doc.get(block, "id"))
+        if not id: raise Error("Anthropic web-search tool use requires an id")
+        var input = doc.get(block, "input")
+        var input_json = serialize_json(doc, input) if input >= 0 and len(doc.nodes[input].children) != 0 else String()
+        var search = AnthropicWebSearch(index, id, input_json, "[]", False)
+        var item = _web_search_item(search, True)
+        var position = 0
+        while position < len(self.anthropic_searches) and self.anthropic_searches[position].output_index < search.output_index:
+            position += 1
+        self.anthropic_searches.insert(position, search^)
+        var output = List[String]()
+        output.append(self.event("response.output_item.added", '"output_index":' + String(index) + ',"item":' + item))
+        return output^
+
+    def finish_anthropic_search(mut self, doc: JsonDocument, block: Int) raises -> List[String]:
+        var id = doc.string(doc.get(block, "tool_use_id"))
+        if not id: raise Error("Anthropic web-search result requires tool_use_id")
+        var sources = _search_sources(doc, block)
+        var content = doc.get(block, "content")
+        if len(doc.nodes[content].children) == 0:
+            raise Error("Anthropic web-search result must contain at least one source")
+        var output = List[String]()
+        var found = False
+        for position in range(len(self.anthropic_searches)):
+            if self.anthropic_searches[position].id != id: continue
+            if self.anthropic_searches[position].done:
+                raise Error("Anthropic web-search result is duplicated")
+            self.anthropic_searches[position].sources = sources
+            if not self.anthropic_searches[position].done:
+                var item = _web_search_item(self.anthropic_searches[position], False)
+                self.anthropic_searches[position].done = True
+                self.external_output_items.append(item)
+                output.append(self.event("response.output_item.done", '"output_index":' + String(self.anthropic_searches[position].output_index) + ',"item":' + item))
+            found = True
+        if not found: raise Error("Anthropic web-search result does not match a tool use")
+        return output^
+
+    def complete_anthropic_searches(mut self) raises -> List[String]:
+        var output = List[String]()
+        for position in range(len(self.anthropic_searches)):
+            if self.anthropic_searches[position].done: continue
+            var item = _web_search_item(self.anthropic_searches[position], False)
+            self.anthropic_searches[position].done = True
+            self.external_output_items.append(item)
+            output.append(self.event("response.output_item.done", '"output_index":' + String(self.anthropic_searches[position].output_index) + ',"item":' + item))
+        return output^
+
+    def anthropic_search_index(self, index: UInt64) -> Int:
+        for position in range(len(self.anthropic_searches)):
+            if self.anthropic_searches[position].output_index == index: return position
+        return -1
 
     def apply_metadata(mut self, doc: JsonDocument) raises:
         var id = optional_string(doc, doc.root, "id")
@@ -271,11 +495,17 @@ struct DeepSeekChatState:
 
     def response_value(self) raises -> String:
         var items = List[String]()
+        if self.anthropic_searches:
+            for item in self.external_output_items:
+                items.append(item)
         if self.output_text:
             items.append('{"type":"message","role":"assistant","content":[{"type":"output_text","text":' + quote_json(self.output_text) + "}]}")
         for tool in self.tools:
             var name = tool.name.value() if tool.name else String("tool_call")
             items.append(tool_output_item(tool.call_id, name, tool.arguments, tool.signature))
+        if not self.anthropic_searches:
+            for item in self.external_output_items:
+                items.append(item)
         var response = '{"id":' + quote_json(self.response_id) + ',"output":' + json_array(items)
         if self.model:
             response += ',"model":' + quote_json(self.model.value())

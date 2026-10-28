@@ -400,7 +400,7 @@ class LocalRewriteTests(unittest.TestCase):
         self.assertNotIn("strict", tool)
         self.assertNotIn("required", tool["parameters"])
 
-    def test_strict_tools_valid_web_tool_keeps_the_known_501_route_gap(self):
+    def test_strict_tools_mixed_web_function_tools_fail_closed(self):
         request = {
             "model": "deepseek-chat",
             "input": "synthetic strict web request",
@@ -431,8 +431,8 @@ class LocalRewriteTests(unittest.TestCase):
                 },
             ) as relay:
                 status, _, body = post_relay(relay.address, json_bytes(request))
-        self.assertEqual(status, 501)
-        self.assertEqual(body, b"DeepSeek native web-search routing is not implemented")
+        self.assertEqual(status, 502)
+        self.assertEqual(body, b"upstream request failed")
         self.assertEqual(server.records, [])
 
     def test_disabled_strict_tools_keeps_default_route_and_schema(self):

@@ -1,5 +1,40 @@
 # CI lessons
 
+## Pinned source recovery does not restore the oracle
+
+- On 2026-10-28, `git ls-remote https://github.com/christiandoxa/prodex
+  refs/tags/0.439.2 'refs/tags/0.439.2^{}'` and the equivalent `0.439.1`
+  lookup both exited successfully with empty stdout. The source helper then
+  fetched only commits `72b77478a5198fc5da6b4d2253137f9cdbf43be9` and
+  `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`, respectively. It verified each
+  checkout's HEAD and every tracked file against the pinned Git tree; the
+  second active-source invocation verified the existing cache. No Prodex
+  source code was executed and the test cache was temporary.
+- Reproduction: `python3 scripts/ci/reference.py source active` and
+  `python3 scripts/ci/reference.py source 0.439.1`, with
+  `MODEX_REFERENCE_CACHE` set to an empty temporary directory. Focused check:
+  `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_ci_reference`
+  passed all 27 tests, including absent, moved, malformed and failed lookup
+  cases; replace-ref, local URL rewrite, and Git fsmonitor/filter execution
+  controls also passed.
+- The oracle command with the same empty cache,
+  `python3 scripts/ci/reference.py oracle active`, exited 1 with
+  `official Prodex tag 0.439.2 is missing; expected frozen commit
+  72b77478a5198fc5da6b4d2253137f9cdbf43be9. The baseline reference is
+  unavailable; refusing to substitute another version.` No oracle cache entry
+  was created. This source-only path does not provide the pinned Linux binary,
+  and Fast CI currently checks the oracle before acquiring source. The missing
+  official binary remains an open CI blocker and no parity claim follows.
+- Captured command results and the exact pinned binary digests are recorded in
+  `docs/evidence/reference-source-fallback-20261028.json`.
+- Cache verification conservatively rejects tracked symlinks to existing
+  directories because `os.walk` classifies them as directories. The recovered
+  0.439.2 and 0.439.1 snapshots passed; generic support for this Git-tree edge
+  is deferred.
+- Fast run [40633014746](https://github.com/christiandoxa/modex/actions/runs/40633014746)
+  on base `cfa983c` failed before source acquisition while obtaining the
+  oracle. The source-only change has no hosted validation.
+
 ## Frozen release disappeared and width-control calibration
 
 - Fast run [40628355469](https://github.com/christiandoxa/modex/actions/runs/40628355469),

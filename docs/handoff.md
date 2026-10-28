@@ -8,6 +8,11 @@ comparisons below are historical and do not establish 0.165.1 behavior.
 The active baseline and oracle routing now select 0.165.1; the full inventory
 and production parity against this release remain unfinished.
 
+The `help update` unknown-subcommand diagnostic now preserves the full
+argument, including attached values, in three real-process comparisons with
+0.165.1 and the historical 0.439.2 control. Update execution remains
+unimplemented; see `docs/evidence/baseline-0.165.1/cli-observations.md`.
+
 `tests/test_cli_01651.py` compares selected root-help forms and leading version
 flags through both production executables in isolated homes. Both cases passed
 on Linux x86-64 with the verified binary. This does not establish complete CLI

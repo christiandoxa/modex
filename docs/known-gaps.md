@@ -92,7 +92,7 @@ listing now ignores selected unrelated state-like filenames in the same way as
 locks, atomic temporary files and profile journals remain fail-closed because
 state recovery and locking are not implemented.
 Selected dotted-I expansion and contextual Greek sigma queries now match both
-the active 0.439.2 oracle and the separately pinned 0.439.5 oracle. The 0.165.1 session selector now uses the full Unicode 17 Cased and
+the historical 0.439.2 and separately pinned 0.439.5 oracles. The 0.165.1 session selector now uses the full Unicode 17 Cased and
 Case_Ignorable properties for sigma context, checked against all scalars and
 selected release queries. All UnicodeData simple lowercase mappings and dotted-I now pass a native audit;
 other string-level lowercase behavior remains unverified. Broader

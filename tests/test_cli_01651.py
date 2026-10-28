@@ -57,6 +57,24 @@ class Release01651CliTests(unittest.TestCase):
                                  (0, map_executable(baseline.stdout), b""))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_help_update_preserves_unknown_subcommand_argument(self):
+        for argument in ("--unknown=synthetic-value", "--help=synthetic-value", "synthetic=value"):
+            with self.subTest(argument=argument):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, ["help", "update", argument], "prodex", "01651-update-help-error"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, ["help", "update", argument], "modex", "modex-update-help-error"
+                )
+                expected_stderr = baseline.stderr.replace(
+                    b"Usage: prodex update", b"Usage: modex update"
+                )
+                self.assertEqual(baseline.returncode, 2)
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, baseline.stdout, expected_stderr))
+                self.assertIn(argument.encode(), expected_stderr)
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
     def test_update_parser_errors_and_help_order_match_release(self):
         cases = (
             (["update", "--help"], 0, "prodex"),

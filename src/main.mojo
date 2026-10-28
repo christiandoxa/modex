@@ -63,7 +63,7 @@ def main():
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])
         if len(args) > 3:
-            var name = argument_name(args[3])
+            var name = String(args[3])
             print(session_cli_error("unrecognized subcommand '" + name + "'", executable + " update"), file=stderr, end="")
             exit(2)
             return

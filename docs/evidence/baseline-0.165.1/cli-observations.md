@@ -21,3 +21,8 @@ positional, literal separator, attached value and custom-executable cases. The
 isolated comparisons verify exit status, stdout, stderr and no home mutations.
 Bare update still fails closed; update execution and untested combinations are
 not qualified.
+
+For `help update`, three unknown subcommands containing `=` now retain the
+whole argument in the diagnostic, matching the 0.165.1 executable and the
+historical 0.439.2 executable. The isolated checks compare exit status, output,
+and home mutations; they do not qualify other argument combinations.

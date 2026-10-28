@@ -1,5 +1,36 @@
 # Current work: Prodex 0.439.5 parity and CI
 
+Checkpoint `96648d0be537ca1c2dedf8dd3fd75d8e5f910fe7` is verified on
+`origin/main`. It follows `1f43496` (untyped content) and `3f82f0d` (embedded
+tool calls), with focused production builds and 0.439.5 synthetic loopback
+regressions passing for each slice. Fast run `40610911584` is in progress on
+`96648d0`; exact-SHA Full run `40610499704` is in progress on `3f82f0d`.
+The corresponding earlier Fast runs were cancelled by later pushes. The latest
+SHA with both Fast and Full passing remains `7519342`; `78472bb` passed Full
+but failed Fast as described below. No newer run is counted as a pass.
+
+Three Luna Max workers were launched for CI memory, continuation observation,
+and provider tools; the collaboration API does not expose their effective
+model or effort independently. The continuation observer and memory-harness
+edits remain uncommitted drafts pending integration and adversarial review.
+The pre-existing profile and artifact-manifest prototypes are also preserved
+in the workspace. Do not stage or build them accidentally when validating a
+checkpoint; use a clean snapshot with explicit intended paths.
+
+The continuation draft comprises `src/modex/runtime_local_rewrite.mojo`, new
+`src/modex/runtime_sse_binding_observer.mojo`, and two new
+`tests/test_runtime_observer*` files. An isolated build, native observer test,
+and oversized-event production comparison passed: release and draft both
+returned 200/503 with one upstream POST. The streaming parser still needs
+bounded differential testing and production-entrypoint controls for malformed
+JSON, duplicate IDs, chunk boundaries, and ordinary events before integration.
+The CI draft changes only `tests/test_text_memory.py` and
+`tests/width_memory_driver.mojo`; its local five-pattern check passed, but the
+synthetic fixture does not yet exercise the full decision logic and its fault
+threshold can reject huge-page samples. The provider-parameter worker made no
+edits after 165 isolated comparisons found no mismatch; tool-shape tracing is
+the next independent production slice.
+
 Fast CI run `40606177561` on `78472bb` failed the new minor-fault positive
 control on a host using transparent huge pages. All five width measurements
 and anonymous controls passed, but a huge-page fault does not correspond to

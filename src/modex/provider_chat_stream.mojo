@@ -219,7 +219,10 @@ struct DeepSeekChatState:
                 self.anthropic_phase = 4
                 return self.finish_anthropic_search(doc, block)
             if block_type == "text":
-                if self.anthropic_phase != 5 or block_index != 2:
+                if not (
+                    (self.anthropic_phase == 1 and block_index == 0)
+                    or (self.anthropic_phase == 5 and block_index == 2)
+                ):
                     raise Error("Anthropic text block is out of order")
                 _only_fields(doc, block, ["type", "text"], "text block")
                 var text = doc.get(block, "text")
@@ -280,7 +283,7 @@ struct DeepSeekChatState:
                 return List[String]()
             raise Error("Anthropic content block stop has no supported block")
         if kind == "message_delta":
-            if self.anthropic_phase != 7:
+            if self.anthropic_phase != 1 and self.anthropic_phase != 7:
                 raise Error("Anthropic message_delta is out of order")
             _only_fields(doc, doc.root, ["type", "delta", "usage"], "message_delta event")
             var delta = doc.get(doc.root, "delta")
@@ -319,15 +322,15 @@ struct DeepSeekChatState:
         if kind == "message_stop":
             _only_fields(doc, doc.root, ["type"], "message_stop event")
             if (
-                (self.anthropic_phase != 7 and self.anthropic_phase != 8)
-                or len(self.anthropic_searches) != 1
-                or not self.anthropic_searches[0].done
-                or not self.anthropic_text_index
+                (self.anthropic_phase != 1 and self.anthropic_phase != 7 and self.anthropic_phase != 8)
+                or len(self.anthropic_searches) > 1
+                or (len(self.anthropic_searches) == 1 and (not self.anthropic_searches[0].done or not self.anthropic_text_index))
             ):
                 raise Error("Anthropic stream ended outside the supported web-search response shape")
+            var emit_created = self.anthropic_phase == 8 or len(self.anthropic_searches) > 0
             self.anthropic_phase = 9
             var events = self.complete_anthropic_searches()
-            if not self.created:
+            if not self.created and emit_created:
                 self.created = True
                 events.insert(0, self.event("response.created", '"response":{"id":' + quote_json(self.response_id) + "}", True))
             events.extend(self.complete())

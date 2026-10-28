@@ -92,6 +92,15 @@ def main() raises:
     var max_tokens_events = collect_anthropic_completed(before_stop + max_tokens_delta + message_stop)
     assert_true('"finish_reason":"length"' in max_tokens_events[len(max_tokens_events) - 1])
 
+    var plain_start = text_start.replace('"index":2', '"index":0')
+    var plain_delta = text_delta.replace('"index":2', '"index":0')
+    var plain_stop = text_stop.replace('"index":2', '"index":0')
+    var plain_events = collect_anthropic_completed(message_start + plain_start + plain_delta + plain_stop + message_delta + message_stop)
+    assert_true('"text":"Found it."' in plain_events[len(plain_events) - 1])
+    var empty_events = collect_anthropic_completed(message_start + message_delta + message_stop)
+    assert_true('"output":[]' in empty_events[len(empty_events) - 1])
+    assert_anthropic_failed(message_start + plain_start + plain_delta + message_stop)
+
     assert_anthropic_failed(search_result + text_start + text_delta + text_stop + message_delta + 'data: {"type":"message_stop"}\n\n')
     assert_anthropic_failed(message_start + search_result + text_start + text_delta + text_stop + message_delta + 'data: [DONE]\n\n')
     assert_anthropic_failed(before_stop)

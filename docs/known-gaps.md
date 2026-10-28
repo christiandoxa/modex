@@ -41,10 +41,10 @@ Oracle controls record citation omission, reasoning conversion from a
 Successful handling remains limited to one tested search call/result with
 text. Broader request/message shapes, tool-result/history round trips, complete
 metadata/citation behavior, TLS/DNS/proxies, resource behavior and full
-stream/error equivalence remain open. Stream success requires the tested
-ordered search/result/text blocks with explicit stops and a final
-`message_stop`; other valid Anthropic event orders remain
-unverified. The exact empty-string request is rejected with the observed 400
+stream/error equivalence remain open. The tested ordered search/result/text
+shape and text-only or empty streams with a final `message_stop` are supported;
+other Anthropic event orders remain unverified. Nonempty initial text blocks
+are rejected while the release drops that text. The exact empty-string request is rejected with the observed 400
 before POST, while whitespace-only input is accepted. See
 `docs/evidence/anthropic-web-search-04392.md`.
 Selected string/null stop reasons and streams without `message_delta` now match

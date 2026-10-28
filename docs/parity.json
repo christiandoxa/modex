@@ -135,6 +135,10 @@
     {
       "date": "2026-10-28",
       "change": "Connect selected environment web-search modes and plain Anthropic message arrays through production Super; expand profile help parsing and harden CI audit gates. Rich content, stateful profiles, TOML mode precedence and broader behavior remain unfinished; no contract or platform status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Support selected Anthropic text-only and empty streams without a web-search call, compared with full 0.439.2 process events. Nonempty initial blocks and broader event orders remain gaps; no status is promoted."
     }
   ],
   "contracts": [
@@ -2799,6 +2803,7 @@
         "tests/test_provider_embedded_tool_calls_04395.py",
         "tests/test_provider_tools_04392_characterization.py",
         "tests/test_anthropic_message_arrays_04392.py",
+        "tests/test_anthropic_text_stream_04392.py",
         "tests/test_anthropic_buffered_payload_04392.py"
       ],
       "evidence": [

@@ -62,6 +62,10 @@
 - Fast run [40650182199](https://github.com/christiandoxa/modex/actions/runs/40650182199)
   on `53045196292d349116e05cdd90f080c62b7dd0dd` again passed 31 reference
   helpers, then failed at the unavailable oracle before build.
+- Fast run [40657417451](https://github.com/christiandoxa/modex/actions/runs/40657417451)
+  on `9918b416c66f3a5f25d263c18fe73b956c851d35` passed the 14 policy and
+  inventory tests, the 71-source audit and all 31 reference helpers. It then
+  failed at the missing oracle before build; the artifact consumer was skipped.
 
 ## Workflow and dependency audit corrections
 

@@ -44,9 +44,12 @@ completes after an image block without preserving its data. Modex returns 502
 for the buffered cases and a terminal `response.failed` event for the stream
 case. Native SSE success requires an ordered message start, one search block,
 one result block, one empty-start text block, their stop events and a message
-stop. A bare `[DONE]`, missing start/stop, nonempty initial text and unsupported
-block order fail closed. Only the tested single web-search call/result and text
-shape succeeds.
+stop for the tested search-result shape. A separate text-only or empty message
+may now complete without a web-search block. Eight such event sequences match
+the release after normalizing generated IDs and timestamps, with or without
+`message_delta`. A bare `[DONE]`, missing start/stop, nonempty initial text and
+unsupported block order fail closed. The release drops a nonempty initial text
+block; Modex rejects that tested shape instead.
 
 Full normalized release comparisons now match `stop_sequence`, null and
 unknown string reasons, `tool_use`, `max_tokens`, a non-null stop sequence with
@@ -68,6 +71,10 @@ Checks run in an isolated workspace copy:
 The combined production build subsequently passed all 20 methods in
 `test_anthropic_message_arrays_04392.py` and
 `test_provider_tools_04392_characterization.py` without skips.
+The later text-only stream change passed
+`python3 scripts/ci/run-unittest.py test_anthropic_text_stream_04392.py`,
+three existing SSE characterization methods and the rebuilt native reader and
+stream programs.
 
 Fixtures use synthetic keys and local loopback providers. No paid provider traffic,
 real credentials or account login were used. This does not qualify general

@@ -1,5 +1,11 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The Anthropic stream adapter now completes tested text-only and empty messages
+when the model does not invoke web search. Eight full event sequences match
+0.439.2 with generated IDs and timestamps normalized. A nonempty initial text
+block still fails closed while the release drops its contents; broader stream
+orders remain unverified. See `tests/test_anthropic_text_stream_04392.py`.
+
 The production Super relay now honors the tested environment web-search modes:
 off rejects search before POST, chat aliases select Chat Completions, and
 auto/anthropic select the Messages path for the tested search request. Invalid
@@ -34,6 +40,11 @@ the 71-file dependency audit and 31 reference-helper tests. It failed before
 building because the official 0.439.2 tag and pinned oracle were unavailable;
 the artifact consumer was skipped. This run does not validate the product
 changes in hosted CI.
+
+Fast run [40657417451](https://github.com/christiandoxa/modex/actions/runs/40657417451)
+on `9918b416c66f3a5f25d263c18fe73b956c851d35` passed the 14 new CI policy
+and inventory tests, the 71-source audit and 31 reference helpers. It failed
+before building on the unavailable 0.439.2 oracle; the consumer was skipped.
 
 Profile group help, seven subcommands' short and long help, help aliases and
 missing-subcommand output now match the pinned 0.439.2 process for the tested

@@ -31,9 +31,13 @@
   directories because `os.walk` classifies them as directories. The recovered
   0.439.2 and 0.439.1 snapshots passed; generic support for this Git-tree edge
   is deferred.
-- Fast run [40633014746](https://github.com/christiandoxa/modex/actions/runs/40633014746)
-  on base `cfa983c` failed before source acquisition while obtaining the
-  oracle. The source-only change has no hosted validation.
+- Fast run [40641725411](https://github.com/christiandoxa/modex/actions/runs/40641725411),
+  attempt 1 on `6baf72fd1c2bece878a5e2024ac3a7f039653b86`, passed workflow
+  validation, the dependency audit, and all 27 reference-helper tests. It then
+  failed acquiring the missing 0.439.2 oracle before source acquisition or
+  build; artifact consumers were skipped. Evidence artifact `12795867683`
+  and logs are preserved under `/tmp/modex-ci-40641725411/`. The hosted run
+  does not validate the source fallback with the official remote.
 
 ## Frozen release disappeared and width-control calibration
 

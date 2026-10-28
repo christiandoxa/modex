@@ -47,6 +47,13 @@
     "stderr": "official Prodex tag 0.439.2 is missing; expected frozen commit 72b77478a5198fc5da6b4d2253137f9cdbf43be9. The baseline reference is unavailable; refusing to substitute another version.",
     "oracle_cache_created": false
   },
+  "hosted_fast_ci": {
+    "run_id": 40641725411,
+    "source_commit": "6baf72fd1c2bece878a5e2024ac3a7f039653b86",
+    "reference_helper_tests": "27 passed",
+    "conclusion": "failed acquiring the unavailable 0.439.2 oracle before build or source acquisition; artifact consumers skipped",
+    "evidence_artifact_id": 12795867683
+  },
   "remaining_limitation": "This fallback recovers source only. The official release assets are absent, anonymous Actions-artifact download returns HTTP 401, and recovered workflow artifacts expire. No source-built executable has been verified against the pinned Linux oracle SHA-256; it cannot be used as the oracle. The cache verifier also conservatively rejects tracked symlinks to existing directories; neither recovered pinned snapshot exercised that case. Reference-dependent CI remains blocked.",
   "related_evidence": "docs/evidence/reference-recovery-20261028.json"
 }

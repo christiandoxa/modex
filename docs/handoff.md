@@ -19,10 +19,11 @@ so the oracle helper fails closed and CI cannot run reference comparisons
 until those official bytes are available. Exact commands and results are in
 `docs/ci-lessons.md` and `docs/evidence/reference-source-fallback-20261028.json`.
 The cache verifier conservatively rejects tracked symlinks to directories;
-the two recovered source trees contain none.
-Fast run [40633014746](https://github.com/christiandoxa/modex/actions/runs/40633014746)
-on `cfa983c` failed while acquiring the oracle, before source acquisition. This
-worktree has not been validated by a hosted run.
+the two recovered source trees contain none. Fast run
+[40641725411](https://github.com/christiandoxa/modex/actions/runs/40641725411)
+on `6baf72f` passed all 27 reference-helper tests, then failed while acquiring
+the missing oracle before the build or source acquisition. Its artifact
+consumers were skipped.
 
 The Full run `40625731794` memory-control failure is corrected locally by
 disabling transparent huge pages in the isolated test children and verifying

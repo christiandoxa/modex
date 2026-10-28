@@ -29,3 +29,10 @@ orphan and mismatched indices, duplicate/reopened stops, and deltas after stop.
 Some malformed stop sequences complete in the release but remain rejected in
 Modex; image blocks also remain a documented mismatch. This is not general
 function-tool or event-order parity.
+
+Selected mixed text/function streams now match the release with text before or
+after multiple function calls, argument deltas and stops while text is open,
+and a late argument delta after `message_delta`. The real-process comparisons
+also check the observed output indexes and ignore a trailing event after
+`message_stop`. Mixed server-side web search and user-function streams remain
+unverified; previous support remains unchanged.

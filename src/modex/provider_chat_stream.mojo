@@ -216,7 +216,7 @@ struct DeepSeekChatState:
                 self.anthropic_phase = 2
                 return self.start_anthropic_search(doc, block, block_index)
             if block_type == "tool_use":
-                if self.anthropic_phase != 1 and self.anthropic_phase != 5:
+                if self.anthropic_phase != 1 and self.anthropic_phase != 5 and self.anthropic_phase != 7:
                     raise Error("Anthropic tool-use block is out of order")
                 _only_fields(doc, block, ["type", "id", "name", "input"], "tool-use block")
                 var id = doc.get(block, "id")
@@ -251,7 +251,7 @@ struct DeepSeekChatState:
                 return self.finish_anthropic_search(doc, block)
             if block_type == "text":
                 if not (
-                    (self.anthropic_phase == 1 and block_index == 0)
+                    self.anthropic_phase == 1
                     or (self.anthropic_phase == 5 and block_index == 2)
                 ):
                     raise Error("Anthropic text block is out of order")
@@ -304,7 +304,13 @@ struct DeepSeekChatState:
                     if self.anthropic_stopped_tool_indices[position] == block_index:
                         stopped = True
                         break
-                if not tracked or stopped or (self.anthropic_phase != 1 and self.anthropic_phase != 5):
+                if not tracked or stopped or (
+                    self.anthropic_phase != 1
+                    and self.anthropic_phase != 5
+                    and self.anthropic_phase != 6
+                    and self.anthropic_phase != 7
+                    and self.anthropic_phase != 8
+                ):
                     raise Error("Anthropic input JSON delta has no supported tool use")
                 return self.observe(
                     '{"choices":[{"delta":{"tool_calls":[{"index":' + String(block_index)
@@ -336,7 +342,13 @@ struct DeepSeekChatState:
                     tracked = True
                     break
             if tracked:
-                if self.anthropic_phase != 1 and self.anthropic_phase != 5:
+                if (
+                    self.anthropic_phase != 1
+                    and self.anthropic_phase != 5
+                    and self.anthropic_phase != 6
+                    and self.anthropic_phase != 7
+                    and self.anthropic_phase != 8
+                ):
                     raise Error("Anthropic tool-use block stop is out of order")
                 for position in range(len(self.anthropic_stopped_tool_indices)):
                     if self.anthropic_stopped_tool_indices[position] == block_index:

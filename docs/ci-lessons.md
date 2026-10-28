@@ -2,6 +2,14 @@
 
 ## Scratch setup failure must clean its private root
 
+A separate local full-suite run at `6d51973` initially created its nested
+`TMPDIR` with mode 0775. The reference rejected runtime secret storage in that
+untrusted parent, producing historical provider failures. Changing the
+working test-only directories to 0700 made focused Anthropic and continuation
+reproductions pass. The original full run is still a failure and is retained at
+`~/.cache/modex/ci-evidence/full-test-6d51973.log`; do not count it as a clean
+suite. The production CI scratch helper already creates mode-0700 directories.
+
 A partial `mkdir` failure during CI scratch initialization could exit before
 the cleanup trap was installed, leaving the new private directory behind.
 The trap is now installed immediately after the root is created. The synthetic
@@ -10,6 +18,13 @@ and checks that the root is removed. The test runs in the independent helper
 shards; no hosted result is available for this correction yet.
 
 ## 0.165.1 checks precede the unavailable historical oracle
+
+Fast run [40751613083](https://github.com/christiandoxa/modex/actions/runs/40751613083),
+attempt 1 on `12b7392a4fa3fc7b64a192af31b6e49fa8c182b5`, passed both helper
+shards, the production build, native units and 0.165.1 focused tests. The
+producer then failed acquiring the unavailable mandatory 0.439.2 oracle; its
+artifact consumer was skipped. Evidence is retained under
+`~/.cache/modex/ci-evidence/40751613083/`.
 
 Fast run [40749854285](https://github.com/christiandoxa/modex/actions/runs/40749854285),
 attempt 1 on `6d51973c10f74a189399548765eaf3ad39bcf5ec`, passed both

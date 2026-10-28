@@ -191,6 +191,86 @@ class SuperLaunchTests(unittest.TestCase):
                             b'data: {"type":"message_stop"}\n\n',
                         ))
                         content_type = "text/event-stream"
+                    elif scenario in ("anthropic-tool-use-mixed", "anthropic-tool-use-text-after"):
+                        def event(value):
+                            return b"data: " + json.dumps(value, separators=(",", ":")).encode() + b"\n\n"
+
+                        chunks = [event({"type": "message_start", "message": {
+                            "id": "msg_tool_mixed", "role": "assistant", "model": "deepseek-chat",
+                            "usage": {"input_tokens": 3, "output_tokens": 0},
+                        }})]
+                        if scenario == "anthropic-tool-use-mixed":
+                            chunks.extend((
+                                event({"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}),
+                                event({"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "Found "}}),
+                                event({"type": "content_block_stop", "index": 0}),
+                            ))
+                        tool_blocks = [
+                            (1, "toolu_lookup", "lookup", ['{"query":', '"release"}']),
+                            (2, "toolu_count", "count", ['{"n":1}']),
+                        ]
+                        if scenario == "anthropic-tool-use-text-after":
+                            tool_blocks[0] = (0, "toolu_lookup", "lookup", ['{"query":', '"release"}'])
+                        for index, call_id, name, fragments in tool_blocks:
+                            chunks.append(event({"type": "content_block_start", "index": index, "content_block": {
+                                "type": "tool_use", "id": call_id, "name": name, "input": {},
+                            }}))
+                            chunks.extend(event({"type": "content_block_delta", "index": index, "delta": {
+                                "type": "input_json_delta", "partial_json": fragment,
+                            }}) for fragment in fragments)
+                            chunks.append(event({"type": "content_block_stop", "index": index}))
+                            if scenario == "anthropic-tool-use-text-after" and index == 0:
+                                chunks.extend((
+                                    event({"type": "content_block_start", "index": 1, "content_block": {"type": "text", "text": ""}}),
+                                    event({"type": "content_block_delta", "index": 1, "delta": {"type": "text_delta", "text": "Found "}}),
+                                    event({"type": "content_block_stop", "index": 1}),
+                                ))
+                        chunks.extend((
+                            event({"type": "message_delta", "delta": {"stop_reason": "tool_use", "stop_sequence": None}, "usage": {"output_tokens": 5}}),
+                            event({"type": "message_stop"}),
+                        ))
+                        payload = b"".join(chunks)
+                        content_type = "text/event-stream"
+                    elif scenario in (
+                        "anthropic-tool-use-open-text",
+                        "anthropic-tool-use-after-message-delta",
+                        "anthropic-tool-use-after-message-stop",
+                    ):
+                        def event(value):
+                            return b"data: " + json.dumps(value, separators=(",", ":")).encode() + b"\n\n"
+
+                        chunks = [event({"type": "message_start", "message": {
+                            "id": "msg_tool_boundary", "role": "assistant", "model": "deepseek-chat",
+                            "usage": {"input_tokens": 3, "output_tokens": 0},
+                        }}), event({"type": "content_block_start", "index": 0, "content_block": {
+                            "type": "tool_use", "id": "toolu_lookup", "name": "lookup", "input": {},
+                        }})]
+                        if scenario == "anthropic-tool-use-open-text":
+                            chunks.extend((
+                                event({"type": "content_block_delta", "index": 0, "delta": {"type": "input_json_delta", "partial_json": '{"query":'}}),
+                                event({"type": "content_block_start", "index": 1, "content_block": {"type": "text", "text": ""}}),
+                                event({"type": "content_block_delta", "index": 1, "delta": {"type": "text_delta", "text": "Found "}}),
+                                event({"type": "content_block_delta", "index": 0, "delta": {"type": "input_json_delta", "partial_json": '"release"}'}}),
+                                event({"type": "content_block_stop", "index": 0}),
+                                event({"type": "content_block_stop", "index": 1}),
+                            ))
+                        else:
+                            chunks.extend((
+                                event({"type": "content_block_delta", "index": 0, "delta": {"type": "input_json_delta", "partial_json": "{}"}}),
+                                event({"type": "message_delta", "delta": {"stop_reason": "tool_use", "stop_sequence": None}, "usage": {"output_tokens": 5}}),
+                                event({"type": "content_block_delta", "index": 0, "delta": {"type": "input_json_delta", "partial_json": " "}}),
+                                event({"type": "content_block_stop", "index": 0}),
+                                event({"type": "message_stop"}),
+                            ))
+                            if scenario == "anthropic-tool-use-after-message-stop":
+                                chunks.append(event({"type": "content_block_delta", "index": 0, "delta": {"type": "input_json_delta", "partial_json": "late"}}))
+                        if scenario == "anthropic-tool-use-open-text":
+                            chunks.extend((
+                                event({"type": "message_delta", "delta": {"stop_reason": "tool_use", "stop_sequence": None}, "usage": {"output_tokens": 5}}),
+                                event({"type": "message_stop"}),
+                            ))
+                        payload = b"".join(chunks)
+                        content_type = "text/event-stream"
                     elif scenario.startswith("anthropic-tool-use-"):
                         start = b'data: {"type":"message_start","message":{"id":"msg_tool","role":"assistant","model":"deepseek-chat","usage":{"input_tokens":3,"output_tokens":0}}}\n\n'
                         tool = b'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_lookup","name":"lookup","input":{}}}\n\n'

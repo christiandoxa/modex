@@ -96,6 +96,77 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
         self.assertEqual(reference["state"]["leftovers"], [])
         self.assertEqual(modex["state"]["leftovers"], [])
 
+    def test_anthropic_multiple_tools_can_share_a_text_response(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": True,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        for scenario in ("anthropic-tool-use-mixed", "anthropic-tool-use-text-after"):
+            with self.subTest(scenario=scenario):
+                reference = _run(ORACLE_01651, request, scenario=scenario)
+                modex = _run(MODEX, request, scenario=scenario)
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+                self.assertEqual(len(reference["upstream"]), 1)
+                self.assertEqual(len(modex["upstream"]), 1)
+                self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+                self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+                reference_events = _normalized_events(reference["response_body"])
+                modex_events = _normalized_events(modex["response_body"])
+                self.assertEqual(modex_events, reference_events)
+                completed = reference_events[-1][1]["response"]
+                self.assertEqual(completed["output"][0]["content"][0]["text"], "Found ")
+                self.assertEqual(
+                    [(item["name"], item["arguments"]) for item in completed["output"][1:]],
+                    [("lookup", '{"query":"release"}'), ("count", '{"n":1}')],
+                )
+                tool_indexes = [
+                    payload["output_index"]
+                    for name, payload in reference_events
+                    if name == "response.output_item.added" and "output_index" in payload
+                ]
+                self.assertEqual(tool_indexes, [1, 2] if scenario == "anthropic-tool-use-mixed" else [0, 2])
+                self.assertEqual(len(tool_indexes), len(set(tool_indexes)))
+                self.assertEqual(completed["metadata"]["deepseek"]["finish_reason"], "tool_calls")
+                self.assertEqual(reference["state"]["leftovers"], [])
+                self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_tool_events_during_text_and_after_message_delta_match_release(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": True,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        for scenario in (
+            "anthropic-tool-use-open-text",
+            "anthropic-tool-use-after-message-delta",
+            "anthropic-tool-use-after-message-stop",
+        ):
+            with self.subTest(scenario=scenario):
+                reference = _run(ORACLE_01651, request, scenario=scenario)
+                modex = _run(MODEX, request, scenario=scenario)
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+                reference_events = _normalized_events(reference["response_body"])
+                modex_events = _normalized_events(modex["response_body"])
+                self.assertEqual(modex_events, reference_events)
+                names = [name for name, _ in reference_events]
+                self.assertIn("response.completed", names)
+                if scenario == "anthropic-tool-use-after-message-delta":
+                    done = names.index("response.output_item.done")
+                    deltas = [index for index, name in enumerate(names) if name == "response.function_call_arguments.delta"]
+                    self.assertEqual(len(deltas), 2)
+                    self.assertGreater(deltas[-1], done)
+                if scenario == "anthropic-tool-use-after-message-stop":
+                    completed = reference_events[-1][1]["response"]
+                    self.assertEqual(completed["output"][0]["arguments"], "{} ")
+                    self.assertEqual(names.count("response.function_call_arguments.delta"), 2)
+                self.assertEqual(reference["state"]["leftovers"], [])
+                self.assertEqual(modex["state"]["leftovers"], [])
+
     def test_unsupported_anthropic_image_block_difference_stays_visible(self):
         request = {
             "model": "deepseek-chat",

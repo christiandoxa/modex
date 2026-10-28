@@ -25,10 +25,20 @@ its required comparisons remain fail-closed. Both independent helper shards
 passed in run [40748971666](https://github.com/christiandoxa/modex/actions/runs/40748971666)
 on `cfa0dad` before the later push canceled its producer job.
 
+Fast run [40751613083](https://github.com/christiandoxa/modex/actions/runs/40751613083)
+on `12b7392` passed both helper shards, production build, native units and
+current-target tests, then failed at the unavailable mandatory 0.439.2 oracle.
+The artifact consumer was skipped. See `docs/ci-lessons.md`.
+
 Fast run [40749854285](https://github.com/christiandoxa/modex/actions/runs/40749854285)
 on `6d51973` passed both helper shards, production build, native units and
 current-target focused tests, then failed acquiring the unavailable mandatory
 0.439.2 oracle. The artifact consumer was skipped. See `docs/ci-lessons.md`.
+
+The Anthropic stream parser also handles tested mixed text and multiple function
+calls, including selected interleaving and late-delta cases, matching complete
+0.165.1 events in real-process loopback tests. Mixed web-search/function streams
+remain unverified. See `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
 
 The production Anthropic stream parser now maps a tested function `tool_use`
 with split JSON fragments to the same 0.165.1 Responses events. Several invalid

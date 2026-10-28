@@ -2,8 +2,9 @@
 
 Profile group help, seven subcommands' short and long help, help aliases and
 missing-subcommand output now match the pinned 0.439.2 process for the tested
-forms without changing the isolated HOME. Other argument errors and help after
-earlier arguments differ. Profile listing and mutations remain unimplemented
+forms without changing the isolated HOME. First-position help flags also match
+when followed by selected extra arguments. Other argument errors and help
+after earlier arguments differ. Profile listing and mutations remain unimplemented
 because the release creates persistent locks that Modex cannot safely share.
 See `docs/evidence/profile-help-04392.md`; no profile contract is promoted.
 

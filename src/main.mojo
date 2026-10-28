@@ -34,7 +34,7 @@ def main():
             print(profile_help("", executable), file=stderr, end="")
             exit(2)
             return
-        if len(args) == 3 and (args[2] == "--help" or args[2] == "-h"):
+        if args[2] == "--help" or args[2] == "-h":
             print(profile_help("", executable), end="")
             return
         if args[2] == "help":
@@ -46,7 +46,7 @@ def main():
                 if output:
                     print(output, end="")
                     return
-        elif len(args) == 4 and (args[3] == "--help" or args[3] == "-h"):
+        elif len(args) >= 4 and (args[3] == "--help" or args[3] == "-h"):
             var output = profile_help(args[2], executable) if args[3] == "--help" else profile_short_help(args[2], executable)
             if output:
                 print(output, end="")

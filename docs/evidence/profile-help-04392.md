@@ -7,7 +7,9 @@ from source commit `72b77478a5198fc5da6b4d2253137f9cdbf43be9`.
 The production CLI matches the reference's exit status, output bytes and lack
 of filesystem changes for the tested profile group help forms, short and long
 help for all seven subcommands, `help` aliases, a custom executable name and a
-missing profile subcommand. Usage lines substitute Modex's executable name;
+missing profile subcommand. First-position help flags also ignore selected
+trailing positional arguments, unknown flags and literal boundaries, matching
+the release. Usage lines substitute Modex's executable name;
 the release's example text is retained. Tests run each process with an isolated
 HOME and synthetic filesystem.
 
@@ -21,8 +23,8 @@ earlier arguments has not been implemented.
 Checks on the combined Linux x86-64 build:
 
 - `make build` with Mojo 1.2.0 (2016d0cd) passed.
-- `python3 scripts/ci/run-unittest.py test_profile_cli.py test_root_help.py`
-  passed all nine methods without skips.
+- `python3 scripts/ci/run-unittest.py test_profile_cli.py test_root_help.py test_cli.py`
+  passed all 13 methods without skips, including five retained prefix mismatches.
 - `python3 scripts/ci/check-product-dependencies.py` passed for 71 Mojo files.
 
 No stateful profile contract, platform obligation or release qualification is

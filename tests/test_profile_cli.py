@@ -87,6 +87,15 @@ class ProfileCliTests(unittest.TestCase):
                 with self.subTest(command=command, flag=flag):
                     self.assert_help_matches(["profile", command, flag])
 
+    def test_first_help_flag_ignores_trailing_arguments(self):
+        for flag in ("-h", "--help"):
+            for tail in (["synthetic"], ["--bogus", "--", "synthetic"]):
+                with self.subTest(command="profile", flag=flag, tail=tail):
+                    self.assert_help_matches(["profile", flag, *tail])
+                for command in PROFILE_COMMANDS:
+                    with self.subTest(command=command, flag=flag, tail=tail):
+                        self.assert_help_matches(["profile", command, flag, *tail])
+
     def test_profile_help_aliases_and_custom_executable_name(self):
         self.assert_help_matches(["profile", "list", "-h"])
         self.assert_help_matches(["help", "profile", "add"])
@@ -120,6 +129,23 @@ class ProfileCliTests(unittest.TestCase):
         ):
             with self.subTest(arguments=arguments):
                 self.assert_unimplemented_error_without_mutation(arguments)
+
+    def test_valid_arguments_before_help_remain_mismatches(self):
+        for arguments in (
+            ["profile", "add", "synthetic-name", "--help"],
+            ["profile", "add", "--activate", "--help"],
+            ["profile", "export", "--no-password", "--help"],
+            ["profile", "remove", "synthetic-name", "-h"],
+            ["profile", "import-current", "synthetic-name", "--help"],
+        ):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_paths = run_isolated(test_cli.ORACLE, arguments, "prodex")
+                modex, modex_paths = run_isolated(test_cli.MODEX, arguments, "modex")
+                self.assertEqual((baseline.returncode, baseline.stderr), (0, b""))
+                self.assertIn(b"Usage: prodex profile ", baseline.stdout)
+                self.assertEqual((modex.returncode, modex.stdout), (1, b""))
+                self.assertIn(b"has not implemented the requested command", modex.stderr)
+                self.assertEqual((baseline_paths, modex_paths), ([], []))
 
     def test_unknown_profile_subcommands_remain_errors_without_mutation(self):
         for arguments in (

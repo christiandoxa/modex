@@ -133,6 +133,20 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         self.assertEqual(parsed["body_hex"], b"abcdefg".hex())
         self.assertIn(["X-Test", "a\t b"], parsed["headers"])
 
+    def test_status_reason_phrases_match_pinned_transport_table(self):
+        cases = (
+            ("status-206", b"HTTP/1.1 206 Partial Content"),
+            ("status-418", b"HTTP/1.1 418 Unknown"),
+            ("status-422", b"HTTP/1.1 422 Unprocessable Entity"),
+        )
+        for mode, status_line in cases:
+            with self.subTest(mode=mode):
+                process, client = start(mode)
+                client.sendall(request(body=b""))
+                response, stdout = finish(process, client)
+                self.assertTrue(response.startswith(status_line + b"\r\n"), response)
+                self.assertIn("STATUS_SENT", stdout)
+
     def test_chunked_request_and_trailers_are_decoded(self):
         process, client = start("echo")
         client.sendall(

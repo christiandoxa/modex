@@ -84,7 +84,8 @@ class UpstreamHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         response_body = PROVIDER_SSE_RESPONSE if response_kind == "sse" else PROVIDER_RESPONSE
-        self.send_response(200)
+        status = int(response_kind[7:]) if response_kind.startswith("status-") else 200
+        self.send_response(status)
         self.send_header("Content-Type", "text/event-stream" if response_kind == "sse" else "application/json")
         self.send_header("Content-Length", str(len(response_body)))
         self.send_header("Connection", "close")
@@ -309,6 +310,28 @@ def head_bodyless_sse_case(status):
     }
 
 
+def response_status_case(status, reason):
+    return {
+        "name": f"chat_completions_status_{status}_reason",
+        "request": request_bytes(
+            (("X-Oracle-Response", f"status-{status}"),),
+            target=b"/v1/chat/completions",
+        ),
+        "expected_status": status,
+        "expected_reason": reason,
+        "expected_body": PROVIDER_RESPONSE,
+        "expected_headers": {
+            "content-type": "application/json",
+            "content-length": str(len(PROVIDER_RESPONSE)),
+        },
+        "compare_response_body": True,
+        "expected_upstream_method": "POST",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
+    }
+
+
 CASES = (
     {
         "name": "malformed_request_line_missing_version",
@@ -521,6 +544,13 @@ CASES = (
         body=STREAM_REQUEST_BODY,
     ),
     *(head_bodyless_sse_case(status) for status in (204, 304)),
+    response_status_case(200, "OK"),
+    response_status_case(206, "Partial Content"),
+    response_status_case(302, "Found"),
+    response_status_case(404, "Not Found"),
+    response_status_case(500, "Internal Server Error"),
+    response_status_case(418, "Unknown"),
+    response_status_case(422, "Unprocessable Entity"),
     {
         "name": "valid_escaped_query",
         "request": request_bytes(target=b"/v1/responses?x=a%2Fb"),

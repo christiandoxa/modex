@@ -734,38 +734,90 @@ def _reason(status: Int) -> String:
         return "Created"
     if status == 202:
         return "Accepted"
+    if status == 203:
+        return "Non-Authoritative Information"
     if status == 204:
         return "No Content"
+    if status == 205:
+        return "Reset Content"
+    if status == 206:
+        return "Partial Content"
+    if status == 207:
+        return "Multi-Status"
+    if status == 208:
+        return "Already Reported"
+    if status == 226:
+        return "IM Used"
+    if status == 300:
+        return "Multiple Choices"
     if status == 301:
         return "Moved Permanently"
     if status == 302:
         return "Found"
+    if status == 303:
+        return "See Other"
     if status == 304:
         return "Not Modified"
+    if status == 305:
+        return "Use Proxy"
+    if status == 307:
+        return "Temporary Redirect"
+    if status == 308:
+        return "Permanent Redirect"
     if status == 400:
         return "Bad Request"
     if status == 401:
         return "Unauthorized"
+    if status == 402:
+        return "Payment Required"
     if status == 403:
         return "Forbidden"
     if status == 404:
         return "Not Found"
     if status == 405:
         return "Method Not Allowed"
+    if status == 406:
+        return "Not Acceptable"
+    if status == 407:
+        return "Proxy Authentication Required"
     if status == 408:
         return "Request Timeout"
+    if status == 409:
+        return "Conflict"
+    if status == 410:
+        return "Gone"
+    if status == 411:
+        return "Length Required"
+    if status == 412:
+        return "Precondition Failed"
     if status == 413:
         return "Payload Too Large"
+    if status == 414:
+        return "URI Too Long"
     if status == 415:
         return "Unsupported Media Type"
+    if status == 416:
+        return "Range Not Satisfiable"
     if status == 417:
         return "Expectation Failed"
+    if status == 421:
+        return "Misdirected Request"
     if status == 422:
-        return "Unprocessable Content"
-    if status == 429:
-        return "Too Many Requests"
+        return "Unprocessable Entity"
+    if status == 423:
+        return "Locked"
+    if status == 424:
+        return "Failed Dependency"
     if status == 426:
         return "Upgrade Required"
+    if status == 428:
+        return "Precondition Required"
+    if status == 429:
+        return "Too Many Requests"
+    if status == 431:
+        return "Request Header Fields Too Large"
+    if status == 451:
+        return "Unavailable For Legal Reasons"
     if status == 500:
         return "Internal Server Error"
     if status == 501:
@@ -776,4 +828,16 @@ def _reason(status: Int) -> String:
         return "Service Unavailable"
     if status == 504:
         return "Gateway Timeout"
-    return "Response"
+    if status == 505:
+        return "HTTP Version Not Supported"
+    if status == 506:
+        return "Variant Also Negotiates"
+    if status == 507:
+        return "Insufficient Storage"
+    if status == 508:
+        return "Loop Detected"
+    if status == 510:
+        return "Not Extended"
+    if status == 511:
+        return "Network Authentication Required"
+    return "Unknown"

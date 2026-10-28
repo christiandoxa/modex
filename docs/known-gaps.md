@@ -9,12 +9,14 @@ by themselves establish 0.165.1 behavior. The inherited inventory and its
 source traces have not yet been fully revalidated against 0.165.1.
 
 Selected local-relay malformed syntax, method forwarding, GET response framing,
-HEAD responses, WebSocket fallback and truncated-request behavior now match
-0.165.1. HEAD 204/304 `text/event-stream` terminal-chunk framing differs; the
-relay is also serial and does not implement WebSocket transport. The
-oversized-body 413 phrase matches the tested release; large request heads and
-broader framing and security behavior remain unverified. See
-`docs/evidence/baseline-0.165.1/local-relay-http.md`.
+HEAD controls, final response status phrases, WebSocket fallback and
+truncated-request behavior now match selected 0.165.1 controls. HEAD 204/304
+`text/event-stream` terminal-chunk framing differs; the relay is also serial
+and does not implement WebSocket transport. The oversized-body 413 phrase
+matches the tested release; large request heads and broader framing and
+security behavior remain unverified. See
+`docs/evidence/baseline-0.165.1/local-relay-http.md` and
+`docs/evidence/baseline-0.165.1/local-relay-status-reasons.md`.
 
 Prodex 0.165.1 requires bounded idle WebSocket parking and independently
 reclaimed handshake capacity, plus connection-owned interruption and real

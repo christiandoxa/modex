@@ -8,6 +8,12 @@ comparisons below are historical and do not establish 0.165.1 behavior.
 The active baseline and oracle routing now select 0.165.1; the full inventory
 and production parity against this release remain unfinished.
 
+The local response writer now matches the pinned TinyHTTP final-status reason
+table. Production controls cover 200, 204, 206, 302, 404, 418, 422 and 500
+against 0.165.1 and historical 0.439.2. The HEAD 204/304 terminal-chunk and
+large-header gaps remain. See
+`docs/evidence/baseline-0.165.1/local-relay-status-reasons.md`.
+
 The local relay now forwards tested HTTP methods on both supported routes,
 including extension methods. GET JSON and SSE responses and selected HEAD
 framing match 0.165.1; for HEAD 204/304 event streams, Modex suppresses the

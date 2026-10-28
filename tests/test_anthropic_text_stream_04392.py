@@ -64,7 +64,7 @@ class AnthropicTextStreamTests(unittest.TestCase):
                 self.assertEqual(expected[-1][0], "response.completed")
                 self.assertEqual(observed, expected)
 
-    def test_nonempty_block_start_still_fails_closed(self):
+    def test_nonempty_block_start_is_ignored_like_release(self):
         initial = {"type": "content_block_start", "index": 0,
                    "content_block": {"type": "text", "text": "must not be dropped"}}
         reply = {"status": 200, "content_type": "text/event-stream",
@@ -73,8 +73,10 @@ class AnthropicTextStreamTests(unittest.TestCase):
         actual_posts, actual = observe_turns(MODEX, [REQUEST], [reply])
         self.assertEqual(len(reference_posts), 1)
         self.assertEqual(len(actual_posts), 1)
-        self.assertEqual(_normalized_events(bytes.fromhex(reference[0]["body"]))[-1][0], "response.completed")
-        self.assertEqual(_normalized_events(bytes.fromhex(actual[0]["body"]))[-1][0], "response.failed")
+        expected = _normalized_events(bytes.fromhex(reference[0]["body"]))
+        observed = _normalized_events(bytes.fromhex(actual[0]["body"]))
+        self.assertEqual(expected[-1][0], "response.completed")
+        self.assertEqual(observed, expected)
 
 
 if __name__ == "__main__":

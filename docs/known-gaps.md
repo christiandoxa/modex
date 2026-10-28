@@ -54,8 +54,9 @@ text. Broader request/message shapes, tool-result/history round trips, complete
 metadata/citation behavior, TLS/DNS/proxies, resource behavior and full
 stream/error equivalence remain open. The tested ordered search/result/text
 shape and text-only or empty streams with a final `message_stop` are supported;
-other Anthropic event orders remain unverified. Nonempty initial text blocks
-are rejected while the release drops that text. The exact empty-string request is rejected with the observed 400
+other Anthropic event orders remain unverified. Selected initial text-block
+values are ignored as in the 0.165.1 release; subsequent text deltas remain
+covered by the production comparison. The exact empty-string request is rejected with the observed 400
 before POST, while whitespace-only input is accepted. See
 `docs/evidence/anthropic-web-search-04392.md`.
 Selected Anthropic function-tool streams and split JSON fragments now match

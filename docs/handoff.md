@@ -51,6 +51,11 @@ WebSocket fallback and truncated-request behavior; its shared parser still rejec
 upgrades by default. It remains serial and does not implement WebSockets. See
 `docs/evidence/baseline-0.165.1/local-relay-http.md` for controls and gaps.
 
+The Anthropic text-block start now ignores initial text values like 0.165.1;
+nonempty, empty, missing and numeric initial fields match full production event
+sequences. Subsequent text deltas remain intact. The historical 0.439.2
+comparison was recaptured and now matches; see the Anthropic evidence file.
+
 The Anthropic stream parser also handles tested mixed text and multiple function
 calls, including selected interleaving and late-delta cases, matching complete
 0.165.1 events in real-process loopback tests. Mixed web-search/function streams

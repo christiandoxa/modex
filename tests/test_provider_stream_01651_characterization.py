@@ -1,12 +1,16 @@
 """Synthetic production-path checks against the pinned Prodex 0.165.1 oracle."""
 
 import hashlib
+import copy
+import json
 import os
 from pathlib import Path
 import unittest
 
 from test_cli import MODEX
 from test_provider_tools_04392_characterization import _normalized_events, _run
+from test_anthropic_text_stream_04392 import START, TEXT_START, TEXT_DELTA, TEXT_STOP, MESSAGE_DELTA, STOP, REQUEST, stream
+from test_deepseek_continuation import observe_turns
 
 
 ORACLE_01651 = Path(os.environ.get(
@@ -25,6 +29,29 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
             raise AssertionError("The Prodex oracle does not match pinned release 0.165.1")
         if not MODEX.is_file():
             raise AssertionError(f"Modex binary has not been built: {MODEX}")
+
+    def test_anthropic_text_start_payload_is_ignored(self):
+        for value in ("synthetic initial text", "", None, 42):
+            with self.subTest(value=value):
+                start = copy.deepcopy(TEXT_START)
+                if value is None:
+                    del start["content_block"]["text"]
+                else:
+                    start["content_block"]["text"] = value
+                reply = {"status": 200, "content_type": "text/event-stream", "body": stream([
+                    START, start, TEXT_DELTA, TEXT_STOP, MESSAGE_DELTA, STOP,
+                ])}
+                reference_posts, reference = observe_turns(ORACLE_01651, [REQUEST], [reply])
+                actual_posts, actual = observe_turns(MODEX, [REQUEST], [reply])
+                self.assertEqual(len(reference_posts), 1)
+                self.assertEqual(len(actual_posts), 1)
+                self.assertEqual(actual_posts[0]["path"], reference_posts[0]["path"])
+                self.assertEqual(actual_posts[0]["body"], reference_posts[0]["body"])
+                expected = _normalized_events(bytes.fromhex(reference[0]["body"]))
+                observed = _normalized_events(bytes.fromhex(actual[0]["body"]))
+                self.assertEqual(expected[-1][0], "response.completed")
+                self.assertEqual(observed, expected)
+                self.assertNotIn("synthetic initial text", json.dumps(observed, ensure_ascii=False))
 
     def test_anthropic_message_delta_stop_fields_match_release(self):
         request = {

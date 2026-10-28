@@ -36,3 +36,9 @@ and a late argument delta after `message_delta`. The real-process comparisons
 also check the observed output indexes and ignore a trailing event after
 `message_stop`. Mixed server-side web search and user-function streams remain
 unverified; previous support remains unchanged.
+
+For a tested text block, the 0.165.1 release ignores the initial `text` field
+and emits later text deltas. Modex now matches full normalized events when the
+initial field is nonempty, empty, missing, or numeric. The old 0.439.2
+characterization was updated after reproducing the same behavior; other content
+block shapes and event orders remain unverified.

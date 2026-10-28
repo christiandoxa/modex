@@ -256,11 +256,8 @@ struct DeepSeekChatState:
                 ):
                     raise Error("Anthropic text block is out of order")
                 _only_fields(doc, block, ["type", "text"], "text block")
-                var text = doc.get(block, "text")
-                if text < 0 or doc.nodes[text].kind != JSON_STRING or self.anthropic_text_index:
+                if self.anthropic_text_index:
                     raise Error("Anthropic text block is invalid or repeated")
-                if doc.nodes[text].text:
-                    raise Error("Anthropic text block start cannot contain unstreamed text")
                 self.anthropic_text_index = Optional[UInt64](block_index)
                 self.anthropic_phase = 6
                 return List[String]()

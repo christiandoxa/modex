@@ -58,17 +58,20 @@ def _valid_http_url(value: String) -> Bool:
     return authority.find("@") < 0 and valid_url_authority(authority)
 
 
-def _provider(value: String) raises -> String:
+def _provider(value: String, clap_diagnostic: Bool) raises -> String:
     var provider = trim_text(value).lower()
     if provider == "claude": provider = "anthropic"
     if provider == "github-copilot" or provider == "github_copilot": provider = "copilot"
     if provider not in ["anthropic", "copilot", "deepseek", "gemini", "kiro"]:
-        raise Error("invalid --provider: supported values are anthropic, copilot, deepseek, gemini, kiro, got \"" + provider + "\"")
+        var error = "invalid --provider: supported values are anthropic, copilot, deepseek, gemini, kiro, got \"" + provider + "\""
+        if clap_diagnostic:
+            raise session_cli_error("invalid value '" + value + "' for '--provider <PROVIDER>': " + error)
+        raise Error(error)
     return provider^
 
 
-def _validate_value(name: String, value: String) raises -> String:
-    if name == "--provider": return _provider(value)
+def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -> String:
+    if name == "--provider": return _provider(value, clap_diagnostic)
     if name in ["--base-url", "--sub-agent-url", "--url"] and not _valid_http_url(value):
         raise Error("invalid " + name + ": expected an absolute http(s) URL with host and no credentials, query, or fragment")
     if name == "--sub-agent-max-concurrency":
@@ -146,7 +149,7 @@ def parse_super_arguments(args: List[String], executable: String) raises -> Supe
                     raise Error(name + " requires a value")
                 index += 1
                 value = args[index]
-            value = _validate_value(name, value)
+            value = _validate_value(name, value, not positional)
         if not positional and options.has(name) and name != "--tool" and name != "--require-tool" and name != "--rollout-budget-reminders":
             raise session_cli_error("the argument '" + name + "' cannot be used multiple times", executable + " super [OPTIONS] [CODEX_ARG]...")
         if not positional or name != "--profile" or not options.has(name):

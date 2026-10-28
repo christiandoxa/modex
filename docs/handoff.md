@@ -23,6 +23,11 @@ extra separator. Synthetic list and path-query cases match 0.165.1 and the
 historical 0.439.2 control; see `docs/evidence/baseline-0.165.1/session-paths.md`.
 State locking and profile filtering remain unfinished.
 
+Invalid Super `--provider` values before the positional Codex tail now match
+0.165.1 and historical 0.439.2 CLI diagnostics. After `exec`, the error text
+matches but the reference creates lock state that Modex does not; see
+`docs/evidence/baseline-0.165.1/super-provider-cli.md`.
+
 `tests/test_cli_01651.py` compares selected root-help forms and leading version
 flags through both production executables in isolated homes. Both cases passed
 on Linux x86-64 with the verified binary. This does not establish complete CLI

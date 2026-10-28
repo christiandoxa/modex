@@ -80,5 +80,68 @@ class CliTests(unittest.TestCase):
         self.assertEqual(mutations, [])
 
 
+class HistoricalSuperProviderCliTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        CliTests.setUpClass()
+
+    def _run(self, binary, arguments, executable, label):
+        from test_root_help import isolated_run
+
+        return isolated_run(binary, arguments, executable, label)
+
+    def test_invalid_provider_values_match_clap_errors(self):
+        for arguments in (
+            ["super", "--provider", "bad"],
+            ["super", "--provider=Bad", "--help"],
+            ["super", "--provider", " BAD ", "--help"],
+            ["super", "--provider", "local", "--help"],
+        ):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = self._run(ORACLE, arguments, "prodex", "04392-super-provider")
+                modex, modex_created = self._run(MODEX, arguments, "modex", "modex-super-provider")
+                expected_stderr = baseline.stderr.replace(b"prodex", b"modex")
+                self.assertEqual(baseline.returncode, 2)
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, baseline.stdout, expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_positional_provider_error_keeps_runtime_diagnostic(self):
+        arguments = ["super", "exec", "--provider=local", "--help"]
+        expected_stderr = (
+            b'Error: invalid --provider: supported values are anthropic, copilot, deepseek, '
+            b'gemini, kiro, got "local"\n'
+        )
+        baseline, baseline_created = self._run(ORACLE, arguments, "prodex", "04392-super-provider-tail")
+        modex, modex_created = self._run(MODEX, arguments, "modex", "modex-super-provider-tail")
+        self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                         (1, b"", expected_stderr))
+        self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                         (baseline.returncode, baseline.stdout, baseline.stderr))
+        self.assertTrue(baseline_created)
+        self.assertTrue(all(path == "home/.prodex" or path.startswith("home/.prodex/")
+                            for path in baseline_created))
+        self.assertEqual(modex_created, [])
+
+    def test_provider_aliases_and_help_order_match(self):
+        for arguments in (
+            ["super", "--provider", "claude", "--help"],
+            ["super", "--provider=github-copilot", "--help"],
+            ["super", "--provider=github_copilot", "--help"],
+            ["super", "--provider", "DEEPSEEK", "--help"],
+            ["super", "--help", "--provider=bad"],
+        ):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = self._run(ORACLE, arguments, "prodex", "04392-super-provider-help")
+                modex, modex_created = self._run(MODEX, arguments, "modex", "modex-super-provider-help")
+                self.assertEqual((baseline.returncode, modex.returncode), (0, 0))
+                self.assertTrue(baseline.stdout.startswith(b"YOLO shortcut for the Super tool stack"))
+                self.assertTrue(modex.stdout.startswith(b"YOLO shortcut for the Super tool stack"))
+                self.assertIn(b"Usage: prodex super", baseline.stdout)
+                self.assertIn(b"Usage: modex super", modex.stdout)
+                self.assertEqual((baseline.stderr, modex.stderr), (b"", b""))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+
 if __name__ == "__main__":
     unittest.main()

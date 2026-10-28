@@ -186,7 +186,8 @@
         "docs/evidence/version-arguments-tests.txt",
         "docs/evidence/checkpoint-04391-tests.txt",
         "docs/evidence/baseline-0.439.2/reference-verification.json",
-        "docs/evidence/baseline-0.165.1/cli-observations.md"
+        "docs/evidence/baseline-0.165.1/cli-observations.md",
+        "docs/evidence/baseline-0.165.1/super-provider-cli.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -264,7 +265,8 @@
         "docs/evidence/checkpoint13-tests.txt",
         "docs/evidence/checkpoint13-dependencies.txt",
         "docs/evidence/checkpoint13-worker-review.json",
-        "docs/evidence/baseline-0.165.1/cli-observations.md"
+        "docs/evidence/baseline-0.165.1/cli-observations.md",
+        "docs/evidence/baseline-0.165.1/super-provider-cli.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {

@@ -37,6 +37,13 @@ class SessionQuery01651Tests(unittest.TestCase):
             ("AΣ.1", "aς.1", True),
             ("AΣ\u0301A", "aσ\u0301a", True),
             ("AΣ\u0301", "aς\u0301", True),
+            ("\u1c89", "\u1c8a", True),
+            ("\ua7cb", "\u0264", True),
+            ("\ua7dc", "\u019b", True),
+            ("\U00010d50\U00010d65", "\U00010d70\U00010d85", True),
+            ("\U00016ea0\U00016eb8", "\U00016ebb\U00016ed3", True),
+            ("A\u1c89Σ", "a\u1c8aς", True),
+            ("\u1c89", "\u1c8b", False),
         )
         for title, query, expected in cases:
             with self.subTest(title=title, query=query):

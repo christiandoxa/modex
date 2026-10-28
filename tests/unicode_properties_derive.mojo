@@ -2,6 +2,7 @@
 
 from std.collections import List
 from modex.unicode_properties import is_alphanumeric, is_cased, is_case_ignorable
+from modex.sessions import session_query_lowercase
 
 
 def hex_value(value: StringSlice) raises -> Int:
@@ -62,6 +63,8 @@ def main() raises:
         var code = hex_value(fields[0])
         var name = String(fields[1])
         var category = String(fields[2])
+        if fields[13] and code != 0x0130:
+            assert session_query_lowercase(chr(code)) == chr(hex_value(fields[13]))
         if name.endswith(", First>"):
             range_start = code
             range_numeric = category.startswith("N")
@@ -74,6 +77,7 @@ def main() raises:
         elif category.startswith("N"):
             set_range(selected, code, code)
     assert range_start == -1
+    assert session_query_lowercase("İ") == "i\u0307"
 
     var intervals = List[Int]()
     var code = 0

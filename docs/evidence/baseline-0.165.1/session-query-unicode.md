@@ -19,3 +19,10 @@ negative controls. All passed on Linux x86-64.
 
 This does not prove every Unicode lowercase mapping or the complete session
 contract; other state, storage and platform gaps remain open.
+
+A later full Unicode 17 lowercase audit found 55 simple lowercase mappings
+absent from Mojo's table. The selector now supplies the missing Cyrillic, Latin,
+Garay and Beria Erfe mappings. The native audit compares each UnicodeData
+simple lowercase mapping and the dotted-I expansion; the process test compares
+selected mappings and sigma context with the pinned 0.165.1 release. This does
+not establish complete Unicode behavior for strings beyond the tested cases.

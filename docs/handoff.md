@@ -37,6 +37,10 @@ on `d960e54` passed the current-target build, native units and focused CLI and
 provider checks, then failed at the mandatory unavailable 0.439.2 historical
 oracle; its artifact consumer was skipped. See `docs/ci-lessons.md`.
 
+A current-release session-query regression also fixes 55 Unicode 17 lowercase
+mappings absent from Mojo 1.2.0, verified against the pinned UnicodeData and
+selected 0.165.1 process cases. See `docs/evidence/baseline-0.165.1/session-query-unicode.md`.
+
 Update help now matches selected read-only 0.165.1 routes; update execution
 remains unimplemented. The session-query selector now uses the complete Unicode 17 Cased and
 Case_Ignorable properties for contextual sigma. Exhaustive scalar tests and

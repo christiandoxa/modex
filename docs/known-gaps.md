@@ -84,7 +84,8 @@ state recovery and locking are not implemented.
 Selected dotted-I expansion and contextual Greek sigma queries now match both
 the active 0.439.2 oracle and the separately pinned 0.439.5 oracle. The 0.165.1 session selector now uses the full Unicode 17 Cased and
 Case_Ignorable properties for sigma context, checked against all scalars and
-selected release queries. Other lowercase mappings remain unverified. Broader
+selected release queries. All UnicodeData simple lowercase mappings and dotted-I now pass a native audit;
+other string-level lowercase behavior remains unverified. Broader
 session behavior, state locking,
 recovery and security remain unqualified.
 

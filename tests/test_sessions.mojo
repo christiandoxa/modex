@@ -26,6 +26,14 @@ def main() raises:
     assert_equal(session_query_lowercase("ΟΣ\u0301Α"), "οσ\u0301α")
     assert_equal(session_query_lowercase("ΑΣΣ"), "ασς")
     assert_equal(session_query_lowercase("Σ'Α"), "σ'α")
+    for code in [0x1C89, 0xA7CC, 0xA7CE, 0xA7D2, 0xA7D4, 0xA7DA]:
+        assert_equal(session_query_lowercase(chr(code)), chr(code + 1))
+    assert_equal(session_query_lowercase(chr(0xA7CB)), chr(0x0264))
+    assert_equal(session_query_lowercase(chr(0xA7DC)), chr(0x019B))
+    for code in range(0x10D50, 0x10D66):
+        assert_equal(session_query_lowercase(chr(code)), chr(code + 0x20))
+    for code in range(0x16EA0, 0x16EB9):
+        assert_equal(session_query_lowercase(chr(code)), chr(code + 0x1B))
     assert_equal(session_query_lowercase(String("A") * 1048576 + "Σ"), String("a") * 1048576 + "ς")
     assert_equal(fit_cell("abc", 0), "")
     assert_equal(fit_cell("abcd", 3), "...")

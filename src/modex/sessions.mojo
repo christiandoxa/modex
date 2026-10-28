@@ -15,8 +15,25 @@ from .unicode_properties import is_cased, is_case_ignorable
 comptime SESSION_LINE_LIMIT = 64 * 1024 * 1024
 
 
+def session_query_lowercase_override(code: Int) -> Int:
+    # Mojo's lowercase table predates these Unicode 17 mappings.
+    if code == 0xA7CB: return 0x0264
+    if code == 0xA7DC: return 0x019B
+    if code == 0x1C89 or code == 0xA7CC or code == 0xA7CE or code == 0xA7D2 or code == 0xA7D4 or code == 0xA7DA:
+        return code + 1
+    if 0x10D50 <= code <= 0x10D65: return code + 0x20
+    if 0x16EA0 <= code <= 0x16EB8: return code + 0x1B
+    return code
+
+
 def session_query_lowercase(value: String) -> String:
-    if value.find(chr(0x0130)) < 0 and value.find(chr(0x03A3)) < 0:
+    var needs_special_mapping = False
+    for character in value.codepoints():
+        var code = Int(character)
+        if code == 0x0130 or code == 0x03A3 or session_query_lowercase_override(code) != code:
+            needs_special_mapping = True
+            break
+    if not needs_special_mapping:
         return value.lower()
     var characters = value.codepoints()
     var before_cased = False
@@ -40,6 +57,8 @@ def session_query_lowercase(value: String) -> String:
                     after_cased = is_cased(next_code)
                     break
             output += chr(0x03C2 if before_cased and not after_cased else 0x03C3)
+        elif session_query_lowercase_override(code) != code:
+            output += chr(session_query_lowercase_override(code))
         else:
             output += chr(code).lower()
         if not is_case_ignorable(code):

@@ -70,13 +70,17 @@ def _missing_value_error(name: String) -> Error:
     return session_cli_error(message)
 
 
+def _typed_value_error(name: String, value: String, reason: String, clap_diagnostic: Bool) -> Error:
+    if clap_diagnostic:
+        return session_cli_error("invalid value '" + value + "' for '" + _value_label(name) + "': " + reason)
+    return Error(reason)
+
+
 def _validate_unsigned_value(name: String, value: String, parsed_value: String, clap_diagnostic: Bool) raises:
     try:
         _ = unsigned_value(parsed_value)
     except error:
-        if clap_diagnostic:
-            raise session_cli_error("invalid value '" + value + "' for '" + _value_label(name) + "': " + String(error))
-        raise Error(String(error))
+        raise _typed_value_error(name, value, String(error), clap_diagnostic)
 
 
 def _valid_http_url(value: String) -> Bool:
@@ -113,18 +117,23 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
     if name in ["--base-url", "--sub-agent-url", "--url"] and not _valid_http_url(value):
         raise Error("invalid " + name + ": expected an absolute http(s) URL with host and no credentials, query, or fragment")
     if name == "--sub-agent-max-concurrency":
-        if value == "default": return value
+        var parsed_value = String(trim_text(value) if clap_diagnostic else value)
+        if parsed_value == "default": return parsed_value if clap_diagnostic else value
+        if clap_diagnostic and parsed_value.startswith("+"):
+            raise _typed_value_error(name, value, "invalid maximum active sub-agents: expected default or an integer from 1 to 64", clap_diagnostic)
         var count: UInt64
         try:
-            count = unsigned_value(value)
+            count = unsigned_value(parsed_value)
         except error:
             if String(error) == "number too large to fit in target type":
-                raise Error("invalid maximum active sub-agents: expected an integer from 1 to 64")
-            raise Error("invalid maximum active sub-agents: expected default or an integer from 1 to 64")
+                raise _typed_value_error(name, value, "invalid maximum active sub-agents: expected an integer from 1 to 64", clap_diagnostic)
+            raise _typed_value_error(name, value, "invalid maximum active sub-agents: expected default or an integer from 1 to 64", clap_diagnostic)
         if count > 65535:
-            raise Error("invalid maximum active sub-agents: expected an integer from 1 to 64")
+            raise _typed_value_error(name, value, "invalid maximum active sub-agents: expected an integer from 1 to 64", clap_diagnostic)
         if count == 0 or count > 64:
-            raise Error("maximum active sub-agents must be between 1 and 64")
+            raise _typed_value_error(name, value, "maximum active sub-agents must be between 1 and 64", clap_diagnostic)
+        if clap_diagnostic:
+            return String(count)
     if name == "--cli" and value != "agy":
         raise Error("only --cli agy is retained; use --provider gemini|copilot|kiro for other providers")
     if name == "--sub-agent-model" and not trim_text(value):

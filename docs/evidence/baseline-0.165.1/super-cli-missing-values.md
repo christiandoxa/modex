@@ -48,7 +48,8 @@ These controls create no state. After positional `exec`,
 path: Prodex creates its lock files and Modex creates none.
 
 This qualifies selected Super CLI diagnostics on Linux x86-64; it does not
-establish full CLI parity. For example, `--sub-agent-max-concurrency -1`
-remains different: Prodex exits 2 with a Clap invalid-value diagnostic, while
-Modex exits 1 with its unwrapped range error. Other typed and ranged value
-diagnostics and the remaining release targets are unqualified.
+establish full CLI parity. The custom `--sub-agent-max-concurrency` parser is
+covered separately in
+`docs/evidence/baseline-0.165.1/super-sub-agent-concurrency.md`. Other typed
+and ranged value diagnostics and the remaining release targets are
+unqualified.

@@ -18,9 +18,17 @@ rollout-token, rollout-reminder and current-time interval options, including
 the local aliases. Tests cover negative, overflow and whitespace errors,
 accepted zero/U64-max/+1 values, attached forms and help ordering against both
 pinned releases. After `exec`, the negative context-window parse still follows
-the existing exit-1 path and state mismatch. The separate
-`--sub-agent-max-concurrency -1` Clap-wrapper gap remains open. See
-`docs/evidence/baseline-0.165.1/super-cli-missing-values.md`.
+the existing exit-1 path and state mismatch. Sub-agent concurrency syntax and
+range diagnostics now match pre-tail, with accepted bounds, whitespace,
+attached values and help ordering checked against both releases. Accepted
+whitespace forms normalize to the typed default or decimal value. A real
+0.165.1 dry run reports the custom/default concurrency, but Modex stops at its
+Super startup guard before a sub-agent consumer; both pre-tail runs leave no
+files. After `exec`, Prodex accepts the whitespace forms in dry run but Modex
+retains its runtime-style rejection. Its invalid-value post-tail exit-1 and
+Prodex lock creation remain different. See
+`docs/evidence/baseline-0.165.1/super-cli-missing-values.md` and
+`docs/evidence/baseline-0.165.1/super-sub-agent-concurrency.md`.
 
 The Super model override now matches the tested 0.165.1 app-server argument
 for a literal TAB, with quote, backslash, Unicode and injection controls. The

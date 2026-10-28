@@ -11,6 +11,8 @@ from test_cli import (
     SUPER_INTEGER_ERROR_CASES,
     SUPER_NEGATIVE_INTEGER_CASES,
     SUPER_POSITIONAL_VALUE_CASES,
+    SUPER_SUB_AGENT_CONCURRENCY_ACCEPT_CASES,
+    SUPER_SUB_AGENT_CONCURRENCY_ERROR_CASES,
     SUPER_VALUE_OPTIONS,
     isolated_run as isolated_version,
     super_integer_diagnostic,
@@ -302,6 +304,170 @@ class SuperProviderCli01651Tests(unittest.TestCase):
                 self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
                                  (2, b"", expected_stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_sub_agent_concurrency_value_diagnostics_match_release(self):
+        for name, arguments, value, reason in SUPER_SUB_AGENT_CONCURRENCY_ERROR_CASES:
+            with self.subTest(name=name):
+                expected_stderr = super_integer_diagnostic(
+                    value, "--sub-agent-max-concurrency <VALUE>", reason
+                )
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "prodex", "01651-super-sub-agent-concurrency"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "modex", "modex-super-sub-agent-concurrency"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_sub_agent_concurrency_boundaries_help_order_and_tail(self):
+        baseline_help, baseline_help_created = isolated_run(
+            ORACLE, ["super", "--help"], "prodex", "01651-super-sub-agent-help"
+        )
+        modex_help, modex_help_created = isolated_run(
+            MODEX, ["super", "--help"], "modex", "modex-super-sub-agent-help"
+        )
+        self.assertEqual((baseline_help.returncode, baseline_help.stderr, baseline_help_created),
+                         (0, b"", []))
+        self.assertEqual((modex_help.returncode, modex_help.stderr, modex_help_created),
+                         (0, b"", []))
+
+        for value in SUPER_SUB_AGENT_CONCURRENCY_ACCEPT_CASES:
+            with self.subTest(accepted=value):
+                arguments = ["super", "--sub-agent", "--sub-agent-max-concurrency", value, "--help"]
+                baseline, baseline_created = isolated_run(
+                    ORACLE, arguments, "prodex", "01651-super-sub-agent-accepted"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, arguments, "modex", "modex-super-sub-agent-accepted"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (0, baseline_help.stdout, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (0, modex_help.stdout, b""))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        for arguments in (
+            ["super", "--help", "--sub-agent", "--sub-agent-max-concurrency", "-1"],
+            ["super", "--sub-agent", "--sub-agent-max-concurrency", "-1", "--help"],
+        ):
+            with self.subTest(help_order=arguments):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, arguments, "prodex", "01651-super-sub-agent-help-order"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, arguments, "modex", "modex-super-sub-agent-help-order"
+                )
+                if arguments[1] == "--help":
+                    self.assertEqual((baseline.returncode, modex.returncode), (0, 0))
+                    self.assertEqual((baseline.stdout, modex.stdout),
+                                     (baseline_help.stdout, modex_help.stdout))
+                    self.assertEqual((baseline.stderr, modex.stderr), (b"", b""))
+                else:
+                    expected_stderr = super_integer_diagnostic(
+                        "-1",
+                        "--sub-agent-max-concurrency <VALUE>",
+                        "invalid maximum active sub-agents: expected default or an integer from 1 to 64",
+                    )
+                    self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                     (2, b"", expected_stderr))
+                    self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                     (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        arguments = ["super", "exec", "--sub-agent", "--sub-agent-max-concurrency", "-1"]
+        baseline, baseline_created = isolated_run(
+            ORACLE, arguments, "prodex", "01651-super-sub-agent-post-exec"
+        )
+        modex, modex_created = isolated_run(
+            MODEX, arguments, "modex", "modex-super-sub-agent-post-exec"
+        )
+        expected = (
+            1,
+            b"",
+            b"Error: invalid maximum active sub-agents: expected default or an integer from 1 to 64\n",
+        )
+        self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr), expected)
+        self.assertEqual((modex.returncode, modex.stdout, modex.stderr), expected)
+        self.assertTrue(baseline_created)
+        self.assertTrue(all(path == "home/.prodex" or path.startswith("home/.prodex/")
+                            for path in baseline_created))
+        self.assertEqual(modex_created, [])
+
+    def test_sub_agent_concurrency_still_requires_explicit_enablement(self):
+        result, created = isolated_run(
+            MODEX,
+            ["super", "--sub-agent-max-concurrency", "1"],
+            "modex",
+            "modex-sub-agent-required",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, b"")
+        self.assertEqual(result.stderr,
+                         b"Error: sub-agent detail flags require explicit --sub-agent\n")
+        self.assertEqual(created, [])
+
+    def test_sub_agent_concurrency_dry_run_reaches_only_the_release_consumer(self):
+        cases = (
+            (" 1 ", b"Maximum active sub-agents: 1 (custom)\n"),
+            (" default ", b"Maximum active sub-agents: 4 (Prodex default)\n"),
+        )
+        for value, report_line in cases:
+            with self.subTest(value=value):
+                arguments = [
+                    "super", "--dry-run", "--provider", "deepseek", "--api-key",
+                    "synthetic-provider-key", "--base-url", "http://127.0.0.1:8131/v1",
+                    "--model", "deepseek-chat", "--no-presidio", "--skip-quota-check",
+                    "--sub-agent", "--sub-agent-max-concurrency", value,
+                ]
+                baseline, baseline_created = isolated_run(
+                    ORACLE, arguments, "prodex", "01651-super-sub-agent-dry-run"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, arguments, "modex", "modex-super-sub-agent-dry-run"
+                )
+                self.assertEqual((baseline.returncode, baseline.stderr), (0, b""))
+                self.assertIn(report_line, baseline.stdout)
+                self.assertIn(b"Codex/TUI not started because --dry-run was set.\n", baseline.stdout)
+                self.assertNotIn(b"synthetic-provider-key", baseline.stdout + baseline.stderr)
+                self.assertEqual(baseline_created, [])
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (1, b"", b"Error: Super startup is not implemented: secure temporary overlays, Smart Context initialization, and Codex launch supervision remain unavailable\n"),
+                )
+                self.assertEqual(modex_created, [])
+
+    def test_sub_agent_concurrency_post_tail_whitespace_gap_remains_visible(self):
+        cases = (
+            (" 1 ", b"Maximum active sub-agents: 1 (custom)\n"),
+            (" default ", b"Maximum active sub-agents: 4 (Prodex default)\n"),
+        )
+        for value, report_line in cases:
+            with self.subTest(value=value):
+                arguments = [
+                    "super", "exec", "--dry-run", "--provider", "deepseek", "--api-key",
+                    "synthetic-provider-key", "--base-url", "http://127.0.0.1:8131/v1",
+                    "--model", "deepseek-chat", "--no-presidio", "--skip-quota-check",
+                    "--sub-agent", "--sub-agent-max-concurrency", value,
+                ]
+                baseline, baseline_created = isolated_run(
+                    ORACLE, arguments, "prodex", "01651-super-sub-agent-post-tail-dry-run"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, arguments, "modex", "modex-super-sub-agent-post-tail-dry-run"
+                )
+                self.assertEqual((baseline.returncode, baseline.stderr), (0, b""))
+                self.assertIn(report_line, baseline.stdout)
+                self.assertIn(b"Codex/TUI not started because --dry-run was set.\n", baseline.stdout)
+                self.assertEqual(baseline_created, [])
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (1, b"", b"Error: invalid maximum active sub-agents: expected default or an integer from 1 to 64\n"),
+                )
+                self.assertEqual(modex_created, [])
 
     def test_negative_integer_after_exec_keeps_runtime_error_path(self):
         arguments = ["super", "exec", "--context-window", "-1"]

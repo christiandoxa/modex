@@ -75,6 +75,7 @@ for index, arg in enumerate(args[:-1]):
 children = pathlib.Path(f"/proc/{os.getppid()}/task/{os.getppid()}/children")
 save({"kind":"launch","pid":os.getpid(),"mode":home.stat().st_mode & 0o777,"args":args,"config":config,
       "catalog":json.loads(pathlib.Path(config["model_catalog_json"]).read_text()) if "model_catalog_json" in config else None,
+      "runtime_config":(home/"config.toml").read_text() if (home/"config.toml").exists() else None,
       "auth":json.loads((home/"auth.json").read_text()),"children":children.read_text().split(),
       "environment":{key:os.environ.get(key) for key in ("CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT","PRODEX_RUNTIME_LOCAL_KEY","CODEX_SANDBOX_SENTINEL")}})
 (home/"sessions"/"synthetic-session.jsonl").write_text('{"synthetic":true}\n')
@@ -152,7 +153,7 @@ def app_server_config(arguments):
 class SuperLaunchTests(unittest.TestCase):
     def run_launch(
         self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat",
-        super_arguments=(), environment_overrides=None, base_path="/v1",
+        super_arguments=(), environment_overrides=None, base_path="/v1", sub_agent=False,
     ):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-") as directory:
             root = Path(directory)
@@ -473,7 +474,7 @@ class SuperLaunchTests(unittest.TestCase):
             environment.update(environment_overrides or {})
             command = [str(binary), "super", "--provider", "deepseek", "--api-key", "synthetic-provider-key",
                        "--base-url", f"http://127.0.0.1:{server.server_port}{base_path}", "--model", model,
-                       "--no-presidio", "--no-sub-agent", "--skip-quota-check", *super_arguments,
+                       "--no-presidio", "--sub-agent" if sub_agent else "--no-sub-agent", "--skip-quota-check", *super_arguments,
                        "exec", "--", "synthetic prompt"]
             try:
                 result = subprocess.run(command, env=environment, cwd=root / "work", capture_output=True, timeout=40)

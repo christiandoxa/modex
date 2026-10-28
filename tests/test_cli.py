@@ -72,6 +72,27 @@ SUPER_INTEGER_ERROR_CASES = (
     ("invalid value before help", ("super", "--context-window", "-1", "--help"),
      "-1", "--context-window <TOKENS>", "invalid digit found in string"),
 )
+SUPER_SUB_AGENT_CONCURRENCY_ACCEPT_CASES = (
+    "default", "1", "4", "8", "16", "32", "64", " 1 ",
+)
+SUPER_SUB_AGENT_CONCURRENCY_ERROR_CASES = (
+    ("negative", ("super", "--sub-agent", "--sub-agent-max-concurrency", "-1"),
+     "-1", "invalid maximum active sub-agents: expected default or an integer from 1 to 64"),
+    ("plus sign", ("super", "--sub-agent", "--sub-agent-max-concurrency", "+1"),
+     "+1", "invalid maximum active sub-agents: expected default or an integer from 1 to 64"),
+    ("zero", ("super", "--sub-agent", "--sub-agent-max-concurrency", "0"),
+     "0", "maximum active sub-agents must be between 1 and 64"),
+    ("too large", ("super", "--sub-agent", "--sub-agent-max-concurrency", "65"),
+     "65", "maximum active sub-agents must be between 1 and 64"),
+    ("u16 overflow", ("super", "--sub-agent", "--sub-agent-max-concurrency", "65536"),
+     "65536", "invalid maximum active sub-agents: expected an integer from 1 to 64"),
+    ("syntax", ("super", "--sub-agent", "--sub-agent-max-concurrency", "abc"),
+     "abc", "invalid maximum active sub-agents: expected default or an integer from 1 to 64"),
+    ("u64 overflow", ("super", "--sub-agent", "--sub-agent-max-concurrency", "18446744073709551616"),
+     "18446744073709551616", "invalid maximum active sub-agents: expected an integer from 1 to 64"),
+    ("attached negative", ("super", "--sub-agent", "--sub-agent-max-concurrency=-1"),
+     "-1", "invalid maximum active sub-agents: expected default or an integer from 1 to 64"),
+)
 
 
 def super_integer_diagnostic(value, label, reason):
@@ -250,6 +271,98 @@ class HistoricalSuperProviderCliTests(unittest.TestCase):
                 self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
                                  (2, b"", expected_stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_sub_agent_concurrency_value_diagnostics_match_release(self):
+        for name, arguments, value, reason in SUPER_SUB_AGENT_CONCURRENCY_ERROR_CASES:
+            with self.subTest(name=name):
+                expected_stderr = super_integer_diagnostic(
+                    value, "--sub-agent-max-concurrency <VALUE>", reason
+                )
+                baseline, baseline_created = self._run(
+                    ORACLE, list(arguments), "prodex", "04392-super-sub-agent-concurrency"
+                )
+                modex, modex_created = self._run(
+                    MODEX, list(arguments), "modex", "modex-super-sub-agent-concurrency"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_sub_agent_concurrency_boundaries_help_order_and_tail(self):
+        baseline_help, baseline_help_created = self._run(
+            ORACLE, ["super", "--help"], "prodex", "04392-super-sub-agent-help"
+        )
+        modex_help, modex_help_created = self._run(
+            MODEX, ["super", "--help"], "modex", "modex-super-sub-agent-help"
+        )
+        self.assertEqual((baseline_help.returncode, baseline_help.stderr, baseline_help_created),
+                         (0, b"", []))
+        self.assertEqual((modex_help.returncode, modex_help.stderr, modex_help_created),
+                         (0, b"", []))
+
+        for value in SUPER_SUB_AGENT_CONCURRENCY_ACCEPT_CASES:
+            with self.subTest(accepted=value):
+                arguments = ["super", "--sub-agent", "--sub-agent-max-concurrency", value, "--help"]
+                baseline, baseline_created = self._run(
+                    ORACLE, arguments, "prodex", "04392-super-sub-agent-accepted"
+                )
+                modex, modex_created = self._run(
+                    MODEX, arguments, "modex", "modex-super-sub-agent-accepted"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (0, baseline_help.stdout, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (0, modex_help.stdout, b""))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        for arguments in (
+            ["super", "--help", "--sub-agent", "--sub-agent-max-concurrency", "-1"],
+            ["super", "--sub-agent", "--sub-agent-max-concurrency", "-1", "--help"],
+        ):
+            with self.subTest(help_order=arguments):
+                baseline, baseline_created = self._run(
+                    ORACLE, arguments, "prodex", "04392-super-sub-agent-help-order"
+                )
+                modex, modex_created = self._run(
+                    MODEX, arguments, "modex", "modex-super-sub-agent-help-order"
+                )
+                if arguments[1] == "--help":
+                    self.assertEqual((baseline.returncode, modex.returncode), (0, 0))
+                    self.assertEqual((baseline.stdout, modex.stdout),
+                                     (baseline_help.stdout, modex_help.stdout))
+                    self.assertEqual((baseline.stderr, modex.stderr), (b"", b""))
+                else:
+                    expected_stderr = super_integer_diagnostic(
+                        "-1",
+                        "--sub-agent-max-concurrency <VALUE>",
+                        "invalid maximum active sub-agents: expected default or an integer from 1 to 64",
+                    )
+                    self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                     (2, b"", expected_stderr))
+                    self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                     (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        arguments = ["super", "exec", "--sub-agent", "--sub-agent-max-concurrency", "-1"]
+        baseline, baseline_created = self._run(
+            ORACLE, arguments, "prodex", "04392-super-sub-agent-post-exec"
+        )
+        modex, modex_created = self._run(
+            MODEX, arguments, "modex", "modex-super-sub-agent-post-exec"
+        )
+        expected = (
+            1,
+            b"",
+            b"Error: invalid maximum active sub-agents: expected default or an integer from 1 to 64\n",
+        )
+        self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr), expected)
+        self.assertEqual((modex.returncode, modex.stdout, modex.stderr), expected)
+        self.assertTrue(baseline_created)
+        self.assertTrue(all(path == "home/.prodex" or path.startswith("home/.prodex/")
+                            for path in baseline_created))
+        self.assertEqual(modex_created, [])
 
     def test_missing_values_after_positional_tail_keep_runtime_path_difference_visible(self):
         for name, arguments in SUPER_POSITIONAL_VALUE_CASES:

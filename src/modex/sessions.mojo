@@ -320,7 +320,7 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
     var root = ensure_app_root()
     # shortcut: state/journal recovery is unavailable; reject these homes until locking and durable writes are proven.
     for name in listdir(root):
-        if name.startswith("state.json") or name == "profile-lifecycle-journal" or name == "profile-import-auth-journal":
+        if name in ["state.json", "state.json.lock", "state.json.last-good", "profile-lifecycle-journal", "profile-import-auth-journal"] or (name.startswith("state.json.") and name.endswith(".tmp")):
             raise Error("locked state loading and recovery are not implemented")
     var paths = List[String]()
     var shared = shared_root(root)

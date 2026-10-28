@@ -60,9 +60,11 @@ read-only profile-list prototype cannot safely interoperate with the release's
 persistent `flock` files using the available Mojo standard-library APIs, so
 it is not connected to production.
 The tested session metadata admission cases match 0.439.5. For a non-object
-first JSONL record, that release panics while Modex omits the session. With an
-unrelated `.prodex/state.json.backup`, 0.439.5 lists sessions and Modex fails
-closed; `tests/test_session_state_backup_04395.py` captures both outcomes.
+first JSONL record, that release panics while Modex omits the session. Session
+listing now ignores selected unrelated state-like filenames in the same way as
+0.439.2 and the historical 0.439.5 control. Actual state, last-good snapshots,
+locks, atomic temporary files and profile journals remain fail-closed because
+state recovery and locking are not implemented.
 Selected dotted-I expansion and contextual Greek sigma queries now match both
 the active 0.439.2 oracle and the separately pinned 0.439.5 oracle. The sigma
 context covers common combining marks and apostrophes, not the complete

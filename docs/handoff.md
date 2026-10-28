@@ -1,11 +1,23 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Session listing now distinguishes actual state files, their locks and atomic
+temporary files from unrelated names such as `state.json.backup`. Full JSON
+output matches the checksum-verified 0.439.2 release for the tested unrelated
+names; 0.439.5 is a separately pinned historical control. The old build
+rejected two of those cases. Actual state, its last-good copy, a held state
+lock, pending temporary files and profile journals still fail closed without
+modifying the fixture. State recovery and locking remain unimplemented. See
+`docs/evidence/session-state-filenames-04392.md`.
+
 Cached source verification now accepts a tracked symlink to a directory only
 after checking its link bytes against the frozen Git tree; it never follows
 that link. Synthetic controls reject changed targets, untracked links and
 symlinked tracked parents. The 31 reference-helper tests pass locally. The
 released binary is still unavailable to hosted CI, so this does not unblock
-the oracle or promote a parity status.
+the oracle or promote a parity status. Hosted Fast run
+[40644048655](https://github.com/christiandoxa/modex/actions/runs/40644048655)
+on `fdace0b` passed all 31 helper tests, then failed on the unavailable
+0.439.2 oracle before the build; its consumers were skipped.
 
 An isolated combined build passed all native unit programs and 523 Python
 tests on Linux x86-64 using checksum-verified local 0.439.2 and 0.439.5

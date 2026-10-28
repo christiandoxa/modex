@@ -1,5 +1,6 @@
-"""Characterize the pinned release difference for unrelated state backups."""
+"""Compare unrelated state filenames and retain the real state guard."""
 
+import fcntl
 import hashlib
 import json
 from pathlib import Path
@@ -8,37 +9,74 @@ import tempfile
 import unittest
 
 from session_oracle import SESSION_ID, fixture, sandbox_command
-from test_cli import (MODEX, HISTORICAL_04395_ORACLE as ORACLE,
-                      HISTORICAL_04395_ORACLE_SHA256 as ORACLE_SHA256)
+from test_cli import (
+    HISTORICAL_04395_ORACLE,
+    HISTORICAL_04395_ORACLE_SHA256,
+    MODEX,
+    ORACLE,
+    ORACLE_SHA256,
+)
 
 
 class SessionStateBackupTests(unittest.TestCase):
-    def test_unrelated_state_backup_exposes_fail_closed_guard_gap(self):
-        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
-        with tempfile.TemporaryDirectory(prefix="modex-session-state-backup-") as directory:
-            root = Path(directory)
-            fixture(root)
-            app_root = root / "home/.prodex"
-            app_root.mkdir(mode=0o700)
-            backup = app_root / "state.json.backup"
-            backup.write_text("synthetic unrelated backup\n")
-            before = backup.read_bytes()
-            results = []
-            for binary in (ORACLE, MODEX):
-                results.append(subprocess.run(
-                    sandbox_command(binary, root, ["session", "list", "--json"]),
-                    capture_output=True,
-                    timeout=10,
-                    check=False,
-                ))
+    @classmethod
+    def setUpClass(cls):
+        for binary, digest in ((ORACLE, ORACLE_SHA256), (HISTORICAL_04395_ORACLE, HISTORICAL_04395_ORACLE_SHA256)):
+            if not binary.is_file() or hashlib.sha256(binary.read_bytes()).hexdigest() != digest:
+                raise AssertionError(f"Release oracle checksum mismatch: {binary}")
 
-            oracle, modex = results
-            self.assertEqual(oracle.returncode, 0, oracle.stderr)
-            self.assertEqual([report["id"] for report in json.loads(oracle.stdout)], [SESSION_ID])
-            self.assertEqual(modex.returncode, 1)
-            self.assertEqual(modex.stdout, b"")
-            self.assertEqual(modex.stderr, b"Error: locked state loading and recovery are not implemented\n")
-            self.assertEqual(backup.read_bytes(), before)
+    def test_unrelated_state_names_do_not_block_session_listing(self):
+        for name in ("state.json.backup", "state.json.scratch", "state.last-good.json"):
+            with self.subTest(name=name):
+                results = []
+                for binary in (ORACLE, HISTORICAL_04395_ORACLE, MODEX):
+                    with tempfile.TemporaryDirectory(prefix="modex-session-state-name-") as directory:
+                        root = Path(directory)
+                        fixture(root)
+                        app_root = root / "home/.prodex"
+                        app_root.mkdir(mode=0o700)
+                        unrelated = app_root / name
+                        unrelated.write_bytes(b"synthetic unrelated file\n")
+                        result = subprocess.run(
+                            sandbox_command(binary, root, ["session", "list", "--json"]),
+                            capture_output=True, timeout=10, check=False,
+                        )
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        self.assertEqual(unrelated.read_bytes(), b"synthetic unrelated file\n")
+                        payload = json.loads(result.stdout)
+                        self.assertEqual([report["id"] for report in payload], [SESSION_ID])
+                        results.append(json.loads(json.dumps(payload).replace(str(root), "<root>")))
+                self.assertEqual(results[0], results[1])
+                self.assertEqual(results[0], results[2])
+
+    def test_real_state_and_journals_remain_fail_closed(self):
+        names = (
+            "state.json", "state.json.lock", "state.json.last-good",
+            "state.json.123.456.0.tmp", "profile-lifecycle-journal",
+            "profile-import-auth-journal",
+        )
+        for name in names:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(prefix="modex-session-state-guard-") as directory:
+                root = Path(directory)
+                fixture(root)
+                app_root = root / "home/.prodex"
+                app_root.mkdir(mode=0o700)
+                state = app_root / name
+                if name.endswith("-journal"):
+                    state.mkdir(mode=0o700)
+                    state = state / "fixture"
+                state.write_bytes(b"synthetic state marker\n")
+                with state.open("rb") as marker:
+                    if name == "state.json.lock":
+                        fcntl.flock(marker, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    result = subprocess.run(
+                        sandbox_command(MODEX, root, ["session", "list", "--json"]),
+                        capture_output=True, timeout=10, check=False,
+                    )
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout, b"")
+                self.assertEqual(result.stderr, b"Error: locked state loading and recovery are not implemented\n")
+                self.assertEqual(state.read_bytes(), b"synthetic state marker\n")
 
 
 if __name__ == "__main__":

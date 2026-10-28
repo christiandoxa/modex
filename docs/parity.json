@@ -119,6 +119,10 @@
     {
       "date": "2026-10-28",
       "change": "Connect selected simple DeepSeek web-search requests to Anthropic Messages on production Super. Synthetic 0.439.2 process comparisons and focused native units pass; broader translation and transport remain open. No contract, platform or release status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Allow session inspection with selected unrelated state-like filenames, verified against 0.439.2 and a historical 0.439.5 control. Real state, lock, last-good, pending temporary and journal handling remain fail-closed; no contract or platform status is promoted."
     }
   ],
   "contracts": [

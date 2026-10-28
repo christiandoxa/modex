@@ -91,6 +91,10 @@
     {
       "date": "2026-10-28",
       "change": "Untyped DeepSeek tool-role inputs and selected tool-call IDs now match 0.439.5 simple and non-simple process comparisons. Broader provider/tool behavior remains incomplete; no contract or platform status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Selected untyped DeepSeek content values and typed-message rejection controls match 0.439.5 production loopback comparisons. Broader provider behavior remains incomplete; no contract or platform status is promoted."
     }
   ],
   "contracts": [
@@ -2739,7 +2743,8 @@
         "tests/test_gateway_cli.mojo",
         "tests/capture_stream_timeout_mismatch.py",
         "tests/test_loopback_http_stream.py",
-        "tests/test_continuation_binding_04395.py"
+        "tests/test_continuation_binding_04395.py",
+        "tests/test_provider_request_untyped_content_04395.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",

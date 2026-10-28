@@ -1,4 +1,4 @@
-# Current work: baseline reconciliation and CI
+# Current work: Prodex 0.439.5 parity and CI
 
 Fast CI run `40606177561` on `78472bb` failed the new minor-fault positive
 control on a host using transparent huge pages. All five width measurements
@@ -11,16 +11,29 @@ allocation coverage from it. See `docs/ci-lessons.md` and the uploaded run
 artifacts for the measurements. The RSS test needs a separately validated
 transient-peak measurement or an explicitly narrower scope.
 
-The instructions supplied for this session designate official Prodex 0.439.2
-at `72b77478a5198fc5da6b4d2253137f9cdbf43be9` as the frozen reference.
-The checked-in `AGENTS.md`, `docs/baseline.json`, `docs/parity.json`, and
-existing CI still designate 0.439.5. Reconcile those files and their 0.439.5
-fixtures before claiming a complete 0.439.2 baseline; prior 0.439.5 results do
-not establish 0.439.2 parity. All six release targets remain in the incomplete
-denominator. One concrete mismatch is `src/modex/super_hooks.mojo`, which
-sends client version 0.439.5 while the 0.439.2 fixture records 0.439.2.
-Changing the active metadata alone would silently retarget shared-oracle tests;
-preserve and explicitly provision the 0.439.5 checks when reconciling it.
+The active mission designates official Prodex 0.439.5 at
+`ac9aad08f25d6dc8cda96463ce2045b40f35f510` as the frozen reference,
+superseding the earlier 0.439.2 session instruction. The checked-in baseline,
+active CI oracle, and hook client version match that target. The remote tag
+and the cached source and Linux oracle were reverified for this continuation.
+Keep the 0.439.2 role regression and earlier captures as historical evidence;
+they do not establish 0.439.5 parity. All six release targets remain in the
+incomplete denominator.
+
+Untyped DeepSeek input items now follow the 0.439.5 content-validation path.
+For example, untyped null content previously produced a local 502 and no
+upstream POST; the frozen release sends the string `null` and succeeds.
+Typed `message` content and `prefix` validation remain enforced. Thirty
+synthetic real-process cases cover simple and non-simple routing, scalar,
+object and array content, and rejection controls. Broader provider semantics
+remain incomplete. The source trace is `deepseek_input_item_validation` in
+`mojo/prodex_core/deepseek.mojo`; the regression is
+`tests/test_provider_request_untyped_content_04395.py`. In a clean snapshot,
+the production build, four native request tests, dependency and workflow
+audits, test census, and 12 focused Python tests passed. The older 0.439.2
+role comparison remains a historical control. Reobserved two-turn 0.439.5
+binding controls pass; the oversized SSE characterization still exposes the
+separate unresolved mismatch.
 
 Selected untyped DeepSeek role values now reach the mapper, which converts
 unsupported and non-string roles to `user`; explicit `type: message` role

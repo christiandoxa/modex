@@ -92,15 +92,15 @@ def _validate_item(doc: JsonDocument, item: Int) raises:
         raise Error("DeepSeek input item type must be a string")
     var kind = doc.string(kind_node)
     if kind == "message" or kind_node < 0:
-        var role = doc.get(item, "role")
         if kind_node >= 0:
+            var role = doc.get(item, "role")
             if role >= 0 and doc.nodes[role].kind != JSON_STRING:
                 raise Error("DeepSeek message role must be a string")
             if role >= 0:
                 var r = doc.nodes[role].text
                 if not (r == "system" or r == "developer" or r == "user" or r == "assistant"):
                     raise Error("DeepSeek message role `" + r + "` is not supported by this Responses adapter")
-        _validate_content(doc, doc.get(item, "content"))
+            _validate_content(doc, doc.get(item, "content"))
     elif kind == "function_call" or kind == "mcp_call" or kind == "custom_tool_call" or kind == "local_shell_call":
         var id = _first_string(doc, item, ["call_id", "tool_call_id", "id"])
         if not trim_text(id): raise Error("DeepSeek input tool items require a call_id")

@@ -1,12 +1,19 @@
-# Current work: Prodex 0.165.1 parity and CI
+# Current work: Prodex 0.439.2 parity and CI
 
-The requested target is Prodex 0.165.1, commit
+The current project instructions freeze Prodex 0.439.2 at commit
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9`; 0.439.1 is historical regression
+only. The existing `docs/baseline.json` and active CI oracle routing still
+select 0.165.1 and must be reconciled with those instructions. Until then,
+0.165.1 results do not establish current parity. All six release targets and
+unverified security behavior remain in the denominator.
+
+The following checkpoint notes describe earlier work targeting Prodex 0.165.1, commit
 `10ae15b5d1806302b60f051e4e6fec788044f4c2`. The official Linux binary and
 manifest were checked against SHA256SUMS and the GitHub asset digests; see
-`docs/evidence/baseline-0.165.1/reference-verification.json`. The 0.439.x
-comparisons below are historical and do not establish 0.165.1 behavior.
-The active baseline and oracle routing now select 0.165.1; the full inventory
-and production parity against this release remain unfinished.
+`docs/evidence/baseline-0.165.1/reference-verification.json`. References below
+to the 0.165.1 target and historical 0.439.x controls reflect that earlier
+checkpoint, not the current project instructions. The full inventory and
+production parity against 0.439.2 remain unfinished.
 
 The production Super Codex version and app-server help probes now run with
 `CODEX_HOME` and the five `TEST_CODEX_*` logging variables removed. A synthetic

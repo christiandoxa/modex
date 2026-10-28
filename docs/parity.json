@@ -1011,7 +1011,8 @@
         "docs/evidence/checkpoint2-tests.txt",
         "docs/evidence/checkpoint2-dependencies.txt",
         "docs/evidence/baseline-0.439.2/reference-verification.json",
-        "docs/evidence/baseline-0.165.1/session-query-unicode.md"
+        "docs/evidence/baseline-0.165.1/session-query-unicode.md",
+        "docs/evidence/baseline-0.165.1/session-paths.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -1103,7 +1104,8 @@
         "docs/evidence/checkpoint2-tests.txt",
         "docs/evidence/checkpoint2-dependencies.txt",
         "docs/evidence/baseline-0.439.2/reference-verification.json",
-        "docs/evidence/baseline-0.165.1/session-query-unicode.md"
+        "docs/evidence/baseline-0.165.1/session-query-unicode.md",
+        "docs/evidence/baseline-0.165.1/session-paths.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {

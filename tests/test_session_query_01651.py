@@ -66,6 +66,48 @@ class SessionQuery01651Tests(unittest.TestCase):
                 wanted = b"synthetic-id\n" if expected else b""
                 self.assertEqual(outputs, [(0, wanted, b""), (0, wanted, b"")])
 
+    def test_shared_home_path_join_matches_release(self):
+        for suffix, query, query_matches, internal_separator in (
+            ("/", "//sessions", False, False),
+            ("//", "//sessions", True, False),
+            ("//.codex", "//.codex/sessions", True, True),
+        ):
+            with self.subTest(suffix=suffix):
+                with tempfile.TemporaryDirectory(prefix="modex-session-path-01651-") as directory:
+                    outputs = []
+                    query_outputs = []
+                    for label, binary in (("baseline", ORACLE), ("modex", MODEX)):
+                        root = Path(directory) / label
+                        root.mkdir()
+                        (root / "home").mkdir(mode=0o700)
+                        (root / "workspace").mkdir()
+                        shared = root / "home/.codex"
+                        sessions = shared / "sessions/2026/01/01"
+                        sessions.mkdir(parents=True)
+                        (sessions / "rollout-fixture.jsonl").write_text(json.dumps({
+                            "type": "session_meta", "payload": {
+                                "id": "synthetic-id", "thread_name": "Fixture",
+                            }, "timestamp": "2026-10-24T00:00:00Z",
+                        }) + "\n")
+                        shared_path = (str(root / "home") if internal_separator else str(shared)) + suffix
+                        environment = {"PRODEX_SHARED_CODEX_HOME": shared_path}
+                        for arguments, collected in (
+                            (["session", "list", "--json"], outputs),
+                            (["session", "list", "--query", query, "--id-only"], query_outputs),
+                        ):
+                            result = subprocess.run(
+                                sandbox_command(binary, root, arguments, environment=environment),
+                                capture_output=True, timeout=10, check=False,
+                            )
+                            collected.append((result.returncode,
+                                              result.stdout.replace(str(root).encode(), b"<FIXTURE_ROOT>"),
+                                              result.stderr))
+
+                    self.assertEqual(outputs[0], outputs[1])
+                    self.assertEqual(query_outputs[0], query_outputs[1])
+                    wanted = b"synthetic-id\n" if query_matches else b""
+                    self.assertEqual(query_outputs[0], (0, wanted, b""))
+
 
 if __name__ == "__main__":
     unittest.main()

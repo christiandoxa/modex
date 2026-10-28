@@ -3,7 +3,7 @@ from std.testing import assert_equal, assert_false, assert_true
 from modex.cli import jaro_similarity, parse_session_options, unsigned_value
 from modex.json import JsonDocument
 from modex.session_time import integer_timestamp, timestamp_key
-from modex.sessions import SessionReport, session_query_lowercase, starts_session
+from modex.sessions import SessionReport, session_child_path, session_query_lowercase, starts_session
 from modex.text import character_width, fit_cell, pad_cell, section_header, text_width, trim_text, wrap_text
 
 
@@ -20,6 +20,9 @@ def main() raises:
     assert_equal(unsigned_value("18446744073709551615"), UInt64.MAX)
     assert_equal(trim_text(chr(0x2000) + " title " + chr(0xA0)), "title")
     assert_equal(trim_text("\x1cname\x1c"), "\x1cname\x1c")
+    assert_equal(session_child_path("/", "sessions"), "/sessions")
+    assert_equal(session_child_path("/tmp/shared//", "sessions"), "/tmp/shared//sessions")
+    assert_equal(session_child_path("/tmp/shared", "sessions"), "/tmp/shared/sessions")
     assert_equal(session_query_lowercase("İ"), "i\u0307")
     assert_equal(session_query_lowercase("ΟΣ"), "ος")
     assert_equal(session_query_lowercase("Ο\u0301Σ"), "ο\u0301ς")

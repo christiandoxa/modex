@@ -172,6 +172,10 @@ def member_path(document: JsonDocument, path: StringSlice) -> Int:
     return index
 
 
+def session_child_path(root: String, name: String) -> String:
+    return root + name if root.endswith("/") else root + "/" + name
+
+
 def first_string(document: JsonDocument, paths: List[String]) -> String:
     for path in paths:
         var value = trim_text(document.string(member_path(document, path)))
@@ -194,7 +198,7 @@ def session_paths(root: String, mut paths: List[String]) raises:
     if not exists(root):
         return
     for name in listdir(root):
-        var path = root + "/" + name
+        var path = session_child_path(root, name)
         var mode = lstat(path).st_mode & 0o170000
         if mode == 0o040000:
             session_paths(path, paths)
@@ -332,8 +336,8 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
             raise Error("locked state loading and recovery are not implemented")
     var paths = List[String]()
     var shared = shared_root(root)
-    session_paths(shared + "/sessions", paths)
-    session_paths(shared + "/archived_sessions", paths)
+    session_paths(session_child_path(shared, "sessions"), paths)
+    session_paths(session_child_path(shared, "archived_sessions"), paths)
     sort(paths)
     var reports = List[SessionReport]()
     for path in paths:

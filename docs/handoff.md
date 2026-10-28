@@ -18,6 +18,11 @@ phrase and error body observed in 0.165.1 and historical 0.439.2, without an
 upstream request. Concurrency, WebSocket transport and broader HTTP behavior
 remain unfinished; see `docs/evidence/baseline-0.165.1/local-relay-http.md`.
 
+Session listing now joins a shared home ending in `/` without introducing an
+extra separator. Synthetic list and path-query cases match 0.165.1 and the
+historical 0.439.2 control; see `docs/evidence/baseline-0.165.1/session-paths.md`.
+State locking and profile filtering remain unfinished.
+
 `tests/test_cli_01651.py` compares selected root-help forms and leading version
 flags through both production executables in isolated homes. Both cases passed
 on Linux x86-64 with the verified binary. This does not establish complete CLI

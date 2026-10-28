@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Fast run `40629714742` on exact SHA `f1b8181` also failed before building
+because the Prodex 0.439.2 tag is absent; its consumer jobs did not run.
+The official 0.439.2 and historical 0.439.1 binaries were recovered read-only
+from their original successful Prodex Actions artifacts and match the
+previously verified release checksums. Those artifacts expire in early
+November 2026 and require authentication; CI has no durable credential-free
+source yet. See `docs/ci-lessons.md` for run and artifact identities.
+
 Fast CI run `40628355469` on `2b6fe89` failed before building because the
 official Prodex 0.439.2 tag and release assets are no longer published at the
 recorded repository. The source commit remains retrievable and the previously

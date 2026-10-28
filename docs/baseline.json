@@ -7,6 +7,12 @@
     "tag": "0.439.2",
     "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
     "tag_resolution_matches": true,
+    "remote_availability": {
+      "checked_at": "2026-10-28",
+      "tag_present": false,
+      "release_assets_present": false,
+      "recovery_evidence": "docs/evidence/reference-recovery-20261028.json"
+    },
     "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-72b77478a5198fc5da6b4d2253137f9cdbf43be9",
     "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.2",
     "release_features": [
@@ -78,6 +84,12 @@
     "tag": "0.439.1",
     "commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
     "tag_resolution_matches": true,
+    "remote_availability": {
+      "checked_at": "2026-10-28",
+      "tag_present": false,
+      "release_assets_present": false,
+      "recovery_evidence": "docs/evidence/reference-recovery-20261028.json"
+    },
     "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
     "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.1",
     "release_features": [

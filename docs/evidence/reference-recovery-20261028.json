@@ -1,0 +1,39 @@
+{
+  "checked_at_utc": "2026-10-28",
+  "repository": "https://github.com/christiandoxa/prodex",
+  "method": "Read-only GitHub Actions artifact retrieval and SHA-256 comparison against previously verified official release evidence. No installed binary was substituted.",
+  "anonymous_artifact_download_http_status": 401,
+  "references": {
+    "0.439.2": {
+      "role": "active",
+      "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+      "remote_tag_present": false,
+      "release_sha256sums_http_status": 404,
+      "workflow": "standalone release",
+      "workflow_run_id": 40300566491,
+      "workflow_run_conclusion": "success",
+      "artifact_id": 12641885680,
+      "artifact_name": "x86_64-unknown-linux-gnu",
+      "artifact_expires_at_utc": "2026-11-02T09:54:42Z",
+      "artifact_zip_sha256": "db47114338b74ab058ce2ee2ae029f1d1b85216acfb24c59cacedc9f1b196f6c",
+      "contained_file": "prodex",
+      "contained_file_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
+    },
+    "0.439.1": {
+      "role": "historical regression",
+      "commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+      "remote_tag_present": false,
+      "release_sha256sums_http_status": 404,
+      "workflow": "standalone release",
+      "workflow_run_id": 40177799086,
+      "workflow_run_conclusion": "success",
+      "artifact_id": 12593400004,
+      "artifact_name": "x86_64-unknown-linux-gnu",
+      "artifact_expires_at_utc": "2026-11-01T09:59:41Z",
+      "artifact_zip_sha256": "7287a1236e2db47ab55c9856032608de7779533ec031fc0df1267ccbfc0d6adc",
+      "contained_file": "prodex",
+      "contained_file_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a"
+    }
+  },
+  "limitation": "These temporary artifacts require authentication to download and expire; they do not establish a durable credential-free CI acquisition source. Historical verification of the tags is not a claim that they remain available."
+}

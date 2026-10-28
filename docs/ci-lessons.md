@@ -12,6 +12,24 @@
   Reference acquisition remains fail-closed; a durable verified source for
   those same official bytes and hosted verification are unresolved. Logs and
   uploaded evidence were retained under `/tmp/modex-ci-failures-20261028/`.
+  Fast run [40629714742](https://github.com/christiandoxa/modex/actions/runs/40629714742),
+  attempt 1, job `122623006721`, failed the same check on `f1b8181`;
+  the artifact consumers again did not run. The historical `0.439.1` tag is
+  also absent.
+- A read-only investigation recovered the exact official Linux executables
+  from Prodex's successful standalone-release Actions runs. Artifact
+  `12641885680` from run `40300566491`, source commit `72b77478a5198fc5da6b4d2253137f9cdbf43be9`,
+  contains a binary matching the recorded 0.439.2 SHA-256 above; the artifact
+  ZIP SHA-256 is `db47114338b74ab058ce2ee2ae029f1d1b85216acfb24c59cacedc9f1b196f6c`.
+  Artifact `12593400004` from run `40177799086`, source commit
+  `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`, contains a binary matching the
+  historical 0.439.1 SHA-256
+  `b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a`;
+  its ZIP SHA-256 is `7287a1236e2db47ab55c9856032608de7779533ec031fc0df1267ccbfc0d6adc`.
+  Both artifacts were downloaded read-only into the local failure-evidence
+  directory. Their reported expiration dates are 2026-11-02 and 2026-11-01,
+  respectively. Anonymous artifact download returns HTTP 401, so this does
+  not establish a durable, credential-free CI bootstrap.
 - Full run [40625731794](https://github.com/christiandoxa/modex/actions/runs/40625731794),
   attempt 1, job `122610058523`, failed on `865815c`: 458 of 459 Python tests
   passed, while the width-memory test's transient minor-fault positive control

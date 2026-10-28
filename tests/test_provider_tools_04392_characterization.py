@@ -330,18 +330,6 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                 },
             ),
             (
-                "multiple_message_history",
-                {
-                    "model": "deepseek-chat",
-                    "input": [
-                        {"type": "message", "role": "user", "content": "preserve prior text"},
-                        {"type": "message", "role": "user", "content": "preserve current text"},
-                    ],
-                    "stream": False,
-                    "tools": [{"type": "web_search_preview"}],
-                },
-            ),
-            (
                 "typed_text_content",
                 {
                     "model": "deepseek-chat",
@@ -380,15 +368,6 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                 if name == "untyped_role":
                     self.assertEqual(reference["upstream_body"]["messages"][0]["role"], "user")
                     self.assertEqual(reference["upstream_body"]["messages"][0]["content"][0]["text"], "preserve this role content")
-                elif name == "multiple_message_history":
-                    self.assertEqual(
-                        [
-                            part["text"]
-                            for message in reference["upstream_body"]["messages"]
-                            for part in message["content"]
-                        ],
-                        ["preserve prior text", "preserve current text"],
-                    )
                 elif name == "typed_text_content":
                     self.assertEqual(
                         reference["upstream_body"]["messages"][0]["content"][0]["text"],

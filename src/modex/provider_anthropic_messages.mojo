@@ -6,7 +6,7 @@ from .json import JSON_ARRAY, JSON_BOOL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, 
 from .provider_chat_buffered import deepseek_buffered_assistant_messages
 from .provider_chat_metadata import merge_chat_metadata
 from .provider_chat_usage import json_unsigned
-from .text import unsigned_value
+from .text import trim_text, unsigned_value
 
 
 def validate_deepseek_anthropic_request(source: String) raises:
@@ -16,8 +16,29 @@ def validate_deepseek_anthropic_request(source: String) raises:
     if model >= 0 and doc.nodes[model].kind != JSON_STRING:
         raise Error("Anthropic Messages slice requires a string model")
     var input = doc.get(doc.root, "input")
-    if input < 0 or doc.nodes[input].kind != JSON_STRING:
-        raise Error("Anthropic Messages slice supports only string input")
+    if input < 0:
+        raise Error("Anthropic Messages slice requires input")
+    if doc.nodes[input].kind == JSON_STRING:
+        pass
+    elif doc.nodes[input].kind == JSON_ARRAY and len(doc.nodes[input].children) > 0:
+        var has_conversation_message = False
+        for item in doc.nodes[input].children:
+            _only_fields(doc, item, ["type", "role", "content"], "input message")
+            var type = doc.get(item, "type")
+            if type >= 0 and (doc.nodes[type].kind != JSON_STRING or doc.nodes[type].text != "message"):
+                raise Error("Anthropic Messages slice supports only message input items")
+            var role = doc.get(item, "role")
+            if role >= 0 and (doc.nodes[role].kind != JSON_STRING or (doc.nodes[role].text != "user" and doc.nodes[role].text != "assistant" and doc.nodes[role].text != "system" and doc.nodes[role].text != "developer")):
+                raise Error("Anthropic Messages slice supports only user, assistant, system, and developer message roles")
+            var content = doc.get(item, "content")
+            if content < 0 or doc.nodes[content].kind != JSON_STRING or not trim_text(doc.nodes[content].text):
+                raise Error("Anthropic Messages slice supports only non-whitespace string message content")
+            if role < 0 or (doc.nodes[role].text != "system" and doc.nodes[role].text != "developer"):
+                has_conversation_message = True
+        if not has_conversation_message:
+            raise Error("Anthropic Messages slice requires a user or assistant message")
+    else:
+        raise Error("Anthropic Messages slice supports only string input or simple message arrays")
     var stream = doc.get(doc.root, "stream")
     if stream >= 0 and doc.nodes[stream].kind != JSON_BOOL:
         raise Error("Anthropic Messages stream must be a boolean")
@@ -58,10 +79,11 @@ def deepseek_anthropic_messages_body(source: String) raises -> String:
             raise Error("Anthropic Messages does not translate stream_options")
     var fields = List[String]()
     fields.append('"max_tokens":' + _field(body, "max_tokens", "4096"))
-    var messages = _messages(body)
-    fields.append('"messages":' + messages)
+    var translated_messages = _messages(body)
+    fields.append('"messages":' + translated_messages[1])
     fields.append('"model":' + _field(body, "model", '"auto"'))
     fields.append('"stream":' + _field(body, "stream", "false"))
+    if translated_messages[0]: fields.append('"system":' + translated_messages[0])
     var stop = body.get(body.root, "stop")
     if stop >= 0:
         fields.append('"stop_sequences":' + ("[" + serialize_json(body, stop) + "]" if body.nodes[stop].kind == JSON_STRING else serialize_json(body, stop)))
@@ -81,23 +103,37 @@ def _field(doc: JsonDocument, key: String, fallback: String) raises -> String:
     return serialize_json(doc, value) if value >= 0 else fallback
 
 
-def _messages(doc: JsonDocument) raises -> String:
+def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
     var source = doc.get(doc.root, "messages")
-    if source < 0 or doc.nodes[source].kind != JSON_ARRAY:
+    if source < 0 or doc.nodes[source].kind != JSON_ARRAY or len(doc.nodes[source].children) == 0:
         raise Error("Anthropic Messages requires a messages array")
-    if len(doc.nodes[source].children) != 1:
-        raise Error("Anthropic Messages slice supports one simple user message")
     var messages = List[String]()
+    var content_parts = List[String]()
+    var system_parts = List[String]()
+    var current_role = String()
+    var has_message = False
     for item in doc.nodes[source].children:
-        if doc.nodes[item].kind != JSON_OBJECT:
-            raise Error("Anthropic Messages entries must be objects")
         _only_fields(doc, item, ["role", "content"], "message")
         var role = doc.string(doc.get(item, "role"))
         var content = doc.get(item, "content")
-        if role != "user" or content < 0 or doc.nodes[content].kind != JSON_STRING:
-            raise Error("Anthropic Messages slice supports one simple user text message")
-        messages.append('{"content":[{"text":' + serialize_json(doc, content) + ',"type":"text"}],"role":"user"}')
-    return "[" + ",".join(messages) + "]"
+        if role == "developer": role = "system"
+        if (role != "user" and role != "assistant" and role != "system") or content < 0 or doc.nodes[content].kind != JSON_STRING:
+            raise Error("Anthropic Messages slice supports simple user, assistant, and system text messages")
+        if role == "system":
+            system_parts.append(doc.nodes[content].text)
+            continue
+        if has_message and role != current_role:
+            messages.append('{"content":[' + ",".join(content_parts) + '],"role":' + quote_json(current_role) + "}")
+            content_parts = List[String]()
+        current_role = role
+        has_message = True
+        content_parts.append('{"text":' + serialize_json(doc, content) + ',"type":"text"}')
+    if not has_message:
+        raise Error("Anthropic Messages slice requires a user or assistant message")
+    messages.append('{"content":[' + ",".join(content_parts) + '],"role":' + quote_json(current_role) + "}")
+    var system = String()
+    if len(system_parts) > 0: system = quote_json("\n\n".join(system_parts))
+    return (system, "[" + ",".join(messages) + "]")
 
 
 def _tools(doc: JsonDocument) raises -> String:

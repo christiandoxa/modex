@@ -131,6 +131,10 @@
     {
       "date": "2026-10-28",
       "change": "Match selected stateless profile help forms and record an 11-case active-release continuation ownership regression. Stateful profile operations and broader ownership remain unfinished; no contract or platform status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Connect selected environment web-search modes and plain Anthropic message arrays through production Super; expand profile help parsing and harden CI audit gates. Rich content, stateful profiles, TOML mode precedence and broader behavior remain unfinished; no contract or platform status is promoted."
     }
   ],
   "contracts": [
@@ -2786,6 +2790,7 @@
         "tests/test_provider_request_prepare.py",
         "tests/test_deepseek_continuation.py",
         "tests/test_continuation_binding_04392.py",
+        "tests/test_deepseek_web_search_mode_04392.py",
         "tests/test_gateway_cli.mojo",
         "tests/capture_stream_timeout_mismatch.py",
         "tests/test_loopback_http_stream.py",
@@ -2793,6 +2798,7 @@
         "tests/test_provider_request_untyped_content_04395.py",
         "tests/test_provider_embedded_tool_calls_04395.py",
         "tests/test_provider_tools_04392_characterization.py",
+        "tests/test_anthropic_message_arrays_04392.py",
         "tests/test_anthropic_buffered_payload_04392.py"
       ],
       "evidence": [
@@ -2814,6 +2820,7 @@
         "docs/evidence/runtime-local-tests.txt",
         "docs/evidence/runtime-local-link.txt",
         "docs/evidence/continuation-ownership-04392.md",
+        "docs/evidence/deepseek-web-search-mode-04392.md",
         "docs/evidence/checkpoint-04391-tests.txt",
         "docs/evidence/native-super-reference.json",
         "docs/evidence/native-super-data-plane.json",

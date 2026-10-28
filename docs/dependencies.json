@@ -8,6 +8,7 @@
     "src/modex/cli.mojo",
     "src/modex/root_help.mojo",
     "src/modex/inspection_cli.mojo",
+    "src/modex/profile_cli.mojo",
     "src/modex/json.mojo",
     "src/modex/json_float.mojo",
     "src/modex/sha256.mojo",
@@ -31,6 +32,7 @@
     "src/modex/provider_request_prepare.mojo",
     "src/modex/provider_request_tools.mojo",
     "src/modex/provider_deepseek_transport.mojo",
+    "src/modex/provider_anthropic_messages.mojo",
     "src/modex/provider_chat_buffered.mojo",
     "src/modex/provider_conversations.mojo",
     "src/modex/loopback_server.mojo",
@@ -70,7 +72,8 @@
     "src/modex/provider_passthrough.mojo",
     "src/modex/super_launch.mojo",
     "src/modex/runtime_recovery.mojo",
-    "src/modex/runtime_binding.mojo"
+    "src/modex/runtime_binding.mojo",
+    "src/modex/runtime_sse_binding_observer.mojo"
   ],
   "production_imports": [
     "std.collections",
@@ -441,5 +444,15 @@
       "tests/test_provider_tools_04392_characterization.py"
     ],
     "limitations": "Config-only settings, public TLS/DNS beta routes, and validation of unused invalid beta values when strict mode is off remain incomplete. As in the release, the simple-request pass can preserve nested tool schemas unchanged."
+  },
+  "web_search_mode_and_messages_audit": {
+    "new_application_dependencies": [],
+    "new_native_bindings": [],
+    "production_python_or_codegen": false,
+    "scope": "Production routing and message conversion reuse the existing Mojo environment, JSON, text and collection code. Python remains confined to isolated test peers and CI checks.",
+    "evidence": [
+      "docs/evidence/deepseek-web-search-mode-04392.md",
+      "docs/evidence/anthropic-web-search-04392.md"
+    ]
   }
 }

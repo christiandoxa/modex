@@ -20,4 +20,4 @@ def main() raises:
     var listener = LoopbackHTTPListener(String(arguments[1]))
     var output = RawFileDescriptor(1)
     output.write_bytes(("READY http://" + listener.address + "/v1\n").as_bytes())
-    serve_local_rewrite(listener, upstream, key, route[0], route[1], route[2])
+    serve_local_rewrite(listener, upstream, key, route[0], route[1], route[2], web_search_mode=route[3])

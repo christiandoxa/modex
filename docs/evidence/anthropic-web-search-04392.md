@@ -22,14 +22,17 @@ error code and message.
 Incoming Anthropic auth headers are replaced only on the Messages route;
 ordinary DeepSeek and raw passthrough keep forwarding those headers as before.
 
-The production adapter rejects inputs outside the proven shape before its
-upstream POST: string input, one `web_search_preview` tool, optional
-`allowed_domains`, default token limit and no other request fields. It rejects
-typed/multiple message history and mixed function/web tools rather than
-coercing or dropping them. Oracle controls show that Prodex 0.439.2 coerces an
-untyped `critic` role to `user`, sends mixed function/web tools, and combines
-two same-role input messages into one message with both text parts; Modex
-returns 502 with no upstream request for those shapes.
+The production adapter accepts string input and selected nonempty arrays of
+plain string messages, with user, assistant, system and developer roles, one
+`web_search_preview` tool, optional `allowed_domains`, the default token limit
+and no other request fields. Adjacent messages with the same conversation
+role are combined; system and developer text becomes the Messages `system`
+field. Synthetic release comparisons cover Unicode and role transitions.
+Unsupported input shapes fail before the upstream POST. The release coerces an
+untyped `critic` role, omits some message metadata and accepts mixed function
+and web tools; Modex rejects these shapes. Empty, whitespace-only and system-only
+arrays return 502 in Modex instead of the release's 400. A blank item alongside
+nonblank text is rejected by Modex while the release drops the blank item.
 An exactly empty string input returns the release's HTTP 400 JSON error before
 any upstream POST. Whitespace-only inputs, including NBSP and U+200B, remain
 accepted by the tested release and Modex controls.
@@ -62,8 +65,9 @@ Checks run in an isolated workspace copy:
 - `make unit-build UNIT_BUILD_PROGRAMS='local_rewrite_driver'` — pass.
 - `python3 scripts/ci/check-product-dependencies.py` — pass; production imports use only Mojo std/internal modules.
 
-The 15-method characterization suite ran before the profile-help integration;
-the ten stop cases were rerun against the combined production build afterward.
+The combined production build subsequently passed all 20 methods in
+`test_anthropic_message_arrays_04392.py` and
+`test_provider_tools_04392_characterization.py` without skips.
 
 Fixtures use synthetic keys and local loopback providers. No paid provider traffic,
 real credentials or account login were used. This does not qualify general

@@ -8,7 +8,7 @@ from modex.log_cli import log_help, log_short_help, parse_log_arguments
 from modex.logs import log_last
 from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
-from modex.profile_cli import profile_help, profile_short_help
+from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_short_help
 from modex.root_help import root_help
 from modex.sessions import inspect_sessions
 from modex.super_cli import parse_super_arguments, run_super
@@ -34,34 +34,31 @@ def main():
             print(profile_help("", executable), file=stderr, end="")
             exit(2)
             return
-        if args[2] == "--help" or args[2] == "-h":
-            print(profile_help("", executable), end="")
-            return
-        if args[2] == "help":
-            if len(args) == 3:
-                print(profile_help("", executable), end="")
-                return
-            if len(args) == 4:
-                var output = profile_help(args[3], executable)
-                if output:
-                    print(output, end="")
-                    return
-        elif len(args) >= 4 and (args[3] == "--help" or args[3] == "-h"):
-            var output = profile_help(args[2], executable) if args[3] == "--help" else profile_short_help(args[2], executable)
-            if output:
+        try:
+            var request = parse_profile_help_arguments(args, 2, executable)
+            if request.help:
+                var output = profile_help(request.command, executable) if not request.short_help else profile_short_help(request.command, executable)
                 print(output, end="")
                 return
+        except error:
+            print(error, file=stderr, end="")
+            exit(2)
+            return
+        print("Error: this Modex development build has not implemented the requested command", file=stderr)
+        exit(1)
+        return
     if len(args) >= 3 and args[1] == "help" and args[2] == "profile":
-        if len(args) == 3:
-            var executable_parts = args[0].split("/")
-            print(profile_help("", String(executable_parts[len(executable_parts) - 1])), end="")
-            return
-        if len(args) == 4:
-            var executable_parts = args[0].split("/")
-            var output = profile_help(args[3], String(executable_parts[len(executable_parts) - 1]))
-            if output:
-                print(output, end="")
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        try:
+            var request = parse_profile_help_arguments(args, 3, executable, True)
+            if request.help:
+                print(profile_help(request.command, executable), end="")
                 return
+        except error:
+            print(error, file=stderr, end="")
+            exit(2)
+            return
     if len(args) >= 3 and args[1] == "help" and (args[2] == "super" or args[2] == "s"):
         var parts = args[0].split("/")
         var executable = String(parts[len(parts) - 1])

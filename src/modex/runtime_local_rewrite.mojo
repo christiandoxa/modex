@@ -114,19 +114,35 @@ def _strict_tools_value(name: String, value: String) raises -> Bool:
     raise Error(name + " must be true or false")
 
 
-def deepseek_runtime_route() raises -> Tuple[Bool, String, String]:
+def _web_search_mode() raises -> String:
+    var name = String("PRODEX_DEEPSEEK_WEB_SEARCH_MODE")
+    var value = getenv(name, "\x00")
+    if value == "\x00": return "auto"
+    if not value: raise Error(name + " cannot be empty")
+    for character in value.codepoints():
+        if is_whitespace(Int(character)):
+            raise Error(name + " must not contain whitespace")
+    var token = value.lower()
+    if token == "auto" or token == "anthropic": return token
+    if token in ["off", "disabled", "disable"]: return "off"
+    if token in ["openai_chat", "openai-chat", "chat"]: return "openai_chat"
+    raise Error(name + " must be auto, off, openai_chat, or anthropic")
+
+
+def deepseek_runtime_route() raises -> Tuple[Bool, String, String, String]:
     var strict_value = getenv("PRODEX_DEEPSEEK_STRICT_TOOLS", "\x00")
     var strict_tools = strict_value != "\x00" and _strict_tools_value("PRODEX_DEEPSEEK_STRICT_TOOLS", strict_value)
     if not strict_tools:
-        return False, String(), String()
+        return False, String(), String(), _web_search_mode()
     var beta_value = getenv("PRODEX_DEEPSEEK_BETA_BASE_URL", "\x00")
     if beta_value == "\x00":
         raise Error("strict tools require PRODEX_DEEPSEEK_BETA_BASE_URL to be a numeric loopback HTTP URL")
+    var route = (String(), String())
     try:
-        var route = local_rewrite_upstream(beta_value)
-        return True, route[0], route[1]
+        route = local_rewrite_upstream(beta_value)
     except:
         raise Error("PRODEX_DEEPSEEK_BETA_BASE_URL must be a credential-free numeric loopback HTTP URL")
+    return True, route[0], route[1], _web_search_mode()
 
 
 def _bytes(text: String) -> List[UInt8]:
@@ -355,7 +371,7 @@ def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Opt
     return "[]"
 
 
-def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, messages_address: String, messages_path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, mut bindings: RuntimeBindings, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String) raises:
+def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, messages_address: String, messages_path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, mut bindings: RuntimeBindings, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
     if request.method != "POST" or (target != "/v1/chat/completions" and target != "/v1/responses"):
         _route_error(connection)
@@ -410,12 +426,16 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         if tools >= 0 and doc.nodes[tools].kind == JSON_ARRAY:
             for tool in doc.nodes[tools].children:
                 web = web or doc.string(doc.get(tool, "type")).startswith("web_search")
+        if web and web_search_mode == "off":
+            _ = translate_deepseek_request(source, history, strict_tools, web_search_mode)
+        if web_search_mode == "openai_chat":
+            web = False
         if web:
             var input = doc.get(doc.root, "input")
             if input >= 0 and doc.nodes[input].kind == JSON_STRING and not doc.nodes[input].text:
                 connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
                 return
-            _ = translate_deepseek_request(source, history, strict_tools)
+            _ = translate_deepseek_request(source, history, strict_tools, web_search_mode)
     except:
         _reply(connection, 502, "upstream request failed")
         return
@@ -425,7 +445,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     try:
         var exchange_address = messages_address if web else (beta_address if strict_tools else address)
         var exchange_path = messages_path if web else (beta_path if strict_tools else path)
-        exchange = DeepSeekExchange(exchange_address, exchange_path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web)
+        exchange = DeepSeekExchange(exchange_address, exchange_path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web)
     except:
         _reply(connection, 502, "upstream request failed")
         return
@@ -475,7 +495,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         connection.close()
 
 
-def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, key: String, strict_tools: Bool, beta_address: String, beta_path: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False) raises:
+def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, key: String, strict_tools: Bool, beta_address: String, beta_path: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False, web_search_mode: String = "auto") raises:
     var upstream = local_rewrite_upstream(upstream_url)
     var anthropic_upstream = local_rewrite_anthropic_messages_upstream(upstream_url)
     _ = deepseek_request_headers([], key)
@@ -507,7 +527,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         request_id = request_id + 1 if request_id < UInt64.MAX else request_id
         try:
             var request = connection.read_request(120000)
-            _serve(connection, request, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path)
+            _serve(connection, request, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
         except error:
             var message = String(error)
             var too_large = "oversized" in message or "exceeds wire limit" in message

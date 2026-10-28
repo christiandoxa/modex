@@ -59,6 +59,24 @@
   the 71-file dependency audit and 31 reference-helper tests. The absent
   official tag and oracle stopped it before build; the artifact consumer was
   skipped. The hosted run therefore does not validate the product changes.
+- Fast run [40650182199](https://github.com/christiandoxa/modex/actions/runs/40650182199)
+  on `53045196292d349116e05cdd90f080c62b7dd0dd` again passed 31 reference
+  helpers, then failed at the unavailable oracle before build.
+
+## Workflow and dependency audit corrections
+
+- The workflow policy previously accepted job-level `permissions: write-all`,
+  quoted write values and some unpinned actions written as valid YAML flow or
+  escaped keys. Synthetic actionlint-valid fixtures reproduce the bypasses.
+  The checker now accepts one canonical root read-only permissions block and
+  rejects unsupported key forms; focused tests also retain shell-text controls.
+  This is a narrow lexical policy, not a general YAML parser. Hosted validation
+  of the correction is pending.
+- The production-source inventory listed 68 files while the import scan found
+  71. The missing paths are restored in `docs/dependencies.json`, and the
+  audit now rejects missing, stale, duplicate or malformed inventory entries.
+  Isolated regression fixtures check those failures and external imports.
+  Fast CI runs both helper suites before trying to acquire the oracle.
 
 ## Frozen release disappeared and width-control calibration
 

@@ -10,8 +10,8 @@ provenance and do not by themselves establish 0.439.2 behavior.
 The profile group and selected subcommand help now match the 0.439.2 release.
 Profile listing and all state-changing operations remain unimplemented: the
 release creates persistent locks that Modex cannot yet coordinate with safely.
-Malformed or unknown profile arguments and help after earlier arguments also
-remain mismatches. See `docs/evidence/profile-help-04392.md`.
+Selected help prefixes and parser errors now match; other argument combinations
+remain unverified. See `docs/evidence/profile-help-04392.md`.
 
 The 0.439.2 oversized SSE continuation case now binds the response ID: both
 products return 200/503 with one upstream POST. The incremental observer has
@@ -27,11 +27,12 @@ the production Super path. Synthetic release comparisons cover supported URL
 suffixes and prefixes, dot-segment normalization, request body/auth conversion,
 buffered text and search outputs, search sources, SSE ordering and stream
 truncation. It now rejects requests before upstream unless they use string
-input, one `web_search_preview` tool, optional `allowed_domains`, the default
-token limit and no other request fields. Message arrays/history and mixed
-function/web tools are fail-closed. Oracle controls record that the release
-coerces untyped roles, accepts mixed tools and combines same-role input
-messages into one content array; these differences remain explicit gaps.
+input or selected arrays of plain messages, one `web_search_preview` tool,
+optional `allowed_domains`, the default token limit and no other request
+fields. Rich message content, metadata and mixed function/web tools are
+fail-closed. Oracle controls record that the release coerces untyped roles,
+accepts mixed tools and drops some metadata and blank items; these differences
+remain explicit gaps. Empty and system-only arrays also return different errors.
 
 Buffered and SSE response conversion rejects unsupported content, citations,
 result fields and event shapes rather than returning successful partial output.
@@ -57,6 +58,9 @@ pass can preserve nested tools unchanged; config-only settings still fail
 closed, public beta TLS/DNS remains unsupported, and an invalid unused beta
 environment URL is ignored when strict mode is off while Prodex rejects it.
 `tests/test_provider_tools_04392_characterization.py` reproduces these gaps.
+The separate web-search mode environment setting now controls selected
+production routes; TOML mode precedence remains unimplemented. See
+`docs/evidence/deepseek-web-search-mode-04392.md`.
 
 DeepSeek requests with a missing, null, non-string or blank model match the
 tested 0.439.2 default. Selected combo aliases match the active release; its

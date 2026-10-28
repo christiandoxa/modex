@@ -1,5 +1,33 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The production Super relay now honors the tested environment web-search modes:
+off rejects search before POST, chat aliases select Chat Completions, and
+auto/anthropic select the Messages path for the tested search request. Invalid
+values fail before dispatch. Plain requests, raw passthrough and strict beta
+interactions have separate controls. TOML precedence and broader route and
+transport behavior remain unfinished. See
+`docs/evidence/deepseek-web-search-mode-04392.md`.
+
+Selected plain user, assistant, system and developer message arrays now reach
+the Anthropic web-search path, with adjacent conversation roles merged and
+system text retained. Release comparisons cover Unicode and role transitions;
+rich content and message metadata still fail closed. Empty, blank-adjacent and
+system-only arrays retain documented differences in
+`docs/evidence/anthropic-web-search-04392.md`.
+
+The workflow policy now rejects tested job permission overrides, extra root
+permissions and alternate unpinned-action spellings; its narrow YAML lexer is
+not a general parser. The dependency audit now checks that the declared source
+inventory exactly matches all 71 Mojo files. Both helper-test sets run before
+reference acquisition in Fast CI. The hosted oracle is still unavailable.
+
+Combined local validation passed the pinned production build, 16 profile and
+root CLI methods, 20 Anthropic/request characterization methods, five mode
+methods, 19 local-relay methods, two native provider programs and 15 CI helper
+methods. The complete suite was not rerun. The latest SHA with both hosted
+Fast and Full passing is `75193427dc06541047195f976c48a404eba3deec` under
+the earlier 0.439.5 target; it does not validate this 0.439.2 checkpoint.
+
 Fast CI run [40650044718](https://github.com/christiandoxa/modex/actions/runs/40650044718)
 on `cf5c5dd45cd66568d6210bc31d1a024eb6b92379` passed workflow validation,
 the 71-file dependency audit and 31 reference-helper tests. It failed before
@@ -9,10 +37,10 @@ changes in hosted CI.
 
 Profile group help, seven subcommands' short and long help, help aliases and
 missing-subcommand output now match the pinned 0.439.2 process for the tested
-forms without changing the isolated HOME. First-position help flags also match
-when followed by selected extra arguments. Other argument errors and help
-after earlier arguments differ. Profile listing and mutations remain unimplemented
-because the release creates persistent locks that Modex cannot safely share.
+forms without changing the isolated HOME. Selected valid option prefixes,
+short clusters and parser errors now match too; other combinations remain
+unverified. Profile listing and mutations remain unimplemented because the
+release creates persistent locks that Modex cannot safely share.
 See `docs/evidence/profile-help-04392.md`; no profile contract is promoted.
 
 The previously documented protected two-turn ownership mismatch is no longer

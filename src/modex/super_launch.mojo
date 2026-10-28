@@ -140,7 +140,7 @@ def run_local_rewrite_child() raises:
     var listener = LoopbackHTTPListener("127.0.0.1:0")
     var output = RawFileDescriptor(1)
     output.write_bytes((listener.address + "\n").as_bytes())
-    serve_local_rewrite(listener, upstream, key, route[0], route[1], route[2], parent_fd=0, allow_local_file_access=True)
+    serve_local_rewrite(listener, upstream, key, route[0], route[1], route[2], parent_fd=0, allow_local_file_access=True, web_search_mode=route[3])
 
 
 def _ready(input_pipe: Pipe, mut child: Process) raises -> String:

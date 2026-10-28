@@ -15,6 +15,7 @@ RUNNER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(RUNNER)
 HELPER_MODULES = (
     "test_ci_artifact_manifest.py",
+    "test_ci_private_scratch.py",
     "test_ci_shard_runner.py",
     "test_ci_test_census.py",
     "test_ci_workflow_shards.py",

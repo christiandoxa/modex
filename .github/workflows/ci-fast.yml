@@ -161,7 +161,7 @@ jobs:
           set -euo pipefail
           "$PYTHON" scripts/ci/run-unittest.py \
             --shard-index "$SHARD_INDEX" --shard-count 2 \
-            test_ci_artifact_manifest.py test_ci_shard_runner.py test_ci_test_census.py test_ci_workflow_shards.py
+            test_ci_artifact_manifest.py test_ci_private_scratch.py test_ci_shard_runner.py test_ci_test_census.py test_ci_workflow_shards.py
 
   artifact-consumer:
     needs: linux-x86_64

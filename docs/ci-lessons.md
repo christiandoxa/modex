@@ -1,5 +1,14 @@
 # CI lessons
 
+## Scratch setup failure must clean its private root
+
+A partial `mkdir` failure during CI scratch initialization could exit before
+the cleanup trap was installed, leaving the new private directory behind.
+The trap is now installed immediately after the root is created. The synthetic
+`tests/test_ci_private_scratch.py` regression forces a partial setup failure
+and checks that the root is removed. The test runs in the independent helper
+shards; no hosted result is available for this correction yet.
+
 ## 0.165.1 checks precede the unavailable historical oracle
 
 Fast run [40747049105](https://github.com/christiandoxa/modex/actions/runs/40747049105),

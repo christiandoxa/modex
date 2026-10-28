@@ -87,7 +87,7 @@ if [[ "${MODEX_CI_FAST_HELPER_TESTS_IN_SHARDS:-0}" == 1 ]]; then
     echo 'Fast CI helper tests are assigned to independent shards.'
     printf 'focused-helper-python: SHARDED\n' | tee -a "$EVIDENCE_DIR/summary.txt"
 else
-    run_logged focused-helper-python "$PYTHON" scripts/ci/run-unittest.py test_ci_artifact_manifest.py test_ci_shard_runner.py test_ci_test_census.py test_ci_workflow_shards.py
+    run_logged focused-helper-python "$PYTHON" scripts/ci/run-unittest.py test_ci_artifact_manifest.py test_ci_private_scratch.py test_ci_shard_runner.py test_ci_test_census.py test_ci_workflow_shards.py
 fi
 run_logged width-memory env MODEX_WIDTH_MEMORY_ARTIFACTS="$EVIDENCE_DIR/width-memory" MODEX_WIDTH_MEMORY_DRIVER="$ROOT/build/tests/width_memory_driver" "$PYTHON" scripts/ci/run-unittest.py test_text_memory.py
 echo 'Fast CI checks passed.' | tee -a "$EVIDENCE_DIR/summary.txt"

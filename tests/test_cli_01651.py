@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import unittest
 
-from test_cli import MODEX, isolated_run as isolated_version
+from test_cli import MODEX, SUPER_POSITIONAL_VALUE_CASES, SUPER_VALUE_OPTIONS, isolated_run as isolated_version
 from test_root_help import isolated_run, map_executable
 
 
@@ -191,6 +191,74 @@ class SuperProviderCli01651Tests(unittest.TestCase):
                 self.assertIn(b"Usage: modex super", modex.stdout)
                 self.assertEqual((baseline.stderr, modex.stderr), (b"", b""))
                 self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_missing_values_match_clap_for_all_options_and_aliases(self):
+        for option in SUPER_VALUE_OPTIONS:
+            with self.subTest(option=option):
+                baseline, baseline_created = isolated_run(ORACLE, ["super", option], "prodex", "01651-super-missing")
+                modex, modex_created = isolated_run(MODEX, ["super", option], "modex", "modex-super-missing")
+                self.assertEqual(baseline.returncode, 2)
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, baseline.stdout, baseline.stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_missing_value_boundaries_preserve_empty_dash_values_and_order(self):
+        for arguments in (
+            ["super", "--provider="],
+            ["super", "--provider", ""],
+            ["super", "--provider", "-bad"],
+            ["super", "--provider=-bad"],
+            ["super", "--provider", "--api-key"],
+            ["super", "--provider", "--help"],
+            ["super", "--provider", "-h"],
+            ["super", "--provider=bad", "--help"],
+        ):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(ORACLE, arguments, "prodex", "01651-super-missing-boundary")
+                modex, modex_created = isolated_run(MODEX, arguments, "modex", "modex-super-missing-boundary")
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (baseline.returncode, baseline.stdout, baseline.stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        for arguments in (
+            ["super", "--help", "--provider"],
+            ["super", "--provider=deepseek", "--help"],
+        ):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(ORACLE, arguments, "prodex", "01651-super-help-order")
+                modex, modex_created = isolated_run(MODEX, arguments, "modex", "modex-super-help-order")
+                self.assertEqual((baseline.returncode, modex.returncode), (0, 0))
+                self.assertTrue(baseline.stdout.startswith(b"YOLO shortcut for the Super tool stack"))
+                self.assertTrue(modex.stdout.startswith(b"YOLO shortcut for the Super tool stack"))
+                self.assertEqual((baseline.stderr, modex.stderr), (b"", b""))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_negative_integer_value_diagnostic_gap_remains_visible(self):
+        arguments = ["super", "--context-window", "-1"]
+        baseline, baseline_created = isolated_run(ORACLE, arguments, "prodex", "01651-super-negative-window")
+        modex, modex_created = isolated_run(MODEX, arguments, "modex", "modex-super-negative-window")
+        self.assertEqual(baseline.returncode, 2)
+        self.assertIn(b"invalid value '-1' for '--context-window <TOKENS>'", baseline.stderr)
+        self.assertEqual((modex.returncode, modex.stderr), (1, b"Error: invalid digit found in string\n"))
+        self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_missing_values_after_positional_tail_keep_runtime_path_difference_visible(self):
+        for name, arguments in SUPER_POSITIONAL_VALUE_CASES:
+            with self.subTest(name=name):
+                baseline, baseline_created = isolated_run(ORACLE, list(arguments), "prodex", "01651-super-tail-missing")
+                modex, modex_created = isolated_run(MODEX, list(arguments), "modex", "modex-super-tail-missing")
+                self.assertEqual((baseline.returncode, modex.returncode), (1, 1))
+                if name == "model-help-tail":
+                    self.assertIn(b"no active profile selected", baseline.stderr)
+                    self.assertIn(b"Super startup is not implemented", modex.stderr)
+                else:
+                    expected = f"Error: --{name} requires a value".encode()
+                    self.assertEqual(baseline.stderr.splitlines()[-1], expected)
+                    self.assertEqual(modex.stderr, expected + b"\n")
+                self.assertTrue(baseline_created)
+                self.assertTrue(all(path == "home/.prodex" or path.startswith("home/.prodex/")
+                                    for path in baseline_created))
+                self.assertEqual(modex_created, [])
 
 
 if __name__ == "__main__":

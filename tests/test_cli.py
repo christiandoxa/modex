@@ -23,6 +23,23 @@ HISTORICAL_04395_ORACLE = Path(os.environ.get(
 HISTORICAL_04395_ORACLE_SHA256 = "96cef1bfea9cfd90b769d1d7854e88400beed151ad05c229facdd6d52a5d59c5"
 HISTORICAL_04392_ORACLE_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 HISTORICAL_04391_ORACLE_SHA256 = "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a"
+SUPER_VALUE_OPTIONS = (
+    "--profile", "-p", "--base-url", "--sub-agent-provider", "--sub-agent-model",
+    "--sub-agent-model-reasoning-effort", "--sub-agent-url", "--sub-agent-max-concurrency",
+    "--tool", "--require-tool", "--url", "--provider", "--cli", "--api-key", "--model",
+    "--local-model", "--context-window", "--local-context-window", "--auto-compact-token-limit",
+    "--local-auto-compact-token-limit", "--web-search", "--rollout-budget-tokens",
+    "--rollout-budget-reminders", "--rollout-budget-sampling-weight",
+    "--rollout-budget-prefill-weight", "--current-time-reminder-interval",
+    "--current-time-clock-source",
+)
+SUPER_POSITIONAL_VALUE_CASES = (
+    ("provider", ("super", "exec", "--provider")),
+    ("api-key", ("super", "exec", "--api-key")),
+    ("model", ("super", "exec", "--model")),
+    ("context-window", ("super", "exec", "--context-window")),
+    ("model-help-tail", ("super", "exec", "--model", "--help")),
+)
 
 
 def isolated_run(binary, arguments):
@@ -104,6 +121,67 @@ class HistoricalSuperProviderCliTests(unittest.TestCase):
                 self.assertEqual(baseline.returncode, 2)
                 self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
                                  (2, baseline.stdout, expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_missing_values_match_clap_for_all_options_and_aliases(self):
+        for option in SUPER_VALUE_OPTIONS:
+            with self.subTest(option=option):
+                baseline, baseline_created = self._run(ORACLE, ["super", option], "prodex", "04392-super-missing")
+                modex, modex_created = self._run(MODEX, ["super", option], "modex", "modex-super-missing")
+                expected_stderr = baseline.stderr.replace(b"prodex", b"modex")
+                self.assertEqual(baseline.returncode, 2)
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, baseline.stdout, expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_missing_value_boundaries_keep_empty_dash_values_and_help_order(self):
+        for arguments in (
+            ["super", "--provider="],
+            ["super", "--provider", ""],
+            ["super", "--provider", "-bad"],
+            ["super", "--provider=-bad"],
+            ["super", "--provider", "--api-key"],
+            ["super", "--provider", "--help"],
+            ["super", "--provider", "-h"],
+            ["super", "--provider=bad", "--help"],
+        ):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = self._run(ORACLE, arguments, "prodex", "04392-super-missing-boundary")
+                modex, modex_created = self._run(MODEX, arguments, "modex", "modex-super-missing-boundary")
+                expected_stderr = baseline.stderr.replace(b"prodex", b"modex")
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (baseline.returncode, baseline.stdout, expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_missing_values_after_positional_tail_keep_runtime_path_difference_visible(self):
+        for name, arguments in SUPER_POSITIONAL_VALUE_CASES:
+            with self.subTest(name=name):
+                baseline, baseline_created = self._run(ORACLE, list(arguments), "prodex", "04392-super-tail-missing")
+                modex, modex_created = self._run(MODEX, list(arguments), "modex", "modex-super-tail-missing")
+                self.assertEqual((baseline.returncode, modex.returncode), (1, 1))
+                if name == "model-help-tail":
+                    self.assertIn(b"no active profile selected", baseline.stderr)
+                    self.assertIn(b"Super startup is not implemented", modex.stderr)
+                else:
+                    expected = f"Error: --{name} requires a value".encode()
+                    self.assertEqual(baseline.stderr.splitlines()[-1], expected)
+                    self.assertEqual(modex.stderr, expected + b"\n")
+                self.assertTrue(baseline_created)
+                self.assertTrue(all(path == "home/.prodex" or path.startswith("home/.prodex/")
+                                    for path in baseline_created))
+                self.assertEqual(modex_created, [])
+
+        for arguments in (
+            ["super", "--help", "--provider"],
+            ["super", "--provider=deepseek", "--help"],
+        ):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = self._run(ORACLE, arguments, "prodex", "04392-super-help-order")
+                modex, modex_created = self._run(MODEX, arguments, "modex", "modex-super-help-order")
+                self.assertEqual((baseline.returncode, modex.returncode), (0, 0))
+                self.assertTrue(baseline.stdout.startswith(b"YOLO shortcut for the Super tool stack"))
+                self.assertTrue(modex.stdout.startswith(b"YOLO shortcut for the Super tool stack"))
+                self.assertEqual((baseline.stderr, modex.stderr), (b"", b""))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
     def test_positional_provider_error_keeps_runtime_diagnostic(self):

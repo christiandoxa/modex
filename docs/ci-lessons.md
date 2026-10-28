@@ -22,6 +22,10 @@ the build, native suite and 622 Python tests; its log is
 `~/.cache/modex/ci-evidence/full-test-fb9617f.log`. These results are not
 final-head validation.
 
+The `da71771` full local run passed the production build, native suite and 625
+Python tests with isolated HOME and explicit pinned source paths. Its log is
+`~/.cache/modex/ci-evidence/full-test-da71771.log`; it predates the current head.
+
 Fast run [40769127160](https://github.com/christiandoxa/modex/actions/runs/40769127160)
 on `44ca9e9` passed both helper shards and 37 focused relay/parser tests, then
 failed acquiring the unavailable required 0.439.2 oracle. Artifact consumption

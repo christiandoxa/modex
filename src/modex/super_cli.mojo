@@ -41,6 +41,35 @@ def _switch_option(name: String) -> Bool:
     return name in ["--auto-rotate", "--no-auto-rotate", "--auto-redeem", "--skip-quota-check", "--dry-run", "--no-proxy", "--presidio", "--no-presidio", "--sub-agent", "--no-sub-agent", "--full-access", "--current-time-reminder", "--respect-system-proxy", "--no-respect-system-proxy"]
 
 
+def _value_label(name: String) -> String:
+    if name == "--profile": return name + " <NAME>"
+    if name == "--base-url" or name == "--url" or name == "--sub-agent-url": return name + " <URL>"
+    if name == "--sub-agent-provider" or name == "--provider": return name + " <PROVIDER>"
+    if name == "--sub-agent-model" or name == "--model": return name + " <MODEL>"
+    if name == "--sub-agent-model-reasoning-effort": return name + " <EFFORT>"
+    if name == "--sub-agent-max-concurrency": return name + " <VALUE>"
+    if name == "--tool" or name == "--require-tool": return name + " <TOOL>"
+    if name == "--cli": return name + " <CLI>"
+    if name == "--api-key": return name + " <KEY>"
+    if name == "--context-window" or name == "--auto-compact-token-limit" or name == "--rollout-budget-tokens" or name == "--rollout-budget-reminders": return name + " <TOKENS>"
+    if name == "--web-search": return name + " <MODE>"
+    if name == "--rollout-budget-sampling-weight" or name == "--rollout-budget-prefill-weight": return name + " <WEIGHT>"
+    if name == "--current-time-reminder-interval": return name + " <REQUESTS>"
+    if name == "--current-time-clock-source": return name + " <SOURCE>"
+    return name
+
+
+def _missing_value_error(name: String) -> Error:
+    var message = "a value is required for '" + _value_label(name) + "' but none was supplied"
+    if name == "--cli":
+        message += "\n  [possible values: agy]"
+    elif name == "--web-search":
+        message += "\n  [possible values: disabled, cached, indexed, live]"
+    elif name == "--current-time-clock-source":
+        message += "\n  [possible values: system, external]"
+    return session_cli_error(message)
+
+
 def _valid_http_url(value: String) -> Bool:
     var scheme_end = value.find("://")
     if scheme_end < 0 or value.find("?") >= 0 or value.find("#") >= 0:
@@ -145,8 +174,16 @@ def parse_super_arguments(args: List[String], executable: String) raises -> Supe
             if len(pieces) == 2:
                 value = String(pieces[1])
             else:
-                if index + 1 == len(args) or args[index + 1] == "--" or _value_option(_name(args[index + 1])) or _switch_option(_name(args[index + 1])):
-                    raise Error(name + " requires a value")
+                var missing = index + 1 == len(args)
+                if not missing:
+                    var next_argument = args[index + 1]
+                    missing = next_argument == "--" or _value_option(_name(next_argument)) or _switch_option(_name(next_argument))
+                    if not positional and (next_argument == "--help" or next_argument == "-h"):
+                        missing = True
+                if missing:
+                    if positional:
+                        raise Error(name + " requires a value")
+                    raise _missing_value_error(name)
                 index += 1
                 value = args[index]
             value = _validate_value(name, value, not positional)

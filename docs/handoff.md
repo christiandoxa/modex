@@ -8,6 +8,14 @@ comparisons below are historical and do not establish 0.165.1 behavior.
 The active baseline and oracle routing now select 0.165.1; the full inventory
 and production parity against this release remain unfinished.
 
+Pre-positional Super missing-value diagnostics now match the pinned Clap output
+for all 27 value-option spellings and aliases, with empty values, dash-prefixed
+values, help ordering and historical 0.439.2 controls. After `exec`, the
+references still create lock state and report runtime-style errors; Modex
+preserves its old exit-1 diagnostics without state mutations. A negative
+numeric value such as `--context-window -1` also remains different. See
+`docs/evidence/baseline-0.165.1/super-cli-missing-values.md`.
+
 The Super model override now matches the tested 0.165.1 app-server argument
 for a literal TAB, with quote, backslash, Unicode and injection controls. The
 reference emits several other raw controls in invalid single-line TOML; Modex
@@ -136,7 +144,8 @@ and rejected one skip because isolated HOME hid the historical source paths.
 The affected modules pass with the explicit pinned sources. A subsequent full
 run on `165dd15` passed 605 tests with both historical source paths supplied;
 the later `f386c7b` run passed 613 tests, `8f7c3c1` passed 616 tests, and
-`fb9617f` passed 622 tests. All predate the current head. See `docs/ci-lessons.md`.
+`fb9617f` passed 622 tests and `da71771` passed 625 tests. All predate the
+current head. See `docs/ci-lessons.md`.
 
 The local relay now matches selected 0.165.1 request-target admission, body
 limit, `Expect` and WebSocket fallback ordering. It also accepts non-WebSocket

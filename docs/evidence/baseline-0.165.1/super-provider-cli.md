@@ -22,3 +22,10 @@ validation in Prodex and emits the same error text as Modex, but the release
 creates profile and housekeeping lock state while Modex fails before startup.
 That startup-state mismatch is recorded by the test; this comparison does not
 qualify its filesystem or full Super contract parity.
+
+Missing value options after `exec` retain the same split: both releases return
+exit 1 and `Error: --option requires a value`, while Modex creates no state and
+Prodex creates its lock files. `super exec --model --help` reaches startup in
+both releases and reports that no active profile is selected; Modex still
+fails closed as an unimplemented Super command. Tests compare exit, stderr and
+state mutations for both the 0.165.1 target and historical 0.439.2.

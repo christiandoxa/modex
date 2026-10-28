@@ -14,6 +14,16 @@ these are rejected by the TOML parser, so Modex keeps escaped, parseable values.
 This difference and its safety controls are documented in
 `docs/evidence/baseline-0.165.1/super-model-toml-tab.md`.
 
+Super missing-value diagnostics now match 0.165.1 for the tested value options
+and aliases before the positional `exec` tail. After `exec`, the reference
+creates lock state and reports runtime-style errors while Modex fails before
+state mutation; `super exec --model --help` also reaches startup in Prodex but
+not Modex. Other typed-value errors remain incomplete: for example,
+`--context-window -1` exits 2 with a Clap invalid-value message in Prodex but
+exits 1 with a native integer parse error in Modex. Selected empty/dash-value
+and help-order controls match both 0.165.1 and historical 0.439.2. See
+`docs/evidence/baseline-0.165.1/super-cli-missing-values.md`.
+
 Selected local-relay malformed syntax, method forwarding, GET response framing,
 HEAD controls, final response status phrases, WebSocket fallback and
 truncated-request behavior now match selected 0.165.1 controls. HEAD 204/304

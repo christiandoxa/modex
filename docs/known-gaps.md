@@ -133,13 +133,15 @@ checkpoint; checkpoints 10/12 cover admitted separators and whole-dot segments.
 Broader URL behavior remains unqualified. See `docs/evidence/checkpoint9-reference.json`.
 
 Exactly two completed worker proposals were reviewed and excluded. `9d05840`
-changes one source-derived timeout message without reproducing the whole
-production transport: the release returns 502 before an idle first event,
-where Modex emits 200/failed. After a text delta the observed release message is
-`error decoding response body`; Modex emits its internal loopback timeout.
-Deadline ordering can affect the release diagnostic. Reproduce with
-`python3 tests/capture_stream_timeout_mismatch.py` (exit 1); the shared error
-code and source-level string substitution do not qualify the precommit path.
+changed only a timeout message and did not implement precommit behavior; its
+historical 0.439.1 mismatch capture remains unchanged. The current 0.439.2
+production path now distinguishes lookahead and idle deadlines for selected
+DeepSeek chat streams: an idle error with an empty precommit prefix returns
+502, while a nonempty prefix or elapsed lookahead commits the stream. Tests
+cover timeout, EOF, truncation, invalid UTF-8, incremental output and no
+replay. The release can expose either of two idle diagnostics; Modex emits the
+decoding form. Complete retry/rotation, parallel admission and transport
+behavior remain open.
 
 `d127513` introduces an incompatible partial 16 MiB state counter. Both real
 products complete 500,000 null annotations that its allowances would charge

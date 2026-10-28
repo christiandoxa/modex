@@ -1,13 +1,24 @@
 """Native loopback DeepSeek POST and incremental Responses SSE exchange."""
 
 from std.collections import List, Span
+from std.time import perf_counter
 
 from .json import JSON_STRING, JsonDocument, serialize_json
 from .provider_chat_buffered import deepseek_buffered_assistant_messages, deepseek_buffered_response
 from .loopback_http import LoopbackHTTPStream, _http_token_byte
 from .provider_chat_reader import DeepSeekChatReader
+from .provider_sse_wire import ProviderSSEFramer
 from .provider_request import translate_deepseek_request
 from .text import is_whitespace, trim_text
+
+
+def _precommit_hold(lines: List[String]) -> Bool:
+    try:
+        var event = JsonDocument(String("\n").join(lines))
+        var kind = event.string(event.get(event.root, "type"))
+        return kind in ["keepalive", "codex.rate_limits", "codex.response.metadata", "response.metadata", "response.created", "response.in_progress", "response.queued", "response.output_item.added", "response.content_part.added", "response.reasoning_summary_part.added"]
+    except:
+        return False
 
 
 def _policy_name(name: String) -> String:
@@ -97,6 +108,7 @@ struct DeepSeekExchange(Movable):
     var max_body_bytes: Int
     var pending: List[UInt8]
     var pending_offset: Int
+    var pending_error: Bool
     var read_mode: Int
     var done: Bool
     var cancelled: Bool
@@ -113,6 +125,7 @@ struct DeepSeekExchange(Movable):
         self.max_body_bytes = max_body_bytes
         self.pending = List[UInt8]()
         self.pending_offset = 0
+        self.pending_error = False
         self.read_mode = 0
         self.done = False
         self.cancelled = False
@@ -161,6 +174,43 @@ struct DeepSeekExchange(Movable):
             self._finish()
             raise
 
+    def prefetch(mut self, timeout_ms: UInt64) raises:
+        self.http.lookahead_deadline = perf_counter() + Float64(timeout_ms) / 1000.0
+        try:
+            var inspector = ProviderSSEFramer(inspection=True)
+            var progress = False
+            while len(self.pending) < 8192 and not progress:
+                var chunk: List[UInt8]
+                try:
+                    chunk = self.http.read_chunk()
+                except error:
+                    var message = String(error)
+                    if message == "loopback HTTP lookahead elapsed":
+                        break
+                    if not self.pending:
+                        raise
+                    self.pending_error = True
+                    break
+                if not chunk:
+                    break
+                var inspect_length = min(len(chunk), 8192 - len(self.pending))
+                var offset = 0
+                try:
+                    while offset < inspect_length:
+                        var result = inspector.consume(Span(chunk)[offset:inspect_length])
+                        offset += result[0]
+                        if result[1] and not _precommit_hold(result[1].value()):
+                            progress = True
+                            break
+                except:
+                    # The strict event reader owns failures outside precommit inspection.
+                    progress = True
+                self.pending.extend(chunk^)
+        except:
+            self.http.lookahead_deadline = 0.0
+            raise
+        self.http.lookahead_deadline = 0.0
+
     def read_events(mut self) raises -> List[String]:
         if self.read_mode == 1:
             self._finish()
@@ -186,7 +236,14 @@ struct DeepSeekExchange(Movable):
                     if result[1] or self.done:
                         return result[1].copy()
                     continue
-                self.pending = self.http.read_chunk()
+                if self.pending_error:
+                    self.pending_error = False
+                    raise Error("error decoding response body")
+                try:
+                    self.pending = self.http.read_chunk()
+                except:
+                    # The frozen Rust body reader reports framing and read failures generically.
+                    raise Error("error decoding response body")
                 self.pending_offset = 0
                 if not self.pending:
                     var events = self.reader.finish()

@@ -13,19 +13,23 @@ def decode_provider_sse_utf8(bytes: List[UInt8]) raises -> String:
 struct ProviderSSEFramer:
     var line_max_bytes: Int
     var event_max_bytes: Int
+    var inspection: Bool
     var line: List[UInt8]
     var data: List[String]
+    var invalid_event: Bool
     var event_bytes: Int
     var failed: Bool
     var finished: Bool
 
-    def __init__(out self, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304) raises:
+    def __init__(out self, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, inspection: Bool = False) raises:
         if line_max_bytes <= 0 or event_max_bytes <= 0:
             raise Error("provider SSE limits must be positive and bounded")
         self.line_max_bytes = line_max_bytes
         self.event_max_bytes = event_max_bytes
+        self.inspection = inspection
         self.line = List[UInt8]()
         self.data = List[String]()
+        self.invalid_event = False
         self.event_bytes = 0
         self.failed = False
         self.finished = False
@@ -82,8 +86,15 @@ struct ProviderSSEFramer:
         for i in range(end):
             raw.append(self.line[i])
         self.line.clear()
-        _ = decode_provider_sse_utf8(raw)
+        # The release scanner classifies raw fields before validating data bytes.
+        if not self.inspection:
+            _ = decode_provider_sse_utf8(raw)
         if end == 0:
+            if self.invalid_event:
+                self.invalid_event = False
+                self.data.clear()
+                self.event_bytes = 0
+                return Optional[List[String]]()
             if self.data:
                 var output = self.data^
                 self.data = List[String]()
@@ -99,6 +110,8 @@ struct ProviderSSEFramer:
         var field_end = end if colon < 0 else colon
         if field_end != 4 or raw[0] != 100 or raw[1] != 97 or raw[2] != 116 or raw[3] != 97:
             return Optional[List[String]]()
+        if self.invalid_event:
+            return Optional[List[String]]()
         var start = end
         if colon >= 0:
             start = colon + 1
@@ -107,7 +120,17 @@ struct ProviderSSEFramer:
         var value_bytes = List[UInt8]()
         for i in range(start, end):
             value_bytes.append(raw[i])
-        self.append_data(decode_provider_sse_utf8(value_bytes))
+        var value: String
+        try:
+            value = decode_provider_sse_utf8(value_bytes)
+        except:
+            if not self.inspection:
+                raise
+            self.invalid_event = True
+            self.data.clear()
+            self.event_bytes = 0
+            return Optional[List[String]]()
+        self.append_data(value)
         return Optional[List[String]]()
 
     def append_data(mut self, value: String) raises:

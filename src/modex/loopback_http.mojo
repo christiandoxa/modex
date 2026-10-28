@@ -632,6 +632,8 @@ struct LoopbackHTTPStream(Movable):
     var length: Int
     var request_deadline: Float64
     var idle_timeout_ms: UInt64
+    var idle_deadline: Float64
+    var lookahead_deadline: Float64
 
     def __init__(
         out self,
@@ -665,6 +667,8 @@ struct LoopbackHTTPStream(Movable):
         self.length = -1
         self.request_deadline = 0.0
         self.idle_timeout_ms = idle_timeout_ms
+        self.idle_deadline = 0.0
+        self.lookahead_deadline = 0.0
         if max_body_bytes < 0 or max_body_bytes > 4 * 1024 * 1024 or connect_timeout_ms == 0 or request_timeout_ms == 0 or idle_timeout_ms == 0:
             raise Error("invalid or unsupported HTTP stream limits")
 
@@ -731,14 +735,22 @@ struct LoopbackHTTPStream(Movable):
         self.close()
 
     def _receive(mut self) raises:
-        var deadline = self.request_deadline if self.phase == 0 else perf_counter() + Float64(self.idle_timeout_ms) / 1000.0
+        if self.phase != 0 and self.idle_deadline == 0.0:
+            self.idle_deadline = perf_counter() + Float64(self.idle_timeout_ms) / 1000.0
+        var deadline = self.request_deadline if self.phase == 0 else self.idle_deadline
+        var lookahead_first = self.phase != 0 and self.lookahead_deadline > 0.0 and self.lookahead_deadline < deadline
+        if lookahead_first:
+            deadline = self.lookahead_deadline
         var chunk = List[UInt8](length=8192, fill=0)
         while True:
             _check_downstream_peer(self.downstream_fd)
             if perf_counter() >= deadline:
+                if lookahead_first:
+                    raise Error("loopback HTTP lookahead elapsed")
                 raise Error("loopback HTTP stream timed out")
             var n = recv(self.fd, chunk.unsafe_ptr(), UInt(len(chunk)), MSG_DONTWAIT)
             if n > 0:
+                self.idle_deadline = 0.0
                 var count = Int(n)
                 if self.max_wire_bytes >= 0 and self.wire_bytes > self.max_wire_bytes - count:
                     raise Error("HTTP stream exceeds wire limit")
@@ -748,12 +760,13 @@ struct LoopbackHTTPStream(Movable):
                     self.buffer.append(chunk[i])
                 return
             if n == 0:
+                self.idle_deadline = 0.0
                 self.phase = 6
                 return
             var e = get_errno()
             if e != ErrNo.EAGAIN and e != ErrNo.EINTR:
                 raise Error("loopback HTTP stream read failed")
-            _deadline_wait(deadline)
+            sleep(0.001)
 
     def _read_head(mut self) raises:
         var end = _header_end_from(self.buffer, self.header_scan)
@@ -909,7 +922,6 @@ struct LoopbackHTTPStream(Movable):
                     _drop_prefix(self.buffer, 2)
                     self.phase = 2
                 elif self.phase == 4:
-                    self.phase = 5
                     self._read_trailers()
                 elif self.phase == 5:
                     if self.max_body_bytes >= 0 and len(self.buffer) > self.max_body_bytes - self.body_bytes:
@@ -928,6 +940,7 @@ struct LoopbackHTTPStream(Movable):
                     self.done = True
                     self.close()
                     return List[UInt8]()
-        except:
-            self.close()
+        except error:
+            if String(error) != "loopback HTTP lookahead elapsed":
+                self.close()
             raise

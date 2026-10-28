@@ -44,7 +44,7 @@ print("synthetic-continuation-complete")
 '''
 
 
-def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None):
+def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None, lookahead_timeout_ms=None):
     with tempfile.TemporaryDirectory(prefix="modex-continuation-") as temporary:
         root = Path(temporary)
         for name in ("home", "state", "shared", "work"):
@@ -68,6 +68,8 @@ def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=
         }
         if idle_timeout_ms is not None:
             environment["PRODEX_RUNTIME_PROXY_STREAM_IDLE_TIMEOUT_MS"] = str(idle_timeout_ms)
+        if lookahead_timeout_ms is not None:
+            environment["PRODEX_RUNTIME_PROXY_SSE_LOOKAHEAD_TIMEOUT_MS"] = str(lookahead_timeout_ms)
         with serving(responses) as server:
             result = subprocess.run(
                 [str(binary), "super", "--provider", "deepseek", "--api-key", SYNTHETIC_API_KEY,
@@ -96,6 +98,88 @@ class DeepSeekContinuationTests(unittest.TestCase):
     def setUpClass(cls):
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("oracle does not match pinned Prodex 0.439.2")
+
+    def test_stream_precommit_idle_and_lookahead_deadlines_match_release(self):
+        chunk = {"id": "synthetic-idle-chat", "created": 42, "model": "deepseek-chat",
+                 "choices": [{"index": 0, "delta": {"content": "kept before idle"}}]}
+        cases = [
+            ("empty_idle_first", b"", 100, 500, 502, [], []),
+            ("partial_idle_first", b"data: {", 100, 500, 200, ["response.failed"], []),
+            ("comment_idle_first", b": synthetic\n\n", 100, 500, 200, ["response.failed"], []),
+            ("hold_idle_first", b'data: {"type":"response.created"}\n\n', 100, 500,
+             200, ["response.created", "response.failed"], []),
+            ("text_idle_first", b"data: " + json_bytes(chunk) + b"\n\n", 100, 500, 200,
+             ["response.created", "response.output_item.added", "response.output_text.delta",
+              "response.failed"], ["kept before idle"]),
+            ("empty_lookahead_first", b"", 500, 100, 200, ["response.failed"], []),
+            ("partial_lookahead_first", b"data: {", 500, 100, 200, ["response.failed"], []),
+        ]
+        for name, body, idle, lookahead, status, types, deltas in cases:
+            for binary in (ORACLE, MODEX):
+                with self.subTest(case=name, binary=str(binary)):
+                    posts, responses = observe_turns(
+                        binary, [{"model": "deepseek-chat", "input": "synthetic idle", "stream": True}],
+                        [{"status": 200, "content_type": "text/event-stream", "body": body,
+                          "chunked": True, "hold_open": True}],
+                        idle_timeout_ms=idle, lookahead_timeout_ms=lookahead,
+                    )
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual(responses[0]["status"], status)
+                    payload = bytes.fromhex(responses[0]["body"])
+                    if status == 502:
+                        self.assertEqual(payload, b"upstream request failed")
+                        continue
+                    events = [json.loads(line[6:]) for line in payload.splitlines()
+                              if line.startswith(b"data: ")]
+                    self.assertEqual([event["type"] for event in events], types)
+                    self.assertEqual([event["delta"] for event in events
+                                      if event["type"] == "response.output_text.delta"], deltas)
+                    error = events[-1]["response"]["error"]
+                    self.assertEqual(error["code"], "provider_stream_error")
+                    # Either source-backed idle diagnostic can win the release's
+                    # transport race. Modex currently emits the decoding form.
+                    self.assertIn(error["message"], (
+                        "error decoding response body", "runtime upstream stream idle timed out",
+                    ))
+                    if binary == MODEX:
+                        self.assertEqual(error["message"], "error decoding response body")
+
+    def test_precommit_failure_does_not_bind_later_requests(self):
+        identities = (
+            {"session_id": "synthetic-session"},
+            {"_headers": {"x-codex-turn-state": "synthetic-turn"}},
+            {"previous_response_id": "synthetic-previous"},
+        )
+        for identity in identities:
+            for binary in (ORACLE, MODEX):
+                with self.subTest(identity=identity, binary=str(binary)):
+                    turns = [{"model": "deepseek-chat", "input": "first", "stream": True, **identity},
+                             {"model": "deepseek-chat", "input": "retry", **identity}]
+                    replies = [{"status": 200, "content_type": "text/event-stream", "body": b"",
+                                "chunked": True, "hold_open": True}, buffered_reply(created=42)]
+                    posts, responses = observe_turns(
+                        binary, turns, replies, idle_timeout_ms=100, lookahead_timeout_ms=500,
+                    )
+                    self.assertEqual([row["status"] for row in responses], [502, 200])
+                    self.assertEqual(bytes.fromhex(responses[0]["body"]), b"upstream request failed")
+                    self.assertEqual(len(posts), 2)
+
+        chunk = {"id": "synthetic-committed", "created": 42,
+                 "choices": [{"index": 0, "delta": {"content": "accepted"}}]}
+        turns = [{"model": "deepseek-chat", "input": "first", "stream": True,
+                  "session_id": "synthetic-committed-session"},
+                 {"model": "deepseek-chat", "input": "retry",
+                  "session_id": "synthetic-committed-session"}]
+        replies = [{"status": 200, "content_type": "text/event-stream",
+                    "body": b"data: " + json_bytes(chunk) + b"\n\n",
+                    "chunked": True, "hold_open": True}, buffered_reply(created=42)]
+        for binary in (ORACLE, MODEX):
+            with self.subTest(case="committed", binary=str(binary)):
+                posts, responses = observe_turns(
+                    binary, turns, replies, idle_timeout_ms=100, lookahead_timeout_ms=500,
+                )
+                self.assertEqual([row["status"] for row in responses], [200, 503])
+                self.assertEqual(len(posts), 1)
 
     def test_bound_continuation_ownership_matches_release(self):
         turns = [{"model": "deepseek-chat", "input": "first synthetic turn"},

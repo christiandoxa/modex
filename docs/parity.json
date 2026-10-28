@@ -1535,6 +1535,8 @@
         "tests/test_process_capture.mojo",
         "tests/test_relay_streams.py",
         "tests/test_deepseek_continuation.py",
+        "tests/test_deepseek_precommit_boundaries_04392.py",
+        "tests/test_deepseek_precommit_invalid_utf8_04392.py",
         "tests/test_app_server_rpc.mojo"
       ],
       "evidence": [
@@ -2818,6 +2820,7 @@
         "docs/evidence/checkpoint9-dependencies.txt",
         "docs/evidence/checkpoint9-worker-review.txt",
         "docs/evidence/checkpoint9-timeout-mismatch.json",
+        "docs/evidence/deepseek-precommit-04392.md",
         "docs/evidence/checkpoint9-state-review.json",
         "docs/evidence/checkpoint10-reference.json",
         "docs/evidence/checkpoint10-tests.txt",
@@ -2848,7 +2851,7 @@
         "Buffered >=400 errors share the pinned 4 MiB cap. Non-2xx streamed redirects retain an additional 4 MiB Modex cap; larger redirect streams and complete resource/cancellation parity remain unqualified.",
         "Selected 0.439.2 two-turn binding controls now match using bounded in-memory credential/endpoint ownership. Persistent and multi-account acquisition, conflict resolution and model/session affinity remain incomplete. Serialized conversation memory is charged using frozen decoded-value weights; physical retained-byte accounting remains unqualified.",
         "Checkpoints 5/9/10/12 qualify UTF-8/six-ASCII path encoding, ordinary backslash separators and whole-dot segments only within admitted numeric-loopback HTTP bases. Broader URL schemes/authorities, transport, redirects, security/resource and non-host behavior remain unqualified.",
-        "Checkpoint 9 rejects the arbitrary aggregate 16 MiB stream-state cap. Response state can still grow with provider output. Idle failure before first output and exact postcommit timeout text differ from live 0.439.1; see checkpoint9-timeout-mismatch.json. Narrow source-derived timeout mapping alone is unproven compatibility.",
+        "Checkpoint 9 rejects the arbitrary aggregate 16 MiB stream-state cap. Response state can still grow with provider output. Selected 0.439.2 precommit timeout, EOF, invalid UTF-8 and truncation cases now match; complete retry/rotation and nondeterministic timeout diagnostics remain unqualified. The earlier 0.439.1 mismatch capture remains historical.",
         "The 0.439.5 single-process synthetic two-turn ownership mismatch is resolved by credential/endpoint identity checks; persistent and multi-account ownership remain unimplemented."
       ]
     },

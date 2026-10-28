@@ -1,5 +1,24 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Fast CI run `40628355469` on `2b6fe89` failed before building because the
+official Prodex 0.439.2 tag and release assets are no longer published at the
+recorded repository. The source commit remains retrievable and the previously
+verified local oracle still matches its pinned SHA-256. Do not substitute a
+different release or treat unavailable assets as a pass. Full CI run
+`40625731794` on `865815c` failed a width-memory positive control; see
+`docs/ci-lessons.md`. Both failures remain open.
+
+The DeepSeek chat-stream path now prefetches a bounded SSE prefix before
+commitment, retaining the idle deadline when lookahead expires. The pinned
+0.439.2 release and Modex agree on selected empty-prefix failures, partial
+prefixes, EOF, truncated framing, invalid UTF-8 inspection and gated
+incremental output with one POST. An empty-prefix 502 does not claim the
+session, turn or previous-response binding, so a later request can proceed.
+The release may expose either of two
+timeout messages; Modex emits the decoding form. Complete retry/rotation,
+parallel prefetch admission and native Messages remain open. See
+`docs/evidence/deepseek-precommit-04392.md`.
+
 Fast CI now has a reviewed build-artifact handoff and two helper-test shards.
 The producer checks clean source before building and packaging; consumers
 validate the same commit, run/attempt, target, toolchain and file digests
@@ -10,8 +29,8 @@ The remaining fast suite still runs in the producer, and broad sharding and
 timing-based balancing remain open. See `docs/ci.md`.
 
 Fast run `40625573927` passed on exact SHA
-`865815c2681e8bf2fef86c57f4b95c7e78214308`; Full run `40625731794` was
-still in progress. Neither validates this later workflow change.
+`865815c2681e8bf2fef86c57f4b95c7e78214308`; its Full run failed as recorded
+above. Neither validates this later workflow change.
 
 Session queries now lowercase selected dotted-I and contextual Greek sigma
 cases on the production CLI path. Synthetic session comparisons use the

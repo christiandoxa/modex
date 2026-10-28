@@ -331,7 +331,7 @@ def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Opt
     return "[]"
 
 
-def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, mut bindings: RuntimeBindings, connect_ms: UInt64, idle_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String) raises:
+def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, mut bindings: RuntimeBindings, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
     if request.method != "POST" or (target != "/v1/chat/completions" and target != "/v1/responses"):
         _route_error(connection)
@@ -402,7 +402,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     except:
         _reply(connection, 502, "upstream request failed")
         return
-    if 200 <= exchange.status() < 400:
+    if 200 <= exchange.status() < 400 and (not exchange.successful() or not deepseek_event_stream(exchange.headers())):
         bindings.remember_request(previous, turn, session)
     if not exchange.successful():
         # Frozen dispatch keeps non-2xx quota headers raw, without Codex projection.
@@ -424,6 +424,12 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         response_headers.extend(deepseek_codex_rate_limit_headers(exchange.headers()))
         connection.respond(exchange.status(), response_headers, _bytes(body), 30000)
         return
+    try:
+        exchange.prefetch(lookahead_ms)
+    except:
+        _reply(connection, 502, "upstream request failed")
+        return
+    bindings.remember_request(previous, turn, session)
     try:
         var response_headers = List[Tuple[String, String]]()
         response_headers.append(("content-type", "text/event-stream; charset=utf-8"))
@@ -447,6 +453,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
     _ = deepseek_request_headers([], key)
     var connect_ms = _timeout("PRODEX_RUNTIME_PROXY_HTTP_CONNECT_TIMEOUT_MS", 5000)
     var idle_ms = _timeout("PRODEX_RUNTIME_PROXY_STREAM_IDLE_TIMEOUT_MS", 300000)
+    var lookahead_ms = _timeout("PRODEX_RUNTIME_PROXY_SSE_LOOKAHEAD_TIMEOUT_MS", 1000)
     var request_id = UInt64(0)
     var conversations = ProviderConversationStore()
     var bindings = RuntimeBindings(key, upstream_url)
@@ -472,7 +479,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         request_id = request_id + 1 if request_id < UInt64.MAX else request_id
         try:
             var request = connection.read_request(120000)
-            _serve(connection, request, upstream[0], upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, allow_local_file_access, strict_tools, beta_address, beta_path)
+            _serve(connection, request, upstream[0], upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path)
         except error:
             var message = String(error)
             var too_large = "oversized" in message or "exceeds wire limit" in message

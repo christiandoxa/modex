@@ -1,5 +1,26 @@
 # CI lessons
 
+## Frozen release disappeared and width-control calibration
+
+- Fast run [40628355469](https://github.com/christiandoxa/modex/actions/runs/40628355469),
+  attempt 1, job `122618621832`, failed on `2b6fe89`: the read-only
+  `git ls-remote` tag check returned no `0.439.2` ref. GitHub's release and
+  tag APIs and the recorded SHA256SUMS URL independently return 404, while
+  the frozen source commit archive remains available. The artifact-consumer
+  jobs did not run. Previously acquired official local bytes still match
+  SHA-256 `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`.
+  Reference acquisition remains fail-closed; a durable verified source for
+  those same official bytes and hosted verification are unresolved. Logs and
+  uploaded evidence were retained under `/tmp/modex-ci-failures-20261028/`.
+- Full run [40625731794](https://github.com/christiandoxa/modex/actions/runs/40625731794),
+  attempt 1, job `122610058523`, failed on `865815c`: 458 of 459 Python tests
+  passed, while the width-memory test's transient minor-fault positive control
+  observed 2 events for Kirat against 3 required, and 2 for emoji-tag against
+  4 required. Raw measurements were uploaded and retained locally. This is a
+  test-calibration failure, not proof of a product memory regression; the
+  positive-control sensitivity must be repaired and revalidated without
+  weakening the actual memory bound.
+
 ## GitHub Ubuntu sandbox setup
 
 - Source: `d4a50b3c1822d189aba94d53ce4db24beefa75bd`. Fast CI run

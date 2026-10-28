@@ -57,8 +57,8 @@ A current-release session-query regression also fixes 55 Unicode 17 lowercase
 mappings absent from Mojo 1.2.0, verified against the pinned UnicodeData and
 selected 0.165.1 process cases. See `docs/evidence/baseline-0.165.1/session-query-unicode.md`.
 
-Update help now matches selected read-only 0.165.1 routes; update execution
-remains unimplemented. The session-query selector now uses the complete Unicode 17 Cased and
+Update help and selected parser diagnostics now match 0.165.1 in isolated
+process tests; update execution remains unimplemented. The session-query selector now uses the complete Unicode 17 Cased and
 Case_Ignorable properties for contextual sigma. Exhaustive scalar tests and
 eight real 0.165.1 process comparisons pass; other lowercase behavior and
 session state remain unverified. Selected unknown Anthropic event types are now

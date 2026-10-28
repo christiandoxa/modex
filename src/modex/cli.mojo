@@ -25,6 +25,40 @@ def session_cli_error(message: String, usage: String = "") -> Error:
     return Error(output + "\n\nFor more information, try '--help'.\n")
 
 
+def parse_update_help_arguments(args: List[String], executable: String) raises -> Bool:
+    var usage = executable + " update"
+    var literal = False
+    var index = 2
+    while index < len(args):
+        var argument = args[index]
+        if not literal and (argument == "--help" or (argument.startswith("-h") and not argument.startswith("--"))):
+            return True
+        if not literal and argument == "--":
+            literal = True
+            index += 1
+            continue
+
+        var name = argument_name(argument)
+        if not literal and name == "--help" and argument.startswith("--help="):
+            var value = String(argument[byte=7:])
+            raise session_cli_error(
+                "unexpected value '" + value + "' for '--help' found; no more were expected",
+                usage + " --help",
+            )
+        var message = "unexpected argument '" + name + "' found"
+        var suggestion = String()
+        if not literal and name.startswith("--"):
+            var choices = List[String]()
+            choices.append("help")
+            var matches = similar_names(String(name[byte=2:]), choices)
+            if matches:
+                suggestion = "--" + matches[len(matches) - 1]
+                message += "\n\n  tip: a similar argument exists: '" + suggestion + "'"
+        var error_usage = usage + (" " + suggestion if suggestion else "")
+        raise session_cli_error(message, error_usage)
+    return False
+
+
 def option_label(name: String) -> String:
     if name == "--profile":
         return name + " <NAME>"

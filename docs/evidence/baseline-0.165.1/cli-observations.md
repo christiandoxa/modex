@@ -15,3 +15,9 @@ contract or release parity.
 The read-only `update --help`, `update -h`, `help update`, and tested trailing
 argument forms now match 0.165.1 after executable-name mapping, with no home
 mutations. Update execution itself remains unimplemented.
+
+The `update` argument parser now matches selected 0.165.1 help, invalid option,
+positional, literal separator, attached value and custom-executable cases. The
+isolated comparisons verify exit status, stdout, stderr and no home mutations.
+Bare update still fails closed; update execution and untested combinations are
+not qualified.

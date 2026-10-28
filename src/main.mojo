@@ -1,7 +1,7 @@
 from std.collections import List
 from std.sys import argv, exit, stderr
 
-from modex.cli import parse_session_options, session_help
+from modex.cli import argument_name, parse_session_options, parse_update_help_arguments, session_cli_error, session_help
 from modex.gateway_cli import GatewayOptions, gateway_help, parse_gateway_arguments, run_gateway
 from modex.inspection_cli import inspection_help, inspection_help_requested, inspection_usage
 from modex.log_cli import log_help, log_short_help, parse_log_arguments
@@ -59,16 +59,26 @@ def main():
             print(error, file=stderr, end="")
             exit(2)
             return
-    if len(args) == 3 and args[1] == "help" and args[2] == "update":
+    if len(args) >= 3 and args[1] == "help" and args[2] == "update":
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])
+        if len(args) > 3:
+            var name = argument_name(args[3])
+            print(session_cli_error("unrecognized subcommand '" + name + "'", executable + " update"), file=stderr, end="")
+            exit(2)
+            return
         print(update_help(executable), end="")
         return
     if len(args) >= 2 and args[1] == "update":
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])
-        if len(args) > 2 and (args[2] == "-h" or args[2] == "--help"):
-            print(update_help(executable), end="")
+        try:
+            if parse_update_help_arguments(args, executable):
+                print(update_help(executable), end="")
+                return
+        except error:
+            print(error, file=stderr, end="")
+            exit(2)
             return
     if len(args) >= 3 and args[1] == "help" and (args[2] == "super" or args[2] == "s"):
         var parts = args[0].split("/")

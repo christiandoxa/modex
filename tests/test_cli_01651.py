@@ -57,6 +57,60 @@ class Release01651CliTests(unittest.TestCase):
                                  (0, map_executable(baseline.stdout), b""))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_update_parser_errors_and_help_order_match_release(self):
+        cases = (
+            (["update", "--help"], 0, "prodex"),
+            (["update", "-hh"], 0, "prodex"),
+            (["update", "-hx"], 0, "prodex"),
+            (["update", "--help", "ignored"], 0, "prodex"),
+            (["update", "--bogus"], 2, "prodex"),
+            (["update", "--hepl"], 2, "prodex"),
+            (["update", "--help=synthetic-help-value"], 2, "prodex"),
+            (["update", "--bogus=synthetic-secret"], 2, "prodex"),
+            (["update", "--api-key", "synthetic-secret"], 2, "prodex"),
+            (["update", "synthetic-position"], 2, "prodex"),
+            (["update", "--", "--help"], 2, "prodex"),
+            (["help", "update"], 0, "prodex"),
+            (["help", "update", "ignored"], 2, "prodex"),
+            (["update", "--hepl"], 2, "custom-prodex"),
+        )
+        for arguments, code, argv0 in cases:
+            with self.subTest(arguments=arguments, argv0=argv0):
+                executable = "modex" if argv0 == "prodex" else "custom-modex"
+                baseline, baseline_created = isolated_run(ORACLE, arguments, argv0, "01651-update-parser")
+                modex, modex_created = isolated_run(MODEX, arguments, executable, "modex-update-parser")
+                self.assertEqual(baseline.returncode, code)
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (code,
+                     baseline.stdout.replace(b"Usage: " + argv0.encode() + b" ",
+                                             b"Usage: " + executable.encode() + b" "),
+                     baseline.stderr.replace(b"Usage: " + argv0.encode() + b" ",
+                                             b"Usage: " + executable.encode() + b" ")),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+                self.assertNotIn(b"synthetic-secret", baseline.stderr + modex.stderr)
+
+    def test_unknown_option_name_remains_in_diagnostic(self):
+        argument = b"--synthetic-secret"
+        baseline, baseline_created = isolated_run(
+            ORACLE, ["update", argument.decode()], "prodex", "01651-update-option-name"
+        )
+        modex, modex_created = isolated_run(
+            MODEX, ["update", argument.decode()], "modex", "modex-update-option-name"
+        )
+        self.assertEqual((baseline.returncode, modex.returncode), (2, 2))
+        self.assertIn(argument, baseline.stderr)
+        self.assertIn(argument, modex.stderr)
+        self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_update_execution_stays_fail_closed(self):
+        modex, created = isolated_run(MODEX, ["update"], "modex", "modex-update-unimplemented")
+        self.assertEqual(modex.returncode, 1)
+        self.assertEqual(modex.stdout, b"")
+        self.assertIn(b"has not implemented the requested command", modex.stderr)
+        self.assertEqual(created, [])
+
 
 if __name__ == "__main__":
     unittest.main()

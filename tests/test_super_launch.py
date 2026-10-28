@@ -92,7 +92,10 @@ def event_names(payload):
 
 
 class SuperLaunchTests(unittest.TestCase):
-    def run_launch(self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat", super_arguments=()):
+    def run_launch(
+        self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat",
+        super_arguments=(), environment_overrides=None,
+    ):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-") as directory:
             root = Path(directory)
             for name in ("home", "state", "shared", "work"):
@@ -153,6 +156,7 @@ class SuperLaunchTests(unittest.TestCase):
                            "PRODEX_CODEX_BIN": str(codex), "MODEX_LAUNCH_CAPTURE": str(capture),
                            "MODEX_LAUNCH_SCENARIO": scenario, "CODEX_SANDBOX_SENTINEL": "remove-from-child", "TMPDIR": str(root),
                            **{key: str(root / "home") for key in ("XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME")}}
+            environment.update(environment_overrides or {})
             command = [str(binary), "super", "--provider", "deepseek", "--api-key", "synthetic-provider-key",
                        "--base-url", f"http://127.0.0.1:{server.server_port}/v1", "--model", model,
                        "--no-presidio", "--no-sub-agent", "--skip-quota-check", *super_arguments,
@@ -168,7 +172,7 @@ class SuperLaunchTests(unittest.TestCase):
             overlays = list((root / "state/profiles").glob("*"))
             state = {"leftovers": [str(path) for path in overlays], "session": saved.read_text() if saved.exists() else None,
                      "extra": [(path / "synthetic-user-state").read_text() for path in overlays if (path / "synthetic-user-state").exists()],
-                     "config": (root / "shared/config.toml").read_text() if existing else None}
+                     "config": (root / "shared/config.toml").read_text() if (root / "shared/config.toml").exists() else None}
             for record in records:
                 for pid in ([record["pid"]] if "pid" in record else []) + [int(pid) for pid in record.get("children", [])]:
                     try: os.kill(pid, 0)
@@ -270,6 +274,22 @@ class SuperLaunchTests(unittest.TestCase):
         self.assertEqual(records, [])
         self.assertEqual(upstream, [])
         self.assertEqual(state["config"], 'model="preserve-me"\n')
+        self.assertEqual(state["leftovers"], [])
+
+    def test_unsafe_beta_url_fails_before_profile_or_codex_launch(self):
+        result, records, upstream, state = self.run_launch(
+            scenario="buffered",
+            environment_overrides={
+                "PRODEX_DEEPSEEK_STRICT_TOOLS": "true",
+                "PRODEX_DEEPSEEK_BETA_BASE_URL": (
+                    "http://synthetic-user:synthetic-secret@127.0.0.1:1234/beta"
+                ),
+            },
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertNotIn(b"synthetic-secret", result.stdout + result.stderr)
+        self.assertEqual(records, [])
+        self.assertEqual(upstream, [])
         self.assertEqual(state["leftovers"], [])
 
     def test_live_pinned_release_data_plane(self):

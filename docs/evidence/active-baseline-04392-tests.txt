@@ -17,7 +17,8 @@ Combined snapshot validation (Mojo 1.2.0 (2016d0cd), Linux x86-64):
   plus 3 focused continuation controls after integration: PASS.
 - 5 active/supplementary continuation observer and ownership methods: PASS.
 - 7 historical session metadata, whitespace and query methods: PASS.
-- 9 memory suite methods: PASS; the huge-page host replay is not a hosted run.
+- 9 memory suite methods: PASS; hosted Fast run 40619037675 on 863585a also
+  passed the revised harness.
 - 2 synthetic known-gap characterization methods: PASS, recording mismatches.
 - 571 fixed-seed bounded binding cases: PASS, with the specific release-backed
   NBSP old-helper difference explicitly asserted.

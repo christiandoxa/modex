@@ -431,5 +431,15 @@
     ],
     "limitations": "Persistence, multi-profile/account identity, full release/recovery semantics and general streaming/security equivalence remain unfinished. Numeric-position counters saturate at one billion."
   },
-  "process_shutdown_foundation": "The official std.sys._libc.kill wrapper signals only the owned direct Codex child on relay failure; wait is bounded and escalates through the existing direct-child kill/reap path. Descendant process-tree termination remains unverified."
+  "process_shutdown_foundation": "The official std.sys._libc.kill wrapper signals only the owned direct Codex child on relay failure; wait is bounded and escalates through the existing direct-child kill/reap path. Descendant process-tree termination remains unverified.",
+  "strict_tools_environment_foundation": {
+    "implementation": "The existing standard-library environment reader, loopback URL parser and DeepSeek strict-schema normalizer now feed the production relay for explicit strict beta routes.",
+    "new_application_dependencies": [],
+    "new_native_bindings": [],
+    "evidence": [
+      "docs/evidence/deepseek-strict-tools-04392.md",
+      "tests/test_provider_tools_04392_characterization.py"
+    ],
+    "limitations": "Config-only settings, public TLS/DNS beta routes, and validation of unused invalid beta values when strict mode is off remain incomplete. As in the release, the simple-request pass can preserve nested tool schemas unchanged."
+  }
 }

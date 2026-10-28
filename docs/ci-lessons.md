@@ -202,5 +202,6 @@ host, a single minor fault can account for much more than one base page.
 The revised harness treats faults as events, uses separately required anonymous
 RSS and transient VmHWM controls, and measures the allocation control without
 calling width. Synthetic cases and replay of all five Fast-run measurements
-pass; the revised harness has not yet been validated in a hosted run. Resident
-page reuse, transient peaks below the prior VmHWM and host noise remain limits.
+pass. Hosted Fast run `40619037675` on `863585a` passed the revised check.
+Resident page reuse, transient peaks below the prior VmHWM and host noise remain
+limits.

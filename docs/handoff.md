@@ -1,5 +1,21 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Strict tools now work through the production Super relay when both
+`PRODEX_DEEPSEEK_STRICT_TOOLS` and an explicit numeric-loopback HTTP
+`PRODEX_DEEPSEEK_BETA_BASE_URL` are set. The relay validates before launch,
+normalizes supported function schemas on the runtime path and sends Responses
+requests to the beta route; raw Chat Completions passthrough retains its
+original route. Synthetic
+release comparisons cover strict=true, unsafe URLs, non-strict public URLs,
+web tools and config-only inputs. Existing Codex config remains fail-closed;
+TOML settings, public beta TLS/DNS and validation of unused invalid beta URLs
+remain open. See `docs/evidence/deepseek-strict-tools-04392.md`.
+
+Fast CI run `40619037675` passed on exact checkpoint
+`863585a1bafb125e7b42f1e51137dc5e7cb5e703`. Its Full run `40619064905`
+was still in progress when this note was written. The prior checkpoint's
+local 445-test full suite does not itself validate this later strict change.
+
 The user-specified frozen reference is officially released Prodex 0.439.2 at
 `72b77478a5198fc5da6b4d2253137f9cdbf43be9`. The tag, Linux oracle SHA-256,
 and an isolated full source checkout were verified. Earlier 0.439.5 material
@@ -22,18 +38,16 @@ The width-memory harness counts minor faults as events, rather than assuming
 4 KiB per fault, and independently checks anonymous RSS and transient VmHWM
 positive controls. Seven focused fixture/width checks passed locally; the full
 nine-method memory suite passed against the combined build. Five saved samples
-from Fast run `40611230270` replay successfully, but the revised check has not
-yet run on a hosted SHA. The pre-change Fast run on `68446d6` and Full run
+from Fast run `40611230270` replay successfully; the revised check also passed
+in hosted Fast run `40619037675` on `863585a`. The pre-change Fast run on `68446d6` and Full run
 `40610499704` on `3f82f0d` failed their old memory assertion. Fault sensitivity,
 resident-page reuse and peaks below prior VmHWM remain limitations.
 
-The provider characterization reproduces two 0.439.2 gaps with synthetic
-loopback: web-search routes to Anthropic Messages in Prodex but returns 501 in
-Modex; strict-tools configuration is not passed to the beta route or schema
-normalizer. Invalid-input controls agree. See
-`tests/test_provider_tools_04392_characterization.py`; an isolated strict-tool
-prototype is under review and is not included in this checkpoint. The combined
-production build, native units and all 445 Python tests pass on Linux x86-64. No paid traffic or real credentials were used.
+The provider characterization retains the web-search mismatch: Prodex routes
+to Anthropic Messages while Modex returns 501. The environment-only strict
+route now matches selected loopback controls; TOML configuration remains
+unsupported. The preceding combined build, native units and 445 Python tests
+passed on Linux x86-64 before the strict-tools change. No paid traffic or real credentials were used.
 
 The profile-list and artifact-manifest prototypes remain unrelated workspace
 work in progress. The profile prototype cannot safely coordinate with the

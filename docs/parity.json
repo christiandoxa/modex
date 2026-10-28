@@ -111,6 +111,10 @@
     {
       "date": "2026-10-28",
       "change": "Restore the 0.439.2 hook version, model catalog, flash alias and low-effort mapping. Connect bounded streaming observation for selected oversized SSE response IDs and add release-backed controls. Correct memory-test fault units; keep all existing contracts, six targets and statuses."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Connect environment-only strict function schemas and beta routing through the guarded Super relay for numeric-loopback HTTP. Reproduce config-only, non-strict invalid-beta and web-search gaps; no contract, platform or release status is promoted."
     }
   ],
   "contracts": [

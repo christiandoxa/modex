@@ -18,7 +18,7 @@ from .loopback_server import LoopbackHTTPListener
 from .paths import app_root, ensure_app_root, shared_root
 from .process_spawn import capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, terminate_child_gracefully, wait_or_kill
 from .provider_deepseek_transport import deepseek_request_headers
-from .runtime_local_rewrite import local_rewrite_upstream, serve_local_rewrite
+from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, serve_local_rewrite
 from .text import trim_text
 from .uuid7 import new_uuid7
 
@@ -136,10 +136,11 @@ def run_local_rewrite_child() raises:
     var key = getenv("PRODEX_RUNTIME_LOCAL_KEY")
     _ = local_rewrite_upstream(upstream)
     _ = deepseek_request_headers([], key)
+    var route = deepseek_runtime_route()
     var listener = LoopbackHTTPListener("127.0.0.1:0")
     var output = RawFileDescriptor(1)
     output.write_bytes((listener.address + "\n").as_bytes())
-    serve_local_rewrite(listener, upstream, key, parent_fd=0, allow_local_file_access=True)
+    serve_local_rewrite(listener, upstream, key, route[0], route[1], route[2], parent_fd=0, allow_local_file_access=True)
 
 
 def _ready(input_pipe: Pipe, mut child: Process) raises -> String:
@@ -244,6 +245,7 @@ def _exec(binary: String, home: String, model: String, upstream: String, key: St
 def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64 = 0, compact_limit: UInt64 = 0) raises -> Int:
     _ = local_rewrite_upstream(upstream)
     _ = deepseek_request_headers([], key)
+    _ = deepseek_runtime_route()
     var launch_context = context_window if context_window > 1 else UInt64(1048576)
     var launch_compact = min(compact_limit if compact_limit > 0 else UInt64(900000), launch_context - 1)
     var launch_model = trim_text(model)

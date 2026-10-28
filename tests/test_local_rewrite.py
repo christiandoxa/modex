@@ -125,14 +125,20 @@ def serving(responses):
 
 
 class RunningLocalRewrite:
-    def __init__(self, upstream_port, *, sandbox=False):
+    def __init__(
+        self, upstream_port, *, sandbox=False, environment_overrides=None,
+        config_toml=None,
+    ):
         self.upstream_url = f"http://127.0.0.1:{upstream_port}/v1"
         self.sandbox = sandbox
+        self.environment_overrides = environment_overrides or {}
+        self.config_toml = config_toml
         self.temporary = tempfile.TemporaryDirectory(prefix="modex-local-rewrite-")
         self.root = Path(self.temporary.name)
         self.process = None
         self.address = None
         self.startup_line = ""
+        self.startup_tail = ""
         self.shutdown_returncode = None
         self._closed = False
 
@@ -141,6 +147,10 @@ class RunningLocalRewrite:
             "home", "prodex", "shared-codex", "xdg-config", "xdg-cache", "workspace",
         ):
             (self.root / name).mkdir(mode=0o700)
+        if self.config_toml is not None:
+            (self.root / "shared-codex" / "config.toml").write_text(
+                self.config_toml, encoding="utf-8",
+            )
         environment = {
             "HOME": str(self.root / "home"),
             "PRODEX_HOME": str(self.root / "prodex"),
@@ -154,6 +164,7 @@ class RunningLocalRewrite:
             "LANG": "C.UTF-8",
             "LC_ALL": "C.UTF-8",
         }
+        environment.update(self.environment_overrides)
         arguments = [
             "127.0.0.1:0", self.upstream_url, SYNTHETIC_API_KEY,
         ]
@@ -178,7 +189,7 @@ class RunningLocalRewrite:
             self.startup_line = self._read_startup_line(5).decode("utf-8").rstrip("\r\n")
             match = re.fullmatch(r"READY http://127\.0\.0\.1:(\d+)/v1", self.startup_line)
             if not match:
-                raise AssertionError(f"unexpected relay startup line: {self.startup_line!r}")
+                raise RuntimeError(f"local relay failed during startup: {self.startup_line}")
             self.address = ("127.0.0.1", int(match.group(1)))
             return self
         except BaseException:
@@ -213,7 +224,8 @@ class RunningLocalRewrite:
             except subprocess.TimeoutExpired:
                 self.process.kill()
                 self.shutdown_returncode = self.process.wait(timeout=3)
-            self.process.communicate(timeout=1)
+            output, _ = self.process.communicate(timeout=1)
+            self.startup_tail = output.decode("utf-8", errors="replace")
         self.temporary.cleanup()
         return self.shutdown_returncode
 
@@ -292,6 +304,42 @@ class LocalRewriteTests(unittest.TestCase):
         cls.stream_cases = {case["name"]: case for case in cls.streams["cases"]}
         cls.buffered_cases = {case["name"]: case for case in cls.buffered["cases"]}
 
+    @staticmethod
+    def strict_tool_request():
+        return {
+            "model": "deepseek-chat",
+            "input": "synthetic strict tool request",
+            "stream": False,
+            "tools": [{
+                "type": "function",
+                "name": "lookup",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string"}},
+                },
+            }],
+        }
+
+    def run_tool_request(self, server, *, environment_overrides=None, config_toml=None):
+        with RunningLocalRewrite(
+            server.server_port, environment_overrides=environment_overrides,
+            config_toml=config_toml,
+        ) as relay:
+            result = post_relay(relay.address, json_bytes(self.strict_tool_request()))
+        self.assertEqual(result[0], 200)
+        self.assertEqual(len(server.records), 1)
+        return server.records[0]
+
+    def assert_runtime_rejected(self, port, *, environment_overrides=None, config_toml=None):
+        relay = RunningLocalRewrite(
+            port, environment_overrides=environment_overrides,
+            config_toml=config_toml,
+        )
+        with self.assertRaises(RuntimeError):
+            with relay:
+                self.fail("invalid DeepSeek configuration unexpectedly started")
+        return relay.startup_line + relay.startup_tail
+
     def assert_stream_matches_fixture(self, actual, expected, fixture_request_id):
         actual_ids = set(re.findall(rb"msg_deepseek_[0-9]+", actual))
         expected_id = f"msg_deepseek_{fixture_request_id}".encode()
@@ -300,6 +348,144 @@ class LocalRewriteTests(unittest.TestCase):
         actual = actual.replace(b"msg_deepseek_1", b"msg_deepseek_REQUEST_ID")
         expected = expected.replace(expected_id, b"msg_deepseek_REQUEST_ID")
         self.assertEqual(actual, expected)
+
+    def test_strict_tools_environment_routes_to_beta_and_normalizes_schema(self):
+        response = self.buffered_cases["text_tool_usage_metadata"]["upstream_response"]
+        with serving([{
+            "status": response["status"], "content_type": response["content_type"],
+            "body": response["body"].encode("utf-8"),
+        }]) as server:
+            record = self.run_tool_request(
+                server,
+                environment_overrides={
+                    "PRODEX_DEEPSEEK_STRICT_TOOLS": "TrUe",
+                    "PRODEX_DEEPSEEK_BETA_BASE_URL": (
+                        f"http://127.0.0.1:{server.server_port}/beta///"
+                    ),
+                },
+            )
+        self.assertEqual(record["path"], "/beta/chat/completions")
+        tool = json.loads(record["body"])["tools"][0]["function"]
+        self.assertIs(tool["strict"], True)
+        self.assertEqual(tool["parameters"], {
+            "type": "object",
+            "properties": {"query": {"type": "string"}},
+            "required": ["query"],
+            "additionalProperties": False,
+        })
+
+    def test_environment_overrides_do_not_read_deepseek_config(self):
+        response = self.buffered_cases["text_tool_usage_metadata"]["upstream_response"]
+        with serving([{
+            "status": response["status"], "content_type": response["content_type"],
+            "body": response["body"].encode("utf-8"),
+        }]) as server:
+            config = (
+                "[deepseek]\n"
+                "strict_tools = true\n"
+                f'beta_base_url = "http://127.0.0.1:{server.server_port}/configured-beta/"\n'
+            )
+            record = self.run_tool_request(
+                server,
+                environment_overrides={
+                    "PRODEX_DEEPSEEK_STRICT_TOOLS": "false",
+                    "PRODEX_DEEPSEEK_BETA_BASE_URL": (
+                        f"http://127.0.0.1:{server.server_port}/environment-beta"
+                    ),
+                },
+                config_toml=config,
+            )
+        self.assertEqual(record["path"], "/v1/chat/completions")
+        tool = json.loads(record["body"])["tools"][0]["function"]
+        self.assertNotIn("strict", tool)
+        self.assertNotIn("required", tool["parameters"])
+
+    def test_strict_tools_valid_web_tool_keeps_the_known_501_route_gap(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic strict web request",
+            "stream": False,
+            "tools": [
+                {
+                    "type": "function",
+                    "name": "lookup",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"query": {"type": "string"}},
+                    },
+                },
+                {
+                    "type": "web_search_preview",
+                    "allowed_domains": ["example.test"],
+                },
+            ],
+        }
+        with serving([]) as server:
+            with RunningLocalRewrite(
+                server.server_port,
+                environment_overrides={
+                    "PRODEX_DEEPSEEK_STRICT_TOOLS": "true",
+                    "PRODEX_DEEPSEEK_BETA_BASE_URL": (
+                        f"http://127.0.0.1:{server.server_port}/beta"
+                    ),
+                },
+            ) as relay:
+                status, _, body = post_relay(relay.address, json_bytes(request))
+        self.assertEqual(status, 501)
+        self.assertEqual(body, b"DeepSeek native web-search routing is not implemented")
+        self.assertEqual(server.records, [])
+
+    def test_disabled_strict_tools_keeps_default_route_and_schema(self):
+        response = self.buffered_cases["text_tool_usage_metadata"]["upstream_response"]
+        with serving([{
+            "status": response["status"], "content_type": response["content_type"],
+            "body": response["body"].encode("utf-8"),
+        }]) as server:
+            record = self.run_tool_request(
+                server, environment_overrides={"PRODEX_DEEPSEEK_STRICT_TOOLS": "false"},
+            )
+        self.assertEqual(record["path"], "/v1/chat/completions")
+        tool = json.loads(record["body"])["tools"][0]["function"]
+        self.assertNotIn("strict", tool)
+        self.assertEqual(tool["parameters"], self.strict_tool_request()["tools"][0]["parameters"])
+
+    def test_invalid_strict_tools_values_are_rejected_before_listening(self):
+        with serving([]) as server:
+            for value in ("", " true ", "maybe"):
+                with self.subTest(value=value):
+                    self.assert_runtime_rejected(
+                        server.server_port,
+                        environment_overrides={"PRODEX_DEEPSEEK_STRICT_TOOLS": value},
+                    )
+        self.assertEqual(server.records, [])
+
+    def test_strict_beta_base_url_rejects_unsafe_values_without_echoing_them(self):
+        unsafe = (
+            "",
+            "http://user:synthetic-secret@127.0.0.1:1234/beta",
+            "http://127.0.0.1:1234/beta?token=synthetic-secret",
+            "http://127.0.0.1:1234/beta#synthetic-secret",
+            " http://127.0.0.1:1234/beta ",
+            "http:///beta",
+            "http://127.0.0.1:/beta",
+            "ftp://api.deepseek.com/beta",
+        )
+        with serving([]) as server:
+            for value in unsafe:
+                with self.subTest(value=value):
+                    output = self.assert_runtime_rejected(
+                        server.server_port,
+                        environment_overrides={
+                            "PRODEX_DEEPSEEK_STRICT_TOOLS": "true",
+                            "PRODEX_DEEPSEEK_BETA_BASE_URL": value,
+                        },
+                    )
+                    self.assertNotIn("synthetic-secret", output)
+            self.assert_runtime_rejected(
+                server.server_port,
+                environment_overrides={"PRODEX_DEEPSEEK_STRICT_TOOLS": "true"},
+            )
+        self.assertEqual(server.records, [])
 
     def test_sigterm_exit_status_remains_visible(self):
         with serving([]) as server:

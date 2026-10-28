@@ -1,0 +1,52 @@
+# DeepSeek strict-tools and beta-route slice
+
+The frozen reference is Prodex 0.439.2 commit
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9`; the verified Linux oracle SHA-256
+is `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`.
+This evidence covers the strict function-tool setting, schema normalization,
+and beta chat-completions route only. It does not change the parity denominator
+or claim whole-provider parity.
+
+The supported strict-tools slice is environment-only:
+`PRODEX_DEEPSEEK_STRICT_TOOLS` enables normalization and
+`PRODEX_DEEPSEEK_BETA_BASE_URL` selects a beta route. The existing bounded
+numeric-loopback URL parser validates the beta URL before Super creates an
+overlay or starts Codex. Unsafe values fail with a generic diagnostic that
+does not echo URL contents. Strict runtime-path schemas use the beta route.
+The frozen simple-request pass can preserve a nested tool unchanged, even
+when strict mode is enabled; selected production comparisons match this.
+
+TOML settings are intentionally not propagated into the private overlay.
+Super retains its fail-closed behavior when a shared Codex `config.toml` or
+other state already exists. The real 0.439.2 characterization continues to
+show that its TOML-only strict-tools configuration succeeds while Modex
+rejects that config-only home before starting Codex or contacting the
+provider. This config gap is not counted as parity.
+
+Synthetic loopback tests exercise enabled and disabled environment settings,
+trailing-slash normalization, strict schema fields, invalid booleans, and
+credential/query/fragment/whitespace/empty/unsupported URL rejection. A real
+Super launch comparison against the pinned release confirms env-based beta
+routing and normalized schema parity. Separate real launch controls retain
+the config-only mismatch and verify unsafe beta URLs fail before profile or
+Codex launch. The disabled control keeps the regular route and schema.
+
+Focused results from an isolated build:
+
+- Production Modex and native loopback-driver builds passed with Mojo 1.2.0.
+- `test_local_rewrite.py`: 19 tests passed.
+- `test_super_launch.py`: 15 tests passed.
+- `test_provider_tools_04392_characterization.py`: 7 tests passed against
+  the checksum-verified 0.439.2 oracle.
+- Native provider-request-tools and DeepSeek-transport checks passed.
+- Product dependency audit and test-census checks passed.
+
+The beta route must be explicitly set to numeric loopback HTTP when strict
+mode is enabled. Public HTTPS/DNS URLs, including the reference default, are
+unsupported by the current transport; DNS, TLS, and external-provider
+transport remain gaps. Non-strict requests do not resolve the unused beta
+endpoint, preserving ordinary launches with the valid public default. That
+also means an invalid beta environment value is ignored while strict mode is
+off, unlike Prodex 0.439.2, which validates it during launch; the pinned
+real-process test records this mismatch. Tests use only synthetic loopback
+URLs and credentials.

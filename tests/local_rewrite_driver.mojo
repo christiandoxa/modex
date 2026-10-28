@@ -5,7 +5,7 @@ from std.sys import argv
 
 from modex.loopback_server import LoopbackHTTPListener
 from modex.provider_deepseek_transport import deepseek_request_headers
-from modex.runtime_local_rewrite import local_rewrite_upstream, serve_local_rewrite
+from modex.runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, serve_local_rewrite
 
 
 def main() raises:
@@ -16,7 +16,8 @@ def main() raises:
     var key = String(arguments[3])
     _ = local_rewrite_upstream(upstream)
     _ = deepseek_request_headers([], key)
+    var route = deepseek_runtime_route()
     var listener = LoopbackHTTPListener(String(arguments[1]))
     var output = RawFileDescriptor(1)
     output.write_bytes(("READY http://" + listener.address + "/v1\n").as_bytes())
-    serve_local_rewrite(listener, upstream, key)
+    serve_local_rewrite(listener, upstream, key, route[0], route[1], route[2])

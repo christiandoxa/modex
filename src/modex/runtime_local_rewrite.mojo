@@ -19,7 +19,7 @@ from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
 from .runtime_binding import RuntimeBindings
 from .runtime_sse_binding_observer import RuntimeSSEBindingObserver
-from .text import trim_text, unsigned_value
+from .text import is_whitespace, trim_text, unsigned_value
 from .uuid7 import new_uuid7
 
 
@@ -74,6 +74,35 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
         else:
             encoded += chr(Int(byte))
     return address, encoded
+
+
+def _strict_tools_value(name: String, value: String) raises -> Bool:
+    if not value:
+        raise Error(name + " cannot be empty")
+    for character in value.codepoints():
+        if is_whitespace(Int(character)):
+            raise Error(name + " must not contain whitespace")
+    var token = value.lower()
+    if token in ["true", "1", "yes", "on"]:
+        return True
+    if token in ["false", "0", "no", "off"]:
+        return False
+    raise Error(name + " must be true or false")
+
+
+def deepseek_runtime_route() raises -> Tuple[Bool, String, String]:
+    var strict_value = getenv("PRODEX_DEEPSEEK_STRICT_TOOLS", "\x00")
+    var strict_tools = strict_value != "\x00" and _strict_tools_value("PRODEX_DEEPSEEK_STRICT_TOOLS", strict_value)
+    if not strict_tools:
+        return False, String(), String()
+    var beta_value = getenv("PRODEX_DEEPSEEK_BETA_BASE_URL", "\x00")
+    if beta_value == "\x00":
+        raise Error("strict tools require PRODEX_DEEPSEEK_BETA_BASE_URL to be a numeric loopback HTTP URL")
+    try:
+        var route = local_rewrite_upstream(beta_value)
+        return True, route[0], route[1]
+    except:
+        raise Error("PRODEX_DEEPSEEK_BETA_BASE_URL must be a credential-free numeric loopback HTTP URL")
 
 
 def _bytes(text: String) -> List[UInt8]:
@@ -302,7 +331,7 @@ def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Opt
     return "[]"
 
 
-def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, mut bindings: RuntimeBindings, connect_ms: UInt64, idle_ms: UInt64, allow_local_file_access: Bool) raises:
+def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, mut bindings: RuntimeBindings, connect_ms: UInt64, idle_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
     if request.method != "POST" or (target != "/v1/chat/completions" and target != "/v1/responses"):
         _route_error(connection)
@@ -357,7 +386,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             for tool in doc.nodes[tools].children:
                 web = web or doc.string(doc.get(tool, "type")).startswith("web_search")
         if web:
-            _ = translate_deepseek_request(source, history)
+            _ = translate_deepseek_request(source, history, strict_tools)
             _reply(connection, 501, "DeepSeek native web-search routing is not implemented")
             return
     except:
@@ -367,7 +396,9 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     if now < 0: raise Error("system clock returned a negative timestamp")
     var exchange: DeepSeekExchange
     try:
-        exchange = DeepSeekExchange(address, path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found)
+        var exchange_address = beta_address if strict_tools else address
+        var exchange_path = beta_path if strict_tools else path
+        exchange = DeepSeekExchange(exchange_address, exchange_path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found)
     except:
         _reply(connection, 502, "upstream request failed")
         return
@@ -411,7 +442,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         connection.close()
 
 
-def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, key: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False) raises:
+def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, key: String, strict_tools: Bool, beta_address: String, beta_path: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False) raises:
     var upstream = local_rewrite_upstream(upstream_url)
     _ = deepseek_request_headers([], key)
     var connect_ms = _timeout("PRODEX_RUNTIME_PROXY_HTTP_CONNECT_TIMEOUT_MS", 5000)
@@ -441,7 +472,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         request_id = request_id + 1 if request_id < UInt64.MAX else request_id
         try:
             var request = connection.read_request(120000)
-            _serve(connection, request, upstream[0], upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, allow_local_file_access)
+            _serve(connection, request, upstream[0], upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, allow_local_file_access, strict_tools, beta_address, beta_path)
         except error:
             var message = String(error)
             var too_large = "oversized" in message or "exceeds wire limit" in message

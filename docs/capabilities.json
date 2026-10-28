@@ -114,7 +114,8 @@
       "notes": [
         "Current DeepSeek relay tracks bounded in-memory response/session/turn ownership and validates credential/endpoint identity before the next POST; persistent and multi-account affinity remain open.",
         "0.439.5 real-process comparisons cover missing/null and selected non-string or blank model fallbacks, combo aliases, explicit model selection, and selected bare tool-role requests on simple/non-simple paths.",
-        "A bounded streaming observer binds the response ID in a selected oversized SSE event. Prodex 0.439.2 and Modex both return 200/503 with one upstream POST; a 0.439.5 regression is retained separately. Arbitrary numeric-token bounds and full streaming/security equivalence remain unverified."
+        "A bounded streaming observer binds the response ID in a selected oversized SSE event. Prodex 0.439.2 and Modex both return 200/503 with one upstream POST; a 0.439.5 regression is retained separately. Arbitrary numeric-token bounds and full streaming/security equivalence remain unverified.",
+        "Environment-only strict tools use normalized runtime-path schemas and an explicit numeric-loopback beta route; config-only strict settings, public TLS/DNS beta routes and non-strict invalid-beta validation remain incomplete."
       ]
     },
     {

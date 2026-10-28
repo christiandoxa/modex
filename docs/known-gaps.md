@@ -16,12 +16,15 @@ unverified. Persistent bindings, multi-account ownership, affinity release,
 account/profile lifecycle, credential finalization and login/quota concurrency
 remain incomplete.
 
-Two 0.439.2 synthetic provider observations remain open: web-search requests
-route to Anthropic Messages in the release but Modex returns 501, and strict-tool
-configuration uses the beta route and strict schemas in the release but does
-not reach the active Modex route. Reproduce both with
-`tests/test_provider_tools_04392_characterization.py`; no paid provider traffic
-was used.
+The 0.439.2 web-search route remains open: Prodex sends an Anthropic Messages
+request while Modex returns 501. Strict-tool environment settings now select
+the beta route and normalize supported runtime-path schemas for numeric-loopback
+HTTP. The baseline simple-request pass can preserve nested tools unchanged;
+config-only
+settings still fail closed, public beta TLS/DNS remains unsupported, and an
+invalid unused beta environment URL is ignored when strict mode is off while
+Prodex rejects it. `tests/test_provider_tools_04392_characterization.py`
+reproduces these gaps using synthetic loopback requests.
 
 DeepSeek requests with a missing, null, non-string or blank model match the
 tested 0.439.2 default. Selected combo aliases match the active release; its

@@ -17,8 +17,8 @@ from .provider_conversations import ProviderConversationStore
 from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
 from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
-from .provider_sse_wire import ProviderSSEFramer
 from .runtime_binding import RuntimeBindings
+from .runtime_sse_binding_observer import RuntimeSSEBindingObserver
 from .text import trim_text, unsigned_value
 from .uuid7 import new_uuid7
 
@@ -160,10 +160,6 @@ def _binding_response_id(body: String) -> String:
         return ""
 
 
-def _binding_event(mut bindings: RuntimeBindings, data: List[String]):
-    bindings.remember(0, _binding_response_id(String("\n").join(data)))
-
-
 def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: LoopbackHTTPStream, mut bindings: RuntimeBindings) raises:
     var streaming = 200 <= stream.status < 400 and stream.status != 204 and stream.status != 304 and deepseek_event_stream(stream.headers)
     if not streaming and (stream.status < 200 or stream.status >= 300):
@@ -199,28 +195,26 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
         return
     try:
         connection.start_stream(stream.status, response_headers, 30000)
-        var observer = ProviderSSEFramer()
+        var observer = RuntimeSSEBindingObserver()
         var observing = True
         while not stream.done:
             var chunk = stream.read_chunk()
             if chunk:
                 if observing:
                     try:
-                        var offset = 0
-                        while offset < len(chunk):
-                            var observed = observer.consume(Span(chunk)[offset:])
-                            offset += observed[0]
-                            if observed[1]:
-                                _binding_event(bindings, observed[1].value())
+                        var observed = observer.consume(Span(chunk))
+                        for response_id in observed:
+                            bindings.remember(0, response_id)
+                        if observer.is_failed():
+                            observing = False
                     except:
-                        # shortcut: oversized SSE events are not indexed; add incremental ID extraction for them.
                         observing = False
                 connection.write_chunk(chunk, 30000)
         if observing:
             try:
-                var final_event = observer.finish()
-                if final_event:
-                    _binding_event(bindings, final_event.value())
+                var final_ids = observer.finish()
+                for response_id in final_ids:
+                    bindings.remember(0, response_id)
             except:
                 pass
         connection.finish_stream(30000)

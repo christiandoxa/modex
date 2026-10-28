@@ -16,8 +16,8 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 from test_cli import ORACLE, ORACLE_SHA256
 
-BASELINE_COMMIT = "ac9aad08f25d6dc8cda96463ce2045b40f35f510"
-OUTPUT = Path(os.environ.get("MODEX_HOOK_CAPTURE_OUTPUT", ROOT / "tests/fixtures/super_hooks/cases.json"))
+BASELINE_COMMIT = "72b77478a5198fc5da6b4d2253137f9cdbf43be9"
+OUTPUT = Path(os.environ.get("MODEX_HOOK_CAPTURE_OUTPUT", ROOT / "tests/fixtures/super_hooks/historical-0.439.2.json"))
 
 FAKE_CODEX = r'''#!__PYTHON__
 import hashlib
@@ -273,7 +273,7 @@ def run_case(case):
         config_path.chmod(0o600)
         cache_path = prodex_home / "update-check.json"
         cache_path.write_text(json.dumps({
-            "source": "GitHub", "latest_version": "0.439.5", "checked_at": int(time.time()),
+            "source": "GitHub", "latest_version": "0.439.2", "checked_at": int(time.time()),
         }, separators=(",", ":")) + "\n", encoding="utf-8")
         cache_path.chmod(0o600)
         codex_path = root / "codex"
@@ -346,12 +346,12 @@ def main():
     document = {
         "schema_version": 1,
         "baseline_commit": BASELINE_COMMIT,
-        "oracle_version": "0.439.5",
+        "oracle_version": "0.439.2",
         "oracle_sha256": oracle_sha256,
         "capture_harness": "tests/capture_super_hooks.py",
         "scope": "Frozen Super hook-trust JSON-RPC behavior against isolated synthetic Codex app-server peers.",
         "protocol_sources": [
-            "Frozen Prodex 0.439.5 crates/prodex-app/src/runtime_tools/hook_trust.rs",
+            "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs",
             "Codex app-server/tests/suite/v2/hooks_list.rs:77-113, 190-237",
             "Codex app-server-protocol/src/protocol/v2/plugin.rs:52-64, 512-575",
             "Codex app-server-protocol/src/protocol/v2/config.rs:337-357",

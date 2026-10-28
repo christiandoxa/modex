@@ -1,4 +1,4 @@
-"""Compare bare tool-role Responses input mapping with frozen Prodex 0.439.5."""
+"""Compare bare tool-role Responses input mapping with 0.439.2 and historical 0.439.5."""
 
 import hashlib
 import json
@@ -6,7 +6,9 @@ from unittest.mock import patch
 import unittest
 
 import test_super_launch
-from test_cli import MODEX, ORACLE, ORACLE_SHA256
+from test_cli import (MODEX, ORACLE as ACTIVE_ORACLE, ORACLE_SHA256 as ACTIVE_ORACLE_SHA256,
+                      HISTORICAL_04395_ORACLE as ORACLE,
+                      HISTORICAL_04395_ORACLE_SHA256 as ORACLE_SHA256)
 from test_provider_catalog_04395 import _codex_with_request
 
 
@@ -65,6 +67,8 @@ CASES = (
 class ProviderRequestToolRole04395Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        if hashlib.sha256(ACTIVE_ORACLE.read_bytes()).hexdigest() != ACTIVE_ORACLE_SHA256:
+            raise AssertionError("The Prodex oracle does not match active release 0.439.2")
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("The Prodex oracle does not match the pinned release checksum")
         if not MODEX.is_file():
@@ -78,7 +82,7 @@ class ProviderRequestToolRole04395Tests(unittest.TestCase):
                 request["safety_identifier"] = "synthetic-user"
             with self.subTest(case=name):
                 captures = []
-                for binary in (ORACLE, MODEX):
+                for binary in (ACTIVE_ORACLE, ORACLE, MODEX):
                     with patch.object(test_super_launch, "CODEX", _codex_with_request(request)):
                         result, records, upstream, state = harness.run_launch(
                             binary=binary, scenario="buffered", model="deepseek-chat"
@@ -100,7 +104,7 @@ class ProviderRequestToolRole04395Tests(unittest.TestCase):
                     else:
                         self.assertNotIn("user_id", body)
                     captures.append(body)
-                self.assertEqual(captures[1], captures[0])
+                self.assertEqual(captures[1:], [captures[0], captures[0]])
 
 
 if __name__ == "__main__":

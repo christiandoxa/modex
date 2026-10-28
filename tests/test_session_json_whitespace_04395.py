@@ -1,5 +1,6 @@
 """Compare single-object JSON session fallback with the pinned release."""
 
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -31,6 +32,8 @@ class SessionJsonWhitespace04395Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         test_cli.CliTests.setUpClass()
+        if hashlib.sha256(test_cli.HISTORICAL_04395_ORACLE.read_bytes()).hexdigest() != test_cli.HISTORICAL_04395_ORACLE_SHA256:
+            raise AssertionError("oracle does not match historical Prodex 0.439.5")
 
     def test_json_line_fallback_trims_unicode_outer_whitespace(self):
         content = json.dumps({"type": "session_meta", "payload": {"id": SESSION_ID}})
@@ -38,7 +41,7 @@ class SessionJsonWhitespace04395Tests(unittest.TestCase):
                                ("trailing", content + "\u2000")):
             with self.subTest(label=label):
                 outputs = []
-                for name, binary, argv0 in (("baseline", test_cli.ORACLE, "prodex"),
+                for name, binary, argv0 in (("baseline", test_cli.HISTORICAL_04395_ORACLE, "prodex"),
                                              ("modex", test_cli.MODEX, "modex")):
                     result = observe(binary, argv0, ".json", wrapper, ["--id-only"])
                     self.assertEqual(result.returncode, 0, result.stderr.decode())
@@ -79,7 +82,7 @@ class SessionJsonWhitespace04395Tests(unittest.TestCase):
         for label, extension, content, arguments, expected in cases:
             with self.subTest(label=label):
                 outputs = []
-                for binary, argv0 in ((test_cli.ORACLE, "prodex"), (test_cli.MODEX, "modex")):
+                for binary, argv0 in ((test_cli.HISTORICAL_04395_ORACLE, "prodex"), (test_cli.MODEX, "modex")):
                     result = observe(binary, argv0, extension, content, arguments)
                     self.assertEqual(result.returncode, 0, result.stderr.decode())
                     self.assertEqual(result.stderr, b"")

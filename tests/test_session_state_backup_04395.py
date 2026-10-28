@@ -8,7 +8,8 @@ import tempfile
 import unittest
 
 from session_oracle import SESSION_ID, fixture, sandbox_command
-from test_cli import MODEX, ORACLE, ORACLE_SHA256
+from test_cli import (MODEX, HISTORICAL_04395_ORACLE as ORACLE,
+                      HISTORICAL_04395_ORACLE_SHA256 as ORACLE_SHA256)
 
 
 class SessionStateBackupTests(unittest.TestCase):

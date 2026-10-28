@@ -1,5 +1,6 @@
 """Characterize session query behavior against the pinned Prodex release."""
 
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -41,6 +42,8 @@ class SessionQuery04395Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         test_cli.CliTests.setUpClass()
+        if hashlib.sha256(test_cli.HISTORICAL_04395_ORACLE.read_bytes()).hexdigest() != test_cli.HISTORICAL_04395_ORACLE_SHA256:
+            raise AssertionError("oracle does not match historical Prodex 0.439.5")
 
     def test_query_controls_match_the_pinned_release(self):
         with tempfile.TemporaryDirectory(prefix="modex-session-query-") as directory:
@@ -61,7 +64,7 @@ class SessionQuery04395Tests(unittest.TestCase):
             for label, query, matches in cases:
                 with self.subTest(label=label, query=query):
                     outputs = []
-                    for root_label, binary, argv0 in (("baseline", test_cli.ORACLE, "prodex"),
+                    for root_label, binary, argv0 in (("baseline", test_cli.HISTORICAL_04395_ORACLE, "prodex"),
                                                       ("modex", test_cli.MODEX, "modex")):
                         result = subprocess.run(
                             sandbox_command(binary, roots[root_label],
@@ -91,7 +94,7 @@ class SessionQuery04395Tests(unittest.TestCase):
             for label, query, oracle_output, modex_output in cases:
                 with self.subTest(label=label, query=query):
                     outputs = []
-                    for root_label, binary, argv0 in (("baseline", test_cli.ORACLE, "prodex"),
+                    for root_label, binary, argv0 in (("baseline", test_cli.HISTORICAL_04395_ORACLE, "prodex"),
                                                       ("modex", test_cli.MODEX, "modex")):
                         result = subprocess.run(
                             sandbox_command(binary, roots[root_label],
@@ -151,7 +154,7 @@ class SessionQuery04395Tests(unittest.TestCase):
             for label, query, matches in cases:
                 with self.subTest(label=label, query=query):
                     outputs = []
-                    for root_label, binary, argv0 in (("baseline", test_cli.ORACLE, "prodex"),
+                    for root_label, binary, argv0 in (("baseline", test_cli.HISTORICAL_04395_ORACLE, "prodex"),
                                                       ("modex", test_cli.MODEX, "modex")):
                         result = subprocess.run(
                             sandbox_command(binary, roots[root_label],

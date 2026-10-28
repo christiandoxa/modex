@@ -12,9 +12,15 @@ ROOT = Path(__file__).resolve().parents[1]
 MODEX = Path(os.environ.get("MODEX_BINARY", ROOT / "build/modex"))
 ORACLE = Path(os.environ.get(
     "PRODEX_ORACLE",
-    str(Path.home() / ".cache/modex/oracles/0.439.5/prodex-x86_64-unknown-linux-gnu"),
+    str(Path.home() / ".cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu"),
 ))
-ORACLE_SHA256 = "96cef1bfea9cfd90b769d1d7854e88400beed151ad05c229facdd6d52a5d59c5"
+ORACLE_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
+HISTORICAL_04395_ORACLE = Path(os.environ.get(
+    "PRODEX_ORACLE_04395",
+    Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
+    / "oracles/0.439.5/prodex-x86_64-unknown-linux-gnu",
+))
+HISTORICAL_04395_ORACLE_SHA256 = "96cef1bfea9cfd90b769d1d7854e88400beed151ad05c229facdd6d52a5d59c5"
 HISTORICAL_04392_ORACLE_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 HISTORICAL_04391_ORACLE_SHA256 = "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a"
 
@@ -45,7 +51,7 @@ class CliTests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError("Build Modex first with make build")
         if not ORACLE.is_file():
-            raise AssertionError("Set PRODEX_ORACLE to the verified official 0.439.5 Linux binary")
+            raise AssertionError("Set PRODEX_ORACLE to the verified official 0.439.2 Linux binary")
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("The Prodex oracle does not match the pinned release checksum")
 
@@ -57,7 +63,7 @@ class CliTests(unittest.TestCase):
                     baseline, baseline_mutations = isolated_run(ORACLE, arguments)
                     modex, modex_mutations = isolated_run(MODEX, arguments)
                     self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
-                                     (0, b"prodex 0.439.5\n", b""))
+                                     (0, b"prodex 0.439.2\n", b""))
                     self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
                                      (0, b"modex 0.1.0-dev\n", b""))
                     self.assertEqual(baseline_mutations, [])

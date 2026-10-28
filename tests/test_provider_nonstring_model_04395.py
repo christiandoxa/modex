@@ -6,7 +6,8 @@ from unittest.mock import patch
 import unittest
 
 import test_super_launch
-from test_cli import MODEX, ORACLE, ORACLE_SHA256
+from test_cli import (MODEX, ORACLE, ORACLE_SHA256, HISTORICAL_04395_ORACLE,
+                      HISTORICAL_04395_ORACLE_SHA256)
 
 
 CODEX_REQUEST = 'body = b"\\x00synthetic\\xff" if passthrough else json.dumps({"model":"deepseek-chat","input":"synthetic prompt","stream":scenario == "stream"},separators=(",",":")).encode()'
@@ -41,6 +42,8 @@ def _codex_with_request(request):
 class ProviderNonStringModel04395Tests(unittest.TestCase):
     def test_model_fallback_types_match_release_in_simple_and_non_simple_requests(self):
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        self.assertEqual(hashlib.sha256(HISTORICAL_04395_ORACLE.read_bytes()).hexdigest(),
+                         HISTORICAL_04395_ORACLE_SHA256)
         self.assertTrue(MODEX.is_file(), f"Modex binary has not been built: {MODEX}")
         harness = test_super_launch.SuperLaunchTests()
         for name, model, expected_model in MODEL_CASES:
@@ -51,7 +54,7 @@ class ProviderNonStringModel04395Tests(unittest.TestCase):
                         request["safety_identifier"] = "synthetic-user"
                     captures = []
                     with patch.object(test_super_launch, "CODEX", _codex_with_request(request)):
-                        for binary in (ORACLE, MODEX):
+                        for binary in (HISTORICAL_04395_ORACLE, ORACLE, MODEX):
                             result, _, upstream, _ = harness.run_launch(
                                 binary=binary, scenario="buffered", model="deepseek-flash"
                             )
@@ -63,12 +66,15 @@ class ProviderNonStringModel04395Tests(unittest.TestCase):
                             self.assertEqual(len(upstream), 1)
                             captures.append(upstream[0])
 
-                    baseline, modex = captures
+                    historical, baseline, modex = captures
                     self.assertEqual(modex["path"], baseline["path"])
+                    historical_body = json.loads(bytes.fromhex(historical["body"]))
                     baseline_body = json.loads(bytes.fromhex(baseline["body"]))
                     modex_body = json.loads(bytes.fromhex(modex["body"]))
                     self.assertEqual(modex_body, baseline_body)
-                    self.assertEqual(baseline_body["model"], expected_model)
+                    self.assertEqual(historical_body["model"], expected_model)
+                    active_model = "deepseek-v4-flash" if name == "combo-flash-pro" else expected_model
+                    self.assertEqual(baseline_body["model"], active_model)
                     if shape == "non-simple":
                         self.assertEqual(baseline_body["user_id"], "synthetic-user")
                     for capture in (baseline, modex):

@@ -1,4 +1,4 @@
-"""Compare untyped DeepSeek message content with the frozen 0.439.5 release."""
+"""Compare untyped DeepSeek message content with 0.439.2 and historical 0.439.5."""
 
 import hashlib
 import json
@@ -6,7 +6,9 @@ from unittest.mock import patch
 import unittest
 
 import test_super_launch
-from test_cli import MODEX, ORACLE, ORACLE_SHA256
+from test_cli import (MODEX, ORACLE as ACTIVE_ORACLE, ORACLE_SHA256 as ACTIVE_ORACLE_SHA256,
+                      HISTORICAL_04395_ORACLE as ORACLE,
+                      HISTORICAL_04395_ORACLE_SHA256 as ORACLE_SHA256)
 from test_provider_catalog_04395 import _codex_with_request
 
 
@@ -31,6 +33,7 @@ CASES = (
 
 class UntypedContent04395Tests(unittest.TestCase):
     def test_content_mapping_and_typed_validation_match_release(self):
+        self.assertEqual(hashlib.sha256(ACTIVE_ORACLE.read_bytes()).hexdigest(), ACTIVE_ORACLE_SHA256)
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
         harness = test_super_launch.SuperLaunchTests()
         for non_simple in (False, True):
@@ -40,7 +43,7 @@ class UntypedContent04395Tests(unittest.TestCase):
                     request["safety_identifier"] = "synthetic-user"
                 with self.subTest(case=name, non_simple=non_simple):
                     captures = []
-                    for binary in (ORACLE, MODEX):
+                    for binary in (ACTIVE_ORACLE, ORACLE, MODEX):
                         with patch.object(test_super_launch, "CODEX", _codex_with_request(request)):
                             result, records, upstream, state = harness.run_launch(
                                 binary=binary, scenario="buffered", model="deepseek-chat"
@@ -56,7 +59,7 @@ class UntypedContent04395Tests(unittest.TestCase):
                         body = json.loads(bytes.fromhex(upstream[0]["body"]))
                         self.assertEqual(body["messages"], [{"role": "user", "content": expected}])
                         captures.append(body)
-                    self.assertEqual(captures[1], captures[0])
+                    self.assertEqual(captures[1:], [captures[0], captures[0]])
 
 
 if __name__ == "__main__":

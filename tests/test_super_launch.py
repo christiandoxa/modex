@@ -97,7 +97,7 @@ class SuperLaunchTests(unittest.TestCase):
             root = Path(directory)
             for name in ("home", "state", "shared", "work"):
                 (root / name).mkdir(mode=0o700)
-            (root / "state/update-check.json").write_text(json.dumps({"source": "GitHub", "latest_version": "0.439.5", "checked_at": int(time.time())}))
+            (root / "state/update-check.json").write_text(json.dumps({"source": "GitHub", "latest_version": "0.439.2", "checked_at": int(time.time())}))
             codex = root / "codex"
             codex.write_text("#!" + sys.executable + "\n" + CODEX)
             codex.chmod(0o700)
@@ -303,22 +303,20 @@ class SuperLaunchTests(unittest.TestCase):
                 after = next(record for record in after_records if record["kind"] == "launch")
                 self.assertEqual(after["catalog"], before["catalog"])
 
-    def test_04394_deepseek_flash_catalog_matches_provider_model(self):
-        result, records, upstream, _ = self.run_launch(scenario="exit-seven", model="deepseek-flash")
-        self.assertEqual(result.returncode, 7, result.stderr)
-        self.assertEqual(upstream, [])
-        launch = next(record for record in records if record["kind"] == "launch")
-        models = {row["slug"]: row for row in launch["catalog"]["models"]}
-        flash = models["deepseek-flash"]
-        self.assertEqual(flash["display_name"], "DeepSeek V4.1 Flash")
-        self.assertEqual(flash["description"], "Current DeepSeek Flash routed through the Prodex Responses adapter.")
-        self.assertEqual((flash["context_window"], flash["max_context_window"]), (1048576, 1048576))
-        self.assertEqual(flash["default_reasoning_level"], "high")
-        self.assertEqual([level["effort"] for level in flash["supported_reasoning_levels"]], ["none", "low", "high", "max"])
-        self.assertEqual(models["flash"]["description"], "Prodex DeepSeek Flash alias routed through current DeepSeek Flash.")
-        compatibility = models["deepseek-v4-flash"]
-        self.assertEqual(compatibility["description"], "DeepSeek V4 Flash routed through the Prodex Responses adapter.")
-        self.assertEqual(compatibility["supported_reasoning_levels"], flash["supported_reasoning_levels"])
+    def test_release_catalog_retains_compatibility_models(self):
+        for binary in (ORACLE, MODEX):
+            result, records, upstream, _ = self.run_launch(binary, scenario="exit-seven", model="deepseek-flash")
+            self.assertEqual(result.returncode, 7, result.stderr)
+            self.assertEqual(upstream, [])
+            launch = next(record for record in records if record["kind"] == "launch")
+            models = {row["slug"]: row for row in launch["catalog"]["models"]}
+            self.assertEqual(models["deepseek-flash"]["description"],
+                             "DeepSeek model routed through the Prodex Responses adapter.")
+            self.assertEqual(models["flash"]["description"],
+                             "Prodex DeepSeek Flash alias routed through DeepSeek V4 Flash.")
+            for name in ("deepseek-chat", "deepseek-reasoner", "deepseek-v4-flash"):
+                self.assertEqual([level["effort"] for level in models[name]["supported_reasoning_levels"]],
+                                 ["low", "medium", "high", "xhigh"])
 
     def test_oversized_model_fails_before_child_or_upstream(self):
         result, records, upstream, state = self.run_launch(model="m" * 4097)

@@ -22,6 +22,8 @@ DRIVER = Path(os.environ.get("MODEX_WIDTH_MEMORY_DRIVER", ROOT / "build/tests/wi
 MIB = 1024 * 1024
 SESSION_LINE_LIMIT = 64 * MIB
 LINEAR_CONTROL_BYTES_PER_UNIT = 4
+MINOR_FAULT_EVENT_ALLOWANCE = 1
+MAX_MEMORY_FAILURE_MESSAGE_CHARS = 1200
 MIXED = "A界e\u0301🙂"
 
 
@@ -35,6 +37,116 @@ def _input_bytes(mode, count):
     if mode == "kirat":
         return count * 4
     return 8 + count * 4
+
+
+def _input_normalized_growth(points, operation, metric):
+    return ((points[1][operation][metric] - points[0][operation][metric])
+            - (points[1]["input_only"][metric] - points[0]["input_only"][metric]))
+
+
+def _minor_fault_event_allowance(points):
+    sample_noise_events = sum(
+        point[operation]["minor_fault_sample_spread_events"]
+        for point in points for operation in ("width", "input_only")
+    )
+    return sample_noise_events + MINOR_FAULT_EVENT_ALLOWANCE
+
+
+def _control_minor_fault_allowance(point):
+    return (point["linear_control"]["minor_fault_sample_spread_events"]
+            + point["input_only"]["minor_fault_sample_spread_events"]
+            + MINOR_FAULT_EVENT_ALLOWANCE)
+
+
+def _peak_rss_control_allowance(points, base_allowance):
+    sample_noise_bytes = sum(
+        points[1][operation]["peak_rss_sample_spread_bytes"]
+        for operation in ("input_only", "linear_control")
+    )
+    return sample_noise_bytes + base_allowance
+
+
+def _evaluate_memory_points(points, page_size_bytes):
+    """Apply the production thresholds to small/large point summaries."""
+    input_growth = points[1]["input_bytes"] - points[0]["input_bytes"]
+    base_allowance = max(16 * page_size_bytes, input_growth // 100)
+    failures = []
+
+    anonymous_width_growth = _input_normalized_growth(
+        points, "width", "median_anonymous_rss_growth_bytes")
+    anonymous_width_noise = sum(point[operation]["anonymous_sample_spread_bytes"]
+                                for point in points for operation in ("width", "input_only"))
+    anonymous_allowance = anonymous_width_noise + base_allowance
+    points[1]["anonymous_normalized_growth_bytes"] = anonymous_width_growth
+    points[1]["anonymous_allowed_growth_bytes"] = anonymous_allowance
+    if anonymous_width_growth > anonymous_allowance:
+        failures.append(
+            f"width anonymous RSS {anonymous_width_growth}>{anonymous_allowance} bytes"
+        )
+
+    large = points[1]
+    anonymous_control_growth = (
+        large["linear_control"]["median_anonymous_rss_growth_bytes"]
+        - large["input_only"]["median_anonymous_rss_growth_bytes"]
+    )
+    anonymous_control_allowance = (
+        large["linear_control"]["anonymous_sample_spread_bytes"]
+        + large["input_only"]["anonymous_sample_spread_bytes"]
+        + base_allowance
+    )
+    points[1]["linear_control_anonymous_normalized_growth_bytes"] = anonymous_control_growth
+    points[1]["linear_control_anonymous_required_growth_bytes"] = anonymous_control_allowance
+    if anonymous_control_growth <= anonymous_control_allowance:
+        failures.append(
+            f"anonymous control {anonymous_control_growth}<={anonymous_control_allowance} bytes"
+        )
+
+    fault_width_growth = _input_normalized_growth(
+        points, "width", "median_minor_fault_growth_events")
+    fault_width_allowance = _minor_fault_event_allowance(points)
+    points[1]["minor_fault_normalized_growth_events"] = fault_width_growth
+    points[1]["minor_fault_allowed_growth_events"] = fault_width_allowance
+    if fault_width_growth > fault_width_allowance:
+        failures.append(f"width minflt {fault_width_growth}>{fault_width_allowance} events")
+
+    # Event counts stay events. A one-event floor tolerates one changed fault;
+    # the independent byte controls establish that the allocation actually ran.
+    fault_control_growth = (
+        large["linear_control"]["median_minor_fault_growth_events"]
+        - large["input_only"]["median_minor_fault_growth_events"]
+    )
+    fault_control_allowance = _control_minor_fault_allowance(large)
+    points[1]["linear_control_minor_fault_normalized_growth_events"] = fault_control_growth
+    points[1]["linear_control_minor_fault_required_growth_events"] = fault_control_allowance
+    if fault_control_growth <= fault_control_allowance:
+        failures.append(
+            f"minflt control {fault_control_growth}<={fault_control_allowance} events"
+        )
+
+    peak_control_growth = (
+        large["linear_control"]["median_peak_rss_growth_bytes"]
+        - large["input_only"]["median_peak_rss_growth_bytes"]
+    )
+    peak_control_allowance = _peak_rss_control_allowance(points, base_allowance)
+    points[1]["linear_control_peak_rss_normalized_growth_bytes"] = peak_control_growth
+    points[1]["linear_control_peak_rss_required_growth_bytes"] = peak_control_allowance
+    if peak_control_growth <= peak_control_allowance:
+        failures.append(
+            f"VmHWM control {peak_control_growth}<={peak_control_allowance} bytes"
+        )
+    points[1]["memory_base_allowance_bytes"] = base_allowance
+    return failures
+
+
+def _memory_failure_message(failures, artifact_path):
+    prefix = f"width-memory checks failed ({len(failures)}): "
+    artifact = str(artifact_path)[-160:]
+    suffix = f"; see {artifact}"
+    details = "; ".join(failures[:8])
+    available = max(0, MAX_MEMORY_FAILURE_MESSAGE_CHARS - len(prefix) - len(suffix))
+    omitted = f"; and {len(failures) - 8} more" if len(failures) > 8 else ""
+    details = details[:max(0, available - len(omitted))] + omitted
+    return prefix + details + suffix
 
 
 def _process_memory_sample(pid, expected_executable):
@@ -148,10 +260,9 @@ def _measure_process_peak_rss(mode, count, operation="width"):
         "post_peak_rss_bytes": post["peak_rss_bytes"],
         "peak_rss_growth_bytes": post["peak_rss_bytes"] - baseline["peak_rss_bytes"],
         "anonymous_rss_growth_bytes": max(0, smaps_growth["Anonymous"]),
-        "minor_fault_growth": minor_fault_growth,
+        "minor_fault_growth_events": minor_fault_growth,
         "baseline_minor_faults": baseline["minor_faults"],
         "post_minor_faults": post["minor_faults"],
-        "minor_fault_page_equivalent_growth_bytes": max(0, minor_fault_growth) * os.sysconf("SC_PAGE_SIZE"),
         "baseline_smaps_rollup_bytes": baseline["smaps_rollup_bytes"],
         "post_smaps_rollup_bytes": post["smaps_rollup_bytes"],
         "smaps_rollup_growth_bytes": smaps_growth,
@@ -184,15 +295,21 @@ def _record_host():
         "peak_rss_source": "same-process /proc/<pid>/status VmHWM after input baseline",
         "vmhwm_unit": "KiB, converted to bytes in samples",
         "anonymous_rss_source": "same-process /proc/<pid>/smaps_rollup Anonymous after input baseline",
-        "minor_fault_source": "/proc/<pid>/stat minflt",
-        "minor_fault_page_equivalent": "minflt delta multiplied by system base page size",
+        "minor_fault_source": "/proc/<pid>/stat minflt event count",
+        "linear_control": (
+            f"{LINEAR_CONTROL_BYTES_PER_UNIT} bytes per input unit, touched then released before "
+            "the post-operation sample; compared with same-size input-only runs"
+        ),
         "smaps_rollup_source": "/proc/<pid>/smaps_rollup Rss/Anonymous required; retained as diagnostics",
         "measurement_limit": (
-            "Anonymous RSS and base-page minor faults are independent checks. Allocations that "
-            "reuse already-resident allocator pages may increase neither; transparent huge pages "
-            "may make minflt page-equivalents differ from bytes resident, and minflt also counts "
-            "code/file page faults. VmHWM/file RSS are diagnostic only because file-backed "
-            "residency can rise during width traversal."
+            "Anonymous RSS growth measures bytes still resident at the post-operation sample; "
+            "allocations that reuse already-resident allocator pages or are returned before that "
+            "sample may be missed. minflt is an event count, never a byte estimate: transparent "
+            "huge pages can charge one event for 2 MiB, and minflt also counts code/file faults. "
+            "The transient control checks VmHWM growth, but VmHWM is total RSS and can be masked "
+            "by a higher pre-operation peak or include file/code residency. A short-lived huge-page "
+            "allocation is detectable by VmHWM only when its resident peak exceeds the earlier "
+            "process peak; resident-page reuse and smaller peaks remain limits."
         ),
     }
 
@@ -259,7 +376,7 @@ class WidthMemoryTests(unittest.TestCase):
                     if operation == "input-only":
                         expected = _input_bytes(mode, count)
                     elif operation == "linear-control":
-                        expected = [expected_width, count * LINEAR_CONTROL_BYTES_PER_UNIT]
+                        expected = [_input_bytes(mode, count), count * LINEAR_CONTROL_BYTES_PER_UNIT]
                     else:
                         expected = expected_width
                     if outputs != [expected] * 3:
@@ -268,76 +385,30 @@ class WidthMemoryTests(unittest.TestCase):
                             f"got {outputs}, expected {expected} for {count}"
                         )
                     anonymous_growths = [sample["anonymous_rss_growth_bytes"] for sample in samples]
-                    minor_fault_growths = [sample["minor_fault_page_equivalent_growth_bytes"]
-                                           for sample in samples]
+                    peak_rss_growths = [sample["peak_rss_growth_bytes"] for sample in samples]
+                    minor_fault_growths = [sample["minor_fault_growth_events"] for sample in samples]
                     operations[operation.replace("-", "_")] = {
+                        "peak_rss_growth_samples_bytes": peak_rss_growths,
+                        "median_peak_rss_growth_bytes": statistics.median(peak_rss_growths),
+                        "peak_rss_sample_spread_bytes": max(peak_rss_growths) - min(peak_rss_growths),
                         "anonymous_rss_growth_samples_bytes": anonymous_growths,
                         "median_anonymous_rss_growth_bytes": statistics.median(anonymous_growths),
                         "anonymous_sample_spread_bytes": max(anonymous_growths) - min(anonymous_growths),
-                        "minor_fault_page_equivalent_growth_samples_bytes": minor_fault_growths,
-                        "median_minor_fault_page_equivalent_growth_bytes": statistics.median(minor_fault_growths),
-                        "minor_fault_sample_spread_bytes": max(minor_fault_growths) - min(minor_fault_growths),
+                        "minor_fault_growth_samples_events": minor_fault_growths,
+                        "median_minor_fault_growth_events": statistics.median(minor_fault_growths),
+                        "minor_fault_sample_spread_events": max(minor_fault_growths) - min(minor_fault_growths),
                         "samples": samples,
                     }
                 points.append({"count": count, "input_bytes": _input_bytes(mode, count), **operations})
-            input_growth = points[1]["input_bytes"] - points[0]["input_bytes"]
-            base_allowance = max(16 * measurements["host"]["page_size_bytes"], input_growth // 100)
-            anonymous_width_growth = (points[1]["width"]["median_anonymous_rss_growth_bytes"]
-                                      - points[0]["width"]["median_anonymous_rss_growth_bytes"])
-            anonymous_input_growth = (points[1]["input_only"]["median_anonymous_rss_growth_bytes"]
-                                      - points[0]["input_only"]["median_anonymous_rss_growth_bytes"])
-            anonymous_auxiliary_growth = anonymous_width_growth - anonymous_input_growth
-            anonymous_noise = sum(point[operation]["anonymous_sample_spread_bytes"]
-                                  for point in points for operation in ("width", "input_only"))
-            anonymous_tolerance = anonymous_noise + base_allowance
-            points[1]["anonymous_normalized_growth_bytes"] = anonymous_auxiliary_growth
-            points[1]["anonymous_allowed_growth_bytes"] = anonymous_tolerance
-            if anonymous_auxiliary_growth > anonymous_tolerance:
-                failures.append(
-                    f"{mode} text_width anonymous RSS grew {anonymous_auxiliary_growth} bytes over "
-                    f"{anonymous_tolerance}; width growth={anonymous_width_growth}, input construction growth="
-                    f"{anonymous_input_growth}, points={points}"
-                )
-            anonymous_control_growth = (points[1]["linear_control"]["median_anonymous_rss_growth_bytes"]
-                                        - points[0]["linear_control"]["median_anonymous_rss_growth_bytes"])
-            anonymous_control_auxiliary_growth = anonymous_control_growth - anonymous_input_growth
-            points[1]["linear_control_anonymous_normalized_growth_bytes"] = anonymous_control_auxiliary_growth
-            points[1]["linear_control_anonymous_required_growth_bytes"] = anonymous_tolerance
-            if anonymous_control_auxiliary_growth <= anonymous_tolerance:
-                failures.append(
-                    f"{mode} linear-control was not detected by the anonymous RSS bound: "
-                    f"growth={anonymous_control_auxiliary_growth}, required>{anonymous_tolerance}, points={points}"
-                )
-            minor_fault_width_growth = (points[1]["width"]["median_minor_fault_page_equivalent_growth_bytes"]
-                                        - points[0]["width"]["median_minor_fault_page_equivalent_growth_bytes"])
-            minor_fault_input_growth = (points[1]["input_only"]["median_minor_fault_page_equivalent_growth_bytes"]
-                                        - points[0]["input_only"]["median_minor_fault_page_equivalent_growth_bytes"])
-            minor_fault_auxiliary_growth = minor_fault_width_growth - minor_fault_input_growth
-            minor_fault_noise = sum(point[operation]["minor_fault_sample_spread_bytes"]
-                                    for point in points for operation in ("width", "input_only"))
-            minor_fault_tolerance = minor_fault_noise + base_allowance
-            points[1]["minor_fault_normalized_growth_bytes"] = minor_fault_auxiliary_growth
-            points[1]["minor_fault_allowed_growth_bytes"] = minor_fault_tolerance
-            if minor_fault_auxiliary_growth > minor_fault_tolerance:
-                failures.append(
-                    f"{mode} text_width minor-fault page-equivalent growth was "
-                    f"{minor_fault_auxiliary_growth} bytes over {minor_fault_tolerance}; "
-                    f"width growth={minor_fault_width_growth}, input construction growth="
-                    f"{minor_fault_input_growth}, points={points}"
-                )
-            minor_fault_control_growth = (points[1]["linear_control"]["median_minor_fault_page_equivalent_growth_bytes"]
-                                          - points[0]["linear_control"]["median_minor_fault_page_equivalent_growth_bytes"])
-            minor_fault_control_auxiliary_growth = minor_fault_control_growth - minor_fault_input_growth
-            points[1]["linear_control_minor_fault_normalized_growth_bytes"] = minor_fault_control_auxiliary_growth
-            points[1]["linear_control_minor_fault_required_growth_bytes"] = minor_fault_tolerance
-            if minor_fault_control_auxiliary_growth <= minor_fault_tolerance:
-                failures.append(
-                    f"{mode} linear-control was not detected by the minor-fault bound: "
-                    f"growth={minor_fault_control_auxiliary_growth}, required>{minor_fault_tolerance}, points={points}"
-                )
+            failures.extend(
+                f"{mode} {failure}"
+                for failure in _evaluate_memory_points(
+                    points, measurements["host"]["page_size_bytes"])
+            )
             measurements["patterns"][mode] = points
         (ARTIFACTS / "width-rss.json").write_text(json.dumps(measurements, indent=2) + "\n")
-        self.assertEqual(failures, [], f"see {ARTIFACTS / 'width-rss.json'}")
+        if failures:
+            self.fail(_memory_failure_message(failures, ARTIFACTS / "width-rss.json"))
 
 
 class SessionTextMemoryParityTests(unittest.TestCase):
@@ -392,6 +463,89 @@ class SessionTextMemoryParityTests(unittest.TestCase):
                 self.assertEqual(outputs[0], outputs[1], f"line size {line_size}")
                 self.assertEqual(outputs[0][0] == 0, line_size == SESSION_LINE_LIMIT,
                                  f"baseline behavior at line size {line_size}")
+
+
+class MemoryMetricFixtureTests(unittest.TestCase):
+    @staticmethod
+    def _point(input_bytes, *, width_anon=0, width_faults=0, control_anon=0,
+               control_faults=0, control_peak=0, input_anon=0, input_faults=0,
+               input_peak=0, width_anon_spread=0, input_anon_spread=0,
+               control_anon_spread=0, width_fault_spread=0, input_fault_spread=0,
+               control_fault_spread=0, input_peak_spread=0, control_peak_spread=0):
+        def operation(anon=0, faults=0, peak=0, anon_spread=0, fault_spread=0, peak_spread=0):
+            return {
+                "median_peak_rss_growth_bytes": peak,
+                "peak_rss_sample_spread_bytes": peak_spread,
+                "median_anonymous_rss_growth_bytes": anon,
+                "anonymous_sample_spread_bytes": anon_spread,
+                "median_minor_fault_growth_events": faults,
+                "minor_fault_sample_spread_events": fault_spread,
+            }
+
+        return {
+            "input_bytes": input_bytes,
+            "input_only": operation(input_anon, input_faults, input_peak, input_anon_spread,
+                                     input_fault_spread, input_peak_spread),
+            "width": operation(width_anon, width_faults, anon_spread=width_anon_spread,
+                                fault_spread=width_fault_spread),
+            "linear_control": operation(control_anon, control_faults, control_peak,
+                                        control_anon_spread, control_fault_spread,
+                                        control_peak_spread),
+        }
+
+    @classmethod
+    def _valid_points(cls, control_fault_events):
+        return [
+            cls._point(MIB // 2),
+            cls._point(4 * MIB + MIB // 2, control_anon=4 * MIB,
+                       control_faults=control_fault_events, control_peak=4 * MIB),
+        ]
+
+    def test_standard_and_huge_page_controls_use_shared_acceptance_logic(self):
+        for page_mode, control_events in (("standard pages", 1024),
+                                          ("2 MiB huge pages", 2)):
+            with self.subTest(page_mode=page_mode):
+                self.assertEqual(_evaluate_memory_points(self._valid_points(control_events), 4096), [])
+
+    def test_transient_huge_page_peak_passes_hwm_but_reports_missing_resident_signal(self):
+        points = self._valid_points(2)
+        points[1]["linear_control"]["median_anonymous_rss_growth_bytes"] = 0
+        failures = _evaluate_memory_points(points, 4096)
+        self.assertTrue(any(failure.startswith("anonymous control") for failure in failures))
+        self.assertFalse(any(failure.startswith("VmHWM control") for failure in failures))
+        self.assertFalse(any(failure.startswith("minflt control") for failure in failures))
+
+    def test_shared_acceptance_logic_rejects_width_rss_regression(self):
+        points = self._valid_points(2)
+        points[1]["width"]["median_anonymous_rss_growth_bytes"] = 2 * MIB
+        failures = _evaluate_memory_points(points, 4096)
+        self.assertTrue(any(failure.startswith("width anonymous RSS") for failure in failures))
+
+    def test_noisy_control_samples_raise_the_bound_and_detect_insensitive_hwm(self):
+        noisy = self._valid_points(1024)
+        noisy[1]["input_only"]["peak_rss_sample_spread_bytes"] = MIB // 4
+        noisy[1]["linear_control"]["peak_rss_sample_spread_bytes"] = MIB // 4
+        noisy[1]["input_only"]["anonymous_sample_spread_bytes"] = 32 * 1024
+        noisy[1]["linear_control"]["anonymous_sample_spread_bytes"] = 32 * 1024
+        self.assertEqual(_evaluate_memory_points(noisy, 4096), [])
+
+        obscured = self._valid_points(1024)
+        obscured[1]["linear_control"]["peak_rss_sample_spread_bytes"] = 4 * MIB
+        failures = _evaluate_memory_points(obscured, 4096)
+        self.assertTrue(any(failure.startswith("VmHWM control") for failure in failures))
+
+    def test_fault_positive_control_respects_one_event_noise_threshold(self):
+        points = self._valid_points(2)
+        points[1]["linear_control"]["minor_fault_sample_spread_events"] = 1
+        failures = _evaluate_memory_points(points, 4096)
+        self.assertTrue(any(failure.startswith("minflt control 2<=2 events") for failure in failures))
+
+    def test_failure_summary_is_bounded_and_points_to_artifact(self):
+        failures = ["ascii width anonymous RSS " + "x" * 500 for _ in range(40)]
+        message = _memory_failure_message(failures, "/tmp/private-build/test-results/width-rss.json")
+        self.assertLessEqual(len(message), MAX_MEMORY_FAILURE_MESSAGE_CHARS)
+        self.assertIn("and 32 more", message)
+        self.assertIn("width-rss.json", message)
 
 
 if __name__ == "__main__":

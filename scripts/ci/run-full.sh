@@ -66,21 +66,17 @@ echo 'reference oracle: PASS' | tee -a "$EVIDENCE_DIR/summary.txt"
 export PRODEX_ORACLE="$(cat "$EVIDENCE_DIR/oracle-path.txt")"
 rm -- "$EVIDENCE_DIR/oracle-path.txt"
 export PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE"
-if ! "$PYTHON" scripts/ci/reference.py oracle 0.439.2 >"$EVIDENCE_DIR/oracle-path-04392.txt" 2>"$EVIDENCE_DIR/reference-04392.log"; then
-    cat "$EVIDENCE_DIR/reference-04392.log" >&2
+if ! "$PYTHON" scripts/ci/reference.py oracle 0.439.5 >"$EVIDENCE_DIR/oracle-path-04395.txt" 2>"$EVIDENCE_DIR/reference-04395.log"; then
+    cat "$EVIDENCE_DIR/reference-04395.log" >&2
     exit 1
 fi
-cat "$EVIDENCE_DIR/reference-04392.log"
-export PRODEX_ORACLE_04392="$(cat "$EVIDENCE_DIR/oracle-path-04392.txt")"
-rm -- "$EVIDENCE_DIR/oracle-path-04392.txt"
+export PRODEX_ORACLE_04395="$(cat "$EVIDENCE_DIR/oracle-path-04395.txt")"
+rm -- "$EVIDENCE_DIR/oracle-path-04395.txt"
+export PRODEX_ORACLE_04392="$PRODEX_ORACLE"
 "$PYTHON" scripts/ci/reference.py identity active >"$EVIDENCE_DIR/reference.json"
 export MODEX_REFERENCE_VERSION="$("$PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag"])' "$EVIDENCE_DIR/reference.json")"
 if ! "$PYTHON" scripts/ci/reference.py source active >"$EVIDENCE_DIR/reference-source-active.txt" 2>"$EVIDENCE_DIR/reference-source-active.log"; then
     cat "$EVIDENCE_DIR/reference-source-active.log" >&2
-    exit 1
-fi
-if ! "$PYTHON" scripts/ci/reference.py source 0.439.2 >"$EVIDENCE_DIR/reference-source-04392.txt" 2>"$EVIDENCE_DIR/reference-source-04392.log"; then
-    cat "$EVIDENCE_DIR/reference-source-04392.log" >&2
     exit 1
 fi
 if ! "$PYTHON" scripts/ci/reference.py source 0.439.1 >"$EVIDENCE_DIR/reference-source-04391.txt" 2>"$EVIDENCE_DIR/reference-source-04391.log"; then
@@ -88,11 +84,11 @@ if ! "$PYTHON" scripts/ci/reference.py source 0.439.1 >"$EVIDENCE_DIR/reference-
     exit 1
 fi
 export MODEX_REFERENCE_DIR="$(cat "$EVIDENCE_DIR/reference-source-active.txt")"
-export MODEX_REFERENCE_04392_DIR="$(cat "$EVIDENCE_DIR/reference-source-04392.txt")"
+export MODEX_REFERENCE_04392_DIR="$MODEX_REFERENCE_DIR"
 export MODEX_REFERENCE_04391_DIR="$(cat "$EVIDENCE_DIR/reference-source-04391.txt")"
-cat "$EVIDENCE_DIR/reference-source-active.log" "$EVIDENCE_DIR/reference-source-04392.log" "$EVIDENCE_DIR/reference-source-04391.log"
+cat "$EVIDENCE_DIR/reference-source-active.log" "$EVIDENCE_DIR/reference-source-04391.log"
 echo 'reference sources: PASS' | tee -a "$EVIDENCE_DIR/summary.txt"
-rm -- "$EVIDENCE_DIR/reference-source-active.txt" "$EVIDENCE_DIR/reference-source-04392.txt" "$EVIDENCE_DIR/reference-source-04391.txt"
+rm -- "$EVIDENCE_DIR/reference-source-active.txt" "$EVIDENCE_DIR/reference-source-04391.txt"
 printf 'source_sha=%s\nmojo=%s\npython=%s\nreference_commit=%s\nreference_oracle_sha256=%s\n' \
     "$(git rev-parse HEAD)" "$($MOJO --version)" "$($PYTHON --version 2>&1)" \
     "$($PYTHON -c 'import json;print(json.load(open("docs/baseline.json"))["reference"]["commit"])')" \

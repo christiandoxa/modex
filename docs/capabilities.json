@@ -102,19 +102,19 @@
         "actual artifact Serde accounting boundaries and other platform layouts",
         "general HTTP tolerance, TLS/DNS/proxies/retries and non-host targets",
         "unbounded non-2xx redirect SSE beyond the retained 4 MiB body cap",
-        "complete continuation binding resolution: a two-turn buffered case remains a pinned-release mismatch",
+        "complete continuation binding resolution: selected 0.439.2 two-turn cases match, while persistent and multi-account ownership remain incomplete",
         "physical byte equivalence of serialized conversation retention; the incompatible worker estimator change is rejected",
         "complete upstream URL behavior beyond the admitted numeric-loopback HTTP path subset; broader schemes/authorities, TLS, DNS, proxies, redirects, security/resource equivalence and non-host behavior remain unqualified",
         "Non-object SSE remains a mismatch: release synthetic clients time out while Modex emits response.failed; both proposed reader changes are rejected.",
         "General lower-client binary header retention outside the tested relay; lossy internal HTTP header storage remains.",
         "First-event idle response status and exact postcommit timeout text remain live mismatches; worker 9d05840 is excluded. The rejected partial 16 MiB cap does not establish retained-memory bounds.",
-        "Bodyless SSE Transfer-Encoding remains a current-release mismatch: release emits chunked while native omits it. Full HTTP/WS/transport and all six release qualifications remain unfinished."
+        "Selected 0.439.2 bodyless SSE 204/304 responses retain chunked framing; full HTTP/WS/transport and all six release qualifications remain unfinished."
       ],
       "assessment": "Guarded production Super integration is exercised on the host; complete gateway/provider, concurrent admission, security and non-host obligations remain blocked.",
       "notes": [
         "Current DeepSeek relay tracks bounded in-memory response/session/turn ownership and validates credential/endpoint identity before the next POST; persistent and multi-account affinity remain open.",
         "0.439.5 real-process comparisons cover missing/null and selected non-string or blank model fallbacks, combo aliases, explicit model selection, and selected bare tool-role requests on simple/non-simple paths.",
-        "A real-process oversized accepted SSE event exposes an unbound response-ID gap: release 200/503 with one POST versus Modex 200/200 with two."
+        "A bounded streaming observer binds the response ID in a selected oversized SSE event. Prodex 0.439.2 and Modex both return 200/503 with one upstream POST; a 0.439.5 regression is retained separately. Arbitrary numeric-token bounds and full streaming/security equivalence remain unverified."
       ]
     },
     {
@@ -453,13 +453,13 @@
     "all non-host build/link/run targets"
   ],
   "compiler_diagnostic": "The installed compiler emits a nonfatal Crashpad handler discovery warning. It is preserved in raw evidence; all positive programs compile and run with exit 0.",
-  "baseline_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
-  "evidence_policy": "All earlier probes retain their original 0.439.0–0.439.2 provenance. A 0.439.5 reference identity does not requalify their behavior, compiler targets, or any release status.",
-  "baseline_version": "0.439.5",
+  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "evidence_policy": "Each probe retains its original version and commit. Changing the baseline does not requalify behavior, compiler targets, or any release status.",
+  "baseline_version": "0.439.2",
   "target_evidence": [
-    "docs/evidence/baseline-0.439.5/reference-verification.json"
+    "docs/evidence/baseline-0.439.2/reference-verification.json"
   ],
   "historical_target_evidence": [
-    "docs/evidence/baseline-0.439.2/reference-verification.json"
+    "docs/evidence/baseline-0.439.5/reference-verification.json"
   ]
 }

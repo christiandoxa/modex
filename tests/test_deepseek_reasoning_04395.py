@@ -1,4 +1,4 @@
-"""Compare DeepSeek reasoning wire fields with the pinned 0.439.5 release."""
+"""Compare reasoning fields with both the active and historical releases."""
 
 import hashlib
 import json
@@ -6,7 +6,8 @@ import unittest
 from unittest.mock import patch
 
 import test_super_launch
-from test_cli import MODEX, ORACLE, ORACLE_SHA256
+from test_cli import (MODEX, ORACLE, ORACLE_SHA256, HISTORICAL_04395_ORACLE,
+                      HISTORICAL_04395_ORACLE_SHA256)
 
 
 CASES = {
@@ -105,12 +106,14 @@ def _reasoning_codex():
 class DeepseekReasoning04395Tests(unittest.TestCase):
     def test_reasoning_wire_mapping_matches_release_on_synthetic_loopback(self):
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        self.assertEqual(hashlib.sha256(HISTORICAL_04395_ORACLE.read_bytes()).hexdigest(),
+                         HISTORICAL_04395_ORACLE_SHA256)
         harness = test_super_launch.SuperLaunchTests()
         observed = {}
         with patch.object(test_super_launch, "CODEX", _reasoning_codex()):
             for scenario, (_, effort, thinking) in CASES.items():
                 records = []
-                for binary in (ORACLE, MODEX):
+                for binary in (ORACLE, HISTORICAL_04395_ORACLE, MODEX):
                     result, _, upstream, _ = harness.run_launch(binary=binary, scenario=scenario)
                     self.assertEqual(
                         (result.returncode, result.stdout),
@@ -119,18 +122,23 @@ class DeepseekReasoning04395Tests(unittest.TestCase):
                     )
                     self.assertEqual(len(upstream), 1, scenario)
                     records.append(upstream[0])
-                baseline, modex = records
+                baseline, historical, modex = records
                 self.assertEqual(modex["path"], baseline["path"], scenario)
                 baseline_body = json.loads(bytes.fromhex(baseline["body"]))
+                historical_body = json.loads(bytes.fromhex(historical["body"]))
                 modex_body = json.loads(bytes.fromhex(modex["body"]))
                 self.assertEqual(modex_body, baseline_body, scenario)
                 if scenario == "reasoning-direct-chat-low":
                     self.assertEqual(baseline["path"], "/v1/chat/completions?synthetic=1")
                     self.assertEqual(baseline_body, CASES[scenario][0])
+                    self.assertEqual(historical_body, baseline_body)
                 else:
                     self.assertEqual(baseline["path"], "/v1/chat/completions")
-                    self.assertEqual(baseline_body.get("reasoning_effort"), effort, scenario)
+                    active_effort = "high" if effort == "low" else effort
+                    self.assertEqual(baseline_body.get("reasoning_effort"), active_effort, scenario)
+                    self.assertEqual(historical_body.get("reasoning_effort"), effort, scenario)
                     self.assertEqual(baseline_body.get("thinking"), {"type": thinking}, scenario)
+                    self.assertEqual(historical_body.get("thinking"), {"type": thinking}, scenario)
                 observed[scenario] = baseline_body
         self.assertEqual(len(observed), len(CASES))
 

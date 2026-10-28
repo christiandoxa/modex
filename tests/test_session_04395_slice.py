@@ -1,5 +1,6 @@
 """Focused black-box parity checks for session metadata admission."""
 
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -8,13 +9,15 @@ import unittest
 
 from session_oracle import sandbox_command
 import test_cli
-from test_cli import MODEX, ORACLE
+from test_cli import MODEX, HISTORICAL_04395_ORACLE as ORACLE
 
 
 class SessionMetadataAdmissionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         test_cli.CliTests.setUpClass()
+        if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != test_cli.HISTORICAL_04395_ORACLE_SHA256:
+            raise AssertionError("oracle does not match historical Prodex 0.439.5")
 
     def assert_admission_matches(self, content, expected):
         outputs = []

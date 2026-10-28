@@ -392,8 +392,8 @@
       "docs/evidence/checkpoint12-dependencies.txt"
     ]
   },
-  "baseline_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
-  "baseline_version": "0.439.5",
+  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "baseline_version": "0.439.2",
   "checkpoint13_dependency_audit": {
     "new_application_dependencies": [],
     "new_native_bindings": [],
@@ -417,16 +417,19 @@
       "docs/evidence/checkpoint14-dependencies.txt"
     ]
   },
-  "baseline_evidence_policy": "Descriptions and evidence from earlier checkpoints retain their original version and are not automatically 0.439.5 behavioral verification.",
+  "baseline_evidence_policy": "Each description and artifact retains its original version; 0.439.5 and 0.439.1 observations are not automatically 0.439.2 behavioral verification.",
   "continuation_binding_foundation": {
-    "implementation": "In-process DeepSeek relay hashes credential and endpoint identity, remembers accepted response/session/turn bindings with bounded in-memory maps, and validates them before subsequent dispatch.",
+    "implementation": "In-process DeepSeek relay hashes credential and endpoint identity, remembers accepted response/session/turn bindings with bounded in-memory maps, and validates them before subsequent dispatch. The passthrough SSE observer validates JSON incrementally with existing Mojo standard-library and local helpers.",
     "new_application_dependencies": [],
     "new_native_bindings": [],
     "evidence": [
       "tests/test_continuation_binding_04395.py",
-      "tests/test_gateway_cli.mojo"
+      "tests/test_gateway_cli.mojo",
+      "tests/test_runtime_observer.mojo",
+      "tests/test_runtime_observer_04392.py",
+      "tests/test_runtime_binding_04395_slice.py"
     ],
-    "limitations": "Persistence, multi-profile/account identity, full release/recovery semantics, and oversized passthrough SSE indexing remain unfinished."
+    "limitations": "Persistence, multi-profile/account identity, full release/recovery semantics and general streaming/security equivalence remain unfinished. Numeric-position counters saturate at one billion."
   },
   "process_shutdown_foundation": "The official std.sys._libc.kill wrapper signals only the owned direct Codex child on relay failure; wait is bounded and escalates through the existing direct-child kill/reap path. Descendant process-tree termination remains unverified."
 }

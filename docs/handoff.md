@@ -1,4 +1,47 @@
-# Current work: Prodex 0.439.5 parity and CI
+# Current work: Prodex 0.439.2 parity and CI
+
+The user-specified frozen reference is officially released Prodex 0.439.2 at
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9`. The tag, Linux oracle SHA-256,
+and an isolated full source checkout were verified. Earlier 0.439.5 material
+below is historical and retains its original reference; it does not establish
+0.439.2 parity. All 76 contracts, 456 platform obligations, six blocked
+release qualifications and incomplete inventory remain unchanged.
+
+A combined isolated build restores the 0.439.2 hook version, DeepSeek model
+catalog, flash aliases and low-reasoning mapping. Real synthetic launch and
+request comparisons cover the active release and selected separately pinned
+0.439.5 controls. An incremental passthrough observer now validates and binds
+selected SSE response IDs beyond 4 MiB; live 0.439.2 and supplementary 0.439.5
+checks return 200/503 with one upstream POST. Native and 571 deterministic
+binding-boundary comparisons cover malformed JSON, duplicate keys, long
+numbers, UTF-8 and chunk boundaries. The NBSP data-prefix behavior matches the
+release but differs from the former helper. Numeric-position counters saturate
+at one billion; broader resource and security equivalence remains unverified.
+
+The width-memory harness counts minor faults as events, rather than assuming
+4 KiB per fault, and independently checks anonymous RSS and transient VmHWM
+positive controls. Seven focused fixture/width checks passed locally; the full
+nine-method memory suite passed against the combined build. Five saved samples
+from Fast run `40611230270` replay successfully, but the revised check has not
+yet run on a hosted SHA. The pre-change Fast run on `68446d6` and Full run
+`40610499704` on `3f82f0d` failed their old memory assertion. Fault sensitivity,
+resident-page reuse and peaks below prior VmHWM remain limitations.
+
+The provider characterization reproduces two 0.439.2 gaps with synthetic
+loopback: web-search routes to Anthropic Messages in Prodex but returns 501 in
+Modex; strict-tools configuration is not passed to the beta route or schema
+normalizer. Invalid-input controls agree. See
+`tests/test_provider_tools_04392_characterization.py`; an isolated strict-tool
+prototype is under review and is not included in this checkpoint. The combined
+production build, native units and all 445 Python tests pass on Linux x86-64. No paid traffic or real credentials were used.
+
+The profile-list and artifact-manifest prototypes remain unrelated workspace
+work in progress. The profile prototype cannot safely coordinate with the
+baseline's locking; its `src/main.mojo` connection is excluded from this
+checkpoint. Keep those paths unstaged and preserve them. Evidence for the
+combined focused checks is `docs/evidence/active-baseline-04392-tests.txt`.
+
+# Historical checkpoint: Prodex 0.439.5 parity and CI
 
 Checkpoint `96648d0be537ca1c2dedf8dd3fd75d8e5f910fe7` is verified on
 `origin/main`. It follows `1f43496` (untyped content) and `3f82f0d` (embedded

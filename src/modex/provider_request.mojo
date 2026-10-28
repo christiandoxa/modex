@@ -67,5 +67,5 @@ def canonical_deepseek_model(model: String) -> String:
     if not value or alias == "auto" or alias == "pro":
         return "deepseek-v4-pro"
     if alias == "flash":
-        return "deepseek-flash"
+        return "deepseek-v4-flash"
     return value

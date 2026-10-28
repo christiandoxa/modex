@@ -56,7 +56,7 @@ def main() raises:
         staged = True
     if count < 0:
         raise Error("COUNT must be non-negative")
-    var measure = operation != "input-only"
+    var measure = operation == "width"
     var linear_control = operation == "linear-control"
 
     var value = String()

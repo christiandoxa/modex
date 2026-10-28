@@ -55,13 +55,14 @@ def metadata_for(reference: dict) -> tuple[Path, str, str, str]:
         raise SystemExit("baseline evidence paths must be repository-relative")
     evidence_path = ROOT / evidence_path
     evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-    oracle_sha = evidence.get("linux_oracle_sha256")
-    manifest_sha = evidence.get("sha256sums_sha256")
+    name = Path(reference["oracle"]).name
+    assets = evidence.get("downloaded_asset_sha256", {})
+    oracle_sha = evidence.get("linux_oracle_sha256") or assets.get(name)
+    manifest_sha = evidence.get("sha256sums_sha256") or assets.get("SHA256SUMS")
     if not isinstance(oracle_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", oracle_sha):
         raise SystemExit(f"{evidence_path}: missing pinned Linux oracle SHA-256")
     if not isinstance(manifest_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", manifest_sha):
         raise SystemExit(f"{evidence_path}: missing pinned official SHA256SUMS SHA-256")
-    name = Path(reference["oracle"]).name
     tag = reference["tag"]
     if not NAME.fullmatch(name) or not NAME.fullmatch(tag):
         raise SystemExit("baseline tag or oracle asset name contains unsupported characters")

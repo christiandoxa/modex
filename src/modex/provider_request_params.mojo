@@ -48,9 +48,7 @@ def reasoning_fields(effort: Optional[String]) raises -> String:
     var value = trim_text(effort.value()).lower()
     if value == "max" or value == "xhigh":
         return '{"thinking":{"type":"enabled"},"reasoning_effort":"max"}'
-    if value == "low":
-        return '{"thinking":{"type":"enabled"},"reasoning_effort":"low"}'
-    if value == "high" or value == "medium":
+    if value == "high" or value == "medium" or value == "low":
         return '{"thinking":{"type":"enabled"},"reasoning_effort":"high"}'
     if value == "none" or value == "minimal":
         return '{"thinking":{"type":"disabled"}}'

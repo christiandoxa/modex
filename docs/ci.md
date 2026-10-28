@@ -33,8 +33,10 @@ available. Set `PYTHON` when the required interpreter is not `python3`.
 The reference helper obtains the frozen active release and the explicitly
 historical source snapshots outside the repository, verifies release and
 source identities, and accepts `MODEX_REFERENCE_CACHE` for its cache location.
-`PRODEX_ORACLE` can select an existing active-release executable; its SHA-256
-must match the pinned release. Tests use synthetic credentials and loopback
+`PRODEX_ORACLE` can select an existing 0.439.2 active-release executable; its
+SHA-256 must match the pinned release. CI also acquires the checksum-pinned
+0.439.5 oracle separately for historical regressions, exposed to tests as
+`PRODEX_ORACLE_04395`. Tests use synthetic credentials and loopback
 peers. Required sandbox or reference checks fail if their prerequisites are
 missing; a skip is not a pass.
 

@@ -193,3 +193,14 @@
   tests. Exact-SHA Fast CI run
   [40570794170](https://github.com/christiandoxa/modex/actions/runs/40570794170)
   passed on `62b554cb93c477655581ea93d4f2d78a8b042fc4`.
+
+## Fault events and huge pages
+
+Fast run `40611230270` on `68446d6` and Full run `40610499704` on
+`3f82f0d` failed the prior minor-fault control. On a transparent-huge-page
+host, a single minor fault can account for much more than one base page.
+The revised harness treats faults as events, uses separately required anonymous
+RSS and transient VmHWM controls, and measures the allocation control without
+calling width. Synthetic cases and replay of all five Fast-run measurements
+pass; the revised harness has not yet been validated in a hosted run. Resident
+page reuse, transient peaks below the prior VmHWM and host noise remain limits.

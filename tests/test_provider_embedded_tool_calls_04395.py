@@ -1,4 +1,4 @@
-"""Compare embedded DeepSeek message tool calls with the frozen release."""
+"""Compare embedded DeepSeek message tool calls with 0.439.2 and historical 0.439.5."""
 
 import hashlib
 import json
@@ -6,7 +6,9 @@ from unittest.mock import patch
 import unittest
 
 import test_super_launch
-from test_cli import MODEX, ORACLE, ORACLE_SHA256
+from test_cli import (MODEX, ORACLE as ACTIVE_ORACLE, ORACLE_SHA256 as ACTIVE_ORACLE_SHA256,
+                      HISTORICAL_04395_ORACLE as ORACLE,
+                      HISTORICAL_04395_ORACLE_SHA256 as ORACLE_SHA256)
 from test_provider_catalog_04395 import _codex_with_request
 
 
@@ -16,6 +18,7 @@ def call(name="lookup", call_id="synthetic-call", arguments="{}"):
 
 class EmbeddedToolCalls04395Tests(unittest.TestCase):
     def test_generic_tool_calls_match_release_in_simple_and_non_simple_requests(self):
+        self.assertEqual(hashlib.sha256(ACTIVE_ORACLE.read_bytes()).hexdigest(), ACTIVE_ORACLE_SHA256)
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
         regular = call()
         cases = [
@@ -47,7 +50,7 @@ class EmbeddedToolCalls04395Tests(unittest.TestCase):
                 message["tool_calls"] = expected
             with self.subTest(case=name):
                 captures = []
-                for binary in (ORACLE, MODEX):
+                for binary in (ACTIVE_ORACLE, ORACLE, MODEX):
                     with patch.object(test_super_launch, "CODEX", _codex_with_request(request)):
                         result, records, upstream, state = harness.run_launch(
                             binary=binary, scenario="buffered", model="deepseek-chat"
@@ -58,9 +61,10 @@ class EmbeddedToolCalls04395Tests(unittest.TestCase):
                     body = json.loads(bytes.fromhex(upstream[0]["body"]))
                     self.assertEqual(body["messages"], [message])
                     captures.append(body)
-                self.assertEqual(captures[1], captures[0])
+                self.assertEqual(captures[1:], [captures[0], captures[0]])
 
     def test_paired_output_keeps_embedded_call(self):
+        self.assertEqual(hashlib.sha256(ACTIVE_ORACLE.read_bytes()).hexdigest(), ACTIVE_ORACLE_SHA256)
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
         harness = test_super_launch.SuperLaunchTests()
         for typed in (False, True):
@@ -76,7 +80,7 @@ class EmbeddedToolCalls04395Tests(unittest.TestCase):
             ]
             with self.subTest(typed=typed):
                 captures = []
-                for binary in (ORACLE, MODEX):
+                for binary in (ACTIVE_ORACLE, ORACLE, MODEX):
                     with patch.object(test_super_launch, "CODEX", _codex_with_request(request)):
                         result, records, upstream, state = harness.run_launch(
                             binary=binary, scenario="buffered", model="deepseek-chat"
@@ -87,7 +91,7 @@ class EmbeddedToolCalls04395Tests(unittest.TestCase):
                     body = json.loads(bytes.fromhex(upstream[0]["body"]))
                     self.assertEqual(body["messages"], expected)
                     captures.append(body)
-                self.assertEqual(captures[1], captures[0])
+                self.assertEqual(captures[1:], [captures[0], captures[0]])
 
 
 if __name__ == "__main__":

@@ -50,7 +50,7 @@ def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=
         for name in ("home", "state", "shared", "work"):
             (root / name).mkdir(mode=0o700)
         (root / "state/update-check.json").write_text(
-            '{"source":"GitHub","latest_version":"0.439.5","checked_at":4102444800}'
+            '{"source":"GitHub","latest_version":"0.439.2","checked_at":4102444800}'
         )
         codex = root / "codex"
         codex.write_text("#!" + sys.executable + "\n" + CLIENT)
@@ -95,7 +95,7 @@ class DeepSeekContinuationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-            raise AssertionError("oracle does not match pinned Prodex 0.439.5")
+            raise AssertionError("oracle does not match pinned Prodex 0.439.2")
 
     def test_bound_continuation_ownership_matches_release(self):
         turns = [{"model": "deepseek-chat", "input": "first synthetic turn"},

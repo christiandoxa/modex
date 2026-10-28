@@ -117,8 +117,8 @@ def main() raises:
     for effort, expected in [
         (String("max"), String('{"thinking":{"type":"enabled"},"reasoning_effort":"max"}')),
         ("XHIGH", '{"thinking":{"type":"enabled"},"reasoning_effort":"max"}'),
-        ("low", '{"thinking":{"type":"enabled"},"reasoning_effort":"low"}'),
-        (" LoW ", '{"thinking":{"type":"enabled"},"reasoning_effort":"low"}'),
+        ("low", '{"thinking":{"type":"enabled"},"reasoning_effort":"high"}'),
+        (" LoW ", '{"thinking":{"type":"enabled"},"reasoning_effort":"high"}'),
         ("none", '{"thinking":{"type":"disabled"}}'),
         (" minimal ", '{"thinking":{"type":"disabled"}}'),
     ]:

@@ -11,13 +11,13 @@ from test_deepseek_continuation import buffered_reply, observe_turns
 class ProviderRequestPrepareTests(unittest.TestCase):
     def test_combo_model_matches_release_on_synthetic_loopback(self):
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
-        cases = [("flash", "deepseek-flash"),
+        cases = [("flash", "deepseek-v4-flash"),
                  ("deepseek-flash", "deepseek-flash"),
                  ("deepseek-v4-flash", "deepseek-v4-flash"),
-                 ("combo:flash,auto", "deepseek-flash"),
+                 ("combo:flash,auto", "deepseek-v4-flash"),
                  ("combo:pro;flash", "deepseek-v4-pro"),
                  ("combo: ;AUTO|flash", "deepseek-v4-pro"),
-                 (" combo:\u2003; Flash>pro ", "deepseek-flash"),
+                 (" combo:\u2003; Flash>pro ", "deepseek-v4-flash"),
                  ("combo:; custom-model|flash", "custom-model"),
                  ("COMBO:flash,pro", "COMBO:flash,pro"),
                  ("combo:,,,", "combo:,,,"), ("combo:", "combo:")]

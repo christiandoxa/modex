@@ -61,6 +61,7 @@ UNIT_BUILD_PROGRAMS ?= \
 	test_provider_conversations \
 	test_provider_passthrough \
 	provider_passthrough_driver \
+	test_runtime_observer \
 	test_runtime_recovery \
 	test_quota_handoff_04392 \
 	runtime_recovery_driver \
@@ -134,6 +135,7 @@ UNIT_RUNS ?= \
 	test_provider_rate_limits \
 	test_provider_conversations \
 	test_provider_passthrough \
+	test_runtime_observer \
 	test_runtime_recovery \
 	test_quota_handoff_04392 \
 	test_inspection_cli \

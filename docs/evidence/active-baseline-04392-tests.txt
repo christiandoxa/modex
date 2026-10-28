@@ -1,0 +1,31 @@
+Prodex 0.439.2 active baseline and combined runtime checkpoint
+
+Reference: 72b77478a5198fc5da6b4d2253137f9cdbf43be9
+Linux oracle SHA-256: a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e
+Official tag and a clean isolated source checkout were verified by
+scripts/ci/reference.py. Historical 0.439.5 observations use its independently
+verified 96cef1bf...52a5d59c5 oracle, not the active environment variable.
+
+Combined snapshot validation (Mojo 1.2.0 (2016d0cd), Linux x86-64):
+- Production build and native hook, provider request/parameter/preparation,
+  and observer programs: PASS.
+- 27 CLI/reference/hook/RPC/supplementary release checks: PASS.
+- 15 real Super launch/catalog and combo-model checks: PASS.
+- 2 live active/historical reasoning and model fallback checks: PASS.
+- 4 tool/content regression methods using both release binaries: PASS.
+- 25 active continuation and Gateway CLI methods before observer integration,
+  plus 3 focused continuation controls after integration: PASS.
+- 5 active/supplementary continuation observer and ownership methods: PASS.
+- 7 historical session metadata, whitespace and query methods: PASS.
+- 9 memory suite methods: PASS; the huge-page host replay is not a hosted run.
+- 2 synthetic known-gap characterization methods: PASS, recording mismatches.
+- 571 fixed-seed bounded binding cases: PASS, with the specific release-backed
+  NBSP old-helper difference explicitly asserted.
+- Production std/internal import audit, 49-native/89-Python test census,
+  workflow policy and shell syntax: PASS. ldd links official Mojo runtime and
+  system libraries; no new application dependency or binding was added.
+
+Full combined `make test` in the isolated snapshot: PASS; 445 Python tests
+and native unit programs, no skips. Production dependency and workflow audits
+pass. Inventory incomplete; no contract or release qualification is promoted.
+See docs/handoff.md for open gaps and CI provenance.

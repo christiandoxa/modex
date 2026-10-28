@@ -1,39 +1,43 @@
 # Verified gaps
 
-Complete parity remains unfinished against officially released Prodex 0.439.5 at
-`ac9aad08f25d6dc8cda96463ce2045b40f35f510`. The incomplete inventory retains
+Complete parity remains unfinished against officially released Prodex 0.439.2 at
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9`. The incomplete inventory retains
 76 contracts and 456 platform obligations. All six complete release
 qualifications are explicitly BLOCKED; focused host tests do not establish a
-release PASS. Historical 0.439.0–0.439.2 observations retain their provenance.
+release PASS. The 0.439.5 and 0.439.1 observations below retain their original
+provenance and do not by themselves establish 0.439.2 behavior.
 
-The 0.439.5 two-turn continuation probe now returns 200/503 with one upstream
-POST for both products. The native relay records accepted in-memory ownership
-and compares provider/credential/endpoint identity before another dispatch;
-unknown identifiers and failed upstream requests remain eligible. Persistent
-bindings, multi-account ownership, affinity release, oversized passthrough SSE
-identifier observation, account/profile lifecycle, credential finalization and
-login/quota concurrency remain incomplete. The 0.439.3–0.439.5 catalog and
-authentication additions are explicit incomplete obligations, not inferred passes.
-For an accepted SSE event slightly above 4 MiB containing a response ID, the
-0.439.5 release returns 200/503 for a follow-up with one upstream POST; Modex
-returns 200/200 and sends two. The 4 MiB observer limit remains in place until
-a bounded incremental parser can validate the entire event before binding.
-Reproduce with `tests/test_runtime_binding_04395_slice.py`.
-DeepSeek requests with a missing or null model now match the tested 0.439.5
-default; selected non-string, blank, and combo-alias cases now match as well.
-Broader provider model selection and fallback remain unverified. The
+The 0.439.2 oversized SSE continuation case now binds the response ID: both
+products return 200/503 with one upstream POST. The incremental observer has
+native parser comparisons and selected production controls for malformed JSON,
+duplicate keys, chunk boundaries, UTF-8 and depth. Its numeric-position counters
+saturate at one billion; complete streaming/resource/security equivalence remains
+unverified. Persistent bindings, multi-account ownership, affinity release,
+account/profile lifecycle, credential finalization and login/quota concurrency
+remain incomplete.
+
+Two 0.439.2 synthetic provider observations remain open: web-search requests
+route to Anthropic Messages in the release but Modex returns 501, and strict-tool
+configuration uses the beta route and strict schemas in the release but does
+not reach the active Modex route. Reproduce both with
+`tests/test_provider_tools_04392_characterization.py`; no paid provider traffic
+was used.
+
+DeepSeek requests with a missing, null, non-string or blank model match the
+tested 0.439.2 default. Selected combo aliases match the active release; its
+flash alias differs from the historical 0.439.5 behavior. Broader provider
+model selection and fallback remain unverified. The
 read-only profile-list prototype cannot safely interoperate with the release's
 persistent `flock` files using the available Mojo standard-library APIs, so
 it is not connected to production.
-The tested session metadata admission cases now match the frozen release.
-For a non-object first JSONL record, the release panics while Modex omits the
-session. Broader session behavior and security remain unqualified.
-With an unrelated `.prodex/state.json.backup`, the release lists sessions and
-Modex fails closed. `tests/test_session_state_backup_04395.py` captures both
-outcomes while preserving the backup; state locking and recovery remain open.
-Session query matching also differs for Unicode lowercase expansion and final
-sigma; `tests/test_session_query_04395.py` captures the release and Modex
-outputs alongside matching ordinary-query and metadata controls.
+The tested session metadata admission cases match 0.439.5. For a non-object
+first JSONL record, that release panics while Modex omits the session. With an
+unrelated `.prodex/state.json.backup`, 0.439.5 lists sessions and Modex fails
+closed; `tests/test_session_state_backup_04395.py` captures both outcomes.
+Session query matching also differs from 0.439.5 for Unicode lowercase
+expansion and final sigma; `tests/test_session_query_04395.py` captures those
+results. These observations need separate 0.439.2 verification; broader session
+behavior, state locking, recovery and security remain unqualified.
 
 Checkpoint 15 matches the official 0.439.2 bodyless SSE chunked header
 and final raw wire chunk `0\r\n\r\n` on 204/304, and corrects the buffered

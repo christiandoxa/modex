@@ -6,7 +6,8 @@ from unittest.mock import patch
 import unittest
 
 import test_super_launch
-from test_cli import MODEX, ORACLE, ORACLE_SHA256
+from test_cli import (MODEX, HISTORICAL_04395_ORACLE as ORACLE,
+                      HISTORICAL_04395_ORACLE_SHA256 as ORACLE_SHA256)
 
 
 CODEX_REQUEST = 'body = b"\\x00synthetic\\xff" if passthrough else json.dumps({"model":"deepseek-chat","input":"synthetic prompt","stream":scenario == "stream"},separators=(",",":")).encode()'

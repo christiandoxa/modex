@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
   "inventory_complete": false,
   "counting_policy": "Initial coarse contracts are not the final denominator. Each contract retains all applicable platform obligations. PASS requires reproducible evidence; compile-only, mock-only and unverified results never count. No full parity percentage until inventory completion.",
   "inventory_history": [
@@ -103,6 +103,14 @@
     {
       "date": "2026-10-28",
       "change": "Bare DeepSeek tool-role messages select the first present call_id, tool_call_id or id like 0.439.5 in simple requests. Non-simple mapping remains unchanged; no provider or platform status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Restore the user-specified 0.439.2 baseline. Preserve 0.439.5 observations with their original provenance and retain all contracts and six platform obligations without promoting statuses."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Restore the 0.439.2 hook version, model catalog, flash alias and low-effort mapping. Connect bounded streaming observation for selected oversized SSE response IDs and add release-backed controls. Correct memory-test fault units; keep all existing contracts, six targets and statuses."
     }
   ],
   "contracts": [
@@ -2832,7 +2840,7 @@
         "The production slice requires a clean base and explicit loopback/model/key/options. Complete provider preset routing and custom catalog/config options, real Codex distributions, native Messages, account rotation, TLS and general provider launch remain unverified or unfinished.",
         "All six complete release obligations remain blocked; focused host observations do not qualify a release target.",
         "Buffered >=400 errors share the pinned 4 MiB cap. Non-2xx streamed redirects retain an additional 4 MiB Modex cap; larger redirect streams and complete resource/cancellation parity remain unqualified.",
-        "The identifier guard does not implement hard binding acquisition/conflict resolution or model/credential/session affinity. A synthetic two-turn buffered continuation still differs from the pinned release; see checkpoint4-reference.json. Serialized conversation memory is charged using frozen decoded-value weights; physical retained-byte accounting remains unqualified.",
+        "Selected 0.439.2 two-turn binding controls now match using bounded in-memory credential/endpoint ownership. Persistent and multi-account acquisition, conflict resolution and model/session affinity remain incomplete. Serialized conversation memory is charged using frozen decoded-value weights; physical retained-byte accounting remains unqualified.",
         "Checkpoints 5/9/10/12 qualify UTF-8/six-ASCII path encoding, ordinary backslash separators and whole-dot segments only within admitted numeric-loopback HTTP bases. Broader URL schemes/authorities, transport, redirects, security/resource and non-host behavior remain unqualified.",
         "Checkpoint 9 rejects the arbitrary aggregate 16 MiB stream-state cap. Response state can still grow with provider output. Idle failure before first output and exact postcommit timeout text differ from live 0.439.1; see checkpoint9-timeout-mismatch.json. Narrow source-derived timeout mapping alone is unproven compatibility.",
         "The 0.439.5 single-process synthetic two-turn ownership mismatch is resolved by credential/endpoint identity checks; persistent and multi-account ownership remain unimplemented."
@@ -4200,9 +4208,9 @@
       ]
     }
   ],
-  "previous_baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
-  "baseline_version": "0.439.5",
-  "evidence_policy": "Each trace and artifact retains its listed source commit and checksum. Existing 0.439.0–0.439.2 evidence is historical and is not proof of 0.439.5 behavior unless explicitly recaptured or reverified. Repinning does not promote any contract or platform status.",
+  "previous_baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.2",
+  "evidence_policy": "Each trace and artifact retains its listed source commit and checksum. Comparisons with 0.439.5 or 0.439.1 do not establish 0.439.2 behavior; changing the target does not promote parity statuses.",
   "release_qualification": {
     "x86_64-unknown-linux-gnu": {
       "status": "BLOCKED",
@@ -4255,10 +4263,10 @@
   },
   "historical_baselines": [
     {
-      "version": "0.439.2",
-      "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
-      "evidence": "docs/evidence/baseline-0.439.2/reference-verification.json",
-      "role": "Historical regression; no automatic 0.439.5 qualification."
+      "version": "0.439.5",
+      "commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+      "evidence": "docs/evidence/baseline-0.439.5/reference-verification.json",
+      "role": "Historical comparisons retain their original provenance and do not establish 0.439.2 behavior."
     },
     {
       "version": "0.439.1",

@@ -5,7 +5,7 @@ import json
 import unittest
 
 import test_cli
-from test_cli import MODEX, ORACLE
+from test_cli import MODEX, HISTORICAL_04395_ORACLE as ORACLE
 from test_deepseek_continuation import buffered_reply, observe_turns
 from test_local_rewrite import SYNTHETIC_API_KEY
 import test_super_launch
@@ -15,8 +15,10 @@ class Release04395Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         test_cli.CliTests.setUpClass()
+        if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != test_cli.HISTORICAL_04395_ORACLE_SHA256:
+            raise AssertionError("oracle does not match historical Prodex 0.439.5")
 
-    def test_hook_initialize_uses_current_release_client_version(self):
+    def test_hook_initialize_uses_each_release_client_version(self):
         probe = test_super_launch.SuperLaunchTests('runTest')
         for binary in (ORACLE, MODEX):
             with self.subTest(binary=str(binary)):
@@ -27,7 +29,8 @@ class Release04395Tests(unittest.TestCase):
                                   if record['kind'] == 'request' and record['method'] == 'initialize')
                 self.assertEqual(initialize['params'], {
                     'capabilities': {'experimentalApi': True},
-                    'clientInfo': {'name': 'prodex-hook-trust', 'version': '0.439.5'},
+                    'clientInfo': {'name': 'prodex-hook-trust',
+                                   'version': '0.439.5' if binary == ORACLE else '0.439.2'},
                 })
 
     def test_bodyless_chat_and_ordinary_response_lengths(self):

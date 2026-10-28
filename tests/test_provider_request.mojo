@@ -24,10 +24,10 @@ def main() raises:
     for model, expected in [
         (String(" pro "), String("deepseek-v4-pro")),
         ("AUTO", "deepseek-v4-pro"),
-        ("Flash", "deepseek-flash"),
+        ("Flash", "deepseek-v4-flash"),
         (" default ", "default"),
         (" 東京🧭 ", "東京🧭"),
-        ("combo: , flash > pro", "deepseek-flash"),
+        ("combo: , flash > pro", "deepseek-v4-flash"),
         ("combo:pro,flash", "deepseek-v4-pro"),
         ("combo: ;東京🧭|flash", "東京🧭"),
         ("COMBO:flash", "COMBO:flash"),
@@ -50,7 +50,7 @@ def main() raises:
         '{"model":"  ","input":"hello"}',
     ]:
         check(source, default_model_expected)
-    check('{"model":"combo:flash>pro"}', '{"body":{"model":"deepseek-flash","stream":false,"messages":[{"role":"user","content":""}]},"messages":[{"role":"user","content":""}],"response_metadata":null}')
+    check('{"model":"combo:flash>pro"}', '{"body":{"model":"deepseek-v4-flash","stream":false,"messages":[{"role":"user","content":""}]},"messages":[{"role":"user","content":""}],"response_metadata":null}')
     check('{"model":"deepseek-flash","input":"hello"}', '{"body":{"model":"deepseek-flash","stream":false,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
     check('{"model":"deepseek-v4-flash","input":"hello"}', '{"body":{"model":"deepseek-v4-flash","stream":false,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
 

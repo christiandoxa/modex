@@ -57,7 +57,7 @@ if [[ "${MODEX_CI_ARTIFACT_PRODUCER:-0}" == 1 ]]; then
     run_logged build-input-check "$PYTHON" scripts/ci/check-build-inputs.py
 fi
 run_logged focused-build make build unit
-run_logged focused-python-01651 env -u PRODEX_ORACLE -u PRODEX_GATEWAY_ORACLE "$PYTHON" scripts/ci/run-unittest.py test_cli_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py test_unicode_case_properties.py test_local_rewrite_01651_oracle.py
+run_logged focused-python-01651 env -u PRODEX_ORACLE -u PRODEX_GATEWAY_ORACLE "$PYTHON" scripts/ci/run-unittest.py test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py test_unicode_case_properties.py test_local_rewrite_01651_oracle.py
 run_logged focused-relay-python "$PYTHON" scripts/ci/run-unittest.py test_local_rewrite.py test_loopback_server.py
 if ! "$PYTHON" scripts/ci/reference.py oracle 0.439.2 >"$EVIDENCE_DIR/oracle-path-04392.txt" 2>"$EVIDENCE_DIR/reference-04392.log"; then
     cat "$EVIDENCE_DIR/reference-04392.log" >&2

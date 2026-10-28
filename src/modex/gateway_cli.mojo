@@ -39,6 +39,8 @@ def _label(name: String) -> String:
 def parse_gateway_arguments(args: List[String], executable: String) raises -> GatewayOptions:
     var options = GatewayOptions("127.0.0.1:0", "", "", Optional[String](), False, False, False, False)
     var seen = List[String]()
+    var conflict_first = String()
+    var conflict_second = String()
     var index = 2
     while index < len(args):
         var argument = args[index]
@@ -50,7 +52,13 @@ def parse_gateway_arguments(args: List[String], executable: String) raises -> Ga
         var value_option = name == "--listen" or name == "--provider" or name == "--base-url" or name == "--api-key"
         var switch_option = name == "--smart-context" or name == "--presidio" or name == "--no-presidio"
         if not value_option and not switch_option:
-            raise session_cli_error("unexpected argument '" + name + "' found", executable + " gateway [OPTIONS]")
+            var usage = executable + " gateway"
+            if seen:
+                for prior in seen:
+                    usage += " " + _label(prior)
+            else:
+                usage += " [OPTIONS]"
+            raise session_cli_error("unexpected argument '" + name + "' found", usage)
         if name in seen:
             raise session_cli_error("the argument '" + _label(name) + "' cannot be used multiple times", executable + " gateway [OPTIONS]")
         seen.append(name)
@@ -77,11 +85,29 @@ def parse_gateway_arguments(args: List[String], executable: String) raises -> Ga
             if "=" in argument:
                 raise session_cli_error("unexpected value '" + String(argument.split("=", maxsplit=1)[1]) + "' for '" + name + "' found; no more were expected", executable + " gateway " + name)
             if name == "--smart-context": options.smart_context = True
-            elif name == "--presidio": options.presidio = True
-            else: options.no_presidio = True
+            elif name == "--presidio":
+                options.presidio = True
+                if options.no_presidio and not conflict_second:
+                    conflict_first = "--no-presidio"
+                    conflict_second = name
+            else:
+                options.no_presidio = True
+                if options.presidio and not conflict_second:
+                    conflict_first = "--presidio"
+                    conflict_second = name
         index += 1
-    if options.presidio and options.no_presidio:
-        raise session_cli_error("the argument '--presidio' cannot be used with '--no-presidio'", executable + " gateway --presidio")
+    if conflict_second:
+        var usage = executable + " gateway"
+        var skipped_conflict = False
+        for name in seen:
+            if name == conflict_second and not skipped_conflict:
+                skipped_conflict = True
+                continue
+            usage += " " + _label(name)
+        raise session_cli_error(
+            "the argument '" + conflict_first + "' cannot be used with '" + conflict_second + "'",
+            usage,
+        )
     return options^
 
 

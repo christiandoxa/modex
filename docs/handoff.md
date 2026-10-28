@@ -34,6 +34,12 @@ peers. Unmatched IDs, mixed history and representative array outputs also have
 real-process controls. Other message shapes and provider behavior remain
 unqualified; see `docs/evidence/baseline-0.165.1/anthropic-buffered.md`.
 
+Gateway Presidio conflict diagnostics now follow tested option order and
+parsing precedence. Process cases also check usage after value options without
+echoing synthetic API keys. The precedence cases match the historical 0.439.2
+control; gateway startup and other combinations remain unverified. See
+`docs/evidence/baseline-0.165.1/cli-observations.md`.
+
 `tests/test_cli_01651.py` compares selected root-help forms and leading version
 flags through both production executables in isolated homes. Both cases passed
 on Linux x86-64 with the verified binary. This does not establish complete CLI

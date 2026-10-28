@@ -22,6 +22,15 @@ isolated comparisons verify exit status, stdout, stderr and no home mutations.
 Bare update still fails closed; update execution and untested combinations are
 not qualified.
 
+Gateway parser precedence now matches the pinned 0.165.1 process for both
+Presidio conflict orders, valid interleaved options, duplicate flags, unknown
+options and help ordering. `tests/test_gateway_cli_01651.py` covers 15 isolated
+process-precedence cases and seven unknown-option cases after separate and
+attached values, including synthetic API keys without echoing them. The 15
+parser-precedence cases also matched the pinned historical 0.439.2 binary
+locally. Gateway startup, provider attempts, filesystem deltas and untested
+argument combinations remain unqualified.
+
 For `help update`, three unknown subcommands containing `=` now retain the
 whole argument in the diagnostic, matching the 0.165.1 executable and the
 historical 0.439.2 executable. The isolated checks compare exit status, output,

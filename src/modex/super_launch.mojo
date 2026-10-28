@@ -181,6 +181,25 @@ def _config(mut args: List[String], key: String, value: String):
     args.append(key + "=" + value)
 
 
+# TOML permits literal TAB here, matching the pinned model override spelling.
+def _toml_model_literal(value: String) -> String:
+    var encoded = quote_json(value)
+    var result = String()
+    var escaped = False
+    for character in encoded.codepoints():
+        var code = Int(character)
+        if escaped:
+            result += chr(9) if code == 116 else "\\" + chr(code)
+            escaped = False
+        elif code == 92:
+            escaped = True
+        elif code == 127:
+            result += "\\u007f"
+        else:
+            result += chr(code)
+    return result
+
+
 def _exec(binary: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64) raises -> Int:
     var environment = _child_environment(home)
     var version = capture_with_env(binary, [String("--version")], environment, "Codex version probe")
@@ -202,7 +221,7 @@ def _exec(binary: String, home: String, model: String, upstream: String, key: St
         _config(args, "model_catalog_json", quote_json(home + "/prodex-deepseek-model-catalog.json"))
         _config(args, "projects", "{" + quote_json(String(cwd())) + "={trust_level=\"trusted\"}}")
         _config(args, "model_provider", "\"prodex-deepseek\"")
-        _config(args, "model", quote_json(model))
+        _config(args, "model", _toml_model_literal(model))
         _config(args, "model_providers.prodex-deepseek.name", "\"DeepSeek\"")
         _config(args, "model_providers.prodex-deepseek.base_url", quote_json("http://" + address + "/v1"))
         _config(args, "model_providers.prodex-deepseek.wire_api", "\"responses\"")

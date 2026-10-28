@@ -21,6 +21,8 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(script.index("run_logged build-input-check"), historical)
         self.assertLess(script.index("run_logged focused-build make build unit"), historical)
         self.assertLess(script.index("run_logged focused-python-01651"), historical)
+        active_tests = script[script.index("run_logged focused-python-01651"):historical]
+        self.assertIn("test_super_model_toml_01651.py", active_tests)
         self.assertIn("test_ci_parity_baseline.py", script)
         self.assertIn("test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py", script)
         self.assertIn("test_session_query_01651.py test_unicode_case_properties.py", script)
@@ -39,6 +41,8 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(script.index("run_logged build-input-check"), historical)
         self.assertLess(script.index("run_logged focused-build make build"), historical)
         self.assertLess(script.index("run_logged focused-python-01651"), historical)
+        active_tests = script[script.index("run_logged focused-python-01651"):historical]
+        self.assertIn("test_super_model_toml_01651.py", active_tests)
         self.assertIn("test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py", script)
         self.assertNotIn("test_unicode_case_properties.py", script)
         self.assertIn("reference.py source 0.439.2", script)

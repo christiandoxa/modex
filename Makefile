@@ -68,6 +68,7 @@ UNIT_BUILD_PROGRAMS ?= \
 	test_inspection_cli \
 	test_gateway_cli \
 	test_super_cli \
+	test_super_model_toml \
 	local_rewrite_driver \
 	test_json \
 	test_json_float \
@@ -141,6 +142,7 @@ UNIT_RUNS ?= \
 	test_inspection_cli \
 	test_gateway_cli \
 	test_super_cli \
+	test_super_model_toml \
 	test_json \
 	test_json_float \
 	test_sha256 \

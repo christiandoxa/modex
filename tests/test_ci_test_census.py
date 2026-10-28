@@ -13,6 +13,11 @@ SPEC.loader.exec_module(CENSUS)
 MAKEFILE = (ROOT / "Makefile").read_text(encoding="utf-8")
 RUNNER = (ROOT / "scripts/ci/run-unittest.py").read_text(encoding="utf-8")
 PROBE = "test_provider_sse_wire"
+RUNNER_SPEC = importlib.util.spec_from_file_location(
+    "modex_test_runner", ROOT / "scripts/ci/run-unittest.py"
+)
+RUNNER_DISCOVERY = importlib.util.module_from_spec(RUNNER_SPEC)
+RUNNER_SPEC.loader.exec_module(RUNNER_DISCOVERY)
 
 
 def mutate_entry(makefile: str, variable: str, operation: str) -> str:
@@ -37,6 +42,16 @@ class NativeTestCensusTests(unittest.TestCase):
         self.assertEqual(failures, [])
         self.assertEqual(native_count, len(list((ROOT / "tests").glob("test_*.mojo"))))
         self.assertGreater(python_count, 0)
+
+    def test_current_reference_model_toml_module_is_discovered(self):
+        tests = RUNNER_DISCOVERY.discover_tests(
+            ["test_super_model_toml_01651.py"], require_each_pattern=True
+        )
+
+        self.assertEqual(len(tests), 2)
+        self.assertTrue(
+            all(test.__class__.__module__ == "test_super_model_toml_01651" for test in tests)
+        )
 
     def test_duplicate_or_omitted_native_build_is_reported(self):
         for operation, expected in (("duplicate", "found 2"), ("omit", "found 0")):

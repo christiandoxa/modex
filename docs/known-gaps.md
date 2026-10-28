@@ -8,6 +8,12 @@ release PASS. All 0.439.x observations below retain their original provenance an
 by themselves establish 0.165.1 behavior. The inherited inventory and its
 source traces have not yet been fully revalidated against 0.165.1.
 
+The production Super model override matches the pinned app-server argv for a
+literal TAB. Prodex emits raw LF/CR and other controls inside a quoted value;
+these are rejected by the TOML parser, so Modex keeps escaped, parseable values.
+This difference and its safety controls are documented in
+`docs/evidence/baseline-0.165.1/super-model-toml-tab.md`.
+
 Selected local-relay malformed syntax, method forwarding, GET response framing,
 HEAD controls, final response status phrases, WebSocket fallback and
 truncated-request behavior now match selected 0.165.1 controls. HEAD 204/304

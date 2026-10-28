@@ -4,6 +4,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import subprocess
 import sys
@@ -28,7 +29,7 @@ if args == ["app-server", "--help"]:
     print("Codex app-server")
     raise SystemExit(0)
 if "app-server" in args and "--stdio" in args:
-    save({"kind":"preflight", "pid":os.getpid()})
+    save({"kind":"preflight", "pid":os.getpid(), "args":args})
     for line in sys.stdin:
         request = json.loads(line)
         if "id" not in request: continue
@@ -128,6 +129,24 @@ raise SystemExit(0 if response.status == 200 else 1)
 
 def event_names(payload):
     return [line[7:] for line in bytes.fromhex(payload).decode().splitlines() if line.startswith("event: ")]
+
+
+def normalized_app_server_args(arguments):
+    normalized = []
+    for argument in arguments:
+        argument = re.sub(r"/tmp/modex-super-launch-[^/]+", "/tmp/modex-super-launch-<root>", argument)
+        argument = re.sub(r"(?<=\.prodex-overlay-)[^/]+", "<overlay>", argument)
+        argument = re.sub(r"(http://127\.0\.0\.1:)\d+", r"\1<port>", argument)
+        normalized.append(argument)
+    return normalized
+
+
+def app_server_config(arguments):
+    return "\n".join(
+        arguments[index + 1]
+        for index, argument in enumerate(arguments[:-1])
+        if argument == "-c"
+    )
 
 
 class SuperLaunchTests(unittest.TestCase):

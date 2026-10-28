@@ -8,6 +8,12 @@ comparisons below are historical and do not establish 0.165.1 behavior.
 The active baseline and oracle routing now select 0.165.1; the full inventory
 and production parity against this release remain unfinished.
 
+The Super model override now matches the tested 0.165.1 app-server argument
+for a literal TAB, with quote, backslash, Unicode and injection controls. The
+reference emits several other raw controls in invalid single-line TOML; Modex
+retains parseable escapes for them. See
+`docs/evidence/baseline-0.165.1/super-model-toml-tab.md`.
+
 The local response writer now matches the pinned TinyHTTP final-status reason
 table. Production controls cover 200, 204, 206, 302, 404, 418, 422 and 500
 against 0.165.1 and historical 0.439.2. The HEAD 204/304 terminal-chunk and

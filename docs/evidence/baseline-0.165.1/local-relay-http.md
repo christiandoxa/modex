@@ -27,11 +27,16 @@ Invalid targets take precedence over WebSocket fallback and oversized declared
 or chunked-body errors; an 8,192-byte target is accepted and an 8,193-byte
 target is rejected. Raw fragment targets rejected by the shared parser now map
 to the release's invalid-target JSON on the relay path; direct shared-parser
-calls retain the same syntax error. Truncated bodies without `Expect` still
-close without a response. With invalid targets and `Expect: 100-continue`, both
-binaries return the final 400 directly for valid and oversized declared body
-lengths, without an interim 100 response. A two-connection production control
-gets 400 for the invalid target, then serves a valid request with 200. The
+calls retain the same syntax error. Truncated declared-length bodies without
+`Expect` still close without a response. Invalid-target chunked requests return
+400 before body capture: controls cover a header-only half-close, truncated
+chunk data, a missing zero-chunk terminator, and a delayed nonempty trailer.
+The delayed control confirms both binaries reply before the body fragment
+arrives. Prodex keeps that client socket open after its 400; Modex closes it.
+With invalid targets and `Expect: 100-continue`, both binaries return the final
+400 directly for valid and oversized declared body lengths, without an interim
+100 response. A two-connection production control gets 400 for the invalid
+target, then serves a valid request with 200. The
 relay opts into a 65,536-byte request-line cap so the 8,192-byte target can fit
 with its method and HTTP version; the shared parser's default 8,192-byte cap
 remains unchanged. The rebuilt native parser suite passes all 15 tests,
@@ -86,6 +91,23 @@ response and make one upstream POST for each; the upstream receives no `Upgrade`
 header. Modex treats these as ordinary framed HTTP requests and strips the
 hop-by-hop upgrade metadata.
 
+Chunked request controls cover a plain body with an empty trailer section and
+an extension on the data chunk; both return 200 and make one upstream POST in
+Prodex and Modex. With a nonempty valid `X-Trace` trailer or a malformed
+`X-Trace synthetic` trailer, Prodex returns 502 `gateway request capture
+failed` without an upstream request. Modex previously accepted the valid
+trailer and returned 200, and mapped the malformed trailer to 400. The local
+relay now opts into rejecting nonempty trailers during capture, matching the
+release; the shared parser's default still accepts valid trailers for its
+other callers.
+
+The source trace reaches TinyHTTP's `Request::capture`, which reads the
+`Transfer-Encoding: chunked` body through `chunked_transfer::Decoder`. The
+decoder is pinned at 1.5.0 in Prodex's `Cargo.lock`; after the zero-size chunk,
+it requires an immediate empty CRLF and treats trailer fields as a decode
+error. This does not change Modex's support for chunk extensions or empty
+trailer sections.
+
 With both `Connection: Upgrade` and `Upgrade: h2c`, the pinned Prodex returns
 200 and makes one upstream POST after the synthetic client half-closes after its
 body. Modex keeps this case fail-closed: it returns 502 `gateway request capture
@@ -102,5 +124,21 @@ full raw HTTP matrix; all 22 local-rewrite tests and 20 shared loopback-server
 tests passed. The production dependency audit and `git diff --check` passed.
 These controls use synthetic loopback traffic and no real credentials or paid
 services.
+
+The raw oracle matrix also checks trailer boundaries split across sends. A
+fragmented nonempty trailer is rejected after its first byte; an empty trailer
+terminator split between CR and LF is accepted. Half-closed missing terminators
+return 502 instead of closing without a response. Invalid-target chunked
+controls return 400 before delayed or truncated bodies are read. For complete
+requests without `Connection: close`, Prodex leaves the client socket open
+after these 400 and 502 responses and after an accepted 200; Modex closes it
+after each response, a separate connection-lifecycle mismatch.
+
+Validation for the chunked-trailer change: `rtk make build`, both focused Mojo
+drivers, the two-test 0.165.1 oracle suite, all 22 local-rewrite tests and all
+20 shared loopback-server tests passed. The loopback suite confirms default
+shared-parser trailer support. The production dependency audit,
+`python3 -m py_compile tests/test_local_rewrite_01651_oracle.py` and
+`git diff --check` passed.
 
 Broader framing, timeout and security behavior remain unverified or different.

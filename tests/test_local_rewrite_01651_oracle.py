@@ -120,7 +120,7 @@ class UpstreamHandler(BaseHTTPRequestHandler):
 
 
 def make_codex(path: Path):
-    source = r'''import base64, http.client, json, os, re, socket, sys
+    source = r'''import base64, http.client, json, os, re, socket, sys, threading, time
 from urllib.parse import urlsplit
 
 args = sys.argv[1:]
@@ -149,10 +149,41 @@ if not base:
 target = urlsplit(base)
 connection = socket.create_connection((target.hostname, target.port), timeout=5)
 connection.settimeout(5)
-connection.sendall(bytes.fromhex(os.environ["PROBE_REQUEST_HEX"]))
-if os.environ.get("PROBE_HALF_CLOSE") == "1":
-    connection.shutdown(socket.SHUT_WR)
-result = {"status": None, "reason": "", "headers": [], "body_base64": "", "wire_body_base64": "", "wire_body_probe_complete": False, "read_error": ""}
+request_parts = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_REQUEST_PARTS_BASE64", "[]"))]
+request_parts_sent = [0]
+first_request_part_finished = threading.Event()
+half_close = os.environ.get("PROBE_HALF_CLOSE") == "1"
+request_part_delay = int(os.environ.get("PROBE_REQUEST_PART_DELAY_MS", "0")) / 1000
+writer_thread = None
+if request_parts:
+    def send_request_parts():
+        for index, part in enumerate(request_parts):
+            if index:
+                time.sleep(request_part_delay)
+            try:
+                connection.sendall(part)
+            except OSError:
+                if index == 0:
+                    first_request_part_finished.set()
+                return
+            request_parts_sent[0] += 1
+            if index == 0:
+                first_request_part_finished.set()
+        if half_close:
+            try:
+                connection.shutdown(socket.SHUT_WR)
+            except OSError:
+                pass
+    writer_thread = threading.Thread(target=send_request_parts, daemon=True)
+    writer_thread.start()
+    first_request_part_finished.wait(5)
+else:
+    connection.sendall(base64.b64decode(os.environ["PROBE_REQUEST_BASE64"]))
+    request_parts_sent[0] = 1
+    if half_close:
+        connection.shutdown(socket.SHUT_WR)
+request_started = time.monotonic()
+result = {"status": None, "reason": "", "headers": [], "body_base64": "", "wire_body_base64": "", "wire_body_probe_complete": False, "read_error": "", "connection_closed": False, "request_parts_sent_at_response": 0, "response_elapsed_ms": 0}
 try:
     request_method = os.environ.get("PROBE_REQUEST_METHOD")
     response = http.client.HTTPResponse(connection, method=request_method)
@@ -169,6 +200,18 @@ try:
         finally:
             connection.settimeout(5)
     body = response.read()
+    result["request_parts_sent_at_response"] = request_parts_sent[0]
+    result["response_elapsed_ms"] = int((time.monotonic() - request_started) * 1000)
+    if os.environ.get("PROBE_CHECK_CLOSE") == "1":
+        connection.settimeout(0.5)
+        try:
+            result["connection_closed"] = connection.recv(1) == b""
+        except socket.timeout:
+            pass
+        except OSError:
+            result["connection_closed"] = True
+        finally:
+            connection.settimeout(5)
     result.update({
         "status": response.status,
         "reason": response.reason,
@@ -213,6 +256,113 @@ def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses", method
         + b"".join(name.encode() + b": " + value.encode() + b"\r\n" for name, value in all_headers)
         + b"\r\n" + body
     )
+
+
+def chunked_request_case(
+    name,
+    *,
+    extension=b"",
+    trailer=b"",
+    trailer_terminated=True,
+    target=b"/v1/responses",
+    half_close=False,
+    check_close=False,
+    expected_connection_closed=None,
+):
+    invalid_target = target != b"/v1/responses"
+    rejected = bool(trailer) or not trailer_terminated
+    chunk_line = format(len(REQUEST_BODY), "X").encode("ascii") + extension
+    chunked_body = chunk_line + b"\r\n" + REQUEST_BODY + b"\r\n0\r\n" + trailer
+    if trailer_terminated:
+        chunked_body += b"\r\n"
+    if invalid_target:
+        expected_status = 400
+        expected_reason = "Bad Request"
+        expected_body = INVALID_REQUEST_TARGET_BODY
+        upstream = False
+    else:
+        expected_status = 502 if rejected else 200
+        expected_reason = "Bad Gateway" if rejected else "OK"
+        expected_body = b"gateway request capture failed" if rejected else RESPONSES_RESPONSE
+        upstream = not rejected
+    case = {
+        "name": name,
+        "request": (
+            b"POST " + target + b" HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Content-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n"
+            + chunked_body
+        ),
+        "expected_status": expected_status,
+        "expected_reason": expected_reason,
+        "expected_body": expected_body,
+        "expected_headers": {} if not upstream else {
+            "content-type": "application/json; charset=utf-8",
+            "content-length": str(len(RESPONSES_RESPONSE)),
+        },
+        "compare_response_body": upstream,
+        "expected_upstream_method": "POST",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": upstream,
+        "upstream": upstream,
+        "half_close": half_close,
+        "check_close": check_close,
+    }
+    if expected_connection_closed is not None:
+        case["expected_connection_closed"] = expected_connection_closed
+    return case
+
+
+def fragmented_chunked_request_case(name, *, trailer):
+    case = chunked_request_case(name, trailer=trailer, check_close=True)
+    trailer_start = case["request"].rfind(b"0\r\n") + 3
+    case["request_parts"] = [
+        case["request"][:trailer_start],
+        case["request"][trailer_start:trailer_start + 1],
+        case["request"][trailer_start + 1:],
+    ]
+    case["request_part_delay_ms"] = 500
+    case["expected_request_parts_sent"] = 2
+    case["expected_connection_closed"] = {"oracle": False, "modex": True}
+    return case
+
+
+def fragmented_empty_chunked_request_case(name):
+    case = chunked_request_case(name, check_close=True)
+    empty_trailer_start = case["request"].rfind(b"0\r\n") + 3
+    case["request_parts"] = [
+        case["request"][:empty_trailer_start],
+        b"\r",
+        b"\n",
+    ]
+    case["request_part_delay_ms"] = 500
+    case["expected_request_parts_sent"] = 3
+    case["expected_connection_closed"] = {"oracle": False, "modex": True}
+    return case
+
+
+def delayed_invalid_target_chunked_request_case(name, *, body, half_close=False, fragmented=True):
+    target = b"http://example.test/v1/responses"
+    header = (
+        b"POST " + target + b" HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+        b"Transfer-Encoding: chunked\r\n\r\n"
+    )
+    return {
+        "name": name,
+        "request": header + body,
+        "request_parts": [header, body] if fragmented else [],
+        "request_part_delay_ms": 500 if fragmented else 0,
+        "expected_request_parts_sent": 1,
+        "expected_connection_closed": {"oracle": False, "modex": True},
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "expected_upstream_method": "POST",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": False,
+        "upstream": False,
+        "half_close": half_close,
+        "check_close": True,
+    }
 
 
 def invalid_target_case(name, target):
@@ -407,6 +557,71 @@ CASES = (
     ordinary_http_upgrade_case("h2c_without_connection_upgrade", "h2c"),
     ordinary_http_upgrade_case("mixed_case_h2c_without_connection_upgrade", "H2C"),
     ordinary_http_upgrade_case("other_protocol_without_connection_upgrade", "example/1"),
+    chunked_request_case("chunked_request_with_empty_trailers"),
+    chunked_request_case("chunk_extension_without_trailers", extension=b";synthetic=yes"),
+    chunked_request_case(
+        "nonempty_chunked_trailer_rejected",
+        trailer=b"X-Trace: synthetic\r\n",
+    ),
+    chunked_request_case(
+        "malformed_chunked_trailer_rejected",
+        trailer=b"X-Trace synthetic\r\n",
+    ),
+    chunked_request_case(
+        "truncated_nonempty_chunked_trailer_rejected",
+        trailer=b"X-Trace: partial",
+        trailer_terminated=False,
+        half_close=True,
+        check_close=True,
+    ),
+    chunked_request_case(
+        "truncated_empty_chunked_terminator_rejected",
+        trailer_terminated=False,
+        half_close=True,
+        check_close=True,
+    ),
+    chunked_request_case(
+        "oversized_chunked_trailer_rejected",
+        trailer=b"X-Pad: " + b"x" * 65537 + b"\r\n",
+        check_close=True,
+        expected_connection_closed={"oracle": False, "modex": True},
+    ),
+    chunked_request_case(
+        "invalid_target_precedes_valid_chunked_trailer",
+        target=b"http://example.test/v1/responses",
+        trailer=b"X-Trace: synthetic\r\n",
+        check_close=True,
+        expected_connection_closed={"oracle": False, "modex": True},
+    ),
+    chunked_request_case(
+        "invalid_target_precedes_malformed_chunked_trailer",
+        target=b"http://example.test/v1/responses",
+        trailer=b"X-Trace synthetic\r\n",
+        check_close=True,
+        expected_connection_closed={"oracle": False, "modex": True},
+    ),
+    delayed_invalid_target_chunked_request_case(
+        "invalid_target_precedes_delayed_chunked_trailer",
+        body=(format(len(REQUEST_BODY), "X").encode("ascii") + b"\r\n" + REQUEST_BODY
+              + b"\r\n0\r\nX-Trace: synthetic\r\n\r\n"),
+    ),
+    delayed_invalid_target_chunked_request_case(
+        "invalid_target_precedes_truncated_chunk_data",
+        body=b"5\r\nab",
+        half_close=True,
+        fragmented=False,
+    ),
+    delayed_invalid_target_chunked_request_case(
+        "invalid_target_precedes_missing_chunk_terminator",
+        body=b"0\r\n",
+        half_close=True,
+        fragmented=False,
+    ),
+    fragmented_chunked_request_case(
+        "fragmented_nonempty_chunked_trailer_rejected",
+        trailer=b"X-Trace: synthetic\r\n",
+    ),
+    fragmented_empty_chunked_request_case("fragmented_empty_chunked_terminator_accepted"),
     {
         "name": "truncated_declared_body",
         "request": b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 10\r\n\r\nx",
@@ -607,9 +822,15 @@ def run_probe(binary: Path, case, upstream: Upstream):
             "LANG": "C.UTF-8",
             "LC_ALL": "C.UTF-8",
             "PRODEX_CODEX_BIN": str(codex),
-            "PROBE_REQUEST_HEX": case["request"].hex(),
+            "PROBE_REQUEST_BASE64": base64.b64encode(case["request"]).decode("ascii"),
+            "PROBE_REQUEST_PARTS_BASE64": json.dumps(
+                [base64.b64encode(part).decode("ascii") for part in case.get("request_parts", [])],
+                separators=(",", ":"),
+            ),
+            "PROBE_REQUEST_PART_DELAY_MS": str(case.get("request_part_delay_ms", 0)),
             "PROBE_REQUEST_METHOD": case["request"].split(b" ", 1)[0].decode("ascii"),
             "PROBE_HALF_CLOSE": "1" if case.get("half_close") else "0",
+            "PROBE_CHECK_CLOSE": "1" if case.get("check_close") else "0",
             "PROBE_FOLLOWUP_REQUEST_HEX": case.get("followup_request", b"").hex(),
             "PROBE_RESULT_PATH": str(result_path),
         }
@@ -683,6 +904,15 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                         if "expected_reason" in case:
                             self.assertEqual(response["reason"], case["expected_reason"], label)
                         self.assertEqual(response["read_error"], case.get("expected_read_error", ""), label)
+                        if "expected_request_parts_sent" in case:
+                            self.assertEqual(
+                                response["request_parts_sent_at_response"],
+                                case["expected_request_parts_sent"],
+                                label,
+                            )
+                        if case.get("check_close"):
+                            expected_close = case.get("expected_connection_closed", {}).get(label, True)
+                            self.assertEqual(response["connection_closed"], expected_close, label)
                         if "expected_followup_status" in case:
                             self.assertEqual(response["followup_status"], case["expected_followup_status"], label)
                             self.assertTrue(response["followup_body"], label)

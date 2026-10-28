@@ -175,7 +175,7 @@ struct LoopbackHTTPConnection(Movable):
             return True
         raise Error("loopback HTTP peer check failed")
 
-    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False) raises -> LoopbackHTTPRequest:
+    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False) raises -> LoopbackHTTPRequest:
         if self.fd < 0 or self.done or self.request_read:
             raise Error("loopback HTTP connection is closed")
         if max_body_bytes < 0 or max_body_bytes > HTTP_MAX_BODY_LIMIT:
@@ -200,10 +200,13 @@ struct LoopbackHTTPConnection(Movable):
             raise Error("invalid HTTP request target")
         var body_start = header_end + 4
         var body = List[UInt8]()
+        if validate_request_target and reject_chunked_trailers and head.chunked and not request_target_valid(head.target):
+            self.request_read = True
+            return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
         if head.expect_continue:
             _send_all(self.fd, _bytes("HTTP/1.1 100 Continue\r\n\r\n"), deadline)
         if head.chunked:
-            body = self._read_chunked(body_start, max_body_bytes, deadline, wire_limit, validate_request_target and not request_target_valid(head.target))
+            body = self._read_chunked(body_start, max_body_bytes, deadline, wire_limit, validate_request_target and not request_target_valid(head.target), reject_chunked_trailers)
         elif head.length >= 0:
             if head.length > max_body_bytes:
                 raise Error("oversized HTTP request body")
@@ -306,7 +309,7 @@ struct LoopbackHTTPConnection(Movable):
                 raise Error("loopback HTTP request read failed")
             sleep(0.001)
 
-    def _read_chunked(mut self, start: Int, max_body_bytes: Int, deadline: Float64, wire_limit: Int, invalid_target_before_body_limit: Bool = False) raises -> List[UInt8]:
+    def _read_chunked(mut self, start: Int, max_body_bytes: Int, deadline: Float64, wire_limit: Int, invalid_target_before_body_limit: Bool = False, reject_trailers: Bool = False) raises -> List[UInt8]:
         var output = List[UInt8]()
         var cursor = start
         var trailer_start: Int
@@ -346,6 +349,25 @@ struct LoopbackHTTPConnection(Movable):
             cursor = chunk_end + 2
         var trailer_bytes = 0
         cursor = trailer_start
+        if reject_trailers:
+            while len(self.input) < cursor + 1:
+                try:
+                    self._receive(deadline, wire_limit)
+                except:
+                    raise Error("truncated HTTP chunk trailer terminator")
+            if self.input[cursor] != 13:
+                raise Error("HTTP request trailers are unsupported")
+            while len(self.input) < cursor + 2:
+                try:
+                    self._receive(deadline, wire_limit)
+                except:
+                    raise Error("truncated HTTP chunk trailer terminator")
+            if self.input[cursor + 1] != 10:
+                raise Error("malformed HTTP chunk trailer terminator")
+            cursor += 2
+            if len(self.input) != cursor:
+                raise Error("pipelined HTTP requests are unsupported")
+            return output^
         while True:
             var trailer_scan = cursor
             var end = _line_end(self.input, trailer_scan)

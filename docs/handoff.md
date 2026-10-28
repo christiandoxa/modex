@@ -156,6 +156,12 @@ still rejects upgrade headers by default. With `Connection: Upgrade` plus
 `Upgrade: h2c`, Prodex returns 200 and forwards a POST after a half-close, while
 Modex returns 502 without an upstream request. Keep this fail-closed framing
 difference documented; Modex does not implement upgraded streams through EOF.
+For chunked requests, the relay now rejects tested nonempty trailers with 502
+and no upstream POST, while retaining ordinary chunked bodies, extensions and
+empty trailers. Shared-parser trailer support remains enabled by default.
+Invalid-target chunked controls return 400 before delayed or truncated bodies.
+The reference can leave complete request sockets open where Modex closes them;
+connection reuse remains an open lifecycle mismatch.
 Large request heads still differ; the relay remains serial and does not
 implement WebSockets. See `docs/evidence/baseline-0.165.1/local-relay-http.md`.
 

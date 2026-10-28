@@ -45,6 +45,23 @@
 
 ## GitHub width-memory threshold
 
+- The staged harness failed Fast run
+  [40603196899](https://github.com/christiandoxa/modex/actions/runs/40603196899)
+  and Full run [40603202733](https://github.com/christiandoxa/modex/actions/runs/40603202733)
+  on `0267116`; the other 428 Full tests passed. The Fast artifact shows that
+  large Tifinagh width samples gained 1.28–1.43 MiB of total peak RSS, but
+  anonymous RSS grew 4 KiB and minor faults increased by one. File-backed
+  pages accounted for most of the resident growth. The transient control
+  instead gained about 2.1 MiB of anonymous RSS and roughly 514 minor faults.
+  Both runs uploaded detailed measurements. Local copies are retained under
+  `/tmp/modex-ci-failure-40603196899/` and `/tmp/modex-ci-failure-40603202733/`.
+- A follow-up checks anonymous-residency growth and minor-fault page equivalents
+  independently, with the existing allowance applied to each and a transient
+  positive control required for both. Local tests and replay of both hosted
+  artifacts passed; hosted validation is pending. The metrics can miss reused
+  resident allocator pages, huge pages change fault-to-byte ratios, and minor
+  faults can also count file or code pages. They do not prove allocation-free
+  execution.
 - The revised `/proc` harness failed Full run
   [40597916331](https://github.com/christiandoxa/modex/actions/runs/40597916331)
   on `610236a`. Tifinagh width growth was 3,342,336 bytes against a 2,392,064

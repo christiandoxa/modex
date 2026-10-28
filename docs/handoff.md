@@ -38,8 +38,17 @@ before and after each operation in the same process and records VmHWM,
 minor faults and optional memory-map diagnostics. A touched 4-byte-per-unit
 control is freed before the second sample. In a clean local snapshot the
 control exceeded the unchanged bound for all five patterns, and width growth
-was zero; a 96 MiB-parent run also passed. These measures cannot detect
-allocations that reuse resident pages, and hosted stability remains unverified.
+was zero; a 96 MiB-parent run also passed. Fast run `40603196899` and Full
+run `40603202733` on `0267116` nevertheless failed the width RSS check; the
+other 428 Full tests passed. The new diagnostics show Tifinagh width's hosted
+increase was mostly file-backed: anonymous RSS grew 4 KiB and minor faults by
+one, while total RSS grew around 1.3 MiB. The 4-byte transient control grew
+about 2.1 MiB in anonymous RSS and incurred about 514 minor faults. The next
+harness checks anonymous-residency and minor-fault growth separately, with a
+transient positive control for each. Both passed locally and when replayed on
+the two hosted artifacts; the new harness still needs hosted validation. It
+can miss allocations that reuse resident pages, and huge pages can change the
+relationship between faults and resident bytes.
 Full run `40591839335` on `663926f` also failed the earlier Tifinagh check,
 measuring 3,125,248 bytes against a 2,658,304-byte bound.
 

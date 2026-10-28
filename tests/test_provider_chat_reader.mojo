@@ -70,6 +70,24 @@ def main() raises:
     var native_events = collect_anthropic_completed(valid_native)
     assert_true('"finish_reason":"stop"' in native_events[len(native_events) - 1])
 
+    var second_search = (
+        anthropic_search_to_result()
+        .replace('"index":0', '"index":2')
+        .replace('"index":1', '"index":3')
+        .replace("search_1", "search_2")
+    )
+    var multi_text_start = text_start.replace('"index":2', '"index":4')
+    var multi_text_delta = text_delta.replace('"index":2', '"index":4')
+    var multi_text_stop = text_stop.replace('"index":2', '"index":4')
+    var multi_search_events = collect_anthropic_completed(
+        message_start + search_result + second_search + multi_text_start
+        + multi_text_delta + multi_text_stop + message_delta + message_stop
+    )
+    var multi_search_response = multi_search_events[len(multi_search_events) - 1]
+    assert_true('"id":"search_1"' in multi_search_response)
+    assert_true('"id":"search_2"' in multi_search_response)
+    assert_true('"text":"Found it."' in multi_search_response)
+
     var before_stop = message_start + search_result + text_start + text_delta + text_stop
     var sequence_delta = 'data: {"type":"message_delta","delta":{"stop_reason":"stop_sequence","stop_sequence":"synthetic"},"usage":{"output_tokens":5}}\n\n'
     var sequence_events = collect_anthropic_completed(before_stop + sequence_delta + message_stop)

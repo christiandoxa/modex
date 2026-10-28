@@ -13,8 +13,8 @@ The checksum-verified 0.165.1 binary and Modex matched on Linux x86-64. The
 native reader unit covers these cases as well. The separately pinned 0.439.2
 regression remains historical.
 
-This is limited to the tested single-search stream shape. Other event orders,
-metadata and error conditions, WebSockets, and non-Linux targets remain
+The initial web-search control covered one search/result pair. Other event
+orders, metadata and error conditions, WebSockets, and non-Linux targets remain
 unverified; no provider contract is promoted to PASS.
 
 The release also ignores unknown Anthropic event types. A synthetic future event
@@ -42,3 +42,15 @@ and emits later text deltas. Modex now matches full normalized events when the
 initial field is nonempty, empty, missing, or numeric. The old 0.439.2
 characterization was updated after reproducing the same behavior; other content
 block shapes and event orders remain unverified.
+
+A two-search stream with sequential `server_tool_use`/`web_search_tool_result`
+pairs at indexes 0/1 and 2/3, followed by text at index 4, now matches both the
+0.165.1 release and historical 0.439.2 through real Super dispatch. The test
+compares the Anthropic request path and body, complete normalized event
+sequences, query/source order, final text and HTTP status. Both searches use a
+synthetic loopback upstream, synthetic keys, and isolated HOME, state, and work
+directories. This qualifies the tested serial shape only. Interleaved search
+calls/results and mixed server-side search with user-function calls remain
+unverified. The mixed request path also remains unsupported: Modex requires one
+`web_search_preview` request tool and does not translate function declarations
+to Anthropic `input_schema` values.

@@ -54,6 +54,7 @@ struct DeepSeekChatState:
     var anthropic_output_tokens: UInt64
     var anthropic_phase: Int
     var anthropic_text_index: Optional[UInt64]
+    var anthropic_active_search_index: Optional[UInt64]
     var anthropic_result_index: Optional[UInt64]
     var request_metadata: String
     var conversation_snapshot: Optional[String]
@@ -87,6 +88,7 @@ struct DeepSeekChatState:
         self.anthropic_output_tokens = 0
         self.anthropic_phase = 0
         self.anthropic_text_index = Optional[UInt64]()
+        self.anthropic_active_search_index = Optional[UInt64]()
         self.anthropic_result_index = Optional[UInt64]()
         self.request_metadata = request_metadata
         self.conversation_snapshot = Optional[String]()
@@ -203,11 +205,15 @@ struct DeepSeekChatState:
             var block_index = index.value()
             var block_type = doc.string(doc.get(block, "type"))
             if block_type == "server_tool_use" and doc.string(doc.get(block, "name")) == "web_search":
-                if self.anthropic_phase != 1 or block_index != 0:
+                if self.anthropic_phase != 1 and self.anthropic_phase != 5:
                     raise Error("Anthropic web-search block is out of order")
                 _only_fields(doc, block, ["type", "id", "name", "input"], "web-search tool use")
-                if len(self.anthropic_searches) != 0 or self.anthropic_text_index:
-                    raise Error("Anthropic stream has an unsupported tool-use order")
+                if (
+                    self.anthropic_text_index
+                    or self.anthropic_search_index(block_index) >= 0
+                    or (self.anthropic_result_index and block_index <= self.anthropic_result_index.value())
+                ):
+                    raise Error("Anthropic web-search block is out of order")
                 var input = doc.get(block, "input")
                 _only_fields(doc, input, ["query"], "web-search input")
                 var query = doc.get(input, "query")
@@ -243,20 +249,29 @@ struct DeepSeekChatState:
                     + ',"arguments":""}}]},"finish_reason":null}]}'
                 )
             if block_type == "web_search_tool_result":
-                if self.anthropic_phase != 3 or block_index != 1:
+                if (
+                    self.anthropic_phase != 3
+                    or not self.anthropic_active_search_index
+                    or block_index <= self.anthropic_active_search_index.value()
+                ):
                     raise Error("Anthropic web-search result block is out of order")
                 _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
+                var active_search = self.anthropic_search_index(self.anthropic_active_search_index.value())
+                if active_search < 0 or doc.string(doc.get(block, "tool_use_id")) != self.anthropic_searches[active_search].id:
+                    raise Error("Anthropic web-search result does not match active tool use")
                 self.anthropic_result_index = Optional[UInt64](block_index)
                 self.anthropic_phase = 4
                 return self.finish_anthropic_search(doc, block)
             if block_type == "text":
                 if not (
                     self.anthropic_phase == 1
-                    or (self.anthropic_phase == 5 and block_index == 2)
+                    or self.anthropic_phase == 5
                 ):
                     raise Error("Anthropic text block is out of order")
                 _only_fields(doc, block, ["type", "text"], "text block")
-                if self.anthropic_text_index:
+                if self.anthropic_text_index or (
+                    self.anthropic_result_index and block_index <= self.anthropic_result_index.value()
+                ):
                     raise Error("Anthropic text block is invalid or repeated")
                 self.anthropic_text_index = Optional[UInt64](block_index)
                 self.anthropic_phase = 6
@@ -322,13 +337,18 @@ struct DeepSeekChatState:
             var block_index = index.value()
             var search = self.anthropic_search_index(block_index)
             if search >= 0:
-                if self.anthropic_phase != 2:
+                if (
+                    self.anthropic_phase != 2
+                    or not self.anthropic_active_search_index
+                    or self.anthropic_active_search_index.value() != block_index
+                ):
                     raise Error("Anthropic web-search block stop is out of order")
                 _ = _web_search_item(self.anthropic_searches[search], False)
                 self.anthropic_phase = 3
                 return List[String]()
             if self.anthropic_result_index and self.anthropic_result_index.value() == block_index and self.anthropic_phase == 4:
                 self.anthropic_phase = 5
+                self.anthropic_active_search_index = Optional[UInt64]()
                 return List[String]()
             if self.anthropic_text_index and self.anthropic_text_index.value() == block_index and self.anthropic_phase == 6:
                 self.anthropic_phase = 7
@@ -380,11 +400,12 @@ struct DeepSeekChatState:
             return self.complete_tools()
         if kind == "message_stop":
             _only_fields(doc, doc.root, ["type"], "message_stop event")
-            if (
-                (self.anthropic_phase != 1 and self.anthropic_phase != 7 and self.anthropic_phase != 8)
-                or len(self.anthropic_searches) > 1
-                or (len(self.anthropic_searches) == 1 and (not self.anthropic_searches[0].done or not self.anthropic_text_index))
-            ):
+            if self.anthropic_phase != 1 and self.anthropic_phase != 7 and self.anthropic_phase != 8:
+                raise Error("Anthropic stream ended outside the supported web-search response shape")
+            for search in self.anthropic_searches:
+                if not search.done:
+                    raise Error("Anthropic stream ended outside the supported web-search response shape")
+            if self.anthropic_searches and not self.anthropic_text_index:
                 raise Error("Anthropic stream ended outside the supported web-search response shape")
             var emit_created = self.anthropic_phase == 8 or len(self.anthropic_searches) > 0
             self.anthropic_phase = 9
@@ -403,6 +424,7 @@ struct DeepSeekChatState:
         var input = doc.get(block, "input")
         var input_json = serialize_json(doc, input) if input >= 0 and len(doc.nodes[input].children) != 0 else String()
         var search = AnthropicWebSearch(index, id, input_json, "[]", False)
+        self.anthropic_active_search_index = Optional[UInt64](index)
         var item = _web_search_item(search, True)
         var position = 0
         while position < len(self.anthropic_searches) and self.anthropic_searches[position].output_index < search.output_index:

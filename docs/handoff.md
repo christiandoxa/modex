@@ -239,6 +239,18 @@ calls, including selected interleaving and late-delta cases, matching complete
 0.165.1 events in real-process loopback tests. Mixed web-search/function streams
 remain unverified. See `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
 
+The production Anthropic stream parser now matches two sequential server-side
+search/result pairs followed by text against both 0.165.1 and historical
+0.439.2. The provider request path and full normalized event order match in
+isolated real-process runs. Mixed server-side search plus user-function calls
+remain a concrete gap: `validate_deepseek_anthropic_request` requires exactly
+one `web_search_preview`, `_tools` rejects translated function tools instead of
+producing Anthropic `input_schema` declarations, and the stream parser constrains
+search/result/text ordering and indexes. The shared request validator and
+`_validate_anthropic_buffered_response` also require an explicit decision for
+buffered mixed responses before the request contract can be widened. See
+`docs/evidence/baseline-0.165.1/anthropic-stream.md`.
+
 The production Anthropic stream parser now maps a tested function `tool_use`
 with split JSON fragments to the same 0.165.1 Responses events. Several invalid
 stop sequences remain explicitly different; image blocks remain unsupported.

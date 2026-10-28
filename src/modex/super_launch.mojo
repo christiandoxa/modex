@@ -270,6 +270,7 @@ def _codex_version_parts(value: String) -> List[UInt64]:
     var parts = List[UInt64]()
     var number = UInt64(0)
     var digits = 0
+    var component_start = True
     for character in value.codepoints():
         var code = Int(character)
         if 48 <= code <= 57:
@@ -278,12 +279,17 @@ def _codex_version_parts(value: String) -> List[UInt64]:
                 return parts^
             number = number * 10 + digit
             digits += 1
+            component_start = False
         elif code == 46:
             if digits == 0 or len(parts) == 2:
                 return parts^
             parts.append(number)
             number = 0
             digits = 0
+            component_start = True
+        elif code == 43 and component_start:
+            # Rust's unsigned parser permits one leading plus per component.
+            component_start = False
         else:
             return parts^
     if digits == 0 or len(parts) != 2:
@@ -297,7 +303,10 @@ def _exec(binary: String, home: String, model: String, upstream: String, key: St
     var probe_environment = _codex_probe_environment(environment)
     var version = _capture_codex_probe(binary, [String("--version")], probe_environment, "Codex version probe")
     if not version.status.exit_code or version.status.exit_code.value() != 0:
-        raise Error("Codex version probe failed")
+        raise Error(
+            "Codex version probe failed for " + binary + " with status "
+            + String(_child_exit_code(version.status)) + ". " + CODEX_INSTALL_GUIDANCE
+        )
     var version_output = String(from_utf8_lossy=Span(version.stdout)) + "\n" + String(from_utf8_lossy=Span(version.stderr))
     if _ascii_lower(version_output).find("codex") < 0:
         raise Error("Codex CLI at " + binary + " did not report a recognizable version. " + CODEX_INSTALL_GUIDANCE)

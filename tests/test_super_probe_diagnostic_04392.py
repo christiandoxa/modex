@@ -1,7 +1,6 @@
-"""Oversized Codex probe diagnostics against the pinned 0.439.2 release."""
+"""Codex probe diagnostics against the pinned 0.439.2 release."""
 
 import hashlib
-import re
 import unittest
 
 import test_cli
@@ -23,14 +22,12 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
     def test_oversized_version_probe_matches_reference_context(self):
         observations = []
         for binary in (test_cli.ORACLE, launch_support.MODEX):
-            result, records, upstream, state = launch_support.SuperLaunchTests().run_launch(
+            result, records, upstream, state = launch_support.run_private_launch(
                 binary,
                 scenario="exit-seven",
                 environment_overrides={"MODEX_TEST_CODEX_VERSION_OVERSIZE": "1"},
             )
-            diagnostic = re.sub(
-                rb"/tmp/modex-super-launch-[^/]+/codex", b"<CODEX>", result.stderr
-            ).splitlines()[-1:]
+            diagnostic = launch_support.normalized_codex_path(result.stderr).splitlines()[-1:]
             self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
             self.assertEqual(
                 [record["args"] for record in records if record["kind"] == "probe"],
@@ -48,14 +45,12 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
     def test_oversized_app_server_help_probe_matches_reference_context(self):
         observations = []
         for binary in (test_cli.ORACLE, launch_support.MODEX):
-            result, records, upstream, state = launch_support.SuperLaunchTests().run_launch(
+            result, records, upstream, state = launch_support.run_private_launch(
                 binary,
                 scenario="exit-seven",
                 environment_overrides={"MODEX_TEST_CODEX_HELP_OVERSIZE": "1"},
             )
-            diagnostic = re.sub(
-                rb"/tmp/modex-super-launch-[^/]+/codex", b"<CODEX>", result.stderr
-            ).splitlines()[-1:]
+            diagnostic = launch_support.normalized_codex_path(result.stderr).splitlines()[-1:]
             self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
             self.assertEqual(
                 [record["args"] for record in records if record["kind"] == "probe"],
@@ -73,6 +68,8 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
     def test_minimum_codex_version_remains_04392_compatible(self):
         cases = (
             ({"MODEX_TEST_CODEX_VERSION": "codex-cli 0.153.1"}, False),
+            ({"MODEX_TEST_CODEX_VERSION": "codex 0.+153.2"}, True),
+            ({"MODEX_TEST_CODEX_VERSION": "codex 0.153.+2"}, True),
             ({
                 "MODEX_TEST_CODEX_VERSION": "Codex CLI 0.153.2!",
                 "MODEX_TEST_CODEX_VERSION_STDERR": "1",
@@ -82,7 +79,7 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
             with self.subTest(environment=environment):
                 diagnostics = []
                 for binary in (test_cli.ORACLE, launch_support.MODEX):
-                    result, records, upstream, state = launch_support.SuperLaunchTests().run_launch(
+                    result, records, upstream, state = launch_support.run_private_launch(
                         binary,
                         scenario="exit-seven",
                         environment_overrides=environment,
@@ -99,8 +96,27 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
                         self.assertEqual([record["kind"] for record in records], ["probe"])
                         self.assertIn(b"requires 0.153.2 or newer", result.stderr)
                         diagnostics.append(
-                            re.sub(rb"/tmp/modex-super-launch-[^/]+/codex", b"<CODEX>", result.stderr)
+                            launch_support.normalized_codex_path(result.stderr)
                             .splitlines()[-1]
                         )
                 if not accepted:
                     self.assertEqual(diagnostics[0], diagnostics[1])
+
+    def test_nonzero_version_probe_matches_04392(self):
+        diagnostics = []
+        for binary in (test_cli.ORACLE, launch_support.MODEX):
+            result, records, upstream, state = launch_support.run_private_launch(
+                binary,
+                scenario="exit-seven",
+                environment_overrides={"MODEX_TEST_CODEX_VERSION_EXIT": "7"},
+            )
+            self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
+            self.assertEqual([record["kind"] for record in records], ["probe"])
+            self.assertEqual(records[0]["args"], ["--version"])
+            self.assertEqual((upstream, state["leftovers"]), ([], []))
+            diagnostics.append(
+                launch_support.normalized_codex_path(result.stderr)
+                .splitlines()[-1]
+            )
+        self.assertEqual(diagnostics[0], diagnostics[1])
+        self.assertIn(b"Codex version probe failed for <CODEX> with status 7.", diagnostics[0])

@@ -30,20 +30,27 @@ peer comparison against the active 0.165.1 Linux oracle verifies both probe
 arguments, the selected capability-failure diagnostic, no RPC/provider start,
 and overlay cleanup. The version check now enforces the frozen `0.153.2`
 minimum: a synthetic `0.153.1` stops before app-server help, while exact-minimum
-`0.153.2` from stderr is accepted. The final low-version diagnostic and
-oversized version/help capture errors match 0.165.1. Prodex prints startup
-progress before the low-version error; Modex does not, so only the final error
-line matches. Wrapper/hash qualification, other malformed version inputs,
-full startup/security behavior and other targets remain gaps. See
+`0.153.2` from stderr and components with leading `+` are accepted. A version
+probe exit 7 also preserves the oracle's path/status/guidance diagnostic. The
+tests use a private nested temp directory; oversized version/help capture
+errors still match. Prodex prints startup progress before the low-version
+error; Modex does not, so only the final error line matches. Wrapper/hash
+qualification, other malformed version inputs, full startup/security behavior
+and other targets remain gaps. Hosted Fast CI run `40788779491` exposed a
+diagnostic normalizer that assumed the fixture lived directly under `/tmp`;
+normalization now handles nested private temp roots, covered by both 0.165.1
+and 0.439.2 production-oracle tests. See
 `docs/evidence/baseline-0.165.1/super-codex-probes.md`.
 
 The pinned 0.439.2 Codex probe also enforces the `0.153.2` minimum. Its real
 oracle comparison now covers below-minimum rejection, exact-minimum acceptance
-from stderr, and oversized `--version`/`app-server --help` diagnostics. The
-below-minimum final error matches, but Prodex progress output remains absent in
-Modex. These Linux x86-64 synthetic cases do not establish broader Super
-parity. See `docs/evidence/baseline-0.439.2/super-codex-minimum-version.md`
-and `docs/evidence/baseline-0.439.2/super-codex-probe-output-limit.md`.
+from stderr, leading-plus components, version-probe exit 7, and oversized
+`--version`/`app-server --help` diagnostics under a private nested temp
+directory. The below-minimum final error matches, but Prodex progress output
+remains absent in Modex. These Linux x86-64 synthetic cases do not establish
+broader Super parity. See
+`docs/evidence/baseline-0.439.2/super-codex-minimum-version.md` and
+`docs/evidence/baseline-0.439.2/super-codex-probe-output-limit.md`.
 
 The local relay now matches selected 0.165.1 `Expect: 100-continue` ordering,
 including unsupported values, declared body limits, HTTP/1.0 interim responses,

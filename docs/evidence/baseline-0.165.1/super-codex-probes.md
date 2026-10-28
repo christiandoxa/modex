@@ -22,8 +22,15 @@ The frozen source requires Codex `0.153.2` or newer in
 `mojo/prodex_core/codex_auth_headers.mojo`. Modex now rejects synthetic
 `0.153.1` before app-server help and accepts exact-minimum `0.153.2` from
 stderr with a case-insensitive Codex label and trailing punctuation. The
+noninitial `+` forms `0.+153.2` and `0.153.+2` are accepted like Rust's unsigned
+integer parser. A version probe that exits 7 also matches Prodex's status,
+path, and install guidance. These cases run under a mode-0700 temp directory
+nested below a private temp root, covering diagnostic path normalization. The
 final below-minimum diagnostic matches. Prodex prints startup progress before
 that error; Modex does not, so earlier progress output remains different.
+Hosted Fast CI run `40788779491` failed when the old normalizer assumed the
+fixture was directly under `/tmp`; the shared normalizer now covers nested
+private roots and the 0.439.2 regression suite checks the same path layout.
 
 Oversized synthetic `--version` and `app-server --help` output also produce
 the same path-wrapped capture diagnostics in both binaries. The executable

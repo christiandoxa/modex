@@ -10,9 +10,16 @@ x86-64 oracle and Modex with one isolated synthetic Codex executable. A
 `0.153.1` response stops after `--version` and matches the oracle's final
 minimum-version diagnostic. An exact-minimum `0.153.2` response in stderr,
 with a case-insensitive label and trailing punctuation, reaches app-server
-help and the synthetic launch in both binaries. Prodex emits startup progress
-before the rejection; Modex does not, so the test compares only the final
-error line. No provider request or temporary overlay remains.
+help and the synthetic launch in both binaries. Component forms `0.+153.2`
+and `0.153.+2` are also accepted. When `--version` exits 7, Modex matches
+Prodex's status, path, and install guidance. The tests run in a mode-0700 temp
+directory nested below a private temp root. Prodex emits startup progress
+before rejection; Modex does not, so the low-version check compares only the
+final error line. No provider request or temporary overlay remains.
+
+Hosted Fast CI run `40788779491` exposed a diagnostic normalizer that assumed
+fixtures were directly under `/tmp`. The shared normalizer now handles nested
+private temp roots; this suite exercises that layout.
 
 Reproduce after `make build` with:
 

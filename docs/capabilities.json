@@ -217,7 +217,7 @@
         "native hook-trust RPC against synthetic app-server peers, per-RPC deadline, line-size guard and stderr suppression",
         "socketpair MSG_NOSIGNAL hook request channel handles closed stdin without killing parent; synthetic child is killed/reaped",
         "production Super version and app-server help probes clear CODEX_HOME and five TEST_CODEX_* variables; active 0.165.1 comparison captures both probe environments",
-        "Super startup enforces the frozen Codex CLI minimum 0.153.2; real-process oracle checks cover 0.165.1 and 0.439.2 below-minimum rejection, exact-boundary acceptance, stderr parsing and bounded-output diagnostics",
+        "Super startup enforces the frozen Codex CLI minimum 0.153.2; real-process oracle checks cover 0.165.1 and 0.439.2 below-minimum rejection, exact-boundary and leading-plus acceptance, stderr parsing, nonzero-probe diagnostics, and bounded-output diagnostics under nested private temp paths",
         "production clean-home launch exit 0/7, hook failure and relay death cleanup; private overlays preserve shared sessions and retain unexpected state; idle relay exits on parent-channel EOF",
         "Checkpoint 11: hook-trust receive checks an expired deadline before consuming buffered input and uses the pinned pre-receive diagnostic; registered native unit and isolated RPC integration tests pass. This does not establish actual goal progress."
       ],

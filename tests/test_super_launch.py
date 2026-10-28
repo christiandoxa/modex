@@ -1,5 +1,6 @@
 """Production Super CLI against isolated synthetic Codex and loopback providers."""
 import hashlib
+from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -32,6 +33,8 @@ if args == ["--version"]:
         raise SystemExit(0)
     version = os.environ.get("MODEX_TEST_CODEX_VERSION", "codex-cli 0.216.0")
     print(version, file=sys.stderr if os.environ.get("MODEX_TEST_CODEX_VERSION_STDERR") else sys.stdout)
+    if os.environ.get("MODEX_TEST_CODEX_VERSION_EXIT"):
+        raise SystemExit(int(os.environ["MODEX_TEST_CODEX_VERSION_EXIT"]))
     raise SystemExit(0)
 if args == ["app-server", "--help"]:
     save({"kind":"probe", "args":args,
@@ -150,11 +153,34 @@ def event_names(payload):
 def normalized_app_server_args(arguments):
     normalized = []
     for argument in arguments:
-        argument = re.sub(r"/tmp/modex-super-launch-[^/]+", "/tmp/modex-super-launch-<root>", argument)
+        argument = re.sub(r"(?:/[^/\s]+)*/modex-super-launch-[^/\s]+", "/tmp/modex-super-launch-<root>", argument)
         argument = re.sub(r"(?<=\.prodex-overlay-)[^/]+", "<overlay>", argument)
         argument = re.sub(r"(http://127\.0\.0\.1:)\d+", r"\1<port>", argument)
         normalized.append(argument)
     return normalized
+
+
+def normalized_codex_path(output):
+    return re.sub(
+        rb"(?:/[^/\s]+)*/modex-super-launch-[^/\s]+/codex",
+        b"<CODEX>",
+        output,
+    )
+
+
+@contextmanager
+def private_tempdir():
+    with tempfile.TemporaryDirectory(prefix="modex-probe-private-tmpdir-") as root:
+        directory = Path(root) / "private"
+        directory.mkdir(mode=0o700)
+        yield directory
+
+
+def run_private_launch(binary=MODEX, **kwargs):
+    with private_tempdir() as temporary_directory:
+        return SuperLaunchTests().run_launch(
+            binary, temporary_directory=temporary_directory, **kwargs
+        )
 
 
 def app_server_config(arguments):
@@ -169,8 +195,9 @@ class SuperLaunchTests(unittest.TestCase):
     def run_launch(
         self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat",
         super_arguments=(), environment_overrides=None, base_path="/v1", sub_agent=False,
+        temporary_directory=None,
     ):
-        with tempfile.TemporaryDirectory(prefix="modex-super-launch-") as directory:
+        with tempfile.TemporaryDirectory(prefix="modex-super-launch-", dir=temporary_directory) as directory:
             root = Path(directory)
             for name in ("home", "state", "shared", "work"):
                 (root / name).mkdir(mode=0o700)

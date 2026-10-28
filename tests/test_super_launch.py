@@ -153,7 +153,7 @@ def event_names(payload):
 def normalized_app_server_args(arguments):
     normalized = []
     for argument in arguments:
-        argument = re.sub(r"(?:/[^/\s]+)*/modex-super-launch-[^/\s]+", "/tmp/modex-super-launch-<root>", argument)
+        argument = re.sub(r"(?:/[^/\r\n]+)*/modex-super-launch-[^/\r\n]+", "/tmp/modex-super-launch-<root>", argument)
         argument = re.sub(r"(?<=\.prodex-overlay-)[^/]+", "<overlay>", argument)
         argument = re.sub(r"(http://127\.0\.0\.1:)\d+", r"\1<port>", argument)
         normalized.append(argument)
@@ -162,7 +162,7 @@ def normalized_app_server_args(arguments):
 
 def normalized_codex_path(output):
     return re.sub(
-        rb"(?:/[^/\s]+)*/modex-super-launch-[^/\s]+/codex",
+        rb"(?:/[^/\r\n]+)*/modex-super-launch-[^/\r\n]+/codex",
         b"<CODEX>",
         output,
     )
@@ -170,7 +170,7 @@ def normalized_codex_path(output):
 
 @contextmanager
 def private_tempdir():
-    with tempfile.TemporaryDirectory(prefix="modex-probe-private-tmpdir-") as root:
+    with tempfile.TemporaryDirectory(prefix="modex probe private tmpdir ") as root:
         directory = Path(root) / "private"
         directory.mkdir(mode=0o700)
         yield directory

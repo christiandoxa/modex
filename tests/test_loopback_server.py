@@ -169,6 +169,13 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         self.assertEqual(status(response), 200)
         self.assertIn('"body_hex":"626f6479"', stdout)
 
+    def test_default_parser_response_stays_http_1_1_for_http_1_0_request(self):
+        process, client = start("echo")
+        client.sendall(b"GET /version HTTP/1.0\r\n\r\n")
+        response, stdout = finish(process, client)
+        self.assertTrue(response.startswith(b"HTTP/1.1 200 OK\r\n"), response)
+        self.assertIn('"target":"/version"', stdout)
+
     def test_default_parser_keeps_http_1_1_interim_for_http_1_0_request(self):
         process, client = start("echo")
         client.sendall(

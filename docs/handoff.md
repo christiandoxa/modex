@@ -7,6 +7,17 @@ select 0.165.1 and must be reconciled with those instructions. Until then,
 0.165.1 results do not establish current parity. All six release targets and
 unverified security behavior remain in the denominator.
 
+Buffered local-relay responses now retain a valid HTTP/1.0 request version,
+including selected malformed-header and fragment-target errors. A version
+token before an invalid suffix also selects the matching final status-line
+version; absent/invalid versions keep HTTP/1.1. The real-path regression
+matches 16 selected response and streaming controls against 0.439.2, with
+0.439.1 historical controls. Default Server/Date headers, non-token method
+admission, and the HEAD 204/304 SSE terminal chunk remain explicit gaps. SSE
+streaming stays incremental and uses HTTP/1.1 response framing.
+
+# Historical work: Prodex 0.165.1 regression and CI
+
 The following checkpoint notes describe earlier work targeting Prodex 0.165.1, commit
 `10ae15b5d1806302b60f051e4e6fec788044f4c2`. The official Linux binary and
 manifest were checked against SHA256SUMS and the GitHub asset digests; see
@@ -25,9 +36,9 @@ qualification, full startup/security behavior and other targets remain gaps.
 See `docs/evidence/baseline-0.165.1/super-codex-probes.md`.
 
 The pinned 0.439.2 Codex probe also wraps bounded-output failures with the
-Codex executable path. Modex now matches its oversized `--version` diagnostic
-and stops before app-server or provider work. This is one Linux x86-64
-synthetic case and does not establish broader Super parity. See
+Codex executable path. Modex now matches oversized `--version` and
+`app-server --help` diagnostics and stops before RPC or provider work. These
+Linux x86-64 synthetic cases and does not establish broader Super parity. See
 `docs/evidence/baseline-0.439.2/super-codex-probe-output-limit.md`.
 
 The local relay now matches selected 0.165.1 `Expect: 100-continue` ordering,

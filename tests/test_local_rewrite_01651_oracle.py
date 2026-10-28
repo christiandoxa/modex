@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from http.client import HTTPResponse
 
@@ -77,6 +78,20 @@ class UpstreamHandler(BaseHTTPRequestHandler):
                 "body": body,
             })
         response_kind = self.headers.get("X-Oracle-Response", "json")
+        if response_kind == "sse-slow":
+            first, separator, rest = PROVIDER_SSE_RESPONSE.partition(b"\n\n")
+            first_event = first + separator
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.wfile.write(first_event)
+            self.wfile.flush()
+            time.sleep(1.2)
+            self.wfile.write(rest)
+            self.wfile.flush()
+            self.close_connection = True
+            return
         if response_kind in ("sse-204", "sse-304"):
             self.send_response(int(response_kind[-3:]))
             self.send_header("Content-Type", "text/event-stream")
@@ -183,19 +198,55 @@ else:
     if half_close:
         connection.shutdown(socket.SHUT_WR)
 request_started = time.monotonic()
-result = {"status": None, "reason": "", "headers": [], "body_base64": "", "wire_body_base64": "", "wire_body_probe_complete": False, "read_error": "", "connection_closed": False, "request_parts_sent_at_response": 0, "response_elapsed_ms": 0, "interim_statuses": []}
+
+class RecordingReader:
+    def __init__(self, reader):
+        self.reader = reader
+        self.lines = []
+    def readline(self, *args):
+        line = self.reader.readline(*args)
+        self.lines.append(line)
+        return line
+    def read(self, *args):
+        return self.reader.read(*args)
+    def close(self):
+        return self.reader.close()
+    def __getattr__(self, name):
+        return getattr(self.reader, name)
+
+class RecordingHTTPResponse(http.client.HTTPResponse):
+    def __init__(self, sock, method=None):
+        super().__init__(sock, method=method)
+        self.raw_reader = RecordingReader(self.fp)
+        self.fp = self.raw_reader
+        self.raw_response_head = b""
+    def begin(self):
+        super().begin()
+        pending = []
+        for line in self.raw_reader.lines:
+            pending.append(line)
+            if line == b"\r\n":
+                block = b"".join(pending)
+                pending = []
+                status_line = block.split(b"\r\n", 1)[0].split(b" ", 2)
+                if len(status_line) > 1 and status_line[1] != b"100":
+                    self.raw_response_head = block
+
+result = {"status": None, "reason": "", "response_line": "", "raw_response_head_base64": "", "headers": [], "body_base64": "", "wire_body_base64": "", "wire_body_probe_complete": False, "read_error": "", "connection_closed": False, "request_parts_sent_at_response": 0, "response_elapsed_ms": 0, "response_headers_elapsed_ms": 0, "first_body_byte_elapsed_ms": 0, "interim_statuses": []}
 
 def read_expect_response():
-    response_file = connection.makefile("rb")
+    response_file = RecordingReader(connection.makefile("rb"))
     interim_statuses = []
     interim_status_lines = []
     def read_head():
+        start = len(response_file.lines)
         line = response_file.readline()
         if not line:
             raise ConnectionError("remote closed before response")
         version, status, reason = line.decode("iso-8859-1").rstrip("\r\n").split(" ", 2)
-        return version, int(status), reason, http.client.parse_headers(response_file)
-    version, status, reason, headers = read_head()
+        headers = http.client.parse_headers(response_file)
+        return version, int(status), reason, headers, b"".join(response_file.lines[start:])
+    version, status, reason, headers, raw_response_head = read_head()
     while status == 100:
         interim_statuses.append(status)
         interim_status_lines.append(f"{version} {status} {reason}")
@@ -206,26 +257,29 @@ def read_expect_response():
             connection.sendall(body)
         if os.environ.get("PROBE_HALF_CLOSE_AFTER_CONTINUE") == "1":
             connection.shutdown(socket.SHUT_WR)
-        version, status, reason, headers = read_head()
+        version, status, reason, headers, raw_response_head = read_head()
     length = headers.get("Content-Length")
     body = response_file.read(int(length)) if length is not None else response_file.read()
-    return status, reason, list(headers.items()), body, interim_statuses, interim_status_lines
+    return status, reason, list(headers.items()), body, interim_statuses, interim_status_lines, f"{version} {status} {reason}", raw_response_head
 
 try:
     request_method = os.environ.get("PROBE_REQUEST_METHOD")
     if os.environ.get("PROBE_EXPECT_HANDSHAKE") == "1":
-        status, reason, headers, body, interim_statuses, interim_status_lines = read_expect_response()
+        status, reason, headers, body, interim_statuses, interim_status_lines, response_line, raw_response_head = read_expect_response()
         result.update({
             "status": status,
             "reason": reason,
+            "response_line": response_line,
+            "raw_response_head_base64": base64.b64encode(raw_response_head).decode("ascii"),
             "headers": headers,
             "body_base64": base64.b64encode(body).decode("ascii"),
             "interim_statuses": interim_statuses,
             "interim_status_lines": interim_status_lines,
         })
     else:
-        response = http.client.HTTPResponse(connection, method=request_method)
+        response = RecordingHTTPResponse(connection, method=request_method)
         response.begin()
+        result["response_headers_elapsed_ms"] = int((time.monotonic() - request_started) * 1000)
         interim_statuses = []
         wire_body = b""
         wire_body_probe_complete = False
@@ -238,9 +292,17 @@ try:
                 pass
             finally:
                 connection.settimeout(5)
-        body = response.read()
+        if request_method == "HEAD":
+            body = response.read()
+        else:
+            first_body_byte = response.read(1)
+            result["first_body_byte_elapsed_ms"] = int((time.monotonic() - request_started) * 1000)
+            body = first_body_byte + response.read()
+        response_version = f"HTTP/1.{response.version - 10}"
         result.update({
             "status": response.status,
+            "response_line": f"{response_version} {response.status} {response.reason}",
+            "raw_response_head_base64": base64.b64encode(response.raw_response_head).decode("ascii"),
             "interim_statuses": interim_statuses,
             "reason": response.reason,
             "headers": response.getheaders(),
@@ -518,14 +580,17 @@ def success_method_case(name, method, target, response_kind="json", body=REQUEST
     }
 
 
-def head_bodyless_sse_case(status):
+def head_bodyless_sse_case(status, version=b"HTTP/1.1"):
+    suffix = "_http_1_0" if version == b"HTTP/1.0" else ""
     return {
-        "name": f"head_chat_completions_{status}_sse_framing",
+        "name": f"head_chat_completions_{status}_sse_framing{suffix}",
         "request": request_bytes(
             (("Connection", "close"), ("X-Oracle-Response", f"sse-{status}")),
             target=b"/v1/chat/completions",
             method=b"HEAD",
+            version=version,
         ),
+        **({"expected_response_line": f"HTTP/1.1 {status} {'No Content' if status == 204 else 'Not Modified'}"} if version == b"HTTP/1.0" else {}),
         "expected_status": status,
         "expected_reason": "No Content" if status == 204 else "Not Modified",
         "expected_body": b"",
@@ -534,6 +599,8 @@ def head_bodyless_sse_case(status):
             "transfer-encoding": "chunked",
         },
         "expected_wire_body": {"oracle": b"0\r\n\r\n", "modex": b""},
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
         "expected_upstream_method": "HEAD",
         "expected_upstream_path": "/v1/chat/completions",
         "compare_upstream_request": True,
@@ -541,13 +608,15 @@ def head_bodyless_sse_case(status):
     }
 
 
-def response_status_case(status, reason):
+def response_status_case(status, reason, version=b"HTTP/1.1"):
     return {
         "name": f"chat_completions_status_{status}_reason",
         "request": request_bytes(
             (("X-Oracle-Response", f"status-{status}"),),
             target=b"/v1/chat/completions",
+            version=version,
         ),
+        **({"expected_response_line": f"{version.decode()} {status} {reason}"} if version == b"HTTP/1.0" else {}),
         "expected_status": status,
         "expected_reason": reason,
         "expected_body": PROVIDER_RESPONSE,
@@ -561,6 +630,19 @@ def response_status_case(status, reason):
         "compare_upstream_request": True,
         "upstream": True,
     }
+
+
+def http_1_0_status_case(status, reason, response_kind):
+    case = response_status_case(status, reason, version=b"HTTP/1.0")
+    case["name"] = f"http_1_0_chat_completions_status_{status}"
+    case["request"] = request_bytes(
+        (("X-Oracle-Response", response_kind),),
+        target=b"/v1/chat/completions",
+        version=b"HTTP/1.0",
+    )
+    case["check_close"] = True
+    case["expected_connection_closed"] = {"oracle": True, "modex": True}
+    return case
 
 
 def ordinary_http_upgrade_case(name, value):
@@ -587,6 +669,7 @@ CASES = (
         "name": "malformed_request_line_missing_version",
         "request": b"POST /v1/responses\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
         "expected_status": 400,
+        "expected_response_line": "HTTP/1.1 400 Bad Request",
         "expected_body": b"",
         "upstream": False,
     },
@@ -595,6 +678,17 @@ CASES = (
         "request": b"POST /v1/responses HTTP/1.1 extra\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
         "expected_status": 502,
         "expected_body": b"upstream request failed",
+        "upstream": False,
+    },
+    {
+        "name": "http_1_0_request_line_extra_token_keeps_request_version",
+        "request": b"POST /v1/responses HTTP/1.0 extra\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
+        "expected_status": 502,
+        "expected_reason": "Bad Gateway",
+        "expected_response_line": "HTTP/1.0 502 Bad Gateway",
+        "expected_body": b"upstream request failed",
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
         "upstream": False,
     },
     {
@@ -737,6 +831,88 @@ CASES = (
         "upstream": True,
     },
     {
+        "name": "http_1_0_buffered_responses_keep_request_version",
+        "request": request_bytes((("Connection", "close"),), version=b"HTTP/1.0"),
+        "expected_status": 200,
+        "expected_reason": "OK",
+        "expected_response_line": "HTTP/1.0 200 OK",
+        "expected_body": RESPONSES_RESPONSE,
+        "expected_headers": {
+            "content-type": "application/json; charset=utf-8",
+            "content-length": str(len(RESPONSES_RESPONSE)),
+        },
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "expected_upstream_method": "POST",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
+    },
+    {
+        "name": "http_1_0_head_response_keeps_request_version",
+        "request": request_bytes(
+            (("Connection", "close"), ("X-Oracle-Response", "json")),
+            target=b"/v1/chat/completions",
+            method=b"HEAD",
+            version=b"HTTP/1.0",
+        ),
+        "expected_status": 200,
+        "expected_reason": "OK",
+        "expected_response_line": "HTTP/1.0 200 OK",
+        "expected_body": b"",
+        "expected_headers": {"content-length": "0"},
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "expected_upstream_method": "HEAD",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
+    },
+    {
+        "name": "http_1_0_unsupported_route_error_keeps_request_version",
+        "request": request_bytes(target=b"/v1/not-real", version=b"HTTP/1.0"),
+        "expected_status": 404,
+        "expected_reason": "Not Found",
+        "expected_response_line": "HTTP/1.0 404 Not Found",
+        "expected_body": UNSUPPORTED_ROUTE_BODY,
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "upstream": False,
+    },
+    {
+        "name": "http_1_0_invalid_target_keeps_request_version",
+        "request": request_bytes(target=b"http://example.test/v1/responses", version=b"HTTP/1.0"),
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_response_line": "HTTP/1.0 400 Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "upstream": False,
+    },
+    {
+        "name": "http_1_0_fragment_target_keeps_request_version",
+        "request": request_bytes(target=b"/v1/responses#fragment", version=b"HTTP/1.0"),
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_response_line": "HTTP/1.0 400 Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "upstream": False,
+    },
+    {
+        "name": "http_1_0_malformed_header_keeps_request_version",
+        "request": b"POST /v1/responses HTTP/1.0\r\nHost: 127.0.0.1\r\nMalformed\r\nContent-Length: 0\r\n\r\n",
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_response_line": "HTTP/1.0 400 Bad Request",
+        "expected_body": b"",
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "upstream": False,
+    },
+    {
         **expectation_request_case("single_valid_expect_continue", ["100-continue"]),
         "expected_status": 200,
         "expected_reason": "OK",
@@ -768,6 +944,7 @@ CASES = (
         },
         "expected_interim_statuses": [100],
         "expected_interim_status_lines": ["HTTP/1.0 100 Continue"],
+        "expected_response_line": "HTTP/1.0 200 OK",
         "expected_connection_closed": {"oracle": True, "modex": True},
         "compare_response_body": True,
         "compare_upstream_request": True,
@@ -786,6 +963,21 @@ CASES = (
         "expected_reason": "Upgrade Required",
         "expected_body": WEBSOCKET_FALLBACK,
         "expected_interim_statuses": [],
+        "upstream": False,
+    },
+    {
+        **expectation_request_case(
+            "http_1_0_unsupported_expect_returns_417",
+            ["100-wait"],
+            version=b"HTTP/1.0",
+            half_close=True,
+        ),
+        "expected_status": 417,
+        "expected_reason": "Expectation Failed",
+        "expected_response_line": "HTTP/1.0 417 Expectation Failed",
+        "expected_body": b"",
+        "expected_interim_statuses": [],
+        "expected_connection_closed": {"oracle": True, "modex": True},
         "upstream": False,
     },
     {
@@ -1036,6 +1228,29 @@ CASES = (
         b"/v1/chat/completions",
         response_kind="sse",
     ),
+    {
+        "name": "http_1_0_sse_stream_starts_before_upstream_eof",
+        "request": request_bytes(
+            (("X-Oracle-Response", "sse-slow"),),
+            target=b"/v1/chat/completions",
+            method=b"GET",
+            version=b"HTTP/1.0",
+        ),
+        "expected_status": 200,
+        "expected_reason": "OK",
+        "expected_response_line": "HTTP/1.1 200 OK",
+        "expected_body": PROVIDER_SSE_RESPONSE,
+        "expected_headers": {
+            "content-type": "text/event-stream",
+            "transfer-encoding": "chunked",
+        },
+        "response_before_upstream_eof_ms": 900,
+        "compare_response_body": True,
+        "expected_upstream_method": "GET",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
+    },
     success_method_case(
         "successful_get_responses_sse",
         b"GET",
@@ -1044,6 +1259,10 @@ CASES = (
         body=STREAM_REQUEST_BODY,
     ),
     *(head_bodyless_sse_case(status) for status in (204, 304)),
+    *(head_bodyless_sse_case(status, version=b"HTTP/1.0") for status in (204, 304)),
+    http_1_0_status_case(302, "Found", "status-302"),
+    http_1_0_status_case(404, "Not Found", "status-404"),
+    http_1_0_status_case(503, "Service Unavailable", "status-503"),
     response_status_case(200, "OK"),
     response_status_case(206, "Partial Content"),
     response_status_case(302, "Found"),
@@ -1051,6 +1270,7 @@ CASES = (
     response_status_case(500, "Internal Server Error"),
     response_status_case(418, "Unknown"),
     response_status_case(422, "Unprocessable Entity"),
+    response_status_case(503, "Service Unavailable", version=b"HTTP/1.0"),
     {
         "name": "valid_escaped_query",
         "request": request_bytes(target=b"/v1/responses?x=a%2Fb"),
@@ -1126,6 +1346,7 @@ def run_probe(binary: Path, case, upstream: Upstream):
             )
         response = json.loads(result_path.read_text(encoding="utf-8"))
         response["body"] = base64.b64decode(response.pop("body_base64"))
+        response["raw_response_head"] = base64.b64decode(response.pop("raw_response_head_base64"))
         response["wire_body"] = base64.b64decode(response.pop("wire_body_base64"))
         if "followup_body_base64" in response:
             response["followup_body"] = base64.b64decode(response.pop("followup_body_base64"))
@@ -1171,6 +1392,12 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                         self.assertEqual(response["status"], case["expected_status"], label)
                         if "expected_reason" in case:
                             self.assertEqual(response["reason"], case["expected_reason"], label)
+                        if "expected_response_line" in case:
+                            self.assertEqual(response["response_line"], case["expected_response_line"], label)
+                        if "response_before_upstream_eof_ms" in case:
+                            limit = case["response_before_upstream_eof_ms"]
+                            self.assertLess(response["response_headers_elapsed_ms"], limit, label)
+                            self.assertLess(response["first_body_byte_elapsed_ms"], limit, label)
                         self.assertEqual(response["read_error"], case.get("expected_read_error", ""), label)
                         self.assertEqual(response["interim_statuses"], case.get("expected_interim_statuses", []), label)
                         expected_interim_lines = case.get(

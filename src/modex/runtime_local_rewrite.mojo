@@ -11,7 +11,7 @@ from std.time.time import _realtime_nanoseconds
 
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument
 from .loopback_http import HTTP_HEADER_LIMIT, LoopbackHTTPStream, _number
-from .loopback_server import LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest
+from .loopback_server import LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
 from .provider_conversations import ProviderConversationStore
 from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
@@ -188,6 +188,13 @@ def _stream_history(exchange: DeepSeekExchange) -> String:
 
 def _route_error(mut connection: LoopbackHTTPConnection) raises:
     connection.respond(404, [("content-type", "application/json"), ("cache-control", "no-store"), ("x-content-type-options", "nosniff")], _bytes('{"error":{"code":"unsupported_provider_route","message":"provider route is not supported"}}'), 30000)
+
+
+def _invalid_request_target(mut connection: LoopbackHTTPConnection) raises:
+    connection.respond(400, [
+        ("content-type", "application/json"), ("cache-control", "no-store"),
+        ("x-content-type-options", "nosniff"),
+    ], _bytes('{"error":{"code":"invalid_request_target","message":"request target is invalid"}}'), 30000)
 
 
 def _response_headers(headers: List[Tuple[String, String]]) -> List[Tuple[String, String]]:
@@ -528,12 +535,17 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         var request = LoopbackHTTPRequest("", "", List[Tuple[String, String]](), List[UInt8]())
         var captured = False
         try:
-            request = connection.read_request(120000, allow_websocket_upgrade=True)
+            request = connection.read_request(120000, allow_websocket_upgrade=True, validate_request_target=True)
             captured = True
         except error:
             var message = String(error)
             var malformed_syntax = message == "malformed HTTP request line" or message == "malformed HTTP request target spacing" or message == "malformed HTTP method" or message == "malformed HTTP request header" or message == "malformed HTTP header name" or message == "malformed HTTP header value" or message == "non-ASCII byte in HTTP header"
-            if message != "truncated HTTP request":
+            if message == "invalid HTTP request target" or message == "malformed HTTP request target":
+                try:
+                    _invalid_request_target(connection)
+                except:
+                    pass
+            elif message != "truncated HTTP request":
                 if malformed_syntax:
                     try:
                         connection.respond(400, [], List[UInt8](), 30000)
@@ -552,6 +564,10 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
                         pass
         if captured:
             try:
+                if not request_target_valid(request.target):
+                    _invalid_request_target(connection)
+                    connection.close()
+                    continue
                 var websocket_upgrade = False
                 for header in request.headers:
                     if String(header[0]).lower() == "upgrade" and String(header[1]).lower() == "websocket":

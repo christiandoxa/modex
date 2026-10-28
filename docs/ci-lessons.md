@@ -13,7 +13,13 @@ rerun with the pinned 0.439.1 source passed five recovery tests. The original fa
 `~/.cache/modex/ci-evidence/full-test-027fc48.log`. The full run on `165dd15`
 set both historical source paths and passed the build, native suite and 605
 Python tests; its log is `~/.cache/modex/ci-evidence/full-test-165dd15.log`.
-That result predates the current head and is not final-head validation.
+The later `f386c7b` full run also passed the build, native suite and 613 Python
+tests; its log is `~/.cache/modex/ci-evidence/full-test-f386c7b.log`. Both
+results predate the current head and are not final-head validation.
+
+Fast run [40763120392](https://github.com/christiandoxa/modex/actions/runs/40763120392)
+on `6edd459` passed current-reference and relay tests, then failed at the
+unavailable required 0.439.2 oracle. Artifact consumption was skipped.
 
 ## Scratch setup failure must clean its private root
 

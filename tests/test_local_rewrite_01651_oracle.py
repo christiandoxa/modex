@@ -23,6 +23,8 @@ ORACLE = Path(os.environ.get(
 ORACLE_SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
 SYNTHETIC_API_KEY = "synthetic-provider-key"
 WEBSOCKET_FALLBACK = b"provider adapter requires HTTPS Responses transport fallback"
+INVALID_REQUEST_TARGET_BODY = b'{"error":{"code":"invalid_request_target","message":"request target is invalid"}}'
+UNSUPPORTED_ROUTE_BODY = b'{"error":{"code":"unsupported_provider_route","message":"provider route is not supported"}}'
 PROVIDER_RESPONSE = json.dumps({
     "id": "chatcmpl_transport_oracle",
     "model": "deepseek-chat",
@@ -30,6 +32,9 @@ PROVIDER_RESPONSE = json.dumps({
     "choices": [{"message": {"content": "synthetic response"}, "finish_reason": "stop"}],
 }, separators=(",", ":")).encode()
 REQUEST_BODY = b'{"model":"deepseek-chat","input":"synthetic raw transport probe"}'
+TARGET_PREFIX = b"/v1/responses?x="
+MAX_LENGTH_VALID_TARGET = TARGET_PREFIX + b"a" * (8192 - len(TARGET_PREFIX))
+OVER_LENGTH_INVALID_TARGET = MAX_LENGTH_VALID_TARGET + b"a"
 
 
 class Upstream(ThreadingHTTPServer):
@@ -122,6 +127,19 @@ except Exception as error:
     result["read_error"] = type(error).__name__
 finally:
     connection.close()
+followup_hex = os.environ.get("PROBE_FOLLOWUP_REQUEST_HEX", "")
+if followup_hex:
+    followup_connection = socket.create_connection((target.hostname, target.port), timeout=5)
+    followup_connection.settimeout(5)
+    followup_connection.sendall(bytes.fromhex(followup_hex))
+    followup_response = http.client.HTTPResponse(followup_connection)
+    followup_response.begin()
+    followup_body = followup_response.read()
+    result.update({
+        "followup_status": followup_response.status,
+        "followup_body_base64": base64.b64encode(followup_body).decode("ascii"),
+    })
+    followup_connection.close()
 with open(os.environ["PROBE_RESULT_PATH"], "w", encoding="utf-8") as output:
     json.dump(result, output, separators=(",", ":"))
 '''
@@ -129,7 +147,7 @@ with open(os.environ["PROBE_RESULT_PATH"], "w", encoding="utf-8") as output:
     path.chmod(0o700)
 
 
-def request_bytes(headers=(), body=REQUEST_BODY):
+def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses"):
     all_headers = [
         ("Host", "127.0.0.1"),
         *headers,
@@ -137,10 +155,21 @@ def request_bytes(headers=(), body=REQUEST_BODY):
         ("Content-Length", str(len(body))),
     ]
     return (
-        b"POST /v1/responses HTTP/1.1\r\n"
+        b"POST " + target + b" HTTP/1.1\r\n"
         + b"".join(name.encode() + b": " + value.encode() + b"\r\n" for name, value in all_headers)
         + b"\r\n" + body
     )
+
+
+def invalid_target_case(name, target):
+    return {
+        "name": name,
+        "request": request_bytes(target=target),
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "upstream": False,
+    }
 
 
 CASES = (
@@ -229,6 +258,106 @@ CASES = (
         "expected_body": None,
         "upstream": True,
     },
+    {
+        "name": "invalid_target_websocket_precedes_upgrade_fallback",
+        "request": request_bytes((("Upgrade", "websocket"),), target=b"http://example.test/v1/responses"),
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "upstream": False,
+    },
+    {
+        "name": "invalid_target_oversized_declared_body_precedes_body_limit",
+        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: 67108865\r\n\r\n",
+        "half_close": True,
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "upstream": False,
+    },
+    {
+        "name": "invalid_target_oversized_expected_body_precedes_continue",
+        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-continue\r\nContent-Length: 67108865\r\n\r\n",
+        "half_close": True,
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "upstream": False,
+    },
+    {
+        "name": "invalid_target_expected_body_precedes_continue",
+        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-continue\r\nContent-Length: 10\r\n\r\n",
+        "half_close": True,
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "upstream": False,
+    },
+    {
+        "name": "invalid_target_oversized_chunked_body_precedes_body_limit",
+        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nTransfer-Encoding: chunked\r\n\r\n4000001\r\n",
+        "half_close": True,
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "upstream": False,
+    },
+    {
+        "name": "invalid_target_truncated_body_closes_without_response",
+        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 10\r\n\r\nx",
+        "half_close": True,
+        "expected_status": None,
+        "expected_read_error": "RemoteDisconnected",
+        "expected_body": b"",
+        "upstream": False,
+    },
+    {
+        "name": "invalid_target_reply_keeps_relay_accepting_requests",
+        "request": request_bytes(target=b"http://example.test/v1/responses"),
+        "followup_request": request_bytes((("Connection", "close"),)),
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "expected_followup_status": 200,
+        "upstream": True,
+    },
+    {
+        "name": "valid_escaped_path_is_not_normalized",
+        "request": request_bytes(target=b"/v1/resp%6Fnses"),
+        "expected_status": 404,
+        "expected_reason": "Not Found",
+        "expected_body": UNSUPPORTED_ROUTE_BODY,
+        "upstream": False,
+    },
+    {
+        "name": "valid_target_length_8192",
+        "request": request_bytes(target=MAX_LENGTH_VALID_TARGET),
+        "expected_status": 200,
+        "expected_body": None,
+        "upstream": True,
+    },
+    *(
+        invalid_target_case(name, target)
+        for name, target in (
+            ("absolute_form_request_target", b"http://example.test/v1/responses"),
+            ("asterisk_request_target", b"*"),
+            ("leading_double_slash_request_target", b"//v1/responses"),
+            ("interior_double_slash_request_target", b"/v1//responses"),
+            ("dot_segment_request_target", b"/v1/../responses"),
+            ("encoded_dot_segment_request_target", b"/v1/%2e%2e/responses"),
+            ("encoded_slash_request_target", b"/v1/%2f/responses"),
+            ("fragment_request_target", b"/v1/responses#x"),
+            ("malformed_query_percent_escape", b"/v1/responses?x=%GG"),
+            ("request_target_length_8193", OVER_LENGTH_INVALID_TARGET),
+        )
+    ),
+    {
+        "name": "valid_escaped_query",
+        "request": request_bytes(target=b"/v1/responses?x=a%2Fb"),
+        "expected_status": 200,
+        "expected_body": None,
+        "upstream": True,
+    },
 )
 
 
@@ -258,6 +387,7 @@ def run_probe(binary: Path, case, upstream: Upstream):
             "PRODEX_CODEX_BIN": str(codex),
             "PROBE_REQUEST_HEX": case["request"].hex(),
             "PROBE_HALF_CLOSE": "1" if case.get("half_close") else "0",
+            "PROBE_FOLLOWUP_REQUEST_HEX": case.get("followup_request", b"").hex(),
             "PROBE_RESULT_PATH": str(result_path),
         }
         command = [
@@ -284,6 +414,8 @@ def run_probe(binary: Path, case, upstream: Upstream):
             )
         response = json.loads(result_path.read_text(encoding="utf-8"))
         response["body"] = base64.b64decode(response.pop("body_base64"))
+        if "followup_body_base64" in response:
+            response["followup_body"] = base64.b64decode(response.pop("followup_body_base64"))
         response["process_exit"] = process.returncode
         response["stdout"] = process.stdout
         response["stderr"] = process.stderr
@@ -320,6 +452,9 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                         if "expected_reason" in case:
                             self.assertEqual(response["reason"], case["expected_reason"], label)
                         self.assertEqual(response["read_error"], case.get("expected_read_error", ""), label)
+                        if "expected_followup_status" in case:
+                            self.assertEqual(response["followup_status"], case["expected_followup_status"], label)
+                            self.assertTrue(response["followup_body"], label)
                         if case["expected_body"] is not None:
                             self.assertEqual(response["body"], case["expected_body"], label)
                         else:

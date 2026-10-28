@@ -88,12 +88,14 @@ The later `027fc48` full run executed 593 tests but failed two setup checks
 and rejected one skip because isolated HOME hid the historical source paths.
 The affected modules pass with the explicit pinned sources. A subsequent full
 run on `165dd15` passed 605 tests with both historical source paths supplied;
-it predates the current head. See `docs/ci-lessons.md`.
+the later `f386c7b` run passed 613 tests. Both predate the current head. See
+`docs/ci-lessons.md`.
 
-The production local relay now matches selected 0.165.1 malformed-request,
-WebSocket fallback and truncated-request behavior; its shared parser still rejects
-upgrades by default. It remains serial and does not implement WebSockets. See
-`docs/evidence/baseline-0.165.1/local-relay-http.md` for controls and gaps.
+The local relay now matches selected 0.165.1 request-target admission, body
+limit, `Expect` and WebSocket fallback ordering. The shared parser keeps its
+default request-line limit and upgrade rejection. Oversized methods and large
+request heads still differ; the relay remains serial and does not implement
+WebSockets. See `docs/evidence/baseline-0.165.1/local-relay-http.md`.
 
 The Anthropic text-block start now ignores initial text values like 0.165.1;
 nonempty, empty, missing and numeric initial fields match full production event

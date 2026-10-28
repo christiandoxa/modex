@@ -173,7 +173,7 @@ struct LoopbackHTTPConnection(Movable):
             return True
         raise Error("loopback HTTP peer check failed")
 
-    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_websocket_upgrade: Bool = False) raises -> LoopbackHTTPRequest:
+    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_websocket_upgrade: Bool = False, validate_request_target: Bool = False) raises -> LoopbackHTTPRequest:
         if self.fd < 0 or self.done or self.request_read:
             raise Error("loopback HTTP connection is closed")
         if max_body_bytes < 0 or max_body_bytes > HTTP_MAX_BODY_LIMIT:
@@ -190,13 +190,17 @@ struct LoopbackHTTPConnection(Movable):
             header_end = _header_end(self.input, header_scan)
         if header_end > HTTP_HEADER_LIMIT:
             raise Error("HTTP request headers exceed limit")
-        var head = _parse_request_head(self.input, header_end, allow_websocket_upgrade)
+        # The relay caps target bytes, so its request line also includes method and version bytes.
+        var max_request_line_bytes = HTTP_HEADER_LIMIT if validate_request_target else 8192
+        var head = _parse_request_head(self.input, header_end, allow_websocket_upgrade, max_request_line_bytes)
+        if validate_request_target and not request_target_valid(head.target) and (head.expect_continue or head.length > max_body_bytes):
+            raise Error("invalid HTTP request target")
         var body_start = header_end + 4
         var body = List[UInt8]()
         if head.expect_continue:
             _send_all(self.fd, _bytes("HTTP/1.1 100 Continue\r\n\r\n"), deadline)
         if head.chunked:
-            body = self._read_chunked(body_start, max_body_bytes, deadline, wire_limit)
+            body = self._read_chunked(body_start, max_body_bytes, deadline, wire_limit, validate_request_target and not request_target_valid(head.target))
         elif head.length >= 0:
             if head.length > max_body_bytes:
                 raise Error("oversized HTTP request body")
@@ -293,7 +297,7 @@ struct LoopbackHTTPConnection(Movable):
                 raise Error("loopback HTTP request read failed")
             sleep(0.001)
 
-    def _read_chunked(mut self, start: Int, max_body_bytes: Int, deadline: Float64, wire_limit: Int) raises -> List[UInt8]:
+    def _read_chunked(mut self, start: Int, max_body_bytes: Int, deadline: Float64, wire_limit: Int, invalid_target_before_body_limit: Bool = False) raises -> List[UInt8]:
         var output = List[UInt8]()
         var cursor = start
         var trailer_start: Int
@@ -320,6 +324,8 @@ struct LoopbackHTTPConnection(Movable):
                 trailer_start = cursor
                 break
             if size > max_body_bytes - len(output):
+                if invalid_target_before_body_limit:
+                    raise Error("invalid HTTP request target")
                 raise Error("oversized HTTP request body")
             var chunk_end = cursor + size
             while len(self.input) < chunk_end + 2:
@@ -368,10 +374,10 @@ struct ParsedRequestHead(Movable):
     var expect_continue: Bool
 
 
-def _parse_request_head(bytes: List[UInt8], end: Int, allow_websocket_upgrade: Bool) raises -> ParsedRequestHead:
+def _parse_request_head(bytes: List[UInt8], end: Int, allow_websocket_upgrade: Bool, max_request_line_bytes: Int) raises -> ParsedRequestHead:
     var head = _ascii(bytes, 0, end)
     var lines = head.split("\r\n")
-    if not lines or lines[0].byte_length() > 8192:
+    if not lines or lines[0].byte_length() > max_request_line_bytes:
         raise Error("malformed HTTP request line")
     var request_line = lines[0].split(" ")
     if len(request_line) > 3:
@@ -437,6 +443,79 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_websocket_upgrade: B
     if version == "HTTP/1.1" and not has_host:
         raise Error("HTTP/1.1 request requires Host")
     return ParsedRequestHead(String(request_line[0]), String(request_line[1]), headers^, content_length, chunked, expect_continue)
+
+
+def _request_target_hex(value: UInt8) -> Int:
+    var byte = Int(value)
+    if 48 <= byte <= 57: return byte - 48
+    if 65 <= byte <= 70: return byte - 55
+    if 97 <= byte <= 102: return byte - 87
+    return -1
+
+
+def request_target_valid(target: String) -> Bool:
+    var length = target.byte_length()
+    if length == 0 or length > 8192:
+        return False
+    var bytes = target.as_bytes()
+    if bytes[0] != 47 or (length > 1 and bytes[1] == 47):
+        return False
+
+    var path_length = length
+    var index = 0
+    while index < length:
+        var byte = Int(bytes[index])
+        if byte > 127 or byte <= 32 or byte == 127 or byte == 35 or byte == 92:
+            return False
+        if byte == 63:
+            path_length = index
+            break
+        index += 1
+
+    index = path_length
+    while index < length:
+        var byte = Int(bytes[index])
+        if byte > 127 or byte <= 32 or byte == 127 or byte == 35:
+            return False
+        index += 1
+
+    var segment_start = 0
+    index = 0
+    while index <= path_length:
+        if index == path_length or bytes[index] == 47:
+            var segment_length = index - segment_start
+            if (
+                segment_length == 1 and bytes[segment_start] == 46
+            ) or (
+                segment_length == 2 and bytes[segment_start] == 46
+                and bytes[segment_start + 1] == 46
+            ):
+                return False
+            if index < path_length and index > 0 and bytes[index - 1] == 47:
+                return False
+            segment_start = index + 1
+        index += 1
+
+    index = 0
+    while index < length:
+        if bytes[index] != 37:
+            index += 1
+            continue
+        if index + 2 >= length:
+            return False
+        var high = _request_target_hex(bytes[index + 1])
+        var low = _request_target_hex(bytes[index + 2])
+        if high < 0 or low < 0:
+            return False
+        var decoded = (high << 4) | low
+        if index < path_length and (
+            decoded >= 128 or decoded <= 32 or decoded == 127
+            or decoded == 47 or decoded == 92 or decoded == 37
+            or decoded == 63 or decoded == 35 or decoded == 46
+        ):
+            return False
+        index += 3
+    return True
 
 
 def _validate_header_line(bytes: List[UInt8], start: Int, end: Int) raises:

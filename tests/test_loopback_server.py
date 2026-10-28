@@ -159,6 +159,7 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         samples = [
             b"POST / HTTP/1.1\r\nHost: local\r\nContent-Length: 0\r\nTransfer-Encoding: chunked\r\n\r\n",
             b"POST / HTTP/1.1\r\nHost: local\r\nContent-Length: 0\r\nContent-Length: 0\r\n\r\n",
+            b"POST /fragment#x HTTP/1.1\r\nHost: local\r\nContent-Length: 0\r\n\r\n",
             b"POST / HTTP/1.1\r\nHost: local\r\nBad Header: x\r\nContent-Length: 0\r\n\r\n",
         ]
         for wire in samples:
@@ -177,6 +178,19 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         response, stdout = finish(process, client)
         self.assertEqual(status(response), 400)
         self.assertIn("HTTP protocol upgrades are unsupported", stdout)
+
+    def test_default_request_line_limit_stays_at_8192_bytes(self):
+        for line_size, expected_status in ((8192, 200), (8193, 400)):
+            with self.subTest(line_size=line_size):
+                target = b"/" + b"a" * (line_size - len(b"GET / HTTP/1.1"))
+                request_line = b"GET " + target + b" HTTP/1.1"
+                self.assertEqual(len(request_line), line_size)
+                process, client = start("echo")
+                client.sendall(request_line + b"\r\nHost: local\r\n\r\n")
+                response, stdout = finish(process, client)
+                self.assertEqual(status(response), expected_status)
+                if line_size == 8193:
+                    self.assertIn("malformed HTTP request line", stdout)
 
     def test_oversized_and_truncated_bodies_are_rejected(self):
         process, client = start("echo")

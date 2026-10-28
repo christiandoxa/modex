@@ -48,6 +48,8 @@ struct DeepSeekChatState:
     var tools: List[ChatStreamTool]
     var external_output_items: List[String]
     var anthropic_searches: List[AnthropicWebSearch]
+    var anthropic_tool_indices: List[UInt64]
+    var anthropic_stopped_tool_indices: List[UInt64]
     var anthropic_input_tokens: UInt64
     var anthropic_output_tokens: UInt64
     var anthropic_phase: Int
@@ -79,6 +81,8 @@ struct DeepSeekChatState:
         self.tools = List[ChatStreamTool]()
         self.external_output_items = List[String]()
         self.anthropic_searches = List[AnthropicWebSearch]()
+        self.anthropic_tool_indices = List[UInt64]()
+        self.anthropic_stopped_tool_indices = List[UInt64]()
         self.anthropic_input_tokens = 0
         self.anthropic_output_tokens = 0
         self.anthropic_phase = 0
@@ -211,6 +215,33 @@ struct DeepSeekChatState:
                     raise Error("Anthropic web-search query is invalid")
                 self.anthropic_phase = 2
                 return self.start_anthropic_search(doc, block, block_index)
+            if block_type == "tool_use":
+                if self.anthropic_phase != 1 and self.anthropic_phase != 5:
+                    raise Error("Anthropic tool-use block is out of order")
+                _only_fields(doc, block, ["type", "id", "name", "input"], "tool-use block")
+                var id = doc.get(block, "id")
+                var name = doc.get(block, "name")
+                if id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text:
+                    raise Error("Anthropic tool-use block requires an id")
+                if name < 0 or doc.nodes[name].kind != JSON_STRING or not doc.nodes[name].text:
+                    raise Error("Anthropic tool-use block requires a name")
+                var tracked = False
+                for position in range(len(self.anthropic_tool_indices)):
+                    if self.anthropic_tool_indices[position] == block_index:
+                        tracked = True
+                        break
+                if tracked:
+                    for position in range(len(self.anthropic_stopped_tool_indices)):
+                        if self.anthropic_stopped_tool_indices[position] == block_index:
+                            raise Error("Anthropic tool-use block index was already stopped")
+                else:
+                    self.anthropic_tool_indices.append(block_index)
+                return self.observe(
+                    '{"choices":[{"delta":{"tool_calls":[{"index":' + String(block_index)
+                    + ',"id":' + quote_json(doc.nodes[id].text)
+                    + ',"type":"function","function":{"name":' + quote_json(doc.nodes[name].text)
+                    + ',"arguments":""}}]},"finish_reason":null}]}'
+                )
             if block_type == "web_search_tool_result":
                 if self.anthropic_phase != 3 or block_index != 1:
                     raise Error("Anthropic web-search result block is out of order")
@@ -256,12 +287,30 @@ struct DeepSeekChatState:
                 _only_fields(doc, delta, ["type", "partial_json"], "input JSON delta")
                 var fragment = doc.string(doc.get(delta, "partial_json"))
                 var search = self.anthropic_search_index(block_index)
-                if self.anthropic_phase != 2 or search < 0: raise Error("Anthropic input JSON delta has no supported tool use")
                 var fragment_value = doc.get(delta, "partial_json")
                 if fragment_value < 0 or doc.nodes[fragment_value].kind != JSON_STRING:
                     raise Error("Anthropic input JSON delta must be a string")
-                self.anthropic_searches[search].input_json += fragment
-                return List[String]()
+                if search >= 0:
+                    if self.anthropic_phase != 2: raise Error("Anthropic input JSON delta has no supported tool use")
+                    self.anthropic_searches[search].input_json += fragment
+                    return List[String]()
+                var tracked = False
+                var stopped = False
+                for position in range(len(self.anthropic_tool_indices)):
+                    if self.anthropic_tool_indices[position] == block_index:
+                        tracked = True
+                        break
+                for position in range(len(self.anthropic_stopped_tool_indices)):
+                    if self.anthropic_stopped_tool_indices[position] == block_index:
+                        stopped = True
+                        break
+                if not tracked or stopped or (self.anthropic_phase != 1 and self.anthropic_phase != 5):
+                    raise Error("Anthropic input JSON delta has no supported tool use")
+                return self.observe(
+                    '{"choices":[{"delta":{"tool_calls":[{"index":' + String(block_index)
+                    + ',"function":{"arguments":' + quote_json(fragment)
+                    + '}}]},"finish_reason":null}]}'
+                )
             raise Error("Anthropic content delta type is not supported")
         if kind == "content_block_stop":
             _only_fields(doc, doc.root, ["type", "index"], "content_block_stop event")
@@ -280,6 +329,19 @@ struct DeepSeekChatState:
                 return List[String]()
             if self.anthropic_text_index and self.anthropic_text_index.value() == block_index and self.anthropic_phase == 6:
                 self.anthropic_phase = 7
+                return List[String]()
+            var tracked = False
+            for position in range(len(self.anthropic_tool_indices)):
+                if self.anthropic_tool_indices[position] == block_index:
+                    tracked = True
+                    break
+            if tracked:
+                if self.anthropic_phase != 1 and self.anthropic_phase != 5:
+                    raise Error("Anthropic tool-use block stop is out of order")
+                for position in range(len(self.anthropic_stopped_tool_indices)):
+                    if self.anthropic_stopped_tool_indices[position] == block_index:
+                        raise Error("Anthropic tool-use block was already stopped")
+                self.anthropic_stopped_tool_indices.append(block_index)
                 return List[String]()
             raise Error("Anthropic content block stop has no supported block")
         if kind == "message_delta":

@@ -11,6 +11,13 @@ shards; no hosted result is available for this correction yet.
 
 ## 0.165.1 checks precede the unavailable historical oracle
 
+Fast run [40749854285](https://github.com/christiandoxa/modex/actions/runs/40749854285),
+attempt 1 on `6d51973c10f74a189399548765eaf3ad39bcf5ec`, passed both
+independent helper shards, production build, native units and current-release
+focused tests, then failed at the unavailable mandatory 0.439.2 oracle. The
+artifact consumer was skipped. Evidence is retained under
+`~/.cache/modex/ci-evidence/40749854285/`.
+
 Fast run [40747049105](https://github.com/christiandoxa/modex/actions/runs/40747049105),
 attempt 1 on `d960e54cf8bfbde05d1c253690870d04dfe13178`, passed the
 production build, native units, current-reference CLI and stream checks, and

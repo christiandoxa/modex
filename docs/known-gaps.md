@@ -53,6 +53,10 @@ other Anthropic event orders remain unverified. Nonempty initial text blocks
 are rejected while the release drops that text. The exact empty-string request is rejected with the observed 400
 before POST, while whitespace-only input is accepted. See
 `docs/evidence/anthropic-web-search-04392.md`.
+Selected Anthropic function-tool streams and split JSON fragments now match
+0.165.1. Duplicate or orphan stops and reopened tool indices remain rejected
+where the reference completes, and image blocks remain unsupported.
+
 Selected stop reasons, missing or non-string reasons, non-string stop sequences
 and streams without `message_delta` now match normalized 0.165.1 events in the
 tested single-search shape. Other stream metadata and stop variants remain

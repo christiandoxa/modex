@@ -180,6 +180,40 @@ class SuperLaunchTests(unittest.TestCase):
                             b'data: {"type":"message_stop"}\n\n',
                         ))
                         content_type = "text/event-stream"
+                    elif scenario == "anthropic-tool-use":
+                        payload = b"".join((
+                            b'data: {"type":"message_start","message":{"id":"msg_tool","role":"assistant","model":"deepseek-chat","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',
+                            b'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_lookup","name":"lookup","input":{}}}\n\n',
+                            b'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\\"query\\":"}}\n\n',
+                            b'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"\\"current release\\"}"}}\n\n',
+                            b'data: {"type":"content_block_stop","index":0}\n\n',
+                            b'data: {"type":"message_delta","delta":{"stop_reason":"tool_use","stop_sequence":null},"usage":{"output_tokens":5}}\n\n',
+                            b'data: {"type":"message_stop"}\n\n',
+                        ))
+                        content_type = "text/event-stream"
+                    elif scenario.startswith("anthropic-tool-use-"):
+                        start = b'data: {"type":"message_start","message":{"id":"msg_tool","role":"assistant","model":"deepseek-chat","usage":{"input_tokens":3,"output_tokens":0}}}\n\n'
+                        tool = b'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_lookup","name":"lookup","input":{}}}\n\n'
+                        other_tool = b'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_other","name":"other","input":{}}}\n\n'
+                        args = b'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\\"query\\":\\"current release\\"}"}}\n\n'
+                        wrong_args = b'data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\\"query\\":\\"current release\\"}"}}\n\n'
+                        stop = b'data: {"type":"content_block_stop","index":0}\n\n'
+                        wrong_stop = b'data: {"type":"content_block_stop","index":1}\n\n'
+                        message_delta = b'data: {"type":"message_delta","delta":{"stop_reason":"tool_use","stop_sequence":null},"usage":{"output_tokens":5}}\n\n'
+                        message_stop = b'data: {"type":"message_stop"}\n\n'
+                        scenarios = {
+                            "anthropic-tool-use-orphan-delta": (start, args, stop, message_delta, message_stop),
+                            "anthropic-tool-use-mismatched-index": (start, tool, wrong_args, wrong_stop, message_delta, message_stop),
+                            "anthropic-tool-use-duplicate-index": (start, tool, other_tool, args, stop, message_delta, message_stop),
+                            "anthropic-tool-use-duplicate-stop": (start, tool, args, stop, stop, message_delta, message_stop),
+                            "anthropic-tool-use-missing-stop": (start, tool, args, message_delta, message_stop),
+                            "anthropic-tool-use-orphan-stop": (start, stop, b'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":5}}\n\n', message_stop),
+                            "anthropic-tool-use-mismatched-stop": (start, tool, args, wrong_stop, message_delta, message_stop),
+                            "anthropic-tool-use-delta-after-stop": (start, tool, args, stop, args, message_delta, message_stop),
+                            "anthropic-tool-use-reopened-index": (start, tool, args, stop, other_tool, message_delta, message_stop),
+                        }
+                        payload = b"".join(scenarios[scenario])
+                        content_type = "text/event-stream"
                     elif scenario == "anthropic-stream-unknown-content":
                         payload = b"".join((
                             b'data: {"type":"message_start","message":{"id":"msg_search","role":"assistant","model":"deepseek-chat","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',

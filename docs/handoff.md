@@ -13,7 +13,7 @@ flags through both production executables in isolated homes. Both cases passed
 on Linux x86-64 with the verified binary. This does not establish complete CLI
 or platform parity. The old integration worktree under `/tmp` was missing at
 continuation; the original checkout's unrelated uncommitted changes were
-preserved. Latest previously pushed commit was `3c31fea`; Fast CI run
+preserved. An earlier checkpoint was `3c31fea`; Fast CI run
 [40659458138](https://github.com/christiandoxa/modex/actions/runs/40659458138)
 failed and its artifact consumer was skipped. Artifact attestation for 0.165.1
 has not been verified.
@@ -25,6 +25,16 @@ its required comparisons remain fail-closed. Both independent helper shards
 passed in run [40748971666](https://github.com/christiandoxa/modex/actions/runs/40748971666)
 on `cfa0dad` before the later push canceled its producer job.
 
+Fast run [40749854285](https://github.com/christiandoxa/modex/actions/runs/40749854285)
+on `6d51973` passed both helper shards, production build, native units and
+current-target focused tests, then failed acquiring the unavailable mandatory
+0.439.2 oracle. The artifact consumer was skipped. See `docs/ci-lessons.md`.
+
+The production Anthropic stream parser now maps a tested function `tool_use`
+with split JSON fragments to the same 0.165.1 Responses events. Several invalid
+stop sequences remain explicitly different; image blocks remain unsupported.
+See `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
+
 The production Anthropic stream parser now accepts missing or non-string stop
 reasons and ignores stop sequences, matching selected 0.165.1 process events.
 See `docs/evidence/baseline-0.165.1/anthropic-stream.md`; this is not full
@@ -33,9 +43,8 @@ for these tested stop-field cases.
 
 The Linux x86-64 production build, focused native reader, exhaustive Unicode
 audit, current-release CLI/session/provider comparisons, dependency audit,
-test census, and both independent CI helper shards passed locally. The full
-native suite passed before the later provider and Unicode changes; it has not
-been rerun on this combined source. CI now keeps current and historical oracle paths separate, and a
+test census, and both independent CI helper shards passed locally. The full native unit suite also passed on the production source at `63a3b17`;
+its sanitized local log is `~/.cache/modex/ci-evidence/unit-63a3b17.log`. CI now keeps current and historical oracle paths separate, and a
 synthetic orchestration regression verifies that current checks precede an
 unavailable historical oracle without hiding the resulting failure.
 

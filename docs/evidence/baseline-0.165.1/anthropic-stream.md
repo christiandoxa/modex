@@ -20,3 +20,12 @@ unverified; no provider contract is promoted to PASS.
 The release also ignores unknown Anthropic event types. A synthetic future event
 previously failed Modex; both production processes now complete the same tested
 stream. Known malformed events remain subject to validation.
+
+The production parser also maps a tested Anthropic `tool_use` block and split
+`input_json_delta` fragments into Responses function-call events. A synthetic
+loopback comparison matches the complete 0.165.1 event sequence, upstream
+request and cleanup. Additional controls cover duplicate index, missing stop,
+orphan and mismatched indices, duplicate/reopened stops, and deltas after stop.
+Some malformed stop sequences complete in the release but remain rejected in
+Modex; image blocks also remain a documented mismatch. This is not general
+function-tool or event-order parity.

@@ -189,7 +189,8 @@
         "tests/test_process_stdio.mojo",
         "tests/test_app_server_rpc.py",
         "tests/test_process_capture.mojo",
-        "tests/test_super_launch.py"
+        "tests/test_super_launch.py",
+        "tests/test_super_launch_01651.py"
       ],
       "evidence": [
         "docs/evidence/inspection-policy-tests.txt",
@@ -199,6 +200,7 @@
         "docs/evidence/native-super-data-plane.json",
         "docs/evidence/native-super-tests.txt",
         "docs/evidence/native-super-dependencies.txt",
+        "docs/evidence/baseline-0.165.1/super-codex-probes.md",
         "docs/evidence/checkpoint11-reference.json",
         "docs/evidence/checkpoint11-tests.txt",
         "docs/evidence/checkpoint11-dependencies.txt"
@@ -214,6 +216,7 @@
         "descriptor and FD_CLOEXEC restoration on success/spawn failure, synthetic pipe echo and explicitly isolated environment",
         "native hook-trust RPC against synthetic app-server peers, per-RPC deadline, line-size guard and stderr suppression",
         "socketpair MSG_NOSIGNAL hook request channel handles closed stdin without killing parent; synthetic child is killed/reaped",
+        "production Super version and app-server help probes clear CODEX_HOME and five TEST_CODEX_* variables; active 0.165.1 comparison captures both probe environments",
         "production clean-home launch exit 0/7, hook failure and relay death cleanup; private overlays preserve shared sessions and retain unexpected state; idle relay exits on parent-channel EOF",
         "Checkpoint 11: hook-trust receive checks an expired deadline before consuming buffered input and uses the pinned pre-receive diagnostic; registered native unit and isolated RPC integration tests pass. This does not establish actual goal progress."
       ],

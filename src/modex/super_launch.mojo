@@ -22,6 +22,13 @@ from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstrea
 from .text import trim_text
 from .uuid7 import new_uuid7
 
+comptime CODEX_INSTALL_GUIDANCE = String(
+    "Install or update the official Codex CLI with `npm install -g @openai/codex@latest` "
+    + "(https://developers.openai.com/codex/cli), verify `codex --version`, or set "
+    + "PRODEX_CODEX_BIN to its executable path. Prodex accepts compatible Codex releases "
+    + "at or above its minimum capability baseline; the latest stable release is recommended."
+)
+
 
 def _private_directory(path: String) raises:
     if not lexists(path):
@@ -130,6 +137,29 @@ def _child_environment(home: String) -> List[String]:
     return clean^
 
 
+def _codex_probe_environment(environment: List[String]) -> List[String]:
+    var removed: List[String] = [
+        "CODEX_HOME=", "TEST_CODEX_LOG=", "TEST_CODEX_LOG_APPEND=",
+        "TEST_CODEX_ARGS_LOG=", "TEST_CODEX_ARGS_LOG_APPEND=", "TEST_CODEX_STDIN_LOG=",
+    ]
+    var result = List[String]()
+    for entry in environment:
+        var should_remove = False
+        for prefix in removed:
+            should_remove = should_remove or entry.startswith(prefix)
+        if not should_remove:
+            result.append(entry)
+    return result^
+
+
+def _child_exit_code(status: ProcessStatus) -> Int:
+    if status.exit_code:
+        return status.exit_code.value()
+    if status.term_signal:
+        return 128 + status.term_signal.value()
+    return 1
+
+
 def run_local_rewrite_child() raises:
     """Private self-process entrypoint; credentials stay out of argv and output."""
     var upstream = getenv("PRODEX_RUNTIME_LOCAL_UPSTREAM")
@@ -202,9 +232,16 @@ def _toml_model_literal(value: String) -> String:
 
 def _exec(binary: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64) raises -> Int:
     var environment = _child_environment(home)
-    var version = capture_with_env(binary, [String("--version")], environment, "Codex version probe")
+    var probe_environment = _codex_probe_environment(environment)
+    var version = capture_with_env(binary, [String("--version")], probe_environment, "Codex version probe")
     if not version.status.exit_code or version.status.exit_code.value() != 0 or not String(from_utf8=Span(version.stdout)).startswith("codex-cli "):
         raise Error("Codex version probe failed")
+    var capability = capture_with_env(binary, [String("app-server"), String("--help")], probe_environment, "Codex app-server capability probe")
+    if not capability.status.exit_code or capability.status.exit_code.value() != 0:
+        raise Error(
+            "Codex app-server capability probe failed for " + binary + " with status "
+            + String(_child_exit_code(capability.status)) + ". " + CODEX_INSTALL_GUIDANCE
+        )
     var input = Pipe()
     var output = Pipe()
     var relay_environment = _child_environment(home)

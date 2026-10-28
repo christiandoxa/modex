@@ -73,7 +73,7 @@ printf 'source_sha=%s\nmojo=%s\npython=%s\nreference_commit=%s\nreference_oracle
     "$(sha256sum "$PRODEX_ORACLE_01651" | cut -d ' ' -f1)" >"$EVIDENCE_DIR/identity.txt"
 run_logged build-input-check "$PYTHON" scripts/ci/check-build-inputs.py
 run_logged focused-build make build
-run_logged focused-python-01651 env -u PRODEX_ORACLE -u PRODEX_GATEWAY_ORACLE "$PYTHON" scripts/ci/run-unittest.py test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py test_local_rewrite_01651_oracle.py test_app_server_rpc_01651.py test_super_model_toml_01651.py
+run_logged focused-python-01651 env -u PRODEX_ORACLE -u PRODEX_GATEWAY_ORACLE "$PYTHON" scripts/ci/run-unittest.py test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py test_local_rewrite_01651_oracle.py test_app_server_rpc_01651.py test_super_model_toml_01651.py test_super_launch_01651.py
 if ! "$PYTHON" scripts/ci/reference.py oracle 0.439.2 >"$EVIDENCE_DIR/oracle-path-04392.txt" 2>"$EVIDENCE_DIR/reference-04392.log"; then
     cat "$EVIDENCE_DIR/reference-04392.log" >&2
     exit 1

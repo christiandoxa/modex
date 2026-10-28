@@ -53,6 +53,16 @@ class NativeTestCensusTests(unittest.TestCase):
             all(test.__class__.__module__ == "test_super_model_toml_01651" for test in tests)
         )
 
+    def test_current_reference_super_probe_module_is_discovered(self):
+        tests = RUNNER_DISCOVERY.discover_tests(
+            ["test_super_launch_01651.py"], require_each_pattern=True
+        )
+
+        self.assertEqual(len(tests), 1)
+        self.assertTrue(
+            all(test.__class__.__module__ == "test_super_launch_01651" for test in tests)
+        )
+
     def test_duplicate_or_omitted_native_build_is_reported(self):
         for operation, expected in (("duplicate", "found 2"), ("omit", "found 0")):
             with self.subTest(operation=operation):

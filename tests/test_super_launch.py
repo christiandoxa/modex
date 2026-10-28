@@ -22,10 +22,18 @@ args = sys.argv[1:]
 capture = pathlib.Path(os.environ["MODEX_LAUNCH_CAPTURE"])
 def save(value):
     with capture.open("a") as handle: handle.write(json.dumps(value) + "\n")
+probe_environment = ("CODEX_HOME", "TEST_CODEX_LOG", "TEST_CODEX_LOG_APPEND",
+                     "TEST_CODEX_ARGS_LOG", "TEST_CODEX_ARGS_LOG_APPEND", "TEST_CODEX_STDIN_LOG")
 if args == ["--version"]:
+    save({"kind":"probe", "args":args,
+          "environment":{key:os.environ.get(key) for key in probe_environment}})
     print("codex-cli 0.216.0")
     raise SystemExit(0)
 if args == ["app-server", "--help"]:
+    save({"kind":"probe", "args":args,
+          "environment":{key:os.environ.get(key) for key in probe_environment}})
+    if os.environ["MODEX_LAUNCH_SCENARIO"] == "app-server-help-failure":
+        raise SystemExit(7)
     print("Codex app-server")
     raise SystemExit(0)
 if "app-server" in args and "--stdio" in args:

@@ -8,6 +8,15 @@ comparisons below are historical and do not establish 0.165.1 behavior.
 The active baseline and oracle routing now select 0.165.1; the full inventory
 and production parity against this release remain unfinished.
 
+The production Super Codex version and app-server help probes now run with
+`CODEX_HOME` and the five `TEST_CODEX_*` logging variables removed. A synthetic
+peer comparison against the active 0.165.1 Linux oracle verifies both probe
+arguments, the selected capability-failure diagnostic, no RPC/provider start,
+and overlay cleanup. The version check still accepts a `codex-cli ` prefix
+without enforcing the reference's minimum semantic version; wrapper and hash
+qualification, full startup/security behavior and other targets remain gaps.
+See `docs/evidence/baseline-0.165.1/super-codex-probes.md`.
+
 The local relay now matches selected 0.165.1 `Expect: 100-continue` ordering,
 including unsupported values, declared body limits, HTTP/1.0 interim responses,
 WebSocket fallback and a half-closed body. Strict duplicate/framing rejection

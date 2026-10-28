@@ -27,6 +27,9 @@ probe_environment = ("CODEX_HOME", "TEST_CODEX_LOG", "TEST_CODEX_LOG_APPEND",
 if args == ["--version"]:
     save({"kind":"probe", "args":args,
           "environment":{key:os.environ.get(key) for key in probe_environment}})
+    if os.environ.get("MODEX_TEST_CODEX_VERSION_OVERSIZE"):
+        sys.stdout.buffer.write(b"codex-cli " + b"0" * (1024 * 1024))
+        raise SystemExit(0)
     print("codex-cli 0.216.0")
     raise SystemExit(0)
 if args == ["app-server", "--help"]:

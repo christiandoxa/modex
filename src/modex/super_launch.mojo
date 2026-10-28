@@ -16,7 +16,7 @@ from .app_server_rpc import run_super_hook_trust_preflight
 from .json import quote_json
 from .loopback_server import LoopbackHTTPListener
 from .paths import app_root, ensure_app_root, shared_root
-from .process_spawn import capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, terminate_child_gracefully, wait_or_kill
+from .process_spawn import CapturedProcessOutput, capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, terminate_child_gracefully, wait_or_kill
 from .provider_deepseek_transport import deepseek_request_headers
 from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, serve_local_rewrite
 from .text import trim_text
@@ -230,13 +230,20 @@ def _toml_model_literal(value: String) -> String:
     return result
 
 
+def _capture_codex_probe(binary: String, args: List[String], environment: List[String], label: String) raises -> CapturedProcessOutput:
+    try:
+        return capture_with_env(binary, args, environment, label)
+    except error:
+        raise Error("failed to probe Codex CLI at " + binary + ": " + String(error))
+
+
 def _exec(binary: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64) raises -> Int:
     var environment = _child_environment(home)
     var probe_environment = _codex_probe_environment(environment)
-    var version = capture_with_env(binary, [String("--version")], probe_environment, "Codex version probe")
+    var version = _capture_codex_probe(binary, [String("--version")], probe_environment, "Codex version probe")
     if not version.status.exit_code or version.status.exit_code.value() != 0 or not String(from_utf8=Span(version.stdout)).startswith("codex-cli "):
         raise Error("Codex version probe failed")
-    var capability = capture_with_env(binary, [String("app-server"), String("--help")], probe_environment, "Codex app-server capability probe")
+    var capability = _capture_codex_probe(binary, [String("app-server"), String("--help")], probe_environment, "Codex app-server capability probe")
     if not capability.status.exit_code or capability.status.exit_code.value() != 0:
         raise Error(
             "Codex app-server capability probe failed for " + binary + " with status "

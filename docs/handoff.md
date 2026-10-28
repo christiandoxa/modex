@@ -17,6 +17,12 @@ without enforcing the reference's minimum semantic version; wrapper and hash
 qualification, full startup/security behavior and other targets remain gaps.
 See `docs/evidence/baseline-0.165.1/super-codex-probes.md`.
 
+The pinned 0.439.2 Codex probe also wraps bounded-output failures with the
+Codex executable path. Modex now matches its oversized `--version` diagnostic
+and stops before app-server or provider work. This is one Linux x86-64
+synthetic case and does not establish broader Super parity. See
+`docs/evidence/baseline-0.439.2/super-codex-probe-output-limit.md`.
+
 The local relay now matches selected 0.165.1 `Expect: 100-continue` ordering,
 including unsupported values, declared body limits, HTTP/1.0 interim responses,
 WebSocket fallback and a half-closed body. Strict duplicate/framing rejection

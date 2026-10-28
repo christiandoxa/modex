@@ -25,6 +25,11 @@ its required comparisons remain fail-closed. Both independent helper shards
 passed in run [40748971666](https://github.com/christiandoxa/modex/actions/runs/40748971666)
 on `cfa0dad` before the later push canceled its producer job.
 
+Fast run [40753656126](https://github.com/christiandoxa/modex/actions/runs/40753656126)
+on `483bcf1` passed helper shards, build, native units and current-target tests,
+then failed on the unavailable required 0.439.2 oracle. Artifact consumption was
+skipped; see `docs/ci-lessons.md`.
+
 Fast run [40751613083](https://github.com/christiandoxa/modex/actions/runs/40751613083)
 on `12b7392` passed both helper shards, production build, native units and
 current-target tests, then failed at the unavailable mandatory 0.439.2 oracle.
@@ -34,6 +39,17 @@ Fast run [40749854285](https://github.com/christiandoxa/modex/actions/runs/40749
 on `6d51973` passed both helper shards, production build, native units and
 current-target focused tests, then failed acquiring the unavailable mandatory
 0.439.2 oracle. The artifact consumer was skipped. See `docs/ci-lessons.md`.
+
+An isolated full local run at `6d51973` executed 583 tests but failed 54
+assertions in five historical modules because the temporary parent was initially
+mode 0775. A rerun of all five affected modules with a 0700 parent passed 10
+methods. The original run remains failed; a clean full run on final main is
+still required. See `docs/ci-lessons.md`.
+
+The production local relay now matches selected 0.165.1 malformed-request,
+WebSocket fallback and truncated-request behavior; its shared parser still rejects
+upgrades by default. It remains serial and does not implement WebSockets. See
+`docs/evidence/baseline-0.165.1/local-relay-http.md` for controls and gaps.
 
 The Anthropic stream parser also handles tested mixed text and multiple function
 calls, including selected interleaving and late-delta cases, matching complete

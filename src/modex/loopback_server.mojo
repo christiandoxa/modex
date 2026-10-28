@@ -173,7 +173,7 @@ struct LoopbackHTTPConnection(Movable):
             return True
         raise Error("loopback HTTP peer check failed")
 
-    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT) raises -> LoopbackHTTPRequest:
+    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_websocket_upgrade: Bool = False) raises -> LoopbackHTTPRequest:
         if self.fd < 0 or self.done or self.request_read:
             raise Error("loopback HTTP connection is closed")
         if max_body_bytes < 0 or max_body_bytes > HTTP_MAX_BODY_LIMIT:
@@ -190,7 +190,7 @@ struct LoopbackHTTPConnection(Movable):
             header_end = _header_end(self.input, header_scan)
         if header_end > HTTP_HEADER_LIMIT:
             raise Error("HTTP request headers exceed limit")
-        var head = _parse_request_head(self.input, header_end)
+        var head = _parse_request_head(self.input, header_end, allow_websocket_upgrade)
         var body_start = header_end + 4
         var body = List[UInt8]()
         if head.expect_continue:
@@ -368,12 +368,15 @@ struct ParsedRequestHead(Movable):
     var expect_continue: Bool
 
 
-def _parse_request_head(bytes: List[UInt8], end: Int) raises -> ParsedRequestHead:
+def _parse_request_head(bytes: List[UInt8], end: Int, allow_websocket_upgrade: Bool) raises -> ParsedRequestHead:
     var head = _ascii(bytes, 0, end)
     var lines = head.split("\r\n")
     if not lines or lines[0].byte_length() > 8192:
         raise Error("malformed HTTP request line")
     var request_line = lines[0].split(" ")
+    if len(request_line) > 3:
+        var last = String(request_line[len(request_line) - 1])
+        raise Error("malformed HTTP request target spacing" if last == "HTTP/1.0" or last == "HTTP/1.1" else "malformed HTTP request line suffix")
     if len(request_line) != 3 or request_line[0].byte_length() == 0 or request_line[1].byte_length() == 0:
         raise Error("malformed HTTP request line")
     var version = String(request_line[2])
@@ -426,7 +429,8 @@ def _parse_request_head(bytes: List[UInt8], end: Int) raises -> ParsedRequestHea
                 raise Error("unsupported HTTP expectation")
             expect_continue = True
         elif lower == "upgrade":
-            raise Error("HTTP protocol upgrades are unsupported")
+            if not allow_websocket_upgrade or value.lower() != "websocket":
+                raise Error("HTTP protocol upgrades are unsupported")
         headers.append((name, value))
     if has_content_length and has_transfer_encoding:
         raise Error("ambiguous HTTP request framing")
@@ -672,6 +676,8 @@ def _reason(status: Int) -> String:
         return "Unprocessable Content"
     if status == 429:
         return "Too Many Requests"
+    if status == 426:
+        return "Upgrade Required"
     if status == 500:
         return "Internal Server Error"
     if status == 502:

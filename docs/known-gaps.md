@@ -8,6 +8,11 @@ release PASS. All 0.439.x observations below retain their original provenance an
 by themselves establish 0.165.1 behavior. The inherited inventory and its
 source traces have not yet been fully revalidated against 0.165.1.
 
+Selected local-relay malformed syntax, WebSocket fallback and truncated-request
+responses now match 0.165.1, but the relay is serial and does not implement
+WebSocket transport. Its 413 reason phrase differs and broader framing and
+security behavior remain unverified. See `docs/evidence/baseline-0.165.1/local-relay-http.md`.
+
 Prodex 0.165.1 requires bounded idle WebSocket parking and independently
 reclaimed handshake capacity, plus connection-owned interruption and real
 acknowledgement ordering. Modex has no WebSocket production transport; these

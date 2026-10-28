@@ -6,9 +6,10 @@ A separate local full-suite run at `6d51973` initially created its nested
 `TMPDIR` with mode 0775. The reference rejected runtime secret storage in that
 untrusted parent, producing historical provider failures. Changing the
 working test-only directories to 0700 made focused Anthropic and continuation
-reproductions pass. The original full run is still a failure and is retained at
-`~/.cache/modex/ci-evidence/full-test-6d51973.log`; do not count it as a clean
-suite. The production CI scratch helper already creates mode-0700 directories.
+reproductions pass. The original 583-test full run failed 54 assertions across five modules and is
+retained at `~/.cache/modex/ci-evidence/full-test-6d51973.log`; do not count it
+as a clean suite. A targeted rerun of all five affected modules passed 10 test
+methods after correction; see `full-test-6d51973-recovery.log`. The production CI scratch helper already creates mode-0700 directories.
 
 A partial `mkdir` failure during CI scratch initialization could exit before
 the cleanup trap was installed, leaving the new private directory behind.
@@ -18,6 +19,12 @@ and checks that the root is removed. The test runs in the independent helper
 shards; no hosted result is available for this correction yet.
 
 ## 0.165.1 checks precede the unavailable historical oracle
+
+Fast run [40753656126](https://github.com/christiandoxa/modex/actions/runs/40753656126),
+attempt 1 on `483bcf1537969865b7236616d62eeaec3c5350c4`, passed both helper
+shards, production build, native units and current-release checks. The producer
+then failed on the unavailable mandatory 0.439.2 oracle and skipped artifact
+consumption. Evidence is retained under `~/.cache/modex/ci-evidence/40753656126/`.
 
 Fast run [40751613083](https://github.com/christiandoxa/modex/actions/runs/40751613083),
 attempt 1 on `12b7392a4fa3fc7b64a192af31b6e49fa8c182b5`, passed both helper

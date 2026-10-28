@@ -2454,7 +2454,8 @@
         "tests/test_local_rewrite.py",
         "tests/test_super_launch.py",
         "tests/test_provider_passthrough.py",
-        "tests/test_provider_passthrough.mojo"
+        "tests/test_provider_passthrough.mojo",
+        "tests/test_local_rewrite_01651_oracle.py"
       ],
       "evidence": [
         "tests/fixtures/provider-sse/README.md",
@@ -2477,7 +2478,8 @@
         "docs/evidence/baseline-0.439.2/reference-verification.json",
         "docs/evidence/checkpoint14-reference.json",
         "docs/evidence/checkpoint14-tests.txt",
-        "docs/evidence/checkpoint14-dependencies.txt"
+        "docs/evidence/checkpoint14-dependencies.txt",
+        "docs/evidence/baseline-0.165.1/local-relay-http.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2531,9 +2533,13 @@
         "baseline WebSocket upstream"
       ],
       "implementation": null,
-      "tests": [],
+      "tests": [
+        "tests/test_local_rewrite.py",
+        "tests/test_local_rewrite_01651_oracle.py"
+      ],
       "evidence": [
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/baseline-0.165.1/local-relay-http.md"
       ],
       "status": "NOT_STARTED",
       "platform_status": {
@@ -3615,11 +3621,14 @@
       ],
       "prerequisites": [],
       "implementation": "Not yet connected or verified",
-      "tests": [],
+      "tests": [
+        "tests/test_local_rewrite.py"
+      ],
       "evidence": [
         "docs/evidence/baseline-0.439.1/reference-verification.json",
         "docs/evidence/native-super-reference.json",
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/baseline-0.165.1/local-relay-http.md"
       ],
       "status": "BLOCKED",
       "platform_status": {

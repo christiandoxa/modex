@@ -525,14 +525,47 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         if not accepted: continue
         var connection = accepted.take()
         request_id = request_id + 1 if request_id < UInt64.MAX else request_id
+        var request = LoopbackHTTPRequest("", "", List[Tuple[String, String]](), List[UInt8]())
+        var captured = False
         try:
-            var request = connection.read_request(120000)
-            _serve(connection, request, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
+            request = connection.read_request(120000, allow_websocket_upgrade=True)
+            captured = True
         except error:
             var message = String(error)
-            var too_large = "oversized" in message or "exceeds wire limit" in message
+            var malformed_syntax = message == "malformed HTTP request line" or message == "malformed HTTP request target spacing" or message == "malformed HTTP method" or message == "malformed HTTP request header" or message == "malformed HTTP header name" or message == "malformed HTTP header value" or message == "non-ASCII byte in HTTP header"
+            if message != "truncated HTTP request":
+                if malformed_syntax:
+                    try:
+                        connection.respond(400, [], List[UInt8](), 30000)
+                    except:
+                        pass
+                elif message == "malformed HTTP request line suffix":
+                    try:
+                        _reply(connection, 502, "upstream request failed")
+                    except:
+                        pass
+                else:
+                    var too_large = "oversized" in message or "exceeds wire limit" in message
+                    try:
+                        _reply(connection, 413 if too_large else 502, "proxied request body is too large" if too_large else "gateway request capture failed")
+                    except:
+                        pass
+        if captured:
             try:
-                _reply(connection, 413 if too_large else 502, "proxied request body is too large" if too_large else "gateway request capture failed")
-            except:
-                pass
+                var websocket_upgrade = False
+                for header in request.headers:
+                    if String(header[0]).lower() == "upgrade" and String(header[1]).lower() == "websocket":
+                        websocket_upgrade = True
+                        break
+                if websocket_upgrade:
+                    _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback")
+                else:
+                    _serve(connection, request, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
+            except error:
+                var message = String(error)
+                var too_large = "oversized" in message or "exceeds wire limit" in message
+                try:
+                    _reply(connection, 413 if too_large else 502, "proxied request body is too large" if too_large else "gateway request capture failed")
+                except:
+                    pass
         connection.close()

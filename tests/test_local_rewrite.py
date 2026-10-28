@@ -269,6 +269,20 @@ def post_declared_oversized_body(address, body_bytes):
     return int(head.split(b" ", 2)[1]), body
 
 
+def raw_http_exchange(address, request, *, half_close=False):
+    response = bytearray()
+    with socket.create_connection(address, timeout=5) as connection:
+        connection.sendall(request)
+        if half_close:
+            connection.shutdown(socket.SHUT_WR)
+        while True:
+            chunk = connection.recv(4096)
+            if not chunk:
+                break
+            response.extend(chunk)
+    return bytes(response)
+
+
 def post_then_half_close(address, body):
     connection = socket.create_connection(address, timeout=5)
     connection.sendall(
@@ -716,6 +730,63 @@ class LocalRewriteTests(unittest.TestCase):
                 self.assertEqual((status, body), (502, b"upstream request failed"))
                 status, body = post_declared_oversized_body(relay.address, 64 * 1024 * 1024 + 1)
                 self.assertEqual((status, body), (413, b"proxied request body is too large"))
+        self.assertEqual(server.records, [])
+
+    def test_malformed_http_line_and_header_return_empty_400(self):
+        malformed = (
+            b"POST /v1/responses\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
+            b"POST /v1/responses bad HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nMalformed\r\n\r\n",
+        )
+        with serving([]) as server:
+            with RunningLocalRewrite(server.server_port) as relay:
+                for request in malformed:
+                    with self.subTest(request=request):
+                        response = raw_http_exchange(relay.address, request)
+                        head, body = response.split(b"\r\n\r\n", 1)
+                        self.assertEqual(head.split(b"\r\n", 1)[0], b"HTTP/1.1 400 Bad Request")
+                        self.assertEqual(body, b"")
+                        self.assertIn(b"Content-Length: 0", head)
+        self.assertEqual(server.records, [])
+
+    def test_extra_request_line_token_keeps_the_capture_error_response(self):
+        request = (
+            b"POST /v1/responses HTTP/1.1 extra\r\nHost: 127.0.0.1\r\n"
+            b"Connection: close\r\n\r\n"
+        )
+        with serving([]) as server:
+            with RunningLocalRewrite(server.server_port) as relay:
+                response = raw_http_exchange(relay.address, request)
+        head, body = response.split(b"\r\n\r\n", 1)
+        self.assertEqual(head.split(b" ", 2)[:2], [b"HTTP/1.1", b"502"])
+        self.assertEqual(body, b"upstream request failed")
+        self.assertEqual(server.records, [])
+
+    def test_websocket_upgrade_returns_the_https_fallback_response(self):
+        expected = b"provider adapter requires HTTPS Responses transport fallback"
+        body = b'{"model":"deepseek-chat","input":"synthetic websocket probe"}'
+        requests = (
+            (b"Upgrade: WebSocket\r\n",),
+            (b"Connection: keep-alive\r\n", b"Upgrade: websocket\r\n"),
+            (
+                b"Connection: keep-alive\r\n", b"Connection: Upgrade\r\n",
+                b"Upgrade: websocket\r\n",
+            ),
+        )
+        with serving([]) as server:
+            with RunningLocalRewrite(server.server_port) as relay:
+                for headers in requests:
+                    request = (
+                        b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+                        + b"".join(headers)
+                        + b"Content-Type: application/json\r\nContent-Length: "
+                        + str(len(body)).encode() + b"\r\n\r\n" + body
+                    )
+                    with self.subTest(headers=headers):
+                        response = raw_http_exchange(relay.address, request)
+                        head, response_body = response.split(b"\r\n\r\n", 1)
+                        self.assertEqual(head.split(b"\r\n", 1)[0], b"HTTP/1.1 426 Upgrade Required")
+                        self.assertEqual(response_body, expected)
         self.assertEqual(server.records, [])
 
     def test_unsupported_route_returns_json_without_upstream_request(self):

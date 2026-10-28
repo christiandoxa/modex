@@ -169,6 +169,15 @@ class LoopbackHTTPServerTests(unittest.TestCase):
                 self.assertEqual(status(response), 400)
                 self.assertIn("REJECT ", stdout)
 
+    def test_default_loopback_parser_keeps_upgrade_headers_rejected(self):
+        process, client = start("echo")
+        client.sendall(
+            b"GET / HTTP/1.1\r\nHost: local\r\nUpgrade: websocket\r\n\r\n"
+        )
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 400)
+        self.assertIn("HTTP protocol upgrades are unsupported", stdout)
+
     def test_oversized_and_truncated_bodies_are_rejected(self):
         process, client = start("echo")
         client.sendall(

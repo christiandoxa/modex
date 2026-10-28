@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Fast CI run [40650044718](https://github.com/christiandoxa/modex/actions/runs/40650044718)
+on `cf5c5dd45cd66568d6210bc31d1a024eb6b92379` passed workflow validation,
+the 71-file dependency audit and 31 reference-helper tests. It failed before
+building because the official 0.439.2 tag and pinned oracle were unavailable;
+the artifact consumer was skipped. This run does not validate the product
+changes in hosted CI.
+
 Profile group help, seven subcommands' short and long help, help aliases and
 missing-subcommand output now match the pinned 0.439.2 process for the tested
 forms without changing the isolated HOME. First-position help flags also match

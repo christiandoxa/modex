@@ -54,6 +54,11 @@
   tests, then failed at the missing oracle before build; consumers were
   skipped. Logs and run metadata are in `/tmp/modex-ci-40644363845/`;
   evidence artifact is `12796459357`.
+- Fast run [40650044718](https://github.com/christiandoxa/modex/actions/runs/40650044718)
+  on `cf5c5dd45cd66568d6210bc31d1a024eb6b92379` passed workflow validation,
+  the 71-file dependency audit and 31 reference-helper tests. The absent
+  official tag and oracle stopped it before build; the artifact consumer was
+  skipped. The hosted run therefore does not validate the product changes.
 
 ## Frozen release disappeared and width-control calibration
 

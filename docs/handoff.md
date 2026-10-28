@@ -30,8 +30,10 @@ request comparisons cover the active release and selected separately pinned
 selected SSE response IDs beyond 4 MiB; live 0.439.2 and supplementary 0.439.5
 checks return 200/503 with one upstream POST. Native and 571 deterministic
 binding-boundary comparisons cover malformed JSON, duplicate keys, long
-numbers, UTF-8 and chunk boundaries. The NBSP data-prefix behavior matches the
-release but differs from the former helper. Numeric-position counters saturate
+numbers, UTF-8 and chunk boundaries. Twenty more whitespace prefixes match
+the 0.439.2 release in real two-turn tests with one-byte chunks; the former
+helper rejects those prefixes, while the release and new observer bind them.
+The NBSP data-prefix behavior also matches the release. Numeric-position counters saturate
 at one billion; broader resource and security equivalence remains unverified.
 
 The width-memory harness counts minor faults as events, rather than assuming

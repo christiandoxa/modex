@@ -175,6 +175,19 @@ class RuntimeObserverTests(unittest.TestCase):
                 self.assertEqual([item["status"] for item in responses], [200, 503])
                 self.assertEqual(len(upstream), 1)
 
+    def test_unicode_whitespace_before_event_json_matches_release(self):
+        codepoints = (0x0B, 0x0C, 0x85, 0x1680, *range(0x2000, 0x200B),
+                      0x2028, 0x2029, 0x202F, 0x205F, 0x3000)
+        for codepoint in codepoints:
+            response_id = f"resp_whitespace_{codepoint:x}"
+            event = (b'event: response.completed\ndata:' + chr(codepoint).encode()
+                     + b'{"response":{"id":"' + response_id.encode() + b'"}}\n\n')
+            for binary in (ORACLE, MODEX):
+                with self.subTest(codepoint=hex(codepoint), binary=str(binary)):
+                    upstream, responses = observe_case(binary, event, response_id, chunk_size=1)
+                    self.assertEqual([item["status"] for item in responses], [200, 503])
+                    self.assertEqual(len(upstream), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

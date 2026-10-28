@@ -21,7 +21,9 @@ Combined snapshot validation (Mojo 1.2.0 (2016d0cd), Linux x86-64):
   passed the revised harness.
 - 2 synthetic known-gap characterization methods: PASS, recording mismatches.
 - 571 fixed-seed bounded binding cases: PASS, with the specific release-backed
-  NBSP old-helper difference explicitly asserted.
+  NBSP old-helper difference explicitly asserted. Twenty additional vertical
+  tab, form-feed and Unicode whitespace prefixes each matched the 0.439.2
+  release through production two-turn tests with one-byte chunks.
 - Production std/internal import audit, 49-native/89-Python test census,
   workflow policy and shell syntax: PASS. ldd links official Mojo runtime and
   system libraries; no new application dependency or binding was added.

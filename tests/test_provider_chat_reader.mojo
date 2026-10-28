@@ -29,6 +29,14 @@ def assert_anthropic_failed(source: String) raises:
     assert_true(len(events) > 0 and events[len(events) - 1].startswith("event: response.failed\r\n"))
 
 
+def collect_anthropic_completed(source: String) raises -> List[String]:
+    var reader = DeepSeekChatReader(9, "resp_deepseek_initial", 1, native_messages=True)
+    var events = collect(reader, source)
+    assert_true(reader.done and reader.state.completed)
+    assert_true(len(events) > 0 and events[len(events) - 1].startswith("event: response.completed\r\n"))
+    return events^
+
+
 def main() raises:
     var reader = DeepSeekChatReader(7, "resp_deepseek_initial", 1)
     var events = collect(reader, 'data: {"choices":[{"delta":{"content":"kept"}}]}\ndata: {"error":{"message":"synthetic failure"}}\n\ndata: [DONE]\n\n')
@@ -52,17 +60,45 @@ def main() raises:
     var text_start = 'data: {"type":"content_block_start","index":2,"content_block":{"type":"text","text":""}}\n\n'
     var text_delta = 'data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"Found it."}}\n\n'
     var text_stop = 'data: {"type":"content_block_stop","index":2}\n\n'
+    var message_stop = 'data: {"type":"message_stop"}\n\n'
     var message_delta = 'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":5}}\n\n'
     var ping = 'event: ping\ndata: {"type":"ping"}\n\n'
-    var valid_native = message_start + ping + search_result + ping + text_start + text_delta + ping + text_stop + message_delta + 'data: {"type":"message_stop"}\n\n'
-    var native_reader = DeepSeekChatReader(9, "resp_deepseek_initial", 1, native_messages=True)
-    var native_events = collect(native_reader, valid_native)
-    assert_true(native_reader.done and native_reader.state.completed)
-    assert_true(native_events[len(native_events) - 1].startswith("event: response.completed\r\n"))
+    var valid_native = (
+        message_start + ping + search_result + ping + text_start + text_delta + ping
+        + text_stop + message_delta + message_stop
+    )
+    var native_events = collect_anthropic_completed(valid_native)
+    assert_true('"finish_reason":"stop"' in native_events[len(native_events) - 1])
+
+    var before_stop = message_start + search_result + text_start + text_delta + text_stop
+    var sequence_delta = 'data: {"type":"message_delta","delta":{"stop_reason":"stop_sequence","stop_sequence":"synthetic"},"usage":{"output_tokens":5}}\n\n'
+    var sequence_events = collect_anthropic_completed(before_stop + sequence_delta + message_stop)
+    assert_true('"finish_reason":"stop"' in sequence_events[len(sequence_events) - 1])
+    assert_true('"output_tokens":5' in sequence_events[len(sequence_events) - 1])
+    var null_reason_delta = 'data: {"type":"message_delta","delta":{"stop_reason":null,"stop_sequence":null},"usage":{"output_tokens":5}}\n\n'
+    var null_reason_events = collect_anthropic_completed(before_stop + null_reason_delta + message_stop)
+    assert_true('"finish_reason"' not in null_reason_events[len(null_reason_events) - 1])
+    assert_true('"output_tokens":5' in null_reason_events[len(null_reason_events) - 1])
+    var end_turn_sequence_delta = 'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":"synthetic"},"usage":{"output_tokens":5}}\n\n'
+    var end_turn_sequence_events = collect_anthropic_completed(before_stop + end_turn_sequence_delta + message_stop)
+    assert_true('"finish_reason":"stop"' in end_turn_sequence_events[len(end_turn_sequence_events) - 1])
+    var missing_delta_events = collect_anthropic_completed(before_stop + message_stop)
+    assert_true('"usage"' not in missing_delta_events[len(missing_delta_events) - 1])
+    assert_true('"finish_reason"' not in missing_delta_events[len(missing_delta_events) - 1])
+    var tool_use_delta = 'data: {"type":"message_delta","delta":{"stop_reason":"tool_use","stop_sequence":null},"usage":{"output_tokens":5}}\n\n'
+    var tool_use_events = collect_anthropic_completed(before_stop + tool_use_delta + message_stop)
+    assert_true('"finish_reason":"tool_calls"' in tool_use_events[len(tool_use_events) - 1])
+    var max_tokens_delta = 'data: {"type":"message_delta","delta":{"stop_reason":"max_tokens","stop_sequence":null},"usage":{"output_tokens":5}}\n\n'
+    var max_tokens_events = collect_anthropic_completed(before_stop + max_tokens_delta + message_stop)
+    assert_true('"finish_reason":"length"' in max_tokens_events[len(max_tokens_events) - 1])
 
     assert_anthropic_failed(search_result + text_start + text_delta + text_stop + message_delta + 'data: {"type":"message_stop"}\n\n')
     assert_anthropic_failed(message_start + search_result + text_start + text_delta + text_stop + message_delta + 'data: [DONE]\n\n')
-    assert_anthropic_failed(message_start + search_result + text_start + text_delta + text_stop + 'data: {"type":"message_stop"}\n\n')
+    assert_anthropic_failed(before_stop)
+    var invalid_reason_delta = 'data: {"type":"message_delta","delta":{"stop_reason":5,"stop_sequence":null},"usage":{"output_tokens":5}}\n\n'
+    assert_anthropic_failed(before_stop + invalid_reason_delta + message_stop)
+    var invalid_sequence_delta = 'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":5},"usage":{"output_tokens":5}}\n\n'
+    assert_anthropic_failed(before_stop + invalid_sequence_delta + message_stop)
     assert_anthropic_failed(message_start + search_result + 'data: {"type":"content_block_start","index":2,"content_block":{"type":"text","text":"unstreamed"}}\n\n')
     assert_anthropic_failed(message_start + 'data: {"type":"future_event"}\n\n')
     print("Provider chat reader checks: PASS")

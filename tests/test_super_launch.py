@@ -210,6 +210,12 @@ class SuperLaunchTests(unittest.TestCase):
                                 "anthropic-stop-sequence": {"stop_reason": "stop_sequence", "stop_sequence": "synthetic"},
                                 "anthropic-stop-null-reason": {"stop_reason": None, "stop_sequence": None},
                                 "anthropic-stop-end-turn-sequence": {"stop_reason": "end_turn", "stop_sequence": "synthetic"},
+                                "anthropic-stop-tool-use": {"stop_reason": "tool_use", "stop_sequence": None},
+                                "anthropic-stop-max-tokens": {"stop_reason": "max_tokens", "stop_sequence": None},
+                                "anthropic-stop-unknown-reason": {"stop_reason": "synthetic_future_reason", "stop_sequence": None},
+                                "anthropic-stop-missing-reason": {"stop_sequence": None},
+                                "anthropic-stop-invalid-reason": {"stop_reason": 5, "stop_sequence": None},
+                                "anthropic-stop-invalid-sequence": {"stop_reason": "end_turn", "stop_sequence": 5},
                             }
                             delta = json.dumps({"type": "message_delta", "delta": variants[scenario], "usage": {"output_tokens": 5}}, separators=(",", ":"))
                             chunks.append(("data: " + delta + "\n\n").encode())

@@ -387,6 +387,20 @@ class ArtifactManifestTests(unittest.TestCase):
             MANIFEST.extract_bundle(bundle, destination, expected)
         self.assertEqual(list(destination.iterdir()), [])
 
+    def test_bundle_rejects_nonempty_destination_without_overwriting(self):
+        _, bundle, _ = self._bundle()
+        digest = hashlib.sha256(bundle.read_bytes()).hexdigest()
+        destination = self.base / "existing"
+        destination.mkdir()
+        marker = destination / "preserve"
+        marker.write_bytes(b"existing content")
+
+        with self.assertRaisesRegex(MANIFEST.ManifestError, "must be empty"):
+            MANIFEST.extract_bundle(bundle, destination, digest)
+
+        self.assertEqual([path.name for path in destination.iterdir()], ["preserve"])
+        self.assertEqual(marker.read_bytes(), b"existing content")
+
     def test_bundle_rejects_traversal_and_nonregular_entries(self):
         source, _, _ = self._bundle()
         for entry_name, entry_type, mode in (

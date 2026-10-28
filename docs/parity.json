@@ -123,6 +123,14 @@
     {
       "date": "2026-10-28",
       "change": "Allow session inspection with selected unrelated state-like filenames, verified against 0.439.2 and a historical 0.439.5 control. Real state, lock, last-good, pending temporary and journal handling remain fail-closed; no contract or platform status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Match selected Anthropic Messages stream stop reasons and optional message_delta behavior against full 0.439.2 process events. Malformed stop fields remain explicit fail-closed differences; no contract or platform status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Match selected stateless profile help forms and record an 11-case active-release continuation ownership regression. Stateful profile operations and broader ownership remain unfinished; no contract or platform status is promoted."
     }
   ],
   "contracts": [
@@ -206,12 +214,13 @@
         "aarch64-pc-windows-msvc"
       ],
       "prerequisites": [],
-      "implementation": "src/modex/cli.mojo; src/modex/root_help.mojo; src/modex/log_cli.mojo; src/modex/inspection_cli.mojo; src/modex/gateway_cli.mojo; src/main.mojo (root/session/log/current/info/status/gateway help and diagnostics)",
+      "implementation": "src/modex/cli.mojo; src/modex/root_help.mojo; src/modex/log_cli.mojo; src/modex/inspection_cli.mojo; src/modex/gateway_cli.mojo; src/modex/profile_cli.mojo; src/main.mojo (selected help and diagnostics)",
       "tests": [
         "tests/capture_cli.py",
         "tests/capture_session_cli.py",
         "tests/test_session_cli.py",
         "tests/test_root_help.py",
+        "tests/test_profile_cli.py",
         "tests/test_log_cli.py",
         "tests/test_inspection_cli.py",
         "tests/test_gateway_cli.mojo",
@@ -226,6 +235,7 @@
         "docs/evidence/session-arguments-tests.txt",
         "docs/evidence/unicode-width-tests.txt",
         "docs/evidence/log-tests.txt",
+        "docs/evidence/profile-help-04392.md",
         "docs/evidence/inspection-policy-tests.txt",
         "tests/fixtures/gateway/cases.json",
         "docs/evidence/runtime-local-tests.txt",
@@ -280,15 +290,17 @@
       "prerequisites": [
         "managed upstream CLI"
       ],
-      "implementation": "src/main.mojo (version/help/session/log routes only)",
+      "implementation": "src/main.mojo (selected command and help routes)",
       "tests": [
         "tests/test_cli.py",
         "tests/test_root_help.py",
+        "tests/test_profile_cli.py",
         "tests/test_session_cli.py",
         "tests/test_log_cli.py"
       ],
       "evidence": [
         "docs/evidence/log-tests.txt",
+        "docs/evidence/profile-help-04392.md",
         "docs/evidence/baseline-0.439.2/reference-verification.json",
         "docs/evidence/checkpoint13-reference.json",
         "docs/evidence/checkpoint13-tests.txt",
@@ -941,6 +953,7 @@
       "evidence": [
         "docs/evidence/session-tests.txt",
         "docs/evidence/session-query-04392.md",
+        "docs/evidence/session-state-filenames-04392.md",
         "docs/evidence/session-mismatches.json",
         "docs/evidence/time-json-tests.txt",
         "docs/evidence/recurring-time-tests.txt",
@@ -972,7 +985,7 @@
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
         "Selected minimal resume metadata and ID fallbacks match 0.439.5. A non-object first JSONL record panics in the release and is omitted by Modex; this remains a mismatch.",
-        "An unrelated state.json.backup is ignored by the release but rejected by Modex's fail-closed state guard. Safe locking and recovery remain unimplemented.",
+        "Selected unrelated state-like filenames no longer block session listing; actual state, locks, recovery snapshots and journals remain fail-closed until safe locking and recovery are implemented.",
         "Selected dotted-I and Greek sigma query cases match 0.439.2 and 0.439.5; complete Unicode Case_Ignorable handling remains unimplemented.",
         "Machine-output comparisons, 324 synthetic leap-zone cases, dictionary-free compressed rollout cases, 239 detached text scenarios, every Unicode scalar against Unicode 17 UCD, and 3,026 actual release emoji rows plus 960 generated mixed sequences are covered. Unverified sequence cases remain. The baseline three-cell Khmer truncation and wrapping cases panic while Modex returns safe output; these are retained UNAPPROVED_SAFE_DIFFERENCE mismatches, not parity passes. Full contracts still fail on state locking/recovery, startup effects, incomplete terminal rendering and dimensions, remaining timezone file cases, baseline panic behavior, and unapproved noncanonical compressed-frame differences. UTF-8 width scanning now uses constant auxiliary state; Linux RSS regression checks, a 1,100,000-byte title, the exact 64 MiB line boundary and one-byte overflow, and 3,905 short Kirat vowel sequences are verified. Whole-command memory and other platforms remain unverified."
       ]
@@ -2772,12 +2785,15 @@
         "tests/test_relay_streams.py",
         "tests/test_provider_request_prepare.py",
         "tests/test_deepseek_continuation.py",
+        "tests/test_continuation_binding_04392.py",
         "tests/test_gateway_cli.mojo",
         "tests/capture_stream_timeout_mismatch.py",
         "tests/test_loopback_http_stream.py",
         "tests/test_continuation_binding_04395.py",
         "tests/test_provider_request_untyped_content_04395.py",
-        "tests/test_provider_embedded_tool_calls_04395.py"
+        "tests/test_provider_embedded_tool_calls_04395.py",
+        "tests/test_provider_tools_04392_characterization.py",
+        "tests/test_anthropic_buffered_payload_04392.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
@@ -2797,6 +2813,7 @@
         "docs/evidence/provider-buffered-link.txt",
         "docs/evidence/runtime-local-tests.txt",
         "docs/evidence/runtime-local-link.txt",
+        "docs/evidence/continuation-ownership-04392.md",
         "docs/evidence/checkpoint-04391-tests.txt",
         "docs/evidence/native-super-reference.json",
         "docs/evidence/native-super-data-plane.json",
@@ -2829,6 +2846,7 @@
         "docs/evidence/checkpoint9-worker-review.txt",
         "docs/evidence/checkpoint9-timeout-mismatch.json",
         "docs/evidence/deepseek-precommit-04392.md",
+        "docs/evidence/anthropic-web-search-04392.md",
         "docs/evidence/checkpoint9-state-review.json",
         "docs/evidence/checkpoint10-reference.json",
         "docs/evidence/checkpoint10-tests.txt",

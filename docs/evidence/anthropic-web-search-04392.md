@@ -40,27 +40,30 @@ citations from text output, maps a `thinking` block into reasoning output, and
 completes after an image block without preserving its data. Modex returns 502
 for the buffered cases and a terminal `response.failed` event for the stream
 case. Native SSE success requires an ordered message start, one search block,
-one result block, one empty-start text block, their stop events, a message
-delta and a message stop. A bare `[DONE]`, missing start/delta/stop, nonempty
-initial text and unsupported block order fail closed. Only the tested single
-web-search call/result and text shape succeeds.
+one result block, one empty-start text block, their stop events and a message
+stop. A bare `[DONE]`, missing start/stop, nonempty initial text and unsupported
+block order fail closed. Only the tested single web-search call/result and text
+shape succeeds.
 
-Four retained release comparisons expose narrower differences: Prodex completes
-when `message_delta.stop_reason` is `stop_sequence` or null, when `end_turn` has
-a non-null `stop_sequence`, and when `message_delta` is absent before
-`message_stop`; Modex emits `response.failed`. These cases remain explicit
-gaps in `test_anthropic_stream_stop_variants_remain_explicit_mismatches`.
+Full normalized release comparisons now match `stop_sequence`, null and
+unknown string reasons, `tool_use`, `max_tokens`, a non-null stop sequence with
+`end_turn`, and a missing `message_delta`. Missing or non-string stop reasons
+and non-string stop sequences remain explicit, unapproved fail-closed differences: the release
+completes while Modex emits `response.failed`.
 
 Checks run in an isolated workspace copy:
 
 - `make check-toolchain` — pass.
 - `make build-internal` — pass.
-- `python3 -m unittest test_provider_tools_04392_characterization` — 15 tests pass against the pinned release and production Modex CLI, including path, empty-input, heartbeat, and retained stop-mismatch controls.
+- `python3 -m unittest test_provider_tools_04392_characterization` — 15 tests pass against the pinned release and production Modex CLI, including path, empty-input, heartbeat and ten stop variants.
 - `python3 scripts/ci/run-unittest.py test_anthropic_buffered_payload_04392.py` — full buffered comparisons pass for normal, empty-text and empty-ID cases.
 - `python3 -m unittest test_local_rewrite` — 19 tests pass after rebuilding the isolated test-only relay driver.
 - `make unit-build UNIT_BUILD_PROGRAMS='test_gateway_cli test_provider_chat_reader test_provider_chat_stream test_provider_deepseek_transport'` and execute all four programs — pass, including incomplete native stream and route-scoped header checks.
 - `make unit-build UNIT_BUILD_PROGRAMS='local_rewrite_driver'` — pass.
 - `python3 scripts/ci/check-product-dependencies.py` — pass; production imports use only Mojo std/internal modules.
+
+The 15-method characterization suite ran before the profile-help integration;
+the ten stop cases were rerun against the combined production build afterward.
 
 Fixtures use synthetic keys and local loopback providers. No paid provider traffic,
 real credentials or account login were used. This does not qualify general

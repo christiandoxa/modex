@@ -267,32 +267,54 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                 self.assertEqual(reference["state"]["leftovers"], [])
                 self.assertEqual(modex["state"]["leftovers"], [])
 
-    def test_anthropic_stream_stop_variants_remain_explicit_mismatches(self):
+    def test_anthropic_stream_stop_variants_match_release_and_reject_malformed_fields(self):
         request = {
             "model": "deepseek-chat",
             "input": "synthetic web query",
             "stream": True,
             "tools": [{"type": "web_search_preview"}],
         }
-        cases = (
-            "anthropic-stop-sequence",
-            "anthropic-stop-null-reason",
-            "anthropic-stop-end-turn-sequence",
-            "anthropic-stop-missing-message-delta",
-        )
-        for scenario in cases:
+        cases = {
+            "anthropic-stop-sequence": (True, "stop"),
+            "anthropic-stop-null-reason": (True, None),
+            "anthropic-stop-end-turn-sequence": (True, "stop"),
+            "anthropic-stop-missing-message-delta": (True, None),
+            "anthropic-stop-tool-use": (True, "tool_calls"),
+            "anthropic-stop-max-tokens": (True, "length"),
+            "anthropic-stop-unknown-reason": (True, "stop"),
+            "anthropic-stop-missing-reason": (False, None),
+            "anthropic-stop-invalid-reason": (False, None),
+            "anthropic-stop-invalid-sequence": (False, "stop"),
+        }
+        for scenario, (matches_release, expected_finish_reason) in cases.items():
             with self.subTest(scenario=scenario):
                 reference = _run(ORACLE_04392, request, scenario=scenario)
                 modex = _run(MODEX, request, scenario=scenario)
                 self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
                 self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+                self.assertEqual(len(reference["upstream"]), 1)
+                self.assertEqual(len(modex["upstream"]), 1)
+                self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+                self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
                 reference_events = _normalized_events(reference["response_body"])
                 modex_events = _normalized_events(modex["response_body"])
                 self.assertIn("response.completed", [name for name, _ in reference_events])
                 self.assertNotIn("response.failed", [name for name, _ in reference_events])
-                self.assertIn("response.failed", [name for name, _ in modex_events])
-                self.assertNotIn("response.completed", [name for name, _ in modex_events])
-                self.assertNotEqual(modex_events, reference_events)
+                reference_response = reference_events[-1][1]["response"]
+                if expected_finish_reason is None:
+                    self.assertNotIn("metadata", reference_response)
+                else:
+                    self.assertEqual(
+                        reference_response["metadata"]["deepseek"]["finish_reason"],
+                        expected_finish_reason,
+                    )
+                modex_names = [name for name, _ in modex_events]
+                if matches_release:
+                    self.assertEqual(modex_events, reference_events)
+                else:
+                    self.assertIn("response.failed", modex_names)
+                    self.assertNotIn("response.completed", modex_names)
+                    self.assertNotEqual(modex_events, reference_events)
                 self.assertEqual(reference["state"]["leftovers"], [])
                 self.assertEqual(modex["state"]["leftovers"], [])
 

@@ -49,6 +49,11 @@
   including directory-symlink controls, and then failed at the same missing
   0.439.2 oracle before build; consumers were skipped. Logs and run metadata
   are in `/tmp/modex-ci-40644048655/`; evidence artifact is `12796383574`.
+- Fast run [40644363845](https://github.com/christiandoxa/modex/actions/runs/40644363845)
+  on `abf45400b6df545c6b3d564534c9847914a6cecb` repeated the 31 passing helper
+  tests, then failed at the missing oracle before build; consumers were
+  skipped. Logs and run metadata are in `/tmp/modex-ci-40644363845/`;
+  evidence artifact is `12796459357`.
 
 ## Frozen release disappeared and width-control calibration
 

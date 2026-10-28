@@ -285,24 +285,45 @@ struct DeepSeekChatState:
             _only_fields(doc, doc.root, ["type", "delta", "usage"], "message_delta event")
             var delta = doc.get(doc.root, "delta")
             _only_fields(doc, delta, ["stop_reason", "stop_sequence"], "message_delta")
-            if doc.string(doc.get(delta, "stop_reason")) != "end_turn":
-                raise Error("Anthropic stream stop reason is not supported")
+            var stop_reason = doc.get(delta, "stop_reason")
+            if (
+                stop_reason < 0
+                or (doc.nodes[stop_reason].kind != JSON_NULL and doc.nodes[stop_reason].kind != JSON_STRING)
+            ):
+                raise Error("Anthropic stream stop reason is invalid")
             var stop_sequence = doc.get(delta, "stop_sequence")
-            if stop_sequence >= 0 and doc.nodes[stop_sequence].kind != JSON_NULL:
-                raise Error("Anthropic stream stop sequence is not supported")
+            # The frozen Responses translation maps the reason and has no stop-sequence output field.
+            if (
+                stop_sequence >= 0
+                and doc.nodes[stop_sequence].kind != JSON_NULL
+                and doc.nodes[stop_sequence].kind != JSON_STRING
+            ):
+                raise Error("Anthropic stream stop sequence is invalid")
             var usage = doc.get(doc.root, "usage")
             _only_fields(doc, usage, ["output_tokens"], "message_delta usage")
             var output = json_unsigned(doc, doc.get(usage, "output_tokens"))
             if not output: raise Error("Anthropic message_delta usage is invalid")
             self.anthropic_output_tokens = output.value()
             self.anthropic_phase = 8
-            self.finish_reason = Optional[String]("stop")
+            if doc.nodes[stop_reason].kind == JSON_STRING:
+                var reason = doc.nodes[stop_reason].text
+                if reason == "tool_use":
+                    self.finish_reason = Optional[String]("tool_calls")
+                elif reason == "max_tokens":
+                    self.finish_reason = Optional[String]("length")
+                else:
+                    self.finish_reason = Optional[String]("stop")
             var total = UInt64.MAX if self.anthropic_output_tokens > UInt64.MAX - self.anthropic_input_tokens else self.anthropic_input_tokens + self.anthropic_output_tokens
             self.usage = Optional[String]('{"input_tokens":' + String(self.anthropic_input_tokens) + ',"output_tokens":' + String(self.anthropic_output_tokens) + ',"total_tokens":' + String(total) + '}')
             return self.complete_tools()
         if kind == "message_stop":
             _only_fields(doc, doc.root, ["type"], "message_stop event")
-            if self.anthropic_phase != 8 or len(self.anthropic_searches) != 1 or not self.anthropic_searches[0].done or not self.anthropic_text_index:
+            if (
+                (self.anthropic_phase != 7 and self.anthropic_phase != 8)
+                or len(self.anthropic_searches) != 1
+                or not self.anthropic_searches[0].done
+                or not self.anthropic_text_index
+            ):
                 raise Error("Anthropic stream ended outside the supported web-search response shape")
             self.anthropic_phase = 9
             var events = self.complete_anthropic_searches()

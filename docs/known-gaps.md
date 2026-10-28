@@ -7,6 +7,12 @@ qualifications are explicitly BLOCKED; focused host tests do not establish a
 release PASS. The 0.439.5 and 0.439.1 observations below retain their original
 provenance and do not by themselves establish 0.439.2 behavior.
 
+The profile group and selected subcommand help now match the 0.439.2 release.
+Profile listing and all state-changing operations remain unimplemented: the
+release creates persistent locks that Modex cannot yet coordinate with safely.
+Malformed or unknown profile arguments and help after earlier arguments also
+remain mismatches. See `docs/evidence/profile-help-04392.md`.
+
 The 0.439.2 oversized SSE continuation case now binds the response ID: both
 products return 200/503 with one upstream POST. The incremental observer has
 native parser comparisons and selected production controls for malformed JSON,
@@ -36,14 +42,14 @@ text. Broader request/message shapes, tool-result/history round trips, complete
 metadata/citation behavior, TLS/DNS/proxies, resource behavior and full
 stream/error equivalence remain open. Stream success requires the tested
 ordered search/result/text blocks with explicit stops and a final
-`message_delta`/`message_stop`; other valid Anthropic event orders remain
+`message_stop`; other valid Anthropic event orders remain
 unverified. The exact empty-string request is rejected with the observed 400
 before POST, while whitespace-only input is accepted. See
 `docs/evidence/anthropic-web-search-04392.md`.
-The release also completes streams with `stop_reason: stop_sequence`, a null
-`stop_reason`, a non-null stop sequence alongside `end_turn`, or no
-`message_delta`; Modex fails those four retained characterization cases. Other
-stream metadata and stop variants remain unverified.
+Selected string/null stop reasons and streams without `message_delta` now match
+the release's full normalized events. Missing or non-string stop reasons and
+non-string stop sequences remain fail-closed differences: the release completes
+them while Modex fails. Other stream metadata and stop variants remain unverified.
 
 Strict-tool environment settings select the beta route and normalize supported
 runtime-path schemas for numeric-loopback HTTP. The baseline simple-request
@@ -81,9 +87,10 @@ current source oracle and were replaced with eight release/native checks.
 This is verified through real Super synthetic peers, selected route/status
 controls and isolated raw socket probes;
 it is not broad streaming, cancellation, timeout, HTTP binary metadata,
-security or SDK parity. The protected two-turn binding mismatch persists:
-Prodex 200/503 and one POST versus Modex 200/200 and two. All release targets
-remain blocked. Earlier checkpoint mismatch paragraphs below are historical.
+security or SDK parity. At that checkpoint the protected two-turn binding
+case returned 200/503 with one POST in Prodex and 200/200 with two in Modex.
+The current source now matches that case; broader ownership remains unverified.
+All release targets remain blocked. Earlier mismatch paragraphs are historical.
 See `checkpoint15-reference.json` and `checkpoint15-protected-probes.json`.
 
 Checkpoint 14 fixes buffered bodyless Content-Length: 0 and the hook initialize

@@ -1,5 +1,26 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Profile group help, seven subcommands' short and long help, help aliases and
+missing-subcommand output now match the pinned 0.439.2 process for the tested
+forms without changing the isolated HOME. Other argument errors and help after
+earlier arguments differ. Profile listing and mutations remain unimplemented
+because the release creates persistent locks that Modex cannot safely share.
+See `docs/evidence/profile-help-04392.md`; no profile contract is promoted.
+
+The previously documented protected two-turn ownership mismatch is no longer
+present on the current source: the release and Modex both return 200/503 with
+one POST. The new 11-case real-process regression also covers previous ID,
+session and turn identities, route changes and failed or invalid responses.
+The relay still has a single static endpoint and process-local binding table;
+multi-profile ownership and persistence remain unverified. See
+`docs/evidence/continuation-ownership-04392.md`.
+
+For the validated single-search Anthropic stream shape, the production relay
+now matches complete 0.439.2 event sequences for selected null and string
+stop reasons, string stop sequences and a missing `message_delta`. Missing or
+non-string stop reasons and non-string stop sequences remain fail-closed
+differences. No provider or platform status is promoted.
+
 Session listing now distinguishes actual state files, their locks and atomic
 temporary files from unrelated names such as `state.json.backup`. Full JSON
 output matches the checksum-verified 0.439.2 release for the tested unrelated
@@ -18,6 +39,9 @@ the oracle or promote a parity status. Hosted Fast run
 [40644048655](https://github.com/christiandoxa/modex/actions/runs/40644048655)
 on `fdace0b` passed all 31 helper tests, then failed on the unavailable
 0.439.2 oracle before the build; its consumers were skipped.
+The same result occurred for Fast run
+[40644363845](https://github.com/christiandoxa/modex/actions/runs/40644363845)
+on `abf4540`.
 
 An isolated combined build passed all native unit programs and 523 Python
 tests on Linux x86-64 using checksum-verified local 0.439.2 and 0.439.5
@@ -168,16 +192,16 @@ DeepSeek and raw passthrough retain their previous forwarding. Native SSE now
 ignores the Anthropic `ping` heartbeat, matching the whole normalized stream
 from the release; unknown event types still fail closed. It fails closed
 unless the tested search/result/text blocks stop in order and end with
-`message_delta` and `message_stop`.
-Four stop-shape mismatches remain recorded: the release completes for null or
-`stop_sequence` stop reasons, `end_turn` with a non-null stop sequence, and a
-missing `message_delta`; Modex emits `response.failed` for each.
+`message_stop`. Null or string stop reasons, non-null string stop sequences,
+and a missing `message_delta` now match full release event sequences for the
+selected controls. Missing or non-string stop reasons and non-string stop
+sequences still fail closed while the release completes them.
 
-The profile-list and artifact-manifest prototypes remain unrelated workspace
-work in progress. The profile prototype cannot safely coordinate with the
-baseline's locking; its `src/main.mojo` connection is excluded from this
-checkpoint. Keep those paths unstaged and preserve them. Evidence for the
-combined focused checks is `docs/evidence/active-baseline-04392-tests.txt`.
+The older profile-list and artifact-manifest prototypes remain unrelated work
+in progress in the original checkout. Their stateful and CI implementations
+are excluded; the separate stateless profile-help slice is described above.
+Evidence for the combined focused checks is
+`docs/evidence/active-baseline-04392-tests.txt`.
 
 # Historical checkpoint: Prodex 0.439.5 parity and CI
 
@@ -362,12 +386,13 @@ Full run `40587024590` on `216d494` failed the Tifinagh RSS threshold; logs
 and measurement artifacts were retained and the cause is under investigation.
 The later pass does not by itself resolve that failure; see `docs/ci-lessons.md`.
 
-An unrelated `.prodex/state.json.backup` exposes another session-list gap:
+At that historical checkpoint, an unrelated `.prodex/state.json.backup` exposed a session-list gap:
 0.439.5 lists the synthetic session, while Modex fails closed with its state
 recovery error. Both leave the backup unchanged. The guard remains unchanged
 until real locking and recovery semantics can be implemented safely. The
 clean-snapshot production build, import audit and characterization test pass;
-`tests/test_session_state_backup_04395.py` records the mismatch, not parity.
+The later 0.439.2 and historical 0.439.5 correction is recorded at the top of
+this handoff; state locking and recovery remain open.
 
 Checkpoint `5e92613dea9e18b1587b6a1d9cde07b8b052a0b2` is verified on main.
 Fast CI run `40587184826` and exact-SHA Full CI run `40587202764` passed.

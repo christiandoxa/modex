@@ -8,6 +8,7 @@ from modex.log_cli import log_help, log_short_help, parse_log_arguments
 from modex.logs import log_last
 from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
+from modex.profile_cli import profile_help, profile_short_help
 from modex.root_help import root_help
 from modex.sessions import inspect_sessions
 from modex.super_cli import parse_super_arguments, run_super
@@ -26,6 +27,41 @@ def main():
             print("Error: local provider relay failed", file=stderr)
             exit(1)
         return
+    if len(args) >= 2 and args[1] == "profile":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        if len(args) == 2:
+            print(profile_help("", executable), file=stderr, end="")
+            exit(2)
+            return
+        if len(args) == 3 and (args[2] == "--help" or args[2] == "-h"):
+            print(profile_help("", executable), end="")
+            return
+        if args[2] == "help":
+            if len(args) == 3:
+                print(profile_help("", executable), end="")
+                return
+            if len(args) == 4:
+                var output = profile_help(args[3], executable)
+                if output:
+                    print(output, end="")
+                    return
+        elif len(args) == 4 and (args[3] == "--help" or args[3] == "-h"):
+            var output = profile_help(args[2], executable) if args[3] == "--help" else profile_short_help(args[2], executable)
+            if output:
+                print(output, end="")
+                return
+    if len(args) >= 3 and args[1] == "help" and args[2] == "profile":
+        if len(args) == 3:
+            var executable_parts = args[0].split("/")
+            print(profile_help("", String(executable_parts[len(executable_parts) - 1])), end="")
+            return
+        if len(args) == 4:
+            var executable_parts = args[0].split("/")
+            var output = profile_help(args[3], String(executable_parts[len(executable_parts) - 1]))
+            if output:
+                print(output, end="")
+                return
     if len(args) >= 3 and args[1] == "help" and (args[2] == "super" or args[2] == "s"):
         var parts = args[0].split("/")
         var executable = String(parts[len(parts) - 1])

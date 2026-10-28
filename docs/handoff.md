@@ -1,5 +1,16 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Session queries now lowercase selected dotted-I and contextual Greek sigma
+cases on the production CLI path. Synthetic session comparisons use the
+checksum-verified 0.439.2 release; supplementary 0.439.5 checks retain their
+own oracle. The pre-change build failed those cases. This is a partial Unicode
+slice: complete Case_Ignorable context, broader session behavior and state
+locking remain open. See `docs/evidence/session-query-04392.md`.
+
+Fast run `40620967035` and Full run `40620978240` both passed on exact SHA
+`87a011893c99dd467a0d8d6c1330e0189baa58de`. Neither result qualifies this
+newer session change.
+
 Strict tools now work through the production Super relay when both
 `PRODEX_DEEPSEEK_STRICT_TOOLS` and an explicit numeric-loopback HTTP
 `PRODEX_DEEPSEEK_BETA_BASE_URL` are set. The relay validates before launch,

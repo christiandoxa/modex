@@ -82,16 +82,15 @@ class SessionQuery04395Tests(unittest.TestCase):
                     self.assertEqual(outputs[0], expected)
                     self.assertEqual(outputs[1], outputs[0])
 
-    def test_known_unicode_lowercase_mismatches_are_characterized(self):
-        # These observations retain baseline mismatches; they are not parity PASS cases.
+    def test_known_unicode_lowercase_cases_match_the_pinned_release(self):
         with tempfile.TemporaryDirectory(prefix="modex-session-query-unicode-") as directory:
             roots = unicode_query_roots(directory)
             cases = (
-                ("dotted-I lowercase expansion", "prövideri\u0307", (SESSION_ID + "\n").encode(), b""),
-                ("Greek final sigma", "ος", (SESSION_ID + "\n").encode(), b""),
-                ("Greek ordinary sigma", "οσ", b"", (SESSION_ID + "\n").encode()),
+                ("dotted-I lowercase expansion", "prövideri\u0307", (SESSION_ID + "\n").encode()),
+                ("Greek final sigma", "ος", (SESSION_ID + "\n").encode()),
+                ("Greek ordinary sigma", "οσ", b""),
             )
-            for label, query, oracle_output, modex_output in cases:
+            for label, query, expected in cases:
                 with self.subTest(label=label, query=query):
                     outputs = []
                     for root_label, binary, argv0 in (("baseline", test_cli.HISTORICAL_04395_ORACLE, "prodex"),
@@ -108,8 +107,7 @@ class SessionQuery04395Tests(unittest.TestCase):
                         self.assertEqual(result.stderr, b"")
                         outputs.append(result.stdout)
 
-                    self.assertNotEqual(outputs[0], outputs[1])
-                    self.assertEqual(outputs, [oracle_output, modex_output])
+                    self.assertEqual(outputs, [expected, expected])
 
     def test_duplicate_keys_and_later_metadata_drive_query_filters(self):
         with tempfile.TemporaryDirectory(prefix="modex-session-query-updates-") as directory:

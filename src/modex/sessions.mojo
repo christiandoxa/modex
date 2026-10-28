@@ -14,6 +14,50 @@ from .zstd import ZstdReader
 comptime SESSION_LINE_LIMIT = 64 * 1024 * 1024
 
 
+def session_query_case_ignorable(code: Int) -> Bool:
+    # shortcut: skips common combining diacritics and apostrophes; use full Unicode Case_Ignorable data before claiming all contextual sigma cases.
+    return 0x0300 <= code <= 0x036F or code == 0x0027 or code == 0x2019
+
+
+def session_query_cased(code: Int) -> Bool:
+    if code < 128:
+        return 65 <= code <= 90 or 97 <= code <= 122
+    var character = chr(code)
+    return character.lower() != character.upper()
+
+
+def session_query_lowercase(value: String) -> String:
+    if value.find(chr(0x0130)) < 0 and value.find(chr(0x03A3)) < 0:
+        return value.lower()
+    var characters = value.codepoints()
+    var before_cased = False
+    var output = String()
+    while True:
+        var character = characters.next()
+        if not character:
+            break
+        var code = Int(character.value())
+        if code == 0x0130:
+            output += "i\u0307"
+        elif code == 0x03A3:
+            var after = characters.copy()
+            var after_cased = False
+            while True:
+                var next_character = after.next()
+                if not next_character:
+                    break
+                var next_code = Int(next_character.value())
+                if not session_query_case_ignorable(next_code):
+                    after_cased = session_query_cased(next_code)
+                    break
+            output += chr(0x03C2 if before_cased and not after_cased else 0x03C3)
+        else:
+            output += chr(code).lower()
+        if not session_query_case_ignorable(code):
+            before_cased = session_query_cased(code)
+    return output^
+
+
 @fieldwise_init
 struct SessionOptions(Copyable):
     var current: Bool
@@ -85,10 +129,10 @@ struct SessionReport(Copyable):
             return False
         if options.current and (not self.directory or comparable_path(self.directory) != comparable_path(options.directory.value())):
             return False
-        var query = trim_text(options.query).lower()
+        var query = session_query_lowercase(trim_text(options.query))
         if query:
             for field in [self.id, self.thread_name, self.directory, self.provider, self.path]:
-                if query in field.lower():
+                if query in session_query_lowercase(field):
                     return True
             return False
         return True

@@ -37,10 +37,11 @@ The tested session metadata admission cases match 0.439.5. For a non-object
 first JSONL record, that release panics while Modex omits the session. With an
 unrelated `.prodex/state.json.backup`, 0.439.5 lists sessions and Modex fails
 closed; `tests/test_session_state_backup_04395.py` captures both outcomes.
-Session query matching also differs from 0.439.5 for Unicode lowercase
-expansion and final sigma; `tests/test_session_query_04395.py` captures those
-results. These observations need separate 0.439.2 verification; broader session
-behavior, state locking, recovery and security remain unqualified.
+Selected dotted-I expansion and contextual Greek sigma queries now match both
+the active 0.439.2 oracle and the separately pinned 0.439.5 oracle. The sigma
+context covers common combining marks and apostrophes, not the complete
+Unicode Case_Ignorable property. Broader session behavior, state locking,
+recovery and security remain unqualified.
 
 Checkpoint 15 matches the official 0.439.2 bodyless SSE chunked header
 and final raw wire chunk `0\r\n\r\n` on 204/304, and corrects the buffered

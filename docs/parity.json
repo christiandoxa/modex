@@ -1615,6 +1615,7 @@
         "tests/test_super_cli.mojo",
         "tests/test_super_cli.py",
         "tests/test_app_server_rpc.py",
+        "tests/test_app_server_rpc_01651.py",
         "tests/test_super_hooks_runtime.py",
         "tests/test_app_server_args.py",
         "tests/test_super_launch.py",
@@ -1628,6 +1629,7 @@
       "evidence": [
         "docs/evidence/checkpoint-04391-tests.txt",
         "docs/evidence/native-super-reference.json",
+        "docs/evidence/baseline-0.165.1/app-server-client-info.md",
         "docs/evidence/native-super-data-plane.json",
         "docs/evidence/native-super-tests.txt",
         "docs/evidence/native-super-dependencies.txt",

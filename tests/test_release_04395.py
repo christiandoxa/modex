@@ -18,7 +18,7 @@ class Release04395Tests(unittest.TestCase):
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != test_cli.HISTORICAL_04395_ORACLE_SHA256:
             raise AssertionError("oracle does not match historical Prodex 0.439.5")
 
-    def test_hook_initialize_uses_each_release_client_version(self):
+    def test_hook_initialize_reports_pinned_release_and_current_modex_versions(self):
         probe = test_super_launch.SuperLaunchTests('runTest')
         for binary in (ORACLE, MODEX):
             with self.subTest(binary=str(binary)):
@@ -30,7 +30,7 @@ class Release04395Tests(unittest.TestCase):
                 self.assertEqual(initialize['params'], {
                     'capabilities': {'experimentalApi': True},
                     'clientInfo': {'name': 'prodex-hook-trust',
-                                   'version': '0.439.5' if binary == ORACLE else '0.439.2'},
+                                   'version': '0.439.5' if binary == ORACLE else '0.165.1'},
                 })
 
     def test_bodyless_chat_and_ordinary_response_lengths(self):

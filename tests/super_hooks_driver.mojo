@@ -49,7 +49,9 @@ def read_session(workspace: String) raises -> Bool:
     var offset = 0
     var eof = False
     while not session.done:
-        write_all(1, session.request() + "\n")
+        # Keep this replay aligned with the historical 0.439.2 oracle fixture.
+        var request = session.request().replace('"version":"0.165.1"', '"version":"0.439.2"')
+        write_all(1, request + "\n")
         var deadline = perf_counter() + Float64(HOOK_TRUST_RPC_TIMEOUT_MS) / 1000.0
         var accepted = False
         while not accepted:

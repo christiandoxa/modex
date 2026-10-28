@@ -18,7 +18,7 @@ def expect_error(mut session: HookTrustSession, line: String, expected: String) 
 
 def main() raises:
     var session = HookTrustSession("/synthetic/雪\"workspace")
-    assert_equal(session.request(), '{"id":1,"jsonrpc":"2.0","method":"initialize","params":{"capabilities":{"experimentalApi":true},"clientInfo":{"name":"prodex-hook-trust","version":"0.439.2"}}}')
+    assert_equal(session.request(), '{"id":1,"jsonrpc":"2.0","method":"initialize","params":{"capabilities":{"experimentalApi":true},"clientInfo":{"name":"prodex-hook-trust","version":"0.165.1"}}}')
     for ignored in ["bad", "{}", '{"id":"1","result":{}}', '{"id":1.0,"result":{}}', '{"id":1e0,"result":{}}', '{"id":2,"result":{}}', '{"method":"notice"}']:
         assert_true(not session.accept(ignored))
         assert_equal(session.phase, 1)

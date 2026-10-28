@@ -8,6 +8,12 @@ comparisons below are historical and do not establish 0.165.1 behavior.
 The active baseline and oracle routing now select 0.165.1; the full inventory
 and production parity against this release remain unfinished.
 
+Production Super hook-trust initialization now identifies itself as 0.165.1,
+matching the verified Linux oracle through isolated synthetic Codex launches.
+The 0.439.2 fixture and source provenance remain intact for the historical
+protocol regression. This covers `clientInfo` only; see
+`docs/evidence/baseline-0.165.1/app-server-client-info.md`.
+
 The `help update` unknown-subcommand diagnostic now preserves the full
 argument, including attached values, in three real-process comparisons with
 0.165.1 and the historical 0.439.2 control. Update execution remains
@@ -80,9 +86,9 @@ still required. See `docs/ci-lessons.md`.
 
 The later `027fc48` full run executed 593 tests but failed two setup checks
 and rejected one skip because isolated HOME hid the historical source paths.
-The 0.439.2 affected modules pass with the explicit pinned source; a new full
-run with both source paths is in progress on `165dd15`. Neither run qualifies
-the final head; see `docs/ci-lessons.md`.
+The affected modules pass with the explicit pinned sources. A subsequent full
+run on `165dd15` passed 605 tests with both historical source paths supplied;
+it predates the current head. See `docs/ci-lessons.md`.
 
 The production local relay now matches selected 0.165.1 malformed-request,
 WebSocket fallback and truncated-request behavior; its shared parser still rejects

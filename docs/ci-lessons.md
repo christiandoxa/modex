@@ -10,9 +10,10 @@ source-check setup errors and one rejected skip. Its private HOME lacked the
 explicit 0.439.2 and 0.439.1 source paths. Targeted reruns with the pinned
 0.439.2 source passed the untyped-role test and three quota tests; a targeted
 rerun with the pinned 0.439.1 source passed five recovery tests. The original failed log is
-`~/.cache/modex/ci-evidence/full-test-027fc48.log`. A new run on `165dd15`
-sets both historical source paths; it has not yet established final-head
-validation.
+`~/.cache/modex/ci-evidence/full-test-027fc48.log`. The full run on `165dd15`
+set both historical source paths and passed the build, native suite and 605
+Python tests; its log is `~/.cache/modex/ci-evidence/full-test-165dd15.log`.
+That result predates the current head and is not final-head validation.
 
 ## Scratch setup failure must clean its private root
 

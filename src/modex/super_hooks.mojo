@@ -138,7 +138,7 @@ struct HookTrustSession:
             raise Error("hook-trust preflight is already complete")
         var params: String
         if self.phase == 1:
-            params = '{"capabilities":{"experimentalApi":true},"clientInfo":{"name":"prodex-hook-trust","version":"0.439.2"}}'
+            params = '{"capabilities":{"experimentalApi":true},"clientInfo":{"name":"prodex-hook-trust","version":"0.165.1"}}'
         elif self.phase == 3:
             params = '{"edits":[{"keyPath":"hooks.state","mergeStrategy":"upsert","value":' + self.updates + '}],"expectedVersion":null,"filePath":null,"reloadUserConfig":true}'
         else:

@@ -99,6 +99,10 @@
     {
       "date": "2026-10-28",
       "change": "Embedded generic-message tool calls in simple DeepSeek requests match selected 0.439.5 production loopback cases, including paired outputs and malformed entries. Non-simple behavior and remaining provider gaps are unchanged."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Bare DeepSeek tool-role messages select the first present call_id, tool_call_id or id like 0.439.5 in simple requests. Non-simple mapping remains unchanged; no provider or platform status is promoted."
     }
   ],
   "contracts": [

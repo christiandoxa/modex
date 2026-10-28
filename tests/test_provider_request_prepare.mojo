@@ -38,6 +38,10 @@ def main() raises:
     assert_equal(prepare_request_body(bare_tool_non_string_id, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"tool","content":"synthetic output","tool_call_id":"call_1"}]}')
     var bare_tool_valid_id = JsonDocument('{"input":[{"role":"tool","tool_call_id":"synthetic-call","content":"synthetic output"}]}')
     assert_equal(prepare_request_body(bare_tool_valid_id, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"tool","content":"synthetic output","tool_call_id":"synthetic-call"}]}')
+    var bare_tool_primary_id = JsonDocument('{"input":[{"role":"tool","call_id":null,"tool_call_id":"secondary","id":"fallback","content":"synthetic output"}]}')
+    assert_equal(prepare_request_body(bare_tool_primary_id, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"tool","content":"synthetic output","tool_call_id":"call_1"}]}')
+    var bare_tool_fallback_id = JsonDocument('{"input":[{"role":"tool","id":"fallback","content":"synthetic output"}]}')
+    assert_equal(prepare_request_body(bare_tool_fallback_id, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"tool","content":"synthetic output","tool_call_id":"fallback"}]}')
     var bare_tool_paired = JsonDocument('{"input":[{"type":"function_call","call_id":"synthetic-call","name":"lookup","arguments":"{}"},{"role":"tool","tool_call_id":"synthetic-call","content":"synthetic output"}]}')
     assert_equal(prepare_request_body(bare_tool_paired, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"assistant","content":"","tool_calls":[{"id":"synthetic-call","type":"function","function":{"name":"lookup","arguments":"{}"}}]},{"role":"tool","content":"synthetic output","tool_call_id":"synthetic-call"}]}')
 

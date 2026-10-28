@@ -20,6 +20,14 @@ Keep the 0.439.2 role regression and earlier captures as historical evidence;
 they do not establish 0.439.5 parity. All six release targets remain in the
 incomplete denominator.
 
+Bare DeepSeek tool-role messages in simple requests now select the first
+present `call_id`, `tool_call_id`, or `id`, including non-string defaulting.
+Previously `call_id` and `id` were ignored. Eight added 0.439.5 loopback
+controls cover precedence and the unchanged non-simple path; the regression is
+`tests/test_provider_request_tool_role_04395.py`. A clean-snapshot production
+build, two native request checks and three focused Python tests passed.
+Broader tool behavior remains incomplete.
+
 Simple DeepSeek requests now retain embedded generic-message tool calls. A
 paired assistant/tool exchange previously sent the tool output without its
 preceding call; 0.439.5 sends both. Selected real-process comparisons cover

@@ -18,10 +18,13 @@ Super missing-value diagnostics now match 0.165.1 for the tested value options
 and aliases before the positional `exec` tail. After `exec`, the reference
 creates lock state and reports runtime-style errors while Modex fails before
 state mutation; `super exec --model --help` also reaches startup in Prodex but
-not Modex. Other typed-value errors remain incomplete: for example,
-`--context-window -1` exits 2 with a Clap invalid-value message in Prodex but
-exits 1 with a native integer parse error in Modex. Selected empty/dash-value
-and help-order controls match both 0.165.1 and historical 0.439.2. See
+not Modex. Pre-tail unsigned parse diagnostics now match for context-window,
+auto-compact, rollout-token, rollout-reminder and current-time interval flags,
+including local aliases. The `--sub-agent-max-concurrency -1` Clap wrapper
+still differs: Prodex exits 2 with an invalid-value message; Modex exits 1
+with the underlying range error. Post-tail typed errors retain the prior
+runtime/state differences. Selected empty/dash-value, numeric-boundary and
+help-order controls match both 0.165.1 and historical 0.439.2. See
 `docs/evidence/baseline-0.165.1/super-cli-missing-values.md`.
 
 Selected local-relay malformed syntax, method forwarding, GET response framing,

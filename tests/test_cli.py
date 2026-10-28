@@ -40,6 +40,43 @@ SUPER_POSITIONAL_VALUE_CASES = (
     ("context-window", ("super", "exec", "--context-window")),
     ("model-help-tail", ("super", "exec", "--model", "--help")),
 )
+SUPER_NEGATIVE_INTEGER_CASES = (
+    ("--context-window", "--context-window <TOKENS>"),
+    ("--local-context-window", "--context-window <TOKENS>"),
+    ("--auto-compact-token-limit", "--auto-compact-token-limit <TOKENS>"),
+    ("--local-auto-compact-token-limit", "--auto-compact-token-limit <TOKENS>"),
+    ("--rollout-budget-tokens", "--rollout-budget-tokens <TOKENS>"),
+    ("--rollout-budget-reminders", "--rollout-budget-reminders <TOKENS>"),
+    ("--current-time-reminder-interval", "--current-time-reminder-interval <REQUESTS>"),
+)
+SUPER_INTEGER_ACCEPT_CASES = (
+    ("zero", ("super", "--context-window", "0", "--help")),
+    ("u64 max", ("super", "--context-window", "18446744073709551615", "--help")),
+    ("plus sign", ("super", "--context-window", "+1", "--help")),
+    ("attached canonical", ("super", "--context-window=0", "--help")),
+    ("attached context alias", ("super", "--local-context-window=0", "--help")),
+    ("attached auto-compact alias", ("super", "--local-auto-compact-token-limit=0", "--help")),
+    ("help before invalid value", ("super", "--help", "--context-window", "-1")),
+)
+SUPER_INTEGER_ERROR_CASES = (
+    ("overflow", ("super", "--context-window", "18446744073709551616", "--help"),
+     "18446744073709551616", "--context-window <TOKENS>", "number too large to fit in target type"),
+    ("whitespace", ("super", "--context-window", " 1 ", "--help"),
+     " 1 ", "--context-window <TOKENS>", "invalid digit found in string"),
+    ("attached canonical", ("super", "--context-window=-1", "--help"),
+     "-1", "--context-window <TOKENS>", "invalid digit found in string"),
+    ("attached context alias", ("super", "--local-context-window=18446744073709551616", "--help"),
+     "18446744073709551616", "--context-window <TOKENS>", "number too large to fit in target type"),
+    ("attached auto-compact alias", ("super", "--local-auto-compact-token-limit=-1", "--help"),
+     "-1", "--auto-compact-token-limit <TOKENS>", "invalid digit found in string"),
+    ("invalid value before help", ("super", "--context-window", "-1", "--help"),
+     "-1", "--context-window <TOKENS>", "invalid digit found in string"),
+)
+
+
+def super_integer_diagnostic(value, label, reason):
+    return (f"error: invalid value '{value}' for '{label}': {reason}\n\n"
+            "For more information, try '--help'.\n").encode()
 
 
 def isolated_run(binary, arguments):
@@ -151,6 +188,67 @@ class HistoricalSuperProviderCliTests(unittest.TestCase):
                 expected_stderr = baseline.stderr.replace(b"prodex", b"modex")
                 self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
                                  (baseline.returncode, baseline.stdout, expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_negative_integer_values_match_release_diagnostics(self):
+        for option, diagnostic_label in SUPER_NEGATIVE_INTEGER_CASES:
+            with self.subTest(option=option):
+                arguments = ["super", option, "-1"]
+                expected_stderr = (
+                    b"error: invalid value '-1' for '" + diagnostic_label.encode()
+                    + b"': invalid digit found in string\n\nFor more information, try '--help'.\n"
+                )
+                baseline, baseline_created = self._run(
+                    ORACLE, arguments, "prodex", "04392-super-negative-integer"
+                )
+                modex, modex_created = self._run(
+                    MODEX, arguments, "modex", "modex-super-negative-integer"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_integer_boundaries_and_help_order_match_release(self):
+        oracle_help, oracle_help_created = self._run(
+            ORACLE, ["super", "--help"], "prodex", "04392-super-integer-help"
+        )
+        modex_help, modex_help_created = self._run(
+            MODEX, ["super", "--help"], "modex", "modex-super-integer-help"
+        )
+        self.assertEqual((oracle_help.returncode, oracle_help.stderr, oracle_help_created),
+                         (0, b"", []))
+        self.assertEqual((modex_help.returncode, modex_help.stderr, modex_help_created),
+                         (0, b"", []))
+
+        for name, arguments in SUPER_INTEGER_ACCEPT_CASES:
+            with self.subTest(name=name):
+                baseline, baseline_created = self._run(
+                    ORACLE, list(arguments), "prodex", "04392-super-integer-accepted"
+                )
+                modex, modex_created = self._run(
+                    MODEX, list(arguments), "modex", "modex-super-integer-accepted"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (0, oracle_help.stdout, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (0, modex_help.stdout, b""))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        for name, arguments, value, label, reason in SUPER_INTEGER_ERROR_CASES:
+            with self.subTest(name=name):
+                expected_stderr = super_integer_diagnostic(value, label, reason)
+                baseline, baseline_created = self._run(
+                    ORACLE, list(arguments), "prodex", "04392-super-integer-invalid"
+                )
+                modex, modex_created = self._run(
+                    MODEX, list(arguments), "modex", "modex-super-integer-invalid"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
     def test_missing_values_after_positional_tail_keep_runtime_path_difference_visible(self):

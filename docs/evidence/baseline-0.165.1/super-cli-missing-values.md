@@ -1,8 +1,9 @@
-# Super missing option values against 0.165.1
+# Super parser diagnostics against 0.165.1
 
 `tests/test_cli_01651.py` compares real Prodex 0.165.1 and Modex processes in
-isolated homes. Each pre-positional missing-value case exits before creating
-application state. The pinned Linux oracle SHA-256 is
+isolated homes. The same focused cases in `tests/test_cli.py` use historical
+0.439.2. Each parser-only case exits before creating application state. The
+pinned Linux oracle SHA-256 is
 `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51`.
 
 Before the fix, Prodex exited 2 with Clap's `a value is required for
@@ -25,9 +26,29 @@ profile, while Modex reports that Super startup is unimplemented. These
 post-tail outcomes are captured against both releases and remain incomplete
 runtime/state parity.
 
-This qualifies selected Super CLI diagnostics on Linux x86-64. It does not
-establish full CLI parity. A negative integer value such as
-`--context-window -1` remains different: Prodex exits 2 with a Clap invalid
-value diagnostic, while Modex exits 1 with `Error: invalid digit found in
-string`. Other typed-value diagnostics and the remaining release targets are
-unqualified.
+## Unsigned values
+
+The pinned Prodex source at `10ae15b5d1806302b60f051e4e6fec788044f4c2`
+declares context and auto-compact limits as `usize` options in
+`crates/prodex-cli/src/runtime_args/launch_args.rs`; rollout and current-time
+limits are `u64` fields in `crates/prodex-cli/src/runtime_features.rs`.
+Modex now returns the matching
+Clap invalid-value diagnostic before positional `exec` for negative values on
+`--context-window`, `--auto-compact-token-limit`, `--rollout-budget-tokens`,
+`--rollout-budget-reminders` and `--current-time-reminder-interval`, including
+the local context and auto-compact aliases. Tests compare exit, stdout,
+stderr and filesystem mutations against 0.165.1 and historical 0.439.2.
+
+Boundary controls cover zero, U64 max and `+1` as accepted values, attached
+values and aliases, overflow and whitespace errors, and help ordering. Valid
+values are followed by help to isolate parsing from later required-option
+validation; each output is compared with that executable's own help control.
+These controls create no state. After positional `exec`,
+`--context-window -1` still follows the pre-existing exit-1 runtime parser
+path: Prodex creates its lock files and Modex creates none.
+
+This qualifies selected Super CLI diagnostics on Linux x86-64; it does not
+establish full CLI parity. For example, `--sub-agent-max-concurrency -1`
+remains different: Prodex exits 2 with a Clap invalid-value diagnostic, while
+Modex exits 1 with its unwrapped range error. Other typed and ranged value
+diagnostics and the remaining release targets are unqualified.

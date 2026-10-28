@@ -12,8 +12,14 @@ Pre-positional Super missing-value diagnostics now match the pinned Clap output
 for all 27 value-option spellings and aliases, with empty values, dash-prefixed
 values, help ordering and historical 0.439.2 controls. After `exec`, the
 references still create lock state and report runtime-style errors; Modex
-preserves its old exit-1 diagnostics without state mutations. A negative
-numeric value such as `--context-window -1` also remains different. See
+preserves its old exit-1 diagnostics without state mutations. Unsigned parse
+errors now also match before the tail for context-window, auto-compact,
+rollout-token, rollout-reminder and current-time interval options, including
+the local aliases. Tests cover negative, overflow and whitespace errors,
+accepted zero/U64-max/+1 values, attached forms and help ordering against both
+pinned releases. After `exec`, the negative context-window parse still follows
+the existing exit-1 path and state mismatch. The separate
+`--sub-agent-max-concurrency -1` Clap-wrapper gap remains open. See
 `docs/evidence/baseline-0.165.1/super-cli-missing-values.md`.
 
 The Super model override now matches the tested 0.165.1 app-server argument

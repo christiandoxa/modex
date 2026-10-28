@@ -70,6 +70,15 @@ def _missing_value_error(name: String) -> Error:
     return session_cli_error(message)
 
 
+def _validate_unsigned_value(name: String, value: String, parsed_value: String, clap_diagnostic: Bool) raises:
+    try:
+        _ = unsigned_value(parsed_value)
+    except error:
+        if clap_diagnostic:
+            raise session_cli_error("invalid value '" + value + "' for '" + _value_label(name) + "': " + String(error))
+        raise Error(String(error))
+
+
 def _valid_http_url(value: String) -> Bool:
     var scheme_end = value.find("://")
     if scheme_end < 0 or value.find("?") >= 0 or value.find("#") >= 0:
@@ -127,10 +136,10 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
     if name == "--current-time-clock-source" and value not in ["system", "external"]:
         raise Error("invalid --current-time-clock-source: supported values are system, external")
     if name in ["--context-window", "--auto-compact-token-limit", "--rollout-budget-tokens", "--current-time-reminder-interval"]:
-        _ = unsigned_value(value)
+        _validate_unsigned_value(name, value, value, clap_diagnostic)
     if name == "--rollout-budget-reminders":
         for threshold in value.split(","):
-            _ = unsigned_value(String(threshold))
+            _validate_unsigned_value(name, value, String(threshold), clap_diagnostic)
     return value
 
 

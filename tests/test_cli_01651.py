@@ -5,7 +5,16 @@ import os
 from pathlib import Path
 import unittest
 
-from test_cli import MODEX, SUPER_POSITIONAL_VALUE_CASES, SUPER_VALUE_OPTIONS, isolated_run as isolated_version
+from test_cli import (
+    MODEX,
+    SUPER_INTEGER_ACCEPT_CASES,
+    SUPER_INTEGER_ERROR_CASES,
+    SUPER_NEGATIVE_INTEGER_CASES,
+    SUPER_POSITIONAL_VALUE_CASES,
+    SUPER_VALUE_OPTIONS,
+    isolated_run as isolated_version,
+    super_integer_diagnostic,
+)
 from test_root_help import isolated_run, map_executable
 
 
@@ -233,14 +242,82 @@ class SuperProviderCli01651Tests(unittest.TestCase):
                 self.assertEqual((baseline.stderr, modex.stderr), (b"", b""))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
-    def test_negative_integer_value_diagnostic_gap_remains_visible(self):
-        arguments = ["super", "--context-window", "-1"]
-        baseline, baseline_created = isolated_run(ORACLE, arguments, "prodex", "01651-super-negative-window")
-        modex, modex_created = isolated_run(MODEX, arguments, "modex", "modex-super-negative-window")
-        self.assertEqual(baseline.returncode, 2)
-        self.assertIn(b"invalid value '-1' for '--context-window <TOKENS>'", baseline.stderr)
-        self.assertEqual((modex.returncode, modex.stderr), (1, b"Error: invalid digit found in string\n"))
-        self.assertEqual((baseline_created, modex_created), ([], []))
+    def test_negative_integer_values_match_release_diagnostics(self):
+        for option, diagnostic_label in SUPER_NEGATIVE_INTEGER_CASES:
+            with self.subTest(option=option):
+                arguments = ["super", option, "-1"]
+                expected_stderr = (
+                    b"error: invalid value '-1' for '" + diagnostic_label.encode()
+                    + b"': invalid digit found in string\n\nFor more information, try '--help'.\n"
+                )
+                baseline, baseline_created = isolated_run(
+                    ORACLE, arguments, "prodex", "01651-super-negative-integer"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, arguments, "modex", "modex-super-negative-integer"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_integer_boundaries_and_help_order_match_release(self):
+        oracle_help, oracle_help_created = isolated_run(
+            ORACLE, ["super", "--help"], "prodex", "01651-super-integer-help"
+        )
+        modex_help, modex_help_created = isolated_run(
+            MODEX, ["super", "--help"], "modex", "modex-super-integer-help"
+        )
+        self.assertEqual((oracle_help.returncode, oracle_help.stderr, oracle_help_created),
+                         (0, b"", []))
+        self.assertEqual((modex_help.returncode, modex_help.stderr, modex_help_created),
+                         (0, b"", []))
+
+        for name, arguments in SUPER_INTEGER_ACCEPT_CASES:
+            with self.subTest(name=name):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "prodex", "01651-super-integer-accepted"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "modex", "modex-super-integer-accepted"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (0, oracle_help.stdout, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (0, modex_help.stdout, b""))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        for name, arguments, value, label, reason in SUPER_INTEGER_ERROR_CASES:
+            with self.subTest(name=name):
+                expected_stderr = super_integer_diagnostic(value, label, reason)
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "prodex", "01651-super-integer-invalid"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "modex", "modex-super-integer-invalid"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_negative_integer_after_exec_keeps_runtime_error_path(self):
+        arguments = ["super", "exec", "--context-window", "-1"]
+        baseline, baseline_created = isolated_run(
+            ORACLE, arguments, "prodex", "01651-super-post-exec-negative"
+        )
+        modex, modex_created = isolated_run(
+            MODEX, arguments, "modex", "modex-super-post-exec-negative"
+        )
+        expected = (1, b"", b"Error: invalid digit found in string\n")
+        self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr), expected)
+        self.assertEqual((modex.returncode, modex.stdout, modex.stderr), expected)
+        self.assertTrue(baseline_created)
+        self.assertTrue(all(path == "home/.prodex" or path.startswith("home/.prodex/")
+                            for path in baseline_created))
+        self.assertEqual(modex_created, [])
 
     def test_missing_values_after_positional_tail_keep_runtime_path_difference_visible(self):
         for name, arguments in SUPER_POSITIONAL_VALUE_CASES:

@@ -28,16 +28,22 @@ The production Super Codex version and app-server help probes now run with
 `CODEX_HOME` and the five `TEST_CODEX_*` logging variables removed. A synthetic
 peer comparison against the active 0.165.1 Linux oracle verifies both probe
 arguments, the selected capability-failure diagnostic, no RPC/provider start,
-and overlay cleanup. The version check still accepts a `codex-cli ` prefix
-without enforcing the reference's minimum semantic version; wrapper and hash
-qualification, full startup/security behavior and other targets remain gaps.
-See `docs/evidence/baseline-0.165.1/super-codex-probes.md`.
+and overlay cleanup. The version check now enforces the frozen `0.153.2`
+minimum: a synthetic `0.153.1` stops before app-server help, while exact-minimum
+`0.153.2` from stderr is accepted. The final low-version diagnostic and
+oversized version/help capture errors match 0.165.1. Prodex prints startup
+progress before the low-version error; Modex does not, so only the final error
+line matches. Wrapper/hash qualification, other malformed version inputs,
+full startup/security behavior and other targets remain gaps. See
+`docs/evidence/baseline-0.165.1/super-codex-probes.md`.
 
-The pinned 0.439.2 Codex probe also wraps bounded-output failures with the
-Codex executable path. Modex now matches oversized `--version` and
-`app-server --help` diagnostics and stops before RPC or provider work. These
-Linux x86-64 synthetic cases do not establish broader Super parity. See
-`docs/evidence/baseline-0.439.2/super-codex-probe-output-limit.md`.
+The pinned 0.439.2 Codex probe also enforces the `0.153.2` minimum. Its real
+oracle comparison now covers below-minimum rejection, exact-minimum acceptance
+from stderr, and oversized `--version`/`app-server --help` diagnostics. The
+below-minimum final error matches, but Prodex progress output remains absent in
+Modex. These Linux x86-64 synthetic cases do not establish broader Super
+parity. See `docs/evidence/baseline-0.439.2/super-codex-minimum-version.md`
+and `docs/evidence/baseline-0.439.2/super-codex-probe-output-limit.md`.
 
 The local relay now matches selected 0.165.1 `Expect: 100-continue` ordering,
 including unsupported values, declared body limits, HTTP/1.0 interim responses,

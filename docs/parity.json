@@ -1628,6 +1628,8 @@
         "tests/test_deepseek_continuation.py",
         "tests/test_deepseek_precommit_boundaries_04392.py",
         "tests/test_deepseek_precommit_invalid_utf8_04392.py",
+        "tests/test_super_probe_diagnostic_04392.py",
+        "tests/test_super_launch_01651.py",
         "tests/test_app_server_rpc.mojo"
       ],
       "evidence": [
@@ -1639,6 +1641,7 @@
         "docs/evidence/baseline-0.165.1/app-server-invalid-utf8.md",
         "docs/evidence/baseline-0.165.1/super-model-toml-tab.md",
         "docs/evidence/baseline-0.165.1/super-codex-probes.md",
+        "docs/evidence/baseline-0.439.2/super-codex-minimum-version.md",
         "docs/evidence/native-super-data-plane.json",
         "docs/evidence/native-super-tests.txt",
         "docs/evidence/native-super-dependencies.txt",

@@ -30,7 +30,8 @@ if args == ["--version"]:
     if os.environ.get("MODEX_TEST_CODEX_VERSION_OVERSIZE"):
         sys.stdout.buffer.write(b"codex-cli " + b"0" * (1024 * 1024))
         raise SystemExit(0)
-    print("codex-cli 0.216.0")
+    version = os.environ.get("MODEX_TEST_CODEX_VERSION", "codex-cli 0.216.0")
+    print(version, file=sys.stderr if os.environ.get("MODEX_TEST_CODEX_VERSION_STDERR") else sys.stdout)
     raise SystemExit(0)
 if args == ["app-server", "--help"]:
     save({"kind":"probe", "args":args,

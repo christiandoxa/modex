@@ -62,3 +62,70 @@ class ActiveSuperLaunchTests(unittest.TestCase):
             b"at or above its minimum capability baseline; the latest stable release is recommended."
         )
         self.assertEqual(observations, [expected, expected])
+
+    def test_minimum_codex_version_matches_01651(self):
+        cases = (
+            ({"MODEX_TEST_CODEX_VERSION": "codex-cli 0.153.1"}, False),
+            ({
+                "MODEX_TEST_CODEX_VERSION": "Codex CLI 0.153.2!",
+                "MODEX_TEST_CODEX_VERSION_STDERR": "1",
+            }, True),
+        )
+        for environment, accepted in cases:
+            with self.subTest(environment=environment):
+                diagnostics = []
+                for binary in (active_cli.ORACLE, launch_support.MODEX):
+                    result, records, upstream, state = launch_support.SuperLaunchTests().run_launch(
+                        binary,
+                        scenario="exit-seven",
+                        environment_overrides=environment,
+                    )
+                    probes = [record["args"] for record in records if record["kind"] == "probe"]
+                    self.assertEqual((upstream, state["leftovers"]), ([], []))
+                    if accepted:
+                        self.assertEqual((result.returncode, result.stdout), (7, b""), result.stderr)
+                        self.assertEqual(probes, [["--version"], ["app-server", "--help"]])
+                        self.assertTrue(any(record["kind"] == "launch" for record in records))
+                    else:
+                        self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
+                        self.assertEqual(probes, [["--version"]])
+                        self.assertEqual([record["kind"] for record in records], ["probe"])
+                        self.assertIn(b"requires 0.153.2 or newer", result.stderr)
+                        diagnostics.append(
+                            re.sub(rb"/tmp/modex-super-launch-[^/]+/codex", b"<CODEX>", result.stderr)
+                            .splitlines()[-1]
+                        )
+                if not accepted:
+                    self.assertEqual(diagnostics[0], diagnostics[1])
+
+    def test_oversized_probe_capture_matches_01651(self):
+        cases = (
+            ({"MODEX_TEST_CODEX_VERSION_OVERSIZE": "1"}, [["--version"]], "Codex version probe"),
+            ({"MODEX_TEST_CODEX_HELP_OVERSIZE": "1"},
+             [["--version"], ["app-server", "--help"]], "Codex app-server capability probe"),
+        )
+        for environment, expected_probes, label in cases:
+            with self.subTest(environment=environment):
+                diagnostics = []
+                for binary in (active_cli.ORACLE, launch_support.MODEX):
+                    result, records, upstream, state = launch_support.SuperLaunchTests().run_launch(
+                        binary,
+                        scenario="exit-seven",
+                        environment_overrides=environment,
+                    )
+                    self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
+                    self.assertEqual(
+                        [record["args"] for record in records if record["kind"] == "probe"],
+                        expected_probes,
+                    )
+                    self.assertEqual((upstream, state["leftovers"]), ([], []))
+                    diagnostics.append(
+                        re.sub(rb"/tmp/modex-super-launch-[^/]+/codex", b"<CODEX>", result.stderr)
+                        .splitlines()[-1]
+                    )
+                expected = (
+                    b"Error: failed to probe Codex CLI at <CODEX>: "
+                    + label.encode()
+                    + b" output exceeded the limit"
+                )
+                self.assertEqual(diagnostics, [expected, expected])

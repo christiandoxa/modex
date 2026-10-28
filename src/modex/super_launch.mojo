@@ -19,7 +19,7 @@ from .paths import app_root, ensure_app_root, shared_root
 from .process_spawn import CapturedProcessOutput, capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, terminate_child_gracefully, wait_or_kill
 from .provider_deepseek_transport import deepseek_request_headers
 from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, serve_local_rewrite
-from .text import trim_text
+from .text import is_whitespace, trim_text
 from .uuid7 import new_uuid7
 
 comptime CODEX_INSTALL_GUIDANCE = String(
@@ -237,12 +237,79 @@ def _capture_codex_probe(binary: String, args: List[String], environment: List[S
         raise Error("failed to probe Codex CLI at " + binary + ": " + String(error))
 
 
+def _codex_probe_version(output: String) -> String:
+    # The release chooses the rightmost whitespace-delimited version-like token.
+    var token = String()
+    var candidate = String()
+    var starts_with_digit = False
+    var has_dot = False
+    var last_kept = 0
+    for character in output.codepoints():
+        var code = Int(character)
+        if is_whitespace(code):
+            if starts_with_digit and has_dot:
+                candidate = String(token[byte=0:last_kept])
+            token = ""
+            starts_with_digit = False
+            has_dot = False
+            last_kept = 0
+            continue
+        if not token:
+            starts_with_digit = 48 <= code <= 57
+        token += chr(code)
+        if code == 46:
+            has_dot = True
+        if 48 <= code <= 57 or 65 <= code <= 90 or 97 <= code <= 122 or code == 45 or code == 46:
+            last_kept = token.byte_length()
+    if starts_with_digit and has_dot:
+        candidate = String(token[byte=0:last_kept])
+    return candidate
+
+
+def _codex_version_parts(value: String) -> List[UInt64]:
+    var parts = List[UInt64]()
+    var number = UInt64(0)
+    var digits = 0
+    for character in value.codepoints():
+        var code = Int(character)
+        if 48 <= code <= 57:
+            var digit = UInt64(code - 48)
+            if number > (UInt64.MAX - digit) // 10:
+                return parts^
+            number = number * 10 + digit
+            digits += 1
+        elif code == 46:
+            if digits == 0 or len(parts) == 2:
+                return parts^
+            parts.append(number)
+            number = 0
+            digits = 0
+        else:
+            return parts^
+    if digits == 0 or len(parts) != 2:
+        return parts^
+    parts.append(number)
+    return parts^
+
+
 def _exec(binary: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64) raises -> Int:
     var environment = _child_environment(home)
     var probe_environment = _codex_probe_environment(environment)
     var version = _capture_codex_probe(binary, [String("--version")], probe_environment, "Codex version probe")
-    if not version.status.exit_code or version.status.exit_code.value() != 0 or not String(from_utf8=Span(version.stdout)).startswith("codex-cli "):
+    if not version.status.exit_code or version.status.exit_code.value() != 0:
         raise Error("Codex version probe failed")
+    var version_output = String(from_utf8_lossy=Span(version.stdout)) + "\n" + String(from_utf8_lossy=Span(version.stderr))
+    if _ascii_lower(version_output).find("codex") < 0:
+        raise Error("Codex CLI at " + binary + " did not report a recognizable version. " + CODEX_INSTALL_GUIDANCE)
+    var reported_version = _codex_probe_version(version_output)
+    var parts = _codex_version_parts(reported_version)
+    if len(parts) != 3:
+        raise Error("Codex CLI at " + binary + " did not report a recognizable version. " + CODEX_INSTALL_GUIDANCE)
+    if parts[0] == UInt64(0) and (parts[1] < UInt64(153) or (parts[1] == UInt64(153) and parts[2] < UInt64(2))):
+        raise Error(
+            "Codex CLI at " + binary + " reports " + String(parts[0]) + "." + String(parts[1]) + "." + String(parts[2])
+            + "; Prodex requires 0.153.2 or newer. " + CODEX_INSTALL_GUIDANCE
+        )
     var capability = _capture_codex_probe(binary, [String("app-server"), String("--help")], probe_environment, "Codex app-server capability probe")
     if not capability.status.exit_code or capability.status.exit_code.value() != 0:
         raise Error(

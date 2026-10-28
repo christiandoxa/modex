@@ -12,10 +12,25 @@ runs `codex app-server --help`. The shared `probe_codex` helper removes
 isolated synthetic Codex executable. The peer records each probe's argv and
 environment, then exits 7 for `app-server --help`. Both binaries issue
 `--version` followed by `app-server --help`; all six variables are absent in
-both probes. They return exit 1 with the same normalized diagnostic, make no
-app-server RPC or provider request, and leave no temporary runtime overlay.
-The Codex executable and upstream are synthetic; no account, real credential,
-or provider traffic is used.
+both probes. They return exit 1 with the same final capability diagnostic,
+make no app-server RPC or provider request, and leave no temporary runtime
+overlay.
+
+The frozen source requires Codex `0.153.2` or newer in
+`crates/prodex-app/src/codex_binary.rs`. It parses stdout plus stderr through
+`crates/prodex-mojo-core/src/codex_auth_headers.rs`, whose lexer is in
+`mojo/prodex_core/codex_auth_headers.mojo`. Modex now rejects synthetic
+`0.153.1` before app-server help and accepts exact-minimum `0.153.2` from
+stderr with a case-insensitive Codex label and trailing punctuation. The
+final below-minimum diagnostic matches. Prodex prints startup progress before
+that error; Modex does not, so earlier progress output remains different.
+
+Oversized synthetic `--version` and `app-server --help` output also produce
+the same path-wrapped capture diagnostics in both binaries. The executable
+and upstream are synthetic; no account, real credential, or provider traffic
+is used. Wrapper/hash qualification, other malformed version inputs, full
+startup/storage/security behavior, other targets, and broader Super parity
+remain unverified.
 
 Reproduce with:
 
@@ -24,7 +39,6 @@ python3 scripts/ci/run-unittest.py test_super_launch_01651.py
 ```
 
 Fast and Full CI run this module in the active 0.165.1 reference lane before
-historical oracle routing. This verifies the selected Linux x86-64 probe
-failure and environment boundary only. The Codex semantic-version parser,
-wrapper/hash checks, full launch/storage/security behavior, other release
-targets, and broader Super parity remain unverified.
+historical oracle routing. This verifies selected Linux x86-64 startup probes
+and version cases only. Other release targets and broader Super parity remain
+unverified.

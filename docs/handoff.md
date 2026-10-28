@@ -14,6 +14,14 @@ The 0.439.2 fixture and source provenance remain intact for the historical
 protocol regression. This covers `clientInfo` only; see
 `docs/evidence/baseline-0.165.1/app-server-client-info.md`.
 
+When the synthetic Codex app-server closes stdin after `initialize`, production
+Modex now reports the same `Broken pipe (os error 32)` text as the 0.165.1
+oracle, without changing SIGPIPE handling or attempting an upstream request.
+Launch progress stderr and broader transport cases remain different or
+unqualified. The numeric errno text is verified only on Linux x86-64; macOS and
+Windows behavior remains unverified. See
+`docs/evidence/baseline-0.165.1/app-server-broken-pipe.md`.
+
 The `help update` unknown-subcommand diagnostic now preserves the full
 argument, including attached values, in three real-process comparisons with
 0.165.1 and the historical 0.439.2 control. Update execution remains

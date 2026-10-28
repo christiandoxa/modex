@@ -188,7 +188,7 @@ class AppServerRpcTests(unittest.TestCase):
     def test_live_peer_closing_stdin_reports_error_without_sigpipe(self):
         result, records, _workspace, _codex_home = self.run_case("closed_stdin_live")
         self.assertEqual(result.returncode, 1)
-        self.assertIn(b"request write failed", result.stderr)
+        self.assertIn(b"Broken pipe (os error 32)", result.stderr)
         self.assert_child_reaped(records)
 
     def test_workspace_mismatch_fails_before_codex_spawn(self):

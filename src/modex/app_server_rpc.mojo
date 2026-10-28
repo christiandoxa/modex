@@ -123,6 +123,8 @@ def _write_request(fd: Int32, request: String, deadline: Float64, method: String
         var written = send(fd, bytes.unsafe_ptr().unsafe_offset(offset), UInt(min(len(bytes) - offset, IO_CHUNK_BYTES)), MSG_NOSIGNAL)
         if written < 0:
             var error = get_errno()
+            if error == ErrNo.EPIPE:
+                raise Error("Broken pipe (os error " + String(error.value) + ")")
             if error != ErrNo.EAGAIN and error != ErrNo.EINTR:
                 raise Error("Codex hook-trust preflight " + method + " failed: request write failed")
             sleep(0.001)

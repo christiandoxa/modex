@@ -43,6 +43,32 @@ class AppServerRpc01651Tests(unittest.TestCase):
         )
         self.assertEqual(client_info(modex_records), client_info(baseline_records))
 
+    def test_closed_app_server_stdin_reports_reference_broken_pipe(self):
+        suite = test_super_launch.SuperLaunchTests()
+        baseline, baseline_records, baseline_upstream, baseline_state = suite.run_launch(
+            binary=ORACLE, scenario="closed-input"
+        )
+        modex, modex_records, modex_upstream, modex_state = suite.run_launch(
+            binary=MODEX, scenario="closed-input"
+        )
+        expected = "Error: Broken pipe (os error 32)"
+
+        def request_methods(records):
+            return [
+                record["method"]
+                for record in records
+                if record.get("kind") == "request"
+            ]
+
+        self.assertEqual((baseline.returncode, modex.returncode), (1, 1))
+        self.assertEqual((baseline.stdout, modex.stdout), (b"", b""))
+        self.assertEqual((baseline_upstream, modex_upstream), ([], []))
+        self.assertEqual((baseline_state["leftovers"], modex_state["leftovers"]), ([], []))
+        self.assertEqual((request_methods(baseline_records), request_methods(modex_records)),
+                         (["initialize"], ["initialize"]))
+        self.assertEqual(baseline.stderr.decode().splitlines()[-1], expected)
+        self.assertEqual(modex.stderr.decode().splitlines()[-1], expected)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -497,7 +497,7 @@ class SuperLaunchTests(unittest.TestCase):
                 self.assertEqual(result.returncode, code, result.stderr)
                 self.assertEqual(upstream, [])
                 self.assertEqual(state["leftovers"], [])
-                if scenario == "closed-input": self.assertIn(b"request write failed", result.stderr)
+                if scenario == "closed-input": self.assertIn(b"Broken pipe (os error 32)", result.stderr)
                 if scenario == "kill-relay":
                     self.assertEqual([record["signal"] for record in records if record["kind"] == "terminated"], [signal.SIGTERM])
 

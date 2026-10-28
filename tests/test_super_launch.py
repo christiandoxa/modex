@@ -35,6 +35,9 @@ if args == ["--version"]:
 if args == ["app-server", "--help"]:
     save({"kind":"probe", "args":args,
           "environment":{key:os.environ.get(key) for key in probe_environment}})
+    if os.environ.get("MODEX_TEST_CODEX_HELP_OVERSIZE"):
+        sys.stdout.buffer.write(b"Codex app-server " + b"0" * (1024 * 1024))
+        raise SystemExit(0)
     if os.environ["MODEX_LAUNCH_SCENARIO"] == "app-server-help-failure":
         raise SystemExit(7)
     print("Codex app-server")

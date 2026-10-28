@@ -6,8 +6,12 @@ Modex binary with that artifact using isolated homes, empty PATH, and no real
 credentials. Leading `--version` and `-V` with six different tails produced
 the respective product identities and no home mutations. Five root-help forms
 and a custom executable name matched after the documented identity mapping;
-the isolated homes stayed unchanged. Two tests passed on 2026-10-29.
+the isolated homes stayed unchanged. These comparisons passed on 2026-10-29.
 
 These observations do not cover all command-line parsing, installation,
 security, startup paths, or any non-Linux target; they do not establish full
 contract or release parity.
+
+The read-only `update --help`, `update -h`, `help update`, and tested trailing
+argument forms now match 0.165.1 after executable-name mapping, with no home
+mutations. Update execution itself remains unimplemented.

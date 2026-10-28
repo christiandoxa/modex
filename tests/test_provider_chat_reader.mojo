@@ -114,5 +114,7 @@ def main() raises:
     assert_anthropic_failed(message_start + search_result + text_start + text_delta + text_stop + message_delta + 'data: [DONE]\n\n')
     assert_anthropic_failed(before_stop)
     assert_anthropic_failed(message_start + search_result + 'data: {"type":"content_block_start","index":2,"content_block":{"type":"text","text":"unstreamed"}}\n\n')
-    assert_anthropic_failed(message_start + 'data: {"type":"future_event"}\n\n')
+    var unknown_event = 'data: {"type":"future_event","future_field":"ignored"}\n\n'
+    var unknown_event_events = collect_anthropic_completed(before_stop + message_delta + unknown_event + message_stop)
+    assert_true(unknown_event_events[len(unknown_event_events) - 1].startswith("event: response.completed\r\n"))
     print("Provider chat reader checks: PASS")

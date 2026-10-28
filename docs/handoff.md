@@ -24,11 +24,27 @@ See `docs/evidence/baseline-0.165.1/anthropic-stream.md`; this is not full
 provider or streaming parity. Historical mismatch notes below are superseded
 for these tested stop-field cases.
 
-The Linux x86-64 production build, native unit suite, dependency audit, and
-focused CLI/reference/CI routing checks passed locally before the next provider
-change. CI now keeps current and historical oracle paths separate, and a
+The Linux x86-64 production build, focused native reader, exhaustive Unicode
+audit, current-release CLI/session/provider comparisons, dependency audit,
+test census, and both independent CI helper shards passed locally. The full
+native suite passed before the later provider and Unicode changes; it has not
+been rerun on this combined source. CI now keeps current and historical oracle paths separate, and a
 synthetic orchestration regression verifies that current checks precede an
 unavailable historical oracle without hiding the resulting failure.
+
+Fast run [40747049105](https://github.com/christiandoxa/modex/actions/runs/40747049105)
+on `d960e54` passed the current-target build, native units and focused CLI and
+provider checks, then failed at the mandatory unavailable 0.439.2 historical
+oracle; its artifact consumer was skipped. See `docs/ci-lessons.md`.
+
+Update help now matches selected read-only 0.165.1 routes; update execution
+remains unimplemented. The session-query selector now uses the complete Unicode 17 Cased and
+Case_Ignorable properties for contextual sigma. Exhaustive scalar tests and
+eight real 0.165.1 process comparisons pass; other lowercase behavior and
+session state remain unverified. Selected unknown Anthropic event types are now
+ignored as in the 0.165.1 release. No contract status is promoted. Profile list
+still fails closed because the release acquires interprocess locks and repairs
+state; omitting those steps would race concurrent profile operations.
 
 Next: continue recapturing behavior from 0.165.1 and implement the release's
 WebSocket capacity and interruption behavior on production paths.

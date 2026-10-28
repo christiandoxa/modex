@@ -82,9 +82,10 @@ listing now ignores selected unrelated state-like filenames in the same way as
 locks, atomic temporary files and profile journals remain fail-closed because
 state recovery and locking are not implemented.
 Selected dotted-I expansion and contextual Greek sigma queries now match both
-the active 0.439.2 oracle and the separately pinned 0.439.5 oracle. The sigma
-context covers common combining marks and apostrophes, not the complete
-Unicode Case_Ignorable property. Broader session behavior, state locking,
+the active 0.439.2 oracle and the separately pinned 0.439.5 oracle. The 0.165.1 session selector now uses the full Unicode 17 Cased and
+Case_Ignorable properties for sigma context, checked against all scalars and
+selected release queries. Other lowercase mappings remain unverified. Broader
+session behavior, state locking,
 recovery and security remain unqualified.
 
 Checkpoint 15 matches the official 0.439.2 bodyless SSE chunked header

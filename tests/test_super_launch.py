@@ -216,9 +216,12 @@ class SuperLaunchTests(unittest.TestCase):
                                 "anthropic-stop-missing-reason": {"stop_sequence": None},
                                 "anthropic-stop-invalid-reason": {"stop_reason": 5, "stop_sequence": None},
                                 "anthropic-stop-invalid-sequence": {"stop_reason": "end_turn", "stop_sequence": 5},
+                                "anthropic-stop-unknown-event": {"stop_reason": "end_turn", "stop_sequence": None},
                             }
                             delta = json.dumps({"type": "message_delta", "delta": variants[scenario], "usage": {"output_tokens": 5}}, separators=(",", ":"))
                             chunks.append(("data: " + delta + "\n\n").encode())
+                            if scenario == "anthropic-stop-unknown-event":
+                                chunks.append(b'data: {"type":"future_event","future_field":"ignored"}\n\n')
                         chunks.append(b'data: {"type":"message_stop"}\n\n')
                         payload = b"".join(chunks)
                         content_type = "text/event-stream"

@@ -57,7 +57,7 @@ if [[ "${MODEX_CI_ARTIFACT_PRODUCER:-0}" == 1 ]]; then
     run_logged build-input-check "$PYTHON" scripts/ci/check-build-inputs.py
 fi
 run_logged focused-build make build unit
-run_logged focused-python-01651 env -u PRODEX_ORACLE -u PRODEX_GATEWAY_ORACLE "$PYTHON" scripts/ci/run-unittest.py test_cli_01651.py test_provider_stream_01651_characterization.py
+run_logged focused-python-01651 env -u PRODEX_ORACLE -u PRODEX_GATEWAY_ORACLE "$PYTHON" scripts/ci/run-unittest.py test_cli_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py test_unicode_case_properties.py
 if ! "$PYTHON" scripts/ci/reference.py oracle 0.439.2 >"$EVIDENCE_DIR/oracle-path-04392.txt" 2>"$EVIDENCE_DIR/reference-04392.log"; then
     cat "$EVIDENCE_DIR/reference-04392.log" >&2
     exit 1
@@ -82,12 +82,12 @@ cat "$EVIDENCE_DIR/reference-source-04392.log"
 export MODEX_REFERENCE_04392_DIR="$(cat "$EVIDENCE_DIR/reference-source-04392.txt")"
 rm -- "$EVIDENCE_DIR/reference-source-04392.txt"
 "$PYTHON" scripts/ci/reference.py identity active >"$EVIDENCE_DIR/reference.json"
-run_logged focused-python "$PYTHON" scripts/ci/run-unittest.py test_anthropic_buffered_payload_04392.py test_anthropic_message_arrays_04392.py test_anthropic_text_stream_04392.py test_cli.py test_ci_build_input_cleanliness.py test_ci_private_tmp_super_04395.py test_ci_python_path_resolution.py test_ci_unit_build_cache.py test_ci_workflow_shards.py test_continuation_binding_04392.py test_deepseek_web_search_mode_04392.py test_profile_cli.py test_provider_catalog_04395.py test_provider_embedded_tool_calls_04395.py test_provider_nonstring_model_04395.py test_provider_request_tool_role_04395.py test_provider_request_untyped_content_04395.py test_provider_request_untyped_role_04392.py test_provider_tools_04392_characterization.py test_provider_requests.py test_runtime.py test_runtime_binding_04395_slice.py test_runtime_observer_04392.py test_runtime_observer_fuzz.py test_session_04395_slice.py test_session_state_backup_04395.py
-if [[ "${MODEX_CI_FAST_HELPER_TESTS_IN_CONSUMERS:-0}" == 1 ]]; then
-    echo 'Fast CI helper tests are assigned to consumer shards.'
+run_logged focused-python "$PYTHON" scripts/ci/run-unittest.py test_anthropic_buffered_payload_04392.py test_anthropic_message_arrays_04392.py test_anthropic_text_stream_04392.py test_cli.py test_ci_build_input_cleanliness.py test_ci_private_tmp_super_04395.py test_ci_python_path_resolution.py test_ci_unit_build_cache.py test_continuation_binding_04392.py test_deepseek_web_search_mode_04392.py test_profile_cli.py test_provider_catalog_04395.py test_provider_embedded_tool_calls_04395.py test_provider_nonstring_model_04395.py test_provider_request_tool_role_04395.py test_provider_request_untyped_content_04395.py test_provider_request_untyped_role_04392.py test_provider_tools_04392_characterization.py test_provider_requests.py test_runtime.py test_runtime_binding_04395_slice.py test_runtime_observer_04392.py test_runtime_observer_fuzz.py test_session_04395_slice.py test_session_state_backup_04395.py
+if [[ "${MODEX_CI_FAST_HELPER_TESTS_IN_SHARDS:-0}" == 1 ]]; then
+    echo 'Fast CI helper tests are assigned to independent shards.'
     printf 'focused-helper-python: SHARDED\n' | tee -a "$EVIDENCE_DIR/summary.txt"
 else
-    run_logged focused-helper-python "$PYTHON" scripts/ci/run-unittest.py test_ci_artifact_manifest.py test_ci_shard_runner.py test_ci_test_census.py
+    run_logged focused-helper-python "$PYTHON" scripts/ci/run-unittest.py test_ci_artifact_manifest.py test_ci_shard_runner.py test_ci_test_census.py test_ci_workflow_shards.py
 fi
 run_logged width-memory env MODEX_WIDTH_MEMORY_ARTIFACTS="$EVIDENCE_DIR/width-memory" MODEX_WIDTH_MEMORY_DRIVER="$ROOT/build/tests/width_memory_driver" "$PYTHON" scripts/ci/run-unittest.py test_text_memory.py
 echo 'Fast CI checks passed.' | tee -a "$EVIDENCE_DIR/summary.txt"

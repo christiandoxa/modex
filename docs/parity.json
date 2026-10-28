@@ -986,7 +986,8 @@
         "tests/test_session_state_backup_04395.py",
         "tests/test_session_query_04392.py",
         "tests/test_session_query_04395.py",
-        "tests/test_session_json_whitespace_04395.py"
+        "tests/test_session_json_whitespace_04395.py",
+        "tests/test_session_query_01651.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -1009,7 +1010,8 @@
         "docs/evidence/checkpoint2-reference.json",
         "docs/evidence/checkpoint2-tests.txt",
         "docs/evidence/checkpoint2-dependencies.txt",
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/baseline-0.165.1/session-query-unicode.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -1024,7 +1026,7 @@
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
         "Selected minimal resume metadata and ID fallbacks match 0.439.5. A non-object first JSONL record panics in the release and is omitted by Modex; this remains a mismatch.",
         "Selected unrelated state-like filenames no longer block session listing; actual state, locks, recovery snapshots and journals remain fail-closed until safe locking and recovery are implemented.",
-        "Selected dotted-I and Greek sigma query cases match 0.439.2 and 0.439.5; complete Unicode Case_Ignorable handling remains unimplemented.",
+        "Selected contextual sigma queries match 0.165.1, with Unicode 17 Cased and Case_Ignorable properties checked exhaustively; other lowercase behavior remains unverified.",
         "Machine-output comparisons, 324 synthetic leap-zone cases, dictionary-free compressed rollout cases, 239 detached text scenarios, every Unicode scalar against Unicode 17 UCD, and 3,026 actual release emoji rows plus 960 generated mixed sequences are covered. Unverified sequence cases remain. The baseline three-cell Khmer truncation and wrapping cases panic while Modex returns safe output; these are retained UNAPPROVED_SAFE_DIFFERENCE mismatches, not parity passes. Full contracts still fail on state locking/recovery, startup effects, incomplete terminal rendering and dimensions, remaining timezone file cases, baseline panic behavior, and unapproved noncanonical compressed-frame differences. UTF-8 width scanning now uses constant auxiliary state; Linux RSS regression checks, a 1,100,000-byte title, the exact 64 MiB line boundary and one-byte overflow, and 3,905 short Kirat vowel sequences are verified. Whole-command memory and other platforms remain unverified."
       ],
       "historical_status_0_439_2": "FAIL",
@@ -1078,7 +1080,8 @@
         "tests/text_driver.mojo",
         "tests/test_text_memory.py",
         "tests/width_memory_driver.mojo",
-        "tests/test_session_cli.mojo"
+        "tests/test_session_cli.mojo",
+        "tests/test_session_query_01651.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -1099,7 +1102,8 @@
         "docs/evidence/checkpoint2-reference.json",
         "docs/evidence/checkpoint2-tests.txt",
         "docs/evidence/checkpoint2-dependencies.txt",
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/baseline-0.165.1/session-query-unicode.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {

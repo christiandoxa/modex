@@ -10,20 +10,9 @@ from .paths import absolute_path, comparable_path, ensure_app_root, shared_root
 from .session_time import integer_timestamp, timestamp_key
 from .text import cli_width, pad_cell, section_header, status_panel, text_width, trim_text
 from .zstd import ZstdReader
+from .unicode_properties import is_cased, is_case_ignorable
 
 comptime SESSION_LINE_LIMIT = 64 * 1024 * 1024
-
-
-def session_query_case_ignorable(code: Int) -> Bool:
-    # shortcut: skips common combining diacritics and apostrophes; use full Unicode Case_Ignorable data before claiming all contextual sigma cases.
-    return 0x0300 <= code <= 0x036F or code == 0x0027 or code == 0x2019
-
-
-def session_query_cased(code: Int) -> Bool:
-    if code < 128:
-        return 65 <= code <= 90 or 97 <= code <= 122
-    var character = chr(code)
-    return character.lower() != character.upper()
 
 
 def session_query_lowercase(value: String) -> String:
@@ -47,14 +36,14 @@ def session_query_lowercase(value: String) -> String:
                 if not next_character:
                     break
                 var next_code = Int(next_character.value())
-                if not session_query_case_ignorable(next_code):
-                    after_cased = session_query_cased(next_code)
+                if not is_case_ignorable(next_code):
+                    after_cased = is_cased(next_code)
                     break
             output += chr(0x03C2 if before_cased and not after_cased else 0x03C3)
         else:
             output += chr(code).lower()
-        if not session_query_case_ignorable(code):
-            before_cased = session_query_cased(code)
+        if not is_case_ignorable(code):
+            before_cased = is_cased(code)
     return output^
 
 

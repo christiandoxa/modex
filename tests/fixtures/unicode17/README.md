@@ -27,8 +27,9 @@ Copyright 2025 Unicode, Inc. See [Unicode License V3](../../../LICENSES/Unicode-
 The distribution must include the Unicode license notice in `NOTICE` and the
 full license in `LICENSES/Unicode-3.0.txt` alongside Unicode-derived data.
 
-The alphanumeric table combines `Alphabetic` with General_Category `N`.
-Its static interval data is re-derived and checked by the optional test-only
+The alphanumeric table combines `Alphabetic` with General_Category `N`; the
+session query tables contain `Cased` and `Case_Ignorable`. Their static
+interval data is re-derived and checked by the optional test-only
 Mojo audit `mojo run -I src -D ASSERT=all tests/unicode_properties_derive.mojo`.
 That audit is outside the product build and runtime. Authoring provenance is
 recorded in [UnicodeData.provenance.txt](UnicodeData.provenance.txt).

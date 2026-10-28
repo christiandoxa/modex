@@ -9,7 +9,7 @@ from modex.logs import log_last
 from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
 from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_short_help
-from modex.root_help import root_help
+from modex.root_help import root_help, update_help
 from modex.sessions import inspect_sessions
 from modex.super_cli import parse_super_arguments, run_super
 from modex.super_help import super_help
@@ -58,6 +58,17 @@ def main():
         except error:
             print(error, file=stderr, end="")
             exit(2)
+            return
+    if len(args) == 3 and args[1] == "help" and args[2] == "update":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        print(update_help(executable), end="")
+        return
+    if len(args) >= 2 and args[1] == "update":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        if len(args) > 2 and (args[2] == "-h" or args[2] == "--help"):
+            print(update_help(executable), end="")
             return
     if len(args) >= 3 and args[1] == "help" and (args[2] == "super" or args[2] == "s"):
         var parts = args[0].split("/")

@@ -40,7 +40,7 @@ jobs:
       - name: Run fast CI
         env:
           MODEX_CI_ARTIFACT_PRODUCER: '1'
-          MODEX_CI_FAST_HELPER_TESTS_IN_CONSUMERS: '1'
+          MODEX_CI_FAST_HELPER_TESTS_IN_SHARDS: '1'
         run: |
           set -o pipefail
           export MODEX_TOOLCHAIN_DIR="$RUNNER_TEMP/modex-mojo-$GITHUB_RUN_ID"
@@ -123,14 +123,50 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  artifact-consumer:
-    needs: linux-x86_64
+  ci-helper-tests:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         shard: [0, 1]
+    env:
+      PYTHON: python3
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify clean workflow checkout
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          checkout_sha="$(git rev-parse HEAD)"
+          [[ "$checkout_sha" == "$EXPECTED_SOURCE_SHA" ]] || {
+            echo 'helper checkout does not match the workflow commit' >&2
+            exit 1
+          }
+          [[ -z "$(git status --porcelain --untracked-files=all)" ]] || {
+            echo 'helper checkout is not clean' >&2
+            exit 1
+          }
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.14.10'
+      - name: Run deterministic CI helper shard
+        env:
+          SHARD_INDEX: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          "$PYTHON" scripts/ci/run-unittest.py \
+            --shard-index "$SHARD_INDEX" --shard-count 2 \
+            test_ci_artifact_manifest.py test_ci_shard_runner.py test_ci_test_census.py test_ci_workflow_shards.py
+
+  artifact-consumer:
+    needs: linux-x86_64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     env:
       MODEX_CI_PYTHON_VERSION: '3.14.10'
       PYTHON: python3
@@ -166,14 +202,13 @@ jobs:
         with:
           name: fast-build-${{ needs.linux-x86_64.outputs.run_id }}-${{ needs.linux-x86_64.outputs.run_attempt }}
           path: ${{ runner.temp }}/modex-build-download
-      - name: Verify the handoff and execute deterministic shard tests
+      - name: Verify the successful producer handoff
         env:
           EXPECTED_SOURCE_SHA: ${{ needs.linux-x86_64.outputs.source_sha }}
           EXPECTED_RUN_ID: ${{ needs.linux-x86_64.outputs.run_id }}
           EXPECTED_RUN_ATTEMPT: ${{ needs.linux-x86_64.outputs.run_attempt }}
           EXPECTED_MANIFEST_SHA256: ${{ needs.linux-x86_64.outputs.manifest_sha256 }}
           EXPECTED_BUNDLE_SHA256: ${{ needs.linux-x86_64.outputs.bundle_sha256 }}
-          SHARD_INDEX: ${{ matrix.shard }}
           MODEX_TOOLCHAIN_DIR: ${{ runner.temp }}/modex-mojo-${{ github.run_id }}
         run: |
           set -euo pipefail
@@ -219,6 +254,3 @@ jobs:
             --expected-manifest-sha256 "$EXPECTED_MANIFEST_SHA256"
           [[ -x "$artifact_root/modex" ]]
           [[ "$("$artifact_root/modex" --version)" == 'modex 0.1.0-dev' ]]
-          "$PYTHON" scripts/ci/run-unittest.py \
-            --shard-index "$SHARD_INDEX" --shard-count 2 \
-            test_ci_artifact_manifest.py test_ci_shard_runner.py test_ci_test_census.py

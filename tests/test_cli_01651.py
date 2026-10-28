@@ -46,6 +46,17 @@ class Release01651CliTests(unittest.TestCase):
                 self.assertEqual((modex.returncode, modex.stdout, modex.stderr), (0, map_executable(baseline.stdout), b""))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_update_help_routes_are_read_only(self):
+        for arguments in (("update", "--help"), ("update", "-h"), ("help", "update"),
+                          ("update", "--help", "ignored"), ("update", "-h", "ignored")):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(ORACLE, list(arguments), "prodex", "01651-update")
+                modex, modex_created = isolated_run(MODEX, list(arguments), "modex", "modex-update")
+                self.assertEqual((baseline.returncode, baseline.stderr), (0, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (0, map_executable(baseline.stdout), b""))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
 
 if __name__ == "__main__":
     unittest.main()

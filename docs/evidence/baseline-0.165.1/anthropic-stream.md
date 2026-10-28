@@ -16,3 +16,7 @@ regression remains historical.
 This is limited to the tested single-search stream shape. Other event orders,
 metadata and error conditions, WebSockets, and non-Linux targets remain
 unverified; no provider contract is promoted to PASS.
+
+The release also ignores unknown Anthropic event types. A synthetic future event
+previously failed Modex; both production processes now complete the same tested
+stream. Known malformed events remain subject to validation.

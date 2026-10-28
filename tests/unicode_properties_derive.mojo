@@ -1,7 +1,7 @@
 """One-off native UCD audit; not part of the product build or runtime."""
 
 from std.collections import List
-from modex.unicode_properties import is_alphanumeric
+from modex.unicode_properties import is_alphanumeric, is_cased, is_case_ignorable
 
 
 def hex_value(value: StringSlice) raises -> Int:
@@ -29,18 +29,28 @@ def set_range(mut values: List[UInt8], start: Int, end: Int):
 
 def main() raises:
     var selected = List[UInt8](length=0x110000, fill=0)
+    var cased = List[UInt8](length=0x110000, fill=0)
+    var ignorable = List[UInt8](length=0x110000, fill=0)
     var dcp = open("tests/fixtures/unicode17/DerivedCoreProperties.txt", "r")
     for line in dcp.read().split("\n"):
         var record = line.split("#", maxsplit=1)[0].strip()
         if not record:
             continue
         var fields = record.split(";")
-        if len(fields) < 2 or String(fields[1].strip()) != "Alphabetic":
+        if len(fields) < 2:
+            continue
+        var property = String(fields[1].strip())
+        if property != "Alphabetic" and property != "Cased" and property != "Case_Ignorable":
             continue
         var bounds = fields[0].strip().split("..")
         var start = hex_value(bounds[0])
         var end = start if len(bounds) == 1 else hex_value(bounds[1])
-        set_range(selected, start, end)
+        if property == "Alphabetic":
+            set_range(selected, start, end)
+        elif property == "Cased":
+            set_range(cased, start, end)
+        else:
+            set_range(ignorable, start, end)
 
     var data = open("tests/fixtures/unicode17/UnicodeData.txt", "r")
     var range_start = -1
@@ -86,6 +96,8 @@ def main() raises:
         assert intervals[index - 1] + 1 < intervals[index]
     for value in range(0x110000):
         assert is_alphanumeric(value) == (selected[value] != 0 and not (0xD800 <= value <= 0xDFFF))
+        assert is_cased(value) == (cased[value] != 0)
+        assert is_case_ignorable(value) == (ignorable[value] != 0)
     print("intervals:", len(intervals) // 2, "scalars:", scalar_count)
     for index in range(len(intervals)):
         if index % 8 == 0:

@@ -1,5 +1,18 @@
 # CI lessons
 
+## 0.165.1 checks precede the unavailable historical oracle
+
+Fast run [40747049105](https://github.com/christiandoxa/modex/actions/runs/40747049105),
+attempt 1 on `d960e54cf8bfbde05d1c253690870d04dfe13178`, passed the
+production build, native units, current-reference CLI and stream checks, and
+the dependency audit. The producer then failed because the official 0.439.2
+tag and release oracle were unavailable; the artifact consumer was skipped.
+The fail-closed historical gate is intentional. The downloaded evidence for
+this run is retained under `~/.cache/modex/ci-evidence/40747049105/`.
+The routing regression verifies current and historical oracle separation and
+that the missing historical oracle still fails after current checks run.
+Full historical and final exact-commit validation remain unverified.
+
 ## Pinned source recovery does not restore the oracle
 
 - On 2026-10-28, `git ls-remote https://github.com/christiandoxa/prodex

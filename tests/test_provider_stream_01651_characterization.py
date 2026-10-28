@@ -42,6 +42,7 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
             "anthropic-stop-missing-reason": None,
             "anthropic-stop-invalid-reason": None,
             "anthropic-stop-invalid-sequence": "stop",
+            "anthropic-stop-unknown-event": "stop",
         }
         for scenario, expected_finish_reason in cases.items():
             with self.subTest(scenario=scenario):

@@ -323,7 +323,8 @@ struct DeepSeekChatState:
                 events.insert(0, self.event("response.created", '"response":{"id":' + quote_json(self.response_id) + "}", True))
             events.extend(self.complete())
             return events^
-        raise Error("Anthropic stream event type is not supported")
+        # The release ignores event types it does not recognize.
+        return List[String]()
 
     def start_anthropic_search(mut self, doc: JsonDocument, block: Int, index: UInt64) raises -> List[String]:
         var id = doc.string(doc.get(block, "id"))

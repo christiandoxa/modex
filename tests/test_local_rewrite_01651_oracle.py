@@ -183,23 +183,71 @@ else:
     if half_close:
         connection.shutdown(socket.SHUT_WR)
 request_started = time.monotonic()
-result = {"status": None, "reason": "", "headers": [], "body_base64": "", "wire_body_base64": "", "wire_body_probe_complete": False, "read_error": "", "connection_closed": False, "request_parts_sent_at_response": 0, "response_elapsed_ms": 0}
+result = {"status": None, "reason": "", "headers": [], "body_base64": "", "wire_body_base64": "", "wire_body_probe_complete": False, "read_error": "", "connection_closed": False, "request_parts_sent_at_response": 0, "response_elapsed_ms": 0, "interim_statuses": []}
+
+def read_expect_response():
+    response_file = connection.makefile("rb")
+    interim_statuses = []
+    interim_status_lines = []
+    def read_head():
+        line = response_file.readline()
+        if not line:
+            raise ConnectionError("remote closed before response")
+        version, status, reason = line.decode("iso-8859-1").rstrip("\r\n").split(" ", 2)
+        return version, int(status), reason, http.client.parse_headers(response_file)
+    version, status, reason, headers = read_head()
+    while status == 100:
+        interim_statuses.append(status)
+        interim_status_lines.append(f"{version} {status} {reason}")
+        result["interim_statuses"] = interim_statuses
+        result["interim_status_lines"] = interim_status_lines
+        body = base64.b64decode(os.environ.get("PROBE_BODY_AFTER_CONTINUE_BASE64", ""))
+        if body:
+            connection.sendall(body)
+        if os.environ.get("PROBE_HALF_CLOSE_AFTER_CONTINUE") == "1":
+            connection.shutdown(socket.SHUT_WR)
+        version, status, reason, headers = read_head()
+    length = headers.get("Content-Length")
+    body = response_file.read(int(length)) if length is not None else response_file.read()
+    return status, reason, list(headers.items()), body, interim_statuses, interim_status_lines
+
 try:
     request_method = os.environ.get("PROBE_REQUEST_METHOD")
-    response = http.client.HTTPResponse(connection, method=request_method)
-    response.begin()
-    wire_body = b""
-    wire_body_probe_complete = False
-    if request_method == "HEAD" and response.fp:
-        connection.settimeout(0.25)
-        try:
-            wire_body = response.fp.peek(4096)
-            wire_body_probe_complete = True
-        except socket.timeout:
-            pass
-        finally:
-            connection.settimeout(5)
-    body = response.read()
+    if os.environ.get("PROBE_EXPECT_HANDSHAKE") == "1":
+        status, reason, headers, body, interim_statuses, interim_status_lines = read_expect_response()
+        result.update({
+            "status": status,
+            "reason": reason,
+            "headers": headers,
+            "body_base64": base64.b64encode(body).decode("ascii"),
+            "interim_statuses": interim_statuses,
+            "interim_status_lines": interim_status_lines,
+        })
+    else:
+        response = http.client.HTTPResponse(connection, method=request_method)
+        response.begin()
+        interim_statuses = []
+        wire_body = b""
+        wire_body_probe_complete = False
+        if request_method == "HEAD" and response.fp:
+            connection.settimeout(0.25)
+            try:
+                wire_body = response.fp.peek(4096)
+                wire_body_probe_complete = True
+            except socket.timeout:
+                pass
+            finally:
+                connection.settimeout(5)
+        body = response.read()
+        result.update({
+            "status": response.status,
+            "interim_statuses": interim_statuses,
+            "reason": response.reason,
+            "headers": response.getheaders(),
+            "body_base64": base64.b64encode(body).decode("ascii"),
+            "wire_body_base64": base64.b64encode(wire_body).decode("ascii"),
+            "wire_body_probe_complete": wire_body_probe_complete,
+        })
     result["request_parts_sent_at_response"] = request_parts_sent[0]
     result["response_elapsed_ms"] = int((time.monotonic() - request_started) * 1000)
     if os.environ.get("PROBE_CHECK_CLOSE") == "1":
@@ -212,14 +260,6 @@ try:
             result["connection_closed"] = True
         finally:
             connection.settimeout(5)
-    result.update({
-        "status": response.status,
-        "reason": response.reason,
-        "headers": response.getheaders(),
-        "body_base64": base64.b64encode(body).decode("ascii"),
-        "wire_body_base64": base64.b64encode(wire_body).decode("ascii"),
-        "wire_body_probe_complete": wire_body_probe_complete,
-    })
 except Exception as error:
     result["read_error"] = type(error).__name__
 finally:
@@ -244,7 +284,7 @@ with open(os.environ["PROBE_RESULT_PATH"], "w", encoding="utf-8") as output:
     path.chmod(0o700)
 
 
-def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses", method=b"POST"):
+def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses", method=b"POST", version=b"HTTP/1.1"):
     all_headers = [
         ("Host", "127.0.0.1"),
         *headers,
@@ -252,10 +292,51 @@ def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses", method
         ("Content-Length", str(len(body))),
     ]
     return (
-        method + b" " + target + b" HTTP/1.1\r\n"
+        method + b" " + target + b" " + version + b"\r\n"
         + b"".join(name.encode() + b": " + value.encode() + b"\r\n" for name, value in all_headers)
         + b"\r\n" + body
     )
+
+
+def expectation_request_case(
+    name,
+    expectations,
+    *,
+    target=b"/v1/responses",
+    body=REQUEST_BODY,
+    body_after_continue=None,
+    half_close=False,
+    half_close_after_continue=False,
+    extra_headers=(),
+    version=b"HTTP/1.1",
+):
+    request = request_bytes(
+        (*extra_headers, *(("Expect", value) for value in expectations)),
+        body=body,
+        target=target,
+        version=version,
+    )
+    header_end = request.index(b"\r\n\r\n") + 4
+    return {
+        "name": name,
+        "request": request,
+        "request_parts": [request[:header_end]],
+        "body_after_continue": body if body_after_continue is None else body_after_continue,
+        "expect_handshake": True,
+        "half_close": half_close,
+        "half_close_after_continue": half_close_after_continue,
+        "check_close": True,
+    }
+
+
+def raw_expectation_case(name, request, *, half_close=False):
+    return {
+        "name": name,
+        "request": request,
+        "expect_handshake": True,
+        "half_close": half_close,
+        "check_close": True,
+    }
 
 
 def chunked_request_case(
@@ -656,6 +737,185 @@ CASES = (
         "upstream": True,
     },
     {
+        **expectation_request_case("single_valid_expect_continue", ["100-continue"]),
+        "expected_status": 200,
+        "expected_reason": "OK",
+        "expected_body": RESPONSES_RESPONSE,
+        "expected_headers": {
+            "content-type": "application/json; charset=utf-8",
+            "content-length": str(len(RESPONSES_RESPONSE)),
+        },
+        "expected_interim_statuses": [100],
+        "expected_connection_closed": {"oracle": False, "modex": True},
+        "compare_response_body": True,
+        "compare_upstream_request": True,
+        "expected_upstream_method": "POST",
+        "expected_upstream_path": "/v1/chat/completions",
+        "upstream": True,
+    },
+    {
+        **expectation_request_case(
+            "http_1_0_expect_continue_uses_http_1_0_interim",
+            ["100-continue"],
+            version=b"HTTP/1.0",
+        ),
+        "expected_status": 200,
+        "expected_reason": "OK",
+        "expected_body": RESPONSES_RESPONSE,
+        "expected_headers": {
+            "content-type": "application/json; charset=utf-8",
+            "content-length": str(len(RESPONSES_RESPONSE)),
+        },
+        "expected_interim_statuses": [100],
+        "expected_interim_status_lines": ["HTTP/1.0 100 Continue"],
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "compare_response_body": True,
+        "compare_upstream_request": True,
+        "expected_upstream_method": "POST",
+        "expected_upstream_path": "/v1/chat/completions",
+        "upstream": True,
+    },
+    {
+        **expectation_request_case(
+            "websocket_upgrade_valid_expect_short_circuits_continue",
+            ["100-continue"],
+            extra_headers=(("Connection", "Upgrade"), ("Upgrade", "websocket")),
+        ),
+        "check_close": False,
+        "expected_status": 426,
+        "expected_reason": "Upgrade Required",
+        "expected_body": WEBSOCKET_FALLBACK,
+        "expected_interim_statuses": [],
+        "upstream": False,
+    },
+    {
+        **expectation_request_case(
+            "valid_expect_truncated_body",
+            ["100-continue"],
+            body_after_continue=b"{",
+            half_close_after_continue=True,
+        ),
+        "expected_status": 502,
+        "expected_reason": "Bad Gateway",
+        "expected_body": b"upstream request failed",
+        "expected_interim_statuses": [100],
+        "upstream": False,
+    },
+    {
+        **expectation_request_case("unsupported_expect_returns_417", ["100-wait"], half_close=True),
+        "expected_status": 417,
+        "expected_reason": "Expectation Failed",
+        "expected_body": b"",
+        "upstream": False,
+    },
+    {
+        **expectation_request_case(
+            "unsupported_expect_precedes_invalid_target",
+            ["100-wait"],
+            target=b"http://example.test/v1/responses",
+            half_close=True,
+        ),
+        "expected_status": 417,
+        "expected_reason": "Expectation Failed",
+        "expected_body": b"",
+        "upstream": False,
+    },
+    {
+        **expectation_request_case(
+            "unsupported_expect_precedes_fragment_target",
+            ["100-wait"],
+            target=b"/v1/responses#fragment",
+        ),
+        "expected_status": 417,
+        "expected_reason": "Expectation Failed",
+        "expected_body": b"",
+        "upstream": False,
+    },
+    {
+        **raw_expectation_case(
+            "unsupported_expect_precedes_request_line_suffix",
+            b"POST /v1/responses HTTP/1.1 extra\r\nHost: 127.0.0.1\r\n"
+            b"Expect: 100-wait\r\nContent-Length: 0\r\n\r\n",
+        ),
+        "expected_status": 417,
+        "expected_reason": "Expectation Failed",
+        "expected_body": b"",
+        "upstream": False,
+    },
+    {
+        **raw_expectation_case(
+            "malformed_request_line_precedes_unsupported_expect",
+            b"POST /v1/responses bad HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Expect: 100-wait\r\nContent-Length: 0\r\n\r\n",
+        ),
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": b"",
+        "upstream": False,
+    },
+    {
+        **raw_expectation_case(
+            "malformed_header_precedes_unsupported_expect",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Expect: 100-wait\r\nBroken\r\nContent-Length: 0\r\n\r\n",
+        ),
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": b"",
+        "upstream": False,
+    },
+    {
+        **expectation_request_case(
+            "invalid_target_valid_expect_precedes_continue",
+            ["100-continue"],
+            target=b"http://example.test/v1/responses",
+            half_close=True,
+        ),
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "expected_interim_statuses": [],
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "upstream": False,
+    },
+    {
+        **raw_expectation_case(
+            "valid_target_oversized_expect_precedes_continue",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-continue\r\n"
+            b"Content-Length: 67108865\r\n\r\n",
+        ),
+        "expected_status": 413,
+        "expected_reason": "Payload Too Large",
+        "expected_body": b"proxied request body is too large",
+        "expected_interim_statuses": [],
+        "expected_connection_closed": {"oracle": False, "modex": True},
+        "upstream": False,
+    },
+    {
+        **expectation_request_case(
+            "invalid_target_valid_expect_without_half_close",
+            ["100-continue"],
+            target=b"http://example.test/v1/responses",
+        ),
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_body": INVALID_REQUEST_TARGET_BODY,
+        "expected_interim_statuses": [],
+        "expected_connection_closed": {"oracle": False, "modex": True},
+        "upstream": False,
+    },
+    {
+        **expectation_request_case(
+            "unknown_expect_before_supported_duplicate",
+            ["100-wait", "100-continue"],
+            half_close=True,
+        ),
+        "expected_status": 417,
+        "expected_reason": "Expectation Failed",
+        "expected_body": b"",
+        "upstream": False,
+    },
+    {
         "name": "invalid_target_websocket_precedes_upgrade_fallback",
         "request": request_bytes((("Upgrade", "websocket"),), target=b"http://example.test/v1/responses"),
         "expected_status": 400,
@@ -676,6 +936,9 @@ CASES = (
         "name": "invalid_target_oversized_expected_body_precedes_continue",
         "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-continue\r\nContent-Length: 67108865\r\n\r\n",
         "half_close": True,
+        "expect_handshake": True,
+        "check_close": True,
+        "expected_interim_statuses": [],
         "expected_status": 400,
         "expected_reason": "Bad Request",
         "expected_body": INVALID_REQUEST_TARGET_BODY,
@@ -828,6 +1091,11 @@ def run_probe(binary: Path, case, upstream: Upstream):
                 separators=(",", ":"),
             ),
             "PROBE_REQUEST_PART_DELAY_MS": str(case.get("request_part_delay_ms", 0)),
+            "PROBE_BODY_AFTER_CONTINUE_BASE64": base64.b64encode(
+                case.get("body_after_continue", b"")
+            ).decode("ascii"),
+            "PROBE_HALF_CLOSE_AFTER_CONTINUE": "1" if case.get("half_close_after_continue") else "0",
+            "PROBE_EXPECT_HANDSHAKE": "1" if case.get("expect_handshake") else "0",
             "PROBE_REQUEST_METHOD": case["request"].split(b" ", 1)[0].decode("ascii"),
             "PROBE_HALF_CLOSE": "1" if case.get("half_close") else "0",
             "PROBE_CHECK_CLOSE": "1" if case.get("check_close") else "0",
@@ -904,6 +1172,12 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                         if "expected_reason" in case:
                             self.assertEqual(response["reason"], case["expected_reason"], label)
                         self.assertEqual(response["read_error"], case.get("expected_read_error", ""), label)
+                        self.assertEqual(response["interim_statuses"], case.get("expected_interim_statuses", []), label)
+                        expected_interim_lines = case.get(
+                            "expected_interim_status_lines",
+                            ["HTTP/1.1 100 Continue" for _ in case.get("expected_interim_statuses", [])],
+                        )
+                        self.assertEqual(response.get("interim_status_lines", []), expected_interim_lines, label)
                         if "expected_request_parts_sent" in case:
                             self.assertEqual(
                                 response["request_parts_sent_at_response"],
@@ -953,6 +1227,114 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                             normalize_response_body(case, oracle_response["body"]),
                             normalize_response_body(case, modex_response["body"]),
                         )
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_duplicate_expect_and_framing_rejections_remain_fail_closed(self):
+        request_with_expect = expectation_request_case(
+            "duplicate_valid_expect",
+            ["100-continue", "100-continue"],
+        )
+        mixed_expect = expectation_request_case(
+            "valid_expect_before_unknown_duplicate",
+            ["100-continue", "100-wait"],
+        )
+        invalid_target_duplicate = expectation_request_case(
+            "invalid_target_duplicate_valid_expect",
+            ["100-continue", "100-continue"],
+            target=b"http://example.test/v1/responses",
+        )
+        conflicting_framing = raw_expectation_case(
+            "unsupported_expect_with_conflicting_framing",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-wait\r\n"
+            b"Content-Length: 0\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n",
+        )
+        duplicate_content_length = raw_expectation_case(
+            "unsupported_expect_with_duplicate_content_length",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-wait\r\n"
+            b"Content-Length: 0\r\nContent-Length: 0\r\n\r\n",
+        )
+        duplicate_transfer_encoding = raw_expectation_case(
+            "unsupported_expect_with_duplicate_transfer_encoding",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-wait\r\n"
+            b"Transfer-Encoding: chunked\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n",
+        )
+        malformed_content_length = raw_expectation_case(
+            "unsupported_expect_with_malformed_content_length",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-wait\r\n"
+            b"Content-Length: x\r\n\r\n",
+        )
+        unsupported_transfer_encoding = raw_expectation_case(
+            "unsupported_expect_with_unsupported_transfer_encoding",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-wait\r\n"
+            b"Transfer-Encoding: gzip\r\n\r\n",
+        )
+        malformed_expect_value = raw_expectation_case(
+            "malformed_expect_value_token",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Expect: 100-continue\x00bad\r\nContent-Length: 0\r\n\r\n",
+        )
+        cases = (
+            (request_with_expect, {
+                "oracle": (200, "OK", RESPONSES_RESPONSE, [100], 1, False),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
+            }),
+            (mixed_expect, {
+                "oracle": (200, "OK", RESPONSES_RESPONSE, [100], 1, False),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
+            }),
+            (invalid_target_duplicate, {
+                "oracle": (400, "Bad Request", INVALID_REQUEST_TARGET_BODY, [], 0, False),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
+            }),
+            (conflicting_framing, {
+                "oracle": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (502, "Bad Gateway", b"gateway request capture failed", [], 0, True),
+            }),
+            (duplicate_content_length, {
+                "oracle": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (502, "Bad Gateway", b"gateway request capture failed", [], 0, True),
+            }),
+            (duplicate_transfer_encoding, {
+                "oracle": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (502, "Bad Gateway", b"gateway request capture failed", [], 0, True),
+            }),
+            (malformed_content_length, {
+                "oracle": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (502, "Bad Gateway", b"gateway request capture failed", [], 0, True),
+            }),
+            (unsupported_transfer_encoding, {
+                "oracle": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (502, "Bad Gateway", b"gateway request capture failed", [], 0, True),
+            }),
+            (malformed_expect_value, {
+                "oracle": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (400, "Bad Request", b"", [], 0, True),
+            }),
+        )
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for case, expected in cases:
+                with self.subTest(case=case["name"]):
+                    oracle_response, oracle_records = run_probe(ORACLE, case, upstream)
+                    modex_response, modex_records = run_probe(MODEX, case, upstream)
+                    for label, response, records in (
+                        ("oracle", oracle_response, oracle_records),
+                        ("modex", modex_response, modex_records),
+                    ):
+                        status, reason, body, interim, upstream_count, closed = expected[label]
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(response["status"], status, label)
+                        self.assertEqual(response["reason"], reason, label)
+                        self.assertEqual(response["body"], body, label)
+                        self.assertEqual(response["interim_statuses"], interim, label)
+                        self.assertEqual(response["read_error"], "", label)
+                        self.assertEqual(response["connection_closed"], closed, label)
+                        self.assertEqual(len(records), upstream_count, label)
         finally:
             upstream.shutdown()
             upstream.server_close()

@@ -169,10 +169,32 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         self.assertEqual(status(response), 200)
         self.assertIn('"body_hex":"626f6479"', stdout)
 
+    def test_default_parser_keeps_http_1_1_interim_for_http_1_0_request(self):
+        process, client = start("echo")
+        client.sendall(
+            b"POST /expect HTTP/1.0\r\nContent-Length: 0\r\n"
+            b"Expect: 100-continue\r\n\r\n"
+        )
+        response, _ = finish(process, client)
+        self.assertTrue(response.startswith(b"HTTP/1.1 100 Continue\r\n\r\n"), response)
+
+    def test_default_parser_still_sends_continue_before_body_limit_rejection(self):
+        process, client = start("small-limit")
+        client.sendall(
+            b"POST /expect-large HTTP/1.1\r\nHost: local\r\nContent-Length: 4\r\n"
+            b"Expect: 100-continue\r\n\r\n"
+        )
+        response, stdout = finish(process, client)
+        self.assertTrue(response.startswith(b"HTTP/1.1 100 Continue\r\n\r\n"), response)
+        self.assertIn(b"HTTP/1.1 413 Payload Too Large\r\n", response)
+        self.assertIn("oversized HTTP request body", stdout)
+
     def test_ambiguous_duplicate_and_malformed_headers_are_rejected(self):
         samples = [
             b"POST / HTTP/1.1\r\nHost: local\r\nContent-Length: 0\r\nTransfer-Encoding: chunked\r\n\r\n",
             b"POST / HTTP/1.1\r\nHost: local\r\nContent-Length: 0\r\nContent-Length: 0\r\n\r\n",
+            b"POST / HTTP/1.1\r\nHost: local\r\nExpect: 100-continue\r\nExpect: 100-continue\r\nContent-Length: 0\r\n\r\n",
+            b"POST / HTTP/1.1\r\nHost: local\r\nExpect: 100-continue\x00bad\r\nContent-Length: 0\r\n\r\n",
             b"POST /fragment#x HTTP/1.1\r\nHost: local\r\nContent-Length: 0\r\n\r\n",
             b"POST / HTTP/1.1\r\nHost: local\r\nBad Header: x\r\nContent-Length: 0\r\n\r\n",
         ]

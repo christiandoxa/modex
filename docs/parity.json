@@ -2494,7 +2494,8 @@
         "docs/evidence/checkpoint14-tests.txt",
         "docs/evidence/checkpoint14-dependencies.txt",
         "docs/evidence/baseline-0.165.1/local-relay-http.md",
-        "docs/evidence/baseline-0.165.1/local-relay-status-reasons.md"
+        "docs/evidence/baseline-0.165.1/local-relay-status-reasons.md",
+        "docs/evidence/local-expect-tests.txt"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2555,7 +2556,8 @@
       "evidence": [
         "docs/evidence/baseline-0.439.2/reference-verification.json",
         "docs/evidence/baseline-0.165.1/local-relay-http.md",
-        "docs/evidence/baseline-0.165.1/local-relay-status-reasons.md"
+        "docs/evidence/baseline-0.165.1/local-relay-status-reasons.md",
+        "docs/evidence/local-expect-tests.txt"
       ],
       "status": "NOT_STARTED",
       "platform_status": {
@@ -3647,7 +3649,8 @@
         "docs/evidence/native-super-reference.json",
         "docs/evidence/baseline-0.439.2/reference-verification.json",
         "docs/evidence/baseline-0.165.1/local-relay-http.md",
-        "docs/evidence/baseline-0.165.1/local-relay-status-reasons.md"
+        "docs/evidence/baseline-0.165.1/local-relay-status-reasons.md",
+        "docs/evidence/local-expect-tests.txt"
       ],
       "status": "BLOCKED",
       "platform_status": {

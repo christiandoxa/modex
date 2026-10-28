@@ -26,6 +26,11 @@ The `da71771` full local run passed the production build, native suite and 625
 Python tests with isolated HOME and explicit pinned source paths. Its log is
 `~/.cache/modex/ci-evidence/full-test-da71771.log`; it predates the current head.
 
+The `5471667` full run passed the build, native suite and 629 Python tests;
+the `4ba8627` run passed the same stages and 636 Python tests. Their logs are
+`~/.cache/modex/ci-evidence/full-test-5471667.log` and
+`~/.cache/modex/ci-evidence/full-test-4ba8627.log`. Both predate the current head.
+
 Fast run [40769127160](https://github.com/christiandoxa/modex/actions/runs/40769127160)
 on `44ca9e9` passed both helper shards and 37 focused relay/parser tests, then
 failed acquiring the unavailable required 0.439.2 oracle. Artifact consumption

@@ -139,6 +139,7 @@ struct LoopbackHTTPConnection(Movable):
     var streaming: Bool
     var request_read: Bool
     var head_request: Bool
+    var expect_continue_sent: Bool
     var done: Bool
 
     def __init__(out self, fd: Int32):
@@ -148,6 +149,7 @@ struct LoopbackHTTPConnection(Movable):
         self.streaming = False
         self.request_read = False
         self.head_request = False
+        self.expect_continue_sent = False
         self.done = False
 
     def close(mut self):
@@ -175,7 +177,10 @@ struct LoopbackHTTPConnection(Movable):
             return True
         raise Error("loopback HTTP peer check failed")
 
-    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False) raises -> LoopbackHTTPRequest:
+    def expect_continue_was_sent(self) -> Bool:
+        return self.expect_continue_sent
+
+    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False, defer_expectation_errors: Bool = False, preflight_body_limit_before_continue: Bool = False, use_request_version_for_continue: Bool = False) raises -> LoopbackHTTPRequest:
         if self.fd < 0 or self.done or self.request_read:
             raise Error("loopback HTTP connection is closed")
         if max_body_bytes < 0 or max_body_bytes > HTTP_MAX_BODY_LIMIT:
@@ -194,17 +199,27 @@ struct LoopbackHTTPConnection(Movable):
             raise Error("HTTP request headers exceed limit")
         # The relay caps target bytes, so its request line also includes method and version bytes.
         var max_request_line_bytes = HTTP_HEADER_LIMIT if validate_request_target else 8192
-        var head = _parse_request_head(self.input, header_end, allow_upgrade_headers, max_request_line_bytes)
+        var head = _parse_request_head(self.input, header_end, allow_upgrade_headers, max_request_line_bytes, defer_expectation_errors)
         self.head_request = head.method == "HEAD"
         if validate_request_target and not request_target_valid(head.target) and (head.expect_continue or head.length > max_body_bytes):
             raise Error("invalid HTTP request target")
+        if defer_expectation_errors and head.expect_continue:
+            for header in head.headers:
+                if String(header[0]).lower() == "upgrade" and String(header[1]).lower() == "websocket":
+                    raise Error("websocket upgrade fallback")
+        if preflight_body_limit_before_continue and head.length > max_body_bytes:
+            raise Error("oversized HTTP request body")
         var body_start = header_end + 4
         var body = List[UInt8]()
         if validate_request_target and reject_chunked_trailers and head.chunked and not request_target_valid(head.target):
             self.request_read = True
             return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
         if head.expect_continue:
-            _send_all(self.fd, _bytes("HTTP/1.1 100 Continue\r\n\r\n"), deadline)
+            var continue_version = "HTTP/1.1"
+            if use_request_version_for_continue:
+                continue_version = head.version
+            _send_all(self.fd, _bytes(continue_version + " 100 Continue\r\n\r\n"), deadline)
+            self.expect_continue_sent = True
         if head.chunked:
             body = self._read_chunked(body_start, max_body_bytes, deadline, wire_limit, validate_request_target and not request_target_valid(head.target), reject_chunked_trailers)
         elif head.length >= 0:
@@ -399,22 +414,29 @@ struct LoopbackHTTPConnection(Movable):
 struct ParsedRequestHead(Movable):
     var method: String
     var target: String
+    var version: String
     var headers: List[Tuple[String, String]]
     var length: Int
     var chunked: Bool
     var expect_continue: Bool
 
 
-def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Bool, max_request_line_bytes: Int) raises -> ParsedRequestHead:
+def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Bool, max_request_line_bytes: Int, defer_expectation_errors: Bool = False) raises -> ParsedRequestHead:
     var head = _ascii(bytes, 0, end)
     var lines = head.split("\r\n")
     if not lines or lines[0].byte_length() > max_request_line_bytes:
         raise Error("malformed HTTP request line")
     var request_line = lines[0].split(" ")
+    var malformed_suffix = False
     if len(request_line) > 3:
         var last = String(request_line[len(request_line) - 1])
-        raise Error("malformed HTTP request target spacing" if last == "HTTP/1.0" or last == "HTTP/1.1" else "malformed HTTP request line suffix")
-    if len(request_line) != 3 or request_line[0].byte_length() == 0 or request_line[1].byte_length() == 0:
+        if last == "HTTP/1.0" or last == "HTTP/1.1":
+            raise Error("malformed HTTP request target spacing")
+        if defer_expectation_errors:
+            malformed_suffix = True
+        else:
+            raise Error("malformed HTTP request line suffix")
+    if (len(request_line) != 3 and not malformed_suffix) or request_line[0].byte_length() == 0 or request_line[1].byte_length() == 0:
         raise Error("malformed HTTP request line")
     var version = String(request_line[2])
     if version != "HTTP/1.0" and version != "HTTP/1.1":
@@ -422,9 +444,13 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
     for byte in request_line[0].as_bytes():
         if not _http_token_byte(byte):
             raise Error("malformed HTTP method")
+    var malformed_target = False
     for byte in request_line[1].as_bytes():
         if byte <= 32 or byte == 127 or byte == 35:
-            raise Error("malformed HTTP request target")
+            if defer_expectation_errors:
+                malformed_target = True
+            else:
+                raise Error("malformed HTTP request target")
     var headers = List[Tuple[String, String]]()
     var content_length = -1
     var has_content_length = False
@@ -432,6 +458,7 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
     var chunked = False
     var has_host = False
     var expect_continue = False
+    var unsupported_expectation = False
     var has_connection_upgrade = False
     var has_non_websocket_upgrade = False
     var offset = lines[0].byte_length() + 2
@@ -465,8 +492,12 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
             has_host = True
         elif lower == "expect":
             if expect_continue or value.lower() != "100-continue":
-                raise Error("unsupported HTTP expectation")
-            expect_continue = True
+                if defer_expectation_errors:
+                    unsupported_expectation = True
+                else:
+                    raise Error("unsupported HTTP expectation")
+            else:
+                expect_continue = True
         elif lower == "connection":
             for token in value.split(","):
                 if String(token).strip(" \t").lower() == "upgrade":
@@ -477,14 +508,21 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
             if value.lower() != "websocket":
                 has_non_websocket_upgrade = True
         headers.append((name, value))
+    if has_content_length and has_transfer_encoding:
+        raise Error("ambiguous HTTP request framing")
+    if defer_expectation_errors:
+        if unsupported_expectation:
+            raise Error("unsupported HTTP expectation")
+        if malformed_suffix:
+            raise Error("malformed HTTP request line suffix")
+        if malformed_target:
+            raise Error("malformed HTTP request target")
     # A protocol switch would use the raw stream through EOF, which this parser does not frame.
     if has_connection_upgrade and has_non_websocket_upgrade:
         raise Error("HTTP protocol upgrades are unsupported")
-    if has_content_length and has_transfer_encoding:
-        raise Error("ambiguous HTTP request framing")
     if version == "HTTP/1.1" and not has_host:
         raise Error("HTTP/1.1 request requires Host")
-    return ParsedRequestHead(String(request_line[0]), String(request_line[1]), headers^, content_length, chunked, expect_continue)
+    return ParsedRequestHead(String(request_line[0]), String(request_line[1]), version, headers^, content_length, chunked, expect_continue)
 
 
 def _request_target_hex(value: UInt8) -> Int:

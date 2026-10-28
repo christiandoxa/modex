@@ -536,7 +536,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         var request = LoopbackHTTPRequest("", "", List[Tuple[String, String]](), List[UInt8]())
         var captured = False
         try:
-            request = connection.read_request(120000, allow_upgrade_headers=True, validate_request_target=True, reject_chunked_trailers=True)
+            request = connection.read_request(120000, allow_upgrade_headers=True, validate_request_target=True, reject_chunked_trailers=True, defer_expectation_errors=True, preflight_body_limit_before_continue=True, use_request_version_for_continue=True)
             captured = True
         except error:
             var message = String(error)
@@ -546,7 +546,23 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
                     _invalid_request_target(connection)
                 except:
                     pass
-            elif message != "truncated HTTP request":
+            elif message == "unsupported HTTP expectation":
+                try:
+                    connection.respond(417, [], List[UInt8](), 30000)
+                except:
+                    pass
+            elif message == "websocket upgrade fallback":
+                try:
+                    _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback")
+                except:
+                    pass
+            elif message == "truncated HTTP request":
+                if connection.expect_continue_was_sent():
+                    try:
+                        _reply(connection, 502, "upstream request failed")
+                    except:
+                        pass
+            else:
                 if malformed_syntax:
                     try:
                         connection.respond(400, [], List[UInt8](), 30000)

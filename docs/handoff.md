@@ -8,6 +8,12 @@ comparisons below are historical and do not establish 0.165.1 behavior.
 The active baseline and oracle routing now select 0.165.1; the full inventory
 and production parity against this release remain unfinished.
 
+The local relay now matches selected 0.165.1 `Expect: 100-continue` ordering,
+including unsupported values, declared body limits, HTTP/1.0 interim responses,
+WebSocket fallback and a half-closed body. Strict duplicate/framing rejection
+and the HTTP/1.1 final response to HTTP/1.0 requests remain differences. See
+`docs/evidence/local-expect-tests.txt`.
+
 Pre-positional Super missing-value diagnostics now match the pinned Clap output
 for all 27 value-option spellings and aliases, with empty values, dash-prefixed
 values, help ordering and historical 0.439.2 controls. After `exec`, the

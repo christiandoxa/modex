@@ -1,0 +1,29 @@
+Local relay Expect handling slice
+
+The production binary builds with the pinned Mojo 1.2.0 toolchain. The native
+loopback server and local rewrite test drivers were rebuilt for the focused
+checks.
+
+`python3 scripts/ci/run-unittest.py test_local_rewrite_01651_oracle.py` passed
+all 3 tests against the checksum-pinned Prodex 0.165.1 oracle. The raw relay
+matrix includes supported and unsupported expectations, invalid-target
+ordering, oversized declared bodies, a half-closed partial body after 100,
+HTTP/1.0 interim status-line version, and WebSocket upgrade with a supported
+expectation. Duplicate Expect and framing comparisons stay in a separate
+strict-difference characterization test.
+
+`python3 scripts/ci/run-unittest.py test_local_rewrite.py test_loopback_server.py`
+passed 44 tests. Shared-parser controls confirm its default still sends 100
+before rejecting a body above the caller's limit and uses HTTP/1.1 for the
+interim response to an HTTP/1.0 request. The production relay opts into
+declared-size preflight and request-version interim responses.
+
+`python3 scripts/ci/check-product-dependencies.py` passed: 71 Mojo files use
+only standard-library and internal imports. `git diff --check` passed.
+
+The pinned release's HTTP/1.0 interim response version is matched. The final
+response writer still emits HTTP/1.1, an existing version-parity gap. The
+release uses the first Expect header and returns 417 for malformed expectation
+values or framing combinations that the Modex parser rejects strictly; those
+differences remain visible in the characterization test and are not counted
+as parity.

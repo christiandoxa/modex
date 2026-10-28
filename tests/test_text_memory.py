@@ -1,5 +1,6 @@
 """Measure text_width working-set growth and compare large session text to Prodex."""
 
+import ctypes
 import json
 import os
 from pathlib import Path
@@ -156,6 +157,9 @@ def _process_memory_sample(pid, expected_executable):
         if executable != expected_executable:
             return None
         status = (proc / "status").read_text().splitlines()
+        thp_enabled = next((line for line in status if line.startswith("THP_enabled:")), None)
+        if thp_enabled is None or thp_enabled.split()[1] != "0":
+            raise AssertionError(f"/proc/{pid}/status does not confirm THP is disabled")
         vmhwm = next((line for line in status if line.startswith("VmHWM:")), None)
         if vmhwm is None:
             raise AssertionError(f"/proc/{pid}/status is missing VmHWM")
@@ -196,12 +200,21 @@ def _read_lines(process, output, expected_lines, deadline, mode, count):
     return output
 
 
+def _disable_transparent_huge_pages():
+    # PR_SET_THP_DISABLE is Linux-specific and applies only to this measurement child.
+    libc = ctypes.CDLL(None, use_errno=True)
+    if libc.prctl(41, 1, 0, 0, 0) != 0:
+        error = ctypes.get_errno()
+        raise OSError(error, os.strerror(error))
+
+
 def _measure_process_peak_rss(mode, count, operation="width"):
     """Measure resident high-water growth after a same-process input baseline."""
     driver = DRIVER.resolve()
     arguments = [str(driver), mode, str(count), operation, "staged"]
     process = subprocess.Popen(arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, bufsize=0)
+                                stderr=subprocess.PIPE, bufsize=0,
+                                preexec_fn=_disable_transparent_huge_pages)
     deadline = time.monotonic() + 120
     expected_lines = 2 if operation == "linear-control" else 1
     output = bytearray()
@@ -261,6 +274,7 @@ def _measure_process_peak_rss(mode, count, operation="width"):
         "peak_rss_growth_bytes": post["peak_rss_bytes"] - baseline["peak_rss_bytes"],
         "anonymous_rss_growth_bytes": max(0, smaps_growth["Anonymous"]),
         "minor_fault_growth_events": minor_fault_growth,
+        "transparent_huge_pages_disabled": True,
         "baseline_minor_faults": baseline["minor_faults"],
         "post_minor_faults": post["minor_faults"],
         "baseline_smaps_rollup_bytes": baseline["smaps_rollup_bytes"],
@@ -296,20 +310,25 @@ def _record_host():
         "vmhwm_unit": "KiB, converted to bytes in samples",
         "anonymous_rss_source": "same-process /proc/<pid>/smaps_rollup Anonymous after input baseline",
         "minor_fault_source": "/proc/<pid>/stat minflt event count",
+        "transparent_huge_pages": (
+            "disabled per measurement process with Linux PR_SET_THP_DISABLE; verified by "
+            "/proc/<pid>/status THP_enabled at both measurement samples"
+        ),
         "linear_control": (
-            f"{LINEAR_CONTROL_BYTES_PER_UNIT} bytes per input unit, touched then released before "
-            "the post-operation sample; compared with same-size input-only runs"
+            f"one allocate-touch-release pass at {LINEAR_CONTROL_BYTES_PER_UNIT} bytes per input unit; "
+            "compared with same-size input-only runs"
         ),
         "smaps_rollup_source": "/proc/<pid>/smaps_rollup Rss/Anonymous required; retained as diagnostics",
         "measurement_limit": (
             "Anonymous RSS growth measures bytes still resident at the post-operation sample; "
             "allocations that reuse already-resident allocator pages or are returned before that "
-            "sample may be missed. minflt is an event count, never a byte estimate: transparent "
-            "huge pages can charge one event for 2 MiB, and minflt also counts code/file faults. "
+            "sample may be missed. minflt is an event count, never a byte estimate, and also "
+            "counts code/file faults. Transparent huge pages are disabled in measurement children "
+            "to keep the linear positive control observable at its original size; these results "
+            "do not characterize allocator behavior with THP enabled. "
             "The transient control checks VmHWM growth, but VmHWM is total RSS and can be masked "
-            "by a higher pre-operation peak or include file/code residency. A short-lived huge-page "
-            "allocation is detectable by VmHWM only when its resident peak exceeds the earlier "
-            "process peak; resident-page reuse and smaller peaks remain limits."
+            "by a higher pre-operation peak or include file/code residency; resident-page reuse "
+            "and smaller peaks remain limits."
         ),
     }
 
@@ -539,6 +558,19 @@ class MemoryMetricFixtureTests(unittest.TestCase):
         points[1]["linear_control"]["minor_fault_sample_spread_events"] = 1
         failures = _evaluate_memory_points(points, 4096)
         self.assertTrue(any(failure.startswith("minflt control 2<=2 events") for failure in failures))
+
+    def test_fault_positive_control_exceeds_host_sample_noise(self):
+        noisy = self._valid_points(3)
+        noisy[1]["input_only"]["median_minor_fault_growth_events"] = 1
+        noisy[1]["input_only"]["minor_fault_sample_spread_events"] = 3
+        failures = _evaluate_memory_points(noisy, 4096)
+        self.assertTrue(any(failure.startswith("minflt control 2<=4 events") for failure in failures))
+
+        sensitive = self._valid_points(8)
+        sensitive[1]["input_only"]["median_minor_fault_growth_events"] = 1
+        sensitive[1]["input_only"]["minor_fault_sample_spread_events"] = 3
+        failures = _evaluate_memory_points(sensitive, 4096)
+        self.assertFalse(any(failure.startswith("minflt control") for failure in failures))
 
     def test_failure_summary_is_bounded_and_points_to_artifact(self):
         failures = ["ascii width anonymous RSS " + "x" * 500 for _ in range(40)]

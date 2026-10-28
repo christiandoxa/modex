@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The Full run `40625731794` memory-control failure is corrected locally by
+disabling transparent huge pages in the isolated test children and verifying
+that state at both samples. The original 4-byte-per-unit control, noise
+threshold and width bounds are unchanged. All ten focused memory tests pass;
+hosted validation remains pending, and THP-enabled allocation behavior is not
+qualified. See `docs/ci-lessons.md`.
+
 Fast run `40631003222`, attempt 1, producer job `122627098427`, failed before
 building on exact SHA `84e4777e033742d3637bbfe0b8e3cd1d3d1ad668` because the
 Prodex 0.439.2 tag is absent; consumer job `122628130127` did not run. The

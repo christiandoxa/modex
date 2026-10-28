@@ -47,6 +47,15 @@
   test-calibration failure, not proof of a product memory regression; the
   positive-control sensitivity must be repaired and revalidated without
   weakening the actual memory bound.
+- The 4-byte-per-input-unit control is retained. The test harness now disables
+  transparent huge pages only in each measurement child, verifies the kernel
+  reports `THP_enabled: 0` at both samples, and fails if it cannot establish
+  that condition. The noise threshold and width bounds are unchanged. A local
+  exact-size control produced 513–514 minor-fault events for Kirat and emoji
+  against zero for input-only samples; all ten `test_text_memory.py` tests
+  passed with the pinned compiler and actual 0.439.2 oracle. This measures
+  base-page behavior and does not qualify allocation behavior with THP enabled.
+  Hosted verification of the correction is pending.
 
 ## GitHub Ubuntu sandbox setup
 

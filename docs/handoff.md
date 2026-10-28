@@ -38,6 +38,17 @@ the empty-stdout EOF case only on Linux x86-64; other release targets and
 broader transport behavior remain unverified. See
 `docs/evidence/baseline-0.165.1/app-server-closed-stdout.md`.
 
+When a synthetic app-server writes invalid UTF-8 to stdout after `initialize`,
+production Modex now reports the 0.165.1 oracle's stdout decoding error. It
+sends one initialize request and makes no upstream request. The same diagnostic
+matches when invalid UTF-8 arrives during `hooks/list`. Valid UTF-8 split across
+reads, malformed JSON and an unmatched response ID still pass; the oracle
+comparison reaches the synthetic loopback request. A historical 0.439.2
+control matches both error phases and the split/noise case. The active
+diagnostic mapping is verified only on Linux x86-64; other release targets and
+broader transport behavior remain unverified. See
+`docs/evidence/baseline-0.165.1/app-server-invalid-utf8.md`.
+
 The `help update` unknown-subcommand diagnostic now preserves the full
 argument, including attached values, in three real-process comparisons with
 0.165.1 and the historical 0.439.2 control. Update execution remains

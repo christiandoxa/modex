@@ -33,8 +33,24 @@ if "app-server" in args and "--stdio" in args:
         request = json.loads(line)
         if "id" not in request: continue
         save({"kind":"request", "method":request["method"], "params":request.get("params")})
+        if os.environ["MODEX_LAUNCH_SCENARIO"] == "split-utf8-noise" and request["method"] == "initialize":
+            noise = b"not json\n" + json.dumps({"id": 999, "result": {}}).encode() + b"\n"
+            frame = json.dumps({"id": request["id"], "result": {"message": "雪"}}, ensure_ascii=False).encode() + b"\n"
+            payload = noise + frame
+            split = payload.index("雪".encode()) + 1
+            sys.stdout.buffer.write(payload[:split])
+            sys.stdout.flush()
+            time.sleep(0.1)
+            sys.stdout.buffer.write(payload[split:])
+            sys.stdout.flush()
+            continue
         if os.environ["MODEX_LAUNCH_SCENARIO"] == "legacy" and request["method"] == "hooks/list":
             print(json.dumps({"id":request["id"],"error":{"code":-32601,"message":"Method not found"}}),flush=True)
+            time.sleep(30)
+        if (os.environ["MODEX_LAUNCH_SCENARIO"] == "invalid-utf8" or
+                (os.environ["MODEX_LAUNCH_SCENARIO"] == "invalid-utf8-later" and request["method"] == "hooks/list")):
+            sys.stdout.buffer.write(bytes([255, 10]))
+            sys.stdout.flush()
             time.sleep(30)
         if os.environ["MODEX_LAUNCH_SCENARIO"] == "closed-input":
             os.close(0)

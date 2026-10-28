@@ -70,7 +70,7 @@ struct _RpcReader:
                 var byte = self.bytes[self.offset]
                 self.offset += 1
                 if byte == 10:
-                    var result = self._string_line(method)
+                    var result = self._string_line()
                     return result
                 if len(self.line) >= HOOK_TRUST_MAX_RPC_LINE_BYTES:
                     raise Error("Codex hook-trust preflight stdout line exceeds its supported size")
@@ -78,7 +78,7 @@ struct _RpcReader:
 
             if self.eof:
                 if self.line:
-                    return self._string_line(method)
+                    return self._string_line()
                 raise Error("Codex hook-trust preflight " + method + " failed: channel is empty and sending half is closed")
             if perf_counter() >= deadline:
                 raise Error("Codex hook-trust preflight " + method + " failed: timed out waiting on channel")
@@ -95,12 +95,12 @@ struct _RpcReader:
             self.offset = 0
             self.eof = self.count == 0
 
-    def _string_line(mut self, method: String) raises -> String:
+    def _string_line(mut self) raises -> String:
         var result: String
         try:
             result = String(from_utf8=Span(self.line))
         except:
-            raise Error("Codex hook-trust preflight " + method + " failed: stream did not contain valid UTF-8")
+            raise Error("Codex hook-trust preflight stdout failed: stream did not contain valid UTF-8")
         self.line.clear()
         return result
 

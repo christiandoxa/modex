@@ -94,6 +94,50 @@ class AppServerRpc01651Tests(unittest.TestCase):
         self.assertEqual(baseline.stderr.decode().splitlines()[-1], expected)
         self.assertEqual(modex.stderr.decode().splitlines()[-1], expected)
 
+    def test_invalid_app_server_stdout_utf8_reports_reference_stream_error(self):
+        suite = test_super_launch.SuperLaunchTests()
+        expected = "Error: Codex hook-trust preflight stdout failed: stream did not contain valid UTF-8"
+        for scenario, expected_methods in (
+            ("invalid-utf8", ["initialize"]),
+            ("invalid-utf8-later", ["initialize", "hooks/list"]),
+        ):
+            with self.subTest(scenario=scenario):
+                baseline, baseline_records, baseline_upstream, baseline_state = suite.run_launch(
+                    binary=ORACLE, scenario=scenario
+                )
+                modex, modex_records, modex_upstream, modex_state = suite.run_launch(
+                    binary=MODEX, scenario=scenario
+                )
+
+                def request_methods(records):
+                    return [record["method"] for record in records if record.get("kind") == "request"]
+
+                self.assertEqual((baseline.returncode, modex.returncode), (1, 1))
+                self.assertEqual((baseline.stdout, modex.stdout), (b"", b""))
+                self.assertEqual((baseline_upstream, modex_upstream), ([], []))
+                self.assertEqual((baseline_state["leftovers"], modex_state["leftovers"]), ([], []))
+                self.assertEqual((request_methods(baseline_records), request_methods(modex_records)),
+                                 (expected_methods, expected_methods))
+                self.assertEqual(baseline.stderr.decode().splitlines()[-1], expected)
+                self.assertEqual(modex.stderr.decode().splitlines()[-1], expected)
+
+    def test_split_utf8_frame_ignores_malformed_and_unmatched_noise(self):
+        suite = test_super_launch.SuperLaunchTests()
+        responses = []
+        methods = []
+        for binary in (ORACLE, MODEX):
+            result, records, upstream, state = suite.run_launch(
+                binary=binary, scenario="split-utf8-noise"
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, b"synthetic-client-complete\n")
+            self.assertEqual(len(upstream), 1)
+            self.assertEqual(state["leftovers"], [])
+            responses.append(result.stdout)
+            methods.append([record["method"] for record in records if record.get("kind") == "request"])
+        self.assertEqual(responses[0], responses[1])
+        self.assertEqual(methods, [["initialize", "hooks/list", "hooks/list"]] * 2)
+
 
 if __name__ == "__main__":
     unittest.main()

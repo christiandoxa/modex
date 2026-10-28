@@ -11,14 +11,19 @@ implement the upgrade fallback.
 The native relay now handles these tested cases. Its shared HTTP parser still
 rejects upgrades by default; only the local relay opts in for WebSocket. The
 0.165.1 oracle regression uses synthetic Codex and loopback peers with the
-checksum-pinned release. Ten production-path controls pass against the pinned release, including
+checksum-pinned release. Eleven production-path controls pass against the pinned release, including
 truncated ordinary and WebSocket bodies verified as EOF after half-close.
 Separate raw-socket controls exercise the native relay and shared parser.
 The integrated production build, native drivers and 42 relay, parser and CI
 routing tests passed. No paid services or real accounts are used.
 
+An oversized declared body of 67,108,865 bytes now returns the exact 413
+`Payload Too Large` status phrase and error body without an upstream request,
+matching the 0.165.1 and historical 0.439.2 binaries. The regression checks
+the actual production relay and its shared HTTP response writer.
+
 The relay remains serial; a separate two-request probe found Prodex accepts both
 upstream requests concurrently while Modex serializes them. WebSocket transport
 is not implemented; the 426 fallback is not WebSocket parity. Non-WebSocket
-upgrade handling, the 413 reason phrase, and broader framing, timeout and
+upgrade handling and broader framing, timeout and
 security behavior remain unverified or different.

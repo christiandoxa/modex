@@ -13,6 +13,11 @@ argument, including attached values, in three real-process comparisons with
 0.165.1 and the historical 0.439.2 control. Update execution remains
 unimplemented; see `docs/evidence/baseline-0.165.1/cli-observations.md`.
 
+An oversized declared relay body now returns the 413 `Payload Too Large`
+phrase and error body observed in 0.165.1 and historical 0.439.2, without an
+upstream request. Concurrency, WebSocket transport and broader HTTP behavior
+remain unfinished; see `docs/evidence/baseline-0.165.1/local-relay-http.md`.
+
 `tests/test_cli_01651.py` compares selected root-help forms and leading version
 flags through both production executables in isolated homes. Both cases passed
 on Linux x86-64 with the verified binary. This does not establish complete CLI

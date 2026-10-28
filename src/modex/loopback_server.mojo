@@ -667,7 +667,7 @@ def _reason(status: Int) -> String:
     if status == 408:
         return "Request Timeout"
     if status == 413:
-        return "Content Too Large"
+        return "Payload Too Large"
     if status == 415:
         return "Unsupported Media Type"
     if status == 417:

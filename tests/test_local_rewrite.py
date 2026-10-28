@@ -266,7 +266,7 @@ def post_declared_oversized_body(address, body_bytes):
                 break
             response.extend(chunk)
     head, body = bytes(response).split(b"\r\n\r\n", 1)
-    return int(head.split(b" ", 2)[1]), body
+    return head.split(b"\r\n", 1)[0], body
 
 
 def raw_http_exchange(address, request, *, half_close=False):
@@ -729,7 +729,10 @@ class LocalRewriteTests(unittest.TestCase):
                 status, _, body = post_relay(relay.address, b'{"model":')
                 self.assertEqual((status, body), (502, b"upstream request failed"))
                 status, body = post_declared_oversized_body(relay.address, 64 * 1024 * 1024 + 1)
-                self.assertEqual((status, body), (413, b"proxied request body is too large"))
+                self.assertEqual(
+                    (status, body),
+                    (b"HTTP/1.1 413 Payload Too Large", b"proxied request body is too large"),
+                )
         self.assertEqual(server.records, [])
 
     def test_malformed_http_line_and_header_return_empty_400(self):

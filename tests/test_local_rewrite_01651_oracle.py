@@ -215,6 +215,14 @@ CASES = (
         "upstream": False,
     },
     {
+        "name": "oversized_declared_body",
+        "request": b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: 67108865\r\n\r\n",
+        "expected_status": 413,
+        "expected_reason": "Payload Too Large",
+        "expected_body": b"proxied request body is too large",
+        "upstream": False,
+    },
+    {
         "name": "valid_request_control",
         "request": request_bytes((("Connection", "close"),)),
         "expected_status": 200,
@@ -309,6 +317,8 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                         ("modex", modex_response, modex_upstream),
                     ):
                         self.assertEqual(response["status"], case["expected_status"], label)
+                        if "expected_reason" in case:
+                            self.assertEqual(response["reason"], case["expected_reason"], label)
                         self.assertEqual(response["read_error"], case.get("expected_read_error", ""), label)
                         if case["expected_body"] is not None:
                             self.assertEqual(response["body"], case["expected_body"], label)

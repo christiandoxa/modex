@@ -796,7 +796,7 @@ class LocalRewriteTests(unittest.TestCase):
         with serving([]) as server:
             with RunningLocalRewrite(server.server_port) as relay:
                 connection = HTTPConnection(relay.address[0], relay.address[1], timeout=5)
-                connection.request("GET", "/v1/responses")
+                connection.request("GET", "/v1/models")
                 response = connection.getresponse()
                 body = response.read()
                 self.assertEqual(response.status, 404)

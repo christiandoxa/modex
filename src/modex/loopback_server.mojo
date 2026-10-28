@@ -138,6 +138,7 @@ struct LoopbackHTTPConnection(Movable):
     var wire_bytes: Int
     var streaming: Bool
     var request_read: Bool
+    var head_request: Bool
     var done: Bool
 
     def __init__(out self, fd: Int32):
@@ -146,6 +147,7 @@ struct LoopbackHTTPConnection(Movable):
         self.wire_bytes = 0
         self.streaming = False
         self.request_read = False
+        self.head_request = False
         self.done = False
 
     def close(mut self):
@@ -193,6 +195,7 @@ struct LoopbackHTTPConnection(Movable):
         # The relay caps target bytes, so its request line also includes method and version bytes.
         var max_request_line_bytes = HTTP_HEADER_LIMIT if validate_request_target else 8192
         var head = _parse_request_head(self.input, header_end, allow_websocket_upgrade, max_request_line_bytes)
+        self.head_request = head.method == "HEAD"
         if validate_request_target and not request_target_valid(head.target) and (head.expect_continue or head.length > max_body_bytes):
             raise Error("invalid HTTP request target")
         var body_start = header_end + 4
@@ -228,8 +231,9 @@ struct LoopbackHTTPConnection(Movable):
             var response = _response_head(status, headers, len(body), False, include_bodyless_length, bodyless_chunked)
             var deadline = _deadline(timeout_ms)
             _send_all(self.fd, response, deadline)
-            _send_all(self.fd, body, deadline)
-            if bodyless_chunked:
+            if not self.head_request:
+                _send_all(self.fd, body, deadline)
+            if bodyless_chunked and not self.head_request:
                 _send_all(self.fd, _bytes("0\r\n\r\n"), deadline)
             self.close()
         except:
@@ -257,6 +261,10 @@ struct LoopbackHTTPConnection(Movable):
                 return
             if len(bytes) > HTTP_MAX_BODY_LIMIT:
                 raise Error("oversized HTTP response stream chunk")
+            if self.head_request:
+                if self.client_disconnected():
+                    raise Error("loopback HTTP response write failed")
+                return
             var framed = _chunk_frame(bytes)
             _send_all(self.fd, framed, _deadline(timeout_ms))
         except:
@@ -268,9 +276,10 @@ struct LoopbackHTTPConnection(Movable):
             if not self.streaming or self.done:
                 raise Error("loopback HTTP response stream is not active")
             var final = List[UInt8]()
-            for byte in "0\r\n\r\n".as_bytes():
-                final.append(byte)
-            _send_all(self.fd, final, _deadline(timeout_ms))
+            if not self.head_request:
+                for byte in "0\r\n\r\n".as_bytes():
+                    final.append(byte)
+                _send_all(self.fd, final, _deadline(timeout_ms))
             self.close()
         except:
             self.close()
@@ -759,6 +768,8 @@ def _reason(status: Int) -> String:
         return "Upgrade Required"
     if status == 500:
         return "Internal Server Error"
+    if status == 501:
+        return "Not Implemented"
     if status == 502:
         return "Bad Gateway"
     if status == 503:

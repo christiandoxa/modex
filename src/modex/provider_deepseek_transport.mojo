@@ -122,7 +122,7 @@ struct DeepSeekExchange(Movable):
 
     var native_messages: Bool
 
-    def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, downstream_fd: Int32 = -1, previous_response_found: Bool = False, native_messages: Bool = False) raises:
+    def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, downstream_fd: Int32 = -1, previous_response_found: Bool = False, native_messages: Bool = False, request_method: String = "POST") raises:
         if native_messages: validate_deepseek_anthropic_request(request)
         var prepared = JsonDocument(translate_deepseek_request(request, history, strict_tools, web_search_mode, previous_response_found))
         if max_body_bytes < 0 or max_body_bytes > 4 * 1024 * 1024:
@@ -144,7 +144,7 @@ struct DeepSeekExchange(Movable):
         var bytes = List[UInt8]()
         for byte in self.body.as_bytes():
             bytes.append(byte)
-        self.http = LoopbackHTTPStream(address, path, deepseek_request_headers(headers, api_key, anthropic_messages=native_messages), bytes, connect_timeout_ms, request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd, True)
+        self.http = LoopbackHTTPStream(address, path, deepseek_request_headers(headers, api_key, anthropic_messages=native_messages), bytes, connect_timeout_ms, request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd, True, request_method)
 
     def status(self) -> Int:
         return self.http.status

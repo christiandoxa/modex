@@ -587,10 +587,15 @@ def _valid_request_field(name: String, value: String) raises:
         raise Error("caller-controlled HTTP framing header is forbidden")
 
 
-def _stream_request(path: String, headers: List[Tuple[String, String]], host: String, body_length: Int) raises -> List[UInt8]:
+def _stream_request(path: String, headers: List[Tuple[String, String]], host: String, body_length: Int, request_method: String = "POST") raises -> List[UInt8]:
     # Reuse GET's target validation without changing its established request bytes.
     _ = _request(path, "X", "", host)
-    var head = "POST " + path + " HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\nContent-Length: " + String(body_length) + "\r\n"
+    if not request_method:
+        raise Error("malformed HTTP request method")
+    for byte in request_method.as_bytes():
+        if not _http_token_byte(byte):
+            raise Error("malformed HTTP request method")
+    var head = request_method + " " + path + " HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\nContent-Length: " + String(body_length) + "\r\n"
     var head_bytes = head.byte_length()
     if head_bytes > HTTP_HEADER_LIMIT - 2:
         raise Error("HTTP request headers exceed limit")
@@ -629,6 +634,7 @@ struct LoopbackHTTPStream(Movable):
     var wire_bytes: Int
     var max_wire_bytes: Int
     var max_body_bytes: Int
+    var request_method: String
     var length: Int
     var request_deadline: Float64
     var idle_timeout_ms: UInt64
@@ -647,6 +653,7 @@ struct LoopbackHTTPStream(Movable):
         max_body_bytes: Int,
         downstream_fd: Int32 = -1,
         allow_unbounded_body: Bool = False,
+        request_method: String = "POST",
     ) raises:
         self.fd = -1
         self.downstream_fd = downstream_fd
@@ -664,6 +671,7 @@ struct LoopbackHTTPStream(Movable):
         self.wire_bytes = 0
         self.max_wire_bytes = 0
         self.max_body_bytes = -1 if allow_unbounded_body else max_body_bytes
+        self.request_method = request_method
         self.length = -1
         self.request_deadline = 0.0
         self.idle_timeout_ms = idle_timeout_ms
@@ -697,7 +705,7 @@ struct LoopbackHTTPStream(Movable):
             port = _number(parts[1])
         if port == 0 or port > 65535:
             raise Error("invalid loopback HTTP port")
-        var request = _stream_request(path, headers, address, len(body))
+        var request = _stream_request(path, headers, address, len(body), request_method)
         _check_downstream_peer(self.downstream_fd)
         var started = perf_counter()
         self.request_deadline = started + Float64(request_timeout_ms) / 1000.0
@@ -793,7 +801,7 @@ struct LoopbackHTTPStream(Movable):
             return
         self.status = parsed[0]
         # A 304 length describes the representation; bodyless statuses consume no bytes.
-        self.length = 0 if self.status == 204 or self.status == 304 else parsed[1]
+        self.length = 0 if self.request_method == "HEAD" or self.status == 204 or self.status == 304 else parsed[1]
         if self.max_body_bytes >= 0 and self.length > self.max_body_bytes:
             raise Error("oversized HTTP response body")
         var lines = _ascii(self.buffer, 0, end).split("\r\n")
@@ -803,7 +811,7 @@ struct LoopbackHTTPStream(Movable):
             self.headers.append((String(lines[i][byte=0:colon]), String(lines[i][byte=colon + 1:].strip(" \t"))))
         _drop_prefix(self.buffer, end + 4)
         self.header_scan = 0
-        if parsed[0] == 204 or parsed[0] == 304:
+        if self.request_method == "HEAD" or parsed[0] == 204 or parsed[0] == 304:
             self.phase = 6
         elif parsed[2]:
             self.phase = 2

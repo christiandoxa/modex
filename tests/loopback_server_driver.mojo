@@ -76,6 +76,36 @@ def run(mode: String, mut output: RawFileDescriptor) raises:
         headers.append(("Content-Type", "text/event-stream"))
         connection.respond(204 if mode == "bodyless-sse-204" else 304, headers, List[UInt8](), 1000, False, True)
         emit(output, "BODYLESS_SENT")
+    elif mode == "head-buffered":
+        var headers = List[Tuple[String, String]]()
+        headers.append(("Content-Type", "application/octet-stream"))
+        connection.respond(200, headers, bytes_of("representation"), 1000)
+        emit(output, "HEAD_BUFFERED_SENT")
+    elif mode == "head-stream" or mode == "head-stream-cancel":
+        var headers = List[Tuple[String, String]]()
+        headers.append(("Content-Type", "text/event-stream"))
+        connection.start_stream(200, headers, 1000)
+        if mode == "head-stream-cancel":
+            var detected = False
+            for _ in range(500):
+                if connection.client_disconnected():
+                    detected = True
+                    break
+                sleep(0.002)
+            emit(output, "DISCONNECTED " + ("true" if detected else "false"))
+            if detected:
+                try:
+                    connection.write_chunk(bytes_of("after-cancel"), 1000)
+                    emit(output, "WRITE_SURVIVED")
+                except error:
+                    emit(output, "WRITE_FAILED")
+            connection.close()
+        else:
+            connection.write_chunk(bytes_of("first\n"), 1000)
+            sleep(0.35)
+            connection.write_chunk(bytes_of("second\n"), 1000)
+            connection.finish_stream(1000)
+            emit(output, "HEAD_STREAM_DONE")
     elif mode == "stream":
         var headers = List[Tuple[String, String]]()
         headers.append(("Content-Type", "text/event-stream"))

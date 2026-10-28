@@ -94,9 +94,9 @@ def status(response):
     return int(head.split(b" ")[1])
 
 
-def request(path="/synthetic", body=b"payload"):
+def request(path="/synthetic", body=b"payload", method=b"POST"):
     return (
-        b"POST " + path.encode() + b" HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: "
+        method + b" " + path.encode() + b" HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: "
         + str(len(body)).encode() + b"\r\n\r\n" + body
     )
 
@@ -273,6 +273,58 @@ class LoopbackHTTPServerTests(unittest.TestCase):
                 self.assertNotIn(b"Content-Length:", headers)
                 self.assertEqual(payload, b"0\r\n\r\n")
                 self.assertIn("BODYLESS_SENT", stdout)
+
+    def test_head_buffered_reply_suppresses_body_but_keeps_representation_length(self):
+        process, client = start("head-buffered")
+        client.sendall(request(body=b"", method=b"HEAD"))
+        response, stdout = finish(process, client)
+        headers, separator, payload = response.partition(b"\r\n\r\n")
+        self.assertEqual(separator, b"\r\n\r\n")
+        self.assertEqual(status(response), 200)
+        self.assertIn(b"Content-Length: 14\r\n", headers + b"\r\n")
+        self.assertEqual(payload, b"")
+        self.assertIn("HEAD_BUFFERED_SENT", stdout)
+
+    def test_head_stream_suppresses_chunks_and_chunk_terminator(self):
+        process, client = start("head-stream")
+        client.sendall(request(body=b"", method=b"HEAD"))
+        response, stdout = finish(process, client)
+        headers, separator, payload = response.partition(b"\r\n\r\n")
+        self.assertEqual(separator, b"\r\n\r\n")
+        self.assertEqual(status(response), 200)
+        self.assertIn(b"Transfer-Encoding: chunked\r\n", headers + b"\r\n")
+        self.assertEqual(payload, b"")
+        self.assertIn("HEAD_STREAM_DONE", stdout)
+
+    def test_head_bodyless_chunked_reply_has_no_terminator(self):
+        for response_status in (204, 304):
+            with self.subTest(status=response_status):
+                process, client = start(f"bodyless-sse-{response_status}")
+                client.sendall(request(body=b"", method=b"HEAD"))
+                response, stdout = finish(process, client)
+                headers, separator, payload = response.partition(b"\r\n\r\n")
+                self.assertEqual(separator, b"\r\n\r\n")
+                self.assertEqual(status(response), response_status)
+                self.assertIn(b"Transfer-Encoding: chunked\r\n", headers + b"\r\n")
+                self.assertNotIn(b"Content-Length:", headers)
+                self.assertEqual(payload, b"")
+                self.assertIn("BODYLESS_SENT", stdout)
+
+    def test_head_stream_cancellation_is_still_detected(self):
+        process, client = start("head-stream-cancel")
+        client.sendall(request(body=b"", method=b"HEAD"))
+        header, prefetched = read_header_with_tail(client)
+        self.assertIn(b"Transfer-Encoding: chunked\r\n", header)
+        self.assertEqual(prefetched, b"")
+        client.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+        client.close()
+        stdout = process.stdout.read()
+        stderr = process.stderr.read()
+        self.assertEqual(process.wait(timeout=4), 0, stderr + stdout)
+        self.assertIn("DISCONNECTED true", stdout)
+        self.assertIn("WRITE_FAILED", stdout)
+        process.stdout.close()
+        process.stderr.close()
 
     def test_header_reader_keeps_coalesced_first_chunk(self):
         sender, client = socket.socketpair()

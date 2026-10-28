@@ -26,6 +26,7 @@ def deepseek_chat_completions_stream(
     request_timeout_ms: UInt64,
     idle_timeout_ms: UInt64,
     downstream_fd: Int32,
+    request_method: String = "POST",
 ) raises -> LoopbackHTTPStream:
     var stream = LoopbackHTTPStream(
         address,
@@ -38,6 +39,7 @@ def deepseek_chat_completions_stream(
         DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES,
         downstream_fd,
         True,
+        request_method,
     )
     # The frozen passthrough streams SSE on 2xx/3xx, and buffers non-SSE.
     # Keep >=400 rejection in the send path, before response dispatch; a

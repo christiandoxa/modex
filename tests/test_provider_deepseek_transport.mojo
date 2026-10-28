@@ -3,6 +3,7 @@ from std.sys import argv
 from std.testing import assert_equal, assert_true
 
 from modex.json import JsonDocument, serialize_json
+from modex.loopback_http import LoopbackHTTPStream
 from modex.provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
 from modex.provider_rate_limits import _reset_epoch, deepseek_codex_rate_limit_headers
 
@@ -161,6 +162,19 @@ def lifecycle(address: String, mode: String) raises:
     assert_equal(exchange.pending_offset, 0)
 
 
+def rejects_method_injection() raises:
+    var rejected = False
+    try:
+        _ = LoopbackHTTPStream(
+            "127.0.0.1:1", "/v1/chat/completions", List[Tuple[String, String]](),
+            List[UInt8](), UInt64(100), UInt64(100), UInt64(100), 4096, -1, True,
+            "GET\r\nX-Injected: yes",
+        )
+    except error:
+        rejected = String(error) == "malformed HTTP request method"
+    assert_true(rejected)
+
+
 def main() raises:
     var source: List[Tuple[String, String]] = [
         ("Authorization", "Bearer obsolete-synthetic-key"),
@@ -232,6 +246,7 @@ def main() raises:
     assert_true(not deepseek_event_stream([("Content-Type", "application/json"), ("Content-Type", "text/event-stream")]))
     assert_true(deepseek_event_stream([("Content-Type", "text/event-stream"), ("Content-Type", "application/json")]))
     rate_limits()
+    rejects_method_injection()
     var args = argv()
     if len(args) == 3:
         lifecycle(args[1], args[2])

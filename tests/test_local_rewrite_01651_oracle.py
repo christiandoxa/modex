@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -31,7 +32,14 @@ PROVIDER_RESPONSE = json.dumps({
     "created": 1,
     "choices": [{"message": {"content": "synthetic response"}, "finish_reason": "stop"}],
 }, separators=(",", ":")).encode()
+PROVIDER_SSE_RESPONSE = base64.b64decode(next(
+    case["upstream_base64"]
+    for case in json.loads((ROOT / "tests/fixtures/provider-stream/cases.json").read_text(encoding="utf-8"))["cases"]
+    if case["name"] == "text_done"
+))
 REQUEST_BODY = b'{"model":"deepseek-chat","input":"synthetic raw transport probe"}'
+STREAM_REQUEST_BODY = b'{"model":"deepseek-chat","input":"synthetic raw transport probe","stream":true}'
+RESPONSES_RESPONSE = b'{"created_at":1,"id":"chatcmpl_transport_oracle","metadata":{"deepseek":{"finish_reason":"stop"}},"model":"deepseek-chat","object":"response","output":[{"content":[{"text":"synthetic response","type":"output_text"}],"role":"assistant","type":"message"}]}'
 TARGET_PREFIX = b"/v1/responses?x="
 MAX_LENGTH_VALID_TARGET = TARGET_PREFIX + b"a" * (8192 - len(TARGET_PREFIX))
 OVER_LENGTH_INVALID_TARGET = MAX_LENGTH_VALID_TARGET + b"a"
@@ -58,7 +66,7 @@ class Upstream(ThreadingHTTPServer):
 class UpstreamHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
-    def do_POST(self):
+    def _serve_request(self):
         length = int(self.headers.get("Content-Length", "0"))
         body = self.rfile.read(length)
         with self.server.records_lock:
@@ -68,12 +76,43 @@ class UpstreamHandler(BaseHTTPRequestHandler):
                 "headers": {name.lower(): value for name, value in self.headers.items()},
                 "body": body,
             })
+        response_kind = self.headers.get("X-Oracle-Response", "json")
+        if response_kind in ("sse-204", "sse-304"):
+            self.send_response(int(response_kind[-3:]))
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Connection", "close")
+            self.end_headers()
+            return
+        response_body = PROVIDER_SSE_RESPONSE if response_kind == "sse" else PROVIDER_RESPONSE
         self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(PROVIDER_RESPONSE)))
+        self.send_header("Content-Type", "text/event-stream" if response_kind == "sse" else "application/json")
+        self.send_header("Content-Length", str(len(response_body)))
         self.send_header("Connection", "close")
         self.end_headers()
-        self.wfile.write(PROVIDER_RESPONSE)
+        if self.command != "HEAD":
+            self.wfile.write(response_body)
+
+    def do_GET(self):
+        self._serve_request() if self.headers.get("X-Oracle-Response") else self.send_error(501)
+
+    def do_HEAD(self):
+        self._serve_request() if self.headers.get("X-Oracle-Response") else self.send_error(501)
+
+    def do_POST(self):
+        self._serve_request()
+
+    def send_error(self, code, message=None, explain=None):
+        if code == 501:
+            length = int(self.headers.get("Content-Length", "0"))
+            body = self.rfile.read(length)
+            with self.server.records_lock:
+                self.server.records.append({
+                    "method": self.command,
+                    "path": self.path,
+                    "headers": {name.lower(): value for name, value in self.headers.items()},
+                    "body": body,
+                })
+        super().send_error(code, message, explain)
 
     def log_message(self, *_args):
         pass
@@ -112,16 +151,30 @@ connection.settimeout(5)
 connection.sendall(bytes.fromhex(os.environ["PROBE_REQUEST_HEX"]))
 if os.environ.get("PROBE_HALF_CLOSE") == "1":
     connection.shutdown(socket.SHUT_WR)
-result = {"status": None, "reason": "", "headers": [], "body_base64": "", "read_error": ""}
+result = {"status": None, "reason": "", "headers": [], "body_base64": "", "wire_body_base64": "", "wire_body_probe_complete": False, "read_error": ""}
 try:
-    response = http.client.HTTPResponse(connection)
+    request_method = os.environ.get("PROBE_REQUEST_METHOD")
+    response = http.client.HTTPResponse(connection, method=request_method)
     response.begin()
+    wire_body = b""
+    wire_body_probe_complete = False
+    if request_method == "HEAD" and response.fp:
+        connection.settimeout(0.25)
+        try:
+            wire_body = response.fp.peek(4096)
+            wire_body_probe_complete = True
+        except socket.timeout:
+            pass
+        finally:
+            connection.settimeout(5)
     body = response.read()
     result.update({
         "status": response.status,
         "reason": response.reason,
         "headers": response.getheaders(),
         "body_base64": base64.b64encode(body).decode("ascii"),
+        "wire_body_base64": base64.b64encode(wire_body).decode("ascii"),
+        "wire_body_probe_complete": wire_body_probe_complete,
     })
 except Exception as error:
     result["read_error"] = type(error).__name__
@@ -147,7 +200,7 @@ with open(os.environ["PROBE_RESULT_PATH"], "w", encoding="utf-8") as output:
     path.chmod(0o700)
 
 
-def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses"):
+def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses", method=b"POST"):
     all_headers = [
         ("Host", "127.0.0.1"),
         *headers,
@@ -155,7 +208,7 @@ def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses"):
         ("Content-Length", str(len(body))),
     ]
     return (
-        b"POST " + target + b" HTTP/1.1\r\n"
+        method + b" " + target + b" HTTP/1.1\r\n"
         + b"".join(name.encode() + b": " + value.encode() + b"\r\n" for name, value in all_headers)
         + b"\r\n" + body
     )
@@ -169,6 +222,90 @@ def invalid_target_case(name, target):
         "expected_reason": "Bad Request",
         "expected_body": INVALID_REQUEST_TARGET_BODY,
         "upstream": False,
+    }
+
+
+def method_case(name, method, target):
+    return {
+        "name": name,
+        "request": request_bytes(
+            headers=(("Connection", "close"),) if method == b"HEAD" else (),
+            target=target,
+            method=method,
+        ),
+        "expected_status": 501,
+        "expected_reason": "Not Implemented",
+        "expected_body": b"" if method == b"HEAD" else None,
+        "expected_upstream_method": method.decode("ascii"),
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
+    }
+
+
+def success_method_case(name, method, target, response_kind="json", body=REQUEST_BODY):
+    request_headers = [("X-Oracle-Response", response_kind)]
+    if method == b"HEAD":
+        request_headers.insert(0, ("Connection", "close"))
+    if method == b"HEAD":
+        expected_body = b""
+        expected_headers = (
+            {"content-type": "text/plain; charset=utf-8", "content-length": "40"}
+            if target == b"/v1/responses"
+            else {"content-type": "application/json", "content-length": "0"}
+        )
+    elif response_kind == "sse":
+        expected_body = PROVIDER_SSE_RESPONSE if target == b"/v1/chat/completions" else None
+        expected_headers = {
+            "content-type": "text/event-stream" if target == b"/v1/chat/completions" else "text/event-stream; charset=utf-8",
+            "transfer-encoding": "chunked",
+        }
+    else:
+        expected_body = PROVIDER_RESPONSE if target == b"/v1/chat/completions" else RESPONSES_RESPONSE
+        expected_headers = {
+            "content-type": "application/json" if target == b"/v1/chat/completions" else "application/json; charset=utf-8",
+            "content-length": str(len(expected_body)),
+        }
+    return {
+        "name": name,
+        "request": request_bytes(
+            request_headers,
+            body=body,
+            target=target,
+            method=method,
+        ),
+        "expected_status": 502 if method == b"HEAD" and target == b"/v1/responses" else 200,
+        "expected_reason": "Bad Gateway" if method == b"HEAD" and target == b"/v1/responses" else "OK",
+        "expected_body": expected_body,
+        "expected_headers": expected_headers,
+        "compare_response_body": method != b"HEAD",
+        "expected_upstream_method": method.decode("ascii"),
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
+    }
+
+
+def head_bodyless_sse_case(status):
+    return {
+        "name": f"head_chat_completions_{status}_sse_framing",
+        "request": request_bytes(
+            (("Connection", "close"), ("X-Oracle-Response", f"sse-{status}")),
+            target=b"/v1/chat/completions",
+            method=b"HEAD",
+        ),
+        "expected_status": status,
+        "expected_reason": "No Content" if status == 204 else "Not Modified",
+        "expected_body": b"",
+        "expected_headers": {
+            "content-type": "text/event-stream",
+            "transfer-encoding": "chunked",
+        },
+        "expected_wire_body": {"oracle": b"0\r\n\r\n", "modex": b""},
+        "expected_upstream_method": "HEAD",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
     }
 
 
@@ -351,6 +488,39 @@ CASES = (
             ("request_target_length_8193", OVER_LENGTH_INVALID_TARGET),
         )
     ),
+    *(
+        method_case(f"method_{method.decode('ascii').lower()}_{target.rsplit(b'/', 1)[-1].decode('ascii')}", method, target)
+        for target in (b"/v1/responses", b"/v1/chat/completions")
+        for method in (b"GET", b"HEAD", b"PUT", b"DELETE", b"OPTIONS", b"X-EXT")
+    ),
+    *(
+        method_case(f"extension_method_length_{size}_{target.rsplit(b'/', 1)[-1].decode('ascii')}", b"A" * size, target)
+        for target in (b"/v1/responses", b"/v1/chat/completions")
+        for size in (8192, 8193)
+    ),
+    *(
+        success_method_case(
+            f"successful_{method.decode('ascii').lower()}_{target.rsplit(b'/', 1)[-1].decode('ascii')}",
+            method,
+            target,
+        )
+        for target in (b"/v1/responses", b"/v1/chat/completions")
+        for method in (b"GET", b"HEAD")
+    ),
+    success_method_case(
+        "successful_get_chat_completions_sse",
+        b"GET",
+        b"/v1/chat/completions",
+        response_kind="sse",
+    ),
+    success_method_case(
+        "successful_get_responses_sse",
+        b"GET",
+        b"/v1/responses",
+        response_kind="sse",
+        body=STREAM_REQUEST_BODY,
+    ),
+    *(head_bodyless_sse_case(status) for status in (204, 304)),
     {
         "name": "valid_escaped_query",
         "request": request_bytes(target=b"/v1/responses?x=a%2Fb"),
@@ -386,6 +556,7 @@ def run_probe(binary: Path, case, upstream: Upstream):
             "LC_ALL": "C.UTF-8",
             "PRODEX_CODEX_BIN": str(codex),
             "PROBE_REQUEST_HEX": case["request"].hex(),
+            "PROBE_REQUEST_METHOD": case["request"].split(b" ", 1)[0].decode("ascii"),
             "PROBE_HALF_CLOSE": "1" if case.get("half_close") else "0",
             "PROBE_FOLLOWUP_REQUEST_HEX": case.get("followup_request", b"").hex(),
             "PROBE_RESULT_PATH": str(result_path),
@@ -414,12 +585,19 @@ def run_probe(binary: Path, case, upstream: Upstream):
             )
         response = json.loads(result_path.read_text(encoding="utf-8"))
         response["body"] = base64.b64decode(response.pop("body_base64"))
+        response["wire_body"] = base64.b64decode(response.pop("wire_body_base64"))
         if "followup_body_base64" in response:
             response["followup_body"] = base64.b64decode(response.pop("followup_body_base64"))
         response["process_exit"] = process.returncode
         response["stdout"] = process.stdout
         response["stderr"] = process.stderr
         return response, upstream.snapshot_records()
+
+
+def normalize_response_body(case, body):
+    if case["name"] == "successful_get_responses_sse":
+        return re.sub(rb"msg_deepseek_[0-9]+", b"msg_deepseek_ID", body)
+    return body
 
 
 class LocalRewrite01651OracleTests(unittest.TestCase):
@@ -444,6 +622,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
 
                     self.assertEqual(oracle_response["process_exit"], 0, oracle_response["stderr"])
                     self.assertEqual(modex_response["process_exit"], 0, modex_response["stderr"])
+                    oracle_request = None
                     for label, response, records in (
                         ("oracle", oracle_response, oracle_upstream),
                         ("modex", modex_response, modex_upstream),
@@ -459,13 +638,39 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                             self.assertEqual(response["body"], case["expected_body"], label)
                         else:
                             self.assertTrue(response["body"], label)
+                        if case.get("expected_headers"):
+                            response_headers = {name.lower(): value for name, value in response["headers"]}
+                            for name, value in case["expected_headers"].items():
+                                self.assertEqual(response_headers.get(name), value, label)
+                        if case["request"].startswith(b"HEAD "):
+                            self.assertTrue(response["wire_body_probe_complete"], label)
+                            self.assertEqual(
+                                response["wire_body"],
+                                case.get("expected_wire_body", {}).get(label, b""),
+                                label,
+                            )
                         self.assertEqual(len(records), int(case["upstream"]), label)
                         if case["upstream"]:
                             record = records[0]
-                            self.assertEqual((record["method"], record["path"]), ("POST", "/v1/chat/completions"), label)
+                            self.assertEqual(
+                                (record["method"], record["path"]),
+                                (case.get("expected_upstream_method", "POST"), case.get("expected_upstream_path", "/v1/chat/completions")),
+                                label,
+                            )
+                            if case.get("compare_upstream_request"):
+                                if label == "oracle":
+                                    oracle_request = record
+                                else:
+                                    self.assertIsNotNone(oracle_request)
+                                    self.assertEqual(record["body"], oracle_request["body"], label)
                             self.assertNotIn("upgrade", record["headers"], label)
                             self.assertNotIn("keep-alive", [value.lower() for value in record["headers"].values()], label)
                             self.assertNotEqual(record["headers"].get("connection", "").lower(), "upgrade", label)
+                    if case.get("compare_response_body"):
+                        self.assertEqual(
+                            normalize_response_body(case, oracle_response["body"]),
+                            normalize_response_body(case, modex_response["body"]),
+                        )
         finally:
             upstream.shutdown()
             upstream.server_close()

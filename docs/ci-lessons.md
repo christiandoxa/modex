@@ -15,7 +15,15 @@ set both historical source paths and passed the build, native suite and 605
 Python tests; its log is `~/.cache/modex/ci-evidence/full-test-165dd15.log`.
 The later `f386c7b` full run also passed the build, native suite and 613 Python
 tests; its log is `~/.cache/modex/ci-evidence/full-test-f386c7b.log`. Both
-results predate the current head and are not final-head validation.
+results predate the current head. The `8f7c3c1` full run also passed the build,
+native suite and 616 Python tests; its log is
+`~/.cache/modex/ci-evidence/full-test-8f7c3c1.log`. These results are not
+final-head validation.
+
+Fast run [40769127160](https://github.com/christiandoxa/modex/actions/runs/40769127160)
+on `44ca9e9` passed both helper shards and 37 focused relay/parser tests, then
+failed acquiring the unavailable required 0.439.2 oracle. Artifact consumption
+was skipped.
 
 Fast run [40763120392](https://github.com/christiandoxa/modex/actions/runs/40763120392)
 on `6edd459` passed current-reference and relay tests, then failed at the

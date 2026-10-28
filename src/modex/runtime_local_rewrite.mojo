@@ -380,7 +380,7 @@ def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Opt
 
 def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, messages_address: String, messages_path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, mut bindings: RuntimeBindings, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
-    if request.method != "POST" or (target != "/v1/chat/completions" and target != "/v1/responses"):
+    if target != "/v1/chat/completions" and target != "/v1/responses":
         _route_error(connection)
         return
     var source = String()
@@ -398,7 +398,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     if not _continuation_identity_valid(request.headers, doc) or not bindings.permits(previous, turn, session):
         _binding_error(connection)
         return
-    if request.method == "POST" and target == "/v1/chat/completions":
+    if target == "/v1/chat/completions":
         var stream: LoopbackHTTPStream
         try:
             stream = deepseek_chat_completions_stream(
@@ -411,6 +411,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                 120000,
                 idle_ms,
                 connection.fd,
+                request.method,
             )
         except:
             _reply(connection, 502, "upstream request failed")
@@ -452,7 +453,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     try:
         var exchange_address = messages_address if web else (beta_address if strict_tools else address)
         var exchange_path = messages_path if web else (beta_path if strict_tools else path)
-        exchange = DeepSeekExchange(exchange_address, exchange_path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web)
+        exchange = DeepSeekExchange(exchange_address, exchange_path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method)
     except:
         _reply(connection, 502, "upstream request failed")
         return

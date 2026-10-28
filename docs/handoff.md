@@ -8,6 +8,13 @@ comparisons below are historical and do not establish 0.165.1 behavior.
 The active baseline and oracle routing now select 0.165.1; the full inventory
 and production parity against this release remain unfinished.
 
+The local relay now forwards tested HTTP methods on both supported routes,
+including extension methods. GET JSON and SSE responses and selected HEAD
+framing match 0.165.1; for HEAD 204/304 event streams, Modex suppresses the
+terminal chunk that the reference sends. Large request heads, concurrency,
+WebSocket transport and broader security behavior remain open. See
+`docs/evidence/baseline-0.165.1/local-relay-http.md`.
+
 Production Super hook-trust initialization now identifies itself as 0.165.1,
 matching the verified Linux oracle through isolated synthetic Codex launches.
 The 0.439.2 fixture and source provenance remain intact for the historical
@@ -105,12 +112,12 @@ The later `027fc48` full run executed 593 tests but failed two setup checks
 and rejected one skip because isolated HOME hid the historical source paths.
 The affected modules pass with the explicit pinned sources. A subsequent full
 run on `165dd15` passed 605 tests with both historical source paths supplied;
-the later `f386c7b` run passed 613 tests. Both predate the current head. See
-`docs/ci-lessons.md`.
+the later `f386c7b` run passed 613 tests, and `8f7c3c1` passed 616 tests.
+All predate the current head. See `docs/ci-lessons.md`.
 
 The local relay now matches selected 0.165.1 request-target admission, body
 limit, `Expect` and WebSocket fallback ordering. The shared parser keeps its
-default request-line limit and upgrade rejection. Oversized methods and large
+default request-line limit and upgrade rejection. Large
 request heads still differ; the relay remains serial and does not implement
 WebSockets. See `docs/evidence/baseline-0.165.1/local-relay-http.md`.
 

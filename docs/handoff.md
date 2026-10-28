@@ -1,5 +1,18 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Fast CI now has a reviewed build-artifact handoff and two helper-test shards.
+The producer checks clean source before building and packaging; consumers
+validate the same commit, run/attempt, target, toolchain and file digests
+before execution. Rerunning failed consumers retains the producer attempt.
+Local `make ci-fast` still runs the helpers directly. The verified local
+handoff used Mojo 1.2.0; hosted validation of this workflow is pending.
+The remaining fast suite still runs in the producer, and broad sharding and
+timing-based balancing remain open. See `docs/ci.md`.
+
+Fast run `40625573927` passed on exact SHA
+`865815c2681e8bf2fef86c57f4b95c7e78214308`; Full run `40625731794` was
+still in progress. Neither validates this later workflow change.
+
 Session queries now lowercase selected dotted-I and contextual Greek sigma
 cases on the production CLI path. Synthetic session comparisons use the
 checksum-verified 0.439.2 release; supplementary 0.439.5 checks retain their

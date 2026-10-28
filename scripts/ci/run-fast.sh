@@ -67,7 +67,16 @@ rm -- "$EVIDENCE_DIR/reference-source-04392.txt"
 printf 'source_sha=%s\nmojo=%s\npython=%s\nreference_oracle_sha256=%s\n' \
     "$(git rev-parse HEAD)" "$($MOJO --version)" "$($PYTHON --version 2>&1)" \
     "$(sha256sum "$PRODEX_ORACLE" | cut -d ' ' -f1)" >"$EVIDENCE_DIR/identity.txt"
+if [[ "${MODEX_CI_ARTIFACT_PRODUCER:-0}" == 1 ]]; then
+    run_logged build-input-check "$PYTHON" scripts/ci/check-build-inputs.py
+fi
 run_logged focused-build make build unit
-run_logged focused-python "$PYTHON" scripts/ci/run-unittest.py test_cli.py test_ci_private_tmp_super_04395.py test_ci_python_path_resolution.py test_ci_shard_runner.py test_ci_test_census.py test_ci_unit_build_cache.py test_provider_catalog_04395.py test_provider_embedded_tool_calls_04395.py test_provider_nonstring_model_04395.py test_provider_request_tool_role_04395.py test_provider_request_untyped_content_04395.py test_provider_request_untyped_role_04392.py test_provider_tools_04392_characterization.py test_provider_requests.py test_runtime.py test_runtime_binding_04395_slice.py test_runtime_observer_04392.py test_runtime_observer_fuzz.py test_session_04395_slice.py
+run_logged focused-python "$PYTHON" scripts/ci/run-unittest.py test_cli.py test_ci_build_input_cleanliness.py test_ci_private_tmp_super_04395.py test_ci_python_path_resolution.py test_ci_unit_build_cache.py test_ci_workflow_shards.py test_provider_catalog_04395.py test_provider_embedded_tool_calls_04395.py test_provider_nonstring_model_04395.py test_provider_request_tool_role_04395.py test_provider_request_untyped_content_04395.py test_provider_request_untyped_role_04392.py test_provider_tools_04392_characterization.py test_provider_requests.py test_runtime.py test_runtime_binding_04395_slice.py test_runtime_observer_04392.py test_runtime_observer_fuzz.py test_session_04395_slice.py
+if [[ "${MODEX_CI_FAST_HELPER_TESTS_IN_CONSUMERS:-0}" == 1 ]]; then
+    echo 'Fast CI helper tests are assigned to consumer shards.'
+    printf 'focused-helper-python: SHARDED\n' | tee -a "$EVIDENCE_DIR/summary.txt"
+else
+    run_logged focused-helper-python "$PYTHON" scripts/ci/run-unittest.py test_ci_artifact_manifest.py test_ci_shard_runner.py test_ci_test_census.py
+fi
 run_logged width-memory env MODEX_WIDTH_MEMORY_ARTIFACTS="$EVIDENCE_DIR/width-memory" MODEX_WIDTH_MEMORY_DRIVER="$ROOT/build/tests/width_memory_driver" "$PYTHON" scripts/ci/run-unittest.py test_text_memory.py
 echo 'Fast CI checks passed.' | tee -a "$EVIDENCE_DIR/summary.txt"

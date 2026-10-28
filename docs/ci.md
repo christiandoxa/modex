@@ -52,7 +52,17 @@ execution. Use separate build directories for independently running CI jobs.
 The strict Python runner can partition discovered tests by module with
 `--shard-index N --shard-count M` (zero-based). It validates test IDs and
 exactly-one ownership and rejects discovery errors, empty shards, invalid
-skips, and fixture/class-wide skips. These options do not launch parallel jobs
-or verify artifacts; shared
-state isolation, cross-job provenance, and timing-based balancing remain open.
-Workflow evidence is uploaded as run artifacts.
+skips, and fixture/class-wide skips. Fast CI uses two consumer jobs for its
+artifact, shard-runner, and census helper tests. Local `make ci-fast` runs the
+same helpers directly. A regression checks ownership in both modes.
+
+The Fast producer verifies a clean source checkout before building and again
+before packaging. The two consumers check the producer's commit, run and
+attempt, target, flags, compiler, runtime, standard-library hashes, executable
+mode and checksums before executing the transferred Modex binary. A rerun of
+failed consumers uses the original producer attempt. The downloaded bundle
+accepts only its two expected regular files. The producer still runs the
+remaining fast tests; other test groups, native artifacts, timing-based
+balancing and broader cross-job isolation remain open. The new hosted handoff
+has not yet been validated by GitHub Actions. Workflow evidence is uploaded
+as run artifacts.

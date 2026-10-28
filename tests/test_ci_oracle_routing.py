@@ -27,6 +27,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_ci_parity_baseline.py", script)
         self.assertIn("test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py", script)
         self.assertIn("test_session_query_01651.py test_unicode_case_properties.py", script)
+        self.assertIn("test_session_report_01651.py", script)
         self.assertIn('export PRODEX_ORACLE_01651="$(cat "$EVIDENCE_DIR/oracle-path-active.txt")"', script)
         self.assertIn('export PRODEX_ORACLE_04392="$(cat "$EVIDENCE_DIR/oracle-path-04392.txt")"', script)
         self.assertIn('export PRODEX_ORACLE="$PRODEX_ORACLE_04392"', script)

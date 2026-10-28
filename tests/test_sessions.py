@@ -35,11 +35,11 @@ def normalize_output(data, root, arguments, *, modex=False):
     return data
 
 
-def compare_outputs(arguments, change=None, *, timezone="UTC", timezone_data=None):
+def compare_outputs(arguments, change=None, *, timezone="UTC", timezone_data=None, reference=ORACLE):
     with tempfile.TemporaryDirectory(prefix="modex-session-pair-") as directory:
         parent = Path(directory)
         observations = []
-        for name, binary in (("baseline", ORACLE), ("modex", MODEX)):
+        for name, binary in (("baseline", reference), ("modex", MODEX)):
             root = parent / name
             root.mkdir()
             fixture(root)

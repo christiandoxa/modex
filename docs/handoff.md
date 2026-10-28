@@ -1,30 +1,28 @@
-# Current work: Prodex 0.439.2 parity and CI
+# Current work: Prodex 0.165.1 parity and CI
 
-The current project instructions freeze Prodex 0.439.2 at commit
-`72b77478a5198fc5da6b4d2253137f9cdbf43be9`; 0.439.1 is historical regression
-only. The existing `docs/baseline.json` and active CI oracle routing still
-select 0.165.1 and must be reconciled with those instructions. Until then,
-0.165.1 results do not establish current parity. All six release targets and
-unverified security behavior remain in the denominator.
+The active goal freezes Prodex 0.165.1 at commit
+`10ae15b5d1806302b60f051e4e6fec788044f4c2`. `docs/baseline.json` and CI
+select this release; comparisons with 0.439.x are historical regression
+evidence. All six release targets and unverified security behavior remain in
+the denominator. The full inventory and production parity remain unfinished.
 
 Buffered local-relay responses now retain a valid HTTP/1.0 request version,
 including selected malformed-header and fragment-target errors. A version
 token before an invalid suffix also selects the matching final status-line
 version; absent/invalid versions keep HTTP/1.1. The real-path regression
-matches 16 selected response and streaming controls against 0.439.2, with
-0.439.1 historical controls. Default Server/Date headers, non-token method
+matches 16 selected response and streaming controls against historical 0.439.2,
+with 0.439.1 controls. Default Server/Date headers, non-token method
 admission, and the HEAD 204/304 SSE terminal chunk remain explicit gaps. SSE
 streaming stays incremental and uses HTTP/1.1 response framing.
 
-# Historical work: Prodex 0.165.1 regression and CI
-
-The following checkpoint notes describe earlier work targeting Prodex 0.165.1, commit
-`10ae15b5d1806302b60f051e4e6fec788044f4c2`. The official Linux binary and
+The official Linux binary and
 manifest were checked against SHA256SUMS and the GitHub asset digests; see
-`docs/evidence/baseline-0.165.1/reference-verification.json`. References below
-to the 0.165.1 target and historical 0.439.x controls reflect that earlier
-checkpoint, not the current project instructions. The full inventory and
-production parity against 0.439.2 remain unfinished.
+`docs/evidence/baseline-0.165.1/reference-verification.json`.
+
+The session-report regression suite now also runs against the verified
+0.165.1 Linux binary. It covers selected listing, filters, metadata, ordering,
+timestamps and timezones; one safe handling test exercises Modex alone and is
+not a parity claim. Session state locking and non-host targets remain gaps.
 
 The production Super Codex version and app-server help probes now run with
 `CODEX_HOME` and the five `TEST_CODEX_*` logging variables removed. A synthetic
@@ -38,13 +36,13 @@ See `docs/evidence/baseline-0.165.1/super-codex-probes.md`.
 The pinned 0.439.2 Codex probe also wraps bounded-output failures with the
 Codex executable path. Modex now matches oversized `--version` and
 `app-server --help` diagnostics and stops before RPC or provider work. These
-Linux x86-64 synthetic cases and does not establish broader Super parity. See
+Linux x86-64 synthetic cases do not establish broader Super parity. See
 `docs/evidence/baseline-0.439.2/super-codex-probe-output-limit.md`.
 
 The local relay now matches selected 0.165.1 `Expect: 100-continue` ordering,
 including unsupported values, declared body limits, HTTP/1.0 interim responses,
 WebSocket fallback and a half-closed body. Strict duplicate/framing rejection
-and the HTTP/1.1 final response to HTTP/1.0 requests remain differences. See
+remains a difference. See
 `docs/evidence/local-expect-tests.txt`.
 
 Pre-positional Super missing-value diagnostics now match the pinned Clap output

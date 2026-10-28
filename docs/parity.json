@@ -95,6 +95,10 @@
     {
       "date": "2026-10-28",
       "change": "Selected untyped DeepSeek content values and typed-message rejection controls match 0.439.5 production loopback comparisons. Broader provider behavior remains incomplete; no contract or platform status is promoted."
+    },
+    {
+      "date": "2026-10-28",
+      "change": "Embedded generic-message tool calls in simple DeepSeek requests match selected 0.439.5 production loopback cases, including paired outputs and malformed entries. Non-simple behavior and remaining provider gaps are unchanged."
     }
   ],
   "contracts": [
@@ -2744,7 +2748,8 @@
         "tests/capture_stream_timeout_mismatch.py",
         "tests/test_loopback_http_stream.py",
         "tests/test_continuation_binding_04395.py",
-        "tests/test_provider_request_untyped_content_04395.py"
+        "tests/test_provider_request_untyped_content_04395.py",
+        "tests/test_provider_embedded_tool_calls_04395.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",

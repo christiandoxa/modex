@@ -368,6 +368,25 @@ def _native_item(doc: JsonDocument, item: Int) raises -> String:
         var id = doc.get(item, "tool_call_id")
         if id >= 0:
             message += ',"tool_call_id":' + quote_json(doc.nodes[id].text if doc.nodes[id].kind == JSON_STRING else "call_1")
+    var calls = doc.get(item, "tool_calls")
+    if calls >= 0 and doc.nodes[calls].kind == JSON_ARRAY:
+        message += ',"tool_calls":['
+        var first = True
+        for call in doc.nodes[calls].children:
+            if doc.nodes[call].kind != JSON_OBJECT: continue
+            var function = doc.get(call, "function")
+            if function < 0 or doc.nodes[function].kind != JSON_OBJECT: continue
+            var name = doc.get(function, "name")
+            if name < 0 or doc.nodes[name].kind != JSON_STRING or not doc.nodes[name].text: continue
+            if not first: message += ","
+            first = False
+            message += "{"
+            var id = doc.get(call, "id")
+            if id >= 0: message += '"id":' + serialize_json(doc, id) + ","
+            var arguments = doc.get(function, "arguments")
+            var value = "{}" if arguments < 0 else (doc.nodes[arguments].text if doc.nodes[arguments].kind == JSON_STRING else serialize_json(doc, arguments))
+            message += '"type":"function","function":{"name":' + quote_json(doc.nodes[name].text) + ',"arguments":' + quote_json(value) + "}}"
+        message += "]"
     return message + "}"
 
 

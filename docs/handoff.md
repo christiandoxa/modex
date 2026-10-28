@@ -20,6 +20,16 @@ Keep the 0.439.2 role regression and earlier captures as historical evidence;
 they do not establish 0.439.5 parity. All six release targets remain in the
 incomplete denominator.
 
+Simple DeepSeek requests now retain embedded generic-message tool calls. A
+paired assistant/tool exchange previously sent the tool output without its
+preceding call; 0.439.5 sends both. Selected real-process comparisons cover
+typed and untyped messages, malformed entries, ID and argument shapes, roles,
+and a non-simple control. The source trace is
+`deepseek_raw_put_generic_tool_calls` in `mojo/prodex_core/deepseek.mojo`;
+`tests/test_provider_embedded_tool_calls_04395.py` covers 15 production
+scenarios. A clean-snapshot production build, two native request checks and
+13 focused Python tests passed. Broader tool semantics remain incomplete.
+
 Untyped DeepSeek input items now follow the 0.439.5 content-validation path.
 For example, untyped null content previously produced a local 502 and no
 upstream POST; the frozen release sends the string `null` and succeeds.

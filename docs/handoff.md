@@ -1,4 +1,40 @@
-# Current work: Prodex 0.439.2 parity and CI
+# Current work: Prodex 0.165.1 parity and CI
+
+The requested target is Prodex 0.165.1, commit
+`10ae15b5d1806302b60f051e4e6fec788044f4c2`. The official Linux binary and
+manifest were checked against SHA256SUMS and the GitHub asset digests; see
+`docs/evidence/baseline-0.165.1/reference-verification.json`. The 0.439.x
+comparisons below are historical and do not establish 0.165.1 behavior.
+The active baseline and oracle routing now select 0.165.1; the full inventory
+and production parity against this release remain unfinished.
+
+`tests/test_cli_01651.py` compares selected root-help forms and leading version
+flags through both production executables in isolated homes. Both cases passed
+on Linux x86-64 with the verified binary. This does not establish complete CLI
+or platform parity. The old integration worktree under `/tmp` was missing at
+continuation; the original checkout's unrelated uncommitted changes were
+preserved. Latest previously pushed commit was `3c31fea`; Fast CI run
+[40659458138](https://github.com/christiandoxa/modex/actions/runs/40659458138)
+failed and its artifact consumer was skipped. Artifact attestation for 0.165.1
+has not been verified.
+
+The production Anthropic stream parser now accepts missing or non-string stop
+reasons and ignores stop sequences, matching selected 0.165.1 process events.
+See `docs/evidence/baseline-0.165.1/anthropic-stream.md`; this is not full
+provider or streaming parity. Historical mismatch notes below are superseded
+for these tested stop-field cases.
+
+The Linux x86-64 production build, native unit suite, dependency audit, and
+focused CLI/reference/CI routing checks passed locally before the next provider
+change. CI now keeps current and historical oracle paths separate, and a
+synthetic orchestration regression verifies that current checks precede an
+unavailable historical oracle without hiding the resulting failure.
+
+Next: continue recapturing behavior from 0.165.1 and implement the release's
+WebSocket capacity and interruption behavior on production paths.
+Retain all six targets and do not promote historical PASS evidence.
+
+# Historical work: Prodex 0.439.2 parity and CI
 
 The Anthropic stream adapter now completes tested text-only and empty messages
 when the model does not invoke web search. Eight full event sequences match

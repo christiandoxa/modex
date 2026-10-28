@@ -289,26 +289,14 @@ struct DeepSeekChatState:
             var delta = doc.get(doc.root, "delta")
             _only_fields(doc, delta, ["stop_reason", "stop_sequence"], "message_delta")
             var stop_reason = doc.get(delta, "stop_reason")
-            if (
-                stop_reason < 0
-                or (doc.nodes[stop_reason].kind != JSON_NULL and doc.nodes[stop_reason].kind != JSON_STRING)
-            ):
-                raise Error("Anthropic stream stop reason is invalid")
-            var stop_sequence = doc.get(delta, "stop_sequence")
-            # The frozen Responses translation maps the reason and has no stop-sequence output field.
-            if (
-                stop_sequence >= 0
-                and doc.nodes[stop_sequence].kind != JSON_NULL
-                and doc.nodes[stop_sequence].kind != JSON_STRING
-            ):
-                raise Error("Anthropic stream stop sequence is invalid")
+            # The release reads string stop_reason only and ignores stop_sequence.
             var usage = doc.get(doc.root, "usage")
             _only_fields(doc, usage, ["output_tokens"], "message_delta usage")
             var output = json_unsigned(doc, doc.get(usage, "output_tokens"))
             if not output: raise Error("Anthropic message_delta usage is invalid")
             self.anthropic_output_tokens = output.value()
             self.anthropic_phase = 8
-            if doc.nodes[stop_reason].kind == JSON_STRING:
+            if stop_reason >= 0 and doc.nodes[stop_reason].kind == JSON_STRING:
                 var reason = doc.nodes[stop_reason].text
                 if reason == "tool_use":
                     self.finish_reason = Optional[String]("tool_calls")

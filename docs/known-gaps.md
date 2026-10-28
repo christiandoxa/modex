@@ -1,11 +1,17 @@
 # Verified gaps
 
-Complete parity remains unfinished against officially released Prodex 0.439.2 at
-`72b77478a5198fc5da6b4d2253137f9cdbf43be9`. The incomplete inventory retains
+Complete parity remains unfinished against officially released Prodex 0.165.1 at
+`10ae15b5d1806302b60f051e4e6fec788044f4c2`. The incomplete inventory retains
 76 contracts and 456 platform obligations. All six complete release
 qualifications are explicitly BLOCKED; focused host tests do not establish a
-release PASS. The 0.439.5 and 0.439.1 observations below retain their original
-provenance and do not by themselves establish 0.439.2 behavior.
+release PASS. All 0.439.x observations below retain their original provenance and do not
+by themselves establish 0.165.1 behavior. The inherited inventory and its
+source traces have not yet been fully revalidated against 0.165.1.
+
+Prodex 0.165.1 requires bounded idle WebSocket parking and independently
+reclaimed handshake capacity, plus connection-owned interruption and real
+acknowledgement ordering. Modex has no WebSocket production transport; these
+requirements remain unimplemented and unverified on all six targets.
 
 The profile group and selected subcommand help now match the 0.439.2 release.
 Profile listing and all state-changing operations remain unimplemented: the
@@ -47,10 +53,10 @@ other Anthropic event orders remain unverified. Nonempty initial text blocks
 are rejected while the release drops that text. The exact empty-string request is rejected with the observed 400
 before POST, while whitespace-only input is accepted. See
 `docs/evidence/anthropic-web-search-04392.md`.
-Selected string/null stop reasons and streams without `message_delta` now match
-the release's full normalized events. Missing or non-string stop reasons and
-non-string stop sequences remain fail-closed differences: the release completes
-them while Modex fails. Other stream metadata and stop variants remain unverified.
+Selected stop reasons, missing or non-string reasons, non-string stop sequences
+and streams without `message_delta` now match normalized 0.165.1 events in the
+tested single-search shape. Other stream metadata and stop variants remain
+unverified. See `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
 
 Strict-tool environment settings select the beta route and normalize supported
 runtime-path schemas for numeric-loopback HTTP. The baseline simple-request

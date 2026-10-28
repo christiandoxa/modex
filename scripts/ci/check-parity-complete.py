@@ -32,6 +32,9 @@ def main() -> int:
     baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
     targets = set(baseline["reference"]["release_targets"])
     failures = []
+    reference_commit = baseline["reference"]["commit"]
+    if parity.get("baseline_commit") != reference_commit:
+        failures.append("parity inventory does not match the active baseline commit")
     if targets != REQUIRED_TARGETS:
         failures.append("baseline target denominator does not contain the six required release targets")
         targets = REQUIRED_TARGETS
@@ -48,13 +51,17 @@ def main() -> int:
         contract_status = contract.get("status")
         if contract_status != "PASS":
             contract_statuses[contract_status or "MISSING"] += 1
+        statuses = contract.get("platform_status", {})
+        if contract_status == "PASS" or "PASS" in statuses.values():
+            trace = contract.get("baseline", {})
+            if trace.get("source_commit") != reference_commit or trace.get("target_trace_verified") is not True:
+                failures.append(f"{contract_id}: PASS requires a verified trace against the active baseline")
         if contract_status == "PASS":
             evidence = contract.get("evidence", [])
             if not evidence or any(not evidence_exists(path) for path in evidence):
                 failures.append(f"{contract_id}: PASS requires existing evidence files")
         if set(contract.get("platforms", [])) != targets:
             malformed_platforms.append(contract_id)
-        statuses = contract.get("platform_status", {})
         for target in sorted(targets):
             status = statuses.get(target)
             if status != "PASS":

@@ -85,6 +85,15 @@ def main() raises:
     var missing_delta_events = collect_anthropic_completed(before_stop + message_stop)
     assert_true('"usage"' not in missing_delta_events[len(missing_delta_events) - 1])
     assert_true('"finish_reason"' not in missing_delta_events[len(missing_delta_events) - 1])
+    var missing_reason_delta = 'data: {"type":"message_delta","delta":{"stop_sequence":null},"usage":{"output_tokens":5}}\n\n'
+    var missing_reason_events = collect_anthropic_completed(before_stop + missing_reason_delta + message_stop)
+    assert_true('"finish_reason"' not in missing_reason_events[len(missing_reason_events) - 1])
+    var nonstring_reason_delta = 'data: {"type":"message_delta","delta":{"stop_reason":5,"stop_sequence":null},"usage":{"output_tokens":5}}\n\n'
+    var nonstring_reason_events = collect_anthropic_completed(before_stop + nonstring_reason_delta + message_stop)
+    assert_true('"finish_reason"' not in nonstring_reason_events[len(nonstring_reason_events) - 1])
+    var nonstring_sequence_delta = 'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":5},"usage":{"output_tokens":5}}\n\n'
+    var nonstring_sequence_events = collect_anthropic_completed(before_stop + nonstring_sequence_delta + message_stop)
+    assert_true('"finish_reason":"stop"' in nonstring_sequence_events[len(nonstring_sequence_events) - 1])
     var tool_use_delta = 'data: {"type":"message_delta","delta":{"stop_reason":"tool_use","stop_sequence":null},"usage":{"output_tokens":5}}\n\n'
     var tool_use_events = collect_anthropic_completed(before_stop + tool_use_delta + message_stop)
     assert_true('"finish_reason":"tool_calls"' in tool_use_events[len(tool_use_events) - 1])
@@ -104,10 +113,6 @@ def main() raises:
     assert_anthropic_failed(search_result + text_start + text_delta + text_stop + message_delta + 'data: {"type":"message_stop"}\n\n')
     assert_anthropic_failed(message_start + search_result + text_start + text_delta + text_stop + message_delta + 'data: [DONE]\n\n')
     assert_anthropic_failed(before_stop)
-    var invalid_reason_delta = 'data: {"type":"message_delta","delta":{"stop_reason":5,"stop_sequence":null},"usage":{"output_tokens":5}}\n\n'
-    assert_anthropic_failed(before_stop + invalid_reason_delta + message_stop)
-    var invalid_sequence_delta = 'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":5},"usage":{"output_tokens":5}}\n\n'
-    assert_anthropic_failed(before_stop + invalid_sequence_delta + message_stop)
     assert_anthropic_failed(message_start + search_result + 'data: {"type":"content_block_start","index":2,"content_block":{"type":"text","text":"unstreamed"}}\n\n')
     assert_anthropic_failed(message_start + 'data: {"type":"future_event"}\n\n')
     print("Provider chat reader checks: PASS")

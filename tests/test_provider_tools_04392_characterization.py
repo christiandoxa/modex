@@ -267,7 +267,7 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                 self.assertEqual(reference["state"]["leftovers"], [])
                 self.assertEqual(modex["state"]["leftovers"], [])
 
-    def test_anthropic_stream_stop_variants_match_release_and_reject_malformed_fields(self):
+    def test_anthropic_stream_stop_variants_match_release_with_untyped_fields(self):
         request = {
             "model": "deepseek-chat",
             "input": "synthetic web query",
@@ -275,18 +275,18 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
             "tools": [{"type": "web_search_preview"}],
         }
         cases = {
-            "anthropic-stop-sequence": (True, "stop"),
-            "anthropic-stop-null-reason": (True, None),
-            "anthropic-stop-end-turn-sequence": (True, "stop"),
-            "anthropic-stop-missing-message-delta": (True, None),
-            "anthropic-stop-tool-use": (True, "tool_calls"),
-            "anthropic-stop-max-tokens": (True, "length"),
-            "anthropic-stop-unknown-reason": (True, "stop"),
-            "anthropic-stop-missing-reason": (False, None),
-            "anthropic-stop-invalid-reason": (False, None),
-            "anthropic-stop-invalid-sequence": (False, "stop"),
+            "anthropic-stop-sequence": "stop",
+            "anthropic-stop-null-reason": None,
+            "anthropic-stop-end-turn-sequence": "stop",
+            "anthropic-stop-missing-message-delta": None,
+            "anthropic-stop-tool-use": "tool_calls",
+            "anthropic-stop-max-tokens": "length",
+            "anthropic-stop-unknown-reason": "stop",
+            "anthropic-stop-missing-reason": None,
+            "anthropic-stop-invalid-reason": None,
+            "anthropic-stop-invalid-sequence": "stop",
         }
-        for scenario, (matches_release, expected_finish_reason) in cases.items():
+        for scenario, expected_finish_reason in cases.items():
             with self.subTest(scenario=scenario):
                 reference = _run(ORACLE_04392, request, scenario=scenario)
                 modex = _run(MODEX, request, scenario=scenario)
@@ -308,13 +308,7 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                         reference_response["metadata"]["deepseek"]["finish_reason"],
                         expected_finish_reason,
                     )
-                modex_names = [name for name, _ in modex_events]
-                if matches_release:
-                    self.assertEqual(modex_events, reference_events)
-                else:
-                    self.assertIn("response.failed", modex_names)
-                    self.assertNotIn("response.completed", modex_names)
-                    self.assertNotEqual(modex_events, reference_events)
+                self.assertEqual(modex_events, reference_events)
                 self.assertEqual(reference["state"]["leftovers"], [])
                 self.assertEqual(modex["state"]["leftovers"], [])
 

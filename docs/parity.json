@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "baseline_commit": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
   "inventory_complete": false,
   "counting_policy": "Initial coarse contracts are not the final denominator. Each contract retains all applicable platform obligations. PASS requires reproducible evidence; compile-only, mock-only and unverified results never count. No full parity percentage until inventory completion.",
   "inventory_history": [
@@ -139,6 +139,10 @@
     {
       "date": "2026-10-28",
       "change": "Support selected Anthropic text-only and empty streams without a web-search call, compared with full 0.439.2 process events. Nonempty initial blocks and broader event orders remain gaps; no status is promoted."
+    },
+    {
+      "date": "2026-10-29",
+      "change": "Retarget the incomplete inventory to 0.165.1. Existing source traces and comparisons remain historical, not evidence of current-target behavior. Clear historical PASS and FAIL platform verdicts pending recapture; retain all 76 contracts and six targets."
     }
   ],
   "contracts": [
@@ -154,7 +158,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Exact leading --version and -V flags return the product version on stdout with exit 0, ignoring trailing arguments.",
       "input": "version flag",
@@ -173,17 +178,19 @@
       "implementation": "src/main.mojo",
       "tests": [
         "tests/test_cli.py::CliTests.test_version_identity_mapping_and_no_mutations",
-        "tests/test_runtime.py::CleanRuntimeTests.test_version_with_only_platform_and_official_mojo_runtime_libraries"
+        "tests/test_runtime.py::CleanRuntimeTests.test_version_with_only_platform_and_official_mojo_runtime_libraries",
+        "tests/test_cli_01651.py"
       ],
       "evidence": [
         "docs/evidence/bootstrap-tests.txt",
         "docs/evidence/version-arguments-tests.txt",
         "docs/evidence/checkpoint-04391-tests.txt",
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/baseline-0.165.1/cli-observations.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "PASS",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -192,7 +199,10 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
-      ]
+      ],
+      "historical_platform_status_0_439_2": {
+        "x86_64-unknown-linux-gnu": "PASS"
+      }
     },
     {
       "id": "CLI-HELP",
@@ -206,7 +216,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Preserve help, aliases, usage, stdout/stderr and argument-error codes apart from narrow product identity mapping.",
       "input": "command/flag argv",
@@ -233,7 +244,8 @@
         "tests/test_inspection_cli.py",
         "tests/test_gateway_cli.mojo",
         "tests/test_gateway.py",
-        "tests/capture_gateway.py"
+        "tests/capture_gateway.py",
+        "tests/test_cli_01651.py"
       ],
       "evidence": [
         "docs/cli-inventory.json",
@@ -251,7 +263,8 @@
         "docs/evidence/checkpoint13-reference.json",
         "docs/evidence/checkpoint13-tests.txt",
         "docs/evidence/checkpoint13-dependencies.txt",
-        "docs/evidence/checkpoint13-worker-review.json"
+        "docs/evidence/checkpoint13-worker-review.json",
+        "docs/evidence/baseline-0.165.1/cli-observations.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -280,7 +293,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Route all active commands including hidden helpers; default bare/upstream invocations to run; preserve literal argv boundaries.",
       "input": "raw OS argv",
@@ -341,7 +355,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Create/register/seed profiles, validate private files and activate as requested.",
       "input": "name, codex-home, copy-from, copy-current, activate, insecure",
@@ -387,7 +402,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Export profiles and supported secrets with optional password protection.",
       "input": "profile names, output path, password flags/environment",
@@ -433,7 +449,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Import bundles and active built-in provider sources with rollback/recovery.",
       "input": "bundle/source, name, activate, insecure",
@@ -481,7 +498,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Copy shared Codex home to a new managed profile and activate.",
       "input": "optional name and insecure",
@@ -527,7 +545,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "List sorted profiles, active status, provider/auth/identity/path; recover lifecycle and missing active references.",
       "input": "profile list",
@@ -573,7 +592,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Remove one/all profiles and optionally only eligible managed homes with safe lifecycle recovery.",
       "input": "name/all and delete-home",
@@ -619,7 +639,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Top-level use and profile use resolve selector/active default and persist activation.",
       "input": "optional -p/--profile",
@@ -665,7 +686,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Render active/only/no-active states including provider and auth summary.",
       "input": "current",
@@ -715,7 +737,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Read-only version/profile/policy/log/secret/runtime information and optional token totals.",
       "input": "json and tokens",
@@ -765,7 +788,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Live or once quota/token/resource dashboard with interval validation.",
       "input": "once, interval 1..60",
@@ -817,7 +841,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Redacted stream/last/upstream output, JSON envelopes, session/runtime event selection and terminal rendering.",
       "input": "mode and json",
@@ -892,9 +917,9 @@
         "docs/evidence/checkpoint2-dependencies.txt",
         "docs/evidence/baseline-0.439.2/reference-verification.json"
       ],
-      "status": "FAIL",
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "FAIL",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -904,7 +929,11 @@
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
         "Detached snapshots, upstream file following and general runtime/session streaming are connected with native operational projection, shared bounded descriptors and per-source reservations. Explicit disk recording now bypasses live registry discovery as in tested release scenarios. Full LOG still fails on root permission repair, four prior redaction differences plus stream_payload secret masking, and unimplemented live broker/direct-source and terminal paths. Eight retained live comparisons FAIL. Native SHA-256/loopback HTTP remain unconnected foundations: compatible registry locking/recovery and compliant process identity resolution are unresolved. Unexercised URL/parser/projection/follow failure cases and other platforms remain unverified."
-      ]
+      ],
+      "historical_status_0_439_2": "FAIL",
+      "historical_platform_status_0_439_2": {
+        "x86_64-unknown-linux-gnu": "FAIL"
+      }
     },
     {
       "id": "SESSION-LIST",
@@ -918,7 +947,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "List shared sessions newest first with profile/query/limit/subagent filters and output modes.",
       "input": "list, json/id-only/resume-command, filters",
@@ -981,9 +1011,9 @@
         "docs/evidence/checkpoint2-dependencies.txt",
         "docs/evidence/baseline-0.439.2/reference-verification.json"
       ],
-      "status": "FAIL",
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "FAIL",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -996,7 +1026,11 @@
         "Selected unrelated state-like filenames no longer block session listing; actual state, locks, recovery snapshots and journals remain fail-closed until safe locking and recovery are implemented.",
         "Selected dotted-I and Greek sigma query cases match 0.439.2 and 0.439.5; complete Unicode Case_Ignorable handling remains unimplemented.",
         "Machine-output comparisons, 324 synthetic leap-zone cases, dictionary-free compressed rollout cases, 239 detached text scenarios, every Unicode scalar against Unicode 17 UCD, and 3,026 actual release emoji rows plus 960 generated mixed sequences are covered. Unverified sequence cases remain. The baseline three-cell Khmer truncation and wrapping cases panic while Modex returns safe output; these are retained UNAPPROVED_SAFE_DIFFERENCE mismatches, not parity passes. Full contracts still fail on state locking/recovery, startup effects, incomplete terminal rendering and dimensions, remaining timezone file cases, baseline panic behavior, and unapproved noncanonical compressed-frame differences. UTF-8 width scanning now uses constant auxiliary state; Linux RSS regression checks, a 1,100,000-byte title, the exact 64 MiB line boundary and one-byte overflow, and 3,905 short Kirat vowel sequences are verified. Whole-command memory and other platforms remain unverified."
-      ]
+      ],
+      "historical_status_0_439_2": "FAIL",
+      "historical_platform_status_0_439_2": {
+        "x86_64-unknown-linux-gnu": "FAIL"
+      }
     },
     {
       "id": "SESSION-CURRENT",
@@ -1010,7 +1044,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Match shared sessions to current or explicit cwd, with list filters and output modes.",
       "input": "current, cwd and filters",
@@ -1066,9 +1101,9 @@
         "docs/evidence/checkpoint2-dependencies.txt",
         "docs/evidence/baseline-0.439.2/reference-verification.json"
       ],
-      "status": "FAIL",
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "FAIL",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -1078,7 +1113,11 @@
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
         "Machine-output comparisons, 324 synthetic leap-zone cases, dictionary-free compressed rollout cases, 239 detached text scenarios, every Unicode scalar against Unicode 17 UCD, and 3,026 actual release emoji rows plus 960 generated mixed sequences are covered. Unverified sequence cases remain. The baseline three-cell Khmer truncation and wrapping cases panic while Modex returns safe output; these are retained UNAPPROVED_SAFE_DIFFERENCE mismatches, not parity passes. Full contracts still fail on state locking/recovery, startup effects, incomplete terminal rendering and dimensions, remaining timezone file cases, baseline panic behavior, and unapproved noncanonical compressed-frame differences. UTF-8 width scanning now uses constant auxiliary state; Linux RSS regression checks, a 1,100,000-byte title, the exact 64 MiB line boundary and one-byte overflow, and 3,905 short Kirat vowel sequences are verified. Whole-command memory and other platforms remain unverified."
-      ]
+      ],
+      "historical_status_0_439_2": "FAIL",
+      "historical_platform_status_0_439_2": {
+        "x86_64-unknown-linux-gnu": "FAIL"
+      }
     },
     {
       "id": "SESSION-RESUME",
@@ -1092,7 +1131,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Resolve unique full/partial session ID and launch with correct ownership and repair.",
       "input": "ID",
@@ -1145,7 +1185,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Report local/quota/runtime/install state, redacted bundles, policy suggestions and explicit repairs.",
       "input": "doctor args",
@@ -1193,7 +1234,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Provider login with profile-local credentials and workspace identity defaults.",
       "input": "profile/provider/login arguments",
@@ -1241,7 +1283,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Log out selected/active profile through supported provider behavior.",
       "input": "positional or option profile",
@@ -1289,7 +1332,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Resolve and verify a release and atomically install the matching Modex artifact.",
       "input": "update and release environment",
@@ -1337,7 +1381,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Default detailed pool view; filtered/single/raw/once/watch quota and baseline errors.",
       "input": "quota args",
@@ -1391,7 +1436,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Redeem one OpenAI reset credit with near-reset confirmation and proxy controls.",
       "input": "profile, yes, base-url, no-proxy",
@@ -1439,7 +1485,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Minimal requests through the real eligible OpenAI runtime path with stable JSON results.",
       "input": "profile, model, effort, base-url, no-proxy, json",
@@ -1487,7 +1534,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Quota preflight, eligible precommit rotation, managed argv/env/process launch and exit propagation.",
       "input": "RunArgs and upstream argv",
@@ -1535,7 +1583,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Super/s aliases, providers, agents, tool stack, dry-run and opt-in Presidio with precedence.",
       "input": "SuperArgs and tail argv",
@@ -1632,7 +1681,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "OpenAI-compatible listener, provider transformation, streaming, smart context and redaction policy.",
       "input": "listen, provider, base-url/url, api-key, policy flags",
@@ -1674,9 +1724,9 @@
         "docs/evidence/checkpoint3-dependencies.txt",
         "docs/evidence/baseline-0.439.2/reference-verification.json"
       ],
-      "status": "FAIL",
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "FAIL",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -1687,7 +1737,11 @@
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
         "Two captured startup cases retain filesystem FAIL: runtime/profile lifecycle locks and housekeeping effects are missing. Output/exit/upstream comparisons pass, but successful assertions are not full startup parity. The forced-proxy path excludes native DeepSeek local rewrite; no operational extension is exposed through gateway. Other providers/configs, running gateway policy and all remaining contracts are unfinished.",
         "A captured group-writable 0664 synthetic Codex config reaches the release factory error, while Modex refuses that file before reading. This stricter permission guard is an unapproved safe difference and remains FAIL, not hidden by the private 0600 output fixtures."
-      ]
+      ],
+      "historical_status_0_439_2": "FAIL",
+      "historical_platform_status_0_439_2": {
+        "x86_64-unknown-linux-gnu": "FAIL"
+      }
     },
     {
       "id": "SUPER-EXPOSE",
@@ -1701,7 +1755,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Hidden __super-expose and public super expose alias; preserve modes, lifecycle and provider tools.",
       "input": "expose args",
@@ -1749,7 +1804,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Hidden broker command with runtime ownership, shared coordination and shutdown.",
       "input": "__runtime-broker and runtime config",
@@ -1795,7 +1851,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Launch JSONL MCP target, adapt both input framings, supervise and clean its process tree.",
       "input": "target command and exact argv, framed stdin",
@@ -1843,7 +1900,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Hidden delegated execution from secret-free config and exact task file.",
       "input": "config and task-file",
@@ -1891,7 +1949,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "JSONL/Content-Length with 64 MiB message, 4 KiB first header, 16 KiB continuation and 64 KiB metadata budgets.",
       "input": "bytes",
@@ -1937,7 +1996,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Preserve PRODEX_HOME/PRODEX_SHARED_CODEX_HOME, defaults, relative/absolute and legacy discovery rules.",
       "input": "environment and filesystem",
@@ -1983,7 +2043,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Preserve policy/config/env/CLI precedence, validation and defaults.",
       "input": "TOML/config/environment/argv",
@@ -2039,7 +2100,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Isolate secrets per profile and backend, preserve permissions, keyring and migration behavior.",
       "input": "credential configuration and files",
@@ -2087,7 +2149,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Standard authenticated protected bundle formats and password derivation with verified interoperability.",
       "input": "bundle/password/randomness",
@@ -2133,7 +2196,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Schema 1 state, bounded bindings and merge-safe concurrent atomic updates.",
       "input": "state JSON and updates",
@@ -2179,7 +2243,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Recover interrupted profile lifecycle and auth journals without exposing or losing credentials.",
       "input": "state/journals",
@@ -2225,7 +2290,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Preserve hard continuation ownership, affinity, binding conflicts and unknown metadata.",
       "input": "requests, bindings and pool",
@@ -2287,7 +2353,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Bound retry/recovery, distinguish failure classes, never rotate after stream/response commit or duplicate side effects.",
       "input": "requests and failures",
@@ -2339,7 +2406,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "HTTP/proxy traversal, TLS verification, SSE, backpressure and cancellation behavior.",
       "input": "HTTP/stream bytes",
@@ -2439,7 +2507,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Handshake, frames, request/response tracking, cancellation and continuation recovery.",
       "input": "WebSocket traffic",
@@ -2478,7 +2547,9 @@
       "target_obligations": [
         "Known five-hour OR weekly exhaustion excludes owners and candidates even when positive quota evidence is optional. Missing five-hour data on weekly-only Prolite is not exhaustion; unknown quota and expired holds retain their source-defined treatment.",
         "For a known-exhausted hard-continuation owner and compatible recoverable alternate, signal safe native full-history recovery before owner HTTP/WebSocket upstream I/O. Busy or transiently cooling alternates can be recoverable without being immediately admissible.",
-        "Preserve auth/model eligibility, affinity, session identity and the original request deadline. Never hand an opaque continuation delta to a different owner or replay POST after committed output."
+        "Preserve auth/model eligibility, affinity, session identity and the original request deadline. Never hand an opaque continuation delta to a different owner or replay POST after committed output.",
+        "Forward response.interrupt only on its owning connection, preserving real acknowledgement order and queued follow-up frames; never fabricate a response.create or replay committed output.",
+        "Reject an interruption after its owning transport is gone without sending it on a new upstream socket."
       ]
     },
     {
@@ -2493,7 +2564,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Codex/OpenAI requests, quota, auth, errors and response metadata.",
       "input": "provider requests",
@@ -2541,7 +2613,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Gemini transformation, tools/images/streaming/auth and error contracts.",
       "input": "provider requests",
@@ -2589,7 +2662,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Anthropic/Claude transformation, auth, tools/streaming and quota semantics.",
       "input": "provider requests",
@@ -2608,9 +2682,12 @@
         "Anthropic services/Claude CLI"
       ],
       "implementation": null,
-      "tests": [],
+      "tests": [
+        "tests/test_provider_stream_01651_characterization.py"
+      ],
       "evidence": [
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/baseline-0.165.1/anthropic-stream.md"
       ],
       "status": "NOT_STARTED",
       "platform_status": {
@@ -2637,7 +2714,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Copilot identity, auth, model limits, quotas and transformations.",
       "input": "provider requests/credential source",
@@ -2685,7 +2763,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Kiro account/auth source, request translation, streaming and native integration.",
       "input": "provider requests/credential source",
@@ -2733,7 +2812,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "DeepSeek presets, config and Anthropic/OpenAI protocol adaptation.",
       "input": "provider args/requests",
@@ -2804,7 +2884,8 @@
         "tests/test_provider_tools_04392_characterization.py",
         "tests/test_anthropic_message_arrays_04392.py",
         "tests/test_anthropic_text_stream_04392.py",
-        "tests/test_anthropic_buffered_payload_04392.py"
+        "tests/test_anthropic_buffered_payload_04392.py",
+        "tests/test_provider_stream_01651_characterization.py"
       ],
       "evidence": [
         "tests/fixtures/provider-chat/README.md",
@@ -2872,7 +2953,8 @@
         "docs/evidence/baseline-0.439.2/reference-verification.json",
         "docs/evidence/checkpoint14-reference.json",
         "docs/evidence/checkpoint14-tests.txt",
-        "docs/evidence/checkpoint14-dependencies.txt"
+        "docs/evidence/checkpoint14-dependencies.txt",
+        "docs/evidence/baseline-0.165.1/anthropic-stream.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -2905,7 +2987,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Local OpenAI-compatible URL validation, defaults and runtime adaptation.",
       "input": "URL/model/requests",
@@ -2953,7 +3036,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Native Antigravity launch with baseline minimal startup and account behavior.",
       "input": "Super agent/provider args",
@@ -3001,7 +3085,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Context budgeting, compaction, calibrated tokens and content/metadata preservation.",
       "input": "requests and context policy",
@@ -3047,7 +3132,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": false
+        "unchanged_from_previous_trace": false,
+        "target_trace_verified": false
       },
       "required_behavior": "Discover/configure baseline optional tools; distinguish integration targets from implementation helpers.",
       "input": "tool policy/environment",
@@ -3098,7 +3184,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Optional baseline Presidio lifecycle and redaction behavior; no silently added implementation helper.",
       "input": "policy and request data",
@@ -3149,7 +3236,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Redact CLI/env/JSON/log/diagnostic secrets without corrupting required visible content.",
       "input": "text/JSON/argv/env",
@@ -3176,9 +3264,9 @@
         "docs/evidence/log-mismatches.json",
         "docs/evidence/baseline-0.439.2/reference-verification.json"
       ],
-      "status": "FAIL",
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "FAIL",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -3188,7 +3276,11 @@
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
         "Detached log text redaction only; JSON/argv/environment/other diagnostics remain unfinished. Three baseline Unicode-whitespace fixtures expose quoted credentials while Modex masks them; a fourth preserves whitespace differently. All four remain UNAPPROVED_SAFE_DIFFERENCE, not parity."
-      ]
+      ],
+      "historical_status_0_439_2": "FAIL",
+      "historical_platform_status_0_439_2": {
+        "x86_64-unknown-linux-gnu": "FAIL"
+      }
     },
     {
       "id": "TERMINAL",
@@ -3202,7 +3294,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "PTY, width/height, Unicode display, NO_COLOR, CI modes, signals and cleanup.",
       "input": "terminal state/environment",
@@ -3248,7 +3341,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Isolated argv/env/stdio, process groups, signals, timeouts, cancellation and descendant cleanup.",
       "input": "launch configuration",
@@ -3306,7 +3400,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": false
+        "unchanged_from_previous_trace": false,
+        "target_trace_verified": false
       },
       "required_behavior": "Preserve active installation and packaging contracts with Modex identity and verified Modex artifacts.",
       "input": "platform/package/install options",
@@ -3354,7 +3449,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Audit whether public library/SDK surfaces are active compatibility contracts; record Mojo-only conflicts.",
       "input": "library/package consumers",
@@ -3400,7 +3496,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": false
+        "unchanged_from_previous_trace": false,
+        "target_trace_verified": false
       },
       "required_behavior": "Build/link/run and audit independently on every one of the six official baseline targets.",
       "input": "target OS/architecture and artifact",
@@ -3446,7 +3543,8 @@
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": false
+        "unchanged_from_previous_trace": false,
+        "target_trace_verified": false
       },
       "required_behavior": "Retain the actively staged/imported SDK package surface, JavaScript module import/error/client behavior, declared TypeScript types and client HTTP protocol contracts; resolve its Mojo-only conflict without silently dropping it.",
       "input": "JavaScript imports, client options and method arguments",
@@ -3495,7 +3593,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Cached WebSocket, HTTP Responses, unary compaction and ordinary request lanes have independent bounded worker capacity.",
       "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
@@ -3529,6 +3628,9 @@
       },
       "blockers": [
         "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ],
+      "target_obligations": [
+        "Park idle local WebSockets in a bounded cache without holding inference workers or active-request permits, preserving parser fragments, upstream sockets and continuation ownership."
       ]
     },
     {
@@ -3543,7 +3645,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Ingress admission never waits for saturated workers; lane saturation returns retryable 503 with Retry-After while local control remains responsive.",
       "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
@@ -3577,6 +3680,9 @@
       },
       "blockers": [
         "Production integration and exact isolated behavior remain unverified. Unsupported target compiler obligations remain visible; see docs/capabilities.json."
+      ],
+      "target_obligations": [
+        "Reclaim abandoned queued handshakes independently of busy inference workers, preserve original request deadlines, and avoid treating local pressure as account quota exhaustion."
       ]
     },
     {
@@ -3591,7 +3697,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Local lane pressure does not poison unrelated routes, global route health or upstream accounts.",
       "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
@@ -3640,7 +3747,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Idle cached WebSockets do not exhaust unary compaction or HTTP fallback capacity; original deadlines remain enforced.",
       "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
@@ -3688,7 +3796,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Only assistant/tool output, completed compaction or another root session resets no-progress retry state; task starts, goal updates and accepted control RPCs do not.",
       "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
@@ -3747,7 +3856,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "First recovery is immediate; repeated no-progress failures wait 5, 10, 20, 40 and at most 60 seconds starting at each failure, with monotonic deadlines.",
       "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
@@ -3806,7 +3916,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Preserve exact native session ownership, user cancellation, goal budgets, session identity and exactly-once/no-replay boundaries during recovery.",
       "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
@@ -3873,7 +3984,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Report attempts_without_progress, retry_wait_ms and control_ack_is_progress=false without presenting accepted RPCs as actual progress.",
       "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
@@ -3921,7 +4033,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true
+        "unchanged_from_previous_trace": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Qualify tunnel-client 0.0.18, preserve runtime minimum/capability checks and remove conflicting ambient AWS workload-identity selectors only for static-key probe/child environments.",
       "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
@@ -3969,7 +4082,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": false
+        "unchanged_from_previous_trace": false,
+        "target_trace_verified": false
       },
       "required_behavior": "Preserve Kiro CLI 2.34.0 packaging/checksum qualification, discovery and KIRO_DATA_DIR isolation.",
       "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
@@ -4017,7 +4131,8 @@
           "source_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": false
+        "unchanged_from_previous_trace": false,
+        "target_trace_verified": false
       },
       "required_behavior": "Retain exact-commit CI/publication gates, all six platform artifacts, checksum manifests, installation behavior and JavaScript SDK obligations.",
       "input": "Real production runtime/CLI and isolated synthetic transport/state fixtures",
@@ -4060,7 +4175,8 @@
       "baseline": {
         "path": "crates/prodex-provider-core/catalog/retired-models.json",
         "source_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
-        "trace_verified": true
+        "trace_verified": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Apply frozen retirement rules per provider and authentication scope while retaining local and explicit custom independence.",
       "input": "provider catalog or synthetic profile/login state",
@@ -4100,7 +4216,8 @@
       "baseline": {
         "path": "docs/release-notes/0.439.3.md",
         "source_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
-        "trace_verified": true
+        "trace_verified": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Use usable account catalogs as authoritative for both main and sub-agent membership without merging other accounts or restoring retired selections.",
       "input": "provider catalog or synthetic profile/login state",
@@ -4140,7 +4257,8 @@
       "baseline": {
         "path": "crates/prodex-provider-core/catalog/models.json",
         "source_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
-        "trace_verified": true
+        "trace_verified": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Use the frozen 0.439.4 provider wire IDs and account-specific model, context, effort, default and cache-precedence rules, including Gemini thinking levels and DeepSeek effort.",
       "input": "provider catalog or synthetic profile/login state",
@@ -4180,7 +4298,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/login/identity_commit.rs",
         "source_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
-        "trace_verified": true
+        "trace_verified": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Commit new, existing, named and API-key credentials without scanning historical rollouts or repairing unrelated goals; prefer stored claims and usable cached identity and preserve private permissions, matching, journaling and cleanup.",
       "input": "provider catalog or synthetic profile/login state",
@@ -4220,7 +4339,8 @@
       "baseline": {
         "path": "crates/prodex-app/src/profile_commands/login/identity_commit.rs",
         "source_commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
-        "trace_verified": true
+        "trace_verified": true,
+        "target_trace_verified": false
       },
       "required_behavior": "Perform necessary automatic-login identity lookup outside the lifecycle lock; reload and revalidate profiles and on-disk account identities with bounded retry and preserve concurrent changes and named-profile remove/recreate protection.",
       "input": "provider catalog or synthetic profile/login state",
@@ -4255,9 +4375,9 @@
       ]
     }
   ],
-  "previous_baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
-  "baseline_version": "0.439.2",
-  "evidence_policy": "Each trace and artifact retains its listed source commit and checksum. Comparisons with 0.439.5 or 0.439.1 do not establish 0.439.2 behavior; changing the target does not promote parity statuses.",
+  "previous_baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "baseline_version": "0.165.1",
+  "evidence_policy": "Per-contract source traces and evidence retain their listed source commits. 0.439.x evidence is historical and does not establish 0.165.1 behavior; every contract and all six targets require current-target verification.",
   "release_qualification": {
     "x86_64-unknown-linux-gnu": {
       "status": "BLOCKED",
@@ -4325,6 +4445,12 @@
       "version": "0.439.0",
       "commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
       "role": "Historical fixtures retain their original provenance."
+    },
+    {
+      "version": "0.439.2",
+      "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+      "evidence": "docs/evidence/baseline-0.439.2/reference-verification.json",
+      "role": "Historical comparisons only; not automatically counted as 0.165.1 behavior."
     }
   ]
 }

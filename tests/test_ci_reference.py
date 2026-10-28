@@ -232,7 +232,10 @@ class CachedSourceIntegrityTests(unittest.TestCase):
         self.assertIs(reference_for(BASELINE["reference"]["tag"]), BASELINE["reference"])
         self.assertEqual(reference_for("0.439.2")["commit"], "72b77478a5198fc5da6b4d2253137f9cdbf43be9")
         self.assertEqual(reference_for("0.439.5")["commit"], "ac9aad08f25d6dc8cda96463ce2045b40f35f510")
-        self.assertEqual(reference_for("previous")["tag"], "0.439.1")
+        self.assertEqual(reference_for("active")["commit"], "10ae15b5d1806302b60f051e4e6fec788044f4c2")
+        self.assertEqual(reference_for("0.165.1"), reference_for("active"))
+        self.assertEqual(reference_for("previous")["tag"], "0.439.2")
+        self.assertEqual(reference_for("0.439.1")["commit"], "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3")
 
     def test_uncached_oracle_is_not_replaced_when_the_official_release_is_missing(self):
         cache = Path(self.temporary.name) / "cache"
@@ -250,8 +253,13 @@ class CachedSourceIntegrityTests(unittest.TestCase):
         run.assert_not_called()
         self.assertFalse((cache / "oracles" / reference["tag"]).exists())
 
+    def test_active_release_uses_01651_asset_checksums(self):
+        _, _, oracle_sha, manifest_sha = metadata_for(reference_for("active"))
+        self.assertEqual(oracle_sha, "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51")
+        self.assertEqual(manifest_sha, "c549f193d217b28f86516bba9ab5d4500d963fa96271022d0a0d5672b3ae8d67")
+
     def test_previous_release_uses_recorded_historical_asset_checksums(self):
-        _, _, oracle_sha, manifest_sha = metadata_for(reference_for("previous"))
+        _, _, oracle_sha, manifest_sha = metadata_for(reference_for("0.439.1"))
         self.assertEqual(oracle_sha, "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a")
         self.assertEqual(manifest_sha, "f5f4269d90de95c1cde06043df21c00a253681fcc96a8589cae067beb2fb95d9")
 

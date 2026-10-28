@@ -38,12 +38,14 @@ fetch only the previously pinned commit and verifies its complete Git tree.
 Moved or malformed tags and lookup errors still fail. This recovers source
 only: oracle acquisition still requires the pinned release bytes, so missing
 release assets keep reference-dependent CI fail-closed.
-`PRODEX_ORACLE` can select an existing 0.439.2 active-release executable; its
-SHA-256 must match the pinned release. CI also acquires the checksum-pinned
-0.439.5 oracle separately for historical regressions, exposed to tests as
-`PRODEX_ORACLE_04395`. Tests use synthetic credentials and loopback
-peers. Required sandbox or reference checks fail if their prerequisites are
-missing; a skip is not a pass.
+`PRODEX_ORACLE_01651` selects the current 0.165.1 executable; its SHA-256
+must match the pinned release. CI builds and runs current-release checks before
+acquiring the separately pinned 0.439.2 and 0.439.5 historical oracles. Legacy
+tests use `PRODEX_ORACLE` and `PRODEX_ORACLE_04392` for 0.439.2 and
+`PRODEX_ORACLE_04395` for 0.439.5. Missing mandatory historical assets still
+fail CI after the current evidence is recorded. Tests use synthetic credentials
+and loopback peers. Required sandbox or reference checks fail if their
+prerequisites are missing; a skip is not a pass.
 
 Native unit programs compile with bounded parallelism; set `MODEX_UNIT_JOBS`
 to override the default of four. Reuse requires a fingerprint of the Mojo

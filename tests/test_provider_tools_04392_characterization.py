@@ -75,6 +75,7 @@ def _run(
             )
 
     response = next((record for record in records if record["kind"] == "response"), None)
+    responses = [record for record in records if record["kind"] == "response"]
     upstream_body = None
     if upstream:
         try:
@@ -85,6 +86,7 @@ def _run(
         "exit_code": result.returncode,
         "status": response["status"] if response else None,
         "response_body": bytes.fromhex(response["body"]) if response else b"",
+        "responses": [bytes.fromhex(record["body"]) for record in responses],
         "upstream": upstream,
         "upstream_body": upstream_body,
         "state": state,

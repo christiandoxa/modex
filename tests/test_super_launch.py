@@ -80,8 +80,28 @@ connection = http.client.HTTPConnection(target.hostname,target.port,timeout=10)
 connection.request("POST",target.path+("?"+target.query if target.query else ""),body,
                    {"Content-Type":"application/x-synthetic" if passthrough else "application/json","Authorization":"Bearer synthetic-codex-key","Connection":"close"})
 response=connection.getresponse()
-save({"kind":"response","status":response.status,"headers":{name.lower():value for name,value in response.getheaders()},"body":response.read().hex()})
+response_body=response.read()
+save({"kind":"response","status":response.status,"headers":{name.lower():value for name,value in response.getheaders()},"body":response_body.hex()})
 connection.close()
+if scenario in ("anthropic-buffered-tool-history", "anthropic-buffered-tool-history-array-output", "anthropic-buffered-tool-history-mixed") and response.status == 200:
+    call_id = "call_lookup" if scenario == "anthropic-buffered-tool-history-mixed" else "call_tool_use"
+    tool_output = "lookup result" if scenario == "anthropic-buffered-tool-history-mixed" else "synthetic tool result"
+    if scenario == "anthropic-buffered-tool-history-array-output":
+        tool_output = ["first", {"input_text":"second"}, {"output_text":"third"}, 4, None, {"ok":True}]
+    second_input = [
+        {"type":"function_call_output","call_id":call_id,"output":tool_output},
+        {"type":"message","role":"user","content":"Continue."},
+    ]
+    second_body=json.dumps({"model":"deepseek-chat","input":second_input,"stream":False,"tools":[{"type":"web_search_preview"}]},separators=(",",":")).encode()
+    second_connection=http.client.HTTPConnection(target.hostname,target.port,timeout=10)
+    second_connection.request("POST",target.path+("?"+target.query if target.query else ""),second_body,
+                              {"Content-Type":"application/json","Authorization":"Bearer synthetic-codex-key","Connection":"close"})
+    second=second_connection.getresponse()
+    second_body=second.read()
+    save({"kind":"response","status":second.status,"headers":{name.lower():value for name,value in second.getheaders()},"body":second_body.hex()})
+    second_connection.close()
+    print("synthetic-client-complete")
+    raise SystemExit(0 if second.status == 200 else 1)
 print("synthetic-client-complete")
 raise SystemExit(0 if response.status == 200 else 1)
 '''
@@ -138,6 +158,47 @@ class SuperLaunchTests(unittest.TestCase):
                             "stop_reason": "end_turn",
                             "usage": {"input_tokens": 3, "output_tokens": 5},
                         }, separators=(",", ":")).encode()
+                        content_type = "application/json"
+                    elif scenario.startswith("anthropic-buffered-tool-use") or scenario in (
+                        "anthropic-buffered-tool-history",
+                        "anthropic-buffered-tool-history-array-output",
+                        "anthropic-buffered-tool-history-mixed",
+                    ):
+                        tool_use = {"type": "tool_use", "id": "call_tool_use", "name": "functions--lookup", "input": {"query": "release"}}
+                        if scenario == "anthropic-buffered-tool-use-missing-input":
+                            tool_use.pop("input")
+                        elif scenario == "anthropic-buffered-tool-use-scalar":
+                            tool_use["input"] = 7
+                        elif scenario == "anthropic-buffered-tool-use-array":
+                            tool_use["input"] = [1, "two"]
+                        if scenario in ("anthropic-buffered-tool-use-mixed", "anthropic-buffered-tool-history-mixed"):
+                            content = [
+                                {"type": "text", "text": "Found "},
+                                {"type": "text", "text": "it."},
+                                {"type": "tool_use", "id": "call_lookup", "name": "functions--lookup", "input": {"query": "release"}},
+                                {"type": "text", "text": "Next "},
+                                {"type": "text", "text": "step."},
+                                {"type": "tool_use", "id": "call_count", "name": "functions--count", "input": [1, "two"]},
+                                {"type": "text", "text": "Done."},
+                            ]
+                        else:
+                            content = [{"type": "text", "text": "Found it."}, tool_use]
+                        payload_fields = {
+                            "id": "msg_tool_use",
+                            "type": "message",
+                            "role": "assistant",
+                            "model": "deepseek-chat",
+                            "content": content,
+                            "stop_reason": "tool_use",
+                            "usage": {"input_tokens": 3, "output_tokens": 5},
+                        }
+                        if scenario == "anthropic-buffered-tool-use-stop-missing":
+                            payload_fields.pop("stop_reason")
+                        elif scenario == "anthropic-buffered-tool-use-stop-null":
+                            payload_fields["stop_reason"] = None
+                        elif scenario == "anthropic-buffered-tool-use-stop-numeric":
+                            payload_fields["stop_reason"] = 5
+                        payload = json.dumps(payload_fields, separators=(",", ":")).encode()
                         content_type = "application/json"
                     elif scenario == "anthropic-buffered-citations":
                         payload = json.dumps({

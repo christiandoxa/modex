@@ -63,6 +63,9 @@ before POST, while whitespace-only input is accepted. See
 Selected Anthropic function-tool streams and split JSON fragments now match
 0.165.1. Duplicate or orphan stops and reopened tool indices remain rejected
 where the reference completes, and image blocks remain unsupported.
+Selected buffered function calls and tool-result continuation also match
+0.165.1; mixed server-side web search and function blocks remain unverified.
+See `docs/evidence/baseline-0.165.1/anthropic-buffered.md`.
 
 Selected stop reasons, missing or non-string reasons, non-string stop sequences
 and streams without `message_delta` now match normalized 0.165.1 events in the

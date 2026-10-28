@@ -1,7 +1,8 @@
 from std.testing import assert_equal, assert_true
 from std.time.time import _realtime_nanoseconds
 
-from modex.json import JSON_BOOL, JsonDocument, quote_json
+from modex.json import JSON_BOOL, JSON_NULL, JsonDocument, quote_json
+from modex.provider_anthropic_messages import anthropic_buffered_assistant_messages, anthropic_buffered_response
 from modex.provider_chat_buffered import deepseek_buffered_assistant_messages, deepseek_buffered_response
 from modex.provider_chat_usage import json_unsigned
 
@@ -129,4 +130,69 @@ def main() raises:
     assert_equal(deepseek_buffered_assistant_messages('{"choices":[{"message":{"content":false,"reasoning_content":"think"}}]}'), '[{"content":null,"reasoning_content":"think","role":"assistant"}]')
     assert_equal(deepseek_buffered_assistant_messages('{"choices":[{"message":{"content":null,"tool_calls":[{"id":"original-call","function":{"name":"shell","arguments":"{\\"cmd\\":\\"cargo test\\"}"},"extra_content":{"google":{"thought_signature":"original-signature"}}}]}}]}'), '[{"content":"","role":"assistant","tool_calls":[{"extra_content":{"google":{"thought_signature":"original-signature"}},"function":{"arguments":"{\\"cmd\\":\\"rtk cargo test\\"}","name":"shell"},"id":"original-call"}]}]')
     assert_equal(deepseek_buffered_assistant_messages('{"choices":[{"message":{"content":"first"}},{"message":{"content":"ignored"}}]}'), '[{"content":"first","role":"assistant"}]')
+
+    var anthropic_tool = '{"id":"msg_tool_use","type":"message","role":"assistant","model":"deepseek-chat","content":[{"type":"text","text":"Found it."},{"type":"tool_use","id":"call_tool_use","name":"functions--lookup","input":{"query":"release"}}],"stop_reason":"tool_use","usage":{"input_tokens":3,"output_tokens":5}}'
+    var anthropic_tool_response = JsonDocument(anthropic_buffered_response(anthropic_tool, 7))
+    assert_equal(anthropic_tool_response.string(anthropic_tool_response.get(anthropic_tool_response.root, "id")), "msg_tool_use")
+    assert_equal(anthropic_tool_response.string(anthropic_tool_response.get(anthropic_tool_response.root, "object")), "response")
+    var anthropic_metadata = anthropic_tool_response.get(anthropic_tool_response.root, "metadata")
+    var anthropic_metadata_provider = anthropic_tool_response.get(anthropic_metadata, "anthropic")
+    assert_equal(anthropic_tool_response.string(anthropic_tool_response.get(anthropic_metadata_provider, "stop_reason")), "tool_use")
+    var anthropic_output = anthropic_tool_response.get(anthropic_tool_response.root, "output")
+    assert_equal(len(anthropic_tool_response.nodes[anthropic_output].children), 2)
+    var anthropic_message = anthropic_tool_response.nodes[anthropic_output].children[0]
+    var anthropic_tool_call = anthropic_tool_response.nodes[anthropic_output].children[1]
+    var anthropic_message_content = anthropic_tool_response.get(anthropic_message, "content")
+    assert_equal(anthropic_tool_response.string(anthropic_tool_response.get(anthropic_tool_response.nodes[anthropic_message_content].children[0], "text")), "Found it.")
+    assert_equal(anthropic_tool_response.string(anthropic_tool_response.get(anthropic_tool_call, "type")), "function_call")
+    assert_equal(anthropic_tool_response.string(anthropic_tool_response.get(anthropic_tool_call, "call_id")), "call_tool_use")
+    assert_equal(anthropic_tool_response.string(anthropic_tool_response.get(anthropic_tool_call, "namespace")), "functions")
+    assert_equal(anthropic_tool_response.string(anthropic_tool_response.get(anthropic_tool_call, "arguments")), "{\"query\":\"release\"}")
+    var anthropic_history = JsonDocument(anthropic_buffered_assistant_messages(anthropic_tool))
+    var history_message = anthropic_history.nodes[anthropic_history.root].children[0]
+    assert_equal(anthropic_history.string(anthropic_history.get(history_message, "content")), "Found it.")
+    var history_tool_calls = anthropic_history.get(history_message, "tool_calls")
+    var history_tool_call = anthropic_history.nodes[history_tool_calls].children[0]
+    var history_function = anthropic_history.get(history_tool_call, "function")
+    assert_equal(anthropic_history.string(anthropic_history.get(history_function, "name")), "functions--lookup")
+    var anthropic_missing_input = JsonDocument(anthropic_buffered_response(
+        '{"id":"msg_tool_default","type":"message","role":"assistant","model":"deepseek-chat","content":[{"type":"tool_use","id":"call_default","name":"lookup"}],"stop_reason":"tool_use","usage":{"input_tokens":1,"output_tokens":1}}',
+        7,
+    ))
+    var default_tool = anthropic_missing_input.nodes[anthropic_missing_input.get(anthropic_missing_input.root, "output")].children[0]
+    assert_equal(anthropic_missing_input.string(anthropic_missing_input.get(default_tool, "arguments")), "{}")
+    var anthropic_mixed = JsonDocument(anthropic_buffered_response(
+        '{"id":"msg_mixed","type":"message","role":"assistant","model":"deepseek-chat","content":[{"type":"text","text":"Found "},{"type":"text","text":"it."},{"type":"tool_use","id":"call_one","name":"one","input":7},{"type":"text","text":"Next"},{"type":"tool_use","id":"call_two","name":"two","input":[1,"two"]}],"stop_reason":"tool_use","usage":{"input_tokens":1,"output_tokens":1}}',
+        7,
+    ))
+    var mixed_output = anthropic_mixed.get(anthropic_mixed.root, "output")
+    assert_equal(len(anthropic_mixed.nodes[mixed_output].children), 4)
+    var first_text = anthropic_mixed.nodes[mixed_output].children[0]
+    var first_text_content = anthropic_mixed.get(first_text, "content")
+    assert_equal(len(anthropic_mixed.nodes[first_text_content].children), 2)
+    assert_equal(anthropic_mixed.string(anthropic_mixed.get(anthropic_mixed.nodes[first_text_content].children[0], "text")), "Found ")
+    assert_equal(anthropic_mixed.string(anthropic_mixed.get(anthropic_mixed.nodes[first_text_content].children[1], "text")), "it.")
+    assert_equal(anthropic_mixed.string(anthropic_mixed.get(anthropic_mixed.nodes[mixed_output].children[1], "arguments")), "7")
+    assert_equal(anthropic_mixed.string(anthropic_mixed.get(anthropic_mixed.nodes[mixed_output].children[3], "arguments")), '[1,"two"]')
+    var anthropic_missing_stop = JsonDocument(anthropic_buffered_response(
+        '{"id":"msg_stop","type":"message","role":"assistant","model":"deepseek-chat","content":[{"type":"tool_use","id":"call_stop","name":"lookup","input":{}}],"usage":{"input_tokens":1,"output_tokens":1}}',
+        7,
+    ))
+    assert_true(anthropic_missing_stop.get(anthropic_missing_stop.root, "metadata") < 0)
+    var anthropic_null_stop = JsonDocument(anthropic_buffered_response(
+        '{"id":"msg_stop","type":"message","role":"assistant","model":"deepseek-chat","content":[{"type":"tool_use","id":"call_stop","name":"lookup","input":{}}],"stop_reason":null,"usage":{"input_tokens":1,"output_tokens":1}}',
+        7,
+    ))
+    var null_stop_metadata = anthropic_null_stop.get(anthropic_null_stop.root, "metadata")
+    var null_stop_provider = anthropic_null_stop.get(null_stop_metadata, "anthropic")
+    assert_equal(anthropic_null_stop.nodes[anthropic_null_stop.get(null_stop_provider, "stop_reason")].kind, JSON_NULL)
+    var rejected_anthropic_tool = False
+    try:
+        _ = anthropic_buffered_response(
+            '{"id":"msg_invalid_tool","type":"message","role":"assistant","model":"deepseek-chat","content":[{"type":"tool_use","name":"lookup","input":{}}],"stop_reason":"tool_use","usage":{"input_tokens":1,"output_tokens":1}}',
+            7,
+        )
+    except error:
+        rejected_anthropic_tool = String(error) == "Anthropic tool_use block requires an id"
+    assert_true(rejected_anthropic_tool)
     print("Provider buffered chat checks: PASS")

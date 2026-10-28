@@ -1,7 +1,7 @@
 """Synthetic production-path checks against the pinned Prodex 0.165.1 oracle."""
 
-import hashlib
 import copy
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -95,6 +95,235 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
                     )
                 self.assertEqual(reference["state"]["leftovers"], [])
                 self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_buffered_function_tool_use_matches_release(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        cases = {
+            "anthropic-buffered-tool-use": '{"query":"release"}',
+            "anthropic-buffered-tool-use-missing-input": "{}",
+            "anthropic-buffered-tool-use-scalar": "7",
+            "anthropic-buffered-tool-use-array": '[1,"two"]',
+        }
+        for scenario, expected_arguments in cases.items():
+            with self.subTest(scenario=scenario):
+                reference = _run(ORACLE_01651, request, scenario=scenario)
+                modex = _run(MODEX, request, scenario=scenario)
+
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+                self.assertEqual(len(reference["upstream"]), 1)
+                self.assertEqual(len(modex["upstream"]), 1)
+                self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+                self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+
+                expected = json.loads(reference["response_body"])
+                actual = json.loads(modex["response_body"])
+                self.assertEqual(actual["id"], expected["id"])
+                self.assertEqual(actual["model"], expected["model"])
+                self.assertEqual(actual["output"], expected["output"])
+                self.assertEqual(actual["metadata"], expected["metadata"])
+                self.assertEqual(actual["usage"], expected["usage"])
+                self.assertEqual(actual["output"][1]["arguments"], expected_arguments)
+                self.assertEqual(reference["state"]["leftovers"], [])
+                self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_buffered_text_runs_split_at_tool_calls(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_01651, request, scenario="anthropic-buffered-tool-use-mixed")
+        modex = _run(MODEX, request, scenario="anthropic-buffered-tool-use-mixed")
+
+        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+        self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+        expected = json.loads(reference["response_body"])
+        actual = json.loads(modex["response_body"])
+        self.assertEqual(actual["output"], expected["output"])
+        self.assertEqual(
+            [
+                (
+                    item["type"],
+                    [part["text"] for part in item.get("content", [])],
+                    item.get("name"),
+                    item.get("arguments"),
+                )
+                for item in actual["output"]
+            ],
+            [
+                ("message", ["Found ", "it."], None, None),
+                ("function_call", [], "lookup", '{"query":"release"}'),
+                ("message", ["Next ", "step."], None, None),
+                ("function_call", [], "count", '[1,"two"]'),
+                ("message", ["Done."], None, None),
+            ],
+        )
+        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_buffered_tool_use_preserves_stop_reason_presence_and_type(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        for scenario in (
+            "anthropic-buffered-tool-use-stop-missing",
+            "anthropic-buffered-tool-use-stop-null",
+            "anthropic-buffered-tool-use-stop-numeric",
+        ):
+            with self.subTest(scenario=scenario):
+                reference = _run(ORACLE_01651, request, scenario=scenario)
+                modex = _run(MODEX, request, scenario=scenario)
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+                expected = json.loads(reference["response_body"])
+                actual = json.loads(modex["response_body"])
+                for key in ("id", "object", "model", "output", "usage"):
+                    self.assertEqual(actual[key], expected[key], key)
+                if "metadata" in expected:
+                    self.assertEqual(actual["metadata"], expected["metadata"])
+                else:
+                    self.assertNotIn("metadata", actual)
+                self.assertEqual(reference["state"]["leftovers"], [])
+                self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_buffered_function_call_is_retained_for_next_request(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_01651, request, scenario="anthropic-buffered-tool-history")
+        modex = _run(MODEX, request, scenario="anthropic-buffered-tool-history")
+
+        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(len(reference["responses"]), 2)
+        self.assertEqual(len(modex["responses"]), 2)
+        self.assertEqual(len(reference["upstream"]), 2)
+        self.assertEqual(len(modex["upstream"]), 2)
+        self.assertEqual(modex["upstream"][1]["path"], reference["upstream"][1]["path"])
+        reference_second = json.loads(bytes.fromhex(reference["upstream"][1]["body"]))
+        modex_second = json.loads(bytes.fromhex(modex["upstream"][1]["body"]))
+        self.assertEqual(modex_second, reference_second)
+        assistant = next(message for message in modex_second["messages"] if message["role"] == "assistant")
+        self.assertEqual(assistant["content"][1], {
+            "type": "tool_use",
+            "id": "call_tool_use",
+            "name": "functions--lookup",
+            "input": {"query": "release"},
+        })
+        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_mixed_tool_history_matches_release_order(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_01651, request, scenario="anthropic-buffered-tool-history-mixed")
+        modex = _run(MODEX, request, scenario="anthropic-buffered-tool-history-mixed")
+
+        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(len(reference["upstream"]), 2)
+        self.assertEqual(len(modex["upstream"]), 2)
+        reference_second = json.loads(bytes.fromhex(reference["upstream"][1]["body"]))
+        modex_second = json.loads(bytes.fromhex(modex["upstream"][1]["body"]))
+        self.assertEqual(modex_second, reference_second)
+        assistant = next(message for message in modex_second["messages"] if message["role"] == "assistant")
+        self.assertEqual(assistant["content"], [
+            {"type": "text", "text": "Found it.Next step.Done."},
+            {"type": "tool_use", "id": "call_lookup", "name": "functions--lookup", "input": {"query": "release"}},
+        ])
+        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_function_output_array_matches_release(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_01651, request, scenario="anthropic-buffered-tool-history-array-output")
+        modex = _run(MODEX, request, scenario="anthropic-buffered-tool-history-array-output")
+
+        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(len(reference["upstream"]), 2)
+        self.assertEqual(len(modex["upstream"]), 2)
+        reference_second = json.loads(bytes.fromhex(reference["upstream"][1]["body"]))
+        modex_second = json.loads(bytes.fromhex(modex["upstream"][1]["body"]))
+        self.assertEqual(modex_second, reference_second)
+        user = next(
+            message for message in modex_second["messages"]
+            if message["role"] == "user" and any(part["type"] == "tool_result" for part in message["content"])
+        )
+        result = next(part for part in user["content"] if part["type"] == "tool_result")
+        self.assertEqual(result["content"], "first\nsecond\nthird")
+        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_unmatched_function_output_matches_release_repair(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": [
+                {"type": "function_call_output", "call_id": "call_orphan", "output": "orphan result"},
+                {"type": "message", "role": "user", "content": "Continue."},
+            ],
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_01651, request, scenario="anthropic-buffered-tool-use")
+        modex = _run(MODEX, request, scenario="anthropic-buffered-tool-use")
+
+        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(len(reference["upstream"]), 1)
+        self.assertEqual(len(modex["upstream"]), 1)
+        reference_body = json.loads(bytes.fromhex(reference["upstream"][0]["body"]))
+        modex_body = json.loads(bytes.fromhex(modex["upstream"][0]["body"]))
+        self.assertEqual(modex_body, reference_body)
+        self.assertEqual(reference_body["messages"], [{
+            "role": "user",
+            "content": [{"type": "text", "text": "Continue."}],
+        }])
+        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_buffered_search_shape_remains_release_compatible(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_01651, request, scenario="anthropic-buffered")
+        modex = _run(MODEX, request, scenario="anthropic-buffered")
+
+        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+        self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+        expected = json.loads(reference["response_body"])
+        actual = json.loads(modex["response_body"])
+        for key in ("id", "model", "output", "metadata", "usage"):
+            self.assertEqual(actual[key], expected[key], key)
 
     def test_anthropic_function_tool_use_stream_matches_release(self):
         request = {

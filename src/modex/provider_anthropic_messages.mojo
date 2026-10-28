@@ -3,6 +3,7 @@
 from std.collections import List
 
 from .json import JSON_ARRAY, JSON_BOOL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
+from .provider_chat_items import tool_output_item
 from .provider_chat_buffered import deepseek_buffered_assistant_messages
 from .provider_chat_metadata import merge_chat_metadata
 from .provider_chat_usage import json_unsigned
@@ -23,9 +24,17 @@ def validate_deepseek_anthropic_request(source: String) raises:
     elif doc.nodes[input].kind == JSON_ARRAY and len(doc.nodes[input].children) > 0:
         var has_conversation_message = False
         for item in doc.nodes[input].children:
+            var type = doc.string(doc.get(item, "type"))
+            if type == "function_call_output":
+                _only_fields(doc, item, ["type", "call_id", "output"], "function call output")
+                var call_id = doc.get(item, "call_id")
+                var output = doc.get(item, "output")
+                if call_id < 0 or doc.nodes[call_id].kind != JSON_STRING or not doc.nodes[call_id].text or output < 0:
+                    raise Error("Anthropic function call output requires a call_id and output")
+                continue
             _only_fields(doc, item, ["type", "role", "content"], "input message")
-            var type = doc.get(item, "type")
-            if type >= 0 and (doc.nodes[type].kind != JSON_STRING or doc.nodes[type].text != "message"):
+            var type_node = doc.get(item, "type")
+            if type_node >= 0 and (doc.nodes[type_node].kind != JSON_STRING or doc.nodes[type_node].text != "message"):
                 raise Error("Anthropic Messages slice supports only message input items")
             var role = doc.get(item, "role")
             if role >= 0 and (doc.nodes[role].kind != JSON_STRING or (doc.nodes[role].text != "user" and doc.nodes[role].text != "assistant" and doc.nodes[role].text != "system" and doc.nodes[role].text != "developer")):
@@ -113,13 +122,31 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
     var current_role = String()
     var has_message = False
     for item in doc.nodes[source].children:
-        _only_fields(doc, item, ["role", "content"], "message")
         var role = doc.string(doc.get(item, "role"))
         var content = doc.get(item, "content")
+        if role == "tool":
+            _only_fields(doc, item, ["role", "tool_call_id", "content"], "tool message")
+            var call_id = doc.get(item, "tool_call_id")
+            if call_id < 0 or doc.nodes[call_id].kind != JSON_STRING or not doc.nodes[call_id].text:
+                raise Error("Anthropic tool result requires a tool_call_id")
+            if content < 0 or doc.nodes[content].kind != JSON_STRING:
+                raise Error("Anthropic tool result content must be a string")
+            role = "user"
+            if has_message and role != current_role:
+                messages.append('{"content":[' + ",".join(content_parts) + '],"role":' + quote_json(current_role) + "}")
+                content_parts = List[String]()
+            current_role = role
+            has_message = True
+            content_parts.append('{"type":"tool_result","tool_use_id":' + serialize_json(doc, call_id) + ',"content":' + serialize_json(doc, content) + "}")
+            continue
+        _only_fields(doc, item, ["role", "content", "tool_calls"], "message")
         if role == "developer": role = "system"
+        var tool_calls = doc.get(item, "tool_calls")
         if (role != "user" and role != "assistant" and role != "system") or content < 0 or doc.nodes[content].kind != JSON_STRING:
-            raise Error("Anthropic Messages slice supports simple user, assistant, and system text messages")
+            raise Error("Anthropic Messages slice requires string text messages")
         if role == "system":
+            if tool_calls >= 0:
+                raise Error("Anthropic Messages system messages cannot contain tool calls")
             system_parts.append(doc.nodes[content].text)
             continue
         if has_message and role != current_role:
@@ -127,7 +154,24 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
             content_parts = List[String]()
         current_role = role
         has_message = True
-        content_parts.append('{"text":' + serialize_json(doc, content) + ',"type":"text"}')
+        if doc.nodes[content].text or tool_calls < 0:
+            content_parts.append('{"text":' + serialize_json(doc, content) + ',"type":"text"}')
+        if tool_calls >= 0:
+            if role != "assistant" or doc.nodes[tool_calls].kind != JSON_ARRAY:
+                raise Error("Anthropic tool_calls must be an assistant array")
+            for call in doc.nodes[tool_calls].children:
+                _only_fields(doc, call, ["id", "type", "function"], "tool call")
+                var call_id = doc.get(call, "id")
+                var function = doc.get(call, "function")
+                if call_id < 0 or doc.nodes[call_id].kind != JSON_STRING or not doc.nodes[call_id].text or function < 0 or doc.nodes[function].kind != JSON_OBJECT:
+                    raise Error("Anthropic tool call requires an id and function")
+                _only_fields(doc, function, ["name", "arguments"], "tool function")
+                var name = doc.get(function, "name")
+                var arguments = doc.get(function, "arguments")
+                if name < 0 or doc.nodes[name].kind != JSON_STRING or not doc.nodes[name].text or arguments < 0 or doc.nodes[arguments].kind != JSON_STRING:
+                    raise Error("Anthropic tool function requires a name and JSON arguments")
+                var parsed_arguments = JsonDocument(doc.nodes[arguments].text)
+                content_parts.append('{"type":"tool_use","id":' + serialize_json(doc, call_id) + ',"name":' + serialize_json(doc, name) + ',"input":' + serialize_json(parsed_arguments, parsed_arguments.root) + "}")
     if not has_message:
         raise Error("Anthropic Messages slice requires a user or assistant message")
     messages.append('{"content":[' + ",".join(content_parts) + '],"role":' + quote_json(current_role) + "}")
@@ -170,27 +214,40 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
     var id = doc.string(doc.get(doc.root, "id"))
     var model = doc.string(doc.get(doc.root, "model"))
     var output = List[String]()
-    var text = String()
-    var text_marker_added = False
+    var text_runs = List[String]()
+    var text_run_open = False
     var searches = List[AnthropicWebSearch]()
+    var tool_calls = List[String]()
     var content = doc.get(doc.root, "content")
     if content >= 0:
         for block in doc.nodes[content].children:
             var kind = doc.string(doc.get(block, "type"))
             if kind == "text":
                 var value = doc.string(doc.get(block, "text"))
-                text += value
-                if not text_marker_added:
-                    output.append("$text$")
-                    text_marker_added = True
+                if text_run_open:
+                    text_runs[len(text_runs) - 1] += ',{"type":"output_text","text":' + quote_json(value) + "}"
+                else:
+                    text_runs.append('{"type":"output_text","text":' + quote_json(value) + "}")
+                    output.append("$text$" + String(len(text_runs) - 1))
+                    text_run_open = True
             elif kind == "server_tool_use" and doc.string(doc.get(block, "name")) == "web_search":
+                text_run_open = False
                 var search_id = doc.string(doc.get(block, "id"))
                 if not search_id: search_id = "web_search_" + String(len(searches))
                 var input = doc.get(block, "input")
                 var input_json = serialize_json(doc, input) if input >= 0 else "{}"
                 searches.append(AnthropicWebSearch(UInt64(len(output)), search_id, input_json, "[]", False))
                 output.append("$search$" + String(len(searches) - 1))
+            elif kind == "tool_use":
+                text_run_open = False
+                var id = doc.string(doc.get(block, "id"))
+                var name = doc.string(doc.get(block, "name"))
+                var input = doc.get(block, "input")
+                var arguments = "{}" if input < 0 else serialize_json(doc, input)
+                tool_calls.append(tool_output_item(id, name, arguments, Optional[String]()))
+                output.append("$tool$" + String(len(tool_calls) - 1))
             elif kind == "web_search_tool_result":
+                text_run_open = False
                 var search_id = doc.string(doc.get(block, "tool_use_id"))
                 var index = 0
                 var found = False
@@ -202,11 +259,14 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
                 if not found: raise Error("Anthropic web-search result does not match a tool use")
     var items = List[String]()
     for value in output:
-        if value == "$text$":
-            items.append('{"type":"message","role":"assistant","content":[{"type":"output_text","text":' + quote_json(text) + "}]}")
+        if value.startswith("$text$"):
+            var text = text_runs[unsigned_value(String(value[byte=6:]))]
+            items.append('{"type":"message","role":"assistant","content":[' + text + "]}")
         elif value.startswith("$search$"):
             var search = searches[unsigned_value(String(value[byte=8:]) )].copy()
             items.append(_web_search_item(search, False))
+        elif value.startswith("$tool$"):
+            items.append(tool_calls[unsigned_value(String(value[byte=6:]))])
     var result = '{"id":' + quote_json(id) + ',"object":"response","created_at":' + String(created_at) + ',"model":' + quote_json(model) + ',"output":[' + ",".join(items) + ']'
     var usage = doc.get(doc.root, "usage")
     if usage >= 0:
@@ -216,8 +276,12 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
         var output_count = output_tokens.value() if output_tokens else UInt64(0)
         var total_count = UInt64.MAX if output_count > UInt64.MAX - input_count else input_count + output_count
         result += ',"usage":{"input_tokens":' + String(input_count) + ',"output_tokens":' + String(output_count) + ',"total_tokens":' + String(total_count) + "}"
-    var provider_metadata = '{"anthropic":{"stop_reason":"end_turn"}}'
-    result += ',"metadata":' + merge_chat_metadata(provider_metadata, request_metadata)
+    var stop_reason = doc.get(doc.root, "stop_reason")
+    var provider_metadata = "{}"
+    if stop_reason >= 0:
+        provider_metadata = '{"anthropic":{"stop_reason":' + serialize_json(doc, stop_reason) + "}}"
+    var metadata = merge_chat_metadata(provider_metadata, request_metadata)
+    if metadata != "null" and metadata != "{}": result += ',"metadata":' + metadata
     return result + "}"
 
 
@@ -288,8 +352,6 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
     var model = doc.get(doc.root, "model")
     if id < 0 or doc.nodes[id].kind != JSON_STRING or model < 0 or doc.nodes[model].kind != JSON_STRING:
         raise Error("Anthropic Messages response requires string id and model")
-    if doc.string(doc.get(doc.root, "stop_reason")) != "end_turn":
-        raise Error("Anthropic Messages stop reason is not supported")
     var usage = doc.get(doc.root, "usage")
     if usage < 0 or doc.nodes[usage].kind != JSON_OBJECT:
         raise Error("Anthropic Messages response usage is missing")
@@ -299,7 +361,41 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
     if not input_tokens or not output_tokens:
         raise Error("Anthropic Messages token usage is invalid")
     var content = doc.get(doc.root, "content")
-    if content < 0 or doc.nodes[content].kind != JSON_ARRAY or len(doc.nodes[content].children) != 3:
+    if content < 0 or doc.nodes[content].kind != JSON_ARRAY:
+        raise Error("Anthropic Messages content must be an array")
+    var has_tool_use = False
+    for block in doc.nodes[content].children:
+        if doc.string(doc.get(block, "type")) == "tool_use":
+            has_tool_use = True
+            break
+    if has_tool_use:
+        if len(doc.nodes[content].children) == 0:
+            raise Error("Anthropic Messages tool-use content is missing")
+        var tool_count = 0
+        for block in doc.nodes[content].children:
+            var kind = doc.string(doc.get(block, "type"))
+            if kind == "text":
+                _only_fields(doc, block, ["type", "text"], "text block")
+                var text = doc.get(block, "text")
+                if text < 0 or doc.nodes[text].kind != JSON_STRING:
+                    raise Error("Anthropic Messages text block is invalid")
+            elif kind == "tool_use":
+                _only_fields(doc, block, ["type", "id", "name", "input"], "tool-use block")
+                var id = doc.get(block, "id")
+                var name = doc.get(block, "name")
+                if id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text:
+                    raise Error("Anthropic tool_use block requires an id")
+                if name < 0 or doc.nodes[name].kind != JSON_STRING or not doc.nodes[name].text:
+                    raise Error("Anthropic tool_use block requires a name")
+                tool_count += 1
+            else:
+                raise Error("Anthropic Messages tool-use content has an unsupported block")
+        if tool_count == 0:
+            raise Error("Anthropic Messages tool-use content requires a tool_use block")
+        return
+    if doc.string(doc.get(doc.root, "stop_reason")) != "end_turn":
+        raise Error("Anthropic Messages stop reason is not supported")
+    if len(doc.nodes[content].children) != 3:
         raise Error("Anthropic Messages content is outside the supported web-search shape")
     var search = doc.nodes[content].children[0]
     _only_fields(doc, search, ["type", "id", "name", "input"], "web-search tool use")

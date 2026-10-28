@@ -1,5 +1,19 @@
 # CI lessons
 
+Fast run [40758743188](https://github.com/christiandoxa/modex/actions/runs/40758743188)
+on `10cb584` passed both helper shards, the current-reference checks and 36
+focused relay/parser tests. It then failed acquiring the unavailable required
+0.439.2 tag and oracle; artifact consumption was skipped.
+
+An isolated local `make test` on `027fc48` ran 593 tests and failed with two
+source-check setup errors and one rejected skip. Its private HOME lacked the
+explicit 0.439.2 and 0.439.1 source paths. Targeted reruns with the pinned
+0.439.2 source passed the untyped-role test and three quota tests; a targeted
+rerun with the pinned 0.439.1 source passed five recovery tests. The original failed log is
+`~/.cache/modex/ci-evidence/full-test-027fc48.log`. A new run on `165dd15`
+sets both historical source paths; it has not yet established final-head
+validation.
+
 ## Scratch setup failure must clean its private root
 
 A separate local full-suite run at `6d51973` initially created its nested

@@ -28,6 +28,12 @@ Invalid Super `--provider` values before the positional Codex tail now match
 matches but the reference creates lock state that Modex does not; see
 `docs/evidence/baseline-0.165.1/super-provider-cli.md`.
 
+Buffered Anthropic function calls now preserve tested text and tool ordering,
+stop metadata and a two-turn tool-result history against 0.165.1 synthetic
+peers. Unmatched IDs, mixed history and representative array outputs also have
+real-process controls. Other message shapes and provider behavior remain
+unqualified; see `docs/evidence/baseline-0.165.1/anthropic-buffered.md`.
+
 `tests/test_cli_01651.py` compares selected root-help forms and leading version
 flags through both production executables in isolated homes. Both cases passed
 on Linux x86-64 with the verified binary. This does not establish complete CLI
@@ -65,6 +71,12 @@ assertions in five historical modules because the temporary parent was initially
 mode 0775. A rerun of all five affected modules with a 0700 parent passed 10
 methods. The original run remains failed; a clean full run on final main is
 still required. See `docs/ci-lessons.md`.
+
+The later `027fc48` full run executed 593 tests but failed two setup checks
+and rejected one skip because isolated HOME hid the historical source paths.
+The 0.439.2 affected modules pass with the explicit pinned source; a new full
+run with both source paths is in progress on `165dd15`. Neither run qualifies
+the final head; see `docs/ci-lessons.md`.
 
 The production local relay now matches selected 0.165.1 malformed-request,
 WebSocket fallback and truncated-request behavior; its shared parser still rejects

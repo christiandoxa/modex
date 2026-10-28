@@ -64,6 +64,13 @@ class CachedSourceIntegrityTests(unittest.TestCase):
         command.chmod(0o755)
         return command, marker
 
+    def _commit_fixture(self, message="fixture"):
+        subprocess.run(["git", "-C", str(self.checkout), "add", "--all"], check=True)
+        subprocess.run(["git", "-C", str(self.checkout), "commit", "--quiet", "-m", message], check=True)
+        self.commit = subprocess.check_output(
+            ["git", "-C", str(self.checkout), "rev-parse", "HEAD"], text=True,
+        ).strip()
+
     def test_clean_source_matches_its_frozen_tree(self):
         verify_cached_source(self.checkout, self.commit)
 
@@ -76,6 +83,52 @@ class CachedSourceIntegrityTests(unittest.TestCase):
     def test_untracked_files_are_rejected(self):
         (self.checkout / "untracked.py").write_text("print('changed behavior')\n", encoding="utf-8")
         with self.assertRaisesRegex(SystemExit, "dirty or contains untracked"):
+            verify_cached_source(self.checkout, self.commit)
+
+    def test_tracked_directory_symlink_is_verified_without_traversing_it(self):
+        payload = Path(self.temporary.name) / "payload"
+        payload.mkdir()
+        (payload / "outside.txt").write_text("outside source\n", encoding="utf-8")
+        (self.checkout / "payload-link").symlink_to("../payload", target_is_directory=True)
+        self._commit_fixture()
+
+        verify_cached_source(self.checkout, self.commit)
+
+    def test_changed_tracked_directory_symlink_target_is_rejected(self):
+        for name in ("original", "replacement"):
+            directory = self.checkout / name
+            directory.mkdir()
+            (directory / "tracked.txt").write_text(f"{name}\n", encoding="utf-8")
+        link = self.checkout / "payload-link"
+        link.symlink_to("original", target_is_directory=True)
+        self._commit_fixture()
+        link.unlink()
+        link.symlink_to("replacement", target_is_directory=True)
+
+        with self.assertRaisesRegex(SystemExit, "modified tracked content"):
+            verify_cached_source(self.checkout, self.commit)
+
+    def test_untracked_directory_symlink_is_rejected(self):
+        target = Path(self.temporary.name) / "outside"
+        target.mkdir()
+        (target / "not-tracked.txt").write_text("outside source\n", encoding="utf-8")
+        (self.checkout / "untracked-link").symlink_to(target, target_is_directory=True)
+
+        with self.assertRaisesRegex(SystemExit, "dirty or contains untracked"):
+            verify_cached_source(self.checkout, self.commit)
+
+    def test_replaced_tracked_parent_directory_is_rejected(self):
+        parent = self.checkout / "nested"
+        parent.mkdir()
+        (parent / "tracked.txt").write_text("frozen parent\n", encoding="utf-8")
+        self._commit_fixture()
+        replacement = Path(self.temporary.name) / "replacement"
+        replacement.mkdir()
+        (replacement / "tracked.txt").write_text("frozen parent\n", encoding="utf-8")
+        parent.rename(Path(self.temporary.name) / "original-parent")
+        parent.symlink_to(replacement, target_is_directory=True)
+
+        with self.assertRaises(SystemExit):
             verify_cached_source(self.checkout, self.commit)
 
     def test_source_fetch_must_resolve_to_the_pinned_commit(self):

@@ -27,10 +27,11 @@
   official binary remains an open CI blocker and no parity claim follows.
 - Captured command results and the exact pinned binary digests are recorded in
   `docs/evidence/reference-source-fallback-20261028.json`.
-- Cache verification conservatively rejects tracked symlinks to existing
-  directories because `os.walk` classifies them as directories. The recovered
-  0.439.2 and 0.439.1 snapshots passed; generic support for this Git-tree edge
-  is deferred.
+- At `badf04f`, cache verification incorrectly rejected tracked symlinks to
+  directories because `os.walk` classifies them as directories. The correction
+  checks their literal link bytes against the Git blob and does not traverse
+  them; four synthetic acceptance and tampering controls pass. The existing
+  frozen snapshots contain no symlinks, so these tests cover synthetic trees.
 - Fast run [40641725411](https://github.com/christiandoxa/modex/actions/runs/40641725411),
   attempt 1 on `6baf72fd1c2bece878a5e2024ac3a7f039653b86`, passed workflow
   validation, the dependency audit, and all 27 reference-helper tests. It then
@@ -38,6 +39,11 @@
   build; artifact consumers were skipped. Evidence artifact `12795867683`
   and logs are preserved under `/tmp/modex-ci-40641725411/`. The hosted run
   does not validate the source fallback with the official remote.
+- The documentation-only successor `badf04f` produced the same failure in Fast
+  run [40642097976](https://github.com/christiandoxa/modex/actions/runs/40642097976):
+  all 27 helper tests passed, then the unavailable oracle stopped the producer
+  before build; consumers were skipped. Logs and evidence metadata are in
+  `/tmp/modex-ci-40642097976/`.
 
 ## Frozen release disappeared and width-control calibration
 

@@ -246,8 +246,11 @@ def verify_cached_source(target: Path, expected_commit: str) -> None:
             for name in child_dirs[:]:
                 relative = os.path.join(relative_dir, name) if relative_dir else name
                 path_bytes = os.path.join(current, name)
-                # shortcut: directory symlinks are rejected; support them when a pinned tree needs them.
-                if stat.S_ISLNK(os.lstat(path_bytes).st_mode) or relative not in directories:
+                info = os.lstat(path_bytes)
+                if stat.S_ISLNK(info.st_mode):
+                    child_dirs.remove(name)
+                    child_files.append(name)
+                elif relative not in directories:
                     raise SystemExit(f"cached source snapshot is dirty or contains untracked files: {target}")
             for name in child_files:
                 relative = os.path.join(relative_dir, name) if relative_dir else name

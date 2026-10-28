@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Cached source verification now accepts a tracked symlink to a directory only
+after checking its link bytes against the frozen Git tree; it never follows
+that link. Synthetic controls reject changed targets, untracked links and
+symlinked tracked parents. The 31 reference-helper tests pass locally. The
+released binary is still unavailable to hosted CI, so this does not unblock
+the oracle or promote a parity status.
+
 An isolated combined build passed all native unit programs and 523 Python
 tests on Linux x86-64 using checksum-verified local 0.439.2 and 0.439.5
 oracles and pinned source checkouts. That full run preceded the final heartbeat
@@ -18,12 +25,10 @@ checksum-pinned release binaries still have no durable credential-free source,
 so the oracle helper fails closed and CI cannot run reference comparisons
 until those official bytes are available. Exact commands and results are in
 `docs/ci-lessons.md` and `docs/evidence/reference-source-fallback-20261028.json`.
-The cache verifier conservatively rejects tracked symlinks to directories;
-the two recovered source trees contain none. Fast run
-[40641725411](https://github.com/christiandoxa/modex/actions/runs/40641725411)
-on `6baf72f` passed all 27 reference-helper tests, then failed while acquiring
+Fast run [40642097976](https://github.com/christiandoxa/modex/actions/runs/40642097976)
+on `badf04f` passed all 27 reference-helper tests, then failed while acquiring
 the missing oracle before the build or source acquisition. Its artifact
-consumers were skipped.
+consumers were skipped. It predates the directory-symlink correction above.
 
 The Full run `40625731794` memory-control failure is corrected locally by
 disabling transparent huge pages in the isolated test children and verifying

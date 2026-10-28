@@ -1631,6 +1631,7 @@
         "docs/evidence/native-super-reference.json",
         "docs/evidence/baseline-0.165.1/app-server-client-info.md",
         "docs/evidence/baseline-0.165.1/app-server-broken-pipe.md",
+        "docs/evidence/baseline-0.165.1/app-server-closed-stdout.md",
         "docs/evidence/native-super-data-plane.json",
         "docs/evidence/native-super-tests.txt",
         "docs/evidence/native-super-dependencies.txt",

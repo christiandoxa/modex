@@ -79,7 +79,7 @@ struct _RpcReader:
             if self.eof:
                 if self.line:
                     return self._string_line(method)
-                raise Error("Codex hook-trust preflight " + method + " failed: receiving on a closed channel")
+                raise Error("Codex hook-trust preflight " + method + " failed: channel is empty and sending half is closed")
             if perf_counter() >= deadline:
                 raise Error("Codex hook-trust preflight " + method + " failed: timed out waiting on channel")
 

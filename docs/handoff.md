@@ -22,6 +22,15 @@ unqualified. The numeric errno text is verified only on Linux x86-64; macOS and
 Windows behavior remains unverified. See
 `docs/evidence/baseline-0.165.1/app-server-broken-pipe.md`.
 
+When the synthetic app-server closes stdout immediately after `initialize`,
+production Modex now reports the 0.165.1 oracle's empty-channel error. It sends
+one initialize request, makes no upstream request, and removes its temporary
+overlay. Partial lines still reach JSON-RPC parsing; timeout, oversized-line,
+closed-stdin, and malformed-frame cases retain separate checks. This qualifies
+the empty-stdout EOF case only on Linux x86-64; other release targets and
+broader transport behavior remain unverified. See
+`docs/evidence/baseline-0.165.1/app-server-closed-stdout.md`.
+
 The `help update` unknown-subcommand diagnostic now preserves the full
 argument, including attached values, in three real-process comparisons with
 0.165.1 and the historical 0.439.2 control. Update execution remains

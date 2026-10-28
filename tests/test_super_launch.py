@@ -41,6 +41,9 @@ if "app-server" in args and "--stdio" in args:
             time.sleep(0.2)
             print(json.dumps({"id":request["id"],"result":{}}), flush=True)
             time.sleep(30)
+        if os.environ["MODEX_LAUNCH_SCENARIO"] == "closed-output":
+            os.close(1)
+            time.sleep(30)
         print(json.dumps({"id":request["id"],"result":{"data":[]}}), flush=True)
         if request["id"] == 4: time.sleep(30)
     raise SystemExit(0)

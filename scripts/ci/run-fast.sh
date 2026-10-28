@@ -40,6 +40,7 @@ export PATH="$TOOLCHAIN_DIR/bin:$PATH"
 run_logged prerequisites scripts/ci/bootstrap.sh --check
 run_logged workflow-validation scripts/ci/validate-workflows.sh
 run_logged dependency-audit "$PYTHON" scripts/ci/check-product-dependencies.py
+run_logged reference-helper-tests "$PYTHON" scripts/ci/run-unittest.py test_ci_reference.py
 if ! "$PYTHON" scripts/ci/reference.py oracle >"$EVIDENCE_DIR/oracle-path.txt" 2>"$EVIDENCE_DIR/reference.log"; then
     cat "$EVIDENCE_DIR/reference.log" >&2
     exit 1

@@ -15,7 +15,16 @@
   Fast run [40629714742](https://github.com/christiandoxa/modex/actions/runs/40629714742),
   attempt 1, job `122623006721`, failed the same check on `f1b8181`;
   the artifact consumers again did not run. The historical `0.439.1` tag is
-  also absent.
+  also absent. Fast run
+  [40631003222](https://github.com/christiandoxa/modex/actions/runs/40631003222),
+  attempt 1, producer job `122627098427`, failed the same lookup on exact SHA
+  `84e4777e033742d3637bbfe0b8e3cd1d3d1ad668`; consumer job `122628130127` was
+  skipped. A focused diagnostic now distinguishes an absent tag from a moved
+  tag or remote lookup error without changing fail-closed behavior. Ten local
+  reference tests pass, and a clean-snapshot invocation reproduces the
+  explicit unavailable-baseline failure. Run logs and uploaded evidence are
+  retained under `/tmp/modex-ci-40631003222/`; the earlier run's evidence is
+  under `/tmp/modex-ci-40628355469/`.
 - A read-only investigation recovered the exact official Linux executables
   from Prodex's successful standalone-release Actions runs. Artifact
   `12641885680` from run `40300566491`, source commit `72b77478a5198fc5da6b4d2253137f9cdbf43be9`,

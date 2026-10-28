@@ -137,6 +137,11 @@ def verify_tag(reference: dict) -> None:
         if len(fields) == 2:
             resolved[fields[1]] = fields[0]
     actual = resolved.get(f"refs/tags/{tag}^{{}}", resolved.get(f"refs/tags/{tag}"))
+    if actual is None:
+        raise SystemExit(
+            f"official Prodex tag {tag} is missing; expected frozen commit {expected}. "
+            "The baseline reference is unavailable; refusing to substitute another version."
+        )
     if actual != expected:
         raise SystemExit(f"official tag {tag} resolves to {actual!r}, expected frozen commit {expected}")
 

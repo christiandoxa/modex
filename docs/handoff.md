@@ -1,7 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
-Fast run `40629714742` on exact SHA `f1b8181` also failed before building
-because the Prodex 0.439.2 tag is absent; its consumer jobs did not run.
+Fast run `40631003222`, attempt 1, producer job `122627098427`, failed before
+building on exact SHA `84e4777e033742d3637bbfe0b8e3cd1d3d1ad668` because the
+Prodex 0.439.2 tag is absent; consumer job `122628130127` did not run. The
+reference checker now distinguishes an absent tag from a moved tag and a
+remote lookup failure, while keeping each case fail-closed. Ten focused
+reference tests pass locally. Logs and uploaded evidence are preserved under
+`/tmp/modex-ci-40631003222/`.
+Fast run `40629714742` on exact SHA `f1b8181` failed the same lookup before
+building; its consumer jobs did not run.
 The official 0.439.2 and historical 0.439.1 binaries were recovered read-only
 from their original successful Prodex Actions artifacts and match the
 previously verified release checksums. Those artifacts expire in early

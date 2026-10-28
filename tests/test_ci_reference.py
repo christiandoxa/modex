@@ -14,6 +14,7 @@ from scripts.ci.reference import (
     metadata_for,
     reference_for,
     verify_cached_source,
+    verify_tag,
 )
 
 
@@ -75,6 +76,52 @@ class CachedSourceIntegrityTests(unittest.TestCase):
                 self.assertEqual(acquire_oracle(historical_reference), historical.resolve())
             with patch("scripts.ci.reference.metadata_for", return_value=(Path("evidence"), "prodex", active_sha, "0" * 64)):
                 self.assertEqual(acquire_oracle(active_reference, active=True), configured.resolve())
+
+
+class FrozenTagVerificationTests(unittest.TestCase):
+    def test_missing_official_tag_is_distinguished_from_a_moved_tag(self):
+        reference = reference_for("0.439.2")
+        missing = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+        with patch("scripts.ci.reference.subprocess.run", return_value=missing):
+            with self.assertRaisesRegex(
+                SystemExit,
+                r"official Prodex tag 0\.439\.2 is missing; expected frozen commit "
+                r"72b77478a5198fc5da6b4d2253137f9cdbf43be9.*refusing to substitute",
+            ):
+                verify_tag(reference)
+
+    def test_moved_official_tag_reports_the_resolved_commit(self):
+        reference = reference_for("0.439.2")
+        moved = subprocess.CompletedProcess(
+            args=[], returncode=0,
+            stdout="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/tags/0.439.2\n",
+            stderr="",
+        )
+        with patch("scripts.ci.reference.subprocess.run", return_value=moved):
+            with self.assertRaisesRegex(
+                SystemExit,
+                r"official tag 0\.439\.2 resolves to 'a{40}', expected frozen commit "
+                r"72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+            ):
+                verify_tag(reference)
+
+    def test_remote_lookup_failure_is_reported_as_a_verification_error(self):
+        reference = reference_for("0.439.2")
+        failure = subprocess.CalledProcessError(
+            128, ["git", "ls-remote"], stderr="fatal: could not resolve host\n"
+        )
+        with patch("scripts.ci.reference.subprocess.run", side_effect=failure):
+            with self.assertRaisesRegex(
+                SystemExit, r"could not verify official Prodex tag 0\.439\.2: fatal: could not resolve host"
+            ):
+                verify_tag(reference)
+
+    def test_missing_previous_release_tag_is_reported_without_fallback(self):
+        reference = reference_for("0.439.1")
+        missing = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+        with patch("scripts.ci.reference.subprocess.run", return_value=missing):
+            with self.assertRaisesRegex(SystemExit, r"official Prodex tag 0\.439\.1 is missing"):
+                verify_tag(reference)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,16 @@
 # Current work: baseline reconciliation and CI
 
+Fast CI run `40606177561` on `78472bb` failed the new minor-fault positive
+control on a host using transparent huge pages. All five width measurements
+and anonymous controls passed, but a huge-page fault does not correspond to
+one 4 KiB page. The 49 earlier focused tests passed. Exact-SHA Full run
+`40606182672` passed all 429 Python tests on a host without huge-page growth in
+the controls. Requiring either control to pass would conceal the fault
+signal's insensitivity to freed huge-page allocations; do not claim transient
+allocation coverage from it. See `docs/ci-lessons.md` and the uploaded run
+artifacts for the measurements. The RSS test needs a separately validated
+transient-peak measurement or an explicitly narrower scope.
+
 The instructions supplied for this session designate official Prodex 0.439.2
 at `72b77478a5198fc5da6b4d2253137f9cdbf43be9` as the frozen reference.
 The checked-in `AGENTS.md`, `docs/baseline.json`, `docs/parity.json`, and

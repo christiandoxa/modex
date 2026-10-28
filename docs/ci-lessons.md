@@ -45,6 +45,20 @@
 
 ## GitHub width-memory threshold
 
+- Fast run [40606177561](https://github.com/christiandoxa/modex/actions/runs/40606177561)
+  on `78472bb` failed the fault positive-control check on all five patterns.
+  All width and anonymous-control checks passed. For large Tifinagh, the
+  control grew 4,194,304 bytes in `AnonHugePages` while minor faults increased
+  by two; multiplying by the 4 KiB base page size cannot measure that growth.
+  ASCII's control measured 61,440 bytes of fault equivalents against an 86,835
+  byte allowance, and the other four measured 8,192 bytes each against bounds
+  of 65,536–90,112 bytes. The artifact is retained locally under
+  `/tmp/modex-ci-failure-40606177561/`. The previous 49 Fast focused tests
+  passed. A control passing only anonymous residency does not validate the
+  ability to catch huge-page allocations freed before the post-operation sample.
+  Full run [40606182672](https://github.com/christiandoxa/modex/actions/runs/40606182672)
+  on the same SHA passed all 429 Python tests. Its controls showed no
+  `AnonHugePages` growth, so that pass does not resolve the Fast failure.
 - The staged harness failed Fast run
   [40603196899](https://github.com/christiandoxa/modex/actions/runs/40603196899)
   and Full run [40603202733](https://github.com/christiandoxa/modex/actions/runs/40603202733)

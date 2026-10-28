@@ -15,8 +15,8 @@ or platform parity. The old integration worktree under `/tmp` was missing at
 continuation; the original checkout's unrelated uncommitted changes were
 preserved. An earlier checkpoint was `3c31fea`; Fast CI run
 [40659458138](https://github.com/christiandoxa/modex/actions/runs/40659458138)
-failed and its artifact consumer was skipped. Artifact attestation for 0.165.1
-has not been verified.
+failed and its artifact consumer was skipped. The Linux 0.165.1 oracle attestation now verifies the pinned source commit and
+release workflow; other release assets have not been separately attested.
 
 CI scratch cleanup now installs its exit trap before creating the private
 subdirectories, with a synthetic partial-setup failure regression. The

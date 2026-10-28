@@ -12,7 +12,7 @@
   "linux_oracle_sha256": "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51",
   "sha256sums_sha256": "c549f193d217b28f86516bba9ab5d4500d963fa96271022d0a0d5672b3ae8d67",
   "release_manifest_sha256": "99a9a900d10ba764f96614ee29ea2a265f1ef97c4b17d3c7b27471671c218a7d",
-  "verification": "The Linux binary and release manifest match SHA256SUMS and GitHub release asset digests. The manifest names the pinned version, commit, and all six targets. Artifact attestation has not been verified.",
+  "verification": "Linux binary and release manifest match official SHA256SUMS and GitHub release asset digests. The Linux binary provenance attestation verifies the pinned source and release workflow.",
   "release_targets": [
     "x86_64-unknown-linux-gnu",
     "aarch64-unknown-linux-gnu",
@@ -23,5 +23,18 @@
   ],
   "snapshot": "~/.cache/modex/prodex-0.165.1",
   "snapshot_git_tree_entries_verified": 3327,
-  "snapshot_verification": "Clean checkout verified against the frozen Git tree using scripts/ci/reference.py."
+  "snapshot_verification": "Clean checkout verified against the frozen Git tree using scripts/ci/reference.py.",
+  "attestation": {
+    "verifier": "GitHub CLI 2.102.0 gh attestation verify",
+    "predicate_type": "https://slsa.dev/provenance/v1",
+    "signer_workflow": "https://github.com/christiandoxa/prodex/.github/workflows/standalone-release.yml",
+    "signer_digest": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
+    "source_digest": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
+    "run": "https://github.com/christiandoxa/prodex/actions/runs/40722543016/attempts/2",
+    "runner": "github-hosted",
+    "transparency_log": "https://rekor.sigstore.dev",
+    "subject_sha256": "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51",
+    "verified_results": 1,
+    "other_assets": "Not separately attestation-verified."
+  }
 }

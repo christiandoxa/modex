@@ -14,7 +14,7 @@
     ],
     "release_implementation": "mojo-compiled-in; reference only",
     "oracle": "~/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
-    "checksum_verification": "Linux binary and release manifest match official SHA256SUMS and GitHub release asset digests; artifact attestation is unverified.",
+    "checksum_verification": "Linux binary and release manifest match official SHA256SUMS and GitHub release asset digests. Linux binary provenance attestation verifies the pinned source commit and release workflow.",
     "release_targets": [
       "x86_64-unknown-linux-gnu",
       "aarch64-unknown-linux-gnu",

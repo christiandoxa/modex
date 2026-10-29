@@ -473,7 +473,7 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         client.sendall(request(body=b""))
         header, prefetched = read_header_with_tail(client)
         self.assertIn(b"Transfer-Encoding: chunked\r\n", header)
-        expected_first = b"6\r\nfirst\n\r\n"
+        expected_first = b"A\r\nfirst\nxxxx\r\n"
         self.assertLessEqual(len(prefetched), len(expected_first))
         first = prefetched + read_exact(client, len(expected_first) - len(prefetched))
         self.assertEqual(first, expected_first)

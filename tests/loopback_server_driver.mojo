@@ -118,7 +118,7 @@ def run(mode: String, mut output: RawFileDescriptor) raises:
         var headers = List[Tuple[String, String]]()
         headers.append(("Content-Type", "text/event-stream"))
         connection.start_stream(200, headers, 1000)
-        connection.write_chunk(bytes_of("first\n"), 1000)
+        connection.write_chunk(bytes_of("first\nxxxx"), 1000)
         sleep(0.35)
         connection.write_chunk(bytes_of("second\n"), 1000)
         connection.finish_stream(1000)

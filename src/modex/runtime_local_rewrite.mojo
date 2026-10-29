@@ -28,6 +28,8 @@ from .runtime_binding import RuntimeBindings
 from .runtime_sse_binding_observer import RuntimeSSEBindingObserver
 
 comptime HTTP_KEEP_ALIVE_MAX_PARKED = 128
+# Each parked socket gets bounded read/scan work per event-loop pass.
+comptime LOCAL_REWRITE_HEADER_CAPTURE_BYTES_PER_CONNECTION = 512
 from .text import is_whitespace, trim_text, unsigned_value
 from .uuid7 import new_uuid7
 
@@ -962,19 +964,30 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
                     else:
                         overflow = Optional[LoopbackHTTPConnection](incoming^)
             var dispatched = False
+            var capture_progress = False
             var parked_count = len(parked)
             for _ in range(parked_count):
                 var idle = parked.pop()
-                var ready = idle.request_ready()
+                var has_request_bytes = idle.request_ready()
+                var ready = False
+                if has_request_bytes:
+                    # Capture the head before reserving a provider worker for body parsing.
+                    ready = idle.capture_request_headers(
+                        120000,
+                        HTTP_MAX_REQUEST_HEADER_LIMIT,
+                        LOCAL_REWRITE_HEADER_CAPTURE_BYTES_PER_CONNECTION,
+                    )
+                    capture_progress = capture_progress or idle.request_capture_progress
                 if ready and state_ptr[].has_capacity(worker_count):
                     idle.waiting_for_request = False
                     state_ptr[].enqueue(idle^)
                     dispatched = True
-                elif not ready and idle.client_disconnected():
+                elif not has_request_bytes and idle.client_disconnected():
                     idle.close()
                 else:
                     parked.insert(0, idle^)
             if dispatched: continue
+            if capture_progress: continue
             if overflow:
                 var incoming = overflow.take()
                 var admitted = len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED

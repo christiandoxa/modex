@@ -416,10 +416,10 @@ second client can run. Pipelined requests are parsed and dispatched in order;
 responses remain serial. The parked queue is FIFO; when full, admission closes
 the oldest idle socket to make room, after ready sockets are dispatched. If no
 socket is safe to evict, one accepted overflow connection is retained until
-admission is safe. Parked sockets have no idle expiry. A partial request on a
-reused socket blocks other clients until the request completes or that socket
-closes; parent EOF is checked between requests and does not interrupt an
-in-progress read. The separate runtime-proxy WebSocket transport remains
+admission is safe. This 128-socket cap and FIFO admission policy differ from
+the release's per-connection capture model. Parked sockets have no idle expiry.
+Parent EOF is checked between requests and does not interrupt an in-progress
+body read. The separate runtime-proxy WebSocket transport remains
 unimplemented; the local rewrite adapter's 426 fallback matches its tested
 release behavior. See `docs/evidence/baseline-0.165.1/local-relay-http.md` and
 `docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
@@ -3053,20 +3053,25 @@ tests, the production build, native provider checks, import audit and census
 passed. Broader provider behavior remains unqualified. Evidence:
 `docs/evidence/baseline-0.165.1/anthropic-text-metadata.md`.
 
-The local relay now uses a bounded worker pool and cancels tested in-flight
-upstream requests on parent EOF. A failed Anthropic stream with an unfinished
-downstream body drains unusable pipelined input to detect client closure. The
-separate request-capture model and configured worker counts of the releases
-remain unimplemented: enough partial requests can occupy every lane. Stream
-event byte counts also differ in a separate eight-client failure probe, which
-only established worker recovery. Full concurrency, signal, platform and
-security behavior remain unqualified; all six release targets stay in the
-parity denominator. See `docs/evidence/baseline-0.165.1/local-relay-concurrency.md`.
+The local relay uses a bounded worker pool and cancels tested in-flight
+upstream requests on parent EOF. The accept loop now captures request heads
+incrementally before handler admission; incomplete headers do not occupy
+provider workers. Each pass reads/scans at most 512 bytes per parked socket,
+and the existing 2 MiB request-header limit and 128 parked-socket cap bound
+capture. Admitted workers still parse headers and read request bodies, so slow
+or incomplete bodies can occupy every lane. The per-connection cap, FIFO
+admission, and configured worker-count behavior still differ from the
+releases. A failed Anthropic stream with an unfinished downstream body drains
+unusable pipelined input to detect client closure. Incomplete-body EOF still
+produces no downstream status where both releases return 502. Stream event
+byte counts also differ in a separate eight-client failure probe, which only
+established worker recovery. Full concurrency, signal, platform and security
+behavior remain unqualified; all six release targets stay in the parity
+denominator. See
+`docs/evidence/baseline-0.165.1/local-relay-concurrency.md` and
+`docs/evidence/runtime-slow-partial.md`.
 The byte difference includes a raw second 502 response after an unterminated
 failed stream in both releases; Modex discards the queued request instead.
 The first response also differed in its Connection header in that control.
 The maintained disconnect test records the baseline behavior; general pipeline
 ordering remains unfinished. See `docs/evidence/anthropic-stream-optional-metadata-shared.md`.
-An eight-partial-client process control confirms the admission mismatch: both
-tested releases served a ninth request during a one-second hold, while Modex
-served it after the partial clients closed. See `docs/evidence/runtime-slow-partial.md`.

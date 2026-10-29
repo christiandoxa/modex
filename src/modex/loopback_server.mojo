@@ -150,6 +150,10 @@ struct LoopbackHTTPConnection(Movable):
     var keep_alive: Bool
     var waiting_for_request: Bool
     var worker_tracked: Bool
+    var request_header_scan: Int
+    var request_header_deadline: Float64
+    var request_capture_error: String
+    var request_capture_progress: Bool
     var response_version: String
     var done: Bool
 
@@ -166,6 +170,10 @@ struct LoopbackHTTPConnection(Movable):
         self.keep_alive = False
         self.waiting_for_request = False
         self.worker_tracked = False
+        self.request_header_scan = 0
+        self.request_header_deadline = 0.0
+        self.request_capture_error = ""
+        self.request_capture_progress = False
         self.response_version = "HTTP/1.1"
         self.done = False
 
@@ -214,6 +222,76 @@ struct LoopbackHTTPConnection(Movable):
     def expect_continue_was_sent(self) -> Bool:
         return self.expect_continue_sent
 
+    def capture_request_headers(mut self, timeout_ms: UInt64, header_limit: Int, byte_limit: Int) -> Bool:
+        self.request_capture_progress = False
+        if self.fd < 0 or self.done:
+            return False
+        if self.request_capture_error or self.request_header_scan < 0:
+            return True
+        if self.request_header_deadline == 0.0:
+            self.request_header_deadline = perf_counter() + Float64(timeout_ms) / 1000.0
+        if perf_counter() >= self.request_header_deadline:
+            self.request_capture_error = "loopback HTTP request timed out"
+            self.request_header_scan = -1
+            self.request_header_deadline = 0.0
+            return True
+
+        var scan_start = self.request_header_scan
+        var scan_end = min(len(self.input), scan_start + byte_limit + 3)
+        var header_end = _header_end(self.input, self.request_header_scan, scan_end)
+        if header_end >= 0:
+            self.request_header_scan = -1
+            self.request_header_deadline = 0.0
+            return True
+        self.request_header_scan = max(self.request_header_scan, scan_end - 3)
+        self.request_capture_progress = self.request_header_scan > scan_start
+        if self.request_header_scan > header_limit:
+            self.request_header_scan = -1
+            self.request_header_deadline = 0.0
+            return True
+        if self.request_header_scan < len(self.input) - 3:
+            return False
+        if len(self.input) > header_limit:
+            self.request_header_scan = -1
+            self.request_header_deadline = 0.0
+            return True
+
+        var capacity = min(byte_limit, header_limit + 4 - len(self.input))
+        if capacity <= 0:
+            return False
+        var buffer = List[UInt8](length=capacity, fill=0)
+        var size = recv(self.fd, buffer.unsafe_ptr(), UInt(capacity), MSG_DONTWAIT)
+        if size > 0:
+            var count = Int(size)
+            self.wire_bytes += count
+            for index in range(count):
+                self.input.append(buffer[index])
+            self.request_capture_progress = True
+            scan_start = self.request_header_scan
+            scan_end = min(len(self.input), scan_start + byte_limit + 3)
+            header_end = _header_end(self.input, self.request_header_scan, scan_end)
+            if header_end >= 0:
+                self.request_header_scan = -1
+                self.request_header_deadline = 0.0
+                return True
+            self.request_header_scan = max(self.request_header_scan, scan_end - 3)
+            self.request_capture_progress = self.request_capture_progress or self.request_header_scan > scan_start
+            if self.request_header_scan > header_limit or len(self.input) > header_limit:
+                self.request_header_scan = -1
+                self.request_header_deadline = 0.0
+                return True
+            return False
+        if size == 0:
+            self.request_capture_error = "truncated HTTP request"
+        else:
+            var error = get_errno()
+            if error == ErrNo.EAGAIN or error == ErrNo.EINTR:
+                return False
+            self.request_capture_error = "loopback HTTP request read failed"
+        self.request_header_scan = -1
+        self.request_header_deadline = 0.0
+        return True
+
     def request_ready(mut self) raises -> Bool:
         if self.fd < 0 or self.done:
             return False
@@ -233,6 +311,9 @@ struct LoopbackHTTPConnection(Movable):
     def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False, defer_expectation_errors: Bool = False, preflight_body_limit_before_continue: Bool = False, use_request_version_for_continue: Bool = False, use_request_version_for_response: Bool = False, request_header_limit: Int = HTTP_HEADER_LIMIT) raises -> LoopbackHTTPRequest:
         if self.fd < 0 or self.done or self.request_read:
             raise Error("loopback HTTP connection is closed")
+        if self.request_capture_error:
+            raise Error(self.request_capture_error)
+        self.request_header_scan = 0
         self.keep_alive = False
         self.waiting_for_request = False
         if max_body_bytes < 0 or max_body_bytes > HTTP_MAX_BODY_LIMIT:
@@ -329,6 +410,7 @@ struct LoopbackHTTPConnection(Movable):
         self.request_read = True
         if self.keep_alive_enabled and not upgrade_body:
             self.keep_alive = _request_keep_alive(head.version, head.headers)
+        self.request_header_scan = 0
         return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
 
     def respond(mut self, status: Int, headers: List[Tuple[String, String]], body: List[UInt8], timeout_ms: UInt64, include_bodyless_length: Bool = False, bodyless_chunked: Bool = False) raises:
@@ -438,6 +520,10 @@ struct LoopbackHTTPConnection(Movable):
         self.expect_continue_sent = False
         self.response_version = "HTTP/1.1"
         self.waiting_for_request = True
+        self.request_header_scan = 0
+        self.request_header_deadline = 0.0
+        self.request_capture_error = ""
+        self.request_capture_progress = False
 
     def _read_chunked(mut self, start: Int, max_body_bytes: Int, deadline: Float64, wire_limit: Int, mut request_end: Int, invalid_target_before_body_limit: Bool = False, reject_trailers: Bool = False, allow_pipelining: Bool = False) raises -> List[UInt8]:
         var output = List[UInt8]()
@@ -731,10 +817,11 @@ def _validate_header_line(bytes: List[UInt8], start: Int, end: Int) raises:
             raise Error("malformed HTTP header name")
 
 
-def _header_end(bytes: List[UInt8], start: Int = 0) -> Int:
-    if len(bytes) < 4:
+def _header_end(bytes: List[UInt8], start: Int = 0, end: Int = -1) -> Int:
+    var limit = len(bytes) if end < 0 else min(len(bytes), end)
+    if limit < 4:
         return -1
-    for index in range(max(0, start), len(bytes) - 3):
+    for index in range(max(0, start), limit - 3):
         if bytes[index] == 13 and bytes[index + 1] == 10 and bytes[index + 2] == 13 and bytes[index + 3] == 10:
             return index
     return -1
@@ -881,7 +968,7 @@ def _validate_response_header(name: String, value: String) raises:
 
 
 def _chunk_frame(bytes: List[UInt8]) -> List[UInt8]:
-    var alphabet = String("0123456789abcdef")
+    var alphabet = String("0123456789ABCDEF")
     var digits = List[UInt8]()
     var size = len(bytes)
     while size > 0:

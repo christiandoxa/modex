@@ -549,7 +549,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         var flags = fcntl(parent_fd, F_GETFL, 0)
         if flags < 0 or fcntl(parent_fd, F_SETFL, flags | O_NONBLOCK) < 0:
             raise Error("could not configure local provider parent channel")
-    # shortcut: one request lane, no pipelining or idle expiry; add bounded workers and socket lifetimes.
+    # shortcut: one request lane and no idle expiry; add bounded workers and socket lifetimes.
     while True:
         if _parent_channel_closed(parent_fd, parent_bytes): return
         var accepted_before_scan = False

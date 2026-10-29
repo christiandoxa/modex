@@ -167,6 +167,8 @@ connection.settimeout(5)
 request_parts = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_REQUEST_PARTS_BASE64", "[]"))]
 sequential_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_SEQUENTIAL_REQUESTS_BASE64", "[]"))]
 pipelined_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUESTS_BASE64", "[]"))]
+pipelined_request_parts = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUEST_PARTS_BASE64", "[]"))]
+pipelined_request_delay = int(os.environ.get("PROBE_PIPELINED_REQUEST_DELAY_MS", "0")) / 1000
 request_parts_sent = [0]
 first_request_part_finished = threading.Event()
 half_close = os.environ.get("PROBE_HALF_CLOSE") == "1"
@@ -273,12 +275,21 @@ def read_expect_response():
 try:
     request_method = os.environ.get("PROBE_REQUEST_METHOD")
     if pipelined_requests:
-        connection.sendall(b"".join(pipelined_requests))
-        request_parts_sent[0] = 1
+        if pipelined_request_parts:
+            for index, part in enumerate(pipelined_request_parts):
+                connection.sendall(part)
+                request_parts_sent[0] += 1
+                if index + 1 < len(pipelined_request_parts) and pipelined_request_delay:
+                    time.sleep(pipelined_request_delay)
+        else:
+            connection.sendall(b"".join(pipelined_requests))
+            request_parts_sent[0] = 1
         response_file = PersistentReader(connection.makefile("rb"))
         pipelined_results = []
-        for _ in pipelined_requests:
-            response = http.client.HTTPResponse(connection)
+        response_count = int(os.environ.get("PROBE_PIPELINED_RESPONSE_COUNT", str(len(pipelined_requests))))
+        for request_bytes in pipelined_requests[:response_count]:
+            method = request_bytes.split(b" ", 1)[0].decode("ascii")
+            response = http.client.HTTPResponse(connection, method=method)
             response.fp.close()
             response.fp = response_file
             response.begin()
@@ -1548,6 +1559,12 @@ def run_probe(binary: Path, case, upstream: Upstream):
                 [base64.b64encode(part).decode("ascii") for part in case.get("pipelined_requests", [])],
                 separators=(",", ":"),
             ),
+            "PROBE_PIPELINED_REQUEST_PARTS_BASE64": json.dumps(
+                [base64.b64encode(part).decode("ascii") for part in case.get("pipelined_request_parts", [])],
+                separators=(",", ":"),
+            ),
+            "PROBE_PIPELINED_REQUEST_DELAY_MS": str(case.get("pipelined_request_delay_ms", 0)),
+            "PROBE_PIPELINED_RESPONSE_COUNT": str(case.get("pipelined_response_count", len(case.get("pipelined_requests", [])))),
             "PROBE_SECOND_CLIENT_REQUEST_BASE64": base64.b64encode(
                 case.get("second_client_request", b"")
             ).decode("ascii"),
@@ -1957,43 +1974,136 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                 self.assertFalse(response["connection_closed"])
                 self.assertEqual(len(records), 1)
 
-    def test_pipelined_requests_match_oracle_and_retain_modex_gap(self):
-        first = request_bytes(target=b"/v1/responses")
-        second = request_bytes(target=b"/v1/chat/completions")
-        case = {
-            "name": "pipelined_requests",
-            "request": first,
-            "pipelined_requests": [first, second],
-        }
+    def test_pipelined_requests_match_oracle_across_framing_and_responses(self):
+        first_body = b'{"model":"deepseek-chat","messages":[{"role":"user","content":"pipeline-first"}],"stream":false}'
+        second_body = b'{"model":"deepseek-chat","input":"pipeline-second"}'
+        first = request_bytes(target=b"/v1/responses", body=first_body)
+        bodyless_error = (
+            b"GET /v1/not-supported HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"
+        )
+        chunked = (
+            b"POST /v1/chat/completions HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Content-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n"
+            + format(len(first_body), "X").encode("ascii") + b"\r\n"
+            + first_body + b"\r\n0\r\n\r\n"
+        )
+        second = request_bytes(target=b"/v1/responses", body=second_body)
+        chunked_zero = chunked.rfind(b"0\r\n")
+        chunked_terminator = chunked_zero + 3
+        oversized_second = (
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Connection: close\r\nContent-Length: 67108865\r\n\r\n"
+        )
+        cases = [
+            {
+                "name": "pipelined_fixed_then_bodyless_error",
+                "request": first,
+                "pipelined_requests": [first, bodyless_error],
+                "expected": [(200, RESPONSES_RESPONSE), (404, UNSUPPORTED_ROUTE_BODY)],
+                "upstream_count": 1,
+            },
+            {
+                "name": "pipelined_fragmented_chunked_then_fixed",
+                "request": chunked,
+                "pipelined_requests": [chunked, second],
+                "pipelined_request_parts": [
+                    chunked[:chunked.index(b"\r\n\r\n") + 4],
+                    chunked[chunked.index(b"\r\n\r\n") + 4:chunked_zero],
+                    chunked[chunked_zero:chunked_terminator],
+                    chunked[chunked_terminator:chunked_terminator + 1],
+                    chunked[chunked_terminator + 1:] + second,
+                ],
+                "pipelined_request_delay_ms": 10,
+                "expected_pipelined_request_parts_sent": 5,
+                "expected": [(200, PROVIDER_RESPONSE), (200, RESPONSES_RESPONSE)],
+                "upstream_count": 2,
+            },
+            {
+                "name": "pipelined_oversized_body_keeps_limit",
+                "request": first,
+                "pipelined_requests": [first, oversized_second],
+                "check_close": True,
+                "expected": [(200, RESPONSES_RESPONSE), (413, b"proxied request body is too large")],
+                "upstream_count": 1,
+            },
+            {
+                "name": "pipelined_head_then_get",
+                "request": request_bytes(
+                    (("X-Oracle-Response", "json"),),
+                    body=first_body, method=b"HEAD",
+                ),
+                "pipelined_requests": [
+                    request_bytes(
+                        (("X-Oracle-Response", "json"),),
+                        body=first_body, method=b"HEAD",
+                    ),
+                    second,
+                ],
+                "expected": [(502, b""), (200, RESPONSES_RESPONSE)],
+                "upstream_count": 2,
+            },
+            {
+                "name": "pipelined_sse_then_buffered_response",
+                "request": request_bytes(
+                    (("X-Oracle-Response", "sse"),),
+                    body=first_body, target=b"/v1/chat/completions",
+                ),
+                "pipelined_requests": [
+                    request_bytes(
+                        (("X-Oracle-Response", "sse"),),
+                        body=first_body, target=b"/v1/chat/completions",
+                    ),
+                    second,
+                ],
+                "expected": [(200, PROVIDER_SSE_RESPONSE), (200, RESPONSES_RESPONSE)],
+                "upstream_count": 2,
+            },
+            {
+                "name": "pipelined_connection_close_stops_after_first",
+                "request": request_bytes((("Connection", "close"),), body=first_body),
+                "pipelined_requests": [
+                    request_bytes((("Connection", "close"),), body=first_body), second,
+                ],
+                "pipelined_response_count": 1,
+                "check_close": True,
+                "expected": [(200, RESPONSES_RESPONSE)],
+                "upstream_count": 1,
+            },
+        ]
         upstream = Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)
         worker.start()
         try:
-            results = {
-                label: run_probe(binary, case, upstream)
-                for label, binary in (("oracle", ORACLE), ("modex", MODEX))
-            }
+            for case in cases:
+                with self.subTest(case=case["name"]):
+                    results = {
+                        label: run_probe(binary, case, upstream)
+                        for label, binary in (("oracle", ORACLE), ("modex", MODEX))
+                    }
+                    for label, (response, records) in results.items():
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(
+                            [(item["status"], item["body"]) for item in response["pipelined_responses"]],
+                            case["expected"], label,
+                        )
+                        if "expected_pipelined_request_parts_sent" in case:
+                            self.assertEqual(
+                                response["request_parts_sent_at_response"],
+                                case["expected_pipelined_request_parts_sent"], label,
+                            )
+                        self.assertEqual(len(records), case["upstream_count"], label)
+                        if case.get("check_close"):
+                            self.assertTrue(response["connection_closed"], label)
+                    if case["name"] == "pipelined_fragmented_chunked_then_fixed":
+                        oracle_bodies = sorted(record["body"] for record in results["oracle"][1])
+                        modex_bodies = sorted(record["body"] for record in results["modex"][1])
+                        self.assertEqual(modex_bodies, oracle_bodies)
+                        self.assertIn(first_body, modex_bodies)
+                        self.assertTrue(any(b"pipeline-second" in body for body in modex_bodies))
         finally:
             upstream.shutdown()
             upstream.server_close()
             worker.join(timeout=2)
-
-        oracle_response, oracle_records = results["oracle"]
-        self.assertEqual(oracle_response["process_exit"], 0, oracle_response["stderr"])
-        self.assertEqual(
-            [(item["status"], item["body"]) for item in oracle_response["pipelined_responses"]],
-            [(200, RESPONSES_RESPONSE), (200, PROVIDER_RESPONSE)],
-        )
-        self.assertEqual(len(oracle_records), 2)
-
-        modex_response, modex_records = results["modex"]
-        self.assertEqual(modex_response["process_exit"], 0, modex_response["stderr"])
-        self.assertEqual(
-            [(item["status"], item["body"]) for item in modex_response["pipelined_responses"]],
-            [(502, b"gateway request capture failed")],
-        )
-        self.assertEqual(modex_response["read_error"], "RemoteDisconnected")
-        self.assertEqual(modex_records, [])
 
     def test_http_1_1_connection_close_still_closes_after_one_request(self):
         request = request_bytes((("Connection", "close"),))

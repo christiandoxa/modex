@@ -38,9 +38,10 @@ Selected local-relay malformed syntax, method forwarding, GET response framing,
 HEAD controls, final response status phrases, WebSocket fallback and
 truncated-request behavior now match selected 0.165.1 controls. Sequential
 HTTP/1.1 keep-alive, explicit `Connection: close`, fragmented headers, and
-idle-client handoff also match tested controls. Prodex processes two pipelined
-requests; Modex returns 502 `gateway request capture failed` without an
-upstream request. The relay parks up to 128 idle sockets in FIFO order and
+idle-client handoff also match tested controls. Fixed-length, bodyless, and
+chunked pipelined requests now match selected controls, including fragmented
+and coalesced delivery, ordered HEAD/error/SSE replies, and the body-size cap.
+The relay parks up to 128 idle sockets in FIFO order and
 polls one new connection before each readiness scan. When full, one accepted
 overflow socket waits while ready parked requests are serviced; admission
 evicts the oldest socket with no request bytes. The pool has no idle expiry. A

@@ -166,12 +166,12 @@ socket. Regression controls fill the 128-socket pool and confirm a new client
 is admitted by evicting the oldest idle socket, preserve a partial request on
 the oldest socket while admitting an overflow client, and keep ready parked
 clients moving during new-client churn. A partial-header control on a reused
-socket confirms the second client is served after the partial socket closes. Prodex
-handles two pipelined requests; Modex returns 502
-`gateway request capture failed` before any upstream request. Pipelining is a
-reproducible gap. The local rewrite's WebSocket route still returns the
-baseline 426 fallback; that does not qualify the separate runtime-proxy
-WebSocket transport. See
+socket confirms the second client is served after the partial socket closes. A
+prior coalesced two-request probe found a pipelining gap: Modex returned 502
+`gateway request capture failed` before any upstream request. That mismatch is
+resolved by the buffered-request handling recorded below. The local rewrite's
+WebSocket route still returns the baseline 426 fallback; that does not qualify
+the separate runtime-proxy WebSocket transport. See
 `docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
 
 Validation on Linux x86-64: `rtk make build` passed, as did
@@ -182,3 +182,38 @@ loopback tests. The production dependency audit passed for 71 Mojo files and
 `git diff --check` passed. Tests use synthetic loopback peers, with no
 credentials or paid traffic. All six release targets and broader
 framing/security behavior remain unqualified.
+
+Pipelined local relay requests now preserve request boundaries across the
+existing bounded socket buffer. `read_request` removes only the captured
+headers and body, retains bytes belonging to later requests, and carries the
+remaining byte count into the next parse. `request_ready` services buffered
+bytes before peeking the socket; response completion no longer clears them.
+This is enabled only on connections accepted by the local relay, which opts in
+to keep-alive. Shared loopback-server callers retain their previous strict
+single-request behavior. HTTP body limits, malformed framing and nonempty
+chunked trailers still reject before provider dispatch.
+
+Source trace: frozen commit `10ae15b5d1806302b60f051e4e6fec788044f4c2` uses
+TinyHTTP `ClientConnection::next` in
+`~/.cache/modex/prodex-0.165.1/vendor/tiny_http/src/client.rs`. Its buffered
+`next_header_source` reads successive request heads; `no_more_requests` stops
+after `Connection: close`/`upgrade` or HTTP/1.0 without keep-alive. Each
+`Request` gets a sequenced writer, and the server's `recv` dispatches requests
+to the local rewrite handler, which captures each body before relay dispatch.
+The Linux oracle is checksum-pinned in
+`docs/evidence/baseline-0.165.1/reference-verification.json`.
+
+The production-path oracle matrix compares coalesced fixed-length and bodyless
+requests, fragmented chunked framing with the next request coalesced after the
+terminal CRLF, distinct bodies, ordered HEAD/error/SSE/buffered responses,
+`Connection: close`, and an oversized second body. Two pipelined requests reach
+the synthetic upstream in the correct forms; the oversized follow-up retains
+the 64 MiB body cap and does not dispatch upstream. The full 14-test 0.165.1
+oracle module passed on Linux x86-64 before the oversized-follow-up case was
+added; the final pipelined matrix including that case passed separately. The
+45 native local-rewrite and shared loopback tests passed, along with production
+build and driver builds. Parent shutdown, idle fairness, the existing body
+limit suite, duplicate framing, and strict trailer controls also passed in the
+full oracle run. Requests remain serial; only request buffering and ordering
+are qualified. Other release targets and broader framing/security behavior
+remain unqualified.

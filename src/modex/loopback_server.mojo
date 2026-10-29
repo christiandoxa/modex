@@ -191,6 +191,8 @@ struct LoopbackHTTPConnection(Movable):
     def request_ready(mut self) raises -> Bool:
         if self.fd < 0 or self.done:
             return False
+        if len(self.input) > 0:
+            return True
         var byte: UInt8 = 0
         var result = recv(self.fd, Pointer(to=byte), 1, MSG_PEEK | MSG_DONTWAIT)
         if result > 0:
@@ -238,6 +240,7 @@ struct LoopbackHTTPConnection(Movable):
         if preflight_body_limit_before_continue and head.length > max_body_bytes:
             raise Error("oversized HTTP request body")
         var body_start = header_end + 4
+        var request_end = body_start
         var body = List[UInt8]()
         if validate_request_target and reject_chunked_trailers and head.chunked and not request_target_valid(head.target):
             self.request_read = True
@@ -249,19 +252,23 @@ struct LoopbackHTTPConnection(Movable):
             _send_all(self.fd, _bytes(continue_version + " 100 Continue\r\n\r\n"), deadline)
             self.expect_continue_sent = True
         if head.chunked:
-            body = self._read_chunked(body_start, max_body_bytes, deadline, wire_limit, validate_request_target and not request_target_valid(head.target), reject_chunked_trailers)
+            body = self._read_chunked(body_start, max_body_bytes, deadline, wire_limit, request_end, validate_request_target and not request_target_valid(head.target), reject_chunked_trailers, self.keep_alive_enabled)
         elif head.length >= 0:
             if head.length > max_body_bytes:
                 raise Error("oversized HTTP request body")
             var body_end = body_start + head.length
             while len(self.input) < body_end:
                 self._receive(deadline, wire_limit)
-            if len(self.input) != body_end:
+            if len(self.input) != body_end and not self.keep_alive_enabled:
                 raise Error("pipelined HTTP requests are unsupported")
+            request_end = body_end
             for index in range(body_start, body_end):
                 body.append(self.input[index])
-        elif len(self.input) != body_start:
+        elif len(self.input) != body_start and not self.keep_alive_enabled:
             raise Error("request body requires Content-Length or chunked framing")
+        if self.keep_alive_enabled:
+            self.input = self.input[request_end:len(self.input):1]
+            self.wire_bytes = len(self.input)
         self.request_read = True
         if self.keep_alive_enabled:
             self.keep_alive = _request_keep_alive(head.version, head.headers)
@@ -367,8 +374,6 @@ struct LoopbackHTTPConnection(Movable):
         if not self.keep_alive:
             self.close()
             return
-        self.input.clear()
-        self.wire_bytes = 0
         self.streaming = False
         self.request_read = False
         self.head_request = False
@@ -376,7 +381,7 @@ struct LoopbackHTTPConnection(Movable):
         self.response_version = "HTTP/1.1"
         self.waiting_for_request = True
 
-    def _read_chunked(mut self, start: Int, max_body_bytes: Int, deadline: Float64, wire_limit: Int, invalid_target_before_body_limit: Bool = False, reject_trailers: Bool = False) raises -> List[UInt8]:
+    def _read_chunked(mut self, start: Int, max_body_bytes: Int, deadline: Float64, wire_limit: Int, mut request_end: Int, invalid_target_before_body_limit: Bool = False, reject_trailers: Bool = False, allow_pipelining: Bool = False) raises -> List[UInt8]:
         var output = List[UInt8]()
         var cursor = start
         var trailer_start: Int
@@ -432,8 +437,9 @@ struct LoopbackHTTPConnection(Movable):
             if self.input[cursor + 1] != 10:
                 raise Error("malformed HTTP chunk trailer terminator")
             cursor += 2
-            if len(self.input) != cursor:
+            if len(self.input) != cursor and not allow_pipelining:
                 raise Error("pipelined HTTP requests are unsupported")
+            request_end = cursor
             return output^
         while True:
             var trailer_scan = cursor
@@ -457,8 +463,9 @@ struct LoopbackHTTPConnection(Movable):
                 raise Error("forbidden HTTP trailer field")
             trailer_bytes += end - cursor + 2
             cursor = end + 2
-        if len(self.input) != cursor:
+        if len(self.input) != cursor and not allow_pipelining:
             raise Error("pipelined HTTP requests are unsupported")
+        request_end = cursor
         return output^
 
 

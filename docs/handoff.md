@@ -11,27 +11,26 @@ Hosted Fast CI run `40794762417` passed both helper shards, the build, active
 0.439.2 tag was unavailable. Its artifact consumer was skipped. No hosted CI
 success is claimed for that run.
 
-The local relay now supports tested sequential HTTP/1.1 keep-alive requests,
-honors `Connection: close`, and parks up to 128 idle sockets so a second client
-can run. The parked queue is FIFO; when full, admission closes the oldest idle
-socket to make room, after ready sockets are dispatched. If no socket is safe to
-evict, one accepted overflow connection is retained until admission is safe.
-Parked sockets have no idle expiry. A partial request on a reused socket blocks
-other clients until the request completes or that socket closes; parent EOF is
-checked between requests and does not interrupt an in-progress read. Active
-requests remain serial.
-Pipelining is a reproduced mismatch: Prodex handles two pipelined requests;
-Modex returns 502 `gateway request capture failed` with no upstream request.
-The separate runtime-proxy WebSocket transport remains unimplemented; the
-local rewrite adapter's 426 fallback matches its tested release behavior. See
-`docs/evidence/baseline-0.165.1/local-relay-http.md` and
+The local relay supports tested sequential and pipelined HTTP/1.1 keep-alive
+requests, honors `Connection: close`, and parks up to 128 idle sockets so a
+second client can run. Pipelined requests are parsed and dispatched in order;
+responses remain serial. The parked queue is FIFO; when full, admission closes
+the oldest idle socket to make room, after ready sockets are dispatched. If no
+socket is safe to evict, one accepted overflow connection is retained until
+admission is safe. Parked sockets have no idle expiry. A partial request on a
+reused socket blocks other clients until the request completes or that socket
+closes; parent EOF is checked between requests and does not interrupt an
+in-progress read. The separate runtime-proxy WebSocket transport remains
+unimplemented; the local rewrite adapter's 426 fallback matches its tested
+release behavior. See `docs/evidence/baseline-0.165.1/local-relay-http.md` and
 `docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
 
-Validation: `rtk make build` and the focused native local-rewrite and loopback
-driver build passed. The complete focused relay suite passed 59 tests, followed
-by 45 direct local-rewrite and loopback tests after rebuilding the native
-drivers. The production import audit passed for 71 Mojo files, and
-`git diff --check` passed. No release qualification is promoted.
+Validation on Linux x86-64: `rtk make build` and the native local-rewrite and
+loopback driver build passed. The focused 0.165.1 oracle module passed 14
+tests; after adding the oversized follow-up control, the full pipeline matrix
+passed separately. The direct local-rewrite and shared loopback suites passed
+45 tests. The production import audit passed for 71 Mojo files. All six release
+targets and broader security behavior remain unqualified.
 
 
 Buffered local-relay responses now retain a valid HTTP/1.0 request version,

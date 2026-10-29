@@ -51,6 +51,11 @@ cases as readable or absent. A live symlink is rejected by the tested
 releases. Descriptor checks are not interprocess exclusion. Details and exact
 artifacts are in `docs/evidence/session-profile-state-04392.md`.
 
+Bound empty profile names now remain distinct from absent bindings: JSON emits
+`""` for the former and `null` for the latter, matching both releases and
+`--profile ""` filtering. Identifier, duplicate-key and retention probes are
+recorded in `docs/evidence/session-profile-identifiers-04392.md`.
+
 After integration, the production build and four native session, Super and
 provider checks passed. The focused profile, invalid-path, historical session
 and state-guard suite passed 29 tests, and nine shared stream/concurrency

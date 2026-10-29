@@ -26,6 +26,8 @@ class ActiveSuperLaunchTests(unittest.TestCase):
     def setUpClass(cls):
         if not active_cli.ORACLE.is_file() or hashlib.sha256(active_cli.ORACLE.read_bytes()).hexdigest() != active_cli.ORACLE_SHA256:
             raise AssertionError("PRODEX_ORACLE_01651 must identify the verified 0.165.1 Linux release")
+        if not launch_support.ORACLE.is_file() or hashlib.sha256(launch_support.ORACLE.read_bytes()).hexdigest() != launch_support.ORACLE_SHA256:
+            raise AssertionError("PRODEX_ORACLE must identify the verified 0.439.2 Linux release")
         if not launch_support.MODEX.is_file():
             raise AssertionError("Build Modex first with make build")
         if not NATIVE_CODEX.is_file() or NATIVE_CODEX.stat().st_mode & 0o111 == 0:
@@ -78,6 +80,38 @@ class ActiveSuperLaunchTests(unittest.TestCase):
         )
         self.assertEqual(outputs[0], outputs[1])
         self.assertTrue(outputs[0][2].endswith(expected + b"\n"))
+
+    def test_missing_explicit_profile_matches_both_releases(self):
+        progress = (
+            b"Prodex launch: preparing runtime launch...\n"
+            b"Prodex launch: Smart Context runtime proxy requested.\n"
+            b"Prodex launch: local provider bridge requested.\n"
+        )
+        cases = (
+            ("main", progress + b"Error: profile 'main' does not exist\n"),
+            ("", progress + b"Error: profile '' does not exist\n"),
+        )
+        binaries = (active_cli.ORACLE, launch_support.ORACLE, launch_support.MODEX)
+        results = {}
+        for profile, expected_stderr in cases:
+            for binary in binaries:
+                with self.subTest(profile=profile, binary=binary.name):
+                    result, records, upstream, state = launch_support.run_private_launch(
+                        binary,
+                        scenario="exit-seven",
+                        super_arguments=("--profile", profile),
+                    )
+                    self.assertEqual((result.returncode, result.stdout, result.stderr), (1, b"", expected_stderr))
+                    self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+                    self.assertIsNone(state["session"])
+                    self.assertEqual(state["extra"], [])
+                    self.assertIsNone(state["config"])
+                    results[(profile, binary)] = state["managed"]
+
+        for profile, _ in cases:
+            for oracle in (active_cli.ORACLE, launch_support.ORACLE):
+                self.assertIn("state/profile-lifecycle.json.lock", results[(profile, oracle)])
+            self.assertNotIn("state/profile-lifecycle.json.lock", results[(profile, launch_support.MODEX)])
 
     def test_codex_binary_selection_reaches_probes_and_child_launch(self):
         for mode in ("relative", "symlink", "command", "path", "relative-path", "path-skips-wrapper"):

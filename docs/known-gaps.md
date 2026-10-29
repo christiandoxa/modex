@@ -88,6 +88,14 @@ release creates persistent locks that Modex cannot yet coordinate with safely.
 Selected help prefixes and parser errors now match; other argument combinations
 remain unverified. See `docs/evidence/profile-help-04392.md`.
 
+For an empty profile store, explicit Super `--profile` selection now returns the
+same missing-profile error as both pinned releases, without starting Codex or a
+provider request. The releases also create lifecycle and housekeeping lock
+files before that error; Modex leaves them untouched. Existing profile
+selection, locked state access, broker bootstrap, and WebSocket behavior remain
+unimplemented. See
+`docs/evidence/baseline-0.165.1/super-missing-profile.md`.
+
 The 0.439.2 oversized SSE continuation case now binds the response ID: both
 products return 200/503 with one upstream POST. The incremental observer has
 native parser comparisons and selected production controls for malformed JSON,

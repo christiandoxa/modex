@@ -11,6 +11,18 @@ arguments and request bodies. The production build, three process tests,
 dependency audit and test census passed. Public proxy, DNS and TLS behavior
 remain open. See `docs/evidence/baseline-0.165.1/super-no-proxy.md`.
 
+Super now passes explicit `--profile` through its production launch path. With
+an empty profile store, Modex returns the same missing-profile error as 0.165.1
+and 0.439.2 before starting Codex or contacting a provider. Their
+lifecycle/housekeeping lock files remain absent in Modex; existing profile
+state, safe locking/recovery, broker bootstrap, and WebSocket
+lifecycle/interruption are still open. Evidence and the isolated real-process
+command are in `docs/evidence/baseline-0.165.1/super-missing-profile.md`.
+The production build and native unit build passed; the new comparison plus the
+no-proxy and supported-exec launch controls passed against both releases and
+Modex. The native Super parser, production import audit, test census, and diff
+check also passed.
+
 The guarded DeepSeek Super path now forwards tested Codex `exec --cd` and `-C`
 arguments, including attached values, matching checksum-pinned 0.165.1 and
 0.439.2 child argv. Missing or option-looking separate values remain guarded.

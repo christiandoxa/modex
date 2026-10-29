@@ -537,7 +537,7 @@ def _exec(binary: String, child_path: String, argv0: String, home: String, model
         raise
 
 
-def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64 = 0, compact_limit: UInt64 = 0) raises -> Int:
+def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64 = 0, compact_limit: UInt64 = 0, profile: String = "", profile_supplied: Bool = False) raises -> Int:
     _deepseek_launch_progress()
     _ = local_rewrite_upstream(upstream)
     _ = deepseek_request_headers([], key)
@@ -555,6 +555,8 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
     var root = app_root()
     var shared = shared_root(root)
     _clean_home(root, shared)
+    if profile_supplied:
+        raise Error("profile '" + profile + "' does not exist")
     _ = ensure_app_root()
     _private_directory(shared)
     _private_directory(root + "/profiles")

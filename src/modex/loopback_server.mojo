@@ -340,7 +340,7 @@ struct LoopbackHTTPConnection(Movable):
             raise Error("unsupported HTTP expectation")
         var invalid_target = validate_request_target and not request_target_valid(head.target)
         if invalid_target and head.expect_continue and not head.chunked and head.length <= 0:
-            self.keep_alive = _request_keep_alive(head.version, head.headers)
+            self.keep_alive = self.keep_alive_enabled and _request_keep_alive(head.version, head.headers)
             # Drop this bodyless rejected head while preserving any pipelined request.
             self.input = self.input[header_end + 4:len(self.input):1]
             self.wire_bytes = len(self.input)

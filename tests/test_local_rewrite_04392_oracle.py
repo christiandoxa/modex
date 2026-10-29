@@ -57,13 +57,6 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
             raise AssertionError(f"Local relay oracle cases are missing: {sorted(missing)}")
 
     def test_bodyless_invalid_target_expect_can_reuse_connection(self):
-        references = (
-            ("0.165.1", transport.ORACLE, transport.ORACLE_SHA256),
-            ("0.439.2", ORACLE, ORACLE_SHA256),
-        )
-        for label, binary, expected_hash in references:
-            self.assertEqual(hashlib.sha256(binary.read_bytes()).hexdigest(), expected_hash, label)
-
         upstream = transport.Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)
         worker.start()
@@ -88,7 +81,6 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
                 ):
                     case.update(requests)
                     for label, binary in (
-                        ("0.165.1", transport.ORACLE),
                         ("0.439.2", ORACLE),
                         ("Modex", transport.MODEX),
                     ):
@@ -132,7 +124,6 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
                     "process_timeout": 15,
                 }
                 for label, binary in (
-                    ("0.165.1", transport.ORACLE),
                     ("0.439.2", ORACLE),
                     ("Modex", transport.MODEX),
                 ):

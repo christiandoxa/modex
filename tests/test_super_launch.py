@@ -307,6 +307,27 @@ def check_safe_exec_flags(test, oracle):
             test.assertEqual(captures[0], captures[1])
 
 
+def check_explicit_full_access(test, oracle):
+    cases = (
+        {"super_arguments": ("--full-access",)},
+        {"codex_arguments": ("exec", "--full-access", "--", "synthetic prompt")},
+    )
+    for case in cases:
+        with test.subTest(case=case):
+            captures = []
+            for binary in (oracle, MODEX):
+                result, records, upstream, state = run_private_launch(
+                    binary, scenario="buffered", **case,
+                )
+                test.assertEqual(result.returncode, 0, result.stderr)
+                test.assertEqual(len(upstream), 1)
+                test.assertEqual(state["leftovers"], [])
+                test.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                launch = next(record for record in records if record["kind"] == "launch")
+                captures.append((normalized_app_server_args(launch["args"]), upstream[0]["path"], upstream[0]["body"]))
+            test.assertEqual(captures[0], captures[1])
+
+
 def app_server_config(arguments):
     return "\n".join(
         arguments[index + 1]

@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The guarded DeepSeek Super launch now accepts explicit `--full-access` before
+or after `exec`, matching the already-enabled default in both pinned releases.
+Two real-process comparisons cover normalized child argv and the synthetic
+loopback provider request, and an unverified-argument guard regression passes.
+The production build, native Super parser, import audit and test census pass.
+See `docs/evidence/baseline-0.165.1/super-explicit-full-access.md`.
+
 Anthropic Messages now forwards validated output-token limits and tested alias
 precedence instead of rejecting nondefault values. Terminal session output now
 falls back to plain text under tested `CODEX_CI` and `PRODEX_TUI_STRICT`

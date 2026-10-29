@@ -58,6 +58,90 @@ def repeated_search_case(shared_id=False):
     return request, reply
 
 
+def overlapping_search_result_case():
+    request = {
+        "model": "deepseek-chat",
+        "input": "synthetic mixed prompt",
+        "stream": True,
+        "tools": [
+            {"type": "function", "name": "lookup", "parameters": {"type": "object"}},
+            {"type": "web_search_preview"},
+        ],
+    }
+    events = [
+        START,
+        {"type": "content_block_start", "index": 0, "content_block": {
+            "type": "server_tool_use", "id": "search_0", "name": "web_search", "input": {},
+        }},
+        {"type": "content_block_start", "index": 1, "content_block": {
+            "type": "server_tool_use", "id": "search_1", "name": "web_search", "input": {},
+        }},
+        {"type": "content_block_delta", "index": 0, "delta": {
+            "type": "input_json_delta", "partial_json": '{"query":"query-0"}',
+        }},
+        {"type": "content_block_stop", "index": 0},
+        {"type": "content_block_start", "index": 2, "content_block": {
+            "type": "web_search_tool_result", "tool_use_id": "search_0", "content": [
+                {"type": "web_search_result", "url": "https://example.test/0", "title": "Result 0"},
+            ],
+        }},
+        {"type": "content_block_delta", "index": 1, "delta": {
+            "type": "input_json_delta", "partial_json": '{"query":',
+        }},
+        {"type": "content_block_stop", "index": 2},
+        {"type": "content_block_delta", "index": 1, "delta": {
+            "type": "input_json_delta", "partial_json": '"query-1"}',
+        }},
+        {"type": "content_block_stop", "index": 1},
+        {"type": "content_block_start", "index": 3, "content_block": {
+            "type": "web_search_tool_result", "tool_use_id": "search_1", "content": [
+                {"type": "web_search_result", "url": "https://example.test/1", "title": "Result 1"},
+            ],
+        }},
+        {"type": "content_block_stop", "index": 3},
+        MESSAGE_DELTA,
+        STOP,
+    ]
+    return request, {
+        "status": 200,
+        "content_type": "text/event-stream",
+        "body": stream(events),
+    }
+
+
+def empty_search_result_case():
+    request = {
+        "model": "deepseek-chat",
+        "input": "synthetic mixed prompt",
+        "stream": True,
+        "tools": [
+            {"type": "function", "name": "lookup", "parameters": {"type": "object"}},
+            {"type": "web_search_preview"},
+        ],
+    }
+    events = [
+        START,
+        {"type": "content_block_start", "index": 0, "content_block": {
+            "type": "server_tool_use", "id": "search_empty", "name": "web_search", "input": {},
+        }},
+        {"type": "content_block_delta", "index": 0, "delta": {
+            "type": "input_json_delta", "partial_json": '{"query":"empty"}',
+        }},
+        {"type": "content_block_stop", "index": 0},
+        {"type": "content_block_start", "index": 1, "content_block": {
+            "type": "web_search_tool_result", "tool_use_id": "search_empty", "content": [],
+        }},
+        {"type": "content_block_stop", "index": 1},
+        MESSAGE_DELTA,
+        STOP,
+    ]
+    return request, {
+        "status": 200,
+        "content_type": "text/event-stream",
+        "body": stream(events),
+    }
+
+
 def interleaved_mixed_search_case(
     search_count=2, shared_id=False, include_results=True, query_case="valid",
 ):

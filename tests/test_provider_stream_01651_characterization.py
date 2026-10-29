@@ -11,7 +11,12 @@ from test_cli import MODEX
 from test_provider_tools_04392_characterization import _normalized_events, _run
 from test_anthropic_text_stream_04392 import START, TEXT_START, TEXT_DELTA, TEXT_STOP, MESSAGE_DELTA, STOP, REQUEST, stream
 from test_deepseek_continuation import observe_turns
-from provider_stream_search_cases import interleaved_mixed_search_case, repeated_search_case
+from provider_stream_search_cases import (
+    empty_search_result_case,
+    interleaved_mixed_search_case,
+    overlapping_search_result_case,
+    repeated_search_case,
+)
 
 
 ORACLE_01651 = Path(os.environ.get(
@@ -118,6 +123,43 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
             ["https://one.example.test", "https://two.example.test"],
         )
         self.assertEqual(output[2]["content"][0]["text"], "Found both.")
+
+    def test_anthropic_result_can_finish_while_another_search_is_open(self):
+        request, reply = overlapping_search_result_case()
+        reference_posts, reference = observe_turns(ORACLE_01651, [request], [reply])
+        actual_posts, actual = observe_turns(MODEX, [request], [reply])
+        self.assertEqual([response["status"] for response in reference], [200])
+        self.assertEqual([response["status"] for response in actual], [200])
+        self.assertEqual(len(reference_posts), 1)
+        self.assertEqual(len(actual_posts), 1)
+        self.assertEqual(actual_posts[0]["path"], reference_posts[0]["path"])
+        self.assertEqual(json.loads(actual_posts[0]["body"]), json.loads(reference_posts[0]["body"]))
+        expected = _normalized_events(bytes.fromhex(reference[0]["body"]))
+        observed = _normalized_events(bytes.fromhex(actual[0]["body"]))
+        self.assertEqual(observed, expected)
+        searches = [item for item in expected[-1][1]["response"]["output"]
+                    if item["type"] == "web_search_call"]
+        self.assertEqual([item["id"] for item in searches], ["search_0", "search_1"])
+        self.assertEqual([item["action"]["sources"][0]["url"] for item in searches], [
+            "https://example.test/0", "https://example.test/1",
+        ])
+
+    def test_anthropic_empty_search_result_matches_release(self):
+        request, reply = empty_search_result_case()
+        reference_posts, reference = observe_turns(ORACLE_01651, [request], [reply])
+        actual_posts, actual = observe_turns(MODEX, [request], [reply])
+        self.assertEqual([response["status"] for response in reference], [200])
+        self.assertEqual([response["status"] for response in actual], [200])
+        self.assertEqual(len(reference_posts), 1)
+        self.assertEqual(len(actual_posts), 1)
+        self.assertEqual(actual_posts[0]["path"], reference_posts[0]["path"])
+        self.assertEqual(json.loads(actual_posts[0]["body"]), json.loads(reference_posts[0]["body"]))
+        expected = _normalized_events(bytes.fromhex(reference[0]["body"]))
+        observed = _normalized_events(bytes.fromhex(actual[0]["body"]))
+        self.assertEqual(observed, expected)
+        searches = [item for item in expected[-1][1]["response"]["output"]
+                    if item["type"] == "web_search_call"]
+        self.assertEqual([item["action"]["sources"] for item in searches], [[]])
 
     def test_anthropic_repeated_search_id_matches_release_completion_policy(self):
         request, reply = repeated_search_case(shared_id=True)

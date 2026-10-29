@@ -254,7 +254,12 @@ struct DeepSeekChatState:
                 )
             if block_type == "web_search_tool_result":
                 if (
-                    (self.anthropic_phase != 3 and self.anthropic_phase != 4 and self.anthropic_phase != 5)
+                    (
+                        self.anthropic_phase != 2
+                        and self.anthropic_phase != 3
+                        and self.anthropic_phase != 4
+                        and self.anthropic_phase != 5
+                    )
                     or (self.anthropic_result_index and block_index <= self.anthropic_result_index.value())
                 ):
                     raise Error("Anthropic web-search result block is out of order")
@@ -308,7 +313,10 @@ struct DeepSeekChatState:
                 if fragment_value < 0 or doc.nodes[fragment_value].kind != JSON_STRING:
                     raise Error("Anthropic input JSON delta must be a string")
                 if search >= 0:
-                    if self.anthropic_phase != 2 or block_index in self.anthropic_stopped_search_indices:
+                    if (
+                        (self.anthropic_phase != 2 and self.anthropic_phase != 4)
+                        or block_index in self.anthropic_stopped_search_indices
+                    ):
                         raise Error("Anthropic input JSON delta has no supported tool use")
                     self.anthropic_searches[search].input_json += fragment
                     return List[String]()
@@ -347,22 +355,22 @@ struct DeepSeekChatState:
             var search = self.anthropic_search_index(block_index)
             if search >= 0:
                 if (
-                    self.anthropic_phase != 2
+                    (self.anthropic_phase != 2 and self.anthropic_phase != 4)
                     or block_index in self.anthropic_stopped_search_indices
                 ):
                     raise Error("Anthropic web-search block stop is out of order")
                 self.anthropic_stopped_search_indices[block_index] = True
                 self.anthropic_open_search_count -= 1
-                self.anthropic_phase = 2 if self.anthropic_open_search_count > 0 else 3
+                self.update_anthropic_search_phase()
                 return List[String]()
             var result_position = -1
             for position in range(len(self.anthropic_open_result_indices)):
                 if self.anthropic_open_result_indices[position] == block_index:
                     result_position = position
                     break
-            if result_position >= 0 and self.anthropic_phase == 4:
+            if result_position >= 0:
                 _ = self.anthropic_open_result_indices.pop(result_position)
-                self.anthropic_phase = 4 if len(self.anthropic_open_result_indices) > 0 else 5
+                self.update_anthropic_search_phase()
                 return List[String]()
             if self.anthropic_text_index and self.anthropic_text_index.value() == block_index and self.anthropic_phase == 6:
                 self.anthropic_phase = 7
@@ -452,9 +460,6 @@ struct DeepSeekChatState:
         var id = doc.string(doc.get(block, "tool_use_id"))
         if not id: raise Error("Anthropic web-search result requires tool_use_id")
         var sources = _search_sources(doc, block)
-        var content = doc.get(block, "content")
-        if len(doc.nodes[content].children) == 0:
-            raise Error("Anthropic web-search result must contain at least one source")
         var first = self.anthropic_search_first_by_id.get(id)
         if not first:
             raise Error("Anthropic web-search result does not match a tool use")
@@ -467,6 +472,16 @@ struct DeepSeekChatState:
             self.external_output_items.append(item)
             output.append(self.event("response.output_item.done", '"output_index":' + String(self.anthropic_searches[position].output_index) + ',"item":' + item))
         return output^
+
+    def update_anthropic_search_phase(mut self):
+        if self.anthropic_open_result_indices:
+            self.anthropic_phase = 4
+        elif self.anthropic_open_search_count > 0:
+            self.anthropic_phase = 2
+        elif self.anthropic_result_index:
+            self.anthropic_phase = 5
+        else:
+            self.anthropic_phase = 3
 
     def complete_anthropic_searches(mut self) raises -> List[String]:
         var output = List[String]()

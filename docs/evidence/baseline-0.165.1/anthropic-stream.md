@@ -13,7 +13,7 @@ The checksum-verified 0.165.1 binary and Modex matched on Linux x86-64. The
 native reader unit covers these cases as well. The separately pinned 0.439.2
 regression remains historical.
 
-The initial web-search control covered one search/result pair. Other event
+The controls below cover selected search/result event orders. Other event
 orders, metadata and error conditions, WebSockets, and non-Linux targets remain
 unverified; no provider contract is promoted to PASS.
 
@@ -83,6 +83,13 @@ the release. Provider error events fail the stream without a completed
 response. Separate loopback, relay, and transport downstream-reset tests still
 close the active upstream stream.
 
+A result can also start and stop after its matching search closes while another
+search input remains open; deltas for that search work while the result block is
+open and after it stops. An empty valid result array completes with
+`sources: []`, as in the release. The parser tracks open search inputs and
+result blocks independently and keeps the existing result-array and result-item
+validation.
+
 For search input, the release emits `queries: []` when the query is missing,
 non-string, or malformed. Modex now extracts only a non-empty string query and
 maps those other shapes to an empty list, so malformed fragments are not echoed
@@ -91,7 +98,7 @@ argument validation remains separate: the native reader unit continues to
 reject malformed JSON arguments with `invalid_tool_call_arguments`.
 
 Validation on Linux x86-64: `make build` passed; the focused
-`test_provider_stream_01651_characterization.py` suite passed 23 tests; the
+`test_provider_stream_01651_characterization.py` suite passed 25 tests; the
 native `test_provider_chat_stream` checks passed; the direct loopback reset,
 local-rewrite downstream RST, and provider-transport cancellation tests passed;
 `check-product-dependencies.py` and `git diff --check` passed. The 64-search

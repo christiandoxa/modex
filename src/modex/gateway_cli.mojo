@@ -78,7 +78,7 @@ def parse_gateway_arguments(args: List[String], executable: String) raises -> Ga
                 group_usage = True
                 value = String(argument.split("=", maxsplit=1)[1])
             else:
-                if index + 1 >= len(args) or args[index + 1].startswith("-"):
+                if index + 1 >= len(args) or (args[index + 1].startswith("-") and args[index + 1] != "-"):
                     raise session_cli_error("a value is required for '" + _label(name) + "' but none was supplied")
                 index += 1
                 value = args[index]

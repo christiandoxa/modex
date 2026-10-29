@@ -1,5 +1,16 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Gateway option parsing now treats a lone `-` as a value. The invalid-provider
+diagnostic and the missing-value control match the checksum-pinned 0.165.1 and
+0.439.2 releases. The combined production build, native Gateway check, four
+focused process tests, dependency audit and test census passed. Gateway startup
+and provider exchange remain incomplete; see
+`docs/evidence/baseline-0.165.1/cli-observations.md`.
+
+Hosted Fast run `40832483695` on `e3e47e58453fc05a68a76476a617fb4e263e5dbc`
+failed at the unavailable 0.439.2 tag after its focused build and native
+checks passed. Its oracle-dependent tests and artifact consumers did not run.
+
 The guarded DeepSeek Super launch now forwards selected Codex output-file and
 output-schema arguments. Synthetic child argv matches the pinned 0.165.1 and
 0.439.2 releases for separated and attached values, short `-o`, and `-`.

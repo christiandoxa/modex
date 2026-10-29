@@ -95,6 +95,9 @@ class GatewayCLIDifferentialTests(unittest.TestCase):
             with self.subTest(arguments=arguments):
                 self.assert_matches_oracle(arguments)
 
+    def test_provider_lone_dash_is_parsed_as_a_value(self):
+        self.assert_matches_oracle(("gateway", "--provider", "-"))
+
     def test_help_short_clusters_and_attached_values_match(self):
         for arguments in (
             ("gateway", "-hfoo"),

@@ -14,6 +14,8 @@ ORACLE = Path(os.environ.get(
 ))
 ORACLE_SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
 CASES = (
+    (("gateway", "--provider", "-"), 2, b"invalid value '-' for '--provider <PROVIDER>'"),
+    (("gateway", "--provider", "--no-presidio"), 2, b"a value is required for '--provider <PROVIDER>'"),
     (("gateway", "--presidio", "--no-presidio"), 2, b"the argument '--presidio' cannot be used with '--no-presidio'"),
     (("gateway", "--no-presidio", "--presidio"), 2, b"the argument '--no-presidio' cannot be used with '--presidio'"),
     (("gateway", "--no-presidio", "--listen", "127.0.0.1:0", "--presidio", "--api-key", "synthetic-key"), 2, b"the argument '--no-presidio' cannot be used with '--presidio'"),

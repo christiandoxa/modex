@@ -24,12 +24,15 @@ not qualified.
 
 Gateway parser precedence now matches the pinned 0.165.1 process for both
 Presidio conflict orders, valid interleaved options, duplicate flags, unknown
-options and help ordering. `tests/test_gateway_cli_01651.py` covers 15 isolated
-process-precedence cases and seven unknown-option cases after separate and
-attached values, including synthetic API keys without echoing them. The 15
-parser-precedence cases also matched the pinned historical 0.439.2 binary
-locally. Gateway startup, provider attempts, filesystem deltas and untested
-argument combinations remain unqualified.
+options and help ordering. Prodex source commit
+`10ae15b5d1806302b60f051e4e6fec788044f4c2` defines `--provider` as a parsed
+value option; the lone value `-` therefore reaches provider validation and
+reports `invalid value '-'`, while a following option still reports a missing
+value. `tests/test_gateway_cli_01651.py` covers 17 isolated process-precedence
+cases and seven unknown-option cases after separate and attached values,
+including synthetic API keys without echoing them. The provider-dash comparison
+also matches the active 0.439.2 binary. Gateway startup, provider attempts,
+filesystem deltas and untested argument combinations remain unqualified.
 
 Gateway help parsing now matches the active 0.439.2 and historical 0.165.1
 processes (oracle SHA-256 `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`

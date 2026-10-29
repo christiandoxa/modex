@@ -228,6 +228,7 @@
         "descendant cleanup",
         "cancellation/signals",
         "interactive TTY launch-progress panel rendering and colors",
+        "controlling TTY width without PRODEX_TERM_COLUMNS; Mojo 1.2 stdlib has no terminal-size query and external stty helpers are prohibited",
         "non-host targets",
         "default Super behavior, existing state, real Codex distributions and complete launch lifecycle"
       ],

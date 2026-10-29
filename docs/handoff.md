@@ -3726,3 +3726,11 @@ audit, and 50-native/140-Python test census passed. This qualifies selected
 buffered shapes on Linux x86-64 only; streaming, other response shapes, all six
 release targets, and broader provider parity remain open. See
 `docs/evidence/baseline-0.165.1/anthropic-buffered.md`.
+
+Gateway unknown-option diagnostics now suggest the nearest declared option and
+show the matching generated usage, including the visible `--url` alias, like
+both pinned releases. Real-process comparisons cover nine typo/prior-option
+cases with synthetic homes and an API-key sentinel; no contract or release
+status is promoted. The production build, Gateway process tests, native parser
+checks, dependency audit and test-census audit passed. Evidence and source
+traces are in `docs/evidence/baseline-0.165.1/cli-observations.md`.

@@ -5,7 +5,7 @@ from std.io import RawFileDescriptor
 from std.os import getuid, listdir, lstat, stat
 from std.os.path import exists
 
-from .cli import argument_name, session_cli_error
+from .cli import argument_name, session_cli_error, similar_names
 from .paths import ensure_app_root, shared_root
 from .sessions import checked_session_file
 from .text import trim_text
@@ -34,6 +34,17 @@ def _label(name: String) -> String:
     if name == "--base-url": return name + " <URL>"
     if name == "--api-key": return name + " <KEY>"
     return name
+
+
+def _suggestion(name: String) -> String:
+    if not name.startswith("--"):
+        return ""
+    var choices: List[String] = [
+        "listen", "provider", "base-url", "url", "api-key", "smart-context",
+        "presidio", "no-presidio", "help",
+    ]
+    var matches = similar_names(String(name[byte=2:]), choices)
+    return "--" + matches[len(matches) - 1] if matches else String()
 
 
 def parse_gateway_arguments(args: List[String], executable: String) raises -> GatewayOptions:
@@ -69,13 +80,19 @@ def parse_gateway_arguments(args: List[String], executable: String) raises -> Ga
         var value_option = name == "--listen" or name == "--provider" or name == "--base-url" or name == "--api-key"
         var switch_option = name == "--smart-context" or name == "--presidio" or name == "--no-presidio"
         if not value_option and not switch_option:
+            var suggestion = _suggestion(name)
+            var suggested_usage = suggestion
+            if suggested_usage == "--url": suggested_usage = "--base-url"
             var usage = executable + " gateway"
-            if seen:
-                for prior in seen:
-                    usage += " " + _label(prior)
-            else:
+            for prior in seen:
+                usage += " " + _label(prior)
+            var message = "unexpected argument '" + name + "' found"
+            if suggestion:
+                message += "\n\n  tip: a similar argument exists: '" + suggestion + "'"
+                usage += " " + _label(suggested_usage)
+            elif not seen:
                 usage += " [OPTIONS]"
-            raise session_cli_error("unexpected argument '" + name + "' found", usage)
+            raise session_cli_error(message, usage)
         if name in seen:
             raise session_cli_error("the argument '" + _label(name) + "' cannot be used multiple times", executable + " gateway [OPTIONS]")
         seen.append(name)

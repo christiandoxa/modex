@@ -79,6 +79,23 @@ whole argument in the diagnostic, matching the 0.165.1 executable and the
 historical 0.439.2 executable. The isolated checks compare exit status, output,
 and home mutations; they do not qualify other argument combinations.
 
+Gateway unknown-option suggestions now match selected real-process controls
+against both Prodex 0.165.1 (`10ae15b5d1806302b60f051e4e6fec788044f4c2`) and
+frozen 0.439.2 (`72b77478a5198fc5da6b4d2253137f9cdbf43be9`). In both source
+trees, `crates/prodex-cli/src/runtime_args.rs::GatewayArgs` declares the
+suggestible options and visible `--url` alias, while
+`crates/prodex-cli/src/lib.rs::parse_cli_command_from` calls
+`Cli::try_parse_from`, which produces the unknown-option suggestion and usage.
+Modex now applies its existing option-name matcher on the production Gateway
+parse path. Nine isolated process cases compare exit status and complete output
+for close typos, including attached and split prior options, the `--url` alias,
+and a nonsimilar option; a synthetic API key is never echoed. The comparison is
+in `tests/test_gateway_cli_01651.py::test_unknown_options_suggest_the_matching_option_for_both_releases`.
+The production build, seven Gateway process-test methods, native Gateway
+argument checks, 71-file dependency audit, 50-source/140-module test census,
+and `git diff --check` passed. This does not qualify successful Gateway
+startup, other parser combinations, or any non-Linux target.
+
 For `session list` and `session current`, malformed attached values on boolean
 switches and missing split-value paths now produce the same context-sensitive
 usage as both pinned releases. The 0.165.1 source declares these as Clap

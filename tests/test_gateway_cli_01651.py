@@ -6,6 +6,7 @@ from pathlib import Path
 import unittest
 
 from test_gateway_cli import MODEX, run_cli
+from test_cli import ORACLE as ORACLE_04392, ORACLE_SHA256 as ORACLE_04392_SHA256
 
 
 ORACLE = Path(os.environ.get(
@@ -48,6 +49,9 @@ class GatewayCLI01651ParserTests(unittest.TestCase):
             raise AssertionError(f"build the actual Modex CLI first: {MODEX}")
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError(f"the Prodex oracle does not match pinned release 0.165.1: {ORACLE}")
+        if (not ORACLE_04392.is_file()
+                or hashlib.sha256(ORACLE_04392.read_bytes()).hexdigest() != ORACLE_04392_SHA256):
+            raise AssertionError(f"the Prodex oracle does not match frozen release 0.439.2: {ORACLE_04392}")
 
     def test_conflict_duplicate_unknown_and_help_precedence_matches(self):
         for arguments, returncode, diagnostic in CASES:
@@ -89,6 +93,36 @@ class GatewayCLI01651ParserTests(unittest.TestCase):
                     ),
                 )
                 self.assertNotIn(b"synthetic-key", actual.stdout + actual.stderr)
+
+    def test_unknown_options_suggest_the_matching_option_for_both_releases(self):
+        cases = (
+            ("--presdio", ()),
+            ("--smart-contxt", ()),
+            ("--no-presidioo", ()),
+            ("--base-u", ()),
+            ("--ap-key", ()),
+            ("--urlz", ()),
+            ("--smart-contxt", ("--api-key", "synthetic-key")),
+            ("--base-u", ("--provider=deepseek",)),
+            ("--unknown", ()),
+        )
+        for release, oracle in (("0.165.1", ORACLE), ("0.439.2", ORACLE_04392)):
+            for unknown, preceding in cases:
+                arguments = ("gateway", *preceding, unknown)
+                with self.subTest(release=release, arguments=arguments):
+                    baseline = run_cli(oracle, "prodex", arguments)
+                    actual = run_cli(MODEX, "modex", arguments)
+                    self.assertEqual(baseline.returncode, 2)
+                    self.assertNotIn(b"synthetic-key", baseline.stdout + baseline.stderr)
+                    self.assertEqual(
+                        (actual.returncode, actual.stdout, actual.stderr),
+                        (
+                            baseline.returncode,
+                            baseline.stdout.replace(b"Usage: prodex ", b"Usage: modex "),
+                            baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex "),
+                        ),
+                    )
+                    self.assertNotIn(b"synthetic-key", actual.stdout + actual.stderr)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,10 @@
 # CI lessons
 
+Fast run [40822073508](https://github.com/christiandoxa/modex/actions/runs/40822073508)
+on `5c0803b` passed the production build and native unit suite, then failed
+at the missing required 0.439.2 tag. Oracle comparisons and artifact
+publication did not run.
+
 Fast run [40820069692](https://github.com/christiandoxa/modex/actions/runs/40820069692)
 on `795ad94` passed both helper shards, the production build and native unit
 suite before stopping at the missing required 0.439.2 tag. Oracle comparisons

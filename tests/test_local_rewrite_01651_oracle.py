@@ -607,6 +607,38 @@ def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses", method
     )
 
 
+def upgrade_eof_cases():
+    variants = [
+        ("h2c", (("Connection", "Upgrade"), ("Upgrade", "h2c")), len(REQUEST_BODY), 200),
+        ("connection_only", (("Connection", "Upgrade"),), 0, 200),
+        ("connection_substring", (("Connection", "preupgradepost"),), 0, 200),
+        ("first_upgrade", (("Connection", "Upgrade"), ("Connection", "keep-alive"), ("Upgrade", "h2c")), 0, 200),
+        ("second_upgrade", (("Connection", "keep-alive"), ("Connection", "Upgrade"), ("Upgrade", "h2c")), 0, 502),
+        ("length_exceeds_actual", (("Connection", "Upgrade"), ("Upgrade", "h2c")), len(REQUEST_BODY) + 9, 200),
+        ("oversized_declared", (("Connection", "Upgrade"), ("Upgrade", "h2c")), 67108865, 413),
+    ]
+    cases = []
+    for name, headers, declared, status in variants:
+        request = request_bytes(headers).replace(
+            b"Content-Length: " + str(len(REQUEST_BODY)).encode() + b"\r\n",
+            b"Content-Length: " + str(declared).encode() + b"\r\n",
+        )
+        cases.append({"name": name, "request": request, "half_close": True, "status": status})
+    raw_chunked = request_bytes((("Connection", "Upgrade"), ("Upgrade", "h2c"))).replace(
+        b"Content-Length: " + str(len(REQUEST_BODY)).encode() + b"\r\n",
+        b"Transfer-Encoding: chunked\r\n",
+    )
+    cases.append({"name": "upgrade_takes_precedence_over_chunked", "request": raw_chunked, "half_close": True, "status": 200})
+    request = request_bytes((("Connection", "Upgrade"), ("Upgrade", "h2c")))
+    split = len(request) - len(REQUEST_BODY) // 2
+    cases.append({
+        "name": "fragmented_upgrade_body", "request": request, "half_close": True,
+        "request_parts": [request[:split], request[split:]], "request_part_delay_ms": 100,
+        "expected_request_parts_sent": 2, "status": 200,
+    })
+    return cases
+
+
 def expectation_request_case(
     name,
     expectations,
@@ -1875,40 +1907,33 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             upstream.server_close()
             worker.join(timeout=2)
 
-    def test_non_websocket_connection_upgrade_remains_fail_closed(self):
-        case = {
-            "name": "h2c_with_connection_upgrade_half_closed",
-            "request": request_bytes((
-                ("Connection", "Upgrade"), ("Upgrade", "h2c"),
-            )),
-            "half_close": True,
-        }
+    def test_non_websocket_connection_upgrade_reads_through_eof(self):
         upstream = Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)
         worker.start()
         try:
-            oracle_response, oracle_records = run_probe(ORACLE, case, upstream)
-            modex_response, modex_records = run_probe(MODEX, case, upstream)
+            for case in upgrade_eof_cases():
+                with self.subTest(case=case["name"]):
+                    status = case["status"]
+                    oracle_response, oracle_records = run_probe(ORACLE, case, upstream)
+                    modex_response, modex_records = run_probe(MODEX, case, upstream)
+                    for response in (oracle_response, modex_response):
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(response["status"], status)
+                        self.assertEqual(response["read_error"], "")
+                        if "expected_request_parts_sent" in case:
+                            self.assertEqual(response["request_parts_sent_at_response"], case["expected_request_parts_sent"])
+                    self.assertEqual(modex_response["body"], oracle_response["body"])
+                    self.assertEqual(len(oracle_records), int(status == 200))
+                    self.assertEqual(len(modex_records), int(status == 200))
+                    if oracle_records:
+                        self.assertNotIn("upgrade", oracle_records[0]["headers"])
+                        self.assertNotIn("upgrade", modex_records[0]["headers"])
+                        self.assertEqual(modex_records[0]["body"], oracle_records[0]["body"])
         finally:
             upstream.shutdown()
             upstream.server_close()
             worker.join(timeout=2)
-
-        self.assertEqual(oracle_response["process_exit"], 0, oracle_response["stderr"])
-        self.assertEqual((oracle_response["status"], oracle_response["body"]), (200, RESPONSES_RESPONSE))
-        self.assertEqual(len(oracle_records), 1)
-        self.assertNotIn("upgrade", oracle_records[0]["headers"])
-        self.assertEqual(oracle_records[0]["body"], json.dumps({
-            "messages": [{"content": "synthetic raw transport probe", "role": "user"}],
-            "model": "deepseek-chat",
-            "stream": False,
-        }, separators=(",", ":")).encode())
-
-        self.assertEqual(modex_response["process_exit"], 0, modex_response["stderr"])
-        self.assertEqual((modex_response["status"], modex_response["body"]), (
-            502, b"gateway request capture failed",
-        ))
-        self.assertEqual(modex_records, [])
 
     def test_http_1_1_sequential_requests_reuse_the_client_connection(self):
         first = request_bytes(target=b"/v1/responses")

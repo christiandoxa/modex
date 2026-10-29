@@ -109,15 +109,17 @@ it requires an immediate empty CRLF and treats trailer fields as a decode
 error. This does not change Modex's support for chunk extensions or empty
 trailer sections.
 
-With both `Connection: Upgrade` and `Upgrade: h2c`, the pinned Prodex returns
-200 and makes one upstream POST after the synthetic client half-closes after its
-body. Modex keeps this case fail-closed: it returns 502 `gateway request capture
-failed` and makes no upstream request. The baseline reader consumes this
-connection as an upgraded stream through EOF; Modex's bounded HTTP parser does
-not implement that stream framing. This remains a documented transport
-mismatch. No h2c, HTTP/2 prior-knowledge, or other protocol upgrade transport is
-claimed. The regression also retains WebSocket fallback and duplicate Upgrade /
-Connection controls.
+With `Connection: Upgrade` and non-WebSocket requests, both pinned releases
+capture raw bytes through EOF, even when the declared length is shorter or
+longer. Modex now does the same on the local relay while retaining the body
+limit and request timeout. Process comparisons cover h2c, missing Upgrade
+headers, fragmented bodies, an oversized declared length, raw bytes with
+`Transfer-Encoding: chunked`, and the first Connection header's case-insensitive
+substring rule. The serial relay's 120-second request deadline still allows
+an incomplete request to delay other work for that interval. The shared parser still
+rejects Upgrade headers by default, and the WebSocket fallback is unchanged.
+This is request-body capture, not h2c or HTTP/2 protocol support; other upgrade
+and framing behavior remains unverified.
 
 Validation for the Upgrade-header change: the production build and both focused
 Mojo drivers compiled; the two-test 0.165.1 oracle suite passed, including its

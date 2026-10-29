@@ -58,9 +58,13 @@ def run(mode: String, mut output: RawFileDescriptor) raises:
 
     var request: LoopbackHTTPRequest
     try:
-        var request_timeout = UInt64(150 if mode == "timeout" else 2000)
+        var request_timeout = UInt64(150 if mode == "timeout" or mode == "upgrade-timeout" else 2000)
         if mode == "small-limit":
             request = connection.read_request(request_timeout, 3)
+        elif mode == "upgrade-allowed":
+            request = connection.read_request(request_timeout, allow_upgrade_headers=True)
+        elif mode == "upgrade-small" or mode == "upgrade-timeout":
+            request = connection.read_request(request_timeout, 3, allow_upgrade_headers=True, defer_expectation_errors=True)
         else:
             request = connection.read_request(request_timeout)
     except error:

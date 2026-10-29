@@ -24,6 +24,10 @@ lock and housekeeping files. The tested relative, symlink and PATH Codex
 launches now match both releases' shebang and native argument behavior. The
 selected path is not pinned against replacement between probe and launch.
 These observations do not qualify Super or the other release targets.
+The local relay now captures non-WebSocket upgraded request bodies through EOF,
+matching selected 0.165.1 and 0.439.2 controls while retaining its byte cap and
+timeout. This does not implement h2c or HTTP/2. See
+`docs/evidence/baseline-0.165.1/local-relay-http.md`.
 The rebuilt production path passed 36 launch and RPC tests, followed by
 focused real-process checks for both releases, including empty and relative
 PATH entries. The native spawn check retains absolute-only defaults.
@@ -120,6 +124,10 @@ production comparisons against the verified 0.439.2 release. The historical
 19 tests before the beta-host follow-up. The CI routing and reference helpers
 passed 39 tests; the 71-file dependency audit and 122-module census passed.
 The full suite and non-Linux targets were not rerun for this integration.
+
+Hosted Fast CI run `40822073508` on `5c0803b` passed the production build and
+native suite, then failed at the missing required 0.439.2 tag. Oracle
+comparisons and artifact publication did not run.
 
 Hosted Fast CI run `40820069692` on `795ad94` passed both helper shards and
 the production build and native suite, then failed at the missing required

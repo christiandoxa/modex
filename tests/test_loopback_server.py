@@ -223,6 +223,39 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         self.assertEqual(status(response), 400)
         self.assertIn("HTTP protocol upgrades are unsupported", stdout)
 
+        process, client = start("upgrade-allowed")
+        client.sendall(
+            b"GET / HTTP/1.1\r\nHost: local\r\nConnection: Upgrade\r\nUpgrade: h2c\r\n\r\n"
+        )
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 400)
+        self.assertIn("HTTP protocol upgrades are unsupported", stdout)
+
+    def test_upgraded_capture_retains_body_limit_and_timeout(self):
+        head = b"POST / HTTP/1.1\r\nHost: local\r\nConnection: Upgrade\r\nContent-Length: 0\r\n\r\n"
+        process, client = start("upgrade-small")
+        client.sendall(head + b"abc")
+        client.settimeout(0.1)
+        with self.assertRaises(TimeoutError):
+            client.recv(1)
+        client.settimeout(3)
+        client.shutdown(socket.SHUT_WR)
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 200)
+        self.assertIn('"body_hex":"616263"', stdout)
+
+        process, client = start("upgrade-small")
+        client.sendall(head + b"abcd")
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 413)
+        self.assertIn("oversized HTTP request body", stdout)
+
+        process, client = start("upgrade-timeout")
+        client.sendall(head + b"abc")
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 400)
+        self.assertIn("loopback HTTP request timed out", stdout)
+
     def test_default_request_line_limit_stays_at_8192_bytes(self):
         for line_size, expected_status in ((8192, 200), (8193, 400)):
             with self.subTest(line_size=line_size):

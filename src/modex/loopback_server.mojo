@@ -231,6 +231,19 @@ struct LoopbackHTTPConnection(Movable):
         self.head_request = head.method == "HEAD"
         if head.unsupported_expectation:
             raise Error("unsupported HTTP expectation")
+        var upgrade_body = False
+        var saw_connection = False
+        var websocket_upgrade = False
+        if allow_upgrade_headers and defer_expectation_errors:
+            for header in head.headers:
+                var name = String(header[0]).lower()
+                var value = String(header[1]).lower()
+                if name == "connection" and not saw_connection:
+                    saw_connection = True
+                    upgrade_body = "upgrade" in value
+                elif name == "upgrade" and value == "websocket":
+                    websocket_upgrade = True
+            upgrade_body = upgrade_body and not websocket_upgrade
         if validate_request_target and not request_target_valid(head.target) and (head.expect_continue or head.length > max_body_bytes):
             raise Error("invalid HTTP request target")
         if defer_expectation_errors and head.expect_continue:
@@ -242,6 +255,9 @@ struct LoopbackHTTPConnection(Movable):
         var body_start = header_end + 4
         var request_end = body_start
         var body = List[UInt8]()
+        if upgrade_body and validate_request_target and not request_target_valid(head.target):
+            self.request_read = True
+            return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
         if validate_request_target and reject_chunked_trailers and head.chunked and not request_target_valid(head.target):
             self.request_read = True
             return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
@@ -251,7 +267,20 @@ struct LoopbackHTTPConnection(Movable):
                 continue_version = head.version
             _send_all(self.fd, _bytes(continue_version + " 100 Continue\r\n\r\n"), deadline)
             self.expect_continue_sent = True
-        if head.chunked:
+        if upgrade_body:
+            while True:
+                if len(self.input) - body_start > max_body_bytes:
+                    raise Error("oversized HTTP request body")
+                try:
+                    self._receive(deadline, wire_limit)
+                except error:
+                    if String(error) == "truncated HTTP request":
+                        break
+                    raise
+            request_end = len(self.input)
+            for index in range(body_start, request_end):
+                body.append(self.input[index])
+        elif head.chunked:
             body = self._read_chunked(body_start, max_body_bytes, deadline, wire_limit, request_end, validate_request_target and not request_target_valid(head.target), reject_chunked_trailers, self.keep_alive_enabled)
         elif head.length >= 0:
             if head.length > max_body_bytes:
@@ -270,7 +299,7 @@ struct LoopbackHTTPConnection(Movable):
             self.input = self.input[request_end:len(self.input):1]
             self.wire_bytes = len(self.input)
         self.request_read = True
-        if self.keep_alive_enabled:
+        if self.keep_alive_enabled and not upgrade_body:
             self.keep_alive = _request_keep_alive(head.version, head.headers)
         return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
 
@@ -577,8 +606,7 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
             raise Error("malformed HTTP request line suffix")
         if malformed_target:
             raise Error("malformed HTTP request target")
-    # A protocol switch would use the raw stream through EOF, which this parser does not frame.
-    if has_connection_upgrade and has_non_websocket_upgrade:
+    if has_connection_upgrade and has_non_websocket_upgrade and not defer_expectation_errors:
         raise Error("HTTP protocol upgrades are unsupported")
     if version == "HTTP/1.1" and not has_host:
         raise Error("HTTP/1.1 request requires Host")

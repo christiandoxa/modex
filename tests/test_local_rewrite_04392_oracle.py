@@ -42,6 +42,32 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
         if missing:
             raise AssertionError(f"Local relay oracle cases are missing: {sorted(missing)}")
 
+    def test_non_websocket_connection_upgrade_reads_through_eof(self):
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for case in transport.upgrade_eof_cases():
+                with self.subTest(case=case["name"]):
+                    oracle, oracle_records = transport.run_probe(ORACLE, case, upstream)
+                    modex, modex_records = transport.run_probe(transport.MODEX, case, upstream)
+                    for response in (oracle, modex):
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(response["status"], case["status"])
+                        self.assertEqual(response["read_error"], "")
+                        if "expected_request_parts_sent" in case:
+                            self.assertEqual(response["request_parts_sent_at_response"], case["expected_request_parts_sent"])
+                    self.assertEqual(modex["body"], oracle["body"])
+                    self.assertEqual(len(oracle_records), int(case["status"] == 200))
+                    self.assertEqual(len(modex_records), int(case["status"] == 200))
+                    if oracle_records:
+                        self.assertNotIn("upgrade", modex_records[0]["headers"])
+                        self.assertEqual(modex_records[0]["body"], oracle_records[0]["body"])
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
     def test_http_1_0_responses_and_stream_controls_match_released_oracle(self):
         upstream = transport.Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)

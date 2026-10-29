@@ -130,12 +130,28 @@ uses Modex's 110-column default; columns 50 and 120 are explicit
 `PRODEX_TERM_COLUMNS` overrides. Natural TTY width remains a parity gap: Mojo
 1.2's standard library has no controlling-terminal size query, and project
 rules prohibit an external `stty` helper.
-Wrapper/hash qualification, other malformed version inputs, remaining
-startup/security behavior, and other targets remain gaps. Hosted Fast CI run
+Other malformed version inputs, remaining startup/security behavior, and other
+targets remain gaps. Hosted Fast CI run
 `40788779491` exposed a diagnostic normalizer that assumed the fixture was
 directly under `/tmp`; it now handles nested private temp roots. Both the
 0.165.1 and 0.439.2 production-oracle tests cover that layout. See
 `docs/evidence/baseline-0.165.1/super-codex-probes.md`.
+
+Codex binary selection now follows the pinned 0.165.1 source for tested
+`PRODEX_CODEX_BIN` relative paths and command names, default and relative PATH
+entries, symlink targets, Prodex shim skipping and missing executables. The
+resolved canonical path reaches version and capability probes, hook preflight
+and the real synthetic child launch; the selected invocation name remains
+`argv[0]`. The active-oracle suite compares full output/status, probe and launch
+arguments, zero provider requests, and temporary-overlay cleanup across six
+selection modes. The new process-spawn unit also checks a custom `argv[0]`.
+Missing-path diagnostics match exactly and start no Codex process. The release
+still creates session, profile and housekeeping locks that Modex does not, so
+full storage side-effect parity remains open. Modex pins the resolved path
+across probes and launch, but cannot prevent replacement of that canonical
+file between those operations with the current pathname-based stdlib spawn.
+Legacy-hash rejection is source-derived; no real legacy Codex binary was run.
+See `docs/evidence/baseline-0.165.1/super-codex-probes.md`.
 
 The pinned 0.439.2 Codex probe also enforces the `0.153.2` minimum. Its real
 oracle comparison now covers below-minimum rejection, exact-minimum acceptance

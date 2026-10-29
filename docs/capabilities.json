@@ -218,6 +218,8 @@
         "socketpair MSG_NOSIGNAL hook request channel handles closed stdin without killing parent; synthetic child is killed/reaped",
         "production Super version and app-server help probes clear CODEX_HOME and five TEST_CODEX_* variables; active 0.165.1 comparison captures both probe environments",
         "Super startup enforces the frozen Codex CLI minimum 0.153.2; real-process oracle checks cover 0.165.1 and 0.439.2 below-minimum rejection, exact-boundary and leading-plus acceptance, stderr parsing, nonzero-probe diagnostics, and bounded-output diagnostics under nested private temp paths",
+        "Super Codex selection follows the pinned 0.165.1 source for tested relative PRODEX_CODEX_BIN paths, symlinks, bare command and default PATH lookup, relative PATH entries, shim skipping, and missing-binary diagnostics; selected commands reach production probes, hook preflight and child launch",
+        "posix_spawnp keeps the selected Codex invocation spelling in argv[0] while using the canonical resolved executable path; native process tests cover explicit argv[0] and the active release integration compares real launch arguments",
         "complete redirected launch-progress and provider-fallback stderr matches 0.165.1 and historical 0.439.2 across synthetic probe failures and child start; provider credentials remain absent",
         "production clean-home launch exit 0/7, hook failure and relay death cleanup; private overlays preserve shared sessions and retain unexpected state; idle relay exits on parent-channel EOF",
         "Checkpoint 11: hook-trust receive checks an expired deadline before consuming buffered input and uses the pinned pre-receive diagnostic; registered native unit and isolated RPC integration tests pass. This does not establish actual goal progress."
@@ -230,9 +232,11 @@
         "interactive TTY launch-progress panel rendering and colors",
         "controlling TTY width without PRODEX_TERM_COLUMNS; Mojo 1.2 stdlib has no terminal-size query and external stty helpers are prohibited",
         "non-host targets",
+        "Prodex profile, housekeeping and session lock side effects during successful launch and missing-binary failures; no legacy Codex binary was used to exercise the source-derived hash denylist",
+        "replacement of the canonical Codex executable file between probe and spawn; the stdlib uses pathname-based exec rather than a pinned open file descriptor",
         "default Super behavior, existing state, real Codex distributions and complete launch lifecycle"
       ],
-      "assessment": "Only official stdlib wrappers/types. Explicit env replacement remains parent-env safe; startup stdio swaps restore parent descriptors/flags and require no concurrent parent I/O. Hook transport and direct-child supervision are connected to the guarded clean-home production Super launch. Public Process.run still lacks environment/stdio overrides; full lifecycle remains blocked."
+      "assessment": "Only official stdlib wrappers/types. Tested Codex selection is connected through the actual production Super probes, hook transport and direct-child launch. Explicit env replacement remains parent-env safe; startup stdio swaps restore parent descriptors/flags and require no concurrent parent I/O. Prodex lock side effects, file replacement after path resolution, Public Process.run environment/stdio overrides and full lifecycle remain blocked."
     },
     {
       "id": "LOOPBACK-HTTP-NATIVE",

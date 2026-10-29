@@ -7,6 +7,10 @@ from std.sys._libc import exit
 
 def main() raises:
     var args = argv()
+    if len(args) == 2 and args[1] == "check-argv0":
+        if args[0] != "requested-codex" or getenv("MODEX_EXPECT_ARGV0") != args[0]:
+            raise Error("child argv0 mismatch")
+        return
     if len(args) == 2 and args[1] == "exit-nonzero":
         exit(7)
     if len(args) != 6:

@@ -40,30 +40,35 @@ def inherited_environment(excluded: List[String] = List[String]()) -> List[Strin
     return result^
 
 
-def spawn_with_env(path: String, args: List[String], env: List[String]) raises -> Process:
+def spawn_with_env(path: String, args: List[String], env: List[String], argv0: String = "") raises -> Process:
     comptime assert CompilationTarget.is_linux() or CompilationTarget.is_macos(), "POSIX spawn is supported only on Linux and macOS"
     if not path.startswith("/") or "\0" in path:
         raise Error("executable path must be absolute and NUL-free")
+    var invocation_name = argv0 if argv0 else path
+    if "\0" in invocation_name:
+        raise Error("invalid process argument")
 
     var stored = List[String]()
     stored.append(path)
+    stored.append(invocation_name)
     for i in range(len(args)):
         stored.append(args[i])
     for i in range(len(env)):
         stored.append(env[i])
     # Keep storage fixed while argv/envp spans reference its strings.
     ref exe = stored[0]
+    ref name = stored[1]
     var argv = List[Optional[CStringSpan[ImmutAnyOrigin]]](length=len(args) + 2, fill={})
-    argv[0] = exe.as_c_string_span().as_unsafe_any_origin()
+    argv[0] = name.as_c_string_span().as_unsafe_any_origin()
     for i in range(len(args)):
-        ref arg = stored[i + 1]
+        ref arg = stored[i + 2]
         if "\0" in arg:
             raise Error("invalid process argument")
         argv[i + 1] = arg.as_c_string_span().as_unsafe_any_origin()
 
     var envp = List[Optional[CStringSpan[ImmutAnyOrigin]]](length=len(env) + 1, fill={})
     for i in range(len(env)):
-        ref entry = stored[len(args) + 1 + i]
+        ref entry = stored[len(args) + 2 + i]
         if entry.find("=") <= 0 or "\0" in entry:
             raise Error("invalid child environment entry")
         envp[i] = entry.as_c_string_span().as_unsafe_any_origin()
@@ -153,7 +158,7 @@ struct _SavedStdio:
             _ = close(self.error)
 
 
-def spawn_with_env_stdio(path: String, args: List[String], env: List[String], stdin_fd: Int32, stdout_fd: Int32, stderr_fd: Int32 = -1) raises -> Process:
+def spawn_with_env_stdio(path: String, args: List[String], env: List[String], stdin_fd: Int32, stdout_fd: Int32, stderr_fd: Int32 = -1, argv0: String = "") raises -> Process:
     """Spawn through two pipes before any parent background work or concurrent I/O.
 
     Both supplied descriptors must be above stderr. Their owners must close the
@@ -176,7 +181,7 @@ def spawn_with_env_stdio(path: String, args: List[String], env: List[String], st
         raise Error("failed to redirect child stdio" if restored else "failed to restore parent stdio")
     var child: Process
     try:
-        child = spawn_with_env(path, args, env)
+        child = spawn_with_env(path, args, env, argv0)
     except:
         if not saved.restore():
             raise Error("failed to restore parent stdio after process spawn failed")
@@ -254,14 +259,14 @@ def _capture_read(fd: Int32, mut output: List[UInt8], mut eof: Bool, max_bytes: 
     return count > 0
 
 
-def capture_with_env(path: String, args: List[String], environment: List[String], label: String, timeout_ms: UInt64 = 15000, max_output_bytes: Int = 1048576) raises -> CapturedProcessOutput:
+def capture_with_env(path: String, args: List[String], environment: List[String], label: String, timeout_ms: UInt64 = 15000, max_output_bytes: Int = 1048576, argv0: String = "") raises -> CapturedProcessOutput:
     """Capture both child channels fairly with null stdin and fixed resource limits."""
     if timeout_ms == 0 or max_output_bytes < 0:
         raise Error("invalid process capture limits")
     var input = Pipe()
     var output = Pipe()
     var error_output = Pipe()
-    var child = spawn_with_env_stdio(path, args, environment, input.fd_in.value().value, output.fd_out.value().value, error_output.fd_out.value().value)
+    var child = spawn_with_env_stdio(path, args, environment, input.fd_in.value().value, output.fd_out.value().value, error_output.fd_out.value().value, argv0)
     input.set_output_only()
     input.set_input_only()
     output.set_input_only()

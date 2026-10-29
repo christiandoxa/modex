@@ -19,6 +19,7 @@ from .paths import app_root, ensure_app_root, shared_root
 from .process_spawn import CapturedProcessOutput, capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, terminate_child_gracefully, wait_or_kill
 from .provider_deepseek_transport import deepseek_request_headers
 from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, serve_local_rewrite
+from .sha256 import hash_file
 from .text import cli_width, is_whitespace, section_header, trim_text, wrap_text
 from .uuid7 import new_uuid7
 
@@ -72,6 +73,111 @@ def _ascii_lower(value: String) -> String:
         var code = Int(character)
         result += chr(code + 32 if 65 <= code <= 90 else code)
     return result
+
+
+def _path_candidates(command: String, path: String) -> List[String]:
+    var candidates = List[String]()
+    if path == "\0":
+        return candidates^
+    for directory in path.split(":"):
+        var candidate = String(directory)
+        if candidate and not candidate.endswith("/"):
+            candidate += "/"
+        candidates.append(candidate + command)
+    return candidates^
+
+
+def _executable_path(candidate: String) -> String:
+    try:
+        var resolved = realpath(candidate)
+        var info = lstat(resolved)
+        if info.st_mode & 0o170000 != 0o100000 or info.st_mode & 0o111 == 0:
+            return String()
+        return resolved^
+    except:
+        return String()
+
+
+def _is_prodex_wrapper(path: String) -> Bool:
+    var parts = path.split("/")
+    var basename = _ascii_lower(String(parts[len(parts) - 1]))
+    if basename == "prodex" or basename == "prodex.exe":
+        return True
+    try:
+        if realpath("/proc/self/exe") == path:
+            return True
+    except:
+        pass
+    var bytes: List[UInt8]
+    try:
+        with open(path, "r") as file:
+            bytes = file.read_bytes(8192)
+    except:
+        return False
+    for byte in bytes:
+        if byte == 0:
+            return False
+    var source: String
+    try:
+        source = String(from_utf8=Span(bytes))
+    except:
+        return False
+    var lowered = _ascii_lower(source)
+    if lowered.find("codex-shim") >= 0 or lowered.find("@christiandoxa/prodex") >= 0:
+        return True
+    for line in source.split("\n"):
+        var normalized = _ascii_lower(trim_text(line))
+        if (normalized.startswith("exec ") or normalized.find("spawn") >= 0) and normalized.find("prodex") >= 0:
+            return True
+    return False
+
+
+def _is_legacy_codex(path: String) -> Bool:
+    var digest: String
+    try:
+        digest = hash_file(path, Int.MAX)
+    except:
+        return False
+    return digest in [
+        "31b366ac32f41988056f56ce299d84489b90a18623fa8419dcfd2d39065dd252",
+        "61303e421811460cc8f5a86d765c5b2bbc1578ef8ff606103ef22da0fd74de05",
+        "7990011a697152a285b8511705572400756febac2fbd5d9d8219a876019ed0b7",
+        "e73621dc0acad757636a5ac81d40c727f0a3f055af3ddaab8861aeaf2ba2fa61",
+        "f45c814867246310abf3dfdfc1e8f0e95123b096ef3bcd089562694fe05f2497",
+        "9f5a4e4fbbd784a18e4a46f977aaeb957510e4f6e1b97ef9a31091151b42df71",
+    ]
+
+
+def _codex_binary() raises -> Tuple[String, String]:
+    var requested = getenv("PRODEX_CODEX_BIN", "\0")
+    var path = getenv("PATH", "\0")
+    var configured = requested != "\0"
+    if not configured:
+        for candidate in _path_candidates("codex", path):
+            var resolved = _executable_path(candidate)
+            if not resolved or _is_prodex_wrapper(resolved) or _is_legacy_codex(resolved):
+                continue
+            return (resolved, resolved)
+        requested = "codex"
+
+    var resolved = String()
+    if requested.find("/") >= 0:
+        resolved = _executable_path(requested)
+    else:
+        for candidate in _path_candidates(requested, path):
+            resolved = _executable_path(candidate)
+            if resolved:
+                break
+    if not resolved:
+        raise Error("Codex CLI is unavailable. " + CODEX_INSTALL_GUIDANCE)
+    if _is_prodex_wrapper(resolved):
+        raise Error("Codex executable resolves to a Prodex wrapper: " + resolved + ". " + CODEX_INSTALL_GUIDANCE)
+    if _is_legacy_codex(resolved):
+        raise Error(
+            "Codex executable " + resolved + " is the legacy Prodex-bundled runtime from 0.426.1. "
+            + "It was left untouched, but Prodex 0.427.0 will not run it. " + CODEX_INSTALL_GUIDANCE
+        )
+    return (resolved, requested)
 
 
 def deepseek_model_catalog(launch_model: String) -> String:
@@ -274,9 +380,9 @@ def _deepseek_provider_panel() raises:
     )
 
 
-def _capture_codex_probe(binary: String, args: List[String], environment: List[String], label: String) raises -> CapturedProcessOutput:
+def _capture_codex_probe(binary: String, argv0: String, args: List[String], environment: List[String], label: String) raises -> CapturedProcessOutput:
     try:
-        return capture_with_env(binary, args, environment, label)
+        return capture_with_env(binary, args, environment, label, argv0=argv0)
     except error:
         raise Error("failed to probe Codex CLI at " + binary + ": " + String(error))
 
@@ -342,10 +448,10 @@ def _codex_version_parts(value: String) -> List[UInt64]:
     return parts^
 
 
-def _exec(binary: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64) raises -> Int:
+def _exec(binary: String, argv0: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64) raises -> Int:
     var environment = _child_environment(home)
     var probe_environment = _codex_probe_environment(environment)
-    var version = _capture_codex_probe(binary, [String("--version")], probe_environment, "Codex version probe")
+    var version = _capture_codex_probe(binary, argv0, [String("--version")], probe_environment, "Codex version probe")
     if not version.status.exit_code or version.status.exit_code.value() != 0:
         raise Error(
             "Codex version probe failed for " + binary + " with status "
@@ -363,7 +469,7 @@ def _exec(binary: String, home: String, model: String, upstream: String, key: St
             "Codex CLI at " + binary + " reports " + String(parts[0]) + "." + String(parts[1]) + "." + String(parts[2])
             + "; Prodex requires 0.153.2 or newer. " + CODEX_INSTALL_GUIDANCE
         )
-    var capability = _capture_codex_probe(binary, [String("app-server"), String("--help")], probe_environment, "Codex app-server capability probe")
+    var capability = _capture_codex_probe(binary, argv0, [String("app-server"), String("--help")], probe_environment, "Codex app-server capability probe")
     if not capability.status.exit_code or capability.status.exit_code.value() != 0:
         raise Error(
             "Codex app-server capability probe failed for " + binary + " with status "
@@ -397,7 +503,7 @@ def _exec(binary: String, home: String, model: String, upstream: String, key: St
         _config(args, "web_search", "\"live\"")
         for feature in [String("apps"), String("js_repl"), String("image_generation")]:
             _config(args, "features." + feature, "false")
-        var legacy = run_super_hook_trust_preflight(binary, String(cwd()), args, environment)
+        var legacy = run_super_hook_trust_preflight(binary, String(cwd()), args, environment, argv0)
         var launch = List[String]()
         if legacy:
             launch.append("--dangerously-bypass-hook-trust")
@@ -407,7 +513,7 @@ def _exec(binary: String, home: String, model: String, upstream: String, key: St
         launch.extend(prompt.copy())
         if _launch_progress_fallback():
             print("Prodex launch: starting child process...", file=stderr)
-        var child = spawn_with_env(binary, launch, environment)
+        var child = spawn_with_env(binary, launch, environment, argv0)
         var result: ProcessStatus
         try:
             while not child.poll().has_exited():
@@ -442,9 +548,6 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
     var catalog_model = trim_text(String(model_literal[byte=1:model_literal.byte_length() - 1]))
     if catalog_model.byte_length() > 4096:
         raise Error("DeepSeek model identifier exceeds 4096 bytes")
-    var binary = getenv("PRODEX_CODEX_BIN")
-    if not binary.startswith("/") or "\x00" in binary:
-        raise Error("Super clean-home launch requires an absolute PRODEX_CODEX_BIN")
     var root = app_root()
     var shared = shared_root(root)
     _clean_home(root, shared)
@@ -468,7 +571,8 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
         with open(home + "/prodex-deepseek-model-catalog.json", "w") as catalog:
             # Frozen exact-value lookup ignores numeric -c overrides when building the catalog.
             catalog.write(deepseek_model_catalog(catalog_model))
-        var result = _exec(binary, home, launch_model, upstream, key, prompt, launch_context, launch_compact)
+        var codex = _codex_binary()
+        var result = _exec(codex[0], codex[1], home, launch_model, upstream, key, prompt, launch_context, launch_compact)
         _remove_overlay(home)
         return result
     except:

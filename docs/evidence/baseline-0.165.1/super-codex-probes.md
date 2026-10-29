@@ -53,6 +53,41 @@ wrapper/hash qualification, other malformed version inputs, full
 startup/storage/security behavior, other targets, and broader Super parity
 remain unverified.
 
+## Codex executable selection
+
+The pinned `crates/prodex-app/src/codex_binary.rs` keeps an explicitly set
+`PRODEX_CODEX_BIN` spelling, resolves relative paths against the working
+directory and bare command names through `PATH`, and selects the first
+canonical `codex` in `PATH` when the variable is unset. Default discovery
+skips Prodex wrappers and six legacy bundled Codex hashes. Validation resolves
+symlinks before checking the executable, while the later child command uses
+the selected path spelling.
+
+Modex now resolves the same tested forms using Mojo stdlib path, mode and SHA
+helpers. It retains the selected spelling as child `argv[0]` and uses the
+canonical executable path for version/app-server probes, hook preflight and
+the child launch. `tests/test_super_launch_01651.py` compares full redirected
+stdout/stderr, exit code, probe and launch arguments, no-request behavior and
+overlay cleanup through the actual compiled Modex CLI and the checksum-pinned
+oracle. Synthetic Codex controls cover a relative explicit path, a relative
+symlink, a configured bare command, default PATH discovery, a relative PATH
+entry, a Prodex shim before the valid PATH entry, and a missing executable.
+The selected launch cases reach the final child, which exits 7 before making
+any provider request. The missing case matches the release diagnostic and
+starts no Codex or provider peer.
+
+These controls expose an existing storage difference: 0.165.1 creates profile,
+housekeeping and session lock files during launch and even on the missing
+binary path; Modex does not implement those lock lifecycles. Both remove the
+temporary launch overlay and preserve the synthetic session. This slice does
+not claim matching storage mutations. Modex executes the canonical path chosen
+before probing, which avoids retargeting through a changed symlink alias; a
+replacement of the canonical file between probe and spawn remains possible
+because Mojo 1.2 exposes no file-descriptor-based spawn. The six legacy hashes
+and wrapper markers are ported from the pinned source, but the test suite does
+not run an actual legacy Codex binary. This qualifies only the selected Linux
+x86-64 cases; other release targets and full Super startup remain open.
+
 Reproduce with:
 
 ```sh

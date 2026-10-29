@@ -67,6 +67,84 @@ class ActiveSuperLaunchTests(unittest.TestCase):
         self.assertEqual(outputs[0], outputs[1])
         self.assertTrue(outputs[0][2].endswith(expected + b"\n"))
 
+    def test_codex_binary_selection_reaches_probes_and_child_launch(self):
+        for mode in ("relative", "symlink", "command", "path", "relative-path", "path-skips-wrapper"):
+            with self.subTest(mode=mode):
+                outputs = []
+                states = []
+                for binary in (active_cli.ORACLE, launch_support.MODEX):
+                    result, records, upstream, state = launch_support.SuperLaunchTests().run_launch(
+                        binary=binary,
+                        scenario="exit-seven",
+                        codex_mode=mode,
+                        environment_overrides={"MODEX_TEST_CODEX_VERSION": "codex-cli 0.153.2"},
+                    )
+                    self.assertEqual((result.returncode, result.stdout), (7, b""), result.stderr)
+                    self.assertEqual(upstream, [])
+                    self.assertEqual(state["leftovers"], [])
+                    self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                    self.assertNotIn(b"synthetic-codex-key", result.stdout + result.stderr)
+                    self.assertEqual(
+                        [record["args"] for record in records if record["kind"] == "probe"],
+                        [["--version"], ["app-server", "--help"]],
+                    )
+                    launch = next(record for record in records if record["kind"] == "launch")
+                    trace = [
+                        (
+                            record["kind"],
+                            launch_support.normalized_app_server_args(record["args"])
+                            if "args" in record else None,
+                            record.get("method"),
+                            record.get("environment"),
+                        )
+                        for record in records
+                    ]
+                    outputs.append((
+                        result.returncode,
+                        result.stdout,
+                        launch_support.normalized_codex_path(result.stderr),
+                        trace,
+                    ))
+                    states.append(state)
+                self.assertEqual(outputs[0], outputs[1])
+                self.assertEqual(
+                    tuple(states[0][name] for name in ("leftovers", "session", "extra", "config")),
+                    tuple(states[1][name] for name in ("leftovers", "session", "extra", "config")),
+                )
+                self.assertIn("shared/sessions/.prodex-maintenance.lock", states[0]["managed"])
+                self.assertNotIn("shared/sessions/.prodex-maintenance.lock", states[1]["managed"])
+
+    def test_missing_codex_path_matches_01651_without_startup_side_effects(self):
+        outputs = []
+        states = []
+        for binary in (active_cli.ORACLE, launch_support.MODEX):
+            result, records, upstream, state = launch_support.SuperLaunchTests().run_launch(
+                binary=binary, scenario="exit-seven", codex_mode="missing"
+            )
+            self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
+            self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+            self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+            outputs.append((
+                result.returncode,
+                result.stdout,
+                launch_support.normalized_codex_path(result.stderr),
+            ))
+            states.append(state)
+        self.assertEqual(outputs[0], outputs[1])
+        self.assertEqual(
+            tuple(states[0][name] for name in ("leftovers", "session", "extra", "config")),
+            tuple(states[1][name] for name in ("leftovers", "session", "extra", "config")),
+        )
+        self.assertIn("state/profile-lifecycle.json.lock", states[0]["managed"])
+        self.assertNotIn("state/profile-lifecycle.json.lock", states[1]["managed"])
+        self.assertTrue(outputs[0][2].endswith(
+            b"Error: Codex CLI is unavailable. Install or update the official Codex CLI with "
+            b"`npm install -g @openai/codex@latest` (https://developers.openai.com/codex/cli), "
+            b"verify `codex --version`, or set PRODEX_CODEX_BIN to its executable path. Prodex "
+            b"accepts compatible Codex releases at or above its minimum capability baseline; "
+            b"the latest stable release is recommended.\n"
+        ))
+
     def test_ci_progress_fallback_matches_01651_on_tty(self):
         outputs = []
         for binary in (active_cli.ORACLE, launch_support.MODEX):

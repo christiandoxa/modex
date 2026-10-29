@@ -109,15 +109,14 @@
   ],
   "unconnected_foundations": {
     "modules": [
-      "src/modex/sha256.mojo",
       "src/modex/runtime_recovery.mojo"
     ],
-    "status": "SHA broker acquisition and native recovery policy are not connected to production broker/recovery entrypoints. Recovery has native and pinned-source differential tests only. Quota handoff policy remains unconnected after checkpoint 13; no production recovery or admission claim follows from its component tests.",
+    "status": "Native recovery policy is not connected to production recovery entrypoints. Recovery has native and pinned-source differential tests only. Quota handoff policy remains unconnected after checkpoint 13; no production recovery or admission claim follows from its component tests.",
     "imports": [
       "official Mojo stdlib",
       "local modex JSON modules"
     ],
-    "assessment": "Native SHA and recovery policy remain foundations; production broker acquisition and live goal recovery are not connected. All external imports are official Mojo stdlib.",
+    "assessment": "Recovery policy remains unconnected to live goal recovery. All external imports are official Mojo stdlib.",
     "pointer_ownership": "Recovery consumes owned Strings and the existing JSON document; no borrowed state escapes a synchronous call.",
     "evidence": [
       "docs/evidence/log-foundations-tests.txt",
@@ -153,8 +152,8 @@
   "integration_targets": "Codex is an external integration target, never a product implementation helper. Tests replace only Codex/provider peers with synthetic stdlib harnesses; Modex itself is always the compiled native production binary. Real Codex distribution qualification remains blocked.",
   "production_subprocess_invocations": [
     {
-      "executable": "absolute PRODEX_CODEX_BIN",
-      "purpose": "Codex integration target: bounded version capture, hook-trust app-server stdio, and selected exec invocation; explicit environment via official stdlib posix_spawnp."
+      "executable": "Codex selected from PRODEX_CODEX_BIN or PATH",
+      "purpose": "Codex integration target: resolve executable paths and PATH commands, skip pinned Prodex shims and legacy hashes, then run bounded version capture, hook-trust app-server stdio, and selected exec invocation through official stdlib posix_spawnp."
     },
     {
       "executable": "same Modex executable via /proc/self/exe",
@@ -184,9 +183,9 @@
   "upstream_follow_implementation": "Native incremental file following uses official Mojo file/stat APIs, retained descriptors, /proc/self/fd identity checks and std.time polling. The bundled private std.sys._libc_errno wrapper classifies OS errors without adding a native binding. Source discovery retains at most 32 files; reads and partial-line buffers are bounded. Explicit disk recording bypasses live registry discovery as in the release. Without recording, live broker/direct-source registries still fail explicitly; terminal views remain unimplemented. No service or executable supplies missing behavior. Linux only; other targets unverified.",
   "general_stream_implementation": "Native Mojo combines runtime/session followers under a shared 32-descriptor budget with per-source reservations, 2/10-second discovery intervals and all transcript projections per record. Operational event classification and detail rendering are independently authored from the frozen behavior contract; endpoint display performs native URL path parsing without a library or helper. Exact tested format cases do not establish complete URL or stream equivalence.",
   "json_number_implementation": "Native JSON numeric conversion reproduces the release's default significand-then-decimal-scaling order and output notation, using only UInt64/Float64 arithmetic and official Mojo numeric primitives. It was derived independently from actual oracle outputs, including finite seeded values. No dependency implementation or power table was copied and no production generator is involved.",
-  "sha256_foundation": "Independent native Mojo SHA-256 from NIST FIPS 180-4, with incremental hashing, non-destructive digest calculation and bounded file reads. Numerical constants are specified by FIPS, not copied from a dependency implementation. Python hashlib supplies independent test-only comparisons. No production cryptography readiness or executable identity admission claim.",
+  "sha256_foundation": "Independent native Mojo SHA-256 from NIST FIPS 180-4, with incremental hashing and non-destructive digest calculation. Production Codex discovery uses it only to reject the six legacy bundled-runtime hashes pinned in the 0.165.1 source. Numerical constants are specified by FIPS, not copied from a dependency implementation; Python hashlib supplies independent test-only comparisons. This does not establish general cryptographic readiness or file-descriptor identity pinning.",
   "loopback_http_foundation": "Native Mojo HTTP/1 GET and an owning incremental POST reader over official internal nonblocking POSIX socket wrappers, with numeric loopback-only admission, request validation, absolute deadlines, bounded headers/body/framing and Content-Length/chunked/EOF response handling. Standalone tests include a filesystem containing only the driver and platform/official Mojo runtime libraries, sharing the host network to reach the synthetic loopback server. DNS, TLS, proxies, redirects, general HTTP equivalence and live broker admission remain unfinished.",
-  "process_environment_foundation": "Official stdlib posix_spawnp/dup/dup2/fcntl/Pipe support explicit env, bounded simultaneous stdout/stderr capture and startup-only stdio redirection. Production launch performs swaps before background work. Parent descriptors/flags restore on success/error. Signal forwarding, process groups, descendant cleanup and non-host targets remain gaps.",
+  "process_environment_foundation": "Official stdlib posix_spawnp/dup/dup2/fcntl/Pipe support explicit env, selected argv0, bounded simultaneous stdout/stderr capture and startup-only stdio redirection. Production launch performs swaps before background work. Parent descriptors/flags restore on success/error. Signal forwarding, process groups, descendant cleanup and non-host targets remain gaps.",
   "provider_sse_foundation": "Independently authored native Mojo incremental byte framing and JSON assembly reuse the existing JsonDocument and Unicode trim helpers. Line/event/accumulation limits default to 4 MiB; framing returns at each complete event so callers can stop before trailing errors. The test driver stops at [DONE]. Only official collections/string facilities and local modules are imported; no pointer API, new binding, external parser or implementation helper is added. Native, fragmented-input and clean-runtime tests cover the standalone framing/assembly contract. The chat reader additionally has synthetic official-release adapter comparisons; neither is connected to the CLI. HTTP/TLS/proxies, backpressure/cancellation and complete transport/provider parity remain unfinished.",
   "provider_chat_chunk_foundation": "Native Mojo selects the first chat-compatible choice, decodes choice metadata/deltas and classifies embedded errors using the existing JSON decoder/serializer. Frozen-source projections preserve type, null and fallback rules; no foreign implementation, pointer API or new dependency is used. These helpers remain outside CLI/provider execution.",
   "provider_chat_stream_foundation": "Native Mojo composes incremental SSE framing/JSON assembly with DeepSeek-compatible response events, metadata/usage projection, tool argument accumulation and item conversion. The implementation reuses local JSON/text/redaction and only official stdlib APIs. UUIDv7 fallback IDs read 16 random bytes from /dev/urandom through the official file API and use the pinned stdlib realtime clock; failure is explicit, with no weak random fallback or new binding. RTK support rewrites command strings only and never launches RTK. Synthetic official-release fixtures compare adapter output to a standalone native driver, and the new guarded production Super tests check named live release observations. Complete auth/config, HTTP/TLS/proxies, persistent conversations, transport backpressure/cancellation and non-host platforms remain unfinished. No provider contract is PASS.",
@@ -225,6 +224,7 @@
       "src/modex/app_server_args.mojo",
       "src/modex/app_server_rpc.mojo",
       "src/modex/super_hooks.mojo",
+      "src/modex/sha256.mojo",
       "src/modex/provider_rate_limits.mojo",
       "src/modex/provider_passthrough.mojo",
       "src/modex/super_launch.mojo"
@@ -274,7 +274,7 @@
     "docs/evidence/native-super-tests.txt",
     "docs/evidence/native-super-dependencies.txt"
   ],
-  "super_launch_implementation": "Native clean-home overlay, selected plus bundled DeepSeek model catalog/metadata/default budgets, explicit config/environment, version/hook preflight, supervised same-image relay and Codex exec. Existing state and complete storage/config/companion behavior remain blocked. Context/compaction CLI overrides now use the pinned UInt64 fallback/clamping rules and reach native Codex argv; catalog defaults retain the baseline string-only exact-value lookup behavior.",
+  "super_launch_implementation": "Native clean-home overlay, pinned-source Codex executable selection from PRODEX_CODEX_BIN/PATH, selected plus bundled DeepSeek model catalog/metadata/default budgets, explicit config/environment, version/hook preflight, supervised same-image relay and Codex exec. Path selection and child args match selected 0.165.1 synthetic controls; release lock side effects, existing state and complete storage/config/companion behavior remain blocked. Context/compaction CLI overrides now use the pinned UInt64 fallback/clamping rules and reach native Codex argv; catalog defaults retain the baseline string-only exact-value lookup behavior.",
   "checkpoint2_dependency_audit": {
     "new_application_dependencies": [],
     "new_native_bindings": [],

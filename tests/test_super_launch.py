@@ -196,7 +196,7 @@ class SuperLaunchTests(unittest.TestCase):
     def run_launch(
         self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat",
         super_arguments=(), environment_overrides=None, base_path="/v1", sub_agent=False,
-        temporary_directory=None, stderr_tty=False,
+        temporary_directory=None, stderr_tty=False, codex_mode="explicit",
     ):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-", dir=temporary_directory) as directory:
             root = Path(directory)
@@ -206,6 +206,38 @@ class SuperLaunchTests(unittest.TestCase):
             codex = root / "codex"
             codex.write_text("#!" + sys.executable + "\n" + CODEX)
             codex.chmod(0o700)
+            path_dir = root / "work/bin"
+            if codex_mode in ("path", "command", "relative-path", "path-skips-wrapper"):
+                path_dir.mkdir()
+                os.symlink(codex, path_dir / "codex")
+            path = "/usr/bin:/bin"
+            codex_setting = str(codex)
+            if codex_mode == "relative":
+                codex_setting = "../codex"
+            elif codex_mode == "symlink":
+                os.symlink(codex, root / "codex-alias")
+                codex_setting = "../codex-alias"
+            elif codex_mode in ("path", "command"):
+                path = str(path_dir)
+                codex_setting = "" if codex_mode == "path" else "codex"
+            elif codex_mode == "relative-path":
+                path = "bin"
+                codex_setting = ""
+            elif codex_mode == "path-skips-wrapper":
+                wrapper_dir = root / "shim"
+                wrapper_dir.mkdir()
+                wrapper = wrapper_dir / "codex"
+                wrapper.write_text('#!/bin/sh\nexec prodex "$@"\n')
+                wrapper.chmod(0o700)
+                path = f"{wrapper_dir}:{path_dir}"
+                codex_setting = ""
+            elif codex_mode == "missing":
+                missing_dir = root / "empty-path"
+                missing_dir.mkdir()
+                path = str(missing_dir)
+                codex_setting = ""
+            elif codex_mode != "explicit":
+                raise ValueError(f"unknown Codex selection fixture: {codex_mode}")
             capture = root / "capture.jsonl"
             if existing:
                 (root / "shared/config.toml").write_text('model="preserve-me"\n')
@@ -509,11 +541,13 @@ class SuperLaunchTests(unittest.TestCase):
             server = ThreadingHTTPServer(("127.0.0.1", 0), Upstream)
             worker = threading.Thread(target=server.serve_forever, daemon=True)
             worker.start()
-            environment = {"HOME": str(root / "home"), "PATH": "/usr/bin:/bin", "TERM": "dumb", "NO_COLOR": "1",
+            environment = {"HOME": str(root / "home"), "PATH": path, "TERM": "dumb", "NO_COLOR": "1",
                            "PRODEX_HOME": str(root / "state"), "PRODEX_SHARED_CODEX_HOME": str(root / "shared"),
-                           "PRODEX_CODEX_BIN": str(codex), "MODEX_LAUNCH_CAPTURE": str(capture),
+                           "MODEX_LAUNCH_CAPTURE": str(capture),
                            "MODEX_LAUNCH_SCENARIO": scenario, "CODEX_SANDBOX_SENTINEL": "remove-from-child", "TMPDIR": str(root),
                            **{key: str(root / "home") for key in ("XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME")}}
+            if codex_setting:
+                environment["PRODEX_CODEX_BIN"] = codex_setting
             environment.update(environment_overrides or {})
             command = [str(binary), "super", "--provider", "deepseek", "--api-key", "synthetic-provider-key",
                        "--base-url", f"http://127.0.0.1:{server.server_port}{base_path}", "--model", model,
@@ -557,7 +591,9 @@ class SuperLaunchTests(unittest.TestCase):
             overlays = list((root / "state/profiles").glob("*"))
             state = {"leftovers": [str(path) for path in overlays], "session": saved.read_text() if saved.exists() else None,
                      "extra": [(path / "synthetic-user-state").read_text() for path in overlays if (path / "synthetic-user-state").exists()],
-                     "config": (root / "shared/config.toml").read_text() if (root / "shared/config.toml").exists() else None}
+                     "config": (root / "shared/config.toml").read_text() if (root / "shared/config.toml").exists() else None,
+                     "managed": sorted(str(path.relative_to(root)) for name in ("home", "state", "shared")
+                                       for path in (root / name).rglob("*") if not path.is_socket())}
             for record in records:
                 for pid in ([record["pid"]] if "pid" in record else []) + [int(pid) for pid in record.get("children", [])]:
                     try: os.kill(pid, 0)

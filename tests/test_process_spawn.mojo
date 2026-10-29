@@ -28,6 +28,12 @@ def main() raises:
     assert_true(getenv("MODEX_CHILD_MARKER", "absent") == before)
     assert_true(getenv("MODEX_PARENT_SENTINEL") == "parent-only")
 
+    var argv0_env = List[String]()
+    argv0_env.append("MODEX_EXPECT_ARGV0=requested-codex")
+    var named_child = spawn_with_env(child_path, [String("check-argv0")], argv0_env, "requested-codex")
+    var named_status = named_child.wait()
+    assert_true(named_status.exit_code and named_status.exit_code.value() == 0)
+
     var nonzero_args = List[String]()
     nonzero_args.append("exit-nonzero")
     var nonzero = spawn_with_env(child_path, nonzero_args, List[String]())

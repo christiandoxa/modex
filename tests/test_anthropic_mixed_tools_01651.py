@@ -1002,42 +1002,51 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
             captures.append((json.loads(posts[0]["body"]), events))
         self.assertEqual(captures[1:], captures[:1] * 2)
 
-    def test_stream_numeric_function_argument_fragment_matches_releases(self):
-        reply = _stream([
-            {"type": "message_start", "message": {}},
-            {"type": "content_block_start", "index": 0, "content_block": {
-                "type": "tool_use", "id": "call_numeric", "name": "lookup",
-            }},
-            {"type": "content_block_delta", "index": 0, "delta": {
-                "type": "input_json_delta", "partial_json": 3, "future_field": "ignored",
-            }},
-            {"type": "message_delta", "delta": {"stop_reason": "tool_use"}, "usage": {}},
-            {"type": "message_stop"},
-        ])
+    def test_stream_nonstring_function_argument_fragments_match_releases(self):
         request = _request(stream=True)
-        releases = []
-        for binary in (ORACLE_01651, ORACLE):
-            posts, responses = observe_turns(binary, [request], [reply])
-            self.assertEqual(len(posts), 1)
-            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
-            self.assertEqual(responses[0]["status"], 200)
-            events = _events(bytes.fromhex(responses[0]["body"]))
-            self.assertEqual(events[-1][0], "response.completed")
-            call = next(item for item in events[-1][1]["response"]["output"]
-                        if item["type"] == "function_call")
-            self.assertEqual(call["arguments"], "")
-            releases.append((json.loads(posts[0]["body"]), events))
-        self.assertEqual(releases[1], releases[0])
+        cases = (
+            ("number", {"partial_json": 3}),
+            ("null", {"partial_json": None}),
+            ("missing", {}),
+            ("boolean", {"partial_json": True}),
+            ("object", {"partial_json": {"synthetic": True}}),
+        )
+        for name, fields in cases:
+            with self.subTest(fragment=name):
+                reply = _stream([
+                    {"type": "message_start", "message": {}},
+                    {"type": "content_block_start", "index": 0, "content_block": {
+                        "type": "tool_use", "id": "call_nonstring", "name": "lookup",
+                    }},
+                    {"type": "content_block_delta", "index": 0, "delta": {
+                        "type": "input_json_delta", "future_field": "ignored", **fields,
+                    }},
+                    {"type": "message_delta", "delta": {"stop_reason": "tool_use"}, "usage": {}},
+                    {"type": "message_stop"},
+                ])
+                releases = []
+                for binary in (ORACLE_01651, ORACLE):
+                    posts, responses = observe_turns(binary, [request], [reply])
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual(responses[0]["status"], 200)
+                    events = _events(bytes.fromhex(responses[0]["body"]))
+                    self.assertEqual(events[-1][0], "response.completed")
+                    call = next(item for item in events[-1][1]["response"]["output"]
+                                if item["type"] == "function_call")
+                    self.assertEqual(call["arguments"], "")
+                    releases.append((json.loads(posts[0]["body"]), events))
+                self.assertEqual(releases[1], releases[0])
 
-        posts, responses = observe_turns(MODEX, [request], [reply])
-        self.assertEqual(len(posts), 1)
-        self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
-        self.assertEqual(responses[0]["status"], 200)
-        events = _events(bytes.fromhex(responses[0]["body"]))
-        self.assertEqual((json.loads(posts[0]["body"]), events), releases[0])
-        call = next(item for item in events[-1][1]["response"]["output"]
-                    if item["type"] == "function_call")
-        self.assertEqual(call["arguments"], "")
+                posts, responses = observe_turns(MODEX, [request], [reply])
+                self.assertEqual(len(posts), 1)
+                self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+                self.assertEqual(responses[0]["status"], 200)
+                events = _events(bytes.fromhex(responses[0]["body"]))
+                self.assertEqual((json.loads(posts[0]["body"]), events), releases[0])
+                call = next(item for item in events[-1][1]["response"]["output"]
+                            if item["type"] == "function_call")
+                self.assertEqual(call["arguments"], "")
 
     def test_buffered_envelope_extensions_and_usage_normalization_match_releases(self):
         cases = (

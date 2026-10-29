@@ -14,8 +14,9 @@ function calls without an ID still fail.
 
 For streamed function calls, both releases ignore a non-string or missing
 `input_json_delta.partial_json` value and complete the call with an empty
-argument string. Numeric values are covered by a synthetic real-process
-comparison against both pinned Linux executables and Modex.
+argument string. Numeric, null, missing, boolean, and object values are covered
+by a synthetic real-process comparison against both pinned Linux executables
+and Modex.
 
 Frozen source trace:
 
@@ -47,7 +48,7 @@ Frozen source trace:
 `test_buffered_search_query_shapes_match_both_releases`,
 `test_stream_search_query_shapes_and_metadata_match_both_releases`,
 `test_stream_missing_function_id_uses_release_fallback`, and
-`test_stream_numeric_function_argument_fragment_matches_releases` compare
+`test_stream_nonstring_function_argument_fragments_match_releases` compare
 the relevant complete responses and event sequences against the checksum-pinned
 0.165.1 and 0.439.2 Linux processes, including normalized provider request
 bodies where asserted. The tests use synthetic provider replies, keys, Codex
@@ -55,9 +56,10 @@ peers, isolated directories, and loopback traffic.
 
 Validation: the production build passed, and all 54 methods in
 `test_anthropic_mixed_tools_01651.py` passed on Linux x86-64, including
-`test_stream_numeric_function_argument_fragment_matches_releases`.
-That numeric regression also passed in a focused rerun after tightening its
-provider-request check to compare parsed JSON objects and complete events.
+the earlier numeric-fragment form of the focused regression. The expanded
+five-shape `test_stream_nonstring_function_argument_fragments_match_releases`
+also passed in its focused rerun, comparing parsed provider request objects
+and complete event sequences.
 The production import audit also passed for 71 Mojo files, with only standard
 library/internal imports. Oracle hashes are
 `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51` for

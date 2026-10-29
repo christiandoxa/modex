@@ -13,9 +13,10 @@ parity remain unfinished. Evidence:
 
 Anthropic streamed function calls now ignore non-string or missing
 `input_json_delta.partial_json` fragments like both pinned releases. The
-function call completes with its existing empty argument string; a three-way
-synthetic process comparison covers 0.165.1, 0.439.2, and Modex. The 54-test
-mixed-tools process suite passed. Other Anthropic content and event shapes,
+function call completes with its existing empty argument string; a focused
+synthetic process comparison covers number, null, missing, boolean, and object
+values against 0.165.1, 0.439.2, and Modex. The earlier 54-test mixed-tools
+process suite passed. Other Anthropic content and event shapes,
 continuation, transport security, and non-Linux targets remain unqualified.
 Evidence: `docs/evidence/baseline-0.165.1/anthropic-response-shapes.md`.
 

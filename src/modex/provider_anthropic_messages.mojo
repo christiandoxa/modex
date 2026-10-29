@@ -1,4 +1,4 @@
-"""DeepSeek chat requests and Anthropic Messages responses for web search."""
+"""DeepSeek chat requests and Anthropic Messages function and search tools."""
 
 from std.collections import List
 
@@ -12,7 +12,7 @@ from .text import trim_text, unsigned_value
 
 def validate_deepseek_anthropic_request(source: String) raises:
     var doc = JsonDocument(source)
-    _only_fields(doc, doc.root, ["model", "input", "stream", "tools"], "request")
+    _only_fields(doc, doc.root, ["model", "input", "stream", "tools", "tool_choice"], "request")
     var model = doc.get(doc.root, "model")
     if model >= 0 and doc.nodes[model].kind != JSON_STRING:
         raise Error("Anthropic Messages slice requires a string model")
@@ -52,25 +52,35 @@ def validate_deepseek_anthropic_request(source: String) raises:
     if stream >= 0 and doc.nodes[stream].kind != JSON_BOOL:
         raise Error("Anthropic Messages stream must be a boolean")
     var tools = doc.get(doc.root, "tools")
-    if tools < 0 or doc.nodes[tools].kind != JSON_ARRAY or len(doc.nodes[tools].children) != 1:
+    if tools < 0 or doc.nodes[tools].kind != JSON_ARRAY:
+        raise Error("Anthropic Messages slice requires a web_search_preview tool")
+    var web_count = 0
+    for tool in doc.nodes[tools].children:
+        if doc.nodes[tool].kind != JSON_OBJECT:
+            raise Error("Anthropic Messages tool must be an object")
+        var kind = doc.string(doc.get(tool, "type"))
+        if kind == "function":
+            # The shared Responses tool mapper validates names, schemas, and strict mode.
+            continue
+        if kind != "web_search_preview":
+            raise Error("Anthropic Messages slice supports function and web_search_preview tools")
+        _only_fields(doc, tool, ["type", "allowed_domains"], "web search tool")
+        web_count += 1
+        var domains = doc.get(tool, "allowed_domains")
+        if domains >= 0:
+            if doc.nodes[domains].kind != JSON_ARRAY:
+                raise Error("Anthropic web_search allowed_domains must be an array")
+            for domain in doc.nodes[domains].children:
+                if doc.nodes[domain].kind != JSON_STRING or not doc.nodes[domain].text:
+                    raise Error("Anthropic web_search allowed_domains entries must be non-empty strings")
+    if web_count != 1:
         raise Error("Anthropic Messages slice requires exactly one web_search_preview tool")
-    var tool = doc.nodes[tools].children[0]
-    _only_fields(doc, tool, ["type", "allowed_domains"], "web search tool")
-    if doc.nodes[tool].kind != JSON_OBJECT or doc.string(doc.get(tool, "type")) != "web_search_preview":
-        raise Error("Anthropic Messages slice supports only web_search_preview")
-    var domains = doc.get(tool, "allowed_domains")
-    if domains >= 0:
-        if doc.nodes[domains].kind != JSON_ARRAY:
-            raise Error("Anthropic web_search allowed_domains must be an array")
-        for domain in doc.nodes[domains].children:
-            if doc.nodes[domain].kind != JSON_STRING or not doc.nodes[domain].text:
-                raise Error("Anthropic web_search allowed_domains entries must be non-empty strings")
 
 
 def deepseek_anthropic_messages_body(source: String) raises -> String:
     var prepared = JsonDocument(source)
     var body = JsonDocument(serialize_json(prepared, prepared.get(prepared.root, "body")))
-    _only_fields(body, body.root, ["max_tokens", "messages", "model", "stream", "stream_options", "web_search_options"], "translated request")
+    _only_fields(body, body.root, ["max_tokens", "messages", "model", "stream", "stream_options", "tool_choice", "tools", "web_search_options"], "translated request")
     var max_tokens = body.get(body.root, "max_tokens")
     if max_tokens >= 0 and (body.nodes[max_tokens].kind != JSON_NUMBER or body.nodes[max_tokens].text != "4096"):
         raise Error("Anthropic Messages slice supports the default max_tokens value only")
@@ -182,12 +192,29 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
 
 def _tools(doc: JsonDocument) raises -> String:
     var output = List[String]()
+    var choice = doc.get(doc.root, "tool_choice")
+    if choice >= 0 and doc.nodes[choice].kind == JSON_STRING and doc.nodes[choice].text == "none":
+        return String()
     var tools = doc.get(doc.root, "tools")
     if tools >= 0:
         if doc.nodes[tools].kind != JSON_ARRAY:
             raise Error("Anthropic Messages tools must be an array")
-        if len(doc.nodes[tools].children) != 0:
-            raise Error("Anthropic Messages slice does not translate function tools")
+        for tool in doc.nodes[tools].children:
+            _only_fields(doc, tool, ["type", "function"], "function tool")
+            if doc.string(doc.get(tool, "type")) != "function":
+                raise Error("Anthropic Messages slice supports only function tools")
+            var function = doc.get(tool, "function")
+            _only_fields(doc, function, ["name", "description", "parameters", "strict"], "function tool")
+            var name = doc.get(function, "name")
+            if name < 0 or doc.nodes[name].kind != JSON_STRING or not doc.nodes[name].text:
+                raise Error("Anthropic function tool requires a name")
+            var parameters = doc.get(function, "parameters")
+            if parameters >= 0 and doc.nodes[parameters].kind != JSON_OBJECT:
+                raise Error("Anthropic function tool parameters must be an object")
+            var item = '{"name":' + serialize_json(doc, name) + ',"input_schema":' + (serialize_json(doc, parameters) if parameters >= 0 else '{"type":"object","properties":{}}')
+            var description = doc.get(function, "description")
+            if description >= 0: item += ',"description":' + serialize_json(doc, description)
+            output.append(item + "}")
     var web = doc.get(doc.root, "web_search_options")
     if web >= 0:
         if doc.nodes[web].kind != JSON_OBJECT:
@@ -197,15 +224,29 @@ def _tools(doc: JsonDocument) raises -> String:
         var domains = doc.get(web, "allowed_domains")
         if domains >= 0: item += ',"allowed_domains":' + serialize_json(doc, domains)
         output.append(item + "}")
-    if len(output) != 1:
-        raise Error("Anthropic Messages slice requires one web-search tool")
+    if not output:
+        raise Error("Anthropic Messages slice requires a tool")
     return "[" + ",".join(output) + "]" if output else String()
 
 
 def _choice(doc: JsonDocument) raises -> String:
     var choice = doc.get(doc.root, "tool_choice")
-    if choice >= 0: raise Error("Anthropic Messages slice does not translate tool_choice")
-    return String()
+    if choice < 0: return String()
+    if doc.nodes[choice].kind == JSON_STRING:
+        var kind = doc.nodes[choice].text
+        if kind == "none": return String()
+        if kind == "auto": return '{"type":"auto"}'
+        if kind == "required": return '{"type":"any"}'
+        raise Error("Anthropic Messages tool_choice is not supported")
+    if doc.nodes[choice].kind != JSON_OBJECT or doc.string(doc.get(choice, "type")) != "function":
+        raise Error("Anthropic Messages tool_choice is not supported")
+    var function = doc.get(choice, "function")
+    _only_fields(doc, choice, ["type", "function"], "tool_choice")
+    _only_fields(doc, function, ["name"], "tool_choice function")
+    var name = doc.get(function, "name")
+    if name < 0 or doc.nodes[name].kind != JSON_STRING or not doc.nodes[name].text:
+        raise Error("Anthropic named tool_choice requires a function name")
+    return '{"type":"tool","name":' + serialize_json(doc, name) + "}"
 
 
 def anthropic_buffered_response(source: String, created_at: UInt64, request_metadata: String = "null") raises -> String:
@@ -372,6 +413,8 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         if len(doc.nodes[content].children) == 0:
             raise Error("Anthropic Messages tool-use content is missing")
         var tool_count = 0
+        var search_ids = List[String]()
+        var result_ids = List[String]()
         for block in doc.nodes[content].children:
             var kind = doc.string(doc.get(block, "type"))
             if kind == "text":
@@ -388,10 +431,41 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
                 if name < 0 or doc.nodes[name].kind != JSON_STRING or not doc.nodes[name].text:
                     raise Error("Anthropic tool_use block requires a name")
                 tool_count += 1
+            elif kind == "server_tool_use":
+                _only_fields(doc, block, ["type", "id", "name", "input"], "web-search tool use")
+                var id = doc.get(block, "id")
+                var name = doc.get(block, "name")
+                var input = doc.get(block, "input")
+                if doc.string(doc.get(block, "type")) != "server_tool_use" or doc.string(name) != "web_search" or id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text or input < 0 or doc.nodes[input].kind != JSON_OBJECT:
+                    raise Error("Anthropic web-search tool use is invalid")
+                _only_fields(doc, input, ["query"], "web-search input")
+                var query = doc.get(input, "query")
+                if query < 0 or doc.nodes[query].kind != JSON_STRING or not doc.nodes[query].text:
+                    raise Error("Anthropic web-search input requires a non-empty query")
+                # shortcut: one mixed search pair, upgrade when multi-search mixed replies are qualified.
+                if search_ids: raise Error("Mixed Anthropic replies support one web-search tool use")
+                search_ids.append(doc.nodes[id].text)
+            elif kind == "web_search_tool_result":
+                _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
+                var id = doc.get(block, "tool_use_id")
+                var found = False
+                if id >= 0 and doc.nodes[id].kind == JSON_STRING:
+                    for prior in search_ids:
+                        if prior == doc.nodes[id].text: found = True
+                if not found:
+                    raise Error("Anthropic web-search result does not match a preceding tool use")
+                if result_ids: raise Error("Mixed Anthropic replies support one web-search result")
+                var result_content = doc.get(block, "content")
+                if result_content < 0 or doc.nodes[result_content].kind != JSON_ARRAY or len(doc.nodes[result_content].children) == 0:
+                    raise Error("Anthropic web-search result must contain at least one source")
+                _ = _search_sources(doc, block)
+                result_ids.append(doc.nodes[id].text)
             else:
                 raise Error("Anthropic Messages tool-use content has an unsupported block")
         if tool_count == 0:
             raise Error("Anthropic Messages tool-use content requires a tool_use block")
+        if len(search_ids) != len(result_ids):
+            raise Error("Anthropic web-search tool uses and results must be paired")
         return
     if doc.string(doc.get(doc.root, "stop_reason")) != "end_turn":
         raise Error("Anthropic Messages stop reason is not supported")

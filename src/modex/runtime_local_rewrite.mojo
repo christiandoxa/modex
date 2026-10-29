@@ -18,7 +18,7 @@ from .json import JSON_ARRAY, JSON_STRING, JsonDocument
 from .loopback_http import HTTP_HEADER_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, HTTP_REQUEST_FIELD_LIMIT, LoopbackHTTPStream, _number
 from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
 from .log_operational import valid_url_authority
-from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
+from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers, deepseek_retryable_api_key_response
 from .provider_conversations import ProviderConversationStore
 from .provider_anthropic_messages import anthropic_auto_chat_fallback_safe, anthropic_search_filters_conflict, deepseek_anthropic_messages_body
 from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
@@ -335,7 +335,7 @@ def _binding_response_id(body: String) -> String:
         return ""
 
 
-def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: LoopbackHTTPStream, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin]) raises:
+def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: LoopbackHTTPStream, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], api_key_index: Int, prebuffered_body: List[UInt8]) raises:
     var streaming = 200 <= stream.status < 400 and stream.status != 204 and stream.status != 304 and deepseek_event_stream(stream.headers)
     if not streaming and (stream.status < 200 or stream.status >= 300):
         stream.max_body_bytes = DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES
@@ -348,7 +348,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
             return
     var response_headers = _response_headers(stream.headers.copy())
     if not streaming:
-        var body = List[UInt8]()
+        var body = prebuffered_body.copy()
         try:
             while not stream.done:
                 var chunk = stream.read_chunk()
@@ -361,7 +361,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
             return
         if 200 <= stream.status < 400:
             try:
-                state_ptr[].remember_binding(0, _binding_response_id(String(from_utf8=Span(body))))
+                state_ptr[].remember_binding(0, _binding_response_id(String(from_utf8=Span(body))), api_key_index)
             except:
                 pass
         # TinyHTTP's buffered path retains Content-Length: 0 for bodyless replies.
@@ -379,7 +379,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
                     try:
                         var observed = observer.consume(Span(chunk))
                         for response_id in observed:
-                            state_ptr[].remember_binding(0, response_id)
+                            state_ptr[].remember_binding(0, response_id, api_key_index)
                         if observer.is_failed():
                             observing = False
                     except:
@@ -389,7 +389,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
             try:
                 var final_ids = observer.finish()
                 for response_id in final_ids:
-                    state_ptr[].remember_binding(0, response_id)
+                    state_ptr[].remember_binding(0, response_id, api_key_index)
             except:
                 pass
         connection.finish_stream(30000, include_head_terminal_chunk=True)
@@ -520,7 +520,8 @@ struct LocalRewriteSharedState(Movable):
     var path: String
     var messages_address: String
     var messages_path: String
-    var key: String
+    var api_keys: List[String]
+    var api_key_cursor: Int
     var connect_ms: UInt64
     var idle_ms: UInt64
     var lookahead_ms: UInt64
@@ -530,11 +531,13 @@ struct LocalRewriteSharedState(Movable):
     var beta_path: String
     var web_search_mode: String
 
-    def __init__(out self, key: String, endpoint: String, address: String, path: String, messages_address: String, messages_path: String, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
+    def __init__(out self, api_keys: List[String], endpoint: String, address: String, path: String, messages_address: String, messages_path: String, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
         self.lock = BlockingSpinLock()
         self.conversations = ProviderConversationStore()
-        self.bindings = RuntimeBindings(key, endpoint)
+        self.bindings = RuntimeBindings(api_keys[0], endpoint)
         self.sequence = 0
+        self.api_keys = api_keys.copy()
+        self.api_key_cursor = 0
         self.stopping = Atomic[Int](0)
         self.active = 0
         self.active_fds = List[Int32]()
@@ -546,7 +549,6 @@ struct LocalRewriteSharedState(Movable):
         self.path = path
         self.messages_address = messages_address
         self.messages_path = messages_path
-        self.key = key
         self.connect_ms = connect_ms
         self.idle_ms = idle_ms
         self.lookahead_ms = lookahead_ms
@@ -568,6 +570,20 @@ struct LocalRewriteSharedState(Movable):
                 self.cancel_write_fd = -1
                 raise Error("could not protect local provider cancellation channel")
 
+    def next_api_key_start(mut self) -> Int:
+        var selected: Int
+        with BlockingScopedLock(self.lock):
+            selected = self.api_key_cursor
+            self.api_key_cursor += 1
+            if self.api_key_cursor >= len(self.api_keys): self.api_key_cursor = 0
+        return selected
+
+    def api_key_count(self) -> Int:
+        return len(self.api_keys)
+
+    def api_key_at(self, index: Int) -> String:
+        return self.api_keys[index]
+
     def __deinit__(deinit self):
         if self.cancel_read_fd >= 0: _ = close(self.cancel_read_fd)
         if self.cancel_write_fd >= 0: _ = close(self.cancel_write_fd)
@@ -586,13 +602,13 @@ struct LocalRewriteSharedState(Movable):
             allowed = self.bindings.permits(previous, turn, session)
         return allowed
 
-    def remember_request(mut self, previous: String, turn: String, session: String):
+    def remember_request(mut self, previous: String, turn: String, session: String, api_key_index: Int) raises:
         with BlockingScopedLock(self.lock):
-            self.bindings.remember_request(previous, turn, session)
+            self.bindings.remember_request(previous, turn, session, self.api_keys[api_key_index])
 
-    def remember_binding(mut self, kind: Int, key: String):
+    def remember_binding(mut self, kind: Int, key: String, api_key_index: Int) raises:
         with BlockingScopedLock(self.lock):
-            self.bindings.remember(kind, key)
+            self.bindings.remember(kind, key, self.api_keys[api_key_index])
 
     def history(mut self, doc: JsonDocument, namespace: Optional[String]) raises -> Tuple[Bool, String]:
         var found: Bool
@@ -682,7 +698,7 @@ struct LocalRewriteSharedState(Movable):
             connection.close()
 
 
-def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, messages_address: String, messages_path: String, key: String, request_id: UInt64, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
+def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, messages_address: String, messages_path: String, request_id: UInt64, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
     if target != "/v1/chat/completions" and target != "/v1/responses":
         _route_error(connection)
@@ -704,11 +720,17 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         return
     if target == "/v1/chat/completions":
         var stream: LoopbackHTTPStream
+        var key_count = state_ptr[].api_key_count()
+        var attempt_count = key_count
+        var key_start = state_ptr[].next_api_key_start()
+        var key_index = 0
+        var prebuffered_error = List[UInt8]()
+        key_index = key_start
         try:
             stream = deepseek_chat_completions_stream(
                 address,
                 deepseek_chat_completions_path(path, request.target),
-                key,
+                state_ptr[].api_key_at(key_index),
                 request.headers.copy(),
                 request.body.copy(),
                 connect_ms,
@@ -723,9 +745,42 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         except:
             _reply(connection, 502, "upstream request failed")
             return
+        for attempt_index in range(attempt_count):
+            prebuffered_error = List[UInt8]()
+            if attempt_index > 0:
+                key_index = (key_start + attempt_index) % key_count
+                try:
+                    stream = deepseek_chat_completions_stream(
+                        address,
+                        deepseek_chat_completions_path(path, request.target),
+                        state_ptr[].api_key_at(key_index),
+                        request.headers.copy(),
+                        request.body.copy(),
+                        connect_ms,
+                        120000,
+                        idle_ms,
+                        connection.fd,
+                        request.method,
+                        request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT,
+                        request_field_limit=HTTP_REQUEST_FIELD_LIMIT,
+                        cancel_fd=state_ptr[].cancel_read_fd,
+                    )
+                except:
+                    _reply(connection, 502, "upstream request failed")
+                    return
+            if stream.status >= 400 and attempt_index + 1 < attempt_count:
+                try:
+                    prebuffered_error = stream.read_buffered()
+                except:
+                    _reply(connection, 502, "upstream request failed")
+                    return
+                if deepseek_retryable_api_key_response(stream.status, prebuffered_error, attempt_index, attempt_count):
+                    stream.close()
+                    continue
+            break
         if 200 <= stream.status < 400:
-            state_ptr[].remember_request(previous, turn, session)
-        _passthrough_response(connection, stream, state_ptr)
+            state_ptr[].remember_request(previous, turn, session, key_index)
+        _passthrough_response(connection, stream, state_ptr, key_index, prebuffered_error)
         return
     var history: String
     var namespace = Optional[String]()
@@ -791,21 +846,62 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     var now = _realtime_nanoseconds()
     if now < 0: raise Error("system clock returned a negative timestamp")
     var exchange: DeepSeekExchange
+    var key_count = state_ptr[].api_key_count()
+    var attempt_count = key_count
+    var key_start = state_ptr[].next_api_key_start()
+    var key_index = key_start
+    var prebuffered_error = List[UInt8]()
+    var native_first_event_retries = 0
     try:
         var exchange_address = messages_address if web else (beta_address if strict_tools else address)
         var exchange_path = messages_path if web else (beta_path if strict_tools else path)
-        exchange = DeepSeekExchange(exchange_address, exchange_path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd)
+        exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd)
     except error:
         if web and (String(error) == "Anthropic Messages slice requires a user or assistant message" or String(error) == "Anthropic tool function arguments must be valid JSON"):
             connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
         else:
             _reply(connection, 502, "upstream request failed")
         return
+    for attempt_index in range(attempt_count):
+        prebuffered_error = List[UInt8]()
+        if attempt_index > 0:
+            key_index = (key_start + attempt_index) % key_count
+            try:
+                var exchange_address = messages_address if web else (beta_address if strict_tools else address)
+                var exchange_path = messages_path if web else (beta_path if strict_tools else path)
+                exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd)
+            except error:
+                if web and String(error) == "Anthropic Messages slice requires a user or assistant message":
+                    connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
+                else:
+                    _reply(connection, 502, "upstream request failed")
+                return
+        if exchange.status() >= 400 and attempt_index + 1 < attempt_count:
+            try:
+                prebuffered_error = exchange.read_error_body()
+            except:
+                _reply(connection, 502, "upstream request failed")
+                return
+            if deepseek_retryable_api_key_response(exchange.status(), prebuffered_error, attempt_index, attempt_count):
+                exchange.close()
+                continue
+        if exchange.successful() and deepseek_event_stream(exchange.headers()):
+            var first_event_class: Int
+            try:
+                first_event_class = exchange.prefetch(lookahead_ms)
+            except:
+                _reply(connection, 502, "upstream request failed")
+                return
+            if web and first_event_class >= 0 and first_event_class <= 3 and native_first_event_retries == 0 and attempt_index + 1 < attempt_count:
+                native_first_event_retries += 1
+                exchange.close()
+                continue
+        break
     if 200 <= exchange.status() < 400 and (not exchange.successful() or not deepseek_event_stream(exchange.headers())):
-        state_ptr[].remember_request(previous, turn, session)
+        state_ptr[].remember_request(previous, turn, session, key_index)
     if not exchange.successful():
         # Frozen dispatch keeps non-2xx quota headers raw, without Codex projection.
-        _passthrough_response(connection, exchange.http, state_ptr)
+        _passthrough_response(connection, exchange.http, state_ptr, key_index, prebuffered_error)
         return
     if not deepseek_event_stream(exchange.headers()):
         var body: String
@@ -815,7 +911,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             _reply(connection, 502, "provider response could not be processed")
             return
         var response = JsonDocument(body)
-        state_ptr[].remember_binding(0, _binding_response_id(body))
+        state_ptr[].remember_binding(0, _binding_response_id(body), key_index)
         if response.string(response.get(response.root, "status")) != "failed" and trim_text(response.string(response.get(response.root, "id"))):
             state_ptr[].insert_conversation(response.string(response.get(response.root, "id")), exchange.conversation_messages, namespace)
         var response_headers = List[Tuple[String, String]]()
@@ -823,12 +919,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         response_headers.extend(deepseek_codex_rate_limit_headers(exchange.headers()))
         connection.respond(exchange.status(), response_headers, _bytes(body), 30000)
         return
-    try:
-        exchange.prefetch(lookahead_ms)
-    except:
-        _reply(connection, 502, "upstream request failed")
-        return
-    state_ptr[].remember_request(previous, turn, session)
+    state_ptr[].remember_request(previous, turn, session, key_index)
     try:
         var response_headers = List[Tuple[String, String]]()
         response_headers.append(("content-type", "text/event-stream; charset=utf-8"))
@@ -836,7 +927,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         connection.start_stream(exchange.status(), response_headers, 30000)
         while not exchange.done:
             var events = exchange.read_events()
-            state_ptr[].remember_binding(0, exchange.reader.state.response_id)
+            state_ptr[].remember_binding(0, exchange.reader.state.response_id, key_index)
             for event in events:
                 if event.startswith("event: response.completed\r\n") and trim_text(exchange.reader.state.response_id):
                     state_ptr[].insert_conversation(exchange.reader.state.response_id, _stream_history(exchange), namespace)
@@ -851,7 +942,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         connection.close()
 
 
-def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, path: String, messages_address: String, messages_path: String, key: String, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
+def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, path: String, messages_address: String, messages_path: String, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
     var request_id = state_ptr[].next_request_id()
     var request = LoopbackHTTPRequest("", "", List[Tuple[String, String]](), List[UInt8]())
     var captured = False
@@ -913,7 +1004,7 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
                     connection.keep_alive = False
                     _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback")
                 else:
-                    _serve(connection, request, address, path, messages_address, messages_path, key, request_id, state_ptr, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
+                    _serve(connection, request, address, path, messages_address, messages_path, request_id, state_ptr, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
         except error:
             var message = String(error)
             var too_large = "oversized" in message or "exceeds wire limit" in message
@@ -931,7 +1022,7 @@ __async def _local_rewrite_worker(state_ptr: Pointer[LocalRewriteSharedState, Mu
             continue
         var connection = selected.take()
         try:
-            _serve_connection(connection, state_ptr[].address, state_ptr[].path, state_ptr[].messages_address, state_ptr[].messages_path, state_ptr[].key, state_ptr, state_ptr[].connect_ms, state_ptr[].idle_ms, state_ptr[].lookahead_ms, state_ptr[].allow_local_file_access, state_ptr[].strict_tools, state_ptr[].beta_address, state_ptr[].beta_path, state_ptr[].web_search_mode)
+            _serve_connection(connection, state_ptr[].address, state_ptr[].path, state_ptr[].messages_address, state_ptr[].messages_path, state_ptr, state_ptr[].connect_ms, state_ptr[].idle_ms, state_ptr[].lookahead_ms, state_ptr[].allow_local_file_access, state_ptr[].strict_tools, state_ptr[].beta_address, state_ptr[].beta_path, state_ptr[].web_search_mode)
         except:
             pass
         state_ptr[].finish_request(connection^)
@@ -940,10 +1031,12 @@ __async def _local_rewrite_worker(state_ptr: Pointer[LocalRewriteSharedState, Mu
 comptime LOCAL_REWRITE_MAX_WORKERS = 8
 
 
-def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, key: String, strict_tools: Bool, beta_address: String, beta_path: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False, web_search_mode: String = "auto") raises:
+def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, api_keys: List[String], strict_tools: Bool, beta_address: String, beta_path: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False, web_search_mode: String = "auto") raises:
     var upstream = local_rewrite_upstream(upstream_url)
     var anthropic_upstream = local_rewrite_anthropic_messages_upstream(upstream_url)
-    _ = deepseek_request_headers([], key)
+    if not api_keys: raise Error("DeepSeek provider has no API keys configured")
+    for key in api_keys:
+        _ = deepseek_request_headers([], key)
     var connect_ms = _timeout("PRODEX_RUNTIME_PROXY_HTTP_CONNECT_TIMEOUT_MS", 5000)
     var idle_ms = _timeout("PRODEX_RUNTIME_PROXY_STREAM_IDLE_TIMEOUT_MS", 300000)
     var lookahead_ms = _timeout("PRODEX_RUNTIME_PROXY_SSE_LOOKAHEAD_TIMEOUT_MS", 1000)
@@ -955,7 +1048,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         if flags < 0 or fcntl(parent_fd, F_SETFL, flags | O_NONBLOCK) < 0:
             raise Error("could not configure local provider parent channel")
     # Worker pointers are untracked, so keep their state at a stable address until join.
-    var state = OwnedPointer(LocalRewriteSharedState(key, upstream_url, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode))
+    var state = OwnedPointer(LocalRewriteSharedState(api_keys, upstream_url, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode))
     var state_ptr = state.ptr().unsafe_origin_cast[MutUntrackedOrigin]()
     # shortcut: cap lanes at eight or available runtime workers; match baseline tuning when blocking workers can scale independently.
     var worker_count = max(1, min(LOCAL_REWRITE_MAX_WORKERS, parallelism_level()))

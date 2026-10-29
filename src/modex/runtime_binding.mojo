@@ -60,12 +60,14 @@ struct RuntimeBindings:
     var selected: RuntimeProviderIdentity
     var rows: List[RuntimeBinding]
     var sequence: UInt64
+    var endpoint: String
 
     def __init__(out self, key: String, endpoint: String) raises:
         self.accepted = _identity(key, endpoint, "")
         self.selected = _identity("local", endpoint, "local")
         self.rows = List[RuntimeBinding]()
         self.sequence = 0
+        self.endpoint = endpoint
 
     def permits(self, previous: String, turn: String, session: String) -> Bool:
         for row in self.rows:
@@ -74,15 +76,17 @@ struct RuntimeBindings:
                     return False
         return True
 
-    def remember(mut self, kind: Int, var key: String):
+    def remember(mut self, kind: Int, var key: String, credential: String = "") raises:
         key = trim_text(key)
         if not _binding_key_valid(key):
             return
+        var owner = self.accepted.copy()
+        if credential: owner = _identity(credential, self.endpoint, "")
         if self.sequence < UInt64.MAX:
             self.sequence += 1
         for index in range(len(self.rows)):
             if self.rows[index].kind == kind and self.rows[index].key == key:
-                if not _same_identity(self.rows[index].identity, self.accepted):
+                if not _same_identity(self.rows[index].identity, owner):
                     self.rows[index].conflict = True
                 self.rows[index].sequence = self.sequence
                 return
@@ -96,9 +100,9 @@ struct RuntimeBindings:
                     oldest = index
         if count >= limit:
             _ = self.rows.pop(oldest)
-        self.rows.append(RuntimeBinding(kind, key^, self.accepted.copy(), False, self.sequence))
+        self.rows.append(RuntimeBinding(kind, key^, owner^, False, self.sequence))
 
-    def remember_request(mut self, previous: String, turn: String, session: String):
-        self.remember(0, previous)
-        self.remember(1, turn)
-        self.remember(2, session)
+    def remember_request(mut self, previous: String, turn: String, session: String, credential: String = "") raises:
+        self.remember(0, previous, credential)
+        self.remember(1, turn, credential)
+        self.remember(2, session, credential)

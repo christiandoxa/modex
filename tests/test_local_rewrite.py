@@ -44,6 +44,7 @@ class Upstream(ThreadingHTTPServer):
         self.responses = list(responses)
         self.records = []
         self.response_lock = threading.Lock()
+        self.request_condition = threading.Condition()
         self.client_closed = threading.Event()
         self.hold_timed_out = threading.Event()
         super().__init__(("127.0.0.1", 0), UpstreamHandler)
@@ -60,10 +61,17 @@ class UpstreamHandler(BaseHTTPRequestHandler):
             "headers": {name.lower(): value for name, value in self.headers.items()},
             "body": self.rfile.read(length),
         })
+        with self.server.request_condition:
+            self.server.request_condition.notify_all()
         with self.server.response_lock:
             response = self.server.responses.pop(0) if self.server.responses else {
                 "status": 500, "content_type": "text/plain", "body": b"no fixture response",
             }
+        release_after_requests = response.get("release_after_requests", 0)
+        if release_after_requests:
+            with self.server.request_condition:
+                while len(self.server.records) < release_after_requests:
+                    self.server.request_condition.wait(5)
         self.send_response(response["status"])
         if response.get("response_headers") is None:
             self.send_header("Content-Type", response["content_type"])

@@ -28,7 +28,7 @@ def save(value):
     with capture.open("a") as handle: handle.write(json.dumps(value) + "\n")
 probe_environment = ("CODEX_HOME", "TEST_CODEX_LOG", "TEST_CODEX_LOG_APPEND",
                      "TEST_CODEX_ARGS_LOG", "TEST_CODEX_ARGS_LOG_APPEND", "TEST_CODEX_STDIN_LOG",
-                     "DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS")
+                     "DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS", "PRODEX_RUNTIME_LOCAL_KEYS_JSON")
 if args == ["--version"]:
     save({"kind":"probe", "args":args,
           "environment":{key:os.environ.get(key) for key in probe_environment}})
@@ -99,7 +99,7 @@ save({"kind":"launch","pid":os.getpid(),"mode":home.stat().st_mode & 0o777,"args
       "catalog":json.loads(pathlib.Path(config["model_catalog_json"]).read_text()) if "model_catalog_json" in config else None,
       "runtime_config":(home/"config.toml").read_text() if (home/"config.toml").exists() else None,
       "auth":json.loads((home/"auth.json").read_text()),"children":children.read_text().split(),
-      "environment":{key:os.environ.get(key) for key in ("CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT","PRODEX_RUNTIME_LOCAL_KEY","CODEX_SANDBOX_SENTINEL","DEEPSEEK_API_KEY","DEEPSEEK_API_KEYS")}})
+      "environment":{key:os.environ.get(key) for key in ("CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT","PRODEX_RUNTIME_LOCAL_KEY","PRODEX_RUNTIME_LOCAL_KEYS_JSON","CODEX_SANDBOX_SENTINEL","DEEPSEEK_API_KEY","DEEPSEEK_API_KEYS")}})
 (home/"sessions"/"synthetic-session.jsonl").write_text('{"synthetic":true}\n')
 scenario = os.environ["MODEX_LAUNCH_SCENARIO"]
 if scenario in ("kill-relay", "kill-relay-ignores-term"):
@@ -1315,7 +1315,7 @@ class SuperLaunchTests(unittest.TestCase):
                     for value in filter(None, secret_values):
                         self.assertNotIn(value.encode(), output)
 
-    def test_deepseek_api_key_rotation_gap_is_explicit(self):
+    def test_deepseek_api_key_rotation_keeps_credentials_out_of_codex(self):
         values = "synthetic-rotation-first-key;synthetic-rotation-second-key"
         for binary in (ORACLE_01651, ORACLE):
             with self.subTest(binary=binary.name):
@@ -1340,6 +1340,8 @@ class SuperLaunchTests(unittest.TestCase):
                     self.assertNotIn("synthetic-rotation-second-key", record["args"])
                 if binary == MODEX:
                     self.assertNotIn(values, serialized_records)
+                    for record in [item for item in records if item["kind"] in ("probe", "launch")]:
+                        self.assertIsNone(record["environment"]["PRODEX_RUNTIME_LOCAL_KEYS_JSON"])
 
         result, records, upstream, state = self.run_launch(
             scenario="stream",
@@ -1347,9 +1349,11 @@ class SuperLaunchTests(unittest.TestCase):
             environment_overrides={"DEEPSEEK_API_KEYS": values},
         )
         output = result.stdout + result.stderr
-        self.assertEqual(result.returncode, 1, output)
-        self.assertIn(b"multiple DEEPSEEK_API_KEYS values require key rotation, which is not implemented", output)
-        self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+        self.assertEqual(result.returncode, 0, output)
+        self.assertEqual(len(upstream), 1)
+        authorization = next(value for name, value in upstream[0]["headers"].items()
+                             if name.lower() == "authorization")
+        self.assertEqual((authorization, state["leftovers"]), ("Bearer synthetic-rotation-first-key", []))
         self.assertNotIn(values.encode(), output)
 
     def test_deepseek_plural_key_header_validation_precedes_codex_and_network(self):

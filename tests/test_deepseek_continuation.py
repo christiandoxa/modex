@@ -17,6 +17,41 @@ CLIENT = CODEX[:CODEX.index('passthrough = scenario')]
 CLIENT += r'''
 target = urlsplit(config["model_providers.prodex-deepseek.base_url"] + "/responses")
 previous = None
+if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
+    from concurrent.futures import ThreadPoolExecutor
+    def request_turn(source_turn):
+        turn = dict(source_turn)
+        path = turn.pop("_path", target.path)
+        headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
+                   **turn.pop("_headers", {})}
+        started = int(time.time())
+        connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
+        connection.request("POST", path, json.dumps(turn, separators=(",", ":")).encode(), headers)
+        response = connection.getresponse()
+        payload = response.read()
+        result = {"kind": "response", "status": response.status, "headers": dict(response.getheaders()),
+                  "body": payload.hex(), "started": started, "finished": int(time.time())}
+        connection.close()
+        return result
+    with ThreadPoolExecutor(max_workers=len(json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()))) as executor:
+        for result in executor.map(request_turn, json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text())):
+            save(result)
+    followups_file = os.environ.get("MODEX_CONTINUATION_FOLLOWUPS_FILE")
+    if followups_file:
+        for source_turn in json.loads(pathlib.Path(followups_file).read_text()):
+            turn = dict(source_turn)
+            path = turn.pop("_path", target.path)
+            headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
+                       **turn.pop("_headers", {})}
+            connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
+            connection.request("POST", path, json.dumps(turn, separators=(",", ":")).encode(), headers)
+            response = connection.getresponse()
+            payload = response.read()
+            save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),
+                  "body": payload.hex(), "started": int(time.time()), "finished": int(time.time())})
+            connection.close()
+    print("synthetic-continuation-complete")
+    raise SystemExit(0)
 for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()):
     path = turn.pop("_path", target.path)
     headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
@@ -44,7 +79,7 @@ print("synthetic-continuation-complete")
 '''
 
 
-def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None, lookahead_timeout_ms=None, api_keys=None):
+def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None, lookahead_timeout_ms=None, api_keys=None, concurrent=False, followup_turns=None):
     with tempfile.TemporaryDirectory(prefix="modex-continuation-") as temporary:
         root = Path(temporary)
         for name in ("home", "state", "shared", "work"):
@@ -64,6 +99,7 @@ def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=
             "PRODEX_CODEX_BIN": str(codex), "MODEX_LAUNCH_CAPTURE": str(capture),
             "MODEX_LAUNCH_SCENARIO": "buffered", "MODEX_CONTINUATION_TURNS_FILE": str(turns_file),
             "TERM": "dumb", "NO_COLOR": "1", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
+            "MODEX_CONTINUATION_CONCURRENT": "1" if concurrent else "0",
             **{key: str(root / "home") for key in ("XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HOME")},
         }
         if idle_timeout_ms is not None:
@@ -72,6 +108,10 @@ def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=
             environment["PRODEX_RUNTIME_PROXY_SSE_LOOKAHEAD_TIMEOUT_MS"] = str(lookahead_timeout_ms)
         if api_keys is not None:
             environment["DEEPSEEK_API_KEYS"] = api_keys
+        if followup_turns is not None:
+            followups_file = root / "followups.json"
+            followups_file.write_text(json.dumps(followup_turns))
+            environment["MODEX_CONTINUATION_FOLLOWUPS_FILE"] = str(followups_file)
         with serving(responses) as server:
             auth_args = ["--api-key", SYNTHETIC_API_KEY] if api_keys is None else []
             result = subprocess.run(

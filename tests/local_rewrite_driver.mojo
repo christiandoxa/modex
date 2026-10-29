@@ -26,4 +26,4 @@ def main() raises:
     if parent_fd >= 0:
         startup += " WORKERS=" + String(max(1, min(8, parallelism_level())))
     output.write_bytes((startup + "\n").as_bytes())
-    serve_local_rewrite(listener, upstream, key, route[0], route[1], route[2], parent_fd=parent_fd, web_search_mode=route[3])
+    serve_local_rewrite(listener, upstream, [key], route[0], route[1], route[2], parent_fd=parent_fd, web_search_mode=route[3])

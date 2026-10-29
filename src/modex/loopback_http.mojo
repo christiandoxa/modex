@@ -986,3 +986,10 @@ struct LoopbackHTTPStream(Movable):
             if String(error) != "loopback HTTP lookahead elapsed":
                 self.close()
             raise
+
+    def read_buffered(mut self) raises -> List[UInt8]:
+        var output = List[UInt8]()
+        while not self.done:
+            var chunk = self.read_chunk()
+            output.extend(chunk^)
+        return output^

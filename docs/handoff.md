@@ -40,13 +40,32 @@ upstream request. The outbound method validator remains in place. Evidence and
 the focused real-process comparison are in
 `docs/evidence/baseline-0.439.2/local-relay-http-1.0.md`.
 
-Multi-key DeepSeek rotation remains unimplemented. New real-process controls
-show both pinned releases rotate unbound requests, retry selected precommit
-HTTP errors, and reject a tested bound continuation without a second POST.
-Modex continues to reject multi-key lists before launching a child; the
-reference observations are not a parity pass. Retry classification, binding
-ownership, stream commitment and concurrent rotation must be implemented
-together. See `docs/evidence/baseline-0.165.1/super-api-key-env.md`.
+Multi-key DeepSeek rotation now runs through the production Super relay.
+Unbound requests and requests with unknown response, session or turn IDs start
+from an atomic round-robin cursor and can retry on another key before
+commitment. The classifier matches the pinned code set, structured 429 rule,
+and selected non-429 status/text fallbacks. Retryable native Anthropic
+first-event errors and pre-event transport failures allow one credential
+retry. The exhausted first retry-classified error frame is consumed before the
+stream reader, matching the pinned `provider_stream_error` code and
+`unexpected end of stream` message; an error after stream progress remains
+terminal. Non-2xx SSE stays on the raw pass-through path. Known hard bindings
+keep the pinned 503 gate.
+
+Real-process comparisons against both checksum-pinned Linux releases pass for
+the tested rotation, error-code, continuation and concurrent-conflict cases.
+Concurrent requests with the same unknown identity may use different keys;
+the later conflicting owner is rejected before provider dispatch. The focused
+production build, relay comparisons and 71-file dependency audit pass. This
+does not establish the six-target denominator, public network/TLS, persistent
+or profile-backed ownership, or complete provider parity. See
+`docs/evidence/baseline-0.165.1/super-api-key-env.md`.
+
+The combined rotation and shared Anthropic stream run passed all 37 tests,
+including the 13 rotation methods, error-event compatibility, and pipeline/
+half-close shutdown controls. The synthetic client now edits only the
+sequential request loop, so the generated Codex probe and stream requests run
+as intended.
 
 The Anthropic Messages request path now accepts Responses `metadata` objects
 and `include` arrays, then drops them from the provider request like both
@@ -87,21 +106,17 @@ provider request. This does not establish general provider, profile or model
 selection parity. Evidence:
 `docs/evidence/baseline-0.165.1/super-shared-config.md`.
 
-DeepSeek Super now resolves API keys through `--api-key`, a singular
-`DEEPSEEK_API_KEY`, or a one-entry `DEEPSEEK_API_KEYS` list. Explicit keys take
-precedence; plural entries accept comma, semicolon, and newline separators.
-Both pinned releases select the first key from a multi-entry list, while Modex
-rejects such lists until per-request rotation exists. The releases also expose
-key environment variables to Codex version/help probes before scrubbing them
-for the final launch. Modex scrubs them from all Codex children, including
-probes; this is a deliberate security difference. Four synthetic real-process
-methods compare singular, singleton plural, precedence, validation, and
-Authorization cases against 0.165.1, 0.439.2, and Modex. A plural value with
-unsafe header bytes is rejected by Modex before Codex probes or provider I/O;
-the releases accept spaces and non-ASCII bytes in Authorization, while tab,
-control, and DEL cases launch Codex but stop before the synthetic provider.
-Missing and unsafe keys leave no temporary overlay. No real credentials or
-provider traffic were used. See
+DeepSeek Super now resolves API keys through `--api-key`, `DEEPSEEK_API_KEY`,
+or a plural `DEEPSEEK_API_KEYS` list. Explicit keys take precedence; plural
+entries accept comma, semicolon, and newline separators. The list reaches only
+the dedicated relay child; both provider key variables remain scrubbed from
+all Codex children. The releases expose the key variables to Codex
+version/help probes before scrubbing them from the final launch; this remains
+a deliberate security behavior difference. Synthetic process tests cover
+precedence, validation, Authorization, key rotation and Codex environment
+isolation against both releases and Modex. Unsafe header bytes are rejected by
+Modex before child creation or provider I/O. No real credentials or provider
+traffic were used. See
 `docs/evidence/baseline-0.165.1/super-api-key-env.md`.
 
 The next aggregate-budget relay admission prototype remains unmerged. In an

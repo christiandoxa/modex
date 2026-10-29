@@ -13,7 +13,7 @@ from std.sys import stderr
 from std.time import perf_counter, sleep
 
 from .app_server_rpc import run_super_hook_trust_preflight
-from .json import quote_json
+from .json import JSON_ARRAY, JSON_STRING, JsonDocument, quote_json
 from .loopback_server import LoopbackHTTPListener
 from .paths import app_root, ensure_app_root, shared_root
 from .process_spawn import CapturedProcessOutput, capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, terminate_child_gracefully, wait_or_kill
@@ -279,7 +279,7 @@ def deepseek_model_catalog(launch_model: String, context_window: UInt64, compact
 
 
 def _child_environment(home: String) -> List[String]:
-    var excluded: List[String] = ["CODEX_HOME", "CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT", "NO_PROXY", "no_proxy", "LD_PRELOAD", "LD_AUDIT", "LD_LIBRARY_PATH", "LD_ORIGIN_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH", "DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS", "PRODEX_RUNTIME_LOCAL_UPSTREAM", "PRODEX_RUNTIME_LOCAL_KEY", "PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE", "PRODEX_RUNTIME_LOCAL_STRICT_TOOLS", "PRODEX_RUNTIME_LOCAL_BETA_BASE_URL"]
+    var excluded: List[String] = ["CODEX_HOME", "CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT", "NO_PROXY", "no_proxy", "LD_PRELOAD", "LD_AUDIT", "LD_LIBRARY_PATH", "LD_ORIGIN_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH", "DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS", "PRODEX_RUNTIME_LOCAL_UPSTREAM", "PRODEX_RUNTIME_LOCAL_KEY", "PRODEX_RUNTIME_LOCAL_KEYS_JSON", "PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE", "PRODEX_RUNTIME_LOCAL_STRICT_TOOLS", "PRODEX_RUNTIME_LOCAL_BETA_BASE_URL"]
     var environment = inherited_environment(excluded)
     var clean = List[String]()
     for entry in environment:
@@ -329,9 +329,23 @@ def _child_exit_code(status: ProcessStatus) -> Int:
 def run_local_rewrite_child() raises:
     """Private self-process entrypoint; credentials stay out of argv and output."""
     var upstream = getenv("PRODEX_RUNTIME_LOCAL_UPSTREAM")
-    var key = getenv("PRODEX_RUNTIME_LOCAL_KEY")
+    var api_keys = List[String]()
+    var keys_json = getenv("PRODEX_RUNTIME_LOCAL_KEYS_JSON", "\0")
+    if keys_json != "\0":
+        var keys = JsonDocument(keys_json)
+        if keys.nodes[keys.root].kind != JSON_ARRAY:
+            raise Error("local provider API keys must be a JSON array")
+        for node in keys.nodes[keys.root].children:
+            if keys.nodes[node].kind != JSON_STRING:
+                raise Error("local provider API keys must be strings")
+            var key = keys.string(node)
+            _ = deepseek_request_headers([], key)
+            api_keys.append(key^)
+    else:
+        var key = getenv("PRODEX_RUNTIME_LOCAL_KEY")
+        _ = deepseek_request_headers([], key)
+        api_keys.append(key^)
     _ = local_rewrite_upstream(upstream)
-    _ = deepseek_request_headers([], key)
     var configured_mode = getenv("PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE", "\x00")
     var configured_strict = getenv("PRODEX_RUNTIME_LOCAL_STRICT_TOOLS", "\x00")
     var configured_beta = getenv("PRODEX_RUNTIME_LOCAL_BETA_BASE_URL", "\x00")
@@ -339,7 +353,7 @@ def run_local_rewrite_child() raises:
     var listener = LoopbackHTTPListener("127.0.0.1:0")
     var output = RawFileDescriptor(1)
     output.write_bytes((listener.address + "\n").as_bytes())
-    serve_local_rewrite(listener, upstream, key, route[0], route[1], route[2], parent_fd=0, allow_local_file_access=True, web_search_mode=route[3])
+    serve_local_rewrite(listener, upstream, api_keys, route[0], route[1], route[2], parent_fd=0, allow_local_file_access=True, web_search_mode=route[3])
 
 
 def _ready(input_pipe: Pipe, mut child: Process) raises -> String:
@@ -434,12 +448,15 @@ def _deepseek_launch_progress() raises:
             print("Prodex launch: " + message, file=stderr)
 
 
-def _deepseek_provider_panel() raises:
+def _deepseek_provider_panel(key_count: Int) raises:
     if not _launch_progress_fallback():
         return
+    var rotation = String("Using one provider API key; API-key rotation is skipped")
+    if key_count > 1:
+        rotation = "API-key rotation is enabled across " + String(key_count) + " keys"
     _print_fallback_stderr_panel(
         "Runtime Provider",
-        "Using provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven tokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.",
+        "Using provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven tokenizer. " + rotation + "; quota preflight stays disabled.",
     )
 
 
@@ -452,9 +469,13 @@ def _checked_deepseek_api_key(value: String, name: String) raises -> String:
     return String(value)
 
 
-def _deepseek_api_key(value: String, supplied: Bool) raises -> String:
+def _deepseek_api_keys(value: String, supplied: Bool) raises -> List[String]:
     if supplied:
-        return _checked_deepseek_api_key(value, "--api-key")
+        var keys = List[String]()
+        var key = _checked_deepseek_api_key(value, "--api-key")
+        _ = deepseek_request_headers([], key)
+        keys.append(key^)
+        return keys^
     var multiple = getenv("DEEPSEEK_API_KEYS", "\0")
     if multiple != "\0":
         var keys = List[String]()
@@ -471,13 +492,16 @@ def _deepseek_api_key(value: String, supplied: Bool) raises -> String:
             keys.append(key^)
         if not keys:
             raise Error("DEEPSEEK_API_KEYS cannot be empty")
-        # shortcut: Modex relay accepts one key, when to upgrade: after per-request key rotation exists.
-        if len(keys) > 1:
-            raise Error("multiple DEEPSEEK_API_KEYS values require key rotation, which is not implemented")
-        return String(keys[0])
+        for key in keys:
+            _ = deepseek_request_headers([], key)
+        return keys^
     var single = getenv("DEEPSEEK_API_KEY", "\0")
     if single != "\0":
-        return _checked_deepseek_api_key(single, "DEEPSEEK_API_KEY")
+        var keys = List[String]()
+        var key = _checked_deepseek_api_key(single, "DEEPSEEK_API_KEY")
+        _ = deepseek_request_headers([], key)
+        keys.append(key^)
+        return keys^
     raise Error("DeepSeek provider requires --api-key or DEEPSEEK_API_KEY(S) in the environment")
 
 
@@ -549,7 +573,7 @@ def _codex_version_parts(value: String) -> List[UInt64]:
     return parts^
 
 
-def _exec(binary: String, child_path: String, argv0: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64, web_search_mode: String, strict_tools: Optional[String], beta_base_url: Optional[String], model_supplied: Bool) raises -> Int:
+def _exec(binary: String, child_path: String, argv0: String, home: String, model: String, upstream: String, api_keys: List[String], prompt: List[String], context_window: UInt64, compact_limit: UInt64, web_search_mode: String, strict_tools: Optional[String], beta_base_url: Optional[String], model_supplied: Bool) raises -> Int:
     var environment = _child_environment(home)
     var probe_environment = _codex_probe_environment(environment)
     var version = _capture_codex_probe(binary, [String("--version")], probe_environment, "Codex version probe")
@@ -580,7 +604,12 @@ def _exec(binary: String, child_path: String, argv0: String, home: String, model
     var output = Pipe()
     var relay_environment = _child_environment(home)
     relay_environment.append("PRODEX_RUNTIME_LOCAL_UPSTREAM=" + upstream)
-    relay_environment.append("PRODEX_RUNTIME_LOCAL_KEY=" + key)
+    var keys_json = String("[")
+    for index in range(len(api_keys)):
+        if index: keys_json += ","
+        keys_json += quote_json(api_keys[index])
+    keys_json += "]"
+    relay_environment.append("PRODEX_RUNTIME_LOCAL_KEYS_JSON=" + keys_json)
     relay_environment.append("PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE=" + web_search_mode)
     if strict_tools:
         relay_environment.append("PRODEX_RUNTIME_LOCAL_STRICT_TOOLS=" + strict_tools.value())
@@ -673,9 +702,8 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
     _ = ensure_app_root()
     _private_directory(shared)
     _private_directory(root + "/profiles")
-    _deepseek_provider_panel()
-    var selected_key = _deepseek_api_key(key, key_supplied)
-    _ = deepseek_request_headers([], selected_key)
+    var selected_keys = _deepseek_api_keys(key, key_supplied)
+    _deepseek_provider_panel(len(selected_keys))
     var home = root + "/profiles/.prodex-overlay-" + new_uuid7()
     mkdir(home, 0o700)
     try:
@@ -693,7 +721,7 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
             # Frozen exact-value lookup ignores numeric -c overrides when building the catalog.
             catalog.write(deepseek_model_catalog(catalog_model, catalog_context, catalog_compact))
         var codex = _codex_binary()
-        var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, selected_key, prompt, launch_context, launch_compact, route[3], shared_config[2], shared_config[3], model_supplied)
+        var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, selected_keys, prompt, launch_context, launch_compact, route[3], shared_config[2], shared_config[3], model_supplied)
         _remove_overlay(home)
         return result
     except:

@@ -87,14 +87,19 @@ def _observe_turns_with_read_errors(
     disconnect_after_failed=False, half_close_request=False,
 ):
     client = continuation.CLIENT.replace("timeout=15)", "timeout=5)")
+    loop_marker = '\nfor turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()):\n'
+    client_head, found_loop, client_loop = client.partition(loop_marker)
+    if not found_loop:
+        raise AssertionError("synthetic client could not isolate its sequential request loop")
     if half_close_request:
-        client = client.replace(
+        client_head = client_head.replace(
             "import http.client, json, os, pathlib, signal, sys, time",
             "import http.client, json, os, pathlib, signal, socket, sys, time",
         )
         marker = "    response = connection.getresponse()"
-        client = client.replace(
+        client_loop = client_loop.replace(
             marker, "    connection.sock.shutdown(socket.SHUT_WR)\n" + marker,
+            1,
         )
     if disconnect_after_failed:
         read_and_save = (
@@ -121,12 +126,14 @@ def _observe_turns_with_read_errors(
             '    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),\n'
             '          "body": bytes(payload).hex(), "body_error": body_error, "started": started, "finished": int(time.time())})'
         )
-    client = client.replace(
+    client_loop = client_loop.replace(
         'payload = response.read()\n'
         '    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),\n'
         '          "body": payload.hex(), "started": started, "finished": int(time.time())})',
         read_and_save,
+        1,
     )
+    client = client_head + loop_marker + client_loop
     if (
         client == continuation.CLIENT or "timeout=5)" not in client
         or "body_error" not in client
@@ -181,8 +188,17 @@ def _capture_body_probe(
 def _observe_parent_shutdown(
     binary, request, reply, pipeline_body_bytes=1048576, pipeline_head_bytes=None,
 ):
-    client = continuation.CLIENT.replace(
-        "    payload = response.read()",
+    client = continuation.CLIENT
+    loop_marker = '\nfor turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()):\n'
+    client_head, found_loop, client_loop = client.partition(loop_marker)
+    if not found_loop:
+        raise AssertionError("synthetic client could not isolate its sequential request loop")
+    payload_block = (
+        '    payload = response.read()\n'
+        '    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),\n'
+        '          "body": payload.hex(), "started": started, "finished": int(time.time())})'
+    )
+    read_and_save = (
         '    payload = bytearray()\n'
         '    while b"event: response.failed\\r\\n" not in payload:\n'
         '        piece = response.read1(4096)\n'
@@ -195,8 +211,13 @@ def _observe_parent_shutdown(
         '            if not piece: break\n'
         '    except Exception as error:\n'
         '        save({"kind":"body_error","error":type(error).__name__ + ": " + str(error)})\n'
-        '    payload = bytes(payload)',
+        '    payload = bytes(payload)\n'
+        '    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),\n'
+        '          "body": payload.hex(), "started": started, "finished": int(time.time())})'
     )
+    if payload_block not in client_loop:
+        raise AssertionError("synthetic client could not capture held response bodies")
+    client_loop = client_loop.replace(payload_block, read_and_save, 1)
     marker = "    response = connection.getresponse()"
     pipeline = (
         f'    pipeline_body = b"x" * {pipeline_body_bytes}\n'
@@ -210,7 +231,10 @@ def _observe_parent_shutdown(
         + '    connection.sock.sendall(pipeline)\n'
         + '    save({"kind":"pipelined","bytes":len(pipeline_body),"wire_bytes":len(pipeline),"write_open":True})\n'
     )
-    client = client.replace(marker, pipeline + marker)
+    if marker not in client_loop:
+        raise AssertionError("synthetic client could not locate the sequential response head")
+    client_loop = client_loop.replace(marker, pipeline + marker, 1)
+    client = client_head + loop_marker + client_loop
     if (
         client == continuation.CLIENT or '"kind":"held"' not in client
         or '"kind":"pipelined"' not in client

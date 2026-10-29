@@ -73,13 +73,20 @@ The guarded DeepSeek `super --dry-run ... exec` path now shares its Codex
 argument builder with live launch, honors `PRODEX_CODEX_BIN` and PATH selection,
 and performs no Codex launch, relay startup, or provider traffic. Synthetic
 three-process controls cover read-only config/history, model selection,
-secret and path redaction, absent Codex, and Node without npx. A native Mojo
-Node fixture makes `node --version` runnable in bwrap.
+secret and path redaction, absent Codex, Node without npx, and the bounded RTK
+version probe. The RTK probe uses a filtered environment, selects managed roots
+before PATH, and matches both pinned reports for stable, old, prerelease,
+malformed, stderr-only, empty, failed, and timeout status cases. Modex redacts
+the executable path in timeout diagnostics; both releases include it. The probe
+uses the standard library's direct-child timeout, so descendant process-group
+cleanup remains unverified. A native Mojo Node and RTK fixture make these
+probes runnable inside bwrap.
 
-The post-security-fix dry-run and live-launch suites passed 52 tests against
-the pinned 0.165.1 and 0.439.2 Linux binaries. Production import audit passed
-for 71 Mojo files; test census passed for 50 native sources and 144 Python
-modules. Full repository tests and Fast/Full CI were not run. Evidence:
+The earlier combined dry-run and live-launch run passed 56 tests against the
+pinned 0.165.1 and 0.439.2 Linux binaries. The final dry-run rerun passed all 16
+tests after the managed-root symlink control was added. Production import audit
+passed for 71 Mojo files; test census passed for 50 native sources and 145
+Python modules. Full repository tests and Fast/Full CI were not run. Evidence:
 `docs/evidence/baseline-0.165.1/super-dry-run-01651.md`.
 
 The releases leak a synthetic value in the chained `--api-key --password`

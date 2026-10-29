@@ -519,9 +519,135 @@ def _managed_tool_present(tool: String, command: String = "") -> Bool:
     return False
 
 
-def _dry_run_optional_tool_statuses() raises -> Tuple[String, String]:
+def _dry_run_rtk_binary() raises -> String:
+    for root in _managed_optimizer_roots():
+        var candidate = _executable_path(root + "/rtk")
+        if candidate:
+            try:
+                var info = lstat(root)
+                if info.st_mode & 0o170000 != 0o040000:
+                    raise Error("invalid managed optimizer root")
+                var resolved_root = realpath(root)
+                var prefix = resolved_root if resolved_root.endswith("/") else resolved_root + "/"
+                if not candidate.startswith(prefix):
+                    raise Error("managed RTK command escapes its root")
+            except:
+                raise Error("Super dry-run cannot report installed optional tools yet")
+            return candidate^
+    for candidate in _path_candidates("rtk", getenv("PATH", "\0")):
+        var resolved = _executable_path(candidate)
+        if resolved:
+            return resolved^
+    return String()
+
+
+def _dry_run_probe_environment() -> List[String]:
+    var environment = List[String]()
+    for name in [String("PATH"), String("HOME"), String("TMPDIR"), String("TMP"), String("TEMP"), String("XDG_CACHE_HOME"), String("NPM_CONFIG_CACHE"), String("npm_config_cache"), String("CBM_CACHE_DIR")]:
+        var value = getenv(name, "\0")
+        if value != "\0":
+            environment.append(name + "=" + value)
+    environment.append("npm_config_userconfig=/dev/null")
+    return environment^
+
+
+def _dry_run_probe_first_line(bytes: List[UInt8]) -> String:
+    var text = String(from_utf8_lossy=Span(bytes))
+    for line in text.split("\n"):
+        var value = trim_text(line)
+        if value:
+            return value^
+    return String()
+
+
+def _dry_run_semver_identifiers(value: String, prerelease: Bool) -> Bool:
+    if not value:
+        return False
+    var start = 0
+    var numeric = True
+    for index in range(value.byte_length()):
+        var byte = Int(value.as_bytes()[index])
+        if byte == 46:
+            if start == index or (prerelease and numeric and index - start > 1 and value.as_bytes()[start] == 48):
+                return False
+            start = index + 1
+            numeric = True
+        elif 48 <= byte <= 57:
+            pass
+        elif 65 <= byte <= 90 or 97 <= byte <= 122 or byte == 45:
+            numeric = False
+        else:
+            return False
+    return start < value.byte_length() and not (prerelease and numeric and value.byte_length() - start > 1 and value.as_bytes()[start] == 48)
+
+
+# shortcut: only canonical RTK SemVer lines are accepted, broaden after other real banners are qualified.
+def _dry_run_rtk_version_status(line: String) -> String:
+    var invalid = "skipped (rtk did not report a recognizable semantic version: " + redact_log_text(line) + ")"
+    if not line.startswith("rtk "):
+        return invalid^
+    var version_text = String(line[byte=4:])
+    if version_text.startswith("v"):
+        var stripped_version = String(version_text[byte=1:])
+        version_text = stripped_version
+    var dash = version_text.find("-")
+    var plus = version_text.find("+")
+    var core_end = version_text.byte_length()
+    var prerelease = False
+    if plus >= 0:
+        if not _dry_run_semver_identifiers(String(version_text[byte=plus + 1:]), False):
+            return invalid^
+        core_end = plus
+    if dash >= 0 and (plus < 0 or dash < plus):
+        var prerelease_end = plus if plus >= 0 else version_text.byte_length()
+        if not _dry_run_semver_identifiers(String(version_text[byte=dash + 1:prerelease_end]), True):
+            return invalid^
+        core_end = dash
+        prerelease = True
+    var components = String(version_text[byte=:core_end]).split(".")
+    if len(components) != 3:
+        return invalid^
+    var version = List[UInt64]()
+    for component in components:
+        var part = String(component)
+        var number: UInt64
+        try:
+            number = unsigned_value(part)
+        except:
+            return invalid^
+        if String(number) != part:
+            return invalid^
+        version.append(number)
+    var too_old = version[0] == UInt64(0) and version[1] < UInt64(46)
+    too_old = too_old or (version[0] == UInt64(0) and version[1] == UInt64(46) and version[2] == UInt64(0) and prerelease)
+    if too_old:
+        return "skipped (" + redact_log_text(line) + " is too old; Prodex requires 0.46.0 or newer. Update rtk to the latest stable release (release-qualified reference: 1.1.0))"
+    return "resolved (activation deferred until launch)"
+
+
+def _dry_run_rtk_status() raises -> String:
+    var binary = _dry_run_rtk_binary()
+    if not binary:
+        return "skipped (rtk was not found in managed roots or PATH)"
+    var probe: CapturedProcessOutput
+    try:
+        probe = capture_with_env(binary, [String("--version")], _dry_run_probe_environment(), "rtk health check", 5000, 65536, argv0=binary)
+    except error:
+        if String(error).find("timed out") >= 0:
+            return "skipped (rtk health check timed out after 5s)"
+        return "skipped (rtk health check failed)"
+    var line = _dry_run_probe_first_line(probe.stdout)
+    if not line:
+        line = _dry_run_probe_first_line(probe.stderr)
+    if not line:
+        line = "available"
+    if not probe.status.exit_code or probe.status.exit_code.value() != 0:
+        return "skipped (version check exited with exit status: " + String(_child_exit_code(probe.status)) + ": " + redact_log_text(line) + ")"
+    return _dry_run_rtk_version_status(line)
+
+
+def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String]:
     var present = _managed_tool_present("caveman")
-    present = present or _managed_tool_present("rtk", "rtk") or _path_has_executable("rtk")
     present = present or _managed_tool_present("codebase-memory-mcp", "codebase-memory-mcp") or _path_has_executable("codebase-memory-mcp")
     var node_found = _path_has_executable("node")
     var npx_found = _path_has_executable("npx")
@@ -554,15 +680,18 @@ def _dry_run_optional_tool_statuses() raises -> Tuple[String, String]:
             raise Error("Super dry-run cannot report optional tools with an invalid Node.js version")
         playwright_status = "npx was not found on PATH" if major >= 18 else "Node.js 18+ is required; found " + output
         ponytail_status = "Ponytail 4.9.0+ was not found under a managed optional-tool root; latest stable reference is 5.3.2"
-    return playwright_status^, ponytail_status^
+    return _dry_run_rtk_status(), playwright_status^, ponytail_status^
 
 
-def _print_dry_run_optional_tools(playwright_status: String, ponytail_status: String):
+def _print_dry_run_optional_tools(rtk_status: String, playwright_status: String, ponytail_status: String):
     var caveman_missing = "Caveman 2.3.1+ was not found under a managed optional-tool root; latest stable reference is 4.0.1"
     var command_missing = "was not found in managed roots or PATH"
     print("Optional tools:")
+    if rtk_status.startswith("resolved "):
+        print("  rtk: " + rtk_status)
     print("  caveman: skipped (" + caveman_missing + ")")
-    print("  rtk: skipped (rtk " + command_missing + ")")
+    if not rtk_status.startswith("resolved "):
+        print("  rtk: " + rtk_status)
     print("  codebase-memory-mcp: skipped (codebase-memory-mcp " + command_missing + ")")
     print("  playwright-mcp: skipped (" + playwright_status + ")")
     print("  ponytail: skipped (" + ponytail_status + ")")
@@ -911,7 +1040,7 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
             print("  " + name)
         print("Codex/TUI not started because --dry-run was set.")
         print("Profile: (active/default)")
-        _print_dry_run_optional_tools(optional_tool_statuses[0], optional_tool_statuses[1])
+        _print_dry_run_optional_tools(optional_tool_statuses[0], optional_tool_statuses[1], optional_tool_statuses[2])
         print("Dry run: optional overlays and services are not started.")
         print("Sub-agent: disabled")
         print("Sub-agent inherited Presidio: disabled")

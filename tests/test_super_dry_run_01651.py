@@ -4,6 +4,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -15,6 +17,7 @@ from test_cli_01651 import ORACLE as ORACLE_01651, ORACLE_SHA256 as ORACLE_SHA25
 
 ORACLE = Path(os.environ.get("PRODEX_ORACLE_04392", DEFAULT_ORACLE))
 NODE_FIXTURE = MODEX.parent / "tests/node_version_fixture"
+OPTIONAL_TOOL_FIXTURE = MODEX.parent / "tests/optional_tool_version_fixture"
 
 
 DRY_RUN_ARGS = (
@@ -52,8 +55,20 @@ def write_node(path):
     path.chmod(0o700)
 
 
+def write_optional_tool(path):
+    shutil.copyfile(OPTIONAL_TOOL_FIXTURE, path)
+    path.chmod(0o700)
+
+
+def write_rtk_version(root, version, *, managed=False):
+    name = ".rtk-managed-version-fixture" if managed else ".rtk-version-fixture"
+    path = root / "home" / name
+    path.write_text(version)
+    path.chmod(0o600)
+
+
 def run_dry_run(binary, argv0, prepare=None, *, arguments=DRY_RUN_ARGS,
-                include_codex=True, environment=None, extra_binaries=()):
+                include_codex=True, environment=None, extra_binaries=(), timeout=15):
     with tempfile.TemporaryDirectory(prefix="modex-super-dry-run-") as directory:
         root = Path(directory)
         (root / "home").mkdir(mode=0o700)
@@ -84,7 +99,7 @@ def run_dry_run(binary, argv0, prepare=None, *, arguments=DRY_RUN_ARGS,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            timeout=15,
+            timeout=timeout,
             check=False,
         )
         return result, before, snapshot(root)
@@ -101,6 +116,8 @@ class SuperDryRun01651Tests(unittest.TestCase):
             raise AssertionError("Build Modex first")
         if not NODE_FIXTURE.is_file() or NODE_FIXTURE.stat().st_mode & 0o111 == 0:
             raise AssertionError("Build the native Node version fixture with make unit-build")
+        if not OPTIONAL_TOOL_FIXTURE.is_file() or OPTIONAL_TOOL_FIXTURE.stat().st_mode & 0o111 == 0:
+            raise AssertionError("Build the native optional-tool fixture with make unit-build")
 
     def test_dry_run_reads_shared_config_and_ignores_shared_history(self):
         def prepare(root):
@@ -296,6 +313,138 @@ class SuperDryRun01651Tests(unittest.TestCase):
         self.assertEqual(outputs[0], outputs[1])
         self.assertEqual(outputs[0], outputs[2])
 
+    def test_rtk_version_probe_matches_without_inheriting_unapproved_environment(self):
+        def prepare(root):
+            write_optional_tool(root / "bin/rtk")
+
+        def environment(root):
+            return {"SYNTHETIC_PROBE_MARKER": str(root / "probe-environment-leaked")}
+
+        outputs = []
+        for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                     ("0.439.2", ORACLE, "prodex"),
+                                     ("Modex", MODEX, "modex")):
+            with self.subTest(binary=label):
+                result, before, after = run_dry_run(
+                    binary, argv0, prepare, environment=environment,
+                    extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertIn(b"rtk: resolved (activation deferred until launch)", result.stdout)
+                self.assertEqual(after, before)
+                self.assertNotIn("probe-environment-leaked", after)
+                outputs.append(result.stdout)
+        self.assertEqual(outputs[0], outputs[1])
+        self.assertEqual(outputs[0], outputs[2])
+
+    def test_rtk_managed_root_precedes_path_for_all_pinned_reports(self):
+        def prepare(root):
+            managed = root / "home/.local/share/prodex-optimizers"
+            managed.mkdir(parents=True, mode=0o700)
+            write_optional_tool(managed / "rtk")
+            write_optional_tool(root / "bin/rtk")
+            write_rtk_version(root, "rtk 0.45.9", managed=True)
+            write_rtk_version(root, "rtk 1.1.0")
+
+        outputs = []
+        for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                     ("0.439.2", ORACLE, "prodex"),
+                                     ("Modex", MODEX, "modex")):
+            with self.subTest(binary=label):
+                result, before, after = run_dry_run(
+                    binary, argv0, prepare, extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertIn(b"rtk 0.45.9 is too old", result.stdout)
+                self.assertNotIn(b"rtk 1.1.0 is too old", result.stdout)
+                self.assertEqual(after, before)
+                outputs.append(result.stdout)
+        self.assertEqual(outputs[0], outputs[1])
+        self.assertEqual(outputs[0], outputs[2])
+
+    def test_symlinked_rtk_managed_root_stays_fail_closed(self):
+        def prepare(root):
+            target = root / "optimizer-target"
+            target.mkdir(mode=0o700)
+            write_optional_tool(target / "rtk")
+            managed = root / "home/.local/share/prodex-optimizers"
+            managed.parent.mkdir(parents=True, mode=0o700)
+            managed.symlink_to(target)
+            write_optional_tool(root / "bin/rtk")
+
+        for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                     ("0.439.2", ORACLE, "prodex")):
+            with self.subTest(binary=label):
+                result, before, after = run_dry_run(
+                    binary, argv0, prepare, extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertIn(b"rtk: skipped (optional-tool root", result.stdout)
+                self.assertIn(b"must be a real directory)", result.stdout)
+                self.assertEqual(after, before)
+
+        result, before, after = run_dry_run(
+            MODEX, "modex", prepare, extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b"cannot report installed optional tools yet", result.stderr)
+        self.assertEqual(after, before)
+
+    def test_rtk_probe_versions_and_failures_match_release_reports(self):
+        cases = (
+            ("rtk 0.45.9", b"rtk 0.45.9 is too old"),
+            ("rtk 0.46.0-rc.1", b"rtk 0.46.0-rc.1 is too old"),
+            ("rtk latest", b"rtk did not report a recognizable semantic version: rtk latest"),
+            ("stderr:rtk 1.1.0", b"rtk: resolved (activation deferred until launch)"),
+            ("empty", b"rtk did not report a recognizable semantic version: available"),
+            ("Bearer synthetic-rtk-probe-secret", b"did not report a recognizable semantic version"),
+            ("exit:7", b"version check exited with exit status: 7: synthetic failed version probe"),
+        )
+        for version, expected in cases:
+            outputs = []
+            for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                         ("0.439.2", ORACLE, "prodex"),
+                                         ("Modex", MODEX, "modex")):
+                with self.subTest(version=version, binary=label):
+                    def prepare(root):
+                        write_optional_tool(root / "bin/rtk")
+                        write_rtk_version(root, version)
+
+                    result, before, after = run_dry_run(
+                        binary, argv0, prepare, extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                    )
+                    self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                    self.assertIn(expected, result.stdout)
+                    self.assertNotIn(b"synthetic-rtk-probe-secret", result.stdout)
+                    self.assertEqual(after, before)
+                    outputs.append(result.stdout)
+            self.assertEqual(outputs[0], outputs[1])
+            self.assertEqual(outputs[0], outputs[2])
+
+    def test_rtk_timeout_is_reported_without_leaking_probe_path(self):
+        outputs = []
+        for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                     ("0.439.2", ORACLE, "prodex"),
+                                     ("Modex", MODEX, "modex")):
+            with self.subTest(binary=label):
+                def prepare(root):
+                    write_optional_tool(root / "bin/rtk")
+                    write_rtk_version(root, "timeout")
+
+                result, before, after = run_dry_run(
+                    binary, argv0, prepare, extra_binaries=(OPTIONAL_TOOL_FIXTURE,), timeout=30,
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertIn(b"rtk health check timed out after 5s", result.stdout)
+                self.assertEqual(after, before)
+                outputs.append(result.stdout)
+        normalized_releases = [
+            re.sub(rb"/tmp/modex-super-dry-run-[^/]+", b"<temporary-root>", output)
+            for output in outputs[:2]
+        ]
+        self.assertEqual(normalized_releases[0], normalized_releases[1])
+        self.assertNotIn(b"/tmp/modex-super-dry-run-", outputs[2])
+
     def test_valid_profile_state_is_read_by_releases_but_modex_stays_fail_closed(self):
         def prepare(root):
             app = root / "home/.prodex"
@@ -340,7 +489,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
 
     def test_installed_optional_tools_fail_closed_without_launching_them(self):
         cases = (
-            ("path command", lambda root: write_tool(root / "bin/rtk", root / "rtk-invoked")),
+            ("path command", lambda root: write_tool(root / "bin/codebase-memory-mcp", root / "codebase-memory-invoked")),
             ("managed tool", lambda root: (root / "home/.local/share/prodex-optimizers/caveman/4.0.1").mkdir(parents=True)),
             ("node and npx", lambda root: (write_node(root / "bin/node"), write_tool(root / "bin/npx", root / "npx-invoked"))),
         )

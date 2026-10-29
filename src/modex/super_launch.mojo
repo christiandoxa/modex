@@ -452,11 +452,14 @@ def _deepseek_provider_panel(key_count: Int) raises:
     if not _launch_progress_fallback():
         return
     var rotation = String("Using one provider API key; API-key rotation is skipped")
+    var quota_suffix = String("; quota preflight stays disabled.")
     if key_count > 1:
         rotation = "API-key rotation is enabled across " + String(key_count) + " keys"
+    else:
+        quota_suffix = " and quota preflight stays disabled."
     _print_fallback_stderr_panel(
         "Runtime Provider",
-        "Using provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven tokenizer. " + rotation + "; quota preflight stays disabled.",
+        "Using provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven tokenizer. " + rotation + quota_suffix,
     )
 
 

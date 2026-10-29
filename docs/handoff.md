@@ -10,6 +10,17 @@ Python test census, and diff check pass. This qualifies Linux x86-64 only; all
 six baseline release targets remain in the denominator. See
 `docs/evidence/baseline-0.165.1/anthropic-text-modalities.md`.
 
+The Super single-key provider panel now matches both pinned releases:
+“API-key rotation is skipped and quota preflight stays disabled.” Multi-key
+panel text remains unchanged. A real-process control compares both messages
+across 0.165.1, 0.439.2, and Modex using synthetic credentials and a forced
+Codex capability-probe failure before provider I/O. The probe environment
+regression now records the 0.165.1 behavior of forwarding provider-key
+variables and verifies Modex scrubs them. The production build, three focused
+process tests, dependency audit, test census, and diff check pass. The full
+suite was not run; all six release targets remain in the denominator. See
+`docs/evidence/baseline-0.165.1/super-codex-probes.md`.
+
 The production relay trims ASCII boundary whitespace around request header
 lines and values only in TinyHTTP compatibility mode. Real-process controls
 match checksum-pinned 0.165.1 and 0.439.2 for boundary whitespace, CRLF field

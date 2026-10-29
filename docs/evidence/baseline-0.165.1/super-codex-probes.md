@@ -2,6 +2,10 @@
 
 The active Prodex 0.165.1 Linux oracle is pinned at SHA-256
 `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51`.
+The Prodex 0.439.2 oracle is pinned at SHA-256
+`a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`.
+The frozen source commits are `10ae15b5d1806302b60f051e4e6fec788044f4c2`
+and `72b77478a5198fc5da6b4d2253137f9cdbf43be9`.
 Its `crates/prodex-app/src/codex_binary.rs` validates `codex --version`, then
 runs `codex app-server --help`. The shared `probe_codex` helper removes
 `CODEX_HOME`, `TEST_CODEX_LOG`, `TEST_CODEX_LOG_APPEND`,
@@ -17,6 +21,13 @@ make no app-server RPC or provider request, and leave no temporary runtime
 overlay. The test compares complete stdout and normalized stderr, including
 the launch progress fallback before probes.
 
+When provider-key variables are supplied, the 0.165.1 probe keeps
+`DEEPSEEK_API_KEY`, `DEEPSEEK_API_KEYS`, and
+`PRODEX_RUNTIME_LOCAL_KEYS_JSON` in the Codex probe environment. Modex strips
+these variables before its Codex probe. The updated process test supplies
+synthetic sentinels and asserts both behaviors; no sentinel appears in output
+or diagnostics. The release's six-variable probe cleanup remains unchanged.
+
 The frozen source requires Codex `0.153.2` or newer in
 `crates/prodex-app/src/codex_binary.rs`. It parses stdout plus stderr through
 `crates/prodex-mojo-core/src/codex_auth_headers.rs`, whose lexer is in
@@ -28,11 +39,34 @@ integer parser. A version probe that exits 7 also matches Prodex's status,
 path, and install guidance. These cases run under a mode-0700 temp directory
 nested below a private temp root, covering diagnostic path normalization.
 Modex now matches the frozen fallback progress and provider panel before
-version, capability, and bounded-capture errors. It also prints the child-start
-fallback only after capability and hook-trust preflight succeeds. Full output,
-exit status, probe arguments, environment sanitization, no-provider-request
-behavior, and overlay cleanup are compared against 0.165.1. The same progress
-cases compare against historical 0.439.2.
+version, capability, and bounded-capture errors. The single-key message now
+uses “API-key rotation is skipped and quota preflight stays disabled.” Both
+`crates/prodex-app/src/app_commands/runtime_launch/providers_mode.rs` sources
+use this exact text. Multi-key output keeps “API-key rotation is enabled across
+N keys; quota preflight stays disabled.”
+`test_deepseek_provider_panel_key_counts_match_both_releases` compares both
+messages across 0.165.1, 0.439.2, and Modex using synthetic one-key and two-key
+inputs, then forces a Codex capability-probe failure before provider I/O. It
+also prints the child-start fallback only after capability and hook-trust
+preflight succeeds. Full output, exit status, probe arguments,
+legacy instrumentation-variable sanitization, no-provider-request behavior,
+and overlay cleanup are compared against 0.165.1. The same progress cases
+compare against historical 0.439.2.
+
+The focused process run passed three methods:
+
+```sh
+PYTHONPATH=tests rtk python3 -m unittest \
+  test_super_launch_01651.ActiveSuperLaunchTests.test_probe_failure_and_environment_match_01651 \
+  test_super_launch_01651.ActiveSuperLaunchTests.test_deepseek_provider_panel_key_counts_match_both_releases \
+  test_super_launch.SuperLaunchTests.test_launch_progress_and_probe_errors_match_historical_release
+```
+
+`rtk make build` passes with existing unused-variable warnings. The production
+import audit passes for 71 Mojo files. The test census passes with 50 native
+test sources and 140 Python modules. `git diff --check` passes. The full suite
+was not run.
+
 The redirected provider panel also matches `PRODEX_TERM_COLUMNS=50` and `120`.
 PTY comparisons cover text fallback with `TERM=dumb` and
 `PRODEX_TUI_STRICT=true`, but the test PTY has no controlling-terminal size;

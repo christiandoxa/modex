@@ -1,11 +1,14 @@
 """Active 0.165.1 reference checks for the production Codex probes."""
 
 import hashlib
+import os
+from pathlib import Path
 import unittest
 
 import test_cli_01651 as active_cli
 import test_super_launch as launch_support
 
+ORACLE_04392 = Path(os.environ.get("PRODEX_ORACLE_04392", str(launch_support.ORACLE)))
 
 PROBE_ENVIRONMENT = (
     "CODEX_HOME",
@@ -14,10 +17,18 @@ PROBE_ENVIRONMENT = (
     "TEST_CODEX_ARGS_LOG",
     "TEST_CODEX_ARGS_LOG_APPEND",
     "TEST_CODEX_STDIN_LOG",
+    "DEEPSEEK_API_KEY",
+    "DEEPSEEK_API_KEYS",
+    "PRODEX_RUNTIME_LOCAL_KEYS_JSON",
 )
 NATIVE_CODEX = launch_support.MODEX.parent / "tests/codex_argv_child"
 SENTINEL_ENVIRONMENT = {
-    name: f"synthetic-probe-sentinel-{name.lower()}" for name in PROBE_ENVIRONMENT
+    name: (
+        '["synthetic-probe-sentinel-runtime-key"]'
+        if name == "PRODEX_RUNTIME_LOCAL_KEYS_JSON"
+        else f"synthetic-probe-sentinel-{name.lower()}"
+    )
+    for name in PROBE_ENVIRONMENT
 }
 
 
@@ -26,7 +37,7 @@ class ActiveSuperLaunchTests(unittest.TestCase):
     def setUpClass(cls):
         if not active_cli.ORACLE.is_file() or hashlib.sha256(active_cli.ORACLE.read_bytes()).hexdigest() != active_cli.ORACLE_SHA256:
             raise AssertionError("PRODEX_ORACLE_01651 must identify the verified 0.165.1 Linux release")
-        if not launch_support.ORACLE.is_file() or hashlib.sha256(launch_support.ORACLE.read_bytes()).hexdigest() != launch_support.ORACLE_SHA256:
+        if not ORACLE_04392.is_file() or hashlib.sha256(ORACLE_04392.read_bytes()).hexdigest() != launch_support.ORACLE_SHA256:
             raise AssertionError("PRODEX_ORACLE must identify the verified 0.439.2 Linux release")
         if not launch_support.MODEX.is_file():
             raise AssertionError("Build Modex first with make build")
@@ -58,10 +69,13 @@ class ActiveSuperLaunchTests(unittest.TestCase):
                     ["--version"], ["app-server", "--help"],
                 ])
                 self.assertEqual([record["kind"] for record in records], ["probe", "probe"])
-                self.assertEqual(
-                    [record["environment"] for record in probes],
-                    [{name: None for name in PROBE_ENVIRONMENT}] * 2,
-                )
+                expected_environment = {name: None for name in PROBE_ENVIRONMENT}
+                if binary == active_cli.ORACLE:
+                    expected_environment.update({
+                        name: SENTINEL_ENVIRONMENT[name]
+                        for name in ("DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS", "PRODEX_RUNTIME_LOCAL_KEYS_JSON")
+                    })
+                self.assertEqual([record["environment"] for record in probes], [expected_environment] * 2)
                 self.assertEqual((upstream, state["leftovers"]), ([], []))
                 self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
                 self.assertNotIn(b"synthetic-probe-sentinel", result.stdout + result.stderr)
@@ -81,6 +95,50 @@ class ActiveSuperLaunchTests(unittest.TestCase):
         self.assertEqual(outputs[0], outputs[1])
         self.assertTrue(outputs[0][2].endswith(expected + b"\n"))
 
+    def test_deepseek_provider_panel_key_counts_match_both_releases(self):
+        cases = (
+            (
+                "single",
+                "synthetic-single-provider-key",
+                {},
+                "Using provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven tokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.",
+            ),
+            (
+                "multiple",
+                None,
+                {"DEEPSEEK_API_KEYS": "synthetic-rotation-key-a,synthetic-rotation-key-b"},
+                "Using provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven tokenizer. API-key rotation is enabled across 2 keys; quota preflight stays disabled.",
+            ),
+        )
+        binaries = (active_cli.ORACLE, ORACLE_04392, launch_support.MODEX)
+        for label, api_key, environment, expected_panel in cases:
+            with self.subTest(key_count=label):
+                panels = []
+                for binary in binaries:
+                    result, records, upstream, state = launch_support.run_private_launch(
+                        binary,
+                        scenario="app-server-help-failure",
+                        api_key=api_key,
+                        environment_overrides=environment,
+                    )
+                    self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
+                    self.assertEqual([record["args"] for record in records if record["kind"] == "probe"], [
+                        ["--version"], ["app-server", "--help"],
+                    ])
+                    self.assertEqual((upstream, state["leftovers"]), ([], []))
+                    output = result.stdout + result.stderr
+                    self.assertNotIn(b"synthetic-provider-key", output)
+                    self.assertNotIn(b"synthetic-single-provider-key", output)
+                    for secret in environment.values():
+                        for key in secret.split(","):
+                            self.assertNotIn(key.encode(), output)
+                    text = result.stderr.decode("utf-8")
+                    start = text.index("[ Runtime Provider ]")
+                    end = text.index("Error: Codex app-server capability probe failed", start)
+                    panel_lines = text[start:end].splitlines()[1:]
+                    panels.append(" ".join(line.strip() for line in panel_lines))
+                self.assertEqual(panels, [expected_panel] * len(binaries))
+
     def test_missing_explicit_profile_matches_both_releases(self):
         progress = (
             b"Prodex launch: preparing runtime launch...\n"
@@ -91,7 +149,7 @@ class ActiveSuperLaunchTests(unittest.TestCase):
             ("main", progress + b"Error: profile 'main' does not exist\n"),
             ("", progress + b"Error: profile '' does not exist\n"),
         )
-        binaries = (active_cli.ORACLE, launch_support.ORACLE, launch_support.MODEX)
+        binaries = (active_cli.ORACLE, ORACLE_04392, launch_support.MODEX)
         results = {}
         for profile, expected_stderr in cases:
             for binary in binaries:
@@ -109,7 +167,7 @@ class ActiveSuperLaunchTests(unittest.TestCase):
                     results[(profile, binary)] = state["managed"]
 
         for profile, _ in cases:
-            for oracle in (active_cli.ORACLE, launch_support.ORACLE):
+            for oracle in (active_cli.ORACLE, ORACLE_04392):
                 self.assertIn("state/profile-lifecycle.json.lock", results[(profile, oracle)])
             self.assertNotIn("state/profile-lifecycle.json.lock", results[(profile, launch_support.MODEX)])
 

@@ -407,3 +407,14 @@ suite (27 tests) passed. The 71-file production import audit and the test
 census (50 native, 139 Python) passed with no dependency changes. The synthetic
 Codex peer, provider, credentials, homes and ports were isolated; no real
 provider or account was used.
+
+## Non-ASCII request-head bytes
+
+The 0.165.1 and 0.439.2 TinyHTTP sources convert each completed request line to
+`AsciiString` before trimming. A non-ASCII header-name or value byte therefore
+fails line reading and produces no response. Modex previously returned an
+empty 400; its production relay now closes on this parser error without
+dispatching upstream. The cross-release controls check ordinary, fragmented,
+and half-closed requests, plus a valid request pipelined before an invalid one.
+See `docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md` for the
+source commits, wire observations, test command, and remaining framing gaps.

@@ -980,7 +980,7 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
         captured = True
     except error:
         var message = String(error)
-        var malformed_syntax = message == "malformed HTTP request line" or message == "unsupported HTTP request version" or message == "malformed HTTP request target spacing" or message == "malformed HTTP method" or message == "malformed HTTP request header" or message == "malformed HTTP header name" or message == "malformed HTTP header value" or message == "non-ASCII byte in HTTP header"
+        var malformed_syntax = message == "malformed HTTP request line" or message == "unsupported HTTP request version" or message == "malformed HTTP request target spacing" or message == "malformed HTTP method" or message == "malformed HTTP request header" or message == "malformed HTTP header name" or message == "malformed HTTP header value"
         if message == "invalid HTTP request target" or message == "malformed HTTP request target":
             try:
                 _invalid_request_target(connection)
@@ -1002,6 +1002,8 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
                     _reply(connection, 502, "upstream request failed")
                 except:
                     pass
+        elif message == "non-ASCII byte in HTTP header":
+            connection.close()
         else:
             if malformed_syntax:
                 try:

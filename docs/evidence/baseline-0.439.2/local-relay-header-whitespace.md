@@ -27,7 +27,7 @@ release and Modex to a synthetic loopback upstream:
 | Equal duplicate zero lengths on an unsupported route | 404 | 404 | 404 | No request |
 | Different numeric text (`0N` then `N`) or values (`N` then `N+1`) | 200 | 200 | 502 `gateway request capture failed` | Releases dispatch using the first length; Modex does not |
 | Duplicate equal `Content-Length` plus `Transfer-Encoding`, or duplicate `Transfer-Encoding` | Connection closes without response | Same | 502 | No request |
-| Raw UTF-8 whitespace at header boundaries | Connection closes without response | Same | 400 | No request |
+| Raw UTF-8 bytes at header-name or value boundaries | No response; `RemoteDisconnected` | Same | Same after fix; pre-fix Modex returned 400 | No request |
 
 For `Expect: 100-continue\x00bad` with `Content-Length: 0`, and unsupported
 `Expect: 100-wait` with duplicate `Content-Length: 0` fields, both releases
@@ -49,16 +49,36 @@ Only lexically identical duplicate lengths after TinyHTTP-compatible trimming
 are collapsed. Numeric variants and conflicting framing stay fail-closed in
 Modex even though the releases dispatch numeric variants using the first
 length, and close without a response for ambiguous transfer encoding. These
-are recorded differences, not parity passes. Raw UTF-8 whitespace is not
-accepted by TinyHTTP's ASCII line reader; Modex's different 400 response
-remains unqualified. Embedded-control, mismatched-length, and conflicting-
-framing cases avoid upstream dispatch in Modex.
+are recorded differences, not parity passes. Raw UTF-8 bytes are rejected by
+TinyHTTP's ASCII line reader; Modex now closes without sending its previous
+400 response. Embedded-control, mismatched-length, and conflicting-framing
+cases avoid upstream dispatch in Modex.
 
-The focused four-test process suite passed:
+The source trace uses Prodex 0.165.1 at
+`10ae15b5d1806302b60f051e4e6fec788044f4c2` and Prodex 0.439.2 at
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9`. In both
+`vendor/tiny_http/src/client.rs` versions, `read_next_line` converts each
+completed line to `AsciiString` before trimming. A non-ASCII line returns a
+read error; `ClientConnection::next` drops that error without writing a
+response. Modex's TinyHTTP-compatible path now closes on the same parser
+error, before provider dispatch.
+
+`test_non_ascii_header_bytes_close_without_response_like_releases` checks
+non-ASCII bytes in header names and values across both checksum-pinned releases
+and Modex. It also splits the value bytes across request writes and tests a
+client half-close after the complete request. Each control observes
+`RemoteDisconnected`, an empty response head, exit 0, and no upstream request.
+`test_non_ascii_header_after_valid_pipelined_request_gets_no_response`
+confirms the valid first request receives one 200 and reaches the upstream
+once; the following invalid request gets no response and is not dispatched.
+The process helper's secondary socket-state sample is not asserted after its
+HTTP reader has already observed EOF.
+
+The focused six-test process suite passed:
 
 ```text
-PYTHONPATH=tests MODEX_BINARY=/tmp/modex-relay-duplicate-length-build/modex python3 -m unittest -v test_loopback_header_whitespace
-Ran 4 tests in 40.462s
+PYTHONPATH=tests MODEX_BINARY="$PWD/build/modex" rtk python3 -m unittest -v test_loopback_header_whitespace
+Ran 6 tests in 48.404s
 OK
 ```
 

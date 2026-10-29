@@ -3744,3 +3744,17 @@ cases with synthetic homes and an API-key sentinel; no contract or release
 status is promoted. The production build, Gateway process tests, native parser
 checks, dependency audit and test-census audit passed. Evidence and source
 traces are in `docs/evidence/baseline-0.165.1/cli-observations.md`.
+
+The local relay now matches both pinned TinyHTTP releases for non-ASCII bytes
+in request header names and values. Before the fix, Modex returned an empty
+400; Prodex 0.165.1 and 0.439.2 return no response when ASCII line conversion
+fails. The production path now closes on that parser error before dispatch.
+Real-process controls cover complete and fragmented headers, client half-close,
+and an invalid pipelined request after a valid request. The six-test
+`test_loopback_header_whitespace` suite, production build, dependency audit,
+Python syntax check, and `git diff --check` passed. Probe results record empty
+response heads and `RemoteDisconnected`; they do not rely on the helper's
+secondary socket-state sample after EOF. Numeric duplicate lengths and
+conflicting framing remain fail-closed differences. See
+`docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md` and
+`docs/evidence/baseline-0.165.1/local-relay-http.md`.

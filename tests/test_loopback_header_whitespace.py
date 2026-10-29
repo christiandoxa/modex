@@ -129,6 +129,77 @@ class LoopbackHeaderWhitespaceTests(unittest.TestCase):
             upstream.server_close()
             worker.join(timeout=2)
 
+    def test_non_ascii_header_bytes_close_without_response_like_releases(self):
+        cases = (
+            ("non_ascii_header_name", b"X-\xc2\xa0Boundary: value\r\n", False, False),
+            ("non_ascii_header_value", b"X-Boundary: value\xc2\xa0\r\n", False, False),
+            ("fragmented_non_ascii_header_value", b"X-Boundary: value\xc2\xa0\r\n", True, False),
+            ("half_closed_non_ascii_header_value", b"X-Boundary: value\xc2\xa0\r\n", False, True),
+        )
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for name, header, fragmented, half_close in cases:
+                request = raw_request(header)
+                options = {"half_close": True} if half_close else {}
+                if fragmented:
+                    split = request.index(b"\xc2") + 1
+                    options["request_parts"] = [request[:split], request[split:]]
+                    options["request_part_delay_ms"] = 5
+                for label, binary in PRODUCTS:
+                    with self.subTest(case=name, product=label):
+                        upstream.reset_records()
+                        response, records = self._run(
+                            binary, name, request, upstream, **options,
+                        )
+                        self.assertIsNone(response["status"], label)
+                        self.assertEqual(response["read_error"], "RemoteDisconnected", label)
+                        self.assertEqual(response["raw_response_head"], b"", label)
+                        self.assertEqual(response["process_exit"], 0, label)
+                        self.assertEqual(records, [], label)
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_non_ascii_header_after_valid_pipelined_request_gets_no_response(self):
+        first = (
+            COMMON
+            + b"Content-Length: " + str(len(BODY)).encode() + b"\r\n\r\n"
+            + BODY
+        )
+        invalid = raw_request(b"X-Boundary: value\xc2\xa0\r\n")
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for label, binary in PRODUCTS:
+                with self.subTest(product=label):
+                    upstream.reset_records()
+                    response, records = transport.run_probe(
+                        binary,
+                        {
+                            "name": "valid_then_non_ascii_pipeline",
+                            "request": first,
+                            "pipelined_requests": [first, invalid],
+                            "process_timeout": 15,
+                        },
+                        upstream,
+                    )
+                    self.assertEqual(response["process_exit"], 0, response["stderr"])
+                    self.assertEqual(response["read_error"], "RemoteDisconnected", label)
+                    self.assertEqual(
+                        [item["status"] for item in response["pipelined_responses"]],
+                        [200], label,
+                    )
+                    self.assertEqual(response["pipelined_responses"][0]["body"], transport.RESPONSES_RESPONSE, label)
+                    self.assertEqual(len(records), 1, label)
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
     def test_identical_content_length_duplicates_are_safe_and_pipeline(self):
         duplicate_length = (
             b"Content-Length: \x0b" + str(len(BODY)).encode() + b"\x0c\r\n"

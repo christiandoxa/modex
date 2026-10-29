@@ -169,12 +169,21 @@ chunked bodies open until the five-second synthetic client timeout closes its
 socket. Additional real-process probes verify that ordinary upstream EOF after
 the failure closes the body, a 100 ms upstream idle timeout leaves it open
 until client disconnect, and an upstream reset after the failure has the same
-open-body result. An immediate client disconnect after the failure releases
-Modex promptly. Valid continuation through `message_stop` still
-closes normally. The relay waits for client disconnect without a separate
-downstream idle deadline; clients that retain their socket after a read timeout
-were not tested. These cases cover only the probed framing positions. Broader
-malformed shapes and aggregate stream-state limits remain unverified.
+open-body result. A request `SHUT_WR` control produces the same incomplete body
+in both releases and Modex. A parent-shutdown probe keeps the downstream client
+open after `response.failed`, sends 1 MiB of a pipelined request while keeping
+the client write side open, then terminates `super`. Pending pipeline bytes
+keep `client_disconnected()` false, so parent EOF must stop the open relay
+through its shared stopping signal. Each release child exits within two seconds and the
+caller observes `IncompleteRead`; the current serial Modex parent exits but
+leaves its relay and synthetic Codex children alive. The pooled cancellation
+path must close the open stream despite the pending pipeline.
+`test_parent_eof_cancels_failed_open_stream_with_pending_pipeline` records the
+release behavior and the serial Modex gap. The normal client-close probe also
+exercises the launcher cleanup path. Valid continuation through `message_stop`
+still closes normally. Clients that retain their socket after a read timeout
+and other invalid UTF-8 framing positions were not tested. Broader malformed
+shapes and aggregate stream-state limits remain unverified.
 
 The first four-module run reported four failures and one test-helper error.
 Three failures came from terminating a stream after `response.failed` instead

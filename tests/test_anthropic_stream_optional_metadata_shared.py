@@ -6,11 +6,17 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
+import subprocess
+import sys
+import tempfile
+import time
 import unittest
 
 from test_cli import MODEX, ORACLE as ORACLE_04392, ORACLE_SHA256 as ORACLE_04392_SHA256
 import test_deepseek_continuation as continuation
 from test_deepseek_continuation import observe_turns
+from test_local_rewrite import SYNTHETIC_API_KEY, serving
 from test_provider_tools_04392_characterization import _normalized_events
 from provider_stream_search_cases import repeated_search_case
 
@@ -77,9 +83,18 @@ def _normalize_orphan_fallback_call_id(events):
 
 def _observe_turns_with_read_errors(
     binary, turns, replies, *, idle_timeout_ms=None,
-    disconnect_after_failed=False,
+    disconnect_after_failed=False, half_close_request=False,
 ):
     client = continuation.CLIENT.replace("timeout=15)", "timeout=5)")
+    if half_close_request:
+        client = client.replace(
+            "import http.client, json, os, pathlib, signal, sys, time",
+            "import http.client, json, os, pathlib, signal, socket, sys, time",
+        )
+        marker = "    response = connection.getresponse()"
+        client = client.replace(
+            marker, "    connection.sock.shutdown(socket.SHUT_WR)\n" + marker,
+        )
     if disconnect_after_failed:
         read_and_save = (
             'payload = bytearray()\n'
@@ -111,7 +126,11 @@ def _observe_turns_with_read_errors(
         '          "body": payload.hex(), "started": started, "finished": int(time.time())})',
         read_and_save,
     )
-    if client == continuation.CLIENT or "timeout=5)" not in client or "body_error" not in client:
+    if (
+        client == continuation.CLIENT or "timeout=5)" not in client
+        or "body_error" not in client
+        or half_close_request and "socket.SHUT_WR" not in client
+    ):
         raise AssertionError("synthetic client could not capture incomplete stream reads")
     original = continuation.CLIENT
     continuation.CLIENT = client
@@ -125,6 +144,7 @@ def _observe_turns_with_read_errors(
 
 def _capture_body_probe(
     request, reply, *, idle_timeout_ms=None, disconnect_after_failed=False,
+    half_close_request=False,
 ):
     captures = {}
     for label, binary in (
@@ -135,6 +155,7 @@ def _capture_body_probe(
         posts, responses = _observe_turns_with_read_errors(
             binary, [request], [reply], idle_timeout_ms=idle_timeout_ms,
             disconnect_after_failed=disconnect_after_failed,
+            half_close_request=half_close_request,
         )
         if len(posts) != 1 or posts[0]["path"] != "/anthropic/v1/messages":
             raise AssertionError((label, posts))
@@ -154,6 +175,151 @@ def _capture_body_probe(
             _normalized_events(bytes.fromhex(row["body"])),
         )
     return captures
+
+
+def _observe_parent_shutdown(binary, request, reply):
+    client = continuation.CLIENT.replace(
+        "    payload = response.read()",
+        '    payload = bytearray()\n'
+        '    while b"event: response.failed\\r\\n" not in payload:\n'
+        '        piece = response.read1(4096)\n'
+        '        if not piece: break\n'
+        '        payload.extend(piece)\n'
+        '    save({"kind":"held","body":bytes(payload).hex()})\n'
+        '    try:\n'
+        '        while True:\n'
+        '            piece = response.read1(4096)\n'
+        '            if not piece: break\n'
+        '    except Exception as error:\n'
+        '        save({"kind":"body_error","error":type(error).__name__ + ": " + str(error)})\n'
+        '    payload = bytes(payload)',
+    )
+    marker = "    response = connection.getresponse()"
+    pipeline = (
+        '    pipeline_body = b"x" * 1048576\n'
+        '    connection.sock.sendall(\n'
+        '        b"POST " + target.path.encode() + b" HTTP/1.1\\r\\n"\n'
+        '        + b"Host: " + target.hostname.encode() + b":" + str(target.port).encode() + b"\\r\\n"\n'
+        '        + b"Content-Type: application/json\\r\\nContent-Length: 1048576\\r\\n"\n'
+        '        + b"Connection: keep-alive\\r\\n\\r\\n" + pipeline_body\n'
+        '    )\n'
+        '    save({"kind":"pipelined","bytes":len(pipeline_body),"write_open":True})\n'
+    )
+    client = client.replace(marker, pipeline + marker)
+    if (
+        client == continuation.CLIENT or '"kind":"held"' not in client
+        or '"kind":"pipelined"' not in client
+    ):
+        raise AssertionError("synthetic client could not hold the stream open")
+    with tempfile.TemporaryDirectory(prefix="modex-parent-shutdown-") as temporary:
+        root = Path(temporary)
+        for name in ("home", "state", "shared", "work"):
+            (root / name).mkdir(mode=0o700)
+        (root / "state/update-check.json").write_text(
+            '{"source":"GitHub","latest_version":"0.439.2","checked_at":4102444800}'
+        )
+        codex = root / "codex"
+        codex.write_text("#!" + sys.executable + "\n" + client)
+        codex.chmod(0o700)
+        capture = root / "capture.jsonl"
+        turns_file = root / "turns.json"
+        turns_file.write_text(json.dumps([request]))
+        environment = {
+            "HOME": str(root / "home"), "TMPDIR": str(root), "PATH": "/usr/bin:/bin",
+            "PRODEX_HOME": str(root / "state"),
+            "PRODEX_SHARED_CODEX_HOME": str(root / "shared"),
+            "PRODEX_CODEX_BIN": str(codex),
+            "MODEX_LAUNCH_CAPTURE": str(capture),
+            "MODEX_LAUNCH_SCENARIO": "buffered",
+            "MODEX_CONTINUATION_TURNS_FILE": str(turns_file),
+            "TERM": "dumb", "NO_COLOR": "1", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
+            "XDG_CONFIG_HOME": str(root / "home"),
+            "XDG_CACHE_HOME": str(root / "home"),
+            "XDG_DATA_HOME": str(root / "home"),
+        }
+        with serving([reply]) as upstream:
+            process = subprocess.Popen(
+                [
+                    str(binary), "super", "--provider", "deepseek", "--api-key",
+                    SYNTHETIC_API_KEY, "--base-url",
+                    f"http://127.0.0.1:{upstream.server_port}/v1", "--model",
+                    "deepseek-chat", "--no-presidio", "--no-sub-agent",
+                    "--skip-quota-check", "exec", "--", "synthetic",
+                ],
+                cwd=root / "work", env=environment,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            children = []
+            held = False
+            try:
+                deadline = time.monotonic() + 15
+                while time.monotonic() < deadline and process.poll() is None:
+                    try:
+                        rows = [
+                            json.loads(line) for line in capture.read_text().splitlines()
+                            if line
+                        ] if capture.exists() else []
+                    except json.JSONDecodeError:
+                        rows = []
+                    if any(row.get("kind") == "held" for row in rows):
+                        held = True
+                        break
+                    time.sleep(0.02)
+                try:
+                    children = [
+                        int(value)
+                        for value in Path(
+                            f"/proc/{process.pid}/task/{process.pid}/children"
+                        ).read_text().split()
+                    ]
+                except FileNotFoundError:
+                    pass
+                if held:
+                    process.send_signal(signal.SIGTERM)
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=2)
+                deadline = time.monotonic() + 2
+                while time.monotonic() < deadline:
+                    children = [pid for pid in children if Path(f"/proc/{pid}").exists()]
+                    if not children:
+                        break
+                    time.sleep(0.02)
+                alive_children = children.copy()
+                for pid in alive_children:
+                    try:
+                        os.kill(pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                if alive_children:
+                    time.sleep(0.05)
+                try:
+                    rows = [
+                        json.loads(line) for line in capture.read_text().splitlines()
+                        if line
+                    ] if capture.exists() else []
+                except json.JSONDecodeError:
+                    rows = []
+                return {
+                    "parent_returncode": process.returncode,
+                    "children_alive_after_2s": alive_children,
+                    "held": held or any(row.get("kind") == "held" for row in rows),
+                    "held_records": [row for row in rows if row.get("kind") == "held"],
+                    "pipelined_records": [row for row in rows if row.get("kind") == "pipelined"],
+                    "body_errors": [row for row in rows if row.get("kind") == "body_error"],
+                    "responses": [row for row in rows if row.get("kind") == "response"],
+                }
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                    process.wait(timeout=2)
+                for pid in children:
+                    try:
+                        os.kill(pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
 
 
 def _cases():
@@ -805,6 +971,80 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
             "code": "invalid_anthropic_stream",
             "message": "content delta type is missing",
         })
+
+    def test_request_half_close_preserves_response_body_after_failure(self):
+        request, fixture = repeated_search_case()
+        base = [
+            json.loads(line[6:])
+            for line in fixture["body"].splitlines()
+            if line.startswith(b"data: ")
+        ]
+        failed = {"type": "content_block_delta", "index": 1, "delta": {"type": None}}
+        body = _stream(base[:6] + [failed])["body"] + b": \xff\n\n" + _stream(base[6:])["body"]
+        reply = {**fixture, "body": body, "chunked": True}
+        captures = _capture_body_probe(request, reply, half_close_request=True)
+
+        baseline = captures["0.439.2"]
+        self.assertEqual(captures["0.165.1"], baseline)
+        self.assertEqual(baseline[0], 200)
+        self.assertTrue(baseline[1].startswith("IncompleteRead:"), repr(captures))
+        self.assertEqual(baseline[2], "chunked")
+        self.assertEqual(captures["Modex"], baseline)
+
+    def test_parent_eof_cancels_failed_open_stream_with_pending_pipeline(self):
+        request, fixture = repeated_search_case()
+        base = [
+            json.loads(line[6:])
+            for line in fixture["body"].splitlines()
+            if line.startswith(b"data: ")
+        ]
+        failed = {"type": "content_block_delta", "index": 1, "delta": {"type": None}}
+        body = _stream(base[:6] + [failed])["body"] + b": \xff\n\n" + _stream(base[6:])["body"]
+        reply = {**fixture, "body": body, "chunked": True}
+        observations = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            observations[label] = _observe_parent_shutdown(binary, request, reply)
+        summary = {
+            label: {
+                "held": result["held"],
+                "parent_returncode": result["parent_returncode"],
+                "children_alive_after_2s": result["children_alive_after_2s"],
+                "pipelined_records": result["pipelined_records"],
+                "body_errors": [row["error"] for row in result["body_errors"]],
+            }
+            for label, result in observations.items()
+        }
+
+        for label in ("0.165.1", "0.439.2"):
+            result = observations[label]
+            self.assertTrue(result["held"], (label, result))
+            self.assertEqual(result["parent_returncode"], -signal.SIGTERM, (label, result))
+            self.assertEqual(result["children_alive_after_2s"], [], (label, result))
+            self.assertEqual(
+                [(row["bytes"], row["write_open"]) for row in result["pipelined_records"]],
+                [(1048576, True)],
+                (label, result),
+            )
+            self.assertTrue(result["body_errors"], (label, result))
+            self.assertIn(
+                b"event: response.failed\r\n",
+                bytes.fromhex(result["held_records"][0]["body"]),
+            )
+
+        modex = observations["Modex"]
+        self.assertTrue(modex["held"], modex)
+        self.assertEqual(modex["parent_returncode"], -signal.SIGTERM, modex)
+        self.assertEqual(modex["children_alive_after_2s"], [], summary)
+        self.assertEqual(
+            [(row["bytes"], row["write_open"]) for row in modex["pipelined_records"]],
+            [(1048576, True)],
+            modex,
+        )
+        self.assertTrue(modex["body_errors"], modex)
 
     def test_upstream_eof_after_response_failed_closes_all_bodies(self):
         request, fixture = repeated_search_case()

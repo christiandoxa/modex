@@ -123,6 +123,13 @@ combinations, security behavior, the remaining five release targets and full
 parity remain open. Evidence:
 `docs/evidence/baseline-0.439.2/log-cli-unknown-option-usage.md`.
 
+The full 87-case log CLI argument matrix now also runs against the checksum-
+verified Prodex 0.165.1 process. It compares the shared Modex parser with both
+the active 0.439.2 and historical 0.165.1 releases using isolated synthetic
+homes. The selected parser cases match both; this does not cover successful
+live log sources, output parity, or other release targets. Evidence:
+`docs/evidence/baseline-0.165.1/log-01651-tests.md`.
+
 The production relay now accepts TinyHTTP's ASCII nonstandard method syntax
 such as `G@T`, retaining the parsed HTTP version. Checksum-verified 0.165.1,
 0.439.2 and Modex processes agree on a selected unsupported-route 404 and on a

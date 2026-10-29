@@ -6,6 +6,7 @@ from pathlib import Path
 import unittest
 
 import test_cli
+import test_log_cli
 import test_logs
 import test_log_operational
 import test_log_payload
@@ -31,6 +32,7 @@ LOG_MODULES = (
     test_log_payload_render,
     test_log_redaction,
     test_log_runtime,
+    test_log_cli,
     test_log_text,
     test_log_timestamps,
     test_log_transcript,
@@ -79,6 +81,10 @@ class LogLast01651Tests(ActiveOracle01651, test_logs.LogLastTests):
     pass
 
 
+class LogCli01651Tests(ActiveOracle01651, test_log_cli.LogCliTests):
+    pass
+
+
 class OperationalLogProjection01651Tests(ActiveOracle01651, test_log_operational.OperationalLogProjectionTests):
     pass
 
@@ -115,6 +121,7 @@ def load_tests(loader, standard_tests, pattern):
     suite = unittest.TestSuite()
     for test_case in (
         LogLast01651Tests,
+        LogCli01651Tests,
         OperationalLogProjection01651Tests,
         LogPayload01651Tests,
         LogPayloadRender01651Tests,

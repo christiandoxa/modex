@@ -8,6 +8,18 @@ tests passed in 3,356.477 seconds. The local log is
 run predates later dry-run, provider, and log changes; it does not qualify the
 current revision, non-host targets, or security behavior.
 
+## Generated stateless session matrix (2026-10-30)
+
+Generated real-process fixtures compare session metadata aliases and
+precedence, duplicate keys, record order and type classes, timestamps, and
+stateless query fields across Prodex 0.165.1, frozen Prodex 0.439.2, and Modex.
+All five matrix tests passed; every generated output matched after replacing
+only fixture-root paths. No substantial stateless report or query mismatch
+appeared in the covered Linux x86-64 cases. Managed state and profile filtering
+were excluded; other release targets and overall parity remain open, and all
+six baseline targets stay in the denominator. Evidence:
+`docs/evidence/session-stateless-generated-matrix-04392.md`.
+
 ## Super effort diagnostics with escaped input (2026-10-30)
 
 Reasoning-effort errors now format C0/C1 codepoints, quotes, backslashes, and

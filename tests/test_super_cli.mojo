@@ -44,6 +44,10 @@ def main() raises:
     validate_super_options(options)
     options = parse_super_arguments([String("modex"), "super", "exec", "--sub-agent", "--sub-agent-provider", "local", "--sub-agent-url", "https://[::1]:8131/v1"], "modex")
     validate_super_options(options)
+    options = parse_super_arguments([String("modex"), "super", "--sub-agent", "--sub-agent-model", "  雪 model  "], "modex")
+    assert_equal(options.value("--sub-agent-model"), "  雪 model  ")
+    validate_super_options(options)
+    rejects([String("modex"), "super", "--sub-agent", "--sub-agent-model", "  "], "error: invalid value '  ' for '--sub-agent-model <MODEL>': --sub-agent-model must be nonempty\n\nFor more information, try '--help'.\n")
     for value in ["default", "4", "8", "16", "32", "23", "64"]:
         options = parse_super_arguments([String("modex"), "super", "exec", "--sub-agent", "--sub-agent-max-concurrency", value], "modex")
         assert_equal(options.value("--sub-agent-max-concurrency"), value)

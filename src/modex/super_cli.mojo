@@ -140,7 +140,7 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
     if name == "--cli" and value != "agy":
         raise Error("only --cli agy is retained; use --provider gemini|copilot|kiro for other providers")
     if name == "--sub-agent-model" and not trim_text(value):
-        raise Error("--sub-agent-model must be nonempty")
+        raise _typed_value_error(name, value, "--sub-agent-model must be nonempty", clap_diagnostic)
     if name == "--sub-agent-model-reasoning-effort" and value not in ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]:
         raise Error("invalid sub-agent reasoning effort")
     if name == "--web-search" and value not in ["disabled", "cached", "indexed", "live"]:

@@ -56,6 +56,10 @@ Bound empty profile names now remain distinct from absent bindings: JSON emits
 `--profile ""` filtering. Identifier, duplicate-key and retention probes are
 recorded in `docs/evidence/session-profile-identifiers-04392.md`.
 
+Empty and whitespace-only sub-agent model arguments now produce the selected
+pre- and post-positional diagnostics of both releases. Post-positional state
+creation remains different; see `docs/evidence/super-subagent-model-validation.md`.
+
 After integration, the production build and four native session, Super and
 provider checks passed. The focused profile, invalid-path, historical session
 and state-guard suite passed 29 tests, and nine shared stream/concurrency

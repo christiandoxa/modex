@@ -39,14 +39,24 @@ def _label(name: String) -> String:
 def parse_gateway_arguments(args: List[String], executable: String) raises -> GatewayOptions:
     var options = GatewayOptions("127.0.0.1:0", "", "", Optional[String](), False, False, False, False)
     var seen = List[String]()
+    var group_usage = False
     var conflict_first = String()
     var conflict_second = String()
     var index = 2
     while index < len(args):
         var argument = args[index]
-        if argument == "--help" or argument == "-h":
+        if argument == "--help" or (argument.startswith("-h") and not argument.startswith("--")):
             options.help = True
             return options^
+        if argument.startswith("--help="):
+            var value = String(argument.split("=", maxsplit=1)[1])
+            var usage = executable + " gateway --help"
+            if group_usage:
+                usage += " <--listen <ADDR>|--provider <PROVIDER>|--base-url <URL>|--api-key <KEY>|--smart-context|--presidio|--no-presidio>"
+            raise session_cli_error(
+                "unexpected value '" + value + "' for '--help' found; no more were expected",
+                usage,
+            )
         var name = argument_name(argument)
         if name == "--url": name = "--base-url"
         var value_option = name == "--listen" or name == "--provider" or name == "--base-url" or name == "--api-key"
@@ -65,6 +75,7 @@ def parse_gateway_arguments(args: List[String], executable: String) raises -> Ga
         if value_option:
             var value: String
             if "=" in argument:
+                group_usage = True
                 value = String(argument.split("=", maxsplit=1)[1])
             else:
                 if index + 1 >= len(args) or args[index + 1].startswith("-"):
@@ -84,6 +95,7 @@ def parse_gateway_arguments(args: List[String], executable: String) raises -> Ga
         else:
             if "=" in argument:
                 raise session_cli_error("unexpected value '" + String(argument.split("=", maxsplit=1)[1]) + "' for '" + name + "' found; no more were expected", executable + " gateway " + name)
+            group_usage = True
             if name == "--smart-context": options.smart_context = True
             elif name == "--presidio":
                 options.presidio = True

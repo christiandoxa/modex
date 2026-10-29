@@ -31,6 +31,20 @@ parser-precedence cases also matched the pinned historical 0.439.2 binary
 locally. Gateway startup, provider attempts, filesystem deltas and untested
 argument combinations remain unqualified.
 
+Gateway help parsing now matches the active 0.439.2 and historical 0.165.1
+processes (oracle SHA-256 `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`
+and `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51`) for
+short clusters beginning with `-h`, unknown short options before help, and
+attached `--help=value` diagnostics. The 0.439.2 process regression also checks
+Clap's generated usage after switches and attached versus split values, with a
+synthetic API-key sentinel absent from both output streams.
+On 2026-10-29, `make build`,
+`make unit-compile-internal UNIT_BUILD_PROGRAMS=test_gateway_cli`,
+`build/tests/test_gateway_cli`, and
+`python3 scripts/ci/run-unittest.py test_gateway_cli.py test_gateway_cli_01651.py`
+passed. This covers argument parsing only; Gateway startup and provider
+request/response behavior remain unqualified.
+
 For `help update`, three unknown subcommands containing `=` now retain the
 whole argument in the diagnostic, matching the 0.165.1 executable and the
 historical 0.439.2 executable. The isolated checks compare exit status, output,

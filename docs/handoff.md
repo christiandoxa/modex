@@ -20,6 +20,13 @@ routes active oracle checks to 0.439.2 and keeps all six release targets in the
 parity denominator. The 76-contract inventory and complete production parity
 remain unfinished, with all six release qualifications BLOCKED.
 
+Gateway help parsing now matches tested active 0.439.2 and historical 0.165.1
+short-cluster and attached-value cases, including Clap's usage variation after
+switches and attached versus split values. Synthetic API-key text stays out of
+output. The production build, native parser program and focused process checks
+pass; this covers CLI parsing only. Evidence:
+`docs/evidence/baseline-0.165.1/cli-observations.md`.
+
 After integrating the Super argument, bounded large-header and image-start
 changes, the production build and four native checks passed. Sixteen focused
 image, header and Super process tests passed, including comparisons against

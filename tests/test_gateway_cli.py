@@ -95,6 +95,29 @@ class GatewayCLIDifferentialTests(unittest.TestCase):
             with self.subTest(arguments=arguments):
                 self.assert_matches_oracle(arguments)
 
+    def test_help_short_clusters_and_attached_values_match(self):
+        for arguments in (
+            ("gateway", "-hfoo"),
+            ("gateway", "-hx"),
+            ("gateway", "-xhfoo"),
+            ("gateway", "--help=true"),
+            ("gateway", "--help="),
+            ("gateway", "--api-key", "synthetic-gateway-key", "--help=true"),
+            ("gateway", "--api-key=synthetic-gateway-key", "--help=true"),
+        ):
+            with self.subTest(arguments=arguments):
+                baseline = run_cli(ORACLE, "prodex", arguments)
+                actual = run_cli(MODEX, "modex", arguments)
+                self.assertEqual(
+                    (actual.returncode, actual.stdout, actual.stderr),
+                    (
+                        baseline.returncode,
+                        baseline.stdout.replace(b"Usage: prodex ", b"Usage: modex "),
+                        baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex "),
+                    ),
+                )
+                self.assertNotIn(b"synthetic-gateway-key", actual.stdout + actual.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

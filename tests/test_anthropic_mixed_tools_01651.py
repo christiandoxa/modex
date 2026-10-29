@@ -4,12 +4,15 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from urllib.parse import urlsplit
 import unittest
+from unittest.mock import patch
 
 from test_cli import MODEX, ORACLE, ORACLE_SHA256
 from test_deepseek_continuation import observe_turns
 from test_local_rewrite import SYNTHETIC_API_KEY
-from test_provider_tools_04392_characterization import _run
+from test_provider_tools_04392_characterization import CODEX_REQUEST, _codex_with_request, _normalized_events, _run
+import test_super_launch
 
 
 ORACLE_01651 = Path(os.environ.get(
@@ -36,6 +39,47 @@ COUNT = {
 SEARCH = {"type": "web_search_preview", "allowed_domains": ["example.test"]}
 FUNCTION_RESPONSE_BLOCK = b'{"type":"tool_use","id":"x","name":"f"}'
 TEXT_RESPONSE_BLOCK = b'{"type":"text","text":"x"}'
+
+
+def _codex_with_raw_request(raw_request):
+    source = test_super_launch.CODEX
+    if source.count(CODEX_REQUEST) != 1:
+        raise AssertionError("Expected one synthetic Codex request body")
+    replacement = 'body = b"\\x00synthetic\\xff" if passthrough else ' + repr(raw_request)
+    return source.replace(CODEX_REQUEST, replacement)
+
+
+def _run_mode(binary, request, scenario, mode=None, strict_tools=False, raw_request=None):
+    codex = (
+        _codex_with_raw_request(raw_request)
+        if raw_request is not None else _codex_with_request(request)
+    )
+    with patch.object(test_super_launch, "CODEX", codex):
+        original_run = test_super_launch.subprocess.run
+
+        def run_with_mode(*args, **kwargs):
+            if strict_tools:
+                command = args[0] if args else kwargs["args"]
+                base_url = command[command.index("--base-url") + 1]
+                base = urlsplit(base_url)
+                kwargs["env"] = {
+                    **kwargs["env"],
+                    "PRODEX_DEEPSEEK_STRICT_TOOLS": "true",
+                    "PRODEX_DEEPSEEK_BETA_BASE_URL": f"{base.scheme}://{base.netloc}/beta",
+                }
+            if mode is not None:
+                kwargs["env"] = {
+                    **kwargs["env"],
+                    "PRODEX_DEEPSEEK_WEB_SEARCH_MODE": mode,
+                }
+            return original_run(*args, **kwargs)
+
+        with patch.object(test_super_launch.subprocess, "run", side_effect=run_with_mode):
+            result, records, upstream, state = test_super_launch.SuperLaunchTests().run_launch(
+                binary=binary, scenario=scenario, model="deepseek-chat",
+            )
+    response = next((record for record in records if record["kind"] == "response"), None)
+    return result, response, upstream, state
 
 
 def _request(stream=False):
@@ -865,6 +909,291 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                 self.assertEqual(len(responses), 1)
                 self.assertEqual(responses[0]["status"], 502)
                 self.assertEqual(bytes.fromhex(responses[0]["body"]), b"upstream request failed")
+
+    def test_web_search_options_project_like_both_releases(self):
+        cases = [
+            ("missing", {}),
+            ("allowed domains empty", {"allowed_domains": []}),
+            ("blocked domains empty", {"blocked_domains": []}),
+            ("blocked domains", {"blocked_domains": ["blocked.example"]}),
+            ("max uses minimum", {"max_uses": 1}),
+            ("max uses maximum", {"max_uses": 18446744073709551615}),
+            ("empty location", {"user_location": {}}),
+            ("location fields", {
+                "user_location": {
+                    "type": "approximate",
+                    "city": "Jakarta",
+                    "region": "Jakarta",
+                    "country": "ID",
+                    "timezone": "Asia/Jakarta",
+                    "synthetic_extension": "preserved",
+                },
+            }),
+            ("context low", {"search_context_size": "low"}),
+            ("context medium", {"search_context_size": "medium"}),
+            ("context high", {"search_context_size": "high"}),
+        ]
+        for name, options in cases:
+            request = {
+                "model": "deepseek-chat",
+                "input": "synthetic web query",
+                "stream": False,
+                "tools": [{"type": "web_search_preview", **options}],
+            }
+            with self.subTest(case=name):
+                results = [
+                    _run(binary, request, scenario="anthropic-buffered")
+                    for binary in (ORACLE_01651, ORACLE, MODEX)
+                ]
+                expected = results[0]
+                expected_options = {
+                    key: value for key, value in options.items()
+                    if key != "search_context_size"
+                }
+                for result in results:
+                    self.assertEqual((result["exit_code"], result["status"]), (0, 200))
+                    self.assertEqual(len(result["upstream"]), 1)
+                    self.assertEqual(result["upstream"][0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual(result["upstream_body"], expected["upstream_body"])
+                    self.assertEqual(result["upstream_body"]["tools"][-1]["type"], "web_search_20250305")
+                    web_search = result["upstream_body"]["tools"][-1]
+                    self.assertEqual(
+                        {key: web_search[key] for key in expected_options},
+                        expected_options,
+                    )
+                    self.assertNotIn("search_context_size", web_search)
+                    self.assertEqual(result["state"]["leftovers"], [])
+
+    def test_streamed_web_search_options_match_both_releases(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic streamed web query",
+            "stream": True,
+            "tools": [{
+                "type": "web_search_preview",
+                "blocked_domains": ["blocked.example"],
+                "max_uses": 2,
+                "user_location": {
+                    "type": "approximate",
+                    "city": "Jakarta",
+                    "country": "ID",
+                },
+                "search_context_size": "high",
+            }],
+        }
+        results = [
+            _run(binary, request, scenario="anthropic-stream")
+            for binary in (ORACLE_01651, ORACLE, MODEX)
+        ]
+        expected = results[0]
+        for result in results:
+            self.assertEqual((result["exit_code"], result["status"]), (0, 200))
+            self.assertEqual(len(result["upstream"]), 1)
+            self.assertEqual(result["upstream"][0]["path"], "/anthropic/v1/messages")
+            self.assertEqual(result["upstream_body"], expected["upstream_body"])
+            self.assertEqual(
+                _normalized_events(result["response_body"]),
+                _normalized_events(expected["response_body"]),
+            )
+            self.assertEqual(result["state"]["leftovers"], [])
+        web_search = expected["upstream_body"]["tools"][-1]
+        self.assertEqual(web_search["blocked_domains"], ["blocked.example"])
+        self.assertEqual(web_search["max_uses"], 2)
+        self.assertEqual(web_search["user_location"], request["tools"][0]["user_location"])
+        self.assertNotIn("search_context_size", web_search)
+
+    def test_invalid_web_search_options_fail_before_provider_post(self):
+        cases = [
+            ("allowed domains wrong type", {"allowed_domains": "allowed.example"}),
+            ("blocked domain empty item", {"blocked_domains": [""]}),
+            ("max uses zero", {"max_uses": 0}),
+            ("max uses negative", {"max_uses": -1}),
+            ("max uses fraction", {"max_uses": 1.5}),
+            ("max uses string", {"max_uses": "2"}),
+            ("max uses null", {"max_uses": None}),
+            ("max uses overflow", {"max_uses": 18446744073709551616}),
+            ("location wrong type", {"user_location": []}),
+            ("location null", {"user_location": None}),
+            ("context empty", {"search_context_size": ""}),
+            ("context unknown", {"search_context_size": "extreme"}),
+            ("context wrong type", {"search_context_size": 1}),
+            ("context null", {"search_context_size": None}),
+        ]
+        for name, options in cases:
+            request = {
+                "model": "deepseek-chat",
+                "input": "synthetic web query",
+                "stream": False,
+                "tools": [{"type": "web_search_preview", **options}],
+            }
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                with self.subTest(case=name, binary=binary.name):
+                    result = _run(binary, request, scenario="anthropic-buffered")
+                    self.assertEqual((result["exit_code"], result["status"]), (1, 502))
+                    self.assertEqual(result["upstream"], [])
+                    self.assertEqual(result["state"]["leftovers"], [])
+
+    def test_conflicting_search_filters_fall_back_only_in_auto_mode(self):
+        binaries = (ORACLE_01651, ORACLE, MODEX)
+        requests = (
+            {
+                "model": "deepseek-chat",
+                "input": "synthetic web query",
+                "stream": False,
+                "tools": [{
+                    "type": "web_search_preview",
+                    "allowed_domains": [],
+                    "blocked_domains": [],
+                }],
+            },
+            {
+                "model": "deepseek-chat",
+                "input": "synthetic web query",
+                "stream": False,
+                "web_search_options": {
+                    "allowed_domains": [],
+                    "blocked_domains": [],
+                },
+            },
+        )
+        for request in requests:
+            with self.subTest(fields=tuple(key for key in request if key not in ("model", "input", "stream"))):
+                for mode in ("auto", "openai_chat", "off", "anthropic"):
+                    with self.subTest(mode=mode):
+                        observed = [
+                            _run_mode(binary, request, "buffered", mode)
+                            for binary in binaries
+                        ]
+                        for result, response, upstream, state in observed:
+                            if mode in ("auto", "openai_chat"):
+                                self.assertEqual(result.returncode, 0)
+                                self.assertIsNotNone(response)
+                                self.assertEqual(response["status"], 200)
+                                self.assertEqual(len(upstream), 1)
+                                self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
+                                body = json.loads(bytes.fromhex(upstream[0]["body"]))
+                                expected_body = {
+                                    "messages": [{"content": "synthetic web query", "role": "user"}],
+                                    "model": "deepseek-chat", "stream": False,
+                                }
+                                if mode == "openai_chat":
+                                    expected_body["web_search_options"] = {
+                                        "allowed_domains": [], "blocked_domains": [],
+                                    }
+                                self.assertEqual(body, expected_body)
+                            elif mode == "off":
+                                self.assertEqual(result.returncode, 1)
+                                self.assertIsNotNone(response)
+                                self.assertEqual(response["status"], 502)
+                                self.assertEqual(bytes.fromhex(response["body"]), b"upstream request failed")
+                                self.assertEqual(upstream, [])
+                            else:
+                                self.assertEqual(result.returncode, 1)
+                                self.assertIsNotNone(response)
+                                self.assertEqual(response["status"], 400)
+                                self.assertEqual(
+                                    bytes.fromhex(response["body"]),
+                                    b'{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}',
+                                )
+                                self.assertEqual(upstream, [])
+                            self.assertEqual(state["leftovers"], [])
+
+    def test_conflict_fallback_preserves_input_and_option_validation(self):
+        cases = (
+            ("empty input", "", {}),
+            ("invalid domains", "synthetic web query", {"allowed_domains": "bad"}),
+            ("invalid location", "synthetic web query", {"user_location": []}),
+            ("invalid max uses", "synthetic web query", {"max_uses": 0}),
+            ("invalid context size", "synthetic web query", {"search_context_size": "extreme"}),
+        )
+        for name, content, extra in cases:
+            request = {
+                "model": "deepseek-chat",
+                "input": content,
+                "stream": False,
+                "tools": [{
+                    "type": "web_search_preview",
+                    "allowed_domains": [],
+                    "blocked_domains": [],
+                    **extra,
+                }],
+            }
+            with self.subTest(case=name):
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    result, response, upstream, state = _run_mode(binary, request, "buffered")
+                    expected_status = 400 if name == "empty input" else 502
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIsNotNone(response)
+                    self.assertEqual(response["status"], expected_status)
+                    self.assertEqual(upstream, [])
+                    self.assertEqual(state["leftovers"], [])
+
+    def test_conflict_fallback_preserves_history_and_strict_tools_route(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": [
+                {"type": "message", "role": "user", "content": "synthetic first turn"},
+                {"type": "message", "role": "assistant", "content": "synthetic prior answer"},
+                {"type": "message", "role": "user", "content": "synthetic current turn"},
+            ],
+            "stream": False,
+            "tools": [
+                {"type": "web_search_preview", "allowed_domains": [], "blocked_domains": []},
+                FUNCTION,
+            ],
+        }
+        results = [
+            _run_mode(binary, request, "buffered", strict_tools=True)
+            for binary in (ORACLE_01651, ORACLE, MODEX)
+        ]
+        expected = json.loads(bytes.fromhex(results[0][2][0]["body"]))
+        self.assertEqual(expected["messages"], [
+            {"content": "synthetic first turn", "role": "user"},
+            {"content": "synthetic prior answer", "role": "assistant"},
+            {"content": "synthetic current turn", "role": "user"},
+        ])
+        self.assertEqual(len(expected["tools"]), 1)
+        self.assertEqual(expected["tools"][0]["function"]["name"], "lookup")
+        self.assertNotIn("web_search_options", expected)
+        for result, response, upstream, state in results:
+            self.assertEqual((result.returncode, response["status"]), (0, 200))
+            self.assertEqual(len(upstream), 1)
+            self.assertEqual(upstream[0]["path"], "/beta/chat/completions")
+            self.assertEqual(json.loads(bytes.fromhex(upstream[0]["body"])), expected)
+            self.assertEqual(state["leftovers"], [])
+
+    def test_auto_conflict_duplicate_keys_fall_back_and_malformed_json_stops(self):
+        duplicate = (
+            b'{"model":"deepseek-chat","input":"synthetic web query","stream":false,'
+            b'"tools":[{"type":"web_search_preview","allowed_domains":["first.example"],'
+            b'"allowed_domains":[],"blocked_domains":[]}]} '
+        )
+        malformed = (
+            b'{"model":"deepseek-chat","input":"synthetic web query","stream":false,'
+            b'"tools":[{"type":"web_search_preview","allowed_domains":[],"blocked_domains":[]}'
+        )
+        results = [
+            _run_mode(binary, {}, "buffered", "auto", raw_request=duplicate)
+            for binary in (ORACLE_01651, ORACLE, MODEX)
+        ]
+        for result, response, upstream, state in results:
+            self.assertEqual((result.returncode, response["status"]), (0, 200))
+            self.assertEqual(len(upstream), 1)
+            self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
+            self.assertEqual(json.loads(bytes.fromhex(upstream[0]["body"])), {
+                "messages": [{"content": "synthetic web query", "role": "user"}],
+                "model": "deepseek-chat", "stream": False,
+            })
+            self.assertEqual(state["leftovers"], [])
+        results = [
+            _run_mode(binary, {}, "buffered", "auto", raw_request=malformed)
+            for binary in (ORACLE_01651, ORACLE, MODEX)
+        ]
+        for result, response, upstream, state in results:
+            self.assertEqual((result.returncode, response["status"]), (1, 502))
+            self.assertEqual(bytes.fromhex(response["body"]), b"upstream request failed")
+            self.assertEqual(upstream, [])
+            self.assertEqual(state["leftovers"], [])
 
 
 if __name__ == "__main__":

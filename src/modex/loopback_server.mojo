@@ -13,6 +13,9 @@ from std.sys import Endian, size_of
 from std.sys._libc import FcntlCommands, FcntlFDFlags, close, fcntl
 from std.sys._libc_errno import ErrNo, get_errno
 from std.time import perf_counter, sleep
+from std.time.time import _realtime_nanoseconds
+
+from .local_time import format_http_date
 
 comptime HTTP_HEADER_LIMIT = 65536
 # shortcut: cap unbounded baseline heads at 2 MiB, below the outbound cap; raise with larger oracle evidence.
@@ -143,6 +146,7 @@ struct LoopbackHTTPConnection(Movable):
     var head_request: Bool
     var expect_continue_sent: Bool
     var keep_alive_enabled: Bool
+    var include_default_response_headers: Bool
     var keep_alive: Bool
     var waiting_for_request: Bool
     var response_version: String
@@ -157,6 +161,7 @@ struct LoopbackHTTPConnection(Movable):
         self.head_request = False
         self.expect_continue_sent = False
         self.keep_alive_enabled = False
+        self.include_default_response_headers = False
         self.keep_alive = False
         self.waiting_for_request = False
         self.response_version = "HTTP/1.1"
@@ -322,6 +327,7 @@ struct LoopbackHTTPConnection(Movable):
             var response = _response_head(
                 status, headers, len(body), False, include_bodyless_length,
                 bodyless_chunked, response_version, not self.keep_alive_enabled,
+                self.include_default_response_headers,
             )
             var deadline = _deadline(timeout_ms)
             _send_all(self.fd, response, deadline)
@@ -765,35 +771,73 @@ def _ascii(bytes: List[UInt8], start: Int, end: Int) raises -> String:
     return String(from_utf8=Span(value))
 
 
-def _response_head(status: Int, headers: List[Tuple[String, String]], body_length: Int, chunked: Bool, include_bodyless_length: Bool = False, bodyless_chunked: Bool = False, version: String = "HTTP/1.1", include_connection_close: Bool = True) raises -> List[UInt8]:
+def _response_head(status: Int, headers: List[Tuple[String, String]], body_length: Int, chunked: Bool, include_bodyless_length: Bool = False, bodyless_chunked: Bool = False, version: String = "HTTP/1.1", include_connection_close: Bool = True, include_default_headers: Bool = False) raises -> List[UInt8]:
     if status < 200 or status > 599:
         raise Error("invalid final HTTP response status")
     var output = List[UInt8]()
     var text = version + " " + String(status) + " " + _reason(status) + "\r\n"
     for byte in text.as_bytes():
         output.append(byte)
-    if not chunked and not bodyless_chunked and (status != 204 and status != 304 or include_bodyless_length):
-        text = "Content-Length: " + String(body_length) + "\r\n"
-        for byte in text.as_bytes():
-            output.append(byte)
-    if chunked or bodyless_chunked:
-        for byte in "Transfer-Encoding: chunked\r\n".as_bytes():
-            output.append(byte)
-    if include_connection_close:
-        for byte in "Connection: close\r\n".as_bytes():
-            output.append(byte)
-    var header_bytes = len(output)
+
+    var has_date = False
+    var has_server = False
     for name, value in headers:
         _validate_response_header(name, value)
         var lower = name.lower()
+        if lower == "date": has_date = True
+        elif lower == "server": has_server = True
         if lower == "content-length" or lower == "transfer-encoding" or lower == "connection" or lower == "trailer" or lower == "upgrade" or lower == "keep-alive" or lower == "proxy-connection":
             raise Error("caller-controlled HTTP response framing header is forbidden")
-        var line = name + ": " + value + "\r\n"
-        header_bytes += line.byte_length()
-        if header_bytes + 2 > HTTP_HEADER_LIMIT:
+
+    var header_bytes = len(output)
+    if include_default_headers and not has_server:
+        text = "Server: tiny-http (Rust)\r\n"
+        if header_bytes + text.byte_length() + 2 > HTTP_HEADER_LIMIT:
             raise Error("HTTP response headers exceed limit")
-        for byte in line.as_bytes():
-            output.append(byte)
+        header_bytes += text.byte_length()
+        for byte in text.as_bytes(): output.append(byte)
+    if include_default_headers and not has_date:
+        var nanoseconds = _realtime_nanoseconds()
+        text = "Date: " + format_http_date(nanoseconds // 1_000_000_000) + "\r\n"
+        if header_bytes + text.byte_length() + 2 > HTTP_HEADER_LIMIT:
+            raise Error("HTTP response headers exceed limit")
+        header_bytes += text.byte_length()
+        for byte in text.as_bytes(): output.append(byte)
+
+    if include_default_headers:
+        for name, value in headers:
+            var line = name + ": " + value + "\r\n"
+            header_bytes += line.byte_length()
+            if header_bytes + 2 > HTTP_HEADER_LIMIT:
+                raise Error("HTTP response headers exceed limit")
+            for byte in line.as_bytes(): output.append(byte)
+
+    if not chunked and not bodyless_chunked and (status != 204 and status != 304 or include_bodyless_length):
+        text = "Content-Length: " + String(body_length) + "\r\n"
+        if header_bytes + text.byte_length() + 2 > HTTP_HEADER_LIMIT:
+            raise Error("HTTP response headers exceed limit")
+        header_bytes += text.byte_length()
+        for byte in text.as_bytes(): output.append(byte)
+    if chunked or bodyless_chunked:
+        text = "Transfer-Encoding: chunked\r\n"
+        if header_bytes + text.byte_length() + 2 > HTTP_HEADER_LIMIT:
+            raise Error("HTTP response headers exceed limit")
+        header_bytes += text.byte_length()
+        for byte in text.as_bytes(): output.append(byte)
+    if include_connection_close:
+        text = "Connection: close\r\n"
+        if header_bytes + text.byte_length() + 2 > HTTP_HEADER_LIMIT:
+            raise Error("HTTP response headers exceed limit")
+        header_bytes += text.byte_length()
+        for byte in text.as_bytes(): output.append(byte)
+
+    if not include_default_headers:
+        for name, value in headers:
+            var line = name + ": " + value + "\r\n"
+            header_bytes += line.byte_length()
+            if header_bytes + 2 > HTTP_HEADER_LIMIT:
+                raise Error("HTTP response headers exceed limit")
+            for byte in line.as_bytes(): output.append(byte)
     for byte in "\r\n".as_bytes():
         output.append(byte)
     return output^

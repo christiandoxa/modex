@@ -142,10 +142,16 @@ def run(mode: String, mut output: RawFileDescriptor) raises:
             except error:
                 emit(output, "WRITE_FAILED")
         connection.close()
-    elif mode == "bad-response" or mode == "framing-response":
+    elif mode == "bad-response" or mode == "bad-default-response" or mode == "large-default-response-header" or mode == "framing-response":
         var headers = List[Tuple[String, String]]()
         if mode == "bad-response":
             headers.append(("X-Test", "ok\r\nInjected: yes"))
+        elif mode == "bad-default-response":
+            connection.include_default_response_headers = True
+            headers.append(("Server", "ok\r\nInjected: yes"))
+        elif mode == "large-default-response-header":
+            connection.include_default_response_headers = True
+            headers.append(("X-Large", String("x") * 65500))
         else:
             headers.append(("Content-Length", "0"))
         try:

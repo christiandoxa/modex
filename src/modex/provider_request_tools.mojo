@@ -11,19 +11,21 @@ def request_tool_fields(
     thinking_enabled: Bool = False,
     strict_tools: Bool = False,
     web_search_mode: String = "auto",
+    ignore_web_search: Bool = False,
 ) raises -> String:
     var root = doc.root
     var tools_node = doc.get(root, "tools")
     var converted = List[String]()
     var tool_names = List[String]()
     var web = doc.get(root, "web_search_options")
+    if ignore_web_search: web = -1
     var explicit_web = web >= 0
     _validate_tools_shape(doc, root, tools_node)
     if tools_node >= 0:
         for node in doc.nodes[tools_node].children:
             var kind = _str(doc, node, "type")
             if _is_web(kind):
-                if web < 0:
+                if web < 0 and not ignore_web_search:
                     web = node
                 continue
             var function = doc.get(node, "function")

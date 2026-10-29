@@ -66,17 +66,53 @@ def validate_deepseek_anthropic_request(source: String) raises:
             continue
         if kind != "web_search_preview":
             raise Error("Anthropic Messages slice supports function and web_search_preview tools")
-        _only_fields(doc, tool, ["type", "allowed_domains"], "web search tool")
+        _only_fields(doc, tool, ["type", "allowed_domains", "blocked_domains", "user_location", "max_uses", "search_context_size"], "web search tool")
         web_count += 1
-        var domains = doc.get(tool, "allowed_domains")
-        if domains >= 0:
-            if doc.nodes[domains].kind != JSON_ARRAY:
-                raise Error("Anthropic web_search allowed_domains must be an array")
-            for domain in doc.nodes[domains].children:
-                if doc.nodes[domain].kind != JSON_STRING or not doc.nodes[domain].text:
-                    raise Error("Anthropic web_search allowed_domains entries must be non-empty strings")
+        var allowed_domains = doc.get(tool, "allowed_domains")
+        var blocked_domains = doc.get(tool, "blocked_domains")
+        if allowed_domains >= 0 and blocked_domains >= 0:
+            raise Error("Anthropic web search cannot combine allowed_domains and blocked_domains")
+        for key in [String("allowed_domains"), "blocked_domains"]:
+            var domains = doc.get(tool, key)
+            if domains >= 0:
+                if doc.nodes[domains].kind != JSON_ARRAY:
+                    raise Error("Anthropic web_search " + key + " must be an array")
+                for domain in doc.nodes[domains].children:
+                    if doc.nodes[domain].kind != JSON_STRING or not doc.nodes[domain].text:
+                        raise Error("Anthropic web_search " + key + " entries must be non-empty strings")
+        var max_uses = doc.get(tool, "max_uses")
+        if max_uses >= 0:
+            var count = json_unsigned(doc, max_uses)
+            if not count or count.value() == 0:
+                raise Error("Anthropic web search max_uses must be a positive integer")
+        var location = doc.get(tool, "user_location")
+        if location >= 0 and doc.nodes[location].kind != JSON_OBJECT:
+            raise Error("Anthropic web search user_location must be an object")
+        var search_context = doc.get(tool, "search_context_size")
+        if search_context >= 0 and (
+            doc.nodes[search_context].kind != JSON_STRING
+            or (doc.nodes[search_context].text != "low" and doc.nodes[search_context].text != "medium" and doc.nodes[search_context].text != "high")
+        ):
+            raise Error("Anthropic web search search_context_size must be low, medium, or high")
     if web_count != 1:
         raise Error("Anthropic Messages slice requires exactly one web_search_preview tool")
+
+
+def anthropic_search_filters_conflict(source: String) raises -> Bool:
+    var doc = JsonDocument(source)
+    var options = doc.get(doc.root, "web_search_options")
+    if _has_both_domain_filters(doc, options):
+        return True
+    var tools = doc.get(doc.root, "tools")
+    if tools >= 0 and doc.nodes[tools].kind == JSON_ARRAY:
+        for tool in doc.nodes[tools].children:
+            if doc.string(doc.get(tool, "type")) == "web_search_preview" and _has_both_domain_filters(doc, tool):
+                return True
+    return False
+
+
+def _has_both_domain_filters(doc: JsonDocument, node: Int) -> Bool:
+    return node >= 0 and doc.nodes[node].kind == JSON_OBJECT and doc.get(node, "allowed_domains") >= 0 and doc.get(node, "blocked_domains") >= 0
 
 
 def deepseek_anthropic_messages_body(source: String) raises -> String:
@@ -218,10 +254,11 @@ def _tools(doc: JsonDocument) raises -> String:
     if web >= 0:
         if doc.nodes[web].kind != JSON_OBJECT:
             raise Error("Anthropic Messages web_search_options must be an object")
-        _only_fields(doc, web, ["allowed_domains"], "web_search_options")
+        _only_fields(doc, web, ["allowed_domains", "blocked_domains", "user_location", "max_uses", "search_context_size"], "web_search_options")
         var item = '{"name":"web_search","type":"web_search_20250305"'
-        var domains = doc.get(web, "allowed_domains")
-        if domains >= 0: item += ',"allowed_domains":' + serialize_json(doc, domains)
+        for key in [String("allowed_domains"), "blocked_domains", "user_location", "max_uses"]:
+            var value = doc.get(web, key)
+            if value >= 0: item += "," + quote_json(key) + ":" + serialize_json(doc, value)
         output.append(item + "}")
     if not output:
         raise Error("Anthropic Messages slice requires a tool")

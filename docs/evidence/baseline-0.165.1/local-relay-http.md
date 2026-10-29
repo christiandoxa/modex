@@ -186,6 +186,31 @@ shared-parser trailer support. The production dependency audit,
 
 Broader framing, timeout and security behavior remain unverified or different.
 
+Buffered local-relay responses now add the frozen TinyHTTP defaults when the
+upstream or error response has no case-insensitive `Server` or `Date` field:
+`Server: tiny-http (Rust)`, followed by an RFC 7231 IMF-fixdate `Date` in GMT.
+The date comes from the official Mojo realtime clock and is formatted with the
+existing Gregorian calendar helpers. Caller values, including duplicate
+mixed-case upstream fields, remain byte-for-byte ordered and suppress defaults
+per field. Invalid or folded upstream text fields are discarded by the
+existing response-header filter; connection-nominated `Server` and `Date` are
+removed before defaults are added. Streaming SSE responses do not receive
+these defaults, matching the release's separate response-writer path. The
+opt-in belongs only to local-relay connections; standalone loopback callers
+retain their prior headers.
+
+The live raw-socket matrix compares all selected buffered success, parser
+error, upstream error, HEAD and bodyless-response paths against the
+checksum-verified 0.165.1 process and checks the emitted Date against the test
+wall-clock window. A separate synthetic upstream matrix covers duplicate
+mixed-case overrides, nominated fields, malformed control bytes and obsolete
+folding. Fixed native formatter vectors include pre-epoch time, the Unix epoch,
+leap day, and the RFC example. A 65,500-byte custom response header confirms
+generated defaults and framing stay within the existing 65,536-byte response
+head cap. The 0.165.1 oracle module and 26 shared loopback tests pass on Linux
+x86-64. TLS/DNS, non-host targets, broader HTTP behavior and complete security
+equivalence remain unqualified.
+
 HTTP/1.1 connection reuse now matches selected 0.165.1 controls. TinyHTTP's
 `ClientConnection::next` keeps HTTP/1.1 alive by default, stops after
 `Connection: close` or `Connection: upgrade`, and requires `keep-alive` for

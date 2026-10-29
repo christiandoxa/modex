@@ -2948,3 +2948,32 @@ stops cannot be safely attributed to overlapping blocks. No production
 heuristic was retained. Fixing this requires a broader stop-state redesign that
 matches the release across text, tool, search and result transitions. Other
 stop orders remain unverified. Evidence: `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
+
+The local relay now supplies the release's default Server and Date headers for
+buffered responses, preserving forwarded values and the existing head-size
+limit. Its streamed and shared loopback paths retain their existing behavior.
+Anthropic web-search translation now projects blocked domains, user location,
+and max uses; search context is validated but omitted from the native request.
+Conflicting allow/block filters fall back to Chat Completions only in auto mode.
+The selected real-process comparisons and remaining limits are recorded in
+`docs/evidence/baseline-0.165.1/local-relay-http.md`,
+`docs/evidence/baseline-0.439.2/local-relay-http-1.0.md`, and
+`docs/evidence/baseline-0.165.1/anthropic-mixed-tools.md`.
+The combined production and native driver builds, native unit suite, 48
+shared loopback/local-rewrite tests, 30 mixed-tool process tests, both release
+raw-header controls, and both `super --no-proxy` controls passed. The production import audit and test
+census also passed. The first raw-control command included a mistyped 0.165.1
+test class and reported a loader error; the corrected no-proxy test passed.
+
+Hosted Fast run 40841282229 on `a2e341af21236444d64bd56d3efac712f783e387`
+passed both helper shards and its focused native build and unit checks, then
+failed active-oracle acquisition because the required 0.439.2 tag is absent.
+Oracle-dependent suites and executable handoff/consumer did not run. This is
+not a Fast pass. An interrupted build in the primary checkout may have touched
+its ignored `build/modex`; its previous hash was not captured and the artifact
+was not restored. Tracked source edits in that checkout were left untouched.
+
+Full 0.165.1 parity remains incomplete: profile-backed WebSocket capacity and
+interruption, managed session launch and recovery, interactive TUI, DNS, TLS,
+proxies, security behavior and non-Linux targets remain open. All six release
+targets remain in the denominator.

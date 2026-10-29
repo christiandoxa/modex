@@ -127,6 +127,8 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         client.sendall(b"defg")
         response, stdout = finish(process, client)
         self.assertEqual(status(response), 200)
+        response_headers = response.split(b"\r\n\r\n", 1)[0].split(b"\r\n")
+        self.assertFalse(any(line.lower().startswith((b"server:", b"date:")) for line in response_headers))
         self.assertIn(b"Connection: close\r\n", response.split(b"\r\n\r\n", 1)[0] + b"\r\n")
         self.assertTrue(response.endswith(b"abcdefg"))
         parsed = json.loads(next(line[8:] for line in stdout.splitlines() if line.startswith("REQUEST ")))
@@ -366,7 +368,10 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         self.assertIn("loopback HTTP request timed out", stdout)
 
     def test_response_rejects_header_injection_and_caller_framing(self):
-        for mode in ("bad-response", "framing-response"):
+        for mode in (
+            "bad-response", "bad-default-response", "large-default-response-header",
+            "framing-response",
+        ):
             with self.subTest(mode=mode):
                 process, client = start(mode)
                 client.sendall(request(body=b""))

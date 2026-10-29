@@ -1,6 +1,7 @@
 """Compare raw DeepSeek local-proxy HTTP behavior with Prodex 0.165.1."""
 
 import base64
+from email.utils import parsedate_to_datetime
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -80,6 +81,73 @@ class UpstreamHandler(BaseHTTPRequestHandler):
                 "headers": {name.lower(): value for name, value in self.headers.items()},
                 "body": body,
             })
+        if self.path.endswith("?header-controls=custom"):
+            self.send_response_only(200)
+            self.send_header("sErVeR", "synthetic-server-one")
+            self.send_header("Server", "synthetic-server-two")
+            self.send_header("dAtE", "Sat, 01 Jan 2000 00:00:00 GMT")
+            self.send_header("Date", "Sun, 02 Jan 2000 00:00:00 GMT")
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(PROVIDER_RESPONSE)))
+            self.send_header("Connection", "close")
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(PROVIDER_RESPONSE)
+            self.close_connection = True
+            return
+        if self.path.endswith("?header-controls=filtered"):
+            self.send_response_only(200)
+            self.send_header("Server", "nominated-server")
+            self.send_header("Date", "Sat, 01 Jan 2000 00:00:00 GMT")
+            self.send_header("Connection", "Date, Server, close")
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(PROVIDER_RESPONSE)))
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(PROVIDER_RESPONSE)
+            self.close_connection = True
+            return
+        if self.path.endswith(("?header-controls=invalid", "?header-controls=invalid-date")):
+            invalid_header = (
+                b"Date: invalid\x01value\r\n"
+                if self.path.endswith("invalid-date")
+                else b"Server: invalid\x01value\r\n"
+            )
+            other_header = (
+                b"Server: safe-server\r\n"
+                if self.path.endswith("invalid-date")
+                else b"Date: Sat, 01 Jan 2000 00:00:00 GMT\r\n"
+            )
+            self.wfile.write(
+                b"HTTP/1.1 200 OK\r\n" + invalid_header + other_header
+                + b"Content-Type: application/json\r\n"
+                + b"Content-Length: " + str(len(PROVIDER_RESPONSE)).encode("ascii")
+                + b"\r\nConnection: close\r\n\r\n" + PROVIDER_RESPONSE
+            )
+            self.wfile.flush()
+            self.close_connection = True
+            return
+        if self.path.endswith(("?header-controls=folded", "?header-controls=folded-server")):
+            folded_header = (
+                b"Server: folded-server\r\n folded\r\n"
+                if self.path.endswith("folded-server")
+                else b"Server: safe-server\r\n"
+            )
+            other_header = (
+                b"Date: Sat, 01 Jan 2000 00:00:00 GMT\r\n"
+                if self.path.endswith("folded-server")
+                else b"Date: Sat, 01 Jan 2000 00:00:00 GMT\r\n folded\r\n"
+            )
+            self.wfile.write(
+                b"HTTP/1.1 200 OK\r\n"
+                + folded_header + other_header
+                + b"Content-Type: application/json\r\n"
+                b"Content-Length: " + str(len(PROVIDER_RESPONSE)).encode("ascii")
+                + b"\r\nConnection: close\r\n\r\n" + PROVIDER_RESPONSE
+            )
+            self.wfile.flush()
+            self.close_connection = True
+            return
         response_kind = self.headers.get("X-Oracle-Response", "json")
         if response_kind == "sse-slow":
             first, separator, rest = PROVIDER_SSE_RESPONSE.partition(b"\n\n")
@@ -1779,6 +1847,61 @@ CASES = (
 )
 
 
+def response_header_values(response):
+    values = {}
+    for line in response["raw_response_head"].split(b"\r\n")[1:-2]:
+        name, separator, value = line.partition(b":")
+        if separator:
+            values.setdefault(name.lower(), []).append(value.strip())
+    return values
+
+
+def assert_response_headers(test_case, response, before, after, label):
+    if response["status"] is None:
+        return
+    if response["raw_response_head"]:
+        header_sets = [response_header_values(response)]
+    else:
+        result_sets = response.get("pipelined_responses") or response.get("sequential_responses") or [response]
+        header_sets = []
+        for result in result_sets:
+            values = {}
+            for name, value in result.get("headers", []):
+                name = name.encode("ascii") if isinstance(name, str) else name
+                value = value.encode("ascii") if isinstance(value, str) else value
+                values.setdefault(name.lower(), []).append(value.strip())
+            header_sets.append(values)
+    for index, values in enumerate(header_sets):
+        with test_case.subTest(label=label, response=index):
+            servers = values.get(b"server", [])
+            test_case.assertLessEqual(len(servers), 1)
+            if servers:
+                test_case.assertIn(servers[0], (
+                    b"tiny-http (Rust)",
+                    f"{UpstreamHandler.server_version} {UpstreamHandler.sys_version}".encode("ascii"),
+                ))
+            dates = values.get(b"date", [])
+            test_case.assertLessEqual(len(dates), 1)
+            if dates:
+                date_text = dates[0].decode("ascii")
+                test_case.assertRegex(
+                    date_text,
+                    r"^[A-Z][a-z]{2}, [0-9]{2} [A-Z][a-z]{2} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$",
+                )
+                date_epoch = parsedate_to_datetime(date_text).timestamp()
+                test_case.assertGreaterEqual(date_epoch, before - 2)
+                test_case.assertLessEqual(date_epoch, after + 2)
+
+
+def response_header_control_case(control):
+    target = f"/v1/chat/completions?header-controls={control}".encode("ascii")
+    return {
+        "name": "response_header_" + control,
+        "request": request_bytes((("Connection", "close"),), target=target),
+        "upstream": True,
+    }
+
+
 def run_probe(binary: Path, case, upstream: Upstream):
     with tempfile.TemporaryDirectory(prefix="modex-raw-transport-01651-") as temporary:
         root = Path(temporary)
@@ -2018,8 +2141,18 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
         try:
             for case in CASES:
                 with self.subTest(case=case["name"]):
+                    before = time.time()
                     oracle_response, oracle_upstream = run_probe(ORACLE, case, upstream)
                     modex_response, modex_upstream = run_probe(MODEX, case, upstream)
+                    after = time.time()
+
+                    assert_response_headers(self, oracle_response, before, after, "oracle")
+                    assert_response_headers(self, modex_response, before, after, "modex")
+                    self.assertEqual(
+                        {name for name in (b"server", b"date") if name in response_header_values(oracle_response)},
+                        {name for name in (b"server", b"date") if name in response_header_values(modex_response)},
+                        case["name"],
+                    )
 
                     self.assertEqual(oracle_response["process_exit"], 0, oracle_response["stderr"])
                     self.assertEqual(modex_response["process_exit"], 0, modex_response["stderr"])
@@ -2094,6 +2227,54 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                             normalize_response_body(case, oracle_response["body"]),
                             normalize_response_body(case, modex_response["body"]),
                         )
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_response_header_overrides_filtering_and_invalid_values_match_oracle(self):
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for control in (
+                "custom", "filtered", "invalid", "invalid-date", "folded", "folded-server",
+            ):
+                case = response_header_control_case(control)
+                with self.subTest(control=control):
+                    before = time.time()
+                    oracle, oracle_records = run_probe(ORACLE, case, upstream)
+                    modex, modex_records = run_probe(MODEX, case, upstream)
+                    after = time.time()
+                    for label, response in (("oracle", oracle), ("modex", modex)):
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(response["read_error"], "", label)
+                    self.assertEqual(oracle["status"], modex["status"])
+                    self.assertEqual(oracle["body"], modex["body"])
+                    self.assertEqual(
+                        {name for name in (b"server", b"date") if name in response_header_values(oracle)},
+                        {name for name in (b"server", b"date") if name in response_header_values(modex)},
+                        control,
+                    )
+                    self.assertEqual(len(oracle_records), 1)
+                    self.assertEqual(len(modex_records), 1)
+
+                    if control == "custom":
+                        for response in (oracle, modex):
+                            values = response_header_values(response)
+                            self.assertEqual(values.get(b"server"), [
+                                b"synthetic-server-one", b"synthetic-server-two",
+                            ])
+                            self.assertEqual(values.get(b"date"), [
+                                b"Sat, 01 Jan 2000 00:00:00 GMT",
+                                b"Sun, 02 Jan 2000 00:00:00 GMT",
+                            ])
+                    else:
+                        assert_response_headers(self, oracle, before, after, "oracle")
+                        assert_response_headers(self, modex, before, after, "modex")
+                        for response in (oracle, modex):
+                            names = [line.partition(b":")[0].lower() for line in response["raw_response_head"].split(b"\r\n")]
+                            self.assertNotIn(b"x-injected", names)
         finally:
             upstream.shutdown()
             upstream.server_close()

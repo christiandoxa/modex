@@ -2,6 +2,7 @@
 
 import hashlib
 import threading
+import time
 import unittest
 
 from test_cli import ORACLE, ORACLE_SHA256
@@ -136,8 +137,17 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
             for name in CASE_NAMES:
                 case = CASES[name]
                 with self.subTest(case=name):
+                    before = time.time()
                     oracle, oracle_records = transport.run_probe(ORACLE, case, upstream)
                     modex, modex_records = transport.run_probe(transport.MODEX, case, upstream)
+                    after = time.time()
+                    transport.assert_response_headers(self, oracle, before, after, "oracle")
+                    transport.assert_response_headers(self, modex, before, after, "modex")
+                    self.assertEqual(
+                        {name for name in (b"server", b"date") if name in transport.response_header_values(oracle)},
+                        {name for name in (b"server", b"date") if name in transport.response_header_values(modex)},
+                        case["name"],
+                    )
                     for label, response in (("oracle", oracle), ("modex", modex)):
                         self.assertEqual(response["process_exit"], 0, response["stderr"])
                         self.assertEqual(response["status"], case["expected_status"], label)
@@ -257,14 +267,18 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
             upstream.server_close()
             worker.join(timeout=2)
 
-    def test_default_header_and_method_admission_mismatches_remain_visible(self):
+    def test_method_admission_mismatch_remains_visible(self):
         upstream = transport.Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)
         worker.start()
         try:
             case = CASES["http_1_0_buffered_responses_keep_request_version"]
+            before = time.time()
             oracle, oracle_records = transport.run_probe(ORACLE, case, upstream)
             modex, modex_records = transport.run_probe(transport.MODEX, case, upstream)
+            after = time.time()
+            transport.assert_response_headers(self, oracle, before, after, "oracle")
+            transport.assert_response_headers(self, modex, before, after, "modex")
             self.assertEqual(oracle["response_line"], "HTTP/1.0 200 OK")
             self.assertEqual(modex["response_line"], "HTTP/1.0 200 OK")
             self.assertEqual(oracle["body"], modex["body"])
@@ -275,7 +289,8 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
             self.assertIn(b"Server: tiny-http (Rust)", oracle_headers)
             self.assertTrue(any(line.startswith(b"Date: ") for line in oracle_headers))
             self.assertNotIn(b"Connection: close", oracle_headers)
-            self.assertFalse(any(line.lower().startswith((b"server:", b"date:")) for line in modex_headers))
+            self.assertIn(b"Server: tiny-http (Rust)", modex_headers)
+            self.assertTrue(any(line.startswith(b"Date: ") for line in modex_headers))
             self.assertNotIn(b"Connection: close", modex_headers)
 
             non_token_method = {
@@ -299,6 +314,54 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
             self.assertEqual((oracle_records, modex_records), ([], []))
             self.assertTrue(oracle["connection_closed"])
             self.assertTrue(modex["connection_closed"])
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_response_header_overrides_filtering_and_invalid_values_match_release(self):
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for control in (
+                "custom", "filtered", "invalid", "invalid-date", "folded", "folded-server",
+            ):
+                case = transport.response_header_control_case(control)
+                with self.subTest(control=control):
+                    before = time.time()
+                    oracle, oracle_records = transport.run_probe(ORACLE, case, upstream)
+                    modex, modex_records = transport.run_probe(transport.MODEX, case, upstream)
+                    after = time.time()
+                    for label, response in (("oracle", oracle), ("modex", modex)):
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(response["read_error"], "", label)
+                    self.assertEqual(oracle["status"], modex["status"])
+                    self.assertEqual(oracle["body"], modex["body"])
+                    self.assertEqual(
+                        {name for name in (b"server", b"date") if name in transport.response_header_values(oracle)},
+                        {name for name in (b"server", b"date") if name in transport.response_header_values(modex)},
+                        control,
+                    )
+                    self.assertEqual(len(oracle_records), 1)
+                    self.assertEqual(len(modex_records), 1)
+
+                    if control == "custom":
+                        for response in (oracle, modex):
+                            values = transport.response_header_values(response)
+                            self.assertEqual(values.get(b"server"), [
+                                b"synthetic-server-one", b"synthetic-server-two",
+                            ])
+                            self.assertEqual(values.get(b"date"), [
+                                b"Sat, 01 Jan 2000 00:00:00 GMT",
+                                b"Sun, 02 Jan 2000 00:00:00 GMT",
+                            ])
+                    else:
+                        transport.assert_response_headers(self, oracle, before, after, "oracle")
+                        transport.assert_response_headers(self, modex, before, after, "modex")
+                        for response in (oracle, modex):
+                            names = [line.partition(b":")[0].lower() for line in response["raw_response_head"].split(b"\r\n")]
+                            self.assertNotIn(b"x-injected", names)
         finally:
             upstream.shutdown()
             upstream.server_close()

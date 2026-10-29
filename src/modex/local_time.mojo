@@ -386,6 +386,31 @@ def two_digits(value: Int) -> String:
     return ("0" if value < 10 else "") + String(value)
 
 
+def format_http_date(epoch: Int) raises -> String:
+    var fields_epoch = epoch
+    var negative_second = epoch % 86400 < 0
+    if negative_second:
+        fields_epoch -= 86400
+    var year, month, day, second = civil_fields(fields_epoch)
+    if negative_second:
+        second += 86400
+    if year < 0 or year > 9999:
+        raise Error("HTTP date year is outside the four-digit range")
+    var weekday_index = ((civil_days(year, month, day) + 4) % 7 + 7) % 7
+    var weekday_names = String("SunMonTueWedThuFriSat")
+    var month_names = String("JanFebMarAprMayJunJulAugSepOctNovDec")
+    var weekday = String(weekday_names[byte=weekday_index * 3:weekday_index * 3 + 3])
+    var month_name = String(month_names[byte=(month - 1) * 3:month * 3])
+    var year_text = String(year)
+    while year_text.byte_length() < 4:
+        year_text = "0" + year_text
+    return (
+        weekday + ", " + two_digits(day) + " " + month_name + " " + year_text + " "
+        + two_digits(second // 3600) + ":" + two_digits((second // 60) % 60) + ":"
+        + two_digits(second % 60) + " GMT"
+    )
+
+
 def calendar_time(epoch: Int, zone: ZoneType) -> String:
     # These UTC bounds match Chrono 0.4.44's NaiveDate MIN and MAX.
     if epoch < -8_334_601_228_800 or epoch > 8_210_266_876_799:

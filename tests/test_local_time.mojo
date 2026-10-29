@@ -2,7 +2,7 @@ from std.collections import List
 from std.os import setenv
 from std.testing import assert_equal, assert_true
 
-from modex.local_time import PosixZone, TimeZone, ZoneType, calendar_time, civil_days, civil_fields, format_local_epoch, signed_be
+from modex.local_time import PosixZone, TimeZone, ZoneType, calendar_time, civil_days, civil_fields, format_http_date, format_local_epoch, signed_be
 
 
 def main() raises:
@@ -13,6 +13,10 @@ def main() raises:
     assert_equal(calendar_time(-62167219200, utc), "0000-01-01 00:00:00 +00:00")
     assert_equal(calendar_time(253402300800, utc), "+10000-01-01 00:00:00 +00:00")
     assert_equal(calendar_time(Int.MAX, utc), String(Int.MAX))
+    assert_equal(format_http_date(-1), "Wed, 31 Dec 1969 23:59:59 GMT")
+    assert_equal(format_http_date(0), "Thu, 01 Jan 1970 00:00:00 GMT")
+    assert_equal(format_http_date(784111777), "Sun, 06 Nov 1994 08:49:37 GMT")
+    assert_equal(format_http_date(civil_days(2000, 1, 1) * 86400), "Sat, 01 Jan 2000 00:00:00 GMT")
     assert_equal(signed_be([255, 255, 255, 255], 0, 4), -1)
     assert_equal(signed_be([255, 255, 255, 255, 255, 255, 255, 255], 0, 8), -1)
     assert_true(setenv("TZ", "UTC"))

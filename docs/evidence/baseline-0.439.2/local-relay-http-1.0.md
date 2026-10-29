@@ -24,11 +24,15 @@ response remains streamed: both references and Modex send HTTP/1.1 headers and
 the first body byte before upstream EOF. The HTTP/1.0 request does not buffer
 or delay the stream.
 
-The server's generated headers remain different. In the sampled buffered 200,
-TinyHTTP sends `Server: tiny-http (Rust)` and a `Date` header; Modex omits both.
-The later keep-alive change also removed the relay's `Connection: close` header,
-matching this reference response. The stable response headers, body and close
-result match for the tested case. Before that change, the captured raw heads were:
+The local relay now adds TinyHTTP's default `Server: tiny-http (Rust)` and a
+current GMT `Date` header when a buffered upstream or error response does not
+already provide those fields, case-insensitively. It preserves supplied
+duplicates and removes connection-nominated values before adding defaults.
+Generated fields precede upstream fields and Content-Length, matching the
+release's buffered response writer. SSE streaming keeps its separate framing
+path and does not add defaults. The later keep-alive change also removed the
+relay's `Connection: close` header, matching this reference response. Before
+these changes, the captured raw heads were:
 
 ```text
 0.439.2: HTTP/1.0 200 OK\r\nServer: tiny-http (Rust)\r\nDate: <runtime date>\r\ncontent-type: application/json; charset=utf-8\r\nContent-Length: 254\r\n\r\n
@@ -51,10 +55,11 @@ the response version when a valid HTTP/1.0 or HTTP/1.1 token is present in the
 request line.
 
 Validation: production Modex and the local-rewrite and shared-loopback native
-drivers build with Mojo 1.2.0. The focused 0.439.2 oracle module passes seven
-tests, including 21 selected response/stream controls, HEAD SSE pipeline
-safety and the explicit header and method-admission gaps. The historical
-0.165.1 raw relay module, shared loopback-server tests and local-rewrite tests
-pass the expanded controls. The production dependency audit, Python
-compilation and `git diff --check` pass. This evidence covers selected Linux
-x86-64 behavior only; it does not promote full platform or contract parity.
+drivers build with Mojo 1.2.0. The focused 0.439.2 oracle module passes eight
+tests, including selected response/stream controls, header override/filtering
+comparisons, HEAD SSE pipeline safety and the explicit method-admission gap.
+The historical 0.165.1 raw relay matrix and focused header controls, 26
+shared-loopback tests, 22 local-rewrite tests, native time checks, production
+dependency audit, Python compilation and `git diff --check` pass. This evidence
+covers selected Linux x86-64 behavior only; it does not promote full platform
+or contract parity.

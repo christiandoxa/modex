@@ -10,7 +10,7 @@ from .provider_request_tools import request_tool_fields
 from .text import trim_text
 
 
-def translate_deepseek_request(source: String, history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", previous_response_found: Bool = False) raises -> String:
+def translate_deepseek_request(source: String, history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", previous_response_found: Bool = False, ignore_web_search: Bool = False) raises -> String:
     var initial: JsonDocument
     try:
         initial = JsonDocument(source)
@@ -30,7 +30,7 @@ def translate_deepseek_request(source: String, history: String = "[]", strict_to
     if format:
         messages = ensure_json_instruction(messages)
     var reasoning = reasoning_fields(effort)
-    var tools = request_tool_fields(doc, thinking, strict_tools, web_search_mode)
+    var tools = request_tool_fields(doc, thinking, strict_tools, web_search_mode, ignore_web_search)
     var options = optional_request_fields(doc, stream, format)
     var fields: List[String] = ['"model":' + quote_json(model), '"stream":' + ("true" if stream else "false"), '"messages":' + messages]
     for source_fields in [reasoning, tools, options]:

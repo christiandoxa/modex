@@ -46,17 +46,61 @@ and a loopback provider. No paid traffic or real credentials are used.
 ## Validation
 
 - `rtk make build` — pass.
-- `python3 scripts/ci/run-unittest.py test_anthropic_mixed_tools_01651.py` — 14 tests pass, including exact/over-limit boundaries, text-run boundaries, duplicate-result overwrite, repeated-ID latest-use, reversed distinct-ID results, and result-before-use behavior.
+- `python3 scripts/ci/run-unittest.py test_anthropic_mixed_tools_01651.py` — 30 tests pass, including exact/over-limit boundaries, text-run boundaries, duplicate-result overwrite, repeated-ID latest-use, reversed distinct-ID results, result-before-use behavior, web-search option validation/projection, mode routing, duplicate/malformed JSON, and strict-tools history fallback.
 - `PYTHONPATH=tests python3 -m unittest test_provider_stream_01651_characterization.ProviderStream01651CharacterizationTests.test_anthropic_repeated_server_search_results_match_release test_provider_stream_01651_characterization.ProviderStream01651CharacterizationTests.test_anthropic_buffered_search_shape_remains_release_compatible test_provider_stream_01651_characterization.ProviderStream01651CharacterizationTests.test_anthropic_function_tool_use_stream_matches_release` — 3 existing pure-search and function-stream controls pass.
 - `python3 scripts/ci/check-product-dependencies.py` — pass.
 - `git diff --check` — pass.
 
 This qualifies only the exercised Linux x86-64 shapes. Custom and namespaced
-function tools, search options beyond `allowed_domains`, multiple search pairs
-in streams, interleaved
-search events, malformed provider responses beyond the tested schema rejection,
-other release targets, and general Anthropic parity remain open. No contract or
-release qualification is promoted.
+function tools, multiple search pairs in streams, interleaved search events,
+malformed provider responses beyond the tested schema rejection, other release
+targets, and general Anthropic parity remain open. No contract or release
+qualification is promoted.
+
+## Web-search option projection and automatic fallback
+
+The pinned 0.165.1 and 0.439.2 processes accept web-search tool options
+`allowed_domains`, `blocked_domains`, `user_location`, `max_uses`, and
+`search_context_size`. The first four applicable fields are serialized on
+the Anthropic `web_search_20250305` declaration. `search_context_size` is
+consumed for provider degradation and omitted from that declaration. Both
+domain filters cannot be combined. Domain filters must be arrays of non-empty
+strings; `max_uses` must be a positive UInt64; `user_location` must be an
+object; and context size must be `low`, `medium`, or `high`. Location
+subfields are forwarded without additional validation.
+
+Modex now matches these shapes through the production Super path. Real-process
+comparisons against checksum-pinned 0.165.1 and 0.439.2 cover absent and empty
+domain lists, blocked domains, minimum and maximum `max_uses`, empty and
+populated location objects, all three context sizes, and both buffered and
+streamed Anthropic Messages requests. Invalid domain shapes, zero, negative,
+fractional, string, null and overflowing `max_uses`, non-object locations,
+and invalid context sizes fail before provider dispatch in all three processes.
+
+When both domain filters are present, both releases in automatic mode instead
+fall back to one ordinary `/v1/chat/completions` request and omit the search
+tool and options. Modex now follows that production route. Explicit
+`PRODEX_DEEPSEEK_WEB_SEARCH_MODE=anthropic` keeps the Messages route forced
+and returns the release's 400 invalid-request response without a provider
+request. Real-process controls cover tool-level and top-level search options,
+request count, exact fallback body, forced-mode status/body, and empty local
+state.
+
+The expanded matrix also compares `auto`, `openai_chat`, `off`, and forced
+`anthropic` for both option locations. It checks that `openai_chat` preserves
+the filters on the chat request, `off` rejects before dispatch, and only
+automatic fallback strips them. Raw-body cases cover duplicate domain keys
+and malformed JSON; array input verifies that fallback preserves message
+history while strict-tools mode selects the beta chat route.
+
+The 30-test mixed-tools process suite passed; after the final build, the three
+expanded routing and raw-JSON tests passed again. `rtk make build`, `rtk make
+unit`, the 71-file production import audit, and `git diff --check` passed. The tests use only
+checksum-pinned Linux release binaries, synthetic credentials, isolated homes,
+and loopback peers. These cases add no general provider parity claim or
+release qualification; web-search aliases, broader mode fallback rules,
+non-Linux targets, transport security, and other provider behaviors remain
+unverified.
 
 ## Web-search source projection
 

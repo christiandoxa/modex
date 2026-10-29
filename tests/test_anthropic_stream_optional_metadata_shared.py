@@ -239,6 +239,13 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                     event["future_event_field"] = "ignored"
                 events.insert(3, event)
                 cases.append((f"{delta_type}_extra_{extra_root_field}", events))
+        for name, index in (("missing_index", None), ("nonnumeric_index", "zero")):
+            events = _events()
+            event = {"type": "content_block_delta", "delta": {"type": "future_delta"}}
+            if name == "nonnumeric_index":
+                event["index"] = index
+            events.insert(3, event)
+            cases.append((f"future_delta_{name}", events))
         turns = [
             {"model": "deepseek-chat", "input": name, "stream": True,
              "tools": [{"type": "web_search_preview"}]}

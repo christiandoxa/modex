@@ -47,8 +47,9 @@ synthetic child verifies launch arguments but not Codex path validation or
 working-directory changes. It also forwards repeated `--add-dir`, `--enable`,
 and `--disable` arguments in separated or attached-value form without adding
 them to Modex configuration. Missing and option-looking values are rejected
-before launch; the releases defer these errors to Codex. Other Codex arguments
-remain guarded. See
+before launch. A one-time local Codex CLI 0.165.0 run observed the releases
+defer these errors to Codex; this is not automated evidence. Other Codex
+arguments remain guarded. See
 `docs/evidence/baseline-0.165.1/super-exec-working-directory.md` and
 `docs/evidence/baseline-0.165.1/super-exec-value-options.md`.
 

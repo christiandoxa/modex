@@ -86,10 +86,6 @@ if "app-server" in args and "--stdio" in args:
         print(json.dumps({"id":request["id"],"result":{"data":[]}}), flush=True)
         if request["id"] == 4: time.sleep(30)
     raise SystemExit(0)
-if os.environ.get("MODEX_LAUNCH_REAL_CODEX"):
-    real_codex = os.environ["MODEX_LAUNCH_REAL_CODEX"]
-    save({"kind":"launch", "args":args})
-    os.execv(real_codex, [real_codex, *args])
 home = pathlib.Path(os.environ["CODEX_HOME"])
 config = {}
 for index, arg in enumerate(args[:-1]):

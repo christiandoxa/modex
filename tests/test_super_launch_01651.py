@@ -31,6 +31,9 @@ class ActiveSuperLaunchTests(unittest.TestCase):
         if not NATIVE_CODEX.is_file() or NATIVE_CODEX.stat().st_mode & 0o111 == 0:
             raise AssertionError("Build the native Codex fixture with make unit-build")
 
+    def test_supported_exec_flags_match_01651(self):
+        launch_support.check_safe_exec_flags(self, active_cli.ORACLE)
+
     def test_probe_failure_and_environment_match_01651(self):
         outputs = []
         for binary in (active_cli.ORACLE, launch_support.MODEX):

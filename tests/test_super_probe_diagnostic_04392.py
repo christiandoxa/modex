@@ -19,6 +19,27 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
         if not launch_support.MODEX.is_file():
             raise AssertionError("Build Modex first with make build")
 
+    def test_supported_exec_flags_match_04392(self):
+        launch_support.check_safe_exec_flags(self, test_cli.ORACLE)
+
+    def test_exec_unverified_arguments_remain_fail_closed(self):
+        for arguments in (
+            ("exec", "--json", "-c", "model_provider=unsafe", "prompt"),
+            ("exec", "--config=model_provider=unsafe", "prompt"),
+            ("exec", "--enable", "synthetic-feature", "prompt"),
+            ("exec", "--sandbox", "danger-full-access", "prompt"),
+            ("exec", "--color"),
+            ("exec", "--color=neon", "prompt"),
+            ("exec", "--color", "--json", "prompt"),
+        ):
+            with self.subTest(arguments=arguments):
+                result, records, upstream, state = launch_support.run_private_launch(
+                    launch_support.MODEX, scenario="exit-seven", codex_arguments=arguments,
+                )
+                self.assertEqual((result.returncode, result.stdout), (1, b""))
+                self.assertIn(b"Super startup is not implemented", result.stderr)
+                self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+
     def test_oversized_version_probe_matches_reference_context(self):
         observations = []
         for binary in (test_cli.ORACLE, launch_support.MODEX):

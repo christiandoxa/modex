@@ -249,15 +249,40 @@ def validate_super_options(options: SuperOptions) raises:
         raise Error("--sub-agent is unsupported with the Codex Desktop frontend")
 
 
+def _supported_exec_arguments(arguments: List[String]) -> Bool:
+    # shortcut: other Codex flags remain guarded until their launch effects are verified.
+    if not arguments or arguments[0] != "exec":
+        return False
+    var index = 1
+    var has_prompt = False
+    while index < len(arguments):
+        var argument = arguments[index]
+        if argument == "--":
+            return True
+        if argument == "--json" or argument == "--skip-git-repo-check":
+            index += 1
+            continue
+        if argument == "--color":
+            if index + 1 >= len(arguments) or arguments[index + 1] not in ["auto", "always", "never"]:
+                return False
+            index += 2
+            continue
+        if argument in ["--color=auto", "--color=always", "--color=never"]:
+            index += 1
+            continue
+        if (argument.startswith("-") and argument != "-") or has_prompt:
+            return False
+        has_prompt = True
+        index += 1
+    return True
+
+
 def run_super(options: SuperOptions) raises -> Int:
     validate_super_options(options)
     var supported = options.value("--provider") == "deepseek" and options.has("--no-presidio") and options.has("--no-sub-agent") and options.has("--base-url") and options.has("--api-key") and options.has("--model")
     for name in options.names:
         supported = supported and name in ["--provider", "--no-presidio", "--no-sub-agent", "--base-url", "--api-key", "--model", "--skip-quota-check", "--context-window", "--auto-compact-token-limit"]
-    var simple_exec = options.codex_args and options.codex_args[0] == "exec"
-    if simple_exec and len(options.codex_args) > 1 and options.codex_args[1] != "--":
-        simple_exec = len(options.codex_args) == 2 and not options.codex_args[1].startswith("-")
-    if supported and simple_exec:
+    if supported and _supported_exec_arguments(options.codex_args):
         var prompt = List[String]()
         for index in range(1, len(options.codex_args)):
             prompt.append(options.codex_args[index])

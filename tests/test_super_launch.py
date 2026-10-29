@@ -185,6 +185,30 @@ def run_private_launch(binary=MODEX, **kwargs):
         )
 
 
+def check_safe_exec_flags(test, oracle):
+    cases = (
+        ("exec", "--json", "synthetic prompt"),
+        ("exec", "--color", "never", "synthetic prompt"),
+        ("exec", "--json", "--color=always", "synthetic prompt"),
+        ("exec", "--skip-git-repo-check", "--", "--json"),
+        ("exec", "--json", "-"),
+        ("exec", "--json", "--", "-c", "model_provider=literal"),
+    )
+    for arguments in cases:
+        with test.subTest(arguments=arguments):
+            captures = []
+            for binary in (oracle, MODEX):
+                result, records, upstream, state = run_private_launch(
+                    binary, scenario="exit-seven", codex_arguments=arguments,
+                )
+                test.assertEqual((result.returncode, result.stdout), (7, b""), result.stderr)
+                test.assertEqual((upstream, state["leftovers"]), ([], []))
+                test.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                launch = next(record for record in records if record["kind"] == "launch")
+                captures.append(normalized_app_server_args(launch["args"]))
+            test.assertEqual(captures[0], captures[1])
+
+
 def app_server_config(arguments):
     return "\n".join(
         arguments[index + 1]
@@ -198,6 +222,7 @@ class SuperLaunchTests(unittest.TestCase):
         self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat",
         super_arguments=(), environment_overrides=None, base_path="/v1", sub_agent=False,
         temporary_directory=None, stderr_tty=False, codex_mode="explicit", codex_binary=None,
+        codex_arguments=("exec", "--", "synthetic prompt"),
     ):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-", dir=temporary_directory) as directory:
             root = Path(directory)
@@ -563,7 +588,7 @@ class SuperLaunchTests(unittest.TestCase):
             command = [str(binary), "super", "--provider", "deepseek", "--api-key", "synthetic-provider-key",
                        "--base-url", f"http://127.0.0.1:{server.server_port}{base_path}", "--model", model,
                        "--no-presidio", "--sub-agent" if sub_agent else "--no-sub-agent", "--skip-quota-check", *super_arguments,
-                       "exec", "--", "synthetic prompt"]
+                       *codex_arguments]
             try:
                 if stderr_tty:
                     master, slave = os.openpty()

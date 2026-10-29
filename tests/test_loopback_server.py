@@ -126,6 +126,7 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         client.sendall(b"defg")
         response, stdout = finish(process, client)
         self.assertEqual(status(response), 200)
+        self.assertIn(b"Connection: close\r\n", response.split(b"\r\n\r\n", 1)[0] + b"\r\n")
         self.assertTrue(response.endswith(b"abcdefg"))
         parsed = json.loads(next(line[8:] for line in stdout.splitlines() if line.startswith("REQUEST ")))
         self.assertEqual(parsed["method"], "POST")

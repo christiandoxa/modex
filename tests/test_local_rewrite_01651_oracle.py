@@ -135,7 +135,7 @@ class UpstreamHandler(BaseHTTPRequestHandler):
 
 
 def make_codex(path: Path):
-    source = r'''import base64, http.client, json, os, re, socket, sys, threading, time
+    source = r'''import base64, http.client, json, os, re, socket, subprocess, sys, threading, time
 from urllib.parse import urlsplit
 
 args = sys.argv[1:]
@@ -165,12 +165,16 @@ target = urlsplit(base)
 connection = socket.create_connection((target.hostname, target.port), timeout=5)
 connection.settimeout(5)
 request_parts = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_REQUEST_PARTS_BASE64", "[]"))]
+sequential_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_SEQUENTIAL_REQUESTS_BASE64", "[]"))]
+pipelined_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUESTS_BASE64", "[]"))]
 request_parts_sent = [0]
 first_request_part_finished = threading.Event()
 half_close = os.environ.get("PROBE_HALF_CLOSE") == "1"
 request_part_delay = int(os.environ.get("PROBE_REQUEST_PART_DELAY_MS", "0")) / 1000
 writer_thread = None
-if request_parts:
+if sequential_requests or pipelined_requests:
+    pass
+elif request_parts:
     def send_request_parts():
         for index, part in enumerate(request_parts):
             if index:
@@ -213,6 +217,10 @@ class RecordingReader:
         return self.reader.close()
     def __getattr__(self, name):
         return getattr(self.reader, name)
+
+class PersistentReader(RecordingReader):
+    def close(self):
+        pass
 
 class RecordingHTTPResponse(http.client.HTTPResponse):
     def __init__(self, sock, method=None):
@@ -264,7 +272,185 @@ def read_expect_response():
 
 try:
     request_method = os.environ.get("PROBE_REQUEST_METHOD")
-    if os.environ.get("PROBE_EXPECT_HANDSHAKE") == "1":
+    if pipelined_requests:
+        connection.sendall(b"".join(pipelined_requests))
+        request_parts_sent[0] = 1
+        response_file = PersistentReader(connection.makefile("rb"))
+        pipelined_results = []
+        for _ in pipelined_requests:
+            response = http.client.HTTPResponse(connection)
+            response.fp.close()
+            response.fp = response_file
+            response.begin()
+            body = response.read()
+            pipelined_results.append({
+                "status": response.status,
+                "reason": response.reason,
+                "headers": response.getheaders(),
+                "body_base64": base64.b64encode(body).decode("ascii"),
+            })
+            result["pipelined_responses"] = pipelined_results
+        response_file.reader.close()
+        if pipelined_results:
+            first = pipelined_results[0]
+            result.update({
+                "status": first["status"],
+                "reason": first["reason"],
+                "headers": first["headers"],
+                "body_base64": first["body_base64"],
+            })
+    elif sequential_requests:
+        sequential_results = []
+        for request_bytes in sequential_requests:
+            connection.sendall(request_bytes)
+            request_parts_sent[0] += 1
+            response = http.client.HTTPResponse(connection)
+            response.begin()
+            body = response.read()
+            sequential_results.append({
+                "status": response.status,
+                "reason": response.reason,
+                "headers": response.getheaders(),
+                "body_base64": base64.b64encode(body).decode("ascii"),
+            })
+            result["sequential_responses"] = sequential_results
+            if response.will_close and os.environ.get("PROBE_CONTINUE_AFTER_WILL_CLOSE") != "1":
+                break
+        if sequential_results:
+            first = sequential_results[0]
+            result.update({
+                "status": first["status"],
+                "reason": first["reason"],
+                "headers": first["headers"],
+                "body_base64": first["body_base64"],
+            })
+        second_client_request = os.environ.get("PROBE_SECOND_CLIENT_REQUEST_BASE64", "")
+        if second_client_request:
+            reused_partial_request = base64.b64decode(
+                os.environ.get("PROBE_REUSED_PARTIAL_REQUEST_BASE64", "")
+            )
+            if reused_partial_request:
+                connection.sendall(reused_partial_request)
+            second_client = socket.create_connection((target.hostname, target.port), timeout=5)
+            second_client.settimeout(5)
+            second_client_done = threading.Event()
+            def read_second_client_response():
+                try:
+                    second_client.sendall(base64.b64decode(second_client_request))
+                    second_response = http.client.HTTPResponse(second_client)
+                    second_response.begin()
+                    second_body = second_response.read()
+                    result["second_client"] = {
+                        "status": second_response.status,
+                        "reason": second_response.reason,
+                        "headers": second_response.getheaders(),
+                        "body_base64": base64.b64encode(second_body).decode("ascii"),
+                    }
+                except Exception as error:
+                    result["second_client_error"] = type(error).__name__
+                finally:
+                    second_client.close()
+                    second_client_done.set()
+            if reused_partial_request:
+                second_client_worker = threading.Thread(target=read_second_client_response, daemon=True)
+                second_client_worker.start()
+                time.sleep(int(os.environ.get("PROBE_PARTIAL_HOLD_MS", "300")) / 1000)
+                result["second_client_responded_before_partial_close"] = second_client_done.is_set()
+                try:
+                    connection.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
+                connection.close()
+                second_client_worker.join(5)
+                result["second_client_finished_after_partial_close"] = second_client_done.is_set()
+            else:
+                read_second_client_response()
+        hold_first_client_ms = int(os.environ.get("PROBE_HOLD_FIRST_CLIENT_MS", "0"))
+        if hold_first_client_ms > 0:
+            holder = subprocess.Popen(
+                ["/bin/sleep", str(hold_first_client_ms / 1000)],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True,
+                pass_fds=(connection.fileno(),),
+            )
+            result["holder_pid"] = holder.pid
+        fairness_extra_connections = int(os.environ.get("PROBE_FAIRNESS_EXTRA_CONNECTIONS", "0"))
+        fairness_churn_count = int(os.environ.get("PROBE_FAIRNESS_CHURN_COUNT", "0"))
+        if fairness_extra_connections or fairness_churn_count:
+            fairness_request = base64.b64decode(os.environ["PROBE_FAIRNESS_REQUEST_BASE64"])
+            fairness_churn_request = base64.b64decode(os.environ["PROBE_FAIRNESS_CHURN_REQUEST_BASE64"])
+            fairness_connections = [connection]
+            for _ in range(fairness_extra_connections):
+                parked = socket.create_connection((target.hostname, target.port), timeout=5)
+                parked.settimeout(5)
+                parked.sendall(fairness_request)
+                parked_response = http.client.HTTPResponse(parked)
+                parked_response.begin()
+                parked_response.read()
+                fairness_connections.append(parked)
+            fairness_lock = threading.Lock()
+            fairness_reused_statuses = []
+            fairness_churn_statuses = []
+            fairness_errors = []
+            fairness_reused_stream_finished = threading.Event()
+            fairness_churn_interleaved = []
+            def reuse_parked_connection(parked):
+                try:
+                    repeat_count = int(os.environ.get("PROBE_FAIRNESS_REPEATS", "1")) if parked is connection else 1
+                    for _ in range(repeat_count):
+                        parked.sendall(fairness_request)
+                        parked_response = http.client.HTTPResponse(parked)
+                        parked_response.begin()
+                        parked_response.read()
+                        with fairness_lock:
+                            fairness_reused_statuses.append(parked_response.status)
+                except Exception as error:
+                    with fairness_lock:
+                        fairness_errors.append(type(error).__name__)
+                finally:
+                    if parked is connection:
+                        fairness_reused_stream_finished.set()
+            def churn_new_connections():
+                for _ in range(fairness_churn_count):
+                    fresh = socket.create_connection((target.hostname, target.port), timeout=5)
+                    fresh.settimeout(5)
+                    try:
+                        fresh.sendall(fairness_churn_request)
+                        fresh_response = http.client.HTTPResponse(fresh)
+                        fresh_response.begin()
+                        fresh_response.read()
+                        with fairness_lock:
+                            if not fairness_churn_statuses:
+                                fairness_churn_interleaved.append(not fairness_reused_stream_finished.is_set())
+                            fairness_churn_statuses.append(fresh_response.status)
+                    except Exception as error:
+                        with fairness_lock:
+                            fairness_errors.append(type(error).__name__)
+                    finally:
+                        fresh.close()
+            fairness_workers = [
+                threading.Thread(target=reuse_parked_connection, args=(parked,), daemon=True)
+                for parked in fairness_connections
+            ]
+            for fairness_worker in fairness_workers:
+                fairness_worker.start()
+            churn_worker = threading.Thread(target=churn_new_connections, daemon=True)
+            churn_worker.start()
+            for fairness_worker in fairness_workers:
+                fairness_worker.join(15)
+            churn_worker.join(15)
+            result["fairness_reused_statuses"] = fairness_reused_statuses
+            result["fairness_churn_statuses"] = fairness_churn_statuses
+            result["fairness_errors"] = fairness_errors
+            result["fairness_churn_interleaved"] = fairness_churn_interleaved
+            result["fairness_workers_finished"] = not churn_worker.is_alive() and all(
+                not fairness_worker.is_alive() for fairness_worker in fairness_workers
+            )
+            for parked in fairness_connections:
+                parked.close()
+    elif os.environ.get("PROBE_EXPECT_HANDSHAKE") == "1":
         status, reason, headers, body, interim_statuses, interim_status_lines, response_line, raw_response_head = read_expect_response()
         result.update({
             "status": status,
@@ -322,6 +508,49 @@ try:
             result["connection_closed"] = True
         finally:
             connection.settimeout(5)
+    saturation_count = int(os.environ.get("PROBE_SATURATION_EXTRA_CONNECTIONS", "0"))
+    if saturation_count:
+        saturation_request = base64.b64decode(os.environ["PROBE_SATURATION_REQUEST_BASE64"])
+        saturation_connections = []
+        for _ in range(saturation_count):
+            saturated = socket.create_connection((target.hostname, target.port), timeout=5)
+            saturated.settimeout(5)
+            saturated.sendall(saturation_request)
+            saturated_response = http.client.HTTPResponse(saturated)
+            saturated_response.begin()
+            saturated_response.read()
+            saturation_connections.append(saturated)
+        oldest_partial = base64.b64decode(
+            os.environ.get("PROBE_SATURATION_OLDEST_PARTIAL_BASE64", "")
+        )
+        if oldest_partial:
+            connection.sendall(oldest_partial)
+        overflow = socket.create_connection((target.hostname, target.port), timeout=5)
+        overflow.settimeout(5)
+        overflow.sendall(saturation_request)
+        if oldest_partial:
+            time.sleep(0.05)
+            connection.sendall(saturation_request[len(oldest_partial):])
+            oldest_response = http.client.HTTPResponse(connection)
+            oldest_response.begin()
+            oldest_body = oldest_response.read()
+            result["saturation_oldest_status"] = oldest_response.status
+            result["saturation_oldest_body_base64"] = base64.b64encode(oldest_body).decode("ascii")
+        overflow_response = http.client.HTTPResponse(overflow)
+        overflow_response.begin()
+        overflow_body = overflow_response.read()
+        result["saturation_overflow_status"] = overflow_response.status
+        result["saturation_overflow_body_base64"] = base64.b64encode(overflow_body).decode("ascii")
+        result["saturation_held_connections"] = len(saturation_connections)
+        connection.settimeout(1)
+        try:
+            result["saturation_oldest_closed"] = connection.recv(1) == b""
+        except socket.timeout:
+            result["saturation_oldest_closed"] = False
+        connection.settimeout(5)
+        overflow.close()
+        for saturated in saturation_connections:
+            saturated.close()
 except Exception as error:
     result["read_error"] = type(error).__name__
 finally:
@@ -479,7 +708,7 @@ def fragmented_empty_chunked_request_case(name):
     ]
     case["request_part_delay_ms"] = 500
     case["expected_request_parts_sent"] = 3
-    case["expected_connection_closed"] = {"oracle": False, "modex": True}
+    case["expected_connection_closed"] = {"oracle": False, "modex": False}
     return case
 
 
@@ -922,7 +1151,7 @@ CASES = (
             "content-length": str(len(RESPONSES_RESPONSE)),
         },
         "expected_interim_statuses": [100],
-        "expected_connection_closed": {"oracle": False, "modex": True},
+        "expected_connection_closed": {"oracle": False, "modex": False},
         "compare_response_body": True,
         "compare_upstream_request": True,
         "expected_upstream_method": "POST",
@@ -1311,6 +1540,39 @@ def run_probe(binary: Path, case, upstream: Upstream):
                 separators=(",", ":"),
             ),
             "PROBE_REQUEST_PART_DELAY_MS": str(case.get("request_part_delay_ms", 0)),
+            "PROBE_SEQUENTIAL_REQUESTS_BASE64": json.dumps(
+                [base64.b64encode(part).decode("ascii") for part in case.get("sequential_requests", [])],
+                separators=(",", ":"),
+            ),
+            "PROBE_PIPELINED_REQUESTS_BASE64": json.dumps(
+                [base64.b64encode(part).decode("ascii") for part in case.get("pipelined_requests", [])],
+                separators=(",", ":"),
+            ),
+            "PROBE_SECOND_CLIENT_REQUEST_BASE64": base64.b64encode(
+                case.get("second_client_request", b"")
+            ).decode("ascii"),
+            "PROBE_REUSED_PARTIAL_REQUEST_BASE64": base64.b64encode(
+                case.get("reused_partial_request", b"")
+            ).decode("ascii"),
+            "PROBE_PARTIAL_HOLD_MS": str(case.get("partial_hold_ms", 300)),
+            "PROBE_HOLD_FIRST_CLIENT_MS": str(case.get("hold_first_client_ms", 0)),
+            "PROBE_SATURATION_EXTRA_CONNECTIONS": str(case.get("saturation_extra_connections", 0)),
+            "PROBE_SATURATION_REQUEST_BASE64": base64.b64encode(
+                case.get("saturation_request", b"")
+            ).decode("ascii"),
+            "PROBE_SATURATION_OLDEST_PARTIAL_BASE64": base64.b64encode(
+                case.get("saturation_oldest_partial", b"")
+            ).decode("ascii"),
+            "PROBE_FAIRNESS_EXTRA_CONNECTIONS": str(case.get("fairness_extra_connections", 0)),
+            "PROBE_FAIRNESS_CHURN_COUNT": str(case.get("fairness_churn_count", 0)),
+            "PROBE_FAIRNESS_REPEATS": str(case.get("fairness_repeat_count", 1)),
+            "PROBE_FAIRNESS_REQUEST_BASE64": base64.b64encode(
+                case.get("fairness_request", b"")
+            ).decode("ascii"),
+            "PROBE_FAIRNESS_CHURN_REQUEST_BASE64": base64.b64encode(
+                case.get("fairness_churn_request", b"")
+            ).decode("ascii"),
+            "PROBE_CONTINUE_AFTER_WILL_CLOSE": "1" if case.get("continue_after_will_close") else "0",
             "PROBE_BODY_AFTER_CONTINUE_BASE64": base64.b64encode(
                 case.get("body_after_continue", b"")
             ).decode("ascii"),
@@ -1329,27 +1591,48 @@ def run_probe(binary: Path, case, upstream: Upstream):
             "--skip-quota-check", "exec", "--", "synthetic raw transport probe",
         ]
         upstream.reset_records()
-        process = subprocess.run(
-            command,
-            cwd=root / "work",
-            env=environment,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=40,
-            check=False,
-        )
+        started = time.monotonic()
+        try:
+            process = subprocess.run(
+                command,
+                cwd=root / "work",
+                env=environment,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=case.get("process_timeout", 40),
+                check=False,
+            )
+        finally:
+            if result_path.is_file():
+                try:
+                    holder_pid = json.loads(result_path.read_text(encoding="utf-8")).get("holder_pid")
+                    if holder_pid:
+                        os.kill(holder_pid, 9)
+                except (OSError, ValueError):
+                    pass
         if not result_path.is_file():
             raise AssertionError(
                 f"{binary.name} did not reach the synthetic Codex raw client for {case['name']}: "
                 f"exit={process.returncode}, stdout={process.stdout!r}, stderr={process.stderr!r}"
             )
         response = json.loads(result_path.read_text(encoding="utf-8"))
+        response["process_elapsed_ms"] = int((time.monotonic() - started) * 1000)
         response["body"] = base64.b64decode(response.pop("body_base64"))
         response["raw_response_head"] = base64.b64decode(response.pop("raw_response_head_base64"))
         response["wire_body"] = base64.b64decode(response.pop("wire_body_base64"))
         if "followup_body_base64" in response:
             response["followup_body"] = base64.b64decode(response.pop("followup_body_base64"))
+        for item in response.get("sequential_responses", []):
+            item["body"] = base64.b64decode(item.pop("body_base64"))
+        for item in response.get("pipelined_responses", []):
+            item["body"] = base64.b64decode(item.pop("body_base64"))
+        if "second_client" in response:
+            response["second_client"]["body"] = base64.b64decode(response["second_client"].pop("body_base64"))
+        if "saturation_overflow_body_base64" in response:
+            response["saturation_overflow_body"] = base64.b64decode(response.pop("saturation_overflow_body_base64"))
+        if "saturation_oldest_body_base64" in response:
+            response["saturation_oldest_body"] = base64.b64decode(response.pop("saturation_oldest_body_base64"))
         response["process_exit"] = process.returncode
         response["stdout"] = process.stdout
         response["stderr"] = process.stderr
@@ -1601,6 +1884,406 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             502, b"gateway request capture failed",
         ))
         self.assertEqual(modex_records, [])
+
+    def test_http_1_1_sequential_requests_reuse_the_client_connection(self):
+        first = request_bytes(target=b"/v1/responses")
+        second = request_bytes(target=b"/v1/chat/completions")
+        case = {
+            "name": "sequential_keep_alive_requests",
+            "request": first,
+            "sequential_requests": [first, second],
+            "check_close": True,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            results = {
+                label: run_probe(binary, case, upstream)
+                for label, binary in (("oracle", ORACLE), ("modex", MODEX))
+            }
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        expected_bodies = [RESPONSES_RESPONSE, PROVIDER_RESPONSE]
+        for label, (response, records) in results.items():
+            with self.subTest(label=label):
+                self.assertEqual(response["process_exit"], 0, response["stderr"])
+                self.assertEqual(
+                    [(item["status"], item["body"]) for item in response["sequential_responses"]],
+                    [(200, body) for body in expected_bodies],
+                )
+                self.assertFalse(any(
+                    name.lower() == "connection" and value.lower() == "close"
+                    for item in response["sequential_responses"]
+                    for name, value in item["headers"]
+                ))
+                self.assertFalse(response["connection_closed"])
+                self.assertEqual(len(records), 2)
+                self.assertEqual(
+                    [(item["method"], item["path"]) for item in records],
+                    [("POST", "/v1/chat/completions")] * 2,
+                )
+
+    def test_partial_request_headers_still_complete_before_relay_dispatch(self):
+        request = request_bytes(target=b"/v1/responses")
+        header_end = request.index(b"\r\n\r\n") + 4
+        case = {
+            "name": "partial_keep_alive_request_headers",
+            "request": request,
+            "request_parts": [request[:10], request[10:header_end - 1], request[header_end - 1:header_end], request[header_end:]],
+            "request_part_delay_ms": 30,
+            "check_close": True,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            results = {
+                label: run_probe(binary, case, upstream)
+                for label, binary in (("oracle", ORACLE), ("modex", MODEX))
+            }
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        for label, (response, records) in results.items():
+            with self.subTest(label=label):
+                self.assertEqual(response["process_exit"], 0, response["stderr"])
+                self.assertEqual((response["status"], response["body"]), (200, RESPONSES_RESPONSE))
+                self.assertFalse(response["connection_closed"])
+                self.assertEqual(len(records), 1)
+
+    def test_pipelined_requests_match_oracle_and_retain_modex_gap(self):
+        first = request_bytes(target=b"/v1/responses")
+        second = request_bytes(target=b"/v1/chat/completions")
+        case = {
+            "name": "pipelined_requests",
+            "request": first,
+            "pipelined_requests": [first, second],
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            results = {
+                label: run_probe(binary, case, upstream)
+                for label, binary in (("oracle", ORACLE), ("modex", MODEX))
+            }
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        oracle_response, oracle_records = results["oracle"]
+        self.assertEqual(oracle_response["process_exit"], 0, oracle_response["stderr"])
+        self.assertEqual(
+            [(item["status"], item["body"]) for item in oracle_response["pipelined_responses"]],
+            [(200, RESPONSES_RESPONSE), (200, PROVIDER_RESPONSE)],
+        )
+        self.assertEqual(len(oracle_records), 2)
+
+        modex_response, modex_records = results["modex"]
+        self.assertEqual(modex_response["process_exit"], 0, modex_response["stderr"])
+        self.assertEqual(
+            [(item["status"], item["body"]) for item in modex_response["pipelined_responses"]],
+            [(502, b"gateway request capture failed")],
+        )
+        self.assertEqual(modex_response["read_error"], "RemoteDisconnected")
+        self.assertEqual(modex_records, [])
+
+    def test_http_1_1_connection_close_still_closes_after_one_request(self):
+        request = request_bytes((("Connection", "close"),))
+        case = {
+            "name": "explicit_connection_close",
+            "request": request,
+            "sequential_requests": [request],
+            "check_close": True,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            results = {
+                label: run_probe(binary, case, upstream)
+                for label, binary in (("oracle", ORACLE), ("modex", MODEX))
+            }
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        for label, (response, records) in results.items():
+            with self.subTest(label=label):
+                self.assertEqual(response["process_exit"], 0, response["stderr"])
+                self.assertEqual([item["status"] for item in response["sequential_responses"]], [200])
+                self.assertFalse(any(
+                    name.lower() == "connection" and value.lower() == "close"
+                    for item in response["sequential_responses"]
+                    for name, value in item["headers"]
+                ))
+                self.assertTrue(response["connection_closed"])
+                self.assertEqual(len(records), 1)
+
+    def test_connection_keep_alive_selection_matches_pinned_tinyhttp_rules(self):
+        cases = (
+            (
+                "http_1_0_keep_alive",
+                (("Connection", "keep-alive"),),
+                b"HTTP/1.0",
+                True,
+            ),
+            (
+                "http_1_0_keep_alive_substring",
+                (("Connection", "not-keep-alive"),),
+                b"HTTP/1.0",
+                True,
+            ),
+            (
+                "duplicate_connection_first_header_wins",
+                (("Connection", "keep-alive"), ("Connection", "close")),
+                b"HTTP/1.1",
+                False,
+            ),
+        )
+        for name, headers, version, continue_after_will_close in cases:
+            first = request_bytes(headers=headers, target=b"/v1/responses", version=version)
+            second_headers = (("Connection", "keep-alive"),) if version == b"HTTP/1.0" else ()
+            second = request_bytes(headers=second_headers, target=b"/v1/chat/completions", version=version)
+            case = {
+                "name": name,
+                "request": first,
+                "sequential_requests": [first, second],
+                "continue_after_will_close": continue_after_will_close,
+                "check_close": True,
+            }
+            upstream = Upstream()
+            worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+            worker.start()
+            try:
+                results = {
+                    label: run_probe(binary, case, upstream)
+                    for label, binary in (("oracle", ORACLE), ("modex", MODEX))
+                }
+            finally:
+                upstream.shutdown()
+                upstream.server_close()
+                worker.join(timeout=2)
+
+            for label, (response, records) in results.items():
+                with self.subTest(case=name, label=label):
+                    self.assertEqual(response["process_exit"], 0, response["stderr"])
+                    self.assertEqual(
+                        [(item["status"], item["body"]) for item in response["sequential_responses"]],
+                        [(200, RESPONSES_RESPONSE), (200, PROVIDER_RESPONSE)],
+                    )
+                    self.assertFalse(any(
+                        header_name.lower() == "connection"
+                        for item in response["sequential_responses"]
+                        for header_name, _ in item["headers"]
+                    ))
+                    self.assertFalse(response["connection_closed"])
+                    self.assertEqual(len(records), 2)
+
+    def test_idle_keep_alive_client_does_not_block_a_second_client(self):
+        first = request_bytes(target=b"/v1/responses")
+        second = request_bytes(target=b"/v1/chat/completions")
+        case = {
+            "name": "idle_keep_alive_does_not_block_second_client",
+            "request": first,
+            "sequential_requests": [first],
+            "second_client_request": second,
+            "check_close": True,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            results = {
+                label: run_probe(binary, case, upstream)
+                for label, binary in (("oracle", ORACLE), ("modex", MODEX))
+            }
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        for label, (response, records) in results.items():
+            with self.subTest(label=label):
+                self.assertEqual(response["process_exit"], 0, response["stderr"])
+                self.assertEqual(
+                    [(item["status"], item["body"]) for item in response["sequential_responses"]],
+                    [(200, RESPONSES_RESPONSE)],
+                )
+                self.assertEqual(
+                    (response["second_client"]["status"], response["second_client"]["body"]),
+                    (200, PROVIDER_RESPONSE),
+                )
+                self.assertFalse(response["connection_closed"])
+                self.assertEqual(len(records), 2)
+
+    def test_partial_reused_request_blocks_second_client_until_first_closes(self):
+        first = request_bytes(target=b"/v1/responses")
+        second = request_bytes(( ("Connection", "close"),), target=b"/v1/chat/completions")
+        case = {
+            "name": "partial_reused_request_blocks_second_client",
+            "request": first,
+            "sequential_requests": [first],
+            "reused_partial_request": b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n",
+            "second_client_request": second,
+            "partial_hold_ms": 300,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            results = {
+                label: run_probe(binary, case, upstream)
+                for label, binary in (("oracle", ORACLE), ("modex", MODEX))
+            }
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        for label, (response, records) in results.items():
+            with self.subTest(label=label):
+                self.assertEqual(response["process_exit"], 0, response["stderr"])
+                self.assertEqual(response["second_client"]["status"], 200)
+                self.assertEqual(
+                    response["second_client"]["body"],
+                    PROVIDER_RESPONSE,
+                )
+                self.assertTrue(response["second_client_finished_after_partial_close"])
+                self.assertEqual(len(records), 2)
+                if label == "modex":
+                    self.assertFalse(response["second_client_responded_before_partial_close"])
+
+    def test_parent_shutdown_exits_while_idle_keep_alive_socket_is_held(self):
+        first = request_bytes(target=b"/v1/responses")
+        case = {
+            "name": "parent_shutdown_during_idle_keep_alive",
+            "request": first,
+            "sequential_requests": [first],
+            "hold_first_client_ms": 5000,
+            "process_timeout": 3,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            results = {
+                label: run_probe(binary, case, upstream)
+                for label, binary in (("oracle", ORACLE), ("modex", MODEX))
+            }
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        for label, (response, records) in results.items():
+            with self.subTest(label=label):
+                self.assertEqual(response["process_exit"], 0, response["stderr"])
+                self.assertLess(response["process_elapsed_ms"], 3000, label)
+                self.assertEqual(
+                    [(item["status"], item["body"]) for item in response["sequential_responses"]],
+                    [(200, RESPONSES_RESPONSE)],
+                )
+                self.assertEqual(len(records), 1)
+
+    def test_saturated_idle_pool_evicts_oldest_connection_to_admit_new_client(self):
+        request = request_bytes(target=b"/v1/responses")
+        case = {
+            "name": "saturated_idle_pool_admits_new_client",
+            "request": request,
+            "saturation_extra_connections": 127,
+            "saturation_request": request,
+            "process_timeout": 30,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            response, records = run_probe(MODEX, case, upstream)
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        self.assertEqual(response["process_exit"], 0, response["stderr"])
+        self.assertEqual((response["status"], response["body"]), (200, RESPONSES_RESPONSE))
+        self.assertEqual(response["saturation_held_connections"], 127)
+        self.assertEqual(response["saturation_overflow_status"], 200)
+        self.assertEqual(response["saturation_overflow_body"], RESPONSES_RESPONSE)
+        self.assertTrue(response["saturation_oldest_closed"])
+        self.assertEqual(len(records), 129)
+
+    def test_saturated_pool_preserves_oldest_partial_request_during_admission(self):
+        request = request_bytes(target=b"/v1/responses")
+        header_end = request.index(b"\r\n\r\n") + 4
+        case = {
+            "name": "saturated_pool_preserves_oldest_partial_request",
+            "request": request,
+            "saturation_extra_connections": 127,
+            "saturation_request": request,
+            "saturation_oldest_partial": request[:header_end - 1],
+            "process_timeout": 30,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            response, records = run_probe(MODEX, case, upstream)
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        self.assertEqual(response["process_exit"], 0, response["stderr"])
+        self.assertEqual(response["saturation_oldest_status"], 200)
+        self.assertEqual(response["saturation_oldest_body"], RESPONSES_RESPONSE)
+        self.assertEqual(response["saturation_overflow_status"], 200)
+        self.assertEqual(response["saturation_overflow_body"], RESPONSES_RESPONSE)
+        self.assertEqual(response["saturation_held_connections"], 127)
+        self.assertFalse(response["saturation_oldest_closed"])
+        self.assertEqual(len(records), 130)
+
+    def test_ready_parked_clients_are_served_during_new_client_churn(self):
+        request = request_bytes(target=b"/v1/responses")
+        churn_request = request_bytes(
+            (("Connection", "close"),), target=b"/v1/chat/completions"
+        )
+        case = {
+            "name": "ready_parked_clients_under_new_client_churn",
+            "request": request,
+            "sequential_requests": [request],
+            "fairness_extra_connections": 7,
+            "fairness_churn_count": 24,
+            "fairness_request": request,
+            "fairness_churn_request": churn_request,
+            "fairness_repeat_count": 32,
+            "process_timeout": 30,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            response, records = run_probe(MODEX, case, upstream)
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        self.assertEqual(response["process_exit"], 0, response["stderr"])
+        self.assertTrue(response["fairness_workers_finished"])
+        self.assertEqual(response["fairness_errors"], [])
+        self.assertEqual(response["fairness_reused_statuses"], [200] * 39)
+        self.assertEqual(response["fairness_churn_statuses"], [200] * 24)
+        self.assertEqual(response["fairness_churn_interleaved"], [True])
+        self.assertEqual(len(records), 71)
 
 
 if __name__ == "__main__":

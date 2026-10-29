@@ -6,6 +6,29 @@ select this release; comparisons with 0.439.x are historical regression
 evidence. All six release targets and unverified security behavior remain in
 the denominator. The full inventory and production parity remain unfinished.
 
+The local relay now supports tested sequential HTTP/1.1 keep-alive requests,
+honors `Connection: close`, and parks up to 128 idle sockets so a second client
+can run. The parked queue is FIFO; when full, admission closes the oldest idle
+socket to make room, after ready sockets are dispatched. If no socket is safe to
+evict, one accepted overflow connection is retained until admission is safe.
+Parked sockets have no idle expiry. A partial request on a reused socket blocks
+other clients until the request completes or that socket closes; parent EOF is
+checked between requests and does not interrupt an in-progress read. Active
+requests remain serial.
+Pipelining is a reproduced mismatch: Prodex handles two pipelined requests;
+Modex returns 502 `gateway request capture failed` with no upstream request.
+The separate runtime-proxy WebSocket transport remains unimplemented; the
+local rewrite adapter's 426 fallback matches its tested release behavior. See
+`docs/evidence/baseline-0.165.1/local-relay-http.md` and
+`docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
+
+Validation: `rtk make build` and the focused native local-rewrite and loopback
+driver build passed. The complete focused relay suite passed 59 tests, followed
+by 45 direct local-rewrite and loopback tests after rebuilding the native
+drivers. The production import audit passed for 71 Mojo files, and
+`git diff --check` passed. No release qualification is promoted.
+
+
 Buffered local-relay responses now retain a valid HTTP/1.0 request version,
 including selected malformed-header and fragment-target errors. A version
 token before an invalid suffix also selects the matching final status-line

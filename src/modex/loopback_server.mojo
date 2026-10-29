@@ -140,6 +140,9 @@ struct LoopbackHTTPConnection(Movable):
     var request_read: Bool
     var head_request: Bool
     var expect_continue_sent: Bool
+    var keep_alive_enabled: Bool
+    var keep_alive: Bool
+    var waiting_for_request: Bool
     var response_version: String
     var done: Bool
 
@@ -151,6 +154,9 @@ struct LoopbackHTTPConnection(Movable):
         self.request_read = False
         self.head_request = False
         self.expect_continue_sent = False
+        self.keep_alive_enabled = False
+        self.keep_alive = False
+        self.waiting_for_request = False
         self.response_version = "HTTP/1.1"
         self.done = False
 
@@ -182,9 +188,25 @@ struct LoopbackHTTPConnection(Movable):
     def expect_continue_was_sent(self) -> Bool:
         return self.expect_continue_sent
 
+    def request_ready(mut self) raises -> Bool:
+        if self.fd < 0 or self.done:
+            return False
+        var byte: UInt8 = 0
+        var result = recv(self.fd, Pointer(to=byte), 1, MSG_PEEK | MSG_DONTWAIT)
+        if result > 0:
+            return True
+        if result == 0:
+            return False
+        var error = get_errno()
+        if error == ErrNo.EAGAIN or error == ErrNo.EINTR or error == ErrNo.ECONNRESET:
+            return False
+        raise Error("loopback HTTP peer check failed")
+
     def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False, defer_expectation_errors: Bool = False, preflight_body_limit_before_continue: Bool = False, use_request_version_for_continue: Bool = False, use_request_version_for_response: Bool = False) raises -> LoopbackHTTPRequest:
         if self.fd < 0 or self.done or self.request_read:
             raise Error("loopback HTTP connection is closed")
+        self.keep_alive = False
+        self.waiting_for_request = False
         if max_body_bytes < 0 or max_body_bytes > HTTP_MAX_BODY_LIMIT:
             raise Error("invalid or unsupported HTTP request body limit")
         var deadline = _deadline(timeout_ms)
@@ -241,6 +263,8 @@ struct LoopbackHTTPConnection(Movable):
         elif len(self.input) != body_start:
             raise Error("request body requires Content-Length or chunked framing")
         self.request_read = True
+        if self.keep_alive_enabled:
+            self.keep_alive = _request_keep_alive(head.version, head.headers)
         return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
 
     def respond(mut self, status: Int, headers: List[Tuple[String, String]], body: List[UInt8], timeout_ms: UInt64, include_bodyless_length: Bool = False, bodyless_chunked: Bool = False) raises:
@@ -255,14 +279,17 @@ struct LoopbackHTTPConnection(Movable):
             var response_version = self.response_version
             if bodyless_chunked:
                 response_version = "HTTP/1.1"
-            var response = _response_head(status, headers, len(body), False, include_bodyless_length, bodyless_chunked, response_version)
+            var response = _response_head(
+                status, headers, len(body), False, include_bodyless_length,
+                bodyless_chunked, response_version, not self.keep_alive_enabled,
+            )
             var deadline = _deadline(timeout_ms)
             _send_all(self.fd, response, deadline)
             if not self.head_request:
                 _send_all(self.fd, body, deadline)
             if bodyless_chunked and not self.head_request:
                 _send_all(self.fd, _bytes("0\r\n\r\n"), deadline)
-            self.close()
+            self._finish_response()
         except:
             self.close()
             raise
@@ -273,7 +300,10 @@ struct LoopbackHTTPConnection(Movable):
                 raise Error("loopback HTTP response stream already started")
             if status == 204 or status == 304:
                 raise Error("HTTP response status forbids a stream body")
-            var response = _response_head(status, headers, 0, True)
+            var response = _response_head(
+                status, headers, 0, True, False, False, "HTTP/1.1",
+                not self.keep_alive_enabled,
+            )
             _send_all(self.fd, response, _deadline(timeout_ms))
             self.streaming = True
         except:
@@ -307,7 +337,7 @@ struct LoopbackHTTPConnection(Movable):
                 for byte in "0\r\n\r\n".as_bytes():
                     final.append(byte)
                 _send_all(self.fd, final, _deadline(timeout_ms))
-            self.close()
+            self._finish_response()
         except:
             self.close()
             raise
@@ -332,6 +362,19 @@ struct LoopbackHTTPConnection(Movable):
             if error != ErrNo.EAGAIN and error != ErrNo.EINTR:
                 raise Error("loopback HTTP request read failed")
             sleep(0.001)
+
+    def _finish_response(mut self):
+        if not self.keep_alive:
+            self.close()
+            return
+        self.input.clear()
+        self.wire_bytes = 0
+        self.streaming = False
+        self.request_read = False
+        self.head_request = False
+        self.expect_continue_sent = False
+        self.response_version = "HTTP/1.1"
+        self.waiting_for_request = True
 
     def _read_chunked(mut self, start: Int, max_body_bytes: Int, deadline: Float64, wire_limit: Int, invalid_target_before_body_limit: Bool = False, reject_trailers: Bool = False) raises -> List[UInt8]:
         var output = List[UInt8]()
@@ -661,6 +704,19 @@ def _request_line_version(bytes: List[UInt8], max_request_line_bytes: Int) -> St
     return "HTTP/1.1"
 
 
+def _request_keep_alive(version: String, headers: List[Tuple[String, String]]) -> Bool:
+    var connection = String()
+    for name, value in headers:
+        if name.lower() == "connection":
+            connection = value.lower()
+            break
+    if "close" in connection or "upgrade" in connection:
+        return False
+    if version == "HTTP/1.0":
+        return "keep-alive" in connection
+    return True
+
+
 def _ascii(bytes: List[UInt8], start: Int, end: Int) raises -> String:
     var value = List[UInt8]()
     for index in range(start, end):
@@ -670,7 +726,7 @@ def _ascii(bytes: List[UInt8], start: Int, end: Int) raises -> String:
     return String(from_utf8=Span(value))
 
 
-def _response_head(status: Int, headers: List[Tuple[String, String]], body_length: Int, chunked: Bool, include_bodyless_length: Bool = False, bodyless_chunked: Bool = False, version: String = "HTTP/1.1") raises -> List[UInt8]:
+def _response_head(status: Int, headers: List[Tuple[String, String]], body_length: Int, chunked: Bool, include_bodyless_length: Bool = False, bodyless_chunked: Bool = False, version: String = "HTTP/1.1", include_connection_close: Bool = True) raises -> List[UInt8]:
     if status < 200 or status > 599:
         raise Error("invalid final HTTP response status")
     var output = List[UInt8]()
@@ -684,8 +740,9 @@ def _response_head(status: Int, headers: List[Tuple[String, String]], body_lengt
     if chunked or bodyless_chunked:
         for byte in "Transfer-Encoding: chunked\r\n".as_bytes():
             output.append(byte)
-    for byte in "Connection: close\r\n".as_bytes():
-        output.append(byte)
+    if include_connection_close:
+        for byte in "Connection: close\r\n".as_bytes():
+            output.append(byte)
     var header_bytes = len(output)
     for name, value in headers:
         _validate_response_header(name, value)

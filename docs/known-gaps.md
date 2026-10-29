@@ -36,18 +36,32 @@ diagnostics remain incomplete. See
 
 Selected local-relay malformed syntax, method forwarding, GET response framing,
 HEAD controls, final response status phrases, WebSocket fallback and
-truncated-request behavior now match selected 0.165.1 controls. HEAD 204/304
-`text/event-stream` terminal-chunk framing differs; the relay is also serial
-and does not implement WebSocket transport. The oversized-body 413 phrase
-matches the tested release; large request heads and broader framing and
-security behavior remain unverified. See
+truncated-request behavior now match selected 0.165.1 controls. Sequential
+HTTP/1.1 keep-alive, explicit `Connection: close`, fragmented headers, and
+idle-client handoff also match tested controls. Prodex processes two pipelined
+requests; Modex returns 502 `gateway request capture failed` without an
+upstream request. The relay parks up to 128 idle sockets in FIFO order and
+polls one new connection before each readiness scan. When full, one accepted
+overflow socket waits while ready parked requests are serviced; admission
+evicts the oldest socket with no request bytes. The pool has no idle expiry. A
+partial request on a reused socket blocks other clients until completion or
+close; parent EOF does not interrupt that in-progress read. Active requests
+remain serial. HEAD 204/304
+`text/event-stream` terminal-chunk framing differs; the local-rewrite route's
+426 fallback does not implement the separate runtime-proxy WebSocket path.
+Idle keep-alive sockets are capped at 128 but have no expiry. The oversized-body
+413 phrase matches the tested release; large request heads and broader framing
+and security behavior remain unverified. See
 `docs/evidence/baseline-0.165.1/local-relay-http.md` and
 `docs/evidence/baseline-0.165.1/local-relay-status-reasons.md`.
 
-Prodex 0.165.1 requires bounded idle WebSocket parking and independently
-reclaimed handshake capacity, plus connection-owned interruption and real
-acknowledgement ordering. Modex has no WebSocket production transport; these
-requirements remain unimplemented and unverified on all six targets.
+The local rewrite adapter's 426 WebSocket fallback matches its selected
+0.165.1 behavior. The separate runtime-proxy route requires bounded idle
+WebSocket parking, independently reclaimed handshake capacity,
+message-level admission, connection-owned interruption, and acknowledgement
+ordering. Modex has no production WebSocket transport; these requirements
+remain unimplemented and unverified on all six targets. See
+`docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
 
 The profile group and selected subcommand help now match the 0.439.2 release.
 Profile listing and all state-changing operations remain unimplemented: the

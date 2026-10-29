@@ -6,7 +6,7 @@ from std.net._sys.unix import F_GETFL, F_SETFL, O_NONBLOCK
 from std.sys._libc import fcntl
 from std.sys._libc_errno import ErrNo, get_errno
 from std.os import getenv
-from std.time import perf_counter
+from std.time import perf_counter, sleep
 from std.time.time import _realtime_nanoseconds
 
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument
@@ -19,6 +19,8 @@ from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
 from .runtime_binding import RuntimeBindings
 from .runtime_sse_binding_observer import RuntimeSSEBindingObserver
+
+comptime HTTP_KEEP_ALIVE_MAX_PARKED = 128
 from .text import is_whitespace, trim_text, unsigned_value
 from .uuid7 import new_uuid7
 
@@ -359,6 +361,33 @@ def _continuation_identity_valid(headers: List[Tuple[String, String]], doc: Json
     return True
 
 
+def _parent_channel_closed(parent_fd: Int32, mut parent_bytes: List[UInt8]) raises -> Bool:
+    if parent_fd < 0:
+        return False
+    var parent = RawFileDescriptor(parent_fd)
+    try:
+        _ = parent.read_bytes(Span(parent_bytes))
+        return True
+    except:
+        var error = get_errno()
+        if error != ErrNo.EAGAIN and error != ErrNo.EINTR:
+            raise Error("local provider parent channel failed")
+    return False
+
+
+def _evict_oldest_idle_connection(mut parked: List[LoopbackHTTPConnection]) raises -> Bool:
+    var evicted = False
+    var parked_count = len(parked)
+    for _ in range(parked_count):
+        var idle = parked.pop()
+        if not evicted and not idle.request_ready():
+            idle.close()
+            evicted = True
+        else:
+            parked.insert(0, idle^)
+    return evicted
+
+
 def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Optional[String]) raises -> String:
     var previous = doc.string(doc.get(doc.root, "previous_response_id"))
     var saved = store.history(previous, namespace)
@@ -514,24 +543,58 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
     var conversations = ProviderConversationStore()
     var bindings = RuntimeBindings(key, upstream_url)
     var parent_bytes = List[UInt8](length=1, fill=0)
+    var parked = List[LoopbackHTTPConnection]()
+    var overflow = Optional[LoopbackHTTPConnection]()
     if parent_fd >= 0:
         var flags = fcntl(parent_fd, F_GETFL, 0)
         if flags < 0 or fcntl(parent_fd, F_SETFL, flags | O_NONBLOCK) < 0:
             raise Error("could not configure local provider parent channel")
-    # shortcut: requests run serially; add workers together with baseline admission controls.
+    # shortcut: one request lane, no pipelining or idle expiry; add bounded workers and socket lifetimes.
     while True:
-        if parent_fd >= 0:
-            var parent = RawFileDescriptor(parent_fd)
-            try:
-                _ = parent.read_bytes(Span(parent_bytes))
-                return
-            except:
-                var error = get_errno()
-                if error != ErrNo.EAGAIN and error != ErrNo.EINTR:
-                    raise Error("local provider parent channel failed")
-        var accepted = listener.accept(UInt64(100 if parent_fd >= 0 else 1000))
-        if not accepted: continue
-        var connection = accepted.take()
+        if _parent_channel_closed(parent_fd, parent_bytes): return
+        var accepted_before_scan = False
+        if not overflow:
+            var pending = listener.accept(0)
+            if pending:
+                var incoming = pending.take()
+                accepted_before_scan = True
+                if len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED:
+                    incoming.keep_alive_enabled = True
+                    parked.insert(0, incoming^)
+                else:
+                    overflow = Optional[LoopbackHTTPConnection](incoming^)
+        var selected = Optional[LoopbackHTTPConnection]()
+        var parked_count = len(parked)
+        for _ in range(parked_count):
+            var idle = parked.pop()
+            var ready = idle.request_ready()
+            if not selected and ready:
+                idle.waiting_for_request = False
+                selected = Optional[LoopbackHTTPConnection](idle^)
+            elif not ready and idle.client_disconnected():
+                idle.close()
+            else:
+                parked.insert(0, idle^)
+        if not selected:
+            if overflow:
+                var incoming = overflow.take()
+                var admitted = len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED
+                if not admitted:
+                    admitted = _evict_oldest_idle_connection(parked)
+                if not admitted:
+                    overflow = Optional[LoopbackHTTPConnection](incoming^)
+                    sleep(0.001)
+                    continue
+                incoming.keep_alive_enabled = True
+                parked.insert(0, incoming^)
+                continue
+            if accepted_before_scan: continue
+            var accepted = listener.accept(UInt64(100 if parent_fd >= 0 or len(parked) > 0 else 1000))
+            if not accepted: continue
+            var incoming = accepted.take()
+            overflow = Optional[LoopbackHTTPConnection](incoming^)
+            continue
+        var connection = selected.take()
         request_id = request_id + 1 if request_id < UInt64.MAX else request_id
         var request = LoopbackHTTPRequest("", "", List[Tuple[String, String]](), List[UInt8]())
         var captured = False
@@ -583,17 +646,17 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
             try:
                 if not request_target_valid(request.target):
                     _invalid_request_target(connection)
-                    connection.close()
-                    continue
-                var websocket_upgrade = False
-                for header in request.headers:
-                    if String(header[0]).lower() == "upgrade" and String(header[1]).lower() == "websocket":
-                        websocket_upgrade = True
-                        break
-                if websocket_upgrade:
-                    _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback")
                 else:
-                    _serve(connection, request, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
+                    var websocket_upgrade = False
+                    for header in request.headers:
+                        if String(header[0]).lower() == "upgrade" and String(header[1]).lower() == "websocket":
+                            websocket_upgrade = True
+                            break
+                    if websocket_upgrade:
+                        connection.keep_alive = False
+                        _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback")
+                    else:
+                        _serve(connection, request, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
             except error:
                 var message = String(error)
                 var too_large = "oversized" in message or "exceeds wire limit" in message
@@ -601,4 +664,10 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
                     _reply(connection, 413 if too_large else 502, "proxied request body is too large" if too_large else "gateway request capture failed")
                 except:
                     pass
-        connection.close()
+        if connection.waiting_for_request:
+            if len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED:
+                parked.insert(0, connection^)
+            else:
+                connection.close()
+        else:
+            connection.close()

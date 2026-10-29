@@ -142,3 +142,43 @@ shared-parser trailer support. The production dependency audit,
 `git diff --check` passed.
 
 Broader framing, timeout and security behavior remain unverified or different.
+
+HTTP/1.1 connection reuse now matches selected 0.165.1 controls. TinyHTTP's
+`ClientConnection::next` keeps HTTP/1.1 alive by default, stops after
+`Connection: close` or `Connection: upgrade`, and requires `keep-alive` for
+HTTP/1.0. The Modex local relay now reuses a completed client socket for
+sequential requests and omits the previous forced `Connection: close` header.
+Only the local relay opts into persistence; shared loopback-server callers
+still close by default and emit `Connection: close`. It parks up to 128 idle
+sockets in FIFO order, polls one new connection before each parked-socket
+readiness scan, and checks the parent channel between requests. At the cap one
+accepted overflow socket waits while ready requests are serviced; then the
+oldest socket with no request bytes is evicted to admit it. Parked sockets have no idle
+expiry; disconnected sockets are reclaimed. A partial request on a reused
+socket blocks other clients until it completes or the socket closes; parent EOF
+does not interrupt an in-progress read. The request read has a 120-second
+deadline. Active request handling remains serial.
+
+Synthetic raw-socket comparisons cover two sequential requests on one socket,
+explicit `Connection: close`, fragmented request headers, a second client
+while the first is idle, and parent shutdown while a helper retains the idle
+socket. Regression controls fill the 128-socket pool and confirm a new client
+is admitted by evicting the oldest idle socket, preserve a partial request on
+the oldest socket while admitting an overflow client, and keep ready parked
+clients moving during new-client churn. A partial-header control on a reused
+socket confirms the second client is served after the partial socket closes. Prodex
+handles two pipelined requests; Modex returns 502
+`gateway request capture failed` before any upstream request. Pipelining is a
+reproducible gap. The local rewrite's WebSocket route still returns the
+baseline 426 fallback; that does not qualify the separate runtime-proxy
+WebSocket transport. See
+`docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
+
+Validation on Linux x86-64: `rtk make build` passed, as did
+`rtk make unit-build UNIT_BUILD_PROGRAMS='local_rewrite_driver loopback_server_driver'`.
+The complete focused relay suite passed 59 tests. After the latest source
+change, the rebuilt native drivers passed all 45 direct local-rewrite and
+loopback tests. The production dependency audit passed for 71 Mojo files and
+`git diff --check` passed. Tests use synthetic loopback peers, with no
+credentials or paid traffic. All six release targets and broader
+framing/security behavior remain unqualified.

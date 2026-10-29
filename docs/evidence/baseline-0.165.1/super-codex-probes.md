@@ -33,6 +33,9 @@ fallback only after capability and hook-trust preflight succeeds. Full output,
 exit status, probe arguments, environment sanitization, no-provider-request
 behavior, and overlay cleanup are compared against 0.165.1. The same progress
 cases compare against historical 0.439.2.
+The redirected provider panel also matches `PRODEX_TERM_COLUMNS=50` and `120`.
+PTY comparisons cover the text fallback with `TERM=dumb` and
+`PRODEX_TUI_STRICT=true`; they do not render or qualify the interactive panel.
 Hosted Fast CI run `40788779491` failed when the old normalizer assumed the
 fixture was directly under `/tmp`; the shared normalizer now covers nested
 private roots and the 0.439.2 regression suite checks the same path layout.
@@ -40,10 +43,10 @@ private roots and the 0.439.2 regression suite checks the same path layout.
 Oversized synthetic `--version` and `app-server --help` output also produce
 the same path-wrapped capture diagnostics in both binaries. The executable
 and upstream are synthetic; no account, real credential, or provider traffic
-is used. The pipe/CI fallback text is qualified; the interactive TTY progress
-panel, wrapper/hash qualification, other malformed version inputs, full
-startup/storage/security behavior, other targets, and broader Super parity
-remain unverified.
+is used. Redirected and selected TTY fallback text is qualified; interactive
+TTY panel rendering, wrapper/hash qualification, other malformed version
+inputs, full startup/storage/security behavior, other targets, and broader
+Super parity remain unverified.
 
 Reproduce with:
 

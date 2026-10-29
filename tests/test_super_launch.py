@@ -736,10 +736,13 @@ class SuperLaunchTests(unittest.TestCase):
                     ))
                 self.assertEqual(observations[0], observations[1])
 
-    def test_tty_does_not_receive_the_redirected_progress_fallback(self):
+    def test_normal_tty_does_not_receive_the_text_fallback(self):
         result, records, upstream, state = self.run_launch(
             scenario="exit-seven",
-            environment_overrides={"MODEX_TEST_CODEX_VERSION": "codex-cli 0.153.1"},
+            environment_overrides={
+                "MODEX_TEST_CODEX_VERSION": "codex-cli 0.153.1",
+                "TERM": "xterm-256color",
+            },
             stderr_tty=True,
         )
         self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)

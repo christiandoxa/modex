@@ -19,7 +19,7 @@ from .paths import app_root, ensure_app_root, shared_root
 from .process_spawn import CapturedProcessOutput, capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, terminate_child_gracefully, wait_or_kill
 from .provider_deepseek_transport import deepseek_request_headers
 from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, serve_local_rewrite
-from .text import is_whitespace, trim_text
+from .text import cli_width, is_whitespace, section_header, trim_text, wrap_text
 from .uuid7 import new_uuid7
 
 comptime CODEX_INSTALL_GUIDANCE = String(
@@ -230,25 +230,48 @@ def _toml_model_literal(value: String) -> String:
     return result
 
 
+def _truthy_environment_value(value: String) -> Bool:
+    var normalized = _ascii_lower(trim_text(value))
+    return normalized == "1" or normalized == "true" or normalized == "yes"
+
+
 def _launch_progress_fallback() -> Bool:
     # Interactive launch progress uses a live terminal panel, which Modex does not render yet.
-    return not isatty(2) or getenv("CODEX_CI", "\0") != "\0"
+    if not isatty(2) or getenv("CODEX_CI", "\0") != "\0":
+        return True
+    return getenv("TERM", "") == "dumb" or _truthy_environment_value(getenv("PRODEX_TUI_STRICT", ""))
 
 
-def _deepseek_launch_progress():
+def _print_fallback_stderr_panel(title: String, message: String) raises:
+    var width = cli_width()
+    print(section_header(title, width), file=stderr)
+    for line in wrap_text(message, width):
+        print(line, file=stderr)
+
+
+def _deepseek_launch_progress() raises:
     if not _launch_progress_fallback():
         return
-    print("Prodex launch: preparing runtime launch...", file=stderr)
-    print("Prodex launch: Smart Context runtime proxy requested.", file=stderr)
-    print("Prodex launch: local provider bridge requested.", file=stderr)
-
-
-def _deepseek_provider_panel():
+    var messages = [
+        String("preparing runtime launch..."),
+        String("Smart Context runtime proxy requested."),
+        String("local provider bridge requested."),
+    ]
     if isatty(2) and getenv("CODEX_CI", "\0") == "\0":
+        for message in messages:
+            _print_fallback_stderr_panel("Prodex Launch", message)
+    else:
+        for message in messages:
+            print("Prodex launch: " + message, file=stderr)
+
+
+def _deepseek_provider_panel() raises:
+    if not _launch_progress_fallback():
         return
-    print("[ Runtime Provider ] =========================================================================================", file=stderr)
-    print("Using provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven", file=stderr)
-    print("tokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.", file=stderr)
+    _print_fallback_stderr_panel(
+        "Runtime Provider",
+        "Using provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven tokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.",
+    )
 
 
 def _capture_codex_probe(binary: String, args: List[String], environment: List[String], label: String) raises -> CapturedProcessOutput:

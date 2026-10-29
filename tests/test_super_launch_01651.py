@@ -92,6 +92,61 @@ class ActiveSuperLaunchTests(unittest.TestCase):
         self.assertEqual(outputs[0], outputs[1])
         self.assertIn(b"Prodex launch: preparing runtime launch...\r\n", outputs[0][2])
 
+    def test_redirected_provider_panel_width_matches_01651(self):
+        for columns in ("50", "120"):
+            with self.subTest(columns=columns):
+                outputs = []
+                for binary in (active_cli.ORACLE, launch_support.MODEX):
+                    result, records, upstream, state = launch_support.run_private_launch(
+                        binary,
+                        scenario="app-server-help-failure",
+                        environment_overrides={"PRODEX_TERM_COLUMNS": columns},
+                    )
+                    self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
+                    self.assertEqual([record["kind"] for record in records], ["probe", "probe"])
+                    self.assertEqual((upstream, state["leftovers"]), ([], []))
+                    self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                    outputs.append((
+                        result.returncode,
+                        result.stdout,
+                        launch_support.normalized_codex_path(result.stderr),
+                    ))
+                self.assertEqual(outputs[0], outputs[1])
+                self.assertIn(b"[ Runtime Provider ]", outputs[0][2])
+                self.assertIn(b"compatibility proxy.", outputs[0][2])
+
+    def test_tty_fallback_progress_matches_01651(self):
+        cases = (
+            {"TERM": "dumb"},
+            {"TERM": "xterm-256color", "PRODEX_TUI_STRICT": "true"},
+        )
+        for environment in cases:
+            with self.subTest(environment=environment):
+                outputs = []
+                for binary in (active_cli.ORACLE, launch_support.MODEX):
+                    result, records, upstream, state = launch_support.SuperLaunchTests().run_launch(
+                        binary=binary,
+                        scenario="exit-seven",
+                        environment_overrides={
+                            **environment,
+                            "MODEX_TEST_CODEX_VERSION": "codex-cli 0.153.1",
+                        },
+                        stderr_tty=True,
+                    )
+                    self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
+                    self.assertEqual([record["args"] for record in records if record["kind"] == "probe"], [["--version"]])
+                    self.assertEqual((upstream, state["leftovers"]), ([], []))
+                    self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                    self.assertNotIn(b"\x1b[", result.stderr)
+                    outputs.append((
+                        result.returncode,
+                        result.stdout,
+                        launch_support.normalized_codex_path(result.stderr),
+                    ))
+                self.assertEqual(outputs[0], outputs[1])
+                self.assertIn(b"[ Prodex Launch ]", outputs[0][2])
+                self.assertIn(b"[ Runtime Provider ]", outputs[0][2])
+
     def test_minimum_codex_version_matches_01651(self):
         cases = (
             ({"MODEX_TEST_CODEX_VERSION": "codex-cli 0.153.1"}, False),

@@ -84,7 +84,10 @@ tests use a private nested temp directory; oversized version/help capture
 errors still match. Modex now matches the selected fallback progress lines,
 provider panel, and child-start line on complete redirected stdout/stderr
 comparisons against 0.165.1 and historical 0.439.2, with synthetic child and
-no provider requests. Interactive TTY progress rendering remains unfinished.
+no provider requests. Active 0.165.1 also matches redirected provider-panel
+wrapping at columns 50 and 120, plus text fallback output on a PTY with
+`TERM=dumb` or `PRODEX_TUI_STRICT=true`. Interactive TTY panel rendering
+remains unfinished.
 Wrapper/hash qualification, other malformed version inputs, remaining
 startup/security behavior, and other targets remain gaps. Hosted Fast CI run
 `40788779491` exposed a diagnostic normalizer that assumed the fixture was

@@ -1334,6 +1334,44 @@ class SuperLaunchTests(unittest.TestCase):
         self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
         self.assertNotIn(values.encode(), output)
 
+    def test_deepseek_plural_key_header_validation_precedes_codex_and_network(self):
+        cases = (
+            ("internal space", "synthetic bad key", "--api-key must not contain whitespace", True),
+            ("internal tab", "synthetic\tbadkey", "--api-key must not contain whitespace", False),
+            ("control byte", "synthetic\x01badkey", "--api-key must contain only visible ASCII", False),
+            ("delete byte", "synthetic\x7fbadkey", "--api-key must contain only visible ASCII", False),
+            ("non-ASCII", "synthetic☃badkey", "--api-key must contain only visible ASCII", True),
+        )
+        for label, key, diagnostic, accepted_by_release in cases:
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                with self.subTest(case=label, binary=binary.name):
+                    result, records, upstream, state = self.run_launch(
+                        binary=binary,
+                        scenario="stream",
+                        api_key=None,
+                        environment_overrides={"DEEPSEEK_API_KEYS": key},
+                    )
+                    output = result.stdout + result.stderr
+                    self.assertNotIn(key.encode(), output)
+                    self.assertEqual(state["leftovers"], [])
+                    self.assertNotIn(key, json.dumps([record.get("args", []) for record in records]))
+
+                    if binary == MODEX:
+                        self.assertEqual(result.returncode, 1, output)
+                        self.assertIn(diagnostic.encode(), output)
+                        self.assertEqual((records, upstream), ([], []))
+                    elif accepted_by_release:
+                        self.assertEqual((result.returncode, result.stdout), (0, b"synthetic-client-complete\n"), output)
+                        self.assertEqual(len(upstream), 1)
+                        authorization = next(value for name, value in upstream[0]["headers"].items()
+                                             if name.lower() == "authorization")
+                        expected_authorization = ("Bearer " + key).encode("utf-8").decode("latin-1")
+                        self.assertEqual(authorization, expected_authorization)
+                    else:
+                        self.assertEqual(result.returncode, 1, output)
+                        self.assertEqual(len(upstream), 0)
+                        self.assertEqual(sum(record["kind"] == "launch" for record in records), 1)
+
     def test_buffered_and_binary_passthrough(self):
         for scenario in ("buffered", "passthrough"):
             with self.subTest(scenario=scenario):

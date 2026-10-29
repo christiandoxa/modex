@@ -22,11 +22,20 @@ appear in output or Codex argument vectors. Modex also avoids persisting the
 environment values in the fixture capture. This is an intentional safer
 difference from the releases.
 
-The three real-process methods in `tests/test_super_launch.py` compare the
+The four real-process methods in `tests/test_super_launch.py` compare the
 singular and plural paths, all three separators, explicit-key precedence over
 malformed unused environment values, empty and whitespace errors, missing
 keys, provider Authorization, Codex environment/argv, and the multi-key gap
 against both pinned releases and Modex. Tests use only synthetic credentials,
-isolated homes and a loopback provider. `make build` and the three focused
-methods passed on Linux x86-64. Public network, TLS, other release targets, and
-multi-key rotation remain unqualified.
+isolated homes and a loopback provider. `make build` and all four focused
+methods passed on Linux x86-64. A one-entry plural value also reaches
+`deepseek_request_headers` before any Codex probe or provider request. It
+rejects internal spaces/tabs as whitespace and control, DEL, or non-ASCII
+bytes as non-visible ASCII; the diagnostic does not include the value, and no
+temporary overlay remains. The pinned releases send a key containing an
+internal space or non-ASCII character in Authorization. For tab, control, or
+DEL, they launch Codex but the synthetic provider observes no request. Modex
+rejects all five cases before creating a Codex child or making a provider
+request. The focused header-validation method passed across both releases and
+Modex. Public network, TLS, other release targets, and multi-key rotation remain
+unqualified.

@@ -16,9 +16,13 @@ Both pinned releases select the first key from a multi-entry list, while Modex
 rejects such lists until per-request rotation exists. The releases also expose
 key environment variables to Codex version/help probes before scrubbing them
 for the final launch. Modex scrubs them from all Codex children, including
-probes; this is a deliberate security difference. Three synthetic real-process
-methods match the singular, singleton plural, precedence, validation, and
-Authorization cases against 0.165.1, 0.439.2, and Modex. No real credentials or
+probes; this is a deliberate security difference. Four synthetic real-process
+methods compare singular, singleton plural, precedence, validation, and
+Authorization cases against 0.165.1, 0.439.2, and Modex. A plural value with
+unsafe header bytes is rejected by Modex before Codex probes or provider I/O;
+the releases accept spaces and non-ASCII bytes in Authorization, while tab,
+control, and DEL cases launch Codex but stop before the synthetic provider.
+Missing and unsafe keys leave no temporary overlay. No real credentials or
 provider traffic were used. See
 `docs/evidence/baseline-0.165.1/super-api-key-env.md`.
 

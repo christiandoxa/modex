@@ -341,3 +341,37 @@ The shared size and field controls also pass against the checksum-pinned
 0.439.2 oracle: it accepts the tested 2 MiB + 1-byte head and 1 MiB + 1-byte
 User-Agent field, while Modex retains its explicit capture and outbound field
 bounds. Both focused 0.439.2 large-head oracle tests passed.
+
+## Request-line version handling
+
+The frozen 0.165.1 TinyHTTP source parses versions in
+`vendor/tiny_http/src/client.rs::parse_http_version`: it recognizes HTTP/0.9,
+1.0, 1.1, 2.0, and 3.0. `parse_request_line` reads only its first three
+space-separated fields. Unknown tokens such as HTTP/1.2 become
+`WrongRequestLine`; `ClientConnection::next` emits an empty HTTP/1.1 400 and
+closes. The frozen 0.439.2 source has the same parser and dispatch structure.
+
+The production relay now opts into HTTP/0.9 and first-three-field parsing while
+the shared loopback parser keeps its strict default. The checksum-pinned 0.165.1
+and 0.439.2 processes and Modex match on HTTP/0.9 JSON requests, malformed
+headers, and `Expect: 100-continue`: each response and interim response uses
+the request's HTTP/0.9 line. An HTTP/0.9 connection with no `Connection`
+header also carries two pipelined requests; all three processes return both
+responses in order and honor `Connection: close` on the second. A request line
+with two version-looking fields uses the first field, as TinyHTTP does. HTTP/1.2
+returns the same empty 400 in both releases and Modex without provider I/O.
+For an HTTP/0.9 request whose declared body ends early, all three close without
+a response or upstream request.
+
+HTTP/2.0 and HTTP/3.0 remain unqualified. TinyHTTP recognizes those tokens and
+has a later HTTP-version branch, while Modex classifies them as unsupported and
+returns 400; the isolated raw-process probe did not produce a stable release
+response within its five-second client timeout. Do not count this as parity.
+All results are Linux x86-64 process controls with synthetic credentials,
+isolated homes, and loopback-only provider traffic.
+
+Validation: the production build passed. The 0.165.1 raw HTTP matrix and the
+0.9 keep-alive/pipeline control passed; the 0.439.2 matrix and the same
+keep-alive/pipeline control passed. The truncated HTTP/0.9 body control also
+passed against both releases and Modex. Shared loopback and local rewrite suites
+passed after adding an explicit check that HTTP/0.9 remains rejected by default.

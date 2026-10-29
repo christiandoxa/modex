@@ -302,7 +302,7 @@ struct LoopbackHTTPConnection(Movable):
             return False
         raise Error("loopback HTTP peer check failed")
 
-    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False, defer_expectation_errors: Bool = False, preflight_body_limit_before_continue: Bool = False, use_request_version_for_continue: Bool = False, use_request_version_for_response: Bool = False, request_header_limit: Int = HTTP_HEADER_LIMIT) raises -> LoopbackHTTPRequest:
+    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False, defer_expectation_errors: Bool = False, preflight_body_limit_before_continue: Bool = False, use_request_version_for_continue: Bool = False, use_request_version_for_response: Bool = False, request_header_limit: Int = HTTP_HEADER_LIMIT, tiny_http_request_line_compat: Bool = False) raises -> LoopbackHTTPRequest:
         if self.fd < 0 or self.done or self.request_read:
             raise Error("loopback HTTP connection is closed")
         self.request_head_parsed = False
@@ -331,8 +331,8 @@ struct LoopbackHTTPConnection(Movable):
         # The relay caps target bytes, so its request line also includes method and version bytes.
         var max_request_line_bytes = HTTP_HEADER_LIMIT if validate_request_target else 8192
         if use_request_version_for_response:
-            self.response_version = _request_line_version(self.input, max_request_line_bytes)
-        var head = _parse_request_head(self.input, header_end, allow_upgrade_headers, max_request_line_bytes, defer_expectation_errors)
+            self.response_version = _request_line_version(self.input, max_request_line_bytes, tiny_http_request_line_compat)
+        var head = _parse_request_head(self.input, header_end, allow_upgrade_headers, max_request_line_bytes, defer_expectation_errors, tiny_http_request_line_compat)
         self.request_head_parsed = True
         self.request_body_deferred = defer_expectation_errors and (head.expect_continue or head.chunked or head.length > HTTP_DEFERRED_BODY_THRESHOLD)
         self.head_request = head.method == "HEAD"
@@ -630,14 +630,17 @@ struct ParsedRequestHead(Movable):
     var unsupported_expectation: Bool
 
 
-def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Bool, max_request_line_bytes: Int, defer_expectation_errors: Bool = False) raises -> ParsedRequestHead:
+def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Bool, max_request_line_bytes: Int, defer_expectation_errors: Bool = False, tiny_http_request_line_compat: Bool = False) raises -> ParsedRequestHead:
     var head = _ascii(bytes, 0, end)
     var lines = head.split("\r\n")
     if not lines or lines[0].byte_length() > max_request_line_bytes:
         raise Error("malformed HTTP request line")
     var request_line = lines[0].split(" ")
+    var request_line_fields = len(request_line)
     var malformed_suffix = False
-    if len(request_line) > 3:
+    if tiny_http_request_line_compat and request_line_fields > 3:
+        request_line_fields = 3
+    elif request_line_fields > 3:
         var last = String(request_line[len(request_line) - 1])
         if last == "HTTP/1.0" or last == "HTTP/1.1":
             raise Error("malformed HTTP request target spacing")
@@ -645,10 +648,11 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
             malformed_suffix = True
         else:
             raise Error("malformed HTTP request line suffix")
-    if (len(request_line) != 3 and not malformed_suffix) or request_line[0].byte_length() == 0 or request_line[1].byte_length() == 0:
+    if (request_line_fields != 3 and not malformed_suffix) or request_line[0].byte_length() == 0 or request_line[1].byte_length() == 0:
         raise Error("malformed HTTP request line")
     var version = String(request_line[2])
-    if version != "HTTP/1.0" and version != "HTTP/1.1":
+    # shortcut: HTTP/2.0 and HTTP/3.0 response behavior is unqualified; revisit when raw oracle controls are stable.
+    if version != "HTTP/1.0" and version != "HTTP/1.1" and not (tiny_http_request_line_compat and version == "HTTP/0.9"):
         raise Error("unsupported HTTP request version")
     for byte in request_line[0].as_bytes():
         if not _http_token_byte(byte):
@@ -839,7 +843,7 @@ def _line_end(bytes: List[UInt8], start: Int) -> Int:
     return -1
 
 
-def _request_line_version(bytes: List[UInt8], max_request_line_bytes: Int) -> String:
+def _request_line_version(bytes: List[UInt8], max_request_line_bytes: Int, tiny_http_request_line_compat: Bool = False) -> String:
     var line_end = _line_end(bytes, 0)
     if line_end <= 0 or line_end > max_request_line_bytes:
         return "HTTP/1.1"
@@ -855,7 +859,7 @@ def _request_line_version(bytes: List[UInt8], max_request_line_bytes: Int) -> St
         if not _http_token_byte(byte):
             return "HTTP/1.1"
     var version = String(parts[2])
-    if version == "HTTP/1.0" or version == "HTTP/1.1":
+    if version == "HTTP/1.0" or version == "HTTP/1.1" or (tiny_http_request_line_compat and version == "HTTP/0.9"):
         return version
     return "HTTP/1.1"
 

@@ -11,6 +11,12 @@ import test_local_rewrite_01651_oracle as transport
 
 
 CASE_NAMES = (
+    "http_1_2_request_line_is_malformed",
+    "http_0_9_request_uses_request_version",
+    "http_0_9_malformed_header_uses_request_version",
+    "http_0_9_expect_continue_uses_request_version",
+    "http_0_9_truncated_declared_body_closes",
+    "duplicate_request_versions_keep_first_version",
     "malformed_request_line_missing_version",
     "http_1_0_request_line_extra_token_keeps_request_version",
     "http_1_0_buffered_responses_keep_request_version",
@@ -60,6 +66,22 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
     def test_partial_reused_request_does_not_block_second_client(self):
         with patch.object(transport, "ORACLE", ORACLE):
             transport.LocalRewrite01651OracleTests.test_partial_reused_request_does_not_block_second_client(self)
+
+    def test_pipelined_requests_match_oracle_across_framing_and_responses(self):
+        with patch.object(transport, "ORACLE", ORACLE):
+            transport.LocalRewrite01651OracleTests.test_pipelined_requests_match_oracle_across_framing_and_responses(self)
+
+    def test_http_0_9_keepalive_and_pipelined_requests_match_oracle(self):
+        with patch.object(transport, "ORACLE", ORACLE):
+            transport.LocalRewrite01651OracleTests.test_http_0_9_keepalive_and_pipelined_requests_match_oracle(self)
+
+    def test_connection_keep_alive_selection_matches_pinned_tinyhttp_rules(self):
+        with patch.object(transport, "ORACLE", ORACLE):
+            transport.LocalRewrite01651OracleTests.test_connection_keep_alive_selection_matches_pinned_tinyhttp_rules(self)
+
+    def test_duplicate_expect_and_framing_rejections_remain_fail_closed(self):
+        with patch.object(transport, "ORACLE", ORACLE):
+            transport.LocalRewrite01651OracleTests.test_duplicate_expect_and_framing_rejections_remain_fail_closed(self)
 
     def test_non_websocket_connection_upgrade_reads_through_eof(self):
         upstream = transport.Upstream()
@@ -169,7 +191,7 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
                             self.assertEqual(response["response_line"], case["expected_response_line"], label)
                         raw_lines = response["raw_response_head"].split(b"\r\n")
                         if "expected_response_line" in case:
-                            self.assertEqual(raw_lines[0].decode("iso-8859-1"), case["expected_response_line"], label)
+                            self.assertEqual(raw_lines[0].decode("iso-8859-1"), case.get("expected_wire_response_line", case["expected_response_line"]), label)
                         self.assertEqual(raw_lines[-2:], [b"", b""], label)
                         raw_headers = {}
                         for raw_header in raw_lines[1:-2]:

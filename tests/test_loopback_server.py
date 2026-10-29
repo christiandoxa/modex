@@ -337,6 +337,13 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         self.assertEqual(status(response), 400)
         self.assertIn("truncated HTTP request", stdout)
 
+    def test_http_0_9_requires_explicit_opt_in(self):
+        process, client = start("echo")
+        client.sendall(b"POST /synthetic HTTP/0.9\r\nHost: 127.0.0.1\r\nContent-Length: 0\r\n\r\n")
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 400)
+        self.assertIn('"unsupported HTTP request version"', stdout)
+
     def test_small_caller_body_limit_accepts_exact_and_rejects_over(self):
         process, client = start("small-limit")
         client.sendall(request(body=b"abc"))

@@ -3384,6 +3384,17 @@ all six release targets stay in the
 parity denominator. See
 `docs/evidence/baseline-0.165.1/local-relay-concurrency.md` and
 `docs/evidence/runtime-slow-partial.md`.
+
+The local relay now matches selected TinyHTTP request-line handling: it accepts
+HTTP/0.9 on the production relay, uses the first three space-separated fields,
+and preserves HTTP/0.9 response and `100 Continue` lines. HTTP/1.2 is rejected
+with an empty 400 before provider I/O, as both pinned processes do. HTTP/2.0
+and HTTP/3.0 remain unqualified: TinyHTTP recognizes their tokens while Modex
+returns 400, and the isolated release probe did not obtain a stable response
+within five seconds. The shared parser continues to reject HTTP/0.9 unless a
+caller opts in. Both pinned release matrices, the 0.9 pipelined keep-alive
+control, and the shared parser suite pass. See
+`docs/evidence/baseline-0.165.1/local-relay-http.md`.
 Modex now matches a complete, already-buffered pipelined request after an
 Anthropic stream fails: the first SSE reply carries `Connection: close`, stays
 chunk-incomplete, and a queued request receives the raw second 502 on the same

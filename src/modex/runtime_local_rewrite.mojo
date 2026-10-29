@@ -856,11 +856,11 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
     var request = LoopbackHTTPRequest("", "", List[Tuple[String, String]](), List[UInt8]())
     var captured = False
     try:
-        request = connection.read_request(120000, allow_upgrade_headers=True, validate_request_target=True, reject_chunked_trailers=True, defer_expectation_errors=True, preflight_body_limit_before_continue=True, use_request_version_for_continue=True, use_request_version_for_response=True, request_header_limit=HTTP_MAX_REQUEST_HEADER_LIMIT)
+        request = connection.read_request(120000, allow_upgrade_headers=True, validate_request_target=True, reject_chunked_trailers=True, defer_expectation_errors=True, preflight_body_limit_before_continue=True, use_request_version_for_continue=True, use_request_version_for_response=True, request_header_limit=HTTP_MAX_REQUEST_HEADER_LIMIT, tiny_http_request_line_compat=True)
         captured = True
     except error:
         var message = String(error)
-        var malformed_syntax = message == "malformed HTTP request line" or message == "malformed HTTP request target spacing" or message == "malformed HTTP method" or message == "malformed HTTP request header" or message == "malformed HTTP header name" or message == "malformed HTTP header value" or message == "non-ASCII byte in HTTP header"
+        var malformed_syntax = message == "malformed HTTP request line" or message == "unsupported HTTP request version" or message == "malformed HTTP request target spacing" or message == "malformed HTTP method" or message == "malformed HTTP request header" or message == "malformed HTTP header name" or message == "malformed HTTP header value" or message == "non-ASCII byte in HTTP header"
         if message == "invalid HTTP request target" or message == "malformed HTTP request target":
             try:
                 _invalid_request_target(connection)

@@ -1361,6 +1361,72 @@ def ordinary_http_upgrade_case(name, value):
 
 CASES = (
     {
+        "name": "http_1_2_request_line_is_malformed",
+        "request": b"POST /v1/responses HTTP/1.2\r\nHost: 127.0.0.1\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_response_line": "HTTP/1.1 400 Bad Request",
+        "expected_body": b"",
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "upstream": False,
+    },
+    {
+        "name": "http_0_9_request_uses_request_version",
+        "request": request_bytes((('Connection', 'close'),), version=b'HTTP/0.9'),
+        "expected_status": 200,
+        "expected_reason": "OK",
+        "expected_response_line": "HTTP/1.0 200 OK",
+        "expected_wire_response_line": "HTTP/0.9 200 OK",
+        "expected_body": RESPONSES_RESPONSE,
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "expected_upstream_method": "POST",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
+    },
+    {
+        "name": "http_0_9_malformed_header_uses_request_version",
+        "request": b"POST /v1/responses HTTP/0.9\r\nHost: 127.0.0.1\r\nMalformed\r\nContent-Length: 0\r\n\r\n",
+        "expected_status": 400,
+        "expected_reason": "Bad Request",
+        "expected_response_line": "HTTP/1.0 400 Bad Request",
+        "expected_wire_response_line": "HTTP/0.9 400 Bad Request",
+        "expected_body": b"",
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "upstream": False,
+    },
+    {
+        "name": "http_0_9_expect_continue_uses_request_version",
+        "request": b"POST /v1/responses HTTP/0.9\r\nHost: 127.0.0.1\r\nConnection: close\r\nExpect: 100-continue\r\nContent-Length: " + str(len(REQUEST_BODY)).encode() + b"\r\n\r\n",
+        "body_after_continue": REQUEST_BODY,
+        "expect_handshake": True,
+        "expected_status": 200,
+        "expected_reason": "OK",
+        "expected_response_line": "HTTP/0.9 200 OK",
+        "expected_wire_response_line": "HTTP/0.9 200 OK",
+        "expected_body": RESPONSES_RESPONSE,
+        "expected_interim_statuses": [100],
+        "expected_interim_status_lines": ["HTTP/0.9 100 Continue"],
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "expected_upstream_method": "POST",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
+    },
+    {
+        "name": "http_0_9_truncated_declared_body_closes",
+        "request": b"POST /v1/responses HTTP/0.9\r\nHost: 127.0.0.1\r\nConnection: close\r\nContent-Length: 10\r\n\r\nx",
+        "half_close": True,
+        "expected_status": None,
+        "expected_read_error": "RemoteDisconnected",
+        "expected_body": b"",
+        "upstream": False,
+    },
+    {
         "name": "malformed_request_line_missing_version",
         "request": b"POST /v1/responses\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
         "expected_status": 400,
@@ -1385,6 +1451,20 @@ CASES = (
         "check_close": True,
         "expected_connection_closed": {"oracle": True, "modex": True},
         "upstream": False,
+    },
+    {
+        "name": "duplicate_request_versions_keep_first_version",
+        "request": b"POST /v1/responses HTTP/1.1 HTTP/1.0\r\nHost: 127.0.0.1\r\nConnection: close\r\nContent-Length: " + str(len(REQUEST_BODY)).encode() + b"\r\n\r\n" + REQUEST_BODY,
+        "expected_status": 200,
+        "expected_reason": "OK",
+        "expected_response_line": "HTTP/1.1 200 OK",
+        "expected_body": RESPONSES_RESPONSE,
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "expected_upstream_method": "POST",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
     },
     {
         "name": "malformed_request_target_spacing",
@@ -2306,6 +2386,8 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                             self.assertEqual(response["reason"], case["expected_reason"], label)
                         if "expected_response_line" in case:
                             self.assertEqual(response["response_line"], case["expected_response_line"], label)
+                        if "expected_wire_response_line" in case:
+                            self.assertEqual(response["raw_response_head"].split(b"\r\n", 1)[0].decode(), case["expected_wire_response_line"], label)
                         if "response_before_upstream_eof_ms" in case:
                             limit = case["response_before_upstream_eof_ms"]
                             self.assertLess(response["response_headers_elapsed_ms"], limit, label)
@@ -2371,6 +2453,41 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             upstream.shutdown()
             upstream.server_close()
             worker.join(timeout=2)
+
+    def test_http_0_9_keepalive_and_pipelined_requests_match_oracle(self):
+        first = request_bytes(target=b"/v1/responses", version=b"HTTP/0.9")
+        second = request_bytes((('Connection', 'close'),), target=b"/v1/chat/completions", version=b"HTTP/0.9")
+        case = {
+            "name": "http_0_9_pipelined_keepalive",
+            "request": first,
+            "pipelined_requests": [first, second],
+            "check_close": True,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            results = [
+                run_probe(binary, case, upstream)
+                for binary in (ORACLE, Path.home() / ".cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu", MODEX)
+            ]
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+        expected = [(200, RESPONSES_RESPONSE), (200, PROVIDER_RESPONSE)]
+        for response, records in results:
+            self.assertEqual(response["process_exit"], 0, response["stderr"])
+            self.assertEqual(
+                [(item["status"], item["body"]) for item in response["pipelined_responses"]],
+                expected,
+            )
+            self.assertTrue(response["connection_closed"])
+            self.assertEqual(len(records), 2)
+        self.assertEqual(
+            [(record["method"], record["path"]) for record in results[0][1]],
+            [(record["method"], record["path"]) for record in results[2][1]],
+        )
 
     def test_response_header_overrides_filtering_and_invalid_values_match_oracle(self):
         upstream = Upstream()

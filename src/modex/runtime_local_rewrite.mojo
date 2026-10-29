@@ -820,12 +820,8 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                     state_ptr[].insert_conversation(exchange.reader.state.response_id, _stream_history(exchange), namespace)
                 _write_event(connection, event)
         if exchange.downstream_body_incomplete:
-            # The frozen writer leaves this body open after a post-failure read error.
-            # No later request can be served on an unfinished response; drain it to detect peer EOF.
-            var discard = List[UInt8](length=8192, fill=0)
-            while not state_ptr[].is_stopping() and not connection.discard_incoming_or_disconnected(discard):
-                sleep(0.001)
-            connection.close()
+            # Both releases answer queued requests after leaving this response chunk open.
+            connection.continue_after_incomplete_stream()
         else:
             connection.finish_stream(30000, include_head_terminal_chunk=True)
     except:

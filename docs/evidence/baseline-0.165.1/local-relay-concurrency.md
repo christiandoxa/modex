@@ -53,3 +53,51 @@ barrier and parent-EOF checks. After that update, 101 shared loopback, relay,
 stream and provider transport tests and 17 cross-release Anthropic stream tests
 passed. The production dependency audit and test census passed. These results
 qualify only the exercised controls, not the entire runtime contract.
+
+## Failed-stream pipeline follow-up (2026-10-29)
+
+Both pinned release processes return an unfinished chunked Anthropic failure
+stream with `Connection: close`, then write a raw second 502 for a complete
+queued HTTP/1.1 request on the same socket. Modex now restores the connection
+to the parked listener after that incomplete stream and processes the queued
+request serially. The first response remains open; it does not receive a final
+chunk before the second response. The new production regression checks this
+wire behavior for FIN and RST, then verifies that a separate follow-up request
+still reaches the synthetic provider. This does not create concurrent writers
+for a socket: the first worker finishes before the listener assigns it again.
+At both Prodex 0.439.2 and historical 0.439.1 source commits, the local rewrite
+pipeline finishes rejected requests through `request.respond`; a checksum-
+verified 0.439.1 process control also returned `Connection: close` and the raw
+502. The 0.439.1 control is historical regression evidence only.
+
+No-pipeline/open-body, request half-close, upstream EOF/reset, eight-client
+FIN/RST worker release, a full queued body, a truncated queued body, a
+truncated request head, and parent EOF were checked against 0.165.1, 0.439.2,
+and Modex. The full 1 MiB queued body may finish the fake client naturally after
+the raw 502, so explicit parent-EOF cancellation is asserted separately for a
+complete head with a partial body and for a 64-byte incomplete head. Both
+controls leave no live child processes.
+
+The large-head stress gap remains. In one eight-client run, both releases
+returned the raw 502 on 8/8 32 KiB padded pipeline heads; Modex returned it on
+3/8 within the test's 100 ms read window. The listener still limits request
+head capture to 512 bytes per parked socket per pass for fairness. The captured
+count is timing-sensitive and does not qualify large-head admission parity.
+
+Validation on Linux x86-64 with Mojo 1.2.0 passed the production build and the
+three declared native test drivers:
+
+```sh
+mojo build -O3 --target-cpu=x86-64-v3 -I src src/main.mojo -o build/modex
+make UNIT_BUILD_PROGRAMS='provider_chat_stream_driver loopback_http_stream_driver local_rewrite_driver' unit-build
+```
+
+The affected provider chat stream, loopback HTTP stream, and local rewrite
+modules passed 54 tests; the focused pipeline/open-body/FIN/RST/EOF matrix
+passed 10 tests. The production import audit passed for all 71 Mojo files, and
+the test census passed for 50 native sources and 135 Python modules. A combined
+90-test run initially had 87 passing tests and three setup errors for those
+missing drivers; it included and passed both `test_local_rewrite_01651_oracle`
+and `test_local_rewrite_04392_oracle`. The combined run was not repeated after
+building the drivers, so these results do not qualify the entire runtime
+contract.

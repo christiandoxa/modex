@@ -3173,8 +3173,18 @@ and security behavior remain unqualified; all six release targets stay in the
 parity denominator. See
 `docs/evidence/baseline-0.165.1/local-relay-concurrency.md` and
 `docs/evidence/runtime-slow-partial.md`.
-The byte difference includes a raw second 502 response after an unterminated
-failed stream in both releases; Modex discards the queued request instead.
-The first response also differed in its Connection header in that control.
-The maintained disconnect test records the baseline behavior; general pipeline
-ordering remains unfinished. See `docs/evidence/anthropic-stream-optional-metadata-shared.md`.
+Modex now matches a complete, already-buffered pipelined request after an
+Anthropic stream fails: the first SSE reply carries `Connection: close`, stays
+chunk-incomplete, and a queued request receives the raw second 502 on the same
+socket. FIN and RST controls also verify worker release. No-pipeline open-body,
+request half-close, complete and truncated pipeline heads, truncated pipeline
+bodies, and parent EOF controls pass against both releases. A separate eight
+client probe with 32 KiB padded request heads still exposes a timing gap: both
+releases emitted the raw 502 on 8/8 connections, while Modex emitted it on 3/8
+in one captured run. Modex scans at most 512 bytes per parked socket per pass;
+the 100 ms client window can close a large queued head before admission. Keep
+this admission gap visible; general pipeline and saturation parity remain
+unfinished. The complete 1 MiB parent-EOF control can finish naturally after
+the raw 502, so explicit shutdown is checked separately with a truncated body
+and a truncated head. See `docs/evidence/baseline-0.165.1/local-relay-concurrency.md`
+and `docs/evidence/anthropic-stream-optional-metadata-shared.md`.

@@ -178,7 +178,9 @@ def _capture_body_probe(
     return captures
 
 
-def _observe_parent_shutdown(binary, request, reply):
+def _observe_parent_shutdown(
+    binary, request, reply, pipeline_body_bytes=1048576, pipeline_head_bytes=None,
+):
     client = continuation.CLIENT.replace(
         "    payload = response.read()",
         '    payload = bytearray()\n'
@@ -197,14 +199,16 @@ def _observe_parent_shutdown(binary, request, reply):
     )
     marker = "    response = connection.getresponse()"
     pipeline = (
-        '    pipeline_body = b"x" * 1048576\n'
-        '    connection.sock.sendall(\n'
+        f'    pipeline_body = b"x" * {pipeline_body_bytes}\n'
+        '    pipeline = (\n'
         '        b"POST " + target.path.encode() + b" HTTP/1.1\\r\\n"\n'
         '        + b"Host: " + target.hostname.encode() + b":" + str(target.port).encode() + b"\\r\\n"\n'
         '        + b"Content-Type: application/json\\r\\nContent-Length: 1048576\\r\\n"\n'
         '        + b"Connection: keep-alive\\r\\n\\r\\n" + pipeline_body\n'
         '    )\n'
-        '    save({"kind":"pipelined","bytes":len(pipeline_body),"write_open":True})\n'
+        + (f'    pipeline = pipeline[:{pipeline_head_bytes}]\n' if pipeline_head_bytes is not None else "")
+        + '    connection.sock.sendall(pipeline)\n'
+        + '    save({"kind":"pipelined","bytes":len(pipeline_body),"wire_bytes":len(pipeline),"write_open":True})\n'
     )
     client = client.replace(marker, pipeline + marker)
     if (
@@ -339,7 +343,10 @@ def _observe_parent_shutdown(binary, request, reply):
                         os.close(fd)
 
 
-def _observe_pipelined_disconnect(binary, request, failed_reply, followup_reply, close_mode):
+def _observe_pipelined_disconnect(
+    binary, request, failed_reply, followup_reply, close_mode,
+    pad_bytes=32768, failure_count=8,
+):
     marker = "previous = None\n"
     if marker not in continuation.CLIENT:
         raise AssertionError("synthetic client no longer exposes its target URL")
@@ -357,11 +364,11 @@ request_bytes = (
 pending_tail = (
     b"GET " + target.path.encode() + b" HTTP/1.1\\r\\nHost: " + host
     + b"\\r\\nConnection: keep-alive\\r\\nContent-Length: 0\\r\\nX-Pad: "
-    + b"x" * 32768 + b"\\r\\n\\r\\n"
+    + b"x" * {pad_bytes} + b"\\r\\n\\r\\n"
 )
 failure_marker = b"event: response.failed\\r\\n"
 client_results = []
-for index in range(8):
+for index in range({failure_count}):
     started = time.monotonic()
     client = None
     try:
@@ -392,11 +399,20 @@ for index in range(8):
                 status = int(head.split(b"\\r\\n", 1)[0].split()[1])
             except (IndexError, ValueError):
                 pass
+            first_connection = next(
+                (line.split(b":", 1)[1].strip().decode("latin-1")
+                 for line in head.split(b"\\r\\n")[1:]
+                 if line.lower().startswith(b"connection:")),
+                None,
+            )
+        else:
+            first_connection = None
         client_results.append({{
             "got_failure": got_failure, "status": status,
             "elapsed_ms": int((time.monotonic() - started) * 1000),
             "error": None if got_failure else "TimeoutError",
             "trailing_502": b"HTTP/1.1 502 Bad Gateway\\r\\n" in received,
+            "first_connection": first_connection,
         }})
         if got_failure and {close_mode!r} == "rst":
             client.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
@@ -446,7 +462,7 @@ print("synthetic-continuation-complete")
     continuation.CLIENT = client
     try:
         return continuation.observe_turns(
-            binary, [request], [failed_reply] * 8 + [followup_reply],
+            binary, [request], [failed_reply] * failure_count + [followup_reply],
         )
     finally:
         continuation.CLIENT = original
@@ -1121,7 +1137,7 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
         self.assertEqual(baseline[2], "chunked")
         self.assertEqual(captures["Modex"], baseline)
 
-    def test_parent_eof_cancels_failed_open_stream_with_pending_pipeline(self):
+    def test_parent_eof_cancels_failed_open_stream_with_truncated_pipeline_body(self):
         request, fixture = repeated_search_case()
         base = [
             json.loads(line[6:])
@@ -1137,7 +1153,7 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
             ("0.439.2", ORACLE_04392),
             ("Modex", MODEX),
         ):
-            observations[label] = _observe_parent_shutdown(binary, request, reply)
+            observations[label] = _observe_parent_shutdown(binary, request, reply, pipeline_body_bytes=1024)
         summary = {
             label: {
                 "held": result["held"],
@@ -1157,7 +1173,7 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
             self.assertEqual(result["children_alive_after_2s"], [], (label, result))
             self.assertEqual(
                 [(row["bytes"], row["write_open"]) for row in result["pipelined_records"]],
-                [(1048576, True)],
+                [(1024, True)],
                 (label, result),
             )
             self.assertTrue(result["body_errors"], (label, result))
@@ -1173,10 +1189,119 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
         self.assertEqual(modex["children_alive_after_2s"], [], summary)
         self.assertEqual(
             [(row["bytes"], row["write_open"]) for row in modex["pipelined_records"]],
-            [(1048576, True)],
+            [(1024, True)],
             modex,
         )
         self.assertTrue(modex["body_errors"], modex)
+
+    def test_complete_pipeline_body_after_failed_open_stream_leaves_no_children(self):
+        request, fixture = repeated_search_case()
+        events = [json.loads(line[6:]) for line in fixture["body"].splitlines()
+                  if line.startswith(b"data: ")]
+        failed = {"type": "content_block_delta", "index": 1, "delta": {"type": None}}
+        body = _stream(events[:6] + [failed])["body"] + b": \xff\n\n" + _stream(events[6:])["body"]
+        reply = {**fixture, "body": body, "chunked": True}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651), ("0.439.2", ORACLE_04392), ("Modex", MODEX),
+        ):
+            with self.subTest(binary=label):
+                result = _observe_parent_shutdown(binary, request, reply)
+                self.assertTrue(result["held"], (label, result))
+                self.assertFalse(result["parent_timed_out"], (label, result))
+                self.assertEqual(result["children_alive_after_2s"], [], (label, result))
+                self.assertEqual(
+                    [(row["bytes"], row["write_open"]) for row in result["pipelined_records"]],
+                    [(1048576, True)],
+                    (label, result),
+                )
+                self.assertTrue(result["body_errors"], (label, result))
+
+    def test_parent_eof_with_truncated_pipeline_head_closes_cleanly(self):
+        request, fixture = repeated_search_case()
+        events = [json.loads(line[6:]) for line in fixture["body"].splitlines()
+                  if line.startswith(b"data: ")]
+        failed = {"type": "content_block_delta", "index": 1, "delta": {"type": None}}
+        body = _stream(events[:6] + [failed])["body"] + b": \xff\n\n" + _stream(events[6:])["body"]
+        reply = {**fixture, "body": body, "chunked": True}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651), ("0.439.2", ORACLE_04392), ("Modex", MODEX),
+        ):
+            with self.subTest(binary=label):
+                result = _observe_parent_shutdown(
+                    binary, request, reply, pipeline_body_bytes=0, pipeline_head_bytes=64,
+                )
+                self.assertTrue(result["held"], (label, result))
+                self.assertTrue(result["shutdown_sent"], (label, result))
+                self.assertFalse(result["parent_timed_out"], (label, result))
+                self.assertEqual(result["children_alive_after_2s"], [], (label, result))
+                self.assertEqual(
+                    [(row["wire_bytes"], row["write_open"])
+                     for row in result["pipelined_records"]],
+                    [(64, True)],
+                    (label, result),
+                )
+                self.assertTrue(result["body_errors"], (label, result))
+
+    def test_complete_pipeline_after_failed_open_stream_matches_both_releases(self):
+        request, fixture = repeated_search_case()
+        events = [
+            json.loads(line[6:])
+            for line in fixture["body"].splitlines()
+            if line.startswith(b"data: ")
+        ]
+        failed = {"type": "content_block_delta", "index": 1, "delta": {"type": None}}
+        failed_body = (
+            _stream(events[:6] + [failed])["body"]
+            + b": \xff\n\n"
+            + _stream(events[6:])["body"]
+        )
+        failed_reply = {**fixture, "body": failed_body, "chunked": True}
+
+        for close_mode in ("fin", "rst"):
+            observations = {}
+            for label, binary in (
+                ("0.165.1", ORACLE_01651),
+                ("0.439.2", ORACLE_04392),
+                ("Modex", MODEX),
+            ):
+                with self.subTest(close_mode=close_mode, binary=label):
+                    posts, responses = _observe_pipelined_disconnect(
+                        binary, request, failed_reply, fixture, close_mode,
+                        pad_bytes=128, failure_count=1,
+                    )
+                    self.assertEqual(len(responses), 1, label)
+                    capture = responses[0]
+                    self.assertEqual(capture["failure_count"], 1, (label, capture))
+                    self.assertTrue(
+                        all(row["got_failure"] and row["status"] == 200
+                            and row["trailing_502"]
+                            and row["first_connection"] == "close"
+                            for row in capture["failure_results"]),
+                        (label, capture["failure_results"]),
+                    )
+                    self.assertEqual(capture["status"], 200, (label, capture))
+                    self.assertIsNone(capture["followup_error"], (label, capture))
+                    self.assertEqual(len(posts), 2, (label, posts))
+                    paths = tuple(post["path"] for post in posts)
+                    self.assertEqual(paths, ("/anthropic/v1/messages",) * 2, label)
+                    provider_headers = [
+                        {name.lower(): value for name, value in post["headers"].items()}
+                        for post in posts
+                    ]
+                    provider_auth = all(
+                        headers.get("x-api-key") == "synthetic-provider-key"
+                        and "authorization" not in headers
+                        for headers in provider_headers
+                    )
+                    self.assertTrue(provider_auth, label)
+                    observations[label] = (
+                        tuple((row["got_failure"], row["status"], row["error"],
+                               row["trailing_502"], row["first_connection"])
+                              for row in capture["failure_results"]),
+                        capture["status"], capture["followup_error"], paths, provider_auth,
+                    )
+            self.assertEqual(observations["0.165.1"], observations["0.439.2"])
+            self.assertEqual(observations["Modex"], observations["0.439.2"])
 
     def test_pipelined_disconnect_releases_workers_after_failure_for_fin_and_rst(self):
         request, fixture = repeated_search_case()

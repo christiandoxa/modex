@@ -207,23 +207,6 @@ struct LoopbackHTTPConnection(Movable):
             return True
         raise Error("loopback HTTP peer check failed")
 
-    def discard_incoming_or_disconnected(mut self, mut buffer: List[UInt8]) raises -> Bool:
-        if self.fd < 0:
-            return True
-        if not buffer:
-            raise Error("loopback HTTP discard buffer is empty")
-        var result = recv(self.fd, buffer.unsafe_ptr(), UInt(len(buffer)), MSG_DONTWAIT)
-        if result == 0:
-            return True
-        if result > 0:
-            return False
-        var error = get_errno()
-        if error == ErrNo.EAGAIN or error == ErrNo.EINTR:
-            return False
-        if error == ErrNo.ECONNRESET:
-            return True
-        raise Error("loopback HTTP peer check failed")
-
     def expect_continue_was_sent(self) -> Bool:
         return self.expect_continue_sent
 
@@ -462,9 +445,9 @@ struct LoopbackHTTPConnection(Movable):
                 raise Error("loopback HTTP response stream already started")
             if status == 204 or status == 304:
                 raise Error("HTTP response status forbids a stream body")
+            # TinyHTTP marks streams close even when it has already queued a pipelined request.
             var response = _response_head(
-                status, headers, 0, True, False, False, "HTTP/1.1",
-                not self.keep_alive_enabled,
+                status, headers, 0, True, False, False, "HTTP/1.1", True,
             )
             _send_all(self.fd, response, _deadline(timeout_ms))
             self.streaming = True
@@ -503,6 +486,11 @@ struct LoopbackHTTPConnection(Movable):
         except:
             self.close()
             raise
+
+    def continue_after_incomplete_stream(mut self) raises:
+        if not self.streaming or self.done:
+            raise Error("loopback HTTP response stream is not active")
+        self._finish_response()
 
     def _receive(mut self, deadline: Float64, wire_limit: Int) raises:
         var buffer = List[UInt8](length=8192, fill=0)

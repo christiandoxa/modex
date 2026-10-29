@@ -14,19 +14,23 @@ The repeated-search fixture also places a missing `delta.type` at a closed resul
 
 `test_invalid_utf8_after_response_failed_records_release_open_body` adds a real-process framing probe: a closed-result delta first produces `response.failed`, then an invalid UTF-8 byte appears in an ignored SSE comment line before a valid `message_stop` tail. Both pinned releases and Modex emit the same three normalized events and leave the HTTP 200 chunked body open until the synthetic client times out after five seconds and closes its socket. Separate probes confirm that normal upstream EOF after `response.failed` closes the downstream body, while an upstream reset or a 100 ms upstream idle timeout after that event leaves it open until client disconnect. A request half-close control calls `shutdown(SHUT_WR)` after POST and before reading the response; both releases and Modex return the same `IncompleteRead` after `response.failed`.
 
-`test_parent_eof_cancels_failed_open_stream_with_pending_pipeline` holds the downstream request open after `response.failed`, sends 1 MiB of a pipelined request while keeping the client write side open, then sends SIGTERM to the real `super` process. Both pinned releases and the pooled Modex relay exit with their children gone within two seconds, and the synthetic client records `IncompleteRead`. The earlier serial Modex relay left its relay and synthetic Codex children alive after two seconds; the test cleans up surviving processes. The ordinary client-close probe runs through `super` and also exercises the launcher's relay cleanup. Other invalid UTF-8 framing positions and behavior for clients that retain their socket after a read timeout remain unverified.
+Parent-EOF coverage is split by pipeline completeness. `test_parent_eof_cancels_failed_open_stream_with_truncated_pipeline_body` sends a complete head and 1 KiB of a declared 1 MiB body, then sends SIGTERM while the first response body remains open. `test_parent_eof_with_truncated_pipeline_head_closes_cleanly` sends only a 64-byte incomplete head. Both pinned releases and Modex exit with their children gone within two seconds, and the synthetic client records a read error. `test_complete_pipeline_body_after_failed_open_stream_leaves_no_children` separately sends the full 1 MiB body; the client can finish naturally after the queued 502, so the check requires no timeout or surviving children without requiring SIGTERM. The earlier serial Modex relay left its relay and synthetic Codex children alive after two seconds; the test cleans up surviving processes. Other invalid UTF-8 framing positions and behavior for clients that retain their socket after a read timeout remain unverified.
 
 `test_pipelined_disconnect_releases_workers_after_failure_for_fin_and_rst` sends eight native Anthropic web-search requests through the production `super` launch path, each with a 32 KiB pipelined GET tail. After reading `response.failed`, each synthetic downstream sends either FIN or RST; the next request is sent only after that close, followed by a normal request to check that relay capacity recovered. Both pinned releases and the fixed integrated Modex binary return all eight failures and a 200 follow-up for both close modes. The `d558ac2` pre-fix Modex build reproduces the mismatch: only one failure arrives and the follow-up times out. Clients, waits, synthetic credentials, storage, and upstream traffic are bounded and local. Reproduce with `MODEX_BINARY=/path/to/modex python3 -m unittest test_anthropic_stream_optional_metadata_shared.AnthropicOptionalMetadataSharedTests.test_pipelined_disconnect_releases_workers_after_failure_for_fin_and_rst` from `tests/`; the test itself compares both pinned oracle binaries and the selected Modex binary.
 
-Raw-wire capture of the queued GET exposes another mismatch. In two synthetic
-eight-client FIN probes, both releases sent a raw `HTTP/1.1 502 Bad Gateway`
-response after the failed event without first terminating the chunked response;
-the tested Modex relay drained the queued GET and emitted no second response.
-The first response head also included `Connection: close` in both releases but
-not Modex in this probe. The maintained disconnect test checks that each
-release produces the trailing 502 in at least one of its eight requests; it does
-not require Modex to preserve the mismatch. Other pipelined requests, ordering,
-and headers need separate characterization before claiming a general rule.
+The complete-buffered pipeline case now matches both releases on the real
+production path. For FIN and RST, the first chunked SSE response includes
+`Connection: close` and stays unterminated; a complete queued GET then receives
+the raw `HTTP/1.1 502 Bad Gateway`, and a separate follow-up request succeeds.
+The checksum-verified historical 0.439.1 binary produced the same `Connection:
+close` and trailing 502 in a one-request control; this historical observation
+does not change the active baseline or parity denominator.
+An eight-client FIN probe with 32 KiB padded heads still has a timing gap: both
+releases returned the raw 502 on 8/8 connections, while Modex did so on 3/8 in
+one run with the 100 ms client read window. Modex captures at most 512 bytes per
+parked socket per listener pass, so a large queued head can remain unadmitted
+when the client closes. The count is timing-sensitive; large-head admission,
+general pipeline ordering, and saturation fairness remain unfinished.
 
 The suite compares `thinking_delta` in an in-order block, before any block start, and amid 256 overlapping thinking-block starts followed by a delta and stops. Both release binaries emit the same reasoning events and complete each stream; Modex matches their normalized responses. A separate control holds 128 web-search result indexes open together, sends thinking deltas against them, and closes them in reverse order; Modex matches both releases and suppresses those deltas. This exercises result-index lookup with overlapping blocks but does not set a runtime state limit. The suite also compares orphan stops with extra event fields and stops with missing or nonnumeric indexes against both releases. The 0.165.1 characterization suite covers duplicate, orphan, and mismatched tool-use stops. The frozen reader's `native_anthropic_stream_emits_live_reasoning_events` unit test covers the in-order form.
 

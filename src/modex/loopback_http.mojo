@@ -16,6 +16,9 @@ from std.sys._libc_errno import ErrNo, get_errno
 from std.time import perf_counter, sleep
 
 comptime HTTP_HEADER_LIMIT = 65536
+comptime HTTP_REQUEST_FIELD_LIMIT = 1024 * 1024
+# Leave room for a copied User-Agent plus generated provider headers.
+comptime HTTP_OUTBOUND_REQUEST_HEADER_LIMIT = HTTP_REQUEST_FIELD_LIMIT * 2 + 2048
 
 
 def _number(text: StringSlice) raises -> Int:
@@ -587,7 +590,7 @@ def _valid_request_field(name: String, value: String) raises:
         raise Error("caller-controlled HTTP framing header is forbidden")
 
 
-def _stream_request(path: String, headers: List[Tuple[String, String]], host: String, body_length: Int, request_method: String = "POST") raises -> List[UInt8]:
+def _stream_request(path: String, headers: List[Tuple[String, String]], host: String, body_length: Int, request_method: String = "POST", request_header_limit: Int = HTTP_HEADER_LIMIT, request_field_limit: Int = HTTP_HEADER_LIMIT) raises -> List[UInt8]:
     # Reuse GET's target validation without changing its established request bytes.
     _ = _request(path, "X", "", host)
     if not request_method:
@@ -595,22 +598,30 @@ def _stream_request(path: String, headers: List[Tuple[String, String]], host: St
     for byte in request_method.as_bytes():
         if not _http_token_byte(byte):
             raise Error("malformed HTTP request method")
-    var head = request_method + " " + path + " HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\nContent-Length: " + String(body_length) + "\r\n"
-    var head_bytes = head.byte_length()
-    if head_bytes > HTTP_HEADER_LIMIT - 2:
+    if request_header_limit < 2 or request_header_limit > HTTP_OUTBOUND_REQUEST_HEADER_LIMIT or request_field_limit < 0 or request_field_limit > HTTP_REQUEST_FIELD_LIMIT or request_field_limit > request_header_limit:
+        raise Error("invalid or unsupported HTTP request header limit")
+    var lines = List[String]()
+    lines.append(request_method + " " + path + " HTTP/1.1")
+    lines.append("Host: " + host)
+    lines.append("Connection: close")
+    lines.append("Content-Length: " + String(body_length))
+    var head_bytes = 0
+    for line in lines:
+        head_bytes += line.byte_length() + 2
+    if head_bytes > request_header_limit - 2:
         raise Error("HTTP request headers exceed limit")
     for entry in headers:
         var name_bytes = entry[0].byte_length()
         var value_bytes = entry[1].byte_length()
-        if name_bytes > HTTP_HEADER_LIMIT or value_bytes > HTTP_HEADER_LIMIT:
+        if name_bytes > HTTP_HEADER_LIMIT or value_bytes > request_field_limit:
             raise Error("HTTP request headers exceed limit")
         var field_bytes = name_bytes + value_bytes + 4
-        if field_bytes > HTTP_HEADER_LIMIT - 2 - head_bytes:
+        if field_bytes > request_header_limit - 2 - head_bytes:
             raise Error("HTTP request headers exceed limit")
         _valid_request_field(entry[0], entry[1])
-        head += entry[0] + ": " + entry[1] + "\r\n"
+        lines.append(entry[0] + ": " + entry[1])
         head_bytes += field_bytes
-    head += "\r\n"
+    var head = String("\r\n").join(lines) + "\r\n\r\n"
     var request = List[UInt8]()
     for b in head.as_bytes():
         request.append(b)
@@ -654,6 +665,8 @@ struct LoopbackHTTPStream(Movable):
         downstream_fd: Int32 = -1,
         allow_unbounded_body: Bool = False,
         request_method: String = "POST",
+        request_header_limit: Int = HTTP_HEADER_LIMIT,
+        request_field_limit: Int = HTTP_HEADER_LIMIT,
     ) raises:
         self.fd = -1
         self.downstream_fd = downstream_fd
@@ -705,7 +718,7 @@ struct LoopbackHTTPStream(Movable):
             port = _number(parts[1])
         if port == 0 or port > 65535:
             raise Error("invalid loopback HTTP port")
-        var request = _stream_request(path, headers, address, len(body), request_method)
+        var request = _stream_request(path, headers, address, len(body), request_method, request_header_limit, request_field_limit)
         _check_downstream_peer(self.downstream_fd)
         var started = perf_counter()
         self.request_deadline = started + Float64(request_timeout_ms) / 1000.0

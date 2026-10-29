@@ -69,18 +69,40 @@ terminal chunk. Modex suppresses those terminators for HEAD, so raw-wire parity
 for HEAD event-stream cases is not claimed. Normal POST SSE chunking and
 disconnect cancellation continue to pass.
 
-Large request heads remain a parity gap. A 32,768-byte `X-Pad` header reaches
-the upstream in both binaries. At request-head lengths before the terminating
-`\r\n\r\n` of 65,535, 65,536 and 65,537 bytes, 0.165.1 reaches the upstream and
-gets 200; Modex returns 502 without an upstream request. Its body is `upstream
-request failed` at 65,535 and 65,536 bytes, and `gateway request capture
-failed` at 65,537 bytes. These probes document selected boundaries; broader
-header framing remains unqualified.
+The frozen TinyHTTP reader accumulates request-head lines without a byte cap.
+The local relay now admits selected larger heads with a 1 MiB total capture
+limit; other `read_request` callers keep the 65,536-byte default. Both 0.165.1
+and 0.439.2 reach a synthetic upstream and return 200 for request heads of
+65,535, 65,536 and 65,537 bytes, and for a 128 KiB single field on both
+translated Responses and passthrough chat-completions routes. They also accept
+a 1 MiB head with 4,096 fields and a mixed-case `Connection` case with 8,192
+tokens plus 16,384 fields. Upstream probes compare the forwarded `X-Pad`
+values byte-for-byte, confirm nominated hop headers are removed, and exercise
+a 1 MiB translated-route `User-Agent` whose two outbound copies are both
+preserved.
 
-Validation for this slice: the production build passed; the 0.165.1 oracle
-matrix passed; all 20 shared loopback-server tests, 22 local-rewrite tests and
-26 provider transport tests passed. The provider native checks and production
-dependency audit passed. No real credentials or paid services were used.
+The 1 MiB cap is intentionally bounded: both releases accept a 1 MiB + 1-byte
+head and reach the upstream, while Modex returns 502 `gateway request capture
+failed` before dispatch. This remains a reproducible parity gap. The shared
+parser still accepts a 65,536-byte head and rejects 65,537 bytes by default;
+direct `LoopbackHTTPStream` callers retain their 65,536-byte aggregate and
+field defaults. The relay's request-target, header-name, and response-header
+limits are unchanged. These cases do not qualify other framing or security
+behavior.
+
+Validation for this slice: `make build` and focused native driver builds
+passed. Four large-header process tests passed against the pinned 0.165.1 and
+0.439.2 binaries, along with the shared-parser 65,536/65,537-byte boundary and
+the existing 70 KiB direct-stream rejection check. An earlier 111-test broad
+run had 109 passes and two 0.165.1 close-state assertion failures for
+`invalid_target_precedes_malformed_chunked_trailer` and
+`invalid_target_precedes_missing_chunk_terminator`. Each exact control was
+rerun three times; all six observations matched the assertions: both releases
+returned 400 without an upstream request, the oracle left the client socket
+open, and Modex closed it. Do not treat the broad run as a full-suite pass.
+The final production build and three focused native driver builds passed, as
+did the 71-file production import audit, Python syntax compilation and
+`git diff --check`. No real credentials or paid services were used.
 
 The relay remains serial; a separate two-request probe found Prodex accepts both
 upstream requests concurrently while Modex serializes them. WebSocket transport

@@ -422,9 +422,23 @@ large-header gaps remain. See
 The local relay now forwards tested HTTP methods on both supported routes,
 including extension methods. GET JSON and SSE responses and selected HEAD
 framing match 0.165.1; for HEAD 204/304 event streams, Modex suppresses the
-terminal chunk that the reference sends. Large request heads, concurrency,
+terminal chunk that the reference sends. Large request heads now match
+selected 65,535/65,536/65,537-byte boundaries, 128 KiB fields, and 1 MiB
+aggregate/token cases against 0.165.1 and 0.439.2. The relay is bounded at
+1 MiB, while both releases accept 1 MiB + 1; this mismatch remains open. Other
+callers retain 64 KiB request-head and direct-stream defaults. Concurrency,
 WebSocket transport and broader security behavior remain open. See
 `docs/evidence/baseline-0.165.1/local-relay-http.md`.
+
+The large-header validation run passed four focused 0.165.1/0.439.2 process
+tests, the shared-parser 64 KiB boundary and direct 70 KiB stream rejection.
+An earlier 111-test broad run had 109 passes and two existing 0.165.1
+close-state assertion failures for invalid-target malformed-trailer and
+missing-chunk-terminator requests. Three separate reruns of each control
+matched the existing assertions (oracle leaves the socket open; Modex closes
+it). Preserve the broad-run failures; this is not a full-suite PASS. Final
+`make build`, three focused native driver builds, the 71-file production
+import audit, Python syntax compilation and `git diff --check` passed.
 
 Production Super hook-trust initialization now identifies itself as 0.165.1,
 matching the verified Linux oracle through isolated synthetic Codex launches.

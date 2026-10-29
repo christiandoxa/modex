@@ -1,12 +1,12 @@
 """Native loopback DeepSeek POST and incremental Responses SSE exchange."""
 
-from std.collections import List, Span
+from std.collections import Dict, List, Span
 from std.time import perf_counter
 
 from .json import JSON_STRING, JsonDocument, serialize_json
 from .provider_chat_buffered import deepseek_buffered_assistant_messages, deepseek_buffered_response
 from .provider_anthropic_messages import anthropic_buffered_assistant_messages, anthropic_buffered_response, deepseek_anthropic_messages_body, validate_deepseek_anthropic_request
-from .loopback_http import LoopbackHTTPStream, _http_token_byte
+from .loopback_http import HTTP_HEADER_LIMIT, LoopbackHTTPStream, _http_token_byte
 from .provider_chat_reader import DeepSeekChatReader
 from .provider_sse_wire import ProviderSSEFramer
 from .provider_request import translate_deepseek_request
@@ -50,7 +50,7 @@ def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: Stri
     for byte in api_key.as_bytes():
         if byte < 33 or byte > 126:
             raise Error("--api-key must contain only visible ASCII")
-    var connection_tokens = List[String]()
+    var connection_tokens = Dict[String, Bool]()
     for name, value in headers:
         if name.byte_length() > 4096:
             raise Error("DeepSeek request header name exceeds limit")
@@ -63,7 +63,7 @@ def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: Stri
             for part in value.split(","):
                 var token = trim_text(String(part))
                 if _header_token(token):
-                    connection_tokens.append(token.lower())
+                    connection_tokens[token.lower()] = True
     var output: List[Tuple[String, String]] = [
         ("content-type", "application/json"),
         ("accept-encoding", "identity"),
@@ -83,7 +83,10 @@ def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: Stri
             break
     for name, value in headers:
         var normalized = _policy_name(name)
-        var skip = normalized in connection_tokens or normalized.startswith("sec-websocket-") or normalized.startswith("x-prodex-internal-")
+        var skip = False
+        if connection_tokens.get(normalized):
+            skip = True
+        skip = skip or normalized.startswith("sec-websocket-") or normalized.startswith("x-prodex-internal-")
         for local_name in ["connection", "content-length", "host", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade", "authorization", "chatgpt-account-id"]:
             skip = skip or normalized == local_name
         if anthropic_messages and normalized in ["x-api-key", "anthropic-version"]:
@@ -122,7 +125,7 @@ struct DeepSeekExchange(Movable):
 
     var native_messages: Bool
 
-    def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, downstream_fd: Int32 = -1, previous_response_found: Bool = False, native_messages: Bool = False, request_method: String = "POST") raises:
+    def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, downstream_fd: Int32 = -1, previous_response_found: Bool = False, native_messages: Bool = False, request_method: String = "POST", request_header_limit: Int = HTTP_HEADER_LIMIT, request_field_limit: Int = HTTP_HEADER_LIMIT) raises:
         if native_messages: validate_deepseek_anthropic_request(request)
         var prepared = JsonDocument(translate_deepseek_request(request, history, strict_tools, web_search_mode, previous_response_found))
         if max_body_bytes < 0 or max_body_bytes > 4 * 1024 * 1024:
@@ -144,7 +147,7 @@ struct DeepSeekExchange(Movable):
         var bytes = List[UInt8]()
         for byte in self.body.as_bytes():
             bytes.append(byte)
-        self.http = LoopbackHTTPStream(address, path, deepseek_request_headers(headers, api_key, anthropic_messages=native_messages), bytes, connect_timeout_ms, request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd, True, request_method)
+        self.http = LoopbackHTTPStream(address, path, deepseek_request_headers(headers, api_key, anthropic_messages=native_messages), bytes, connect_timeout_ms, request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd, True, request_method, request_header_limit, request_field_limit)
 
     def status(self) -> Int:
         return self.http.status

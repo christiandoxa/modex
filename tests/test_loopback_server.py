@@ -5,6 +5,7 @@ import socket
 import struct
 import subprocess
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
@@ -268,6 +269,42 @@ class LoopbackHTTPServerTests(unittest.TestCase):
                 self.assertEqual(status(response), expected_status)
                 if line_size == 8193:
                     self.assertIn("malformed HTTP request line", stdout)
+
+    def test_shared_request_head_limit_stays_at_65536_bytes(self):
+        template = b"GET / HTTP/1.1\r\nHost: local\r\nX-Pad: \r\nContent-Length: 0\r\n\r\n"
+        prefix, suffix = template.split(b"X-Pad: ", 1)[0], template.split(b"X-Pad: ", 1)[1].split(b"\r\n", 1)[1]
+        for head_size, expected_status in ((65536, 200), (65537, 400)):
+            with self.subTest(head_size=head_size):
+                value_size = head_size - template.index(b"\r\n\r\n")
+                wire = prefix + b"X-Pad: " + b"x" * value_size + b"\r\n" + suffix
+                self.assertEqual(wire.index(b"\r\n\r\n"), head_size)
+                process, client = start("echo")
+                stdout = []
+                output_reader = threading.Thread(
+                    target=lambda: stdout.append(process.stdout.read()), daemon=True
+                )
+                output_reader.start()
+                client.sendall(wire)
+                response = bytearray()
+                while True:
+                    try:
+                        part = client.recv(4096)
+                    except ConnectionResetError:
+                        break
+                    if not part:
+                        break
+                    response.extend(part)
+                client.close()
+                output_reader.join(timeout=4)
+                self.assertFalse(output_reader.is_alive())
+                stderr = process.stderr.read()
+                code = process.wait(timeout=4)
+                process.stdout.close()
+                process.stderr.close()
+                self.assertEqual(code, 0, f"{stderr}\n{stdout[0]}")
+                stdout = stdout[0]
+                self.assertEqual(status(response), expected_status)
+                self.assertIn("REQUEST " if expected_status == 200 else "HTTP request headers exceed limit", stdout)
 
     def test_oversized_and_truncated_bodies_are_rejected(self):
         process, client = start("echo")

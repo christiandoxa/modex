@@ -68,6 +68,38 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
             upstream.server_close()
             worker.join(timeout=2)
 
+    def test_large_request_head_boundaries_match_released_oracle(self):
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for head_bytes in (65535, 65536, 65537):
+                case = transport.large_request_head_case(head_bytes)
+                with self.subTest(head_bytes=head_bytes):
+                    oracle, oracle_records = transport.run_probe(ORACLE, case, upstream)
+                    modex, modex_records = transport.run_probe(transport.MODEX, case, upstream)
+                    for label, response, records in (
+                        ("oracle", oracle, oracle_records),
+                        ("modex", modex, modex_records),
+                    ):
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(
+                            (response["status"], response["body"]),
+                            (200, transport.RESPONSES_RESPONSE),
+                            label,
+                        )
+                        self.assertEqual(len(records), 1, label)
+                        expected_pad = case["request"].split(b"X-Pad: ", 1)[1].split(b"\r\n", 1)[0]
+                        self.assertEqual(len(records[0]["headers"]["x-pad"]), len(expected_pad), label)
+                    self.assertEqual(modex_records[0]["body"], oracle_records[0]["body"])
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_large_request_heads_use_bounded_linear_capture(self):
+        transport.assert_large_request_head_cases(self, ORACLE, transport.MODEX)
+
     def test_http_1_0_responses_and_stream_controls_match_released_oracle(self):
         upstream = transport.Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)

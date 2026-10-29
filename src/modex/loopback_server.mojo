@@ -15,6 +15,8 @@ from std.sys._libc_errno import ErrNo, get_errno
 from std.time import perf_counter, sleep
 
 comptime HTTP_HEADER_LIMIT = 65536
+# shortcut: cap relay request heads at 1 MiB; raise only with broader oracle evidence.
+comptime HTTP_MAX_REQUEST_HEADER_LIMIT = 1024 * 1024
 comptime HTTP_DEFAULT_BODY_LIMIT = 64 * 1024 * 1024
 comptime HTTP_MAX_BODY_LIMIT = 64 * 1024 * 1024
 comptime HTTP_MAX_RESPONSE_BODY_BYTES = 16777216
@@ -204,24 +206,26 @@ struct LoopbackHTTPConnection(Movable):
             return False
         raise Error("loopback HTTP peer check failed")
 
-    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False, defer_expectation_errors: Bool = False, preflight_body_limit_before_continue: Bool = False, use_request_version_for_continue: Bool = False, use_request_version_for_response: Bool = False) raises -> LoopbackHTTPRequest:
+    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False, defer_expectation_errors: Bool = False, preflight_body_limit_before_continue: Bool = False, use_request_version_for_continue: Bool = False, use_request_version_for_response: Bool = False, request_header_limit: Int = HTTP_HEADER_LIMIT) raises -> LoopbackHTTPRequest:
         if self.fd < 0 or self.done or self.request_read:
             raise Error("loopback HTTP connection is closed")
         self.keep_alive = False
         self.waiting_for_request = False
         if max_body_bytes < 0 or max_body_bytes > HTTP_MAX_BODY_LIMIT:
             raise Error("invalid or unsupported HTTP request body limit")
+        if request_header_limit < 0 or request_header_limit > HTTP_MAX_REQUEST_HEADER_LIMIT:
+            raise Error("invalid or unsupported HTTP request header limit")
         var deadline = _deadline(timeout_ms)
-        var wire_limit = HTTP_HEADER_LIMIT * 2 + max_body_bytes * 8
+        var wire_limit = request_header_limit * 2 + max_body_bytes * 8
         var header_scan = 0
         var header_end = _header_end(self.input, header_scan)
         while header_end < 0:
-            if len(self.input) > HTTP_HEADER_LIMIT:
+            if len(self.input) > request_header_limit:
                 raise Error("HTTP request headers exceed limit")
             header_scan = max(0, len(self.input) - 3)
             self._receive(deadline, wire_limit)
             header_end = _header_end(self.input, header_scan)
-        if header_end > HTTP_HEADER_LIMIT:
+        if header_end > request_header_limit:
             raise Error("HTTP request headers exceed limit")
         # The relay caps target bytes, so its request line also includes method and version bytes.
         var max_request_line_bytes = HTTP_HEADER_LIMIT if validate_request_target else 8192

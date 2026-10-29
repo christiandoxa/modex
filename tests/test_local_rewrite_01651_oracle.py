@@ -7,6 +7,8 @@ import json
 import os
 from pathlib import Path
 import re
+import socket
+import socketserver
 import subprocess
 import sys
 import tempfile
@@ -134,6 +136,75 @@ class UpstreamHandler(BaseHTTPRequestHandler):
         pass
 
 
+class LargeHeaderUpstreamHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        self.request.settimeout(10)
+        wire = bytearray()
+        while b"\r\n\r\n" not in wire:
+            chunk = self.request.recv(65536)
+            if not chunk:
+                return
+            wire.extend(chunk)
+            if len(wire) > 3 * 1024 * 1024:
+                raise AssertionError("synthetic upstream request head exceeded its bound")
+        head, _, body = bytes(wire).partition(b"\r\n\r\n")
+        lines = head.split(b"\r\n")
+        method, path, _ = lines[0].decode("ascii").split(" ", 2)
+        headers = {}
+        pad_headers = {}
+        user_agent_values = []
+        for line in lines[1:]:
+            name, value = line.split(b":", 1)
+            lowered_name = name.decode("ascii").lower()
+            headers[lowered_name] = value.strip().decode("ascii")
+            if lowered_name.startswith("x-pad"):
+                pad_headers[lowered_name] = value.lstrip(b" \t")
+            if lowered_name == "user-agent":
+                user_agent_values.append(value.lstrip(b" \t"))
+        body_length = int(headers.get("content-length", "0"))
+        while len(body) < body_length:
+            chunk = self.request.recv(min(65536, body_length - len(body)))
+            if not chunk:
+                return
+            body += chunk
+        record = {
+            "method": method,
+            "path": path,
+            "headers": headers,
+            "pad_headers": pad_headers,
+            "user_agent_values": user_agent_values,
+            "body": body[:body_length],
+            "head_bytes": len(head),
+        }
+        with self.server.records_lock:
+            self.server.records.append(record)
+        response = (
+            b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+            + b"Content-Length: " + str(len(PROVIDER_RESPONSE)).encode("ascii")
+            + b"\r\nConnection: close\r\n\r\n" + PROVIDER_RESPONSE
+        )
+        self.request.sendall(response)
+
+
+class LargeHeaderUpstream(socketserver.ThreadingTCPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+    def __init__(self):
+        self.records = []
+        self.records_lock = threading.Lock()
+        super().__init__(("127.0.0.1", 0), LargeHeaderUpstreamHandler)
+        self.server_port = self.server_address[1]
+
+    def reset_records(self):
+        with self.records_lock:
+            self.records.clear()
+
+    def snapshot_records(self):
+        with self.records_lock:
+            return list(self.records)
+
+
 def make_codex(path: Path):
     source = r'''import base64, http.client, json, os, re, socket, subprocess, sys, threading, time
 from urllib.parse import urlsplit
@@ -199,7 +270,13 @@ elif request_parts:
     writer_thread.start()
     first_request_part_finished.wait(5)
 else:
-    connection.sendall(base64.b64decode(os.environ["PROBE_REQUEST_BASE64"]))
+    request_file = os.environ.get("PROBE_REQUEST_FILE")
+    if request_file:
+        with open(request_file, "rb") as source:
+            request = source.read()
+    else:
+        request = base64.b64decode(os.environ["PROBE_REQUEST_BASE64"])
+    connection.sendall(request)
     request_parts_sent[0] = 1
     if half_close:
         connection.shutdown(socket.SHUT_WR)
@@ -605,6 +682,104 @@ def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses", method
         + b"".join(name.encode() + b": " + value.encode() + b"\r\n" for name, value in all_headers)
         + b"\r\n" + body
     )
+
+
+def large_request_head_case(head_bytes, target=b"/v1/responses"):
+    empty = request_bytes(headers=(("X-Pad", ""),), target=target)
+    value_bytes = head_bytes - empty.index(b"\r\n\r\n")
+    request = request_bytes(headers=(("X-Pad", "x" * value_bytes),), target=target)
+    if request.index(b"\r\n\r\n") != head_bytes:
+        raise AssertionError(f"request head did not reach {head_bytes} bytes")
+    return {
+        "name": f"large_request_head_{head_bytes}",
+        "request": request,
+        "expected_status": 200,
+        "expected_body": PROVIDER_RESPONSE if target == b"/v1/chat/completions" else RESPONSES_RESPONSE,
+        "compare_upstream_request": True,
+        "upstream": True,
+    }
+
+
+def large_user_agent_case(head_bytes=1024 * 1024):
+    empty = request_bytes(headers=(("User-Agent", ""),))
+    value_bytes = head_bytes - empty.index(b"\r\n\r\n")
+    request = request_bytes(headers=(("User-Agent", "u" * value_bytes),))
+    if request.index(b"\r\n\r\n") != head_bytes:
+        raise AssertionError(f"request head did not reach {head_bytes} bytes")
+    return {
+        "name": f"large_user_agent_{head_bytes}",
+        "request": request,
+        "expected_status": 200,
+        "expected_body": RESPONSES_RESPONSE,
+        "upstream": True,
+        "expected_user_agent_count": 2,
+    }
+
+
+def many_small_header_case(head_bytes, count=4096, target=b"/v1/responses"):
+    base = request_bytes(target=target)
+    names = [f"X-Pad-{index:04d}" for index in range(count)]
+    remaining = head_bytes - base.index(b"\r\n\r\n") - sum(len(name) + 4 for name in names)
+    if remaining < 0:
+        raise AssertionError(f"{count} headers do not fit in a {head_bytes}-byte request head")
+    value_bytes, extra = divmod(remaining, count)
+    headers = [
+        (name, "x" * (value_bytes + (index < extra)))
+        for index, name in enumerate(names)
+    ]
+    request = request_bytes(headers=headers, target=target)
+    if request.index(b"\r\n\r\n") != head_bytes:
+        raise AssertionError(f"request head did not reach {head_bytes} bytes")
+    return {
+        "name": f"many_small_request_headers_{head_bytes}",
+        "request": request,
+        "expected_status": 200,
+        "expected_body": PROVIDER_RESPONSE if target == b"/v1/chat/completions" else RESPONSES_RESPONSE,
+        "compare_upstream_request": True,
+        "upstream": True,
+        "expected_header_count": count,
+    }
+
+
+def many_connection_token_headers_case(head_bytes=1024 * 1024, count=8192):
+    connection_value = ", ".join(f"x-hide-{index:04d}" for index in range(count))
+    hidden_names = [f"X-HiDe-{index:04d}" for index in range(count)]
+    pad_names = [f"X-Pad-{index:04d}" for index in range(count)]
+    names = hidden_names + pad_names
+    base = request_bytes(headers=(("Connection", connection_value),), target=b"/v1/chat/completions")
+    remaining = head_bytes - base.index(b"\r\n\r\n") - sum(len(name) + 4 for name in names)
+    if remaining < 0:
+        raise AssertionError(f"{count} connection tokens and fields do not fit in a {head_bytes}-byte request head")
+    value_bytes, extra = divmod(remaining, len(names))
+    fields = [
+        (name, ("y" if index < count else "x") * (value_bytes + (index < extra)))
+        for index, name in enumerate(names)
+    ]
+    request = request_bytes(
+        headers=(("Connection", connection_value), *fields),
+        target=b"/v1/chat/completions",
+    )
+    if request.index(b"\r\n\r\n") != head_bytes:
+        raise AssertionError(f"request head did not reach {head_bytes} bytes")
+    return {
+        "name": f"many_connection_tokens_and_headers_{head_bytes}",
+        "request": request,
+        "expected_status": 200,
+        "expected_body": PROVIDER_RESPONSE,
+        "upstream": True,
+        "expected_header_count": count,
+        "expected_hidden_count": count,
+    }
+
+
+def expected_pad_headers(request):
+    head = request.split(b"\r\n\r\n", 1)[0]
+    result = {}
+    for line in head.split(b"\r\n")[1:]:
+        name, separator, value = line.partition(b":")
+        if separator and name.lower().startswith(b"x-pad"):
+            result[name.decode("ascii").lower()] = value.lstrip(b" \t")
+    return result
 
 
 def upgrade_eof_cases():
@@ -1570,6 +1745,10 @@ def run_probe(binary: Path, case, upstream: Upstream):
         codex = root / "codex"
         make_codex(codex)
         result_path = root / "raw-response.json"
+        request_file = None
+        if len(case["request"]) > 64 * 1024:
+            request_file = root / "raw-request.bin"
+            request_file.write_bytes(case["request"])
         environment = {
             "HOME": str(root / "home"),
             "PRODEX_HOME": str(root / "prodex"),
@@ -1584,7 +1763,8 @@ def run_probe(binary: Path, case, upstream: Upstream):
             "LANG": "C.UTF-8",
             "LC_ALL": "C.UTF-8",
             "PRODEX_CODEX_BIN": str(codex),
-            "PROBE_REQUEST_BASE64": base64.b64encode(case["request"]).decode("ascii"),
+            "PROBE_REQUEST_BASE64": "" if request_file else base64.b64encode(case["request"]).decode("ascii"),
+            "PROBE_REQUEST_FILE": str(request_file) if request_file else "",
             "PROBE_REQUEST_PARTS_BASE64": json.dumps(
                 [base64.b64encode(part).decode("ascii") for part in case.get("request_parts", [])],
                 separators=(",", ":"),
@@ -1702,6 +1882,76 @@ def normalize_response_body(case, body):
     return body
 
 
+def assert_large_request_head_cases(test, oracle, modex):
+    upstream = LargeHeaderUpstream()
+    worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+    worker.start()
+    try:
+        cases = (
+            (large_request_head_case(131072), 200, 200),
+            (large_request_head_case(131072, target=b"/v1/chat/completions"), 200, 200),
+            (large_user_agent_case(), 200, 200),
+            (many_small_header_case(1024 * 1024), 200, 200),
+            (many_connection_token_headers_case(), 200, 200),
+            (many_small_header_case(1024 * 1024 + 1), 200, 502),
+        )
+        for case, oracle_status, modex_status in cases:
+            with test.subTest(case=case["name"]):
+                oracle_response, oracle_records = run_probe(oracle, case, upstream)
+                modex_response, modex_records = run_probe(modex, case, upstream)
+                for label, response, records, status in (
+                    ("oracle", oracle_response, oracle_records, oracle_status),
+                    ("modex", modex_response, modex_records, modex_status),
+                ):
+                    test.assertEqual(response["process_exit"], 0, response["stderr"])
+                    test.assertEqual(response["status"], status, label)
+                    if status == 200:
+                        test.assertEqual(response["body"], case["expected_body"], label)
+                        test.assertEqual(len(records), 1, label)
+                        test.assertEqual(records[0]["pad_headers"], expected_pad_headers(case["request"]), label)
+                        if "expected_user_agent_count" in case:
+                            expected_user_agent = next(
+                                line.partition(b":")[2].strip()
+                                for line in case["request"].split(b"\r\n")
+                                if line.lower().startswith(b"user-agent:")
+                            )
+                            test.assertEqual(
+                                records[0]["user_agent_values"],
+                                [expected_user_agent] * case["expected_user_agent_count"],
+                                label,
+                            )
+                        if case["name"].startswith("large_request_head_"):
+                            expected_pad = case["request"].split(b"X-Pad: ", 1)[1].split(b"\r\n", 1)[0]
+                            test.assertEqual(len(records[0]["headers"]["x-pad"]), len(expected_pad), label)
+                        if "expected_header_count" in case:
+                            test.assertEqual(
+                                sum(name.startswith("x-pad-") for name in records[0]["headers"]),
+                                case["expected_header_count"],
+                                label,
+                            )
+                        if "expected_hidden_count" in case:
+                            test.assertEqual(
+                                sum(name.startswith("x-hide-") for name in records[0]["headers"]),
+                                0,
+                                label,
+                            )
+                            input_connection = next(
+                                line.partition(b":")[2].strip().decode("ascii")
+                                for line in case["request"].split(b"\r\n")
+                                if line.lower().startswith(b"connection:")
+                            )
+                            test.assertNotEqual(records[0]["headers"].get("connection"), input_connection, label)
+                    else:
+                        test.assertEqual(response["body"], b"gateway request capture failed", label)
+                        test.assertEqual(records, [], label)
+                if oracle_status == modex_status:
+                    test.assertEqual(modex_records[0]["body"], oracle_records[0]["body"])
+    finally:
+        upstream.shutdown()
+        upstream.server_close()
+        worker.join(timeout=2)
+
+
 class LocalRewrite01651OracleTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -1798,6 +2048,34 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             upstream.shutdown()
             upstream.server_close()
             worker.join(timeout=2)
+
+    def test_large_request_head_boundaries_match_pinned_oracle(self):
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for head_bytes in (65535, 65536, 65537):
+                case = large_request_head_case(head_bytes)
+                with self.subTest(head_bytes=head_bytes):
+                    oracle, oracle_records = run_probe(ORACLE, case, upstream)
+                    modex, modex_records = run_probe(MODEX, case, upstream)
+                    for label, response, records in (
+                        ("oracle", oracle, oracle_records),
+                        ("modex", modex, modex_records),
+                    ):
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual((response["status"], response["body"]), (200, RESPONSES_RESPONSE), label)
+                        self.assertEqual(len(records), 1, label)
+                        expected_pad = case["request"].split(b"X-Pad: ", 1)[1].split(b"\r\n", 1)[0]
+                        self.assertEqual(len(records[0]["headers"]["x-pad"]), len(expected_pad), label)
+                    self.assertEqual(modex_records[0]["body"], oracle_records[0]["body"])
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_large_request_heads_use_bounded_linear_capture(self):
+        assert_large_request_head_cases(self, ORACLE, MODEX)
 
     def test_duplicate_expect_and_framing_rejections_remain_fail_closed(self):
         request_with_expect = expectation_request_case(

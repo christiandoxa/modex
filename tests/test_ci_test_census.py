@@ -58,7 +58,12 @@ class NativeTestCensusTests(unittest.TestCase):
             ["test_super_launch_01651.py"], require_each_pattern=True
         )
 
-        self.assertEqual(len(tests), 1)
+        self.assertTrue({
+            "test_probe_failure_and_environment_match_01651",
+            "test_minimum_codex_version_matches_01651",
+            "test_nonzero_version_probe_matches_01651",
+            "test_oversized_probe_capture_matches_01651",
+        }.issubset({test._testMethodName for test in tests}))
         self.assertTrue(
             all(test.__class__.__module__ == "test_super_launch_01651" for test in tests)
         )

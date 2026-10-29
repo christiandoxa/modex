@@ -2922,6 +2922,7 @@
         "tests/test_deepseek_continuation.py",
         "tests/test_continuation_binding_04392.py",
         "tests/test_deepseek_web_search_mode_04392.py",
+        "tests/test_deepseek_web_search_mode_01651_04392.py",
         "tests/test_gateway_cli.mojo",
         "tests/capture_stream_timeout_mismatch.py",
         "tests/test_loopback_http_stream.py",

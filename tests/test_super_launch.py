@@ -623,7 +623,7 @@ class SuperLaunchTests(unittest.TestCase):
         self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat",
         super_arguments=(), environment_overrides=None, base_path="/v1", sub_agent=False,
         temporary_directory=None, stderr_tty=False, codex_mode="explicit", codex_binary=None,
-        codex_arguments=("exec", "--", "synthetic prompt"),
+        codex_arguments=("exec", "--", "synthetic prompt"), shared_config=None, shared_setup=None,
     ):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-", dir=temporary_directory) as directory:
             root = Path(directory)
@@ -676,6 +676,11 @@ class SuperLaunchTests(unittest.TestCase):
             native_capture = root / "native-capture.jsonl"
             if existing:
                 (root / "shared/config.toml").write_text('model="preserve-me"\n')
+            if shared_config is not None:
+                (root / "shared/config.toml").write_text(shared_config)
+                (root / "shared/config.toml").chmod(0o600)
+            if shared_setup is not None:
+                shared_setup(root)
             observed = []
 
             class Upstream(BaseHTTPRequestHandler):

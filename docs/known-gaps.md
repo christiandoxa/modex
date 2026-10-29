@@ -168,7 +168,8 @@ not full release qualification. `tests/test_provider_tools_04392_characterizatio
 checks the 0.439.2 result against the pinned release and synthetic launch
 controls.
 The separate web-search mode environment setting now controls selected
-production routes; TOML mode precedence remains unimplemented. See
+production routes. A safely checked mode-only shared TOML config takes
+precedence; other config and existing-home reconciliation remain guarded. See
 `docs/evidence/deepseek-web-search-mode-04392.md`.
 
 DeepSeek requests with a missing, null, non-string or blank model match the

@@ -1,6 +1,6 @@
 """Internal loopback local-rewrite relay using native provider exchanges."""
 
-from std.collections import Array, List, Span
+from std.collections import Array, List, Optional, Span
 from std.io import RawFileDescriptor
 from std.memory import OwnedPointer
 from std.net._sys.unix import AF_UNIX, F_GETFL, F_SETFL, O_NONBLOCK, SHUT_RDWR, SOCK_STREAM, shutdown, socketpair
@@ -206,10 +206,10 @@ def _url_host_hex_value(byte: Int) -> Int:
     return -1
 
 
-def _web_search_mode() raises -> String:
-    var name = String("PRODEX_DEEPSEEK_WEB_SEARCH_MODE")
-    var value = getenv(name, "\x00")
-    if value == "\x00": return "auto"
+def _web_search_mode(configured: Optional[String] = None) raises -> String:
+    var name = String("deepseek.web_search_mode" if configured else "PRODEX_DEEPSEEK_WEB_SEARCH_MODE")
+    var value = configured.value() if configured else getenv(name, "\x00")
+    if not configured and value == "\x00": return "auto"
     if not value: raise Error(name + " cannot be empty")
     for character in value.codepoints():
         if is_whitespace(Int(character)):
@@ -221,14 +221,14 @@ def _web_search_mode() raises -> String:
     raise Error(name + " must be auto, off, openai_chat, or anthropic")
 
 
-def deepseek_runtime_route() raises -> Tuple[Bool, String, String, String]:
+def deepseek_runtime_route(configured_mode: Optional[String] = None) raises -> Tuple[Bool, String, String, String]:
     var strict_value = getenv("PRODEX_DEEPSEEK_STRICT_TOOLS", "\x00")
     var strict_tools = strict_value != "\x00" and _strict_tools_value("PRODEX_DEEPSEEK_STRICT_TOOLS", strict_value)
     if not strict_tools:
         var beta_value = getenv("PRODEX_DEEPSEEK_BETA_BASE_URL", "\x00")
         if beta_value != "\x00":
             _validate_deepseek_beta_url(beta_value)
-        return False, String(), String(), _web_search_mode()
+        return False, String(), String(), _web_search_mode(configured_mode)
     var beta_value = getenv("PRODEX_DEEPSEEK_BETA_BASE_URL", "\x00")
     if beta_value == "\x00":
         raise Error("strict tools require PRODEX_DEEPSEEK_BETA_BASE_URL to be a numeric loopback HTTP URL")
@@ -237,7 +237,7 @@ def deepseek_runtime_route() raises -> Tuple[Bool, String, String, String]:
         route = local_rewrite_upstream(beta_value)
     except:
         raise Error("PRODEX_DEEPSEEK_BETA_BASE_URL must be a credential-free numeric loopback HTTP URL")
-    return True, route[0], route[1], _web_search_mode()
+    return True, route[0], route[1], _web_search_mode(configured_mode)
 
 
 def _bytes(text: String) -> List[UInt8]:

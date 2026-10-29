@@ -27,6 +27,38 @@ the two rebuilt provider native tests, and all 19 methods in
 `test_local_rewrite.py` passed. The production dependency audit passed for
 all 71 listed Mojo sources.
 
-TOML configuration precedence, non-loopback transport, broader request shapes,
-and complete error and resource equivalence remain unverified or unsupported.
+## Mode-only TOML configuration (2026-10-29)
+
+Both the 0.165.1 source at `10ae15b5d1806302b60f051e4e6fec788044f4c2`
+and the frozen 0.439.2 source resolve `deepseek.web_search_mode` from the
+selected Codex home's `config.toml` before consulting the environment. Real
+Super process controls against both checksum-pinned binaries verify `off`,
+`openai_chat`, `anthropic`, and `auto` routing even when the environment
+requests a different or invalid mode. Invalid TOML values fail before the
+synthetic Codex child or upstream POST.
+
+Modex now admits a private shared home containing only a configuration whose
+only setting is `deepseek.web_search_mode`. It checks the directory and file,
+copies the config into the isolated child home, preserves the original file,
+and passes the validated effective mode to the local relay. Tests reject
+group-writable files, symlinks, and exposed hard links before launching the
+child. Other existing home data and config keys remain guarded until their
+lifecycle and configuration semantics are implemented. Malformed TOML and
+unsafe-file diagnostics remain potentially different from the releases.
+
+The production build, 10 mode tests, 40 neighboring local-rewrite and Super
+tests, native Super parser check, 71-file dependency audit, and 50-native/
+137-Python test census passed. After adding the final size and private-mode
+checks, the production build and three focused cross-release/safety methods
+passed again.
+
+Run the active and cross-release comparisons with:
+
+```sh
+python3 scripts/ci/run-unittest.py test_deepseek_web_search_mode_04392.py test_deepseek_web_search_mode_01651_04392.py
+```
+
+The process comparisons use synthetic credentials and loopback-only peers;
+they do not cover non-loopback transport, broader request shapes, full TOML
+configuration, or complete error and resource equivalence.
 No provider contract, platform obligation or release qualification is promoted.

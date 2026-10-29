@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import unittest
 from unittest.mock import patch
 
@@ -26,12 +27,91 @@ def observe(binary, mode, request, scenario, extra_environment=None):
 
 
 class DeepSeekWebSearchModeTests(unittest.TestCase):
+    binaries = (ORACLE, MODEX)
+
     @classmethod
     def setUpClass(cls):
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("The Prodex oracle does not match pinned release 0.439.2")
         if not MODEX.is_file():
             raise AssertionError("Build the Modex binary first")
+    def test_toml_mode_overrides_environment(self):
+        request = {"model": "deepseek-chat", "input": "synthetic query", "stream": False,
+                   "tools": [{"type": "web_search_preview"}]}
+        for value, environment, scenario, status, path in (
+            ("off", "anthropic", "buffered", 502, None),
+            ("openai_chat", "anthropic", "buffered", 200, "/v1/chat/completions"),
+            ("anthropic", "invalid", "anthropic-buffered", 200, "/anthropic/v1/messages"),
+            ("auto", "off", "anthropic-buffered", 200, "/anthropic/v1/messages"),
+        ):
+            config = f'[deepseek]\nweb_search_mode = "{value}"\n'
+            observations = []
+            for binary in self.binaries:
+                with self.subTest(value=value, binary=str(binary)):
+                    with patch.object(test_super_launch, "CODEX", _codex_with_request(request)):
+                        result, records, upstream, state = test_super_launch.SuperLaunchTests().run_launch(
+                            binary=binary, scenario=scenario, shared_config=config,
+                            environment_overrides={"PRODEX_DEEPSEEK_WEB_SEARCH_MODE": environment,
+                                                   "PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE": "off"},
+                        )
+                    response = next((item for item in records if item["kind"] == "response"), None)
+                    self.assertEqual(result.returncode, 0 if status == 200 else 1, result.stderr)
+                    self.assertEqual(response["status"] if response else None, status)
+                    self.assertEqual([item["path"] for item in upstream], [path] if path else [])
+                    self.assertEqual(state["config"], config)
+                    self.assertEqual(state["leftovers"], [])
+                    observations.append((bytes.fromhex(response["body"]),
+                                         json.loads(bytes.fromhex(upstream[0]["body"])) if upstream else None))
+            if path:
+                for observation in observations[1:]:
+                    self.assertEqual(observations[0][1], observation[1])
+            else:
+                for observation in observations[1:]:
+                    self.assertEqual(observations[0][0], observation[0])
+
+    def test_invalid_toml_mode_fails_before_child_or_upstream(self):
+        for value, diagnostic in (("1", "must be a string"), ('""', "cannot be empty"),
+                                  ('" off "', "must not contain whitespace"),
+                                  ('"\\u0000"', "must be auto, off, openai_chat, or anthropic"),
+                                  ('"unknown"', "must be auto, off, openai_chat, or anthropic")):
+            config = f"[deepseek]\nweb_search_mode = {value}\n"
+            for binary in self.binaries:
+                with self.subTest(value=value, binary=str(binary)):
+                    result, records, upstream, state = test_super_launch.SuperLaunchTests().run_launch(
+                        binary=binary, shared_config=config,
+                        environment_overrides={"PRODEX_DEEPSEEK_WEB_SEARCH_MODE": "off"},
+                    )
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn(("deepseek.web_search_mode " + diagnostic).encode(), result.stderr)
+                    self.assertEqual((records, upstream, state["leftovers"], state["config"]), ([], [], [], config))
+
+    def test_unsafe_toml_file_is_rejected_without_launch(self):
+        config = '[deepseek]\nweb_search_mode = "off"\n'
+        def writable(root):
+            (root / "shared/config.toml").chmod(0o666)
+        def symlink(root):
+            source = root / "home/config.toml"
+            source.write_text(config)
+            (root / "shared/config.toml").unlink()
+            (root / "shared/config.toml").symlink_to(source)
+        def hardlink(root):
+            (root / "shared/config.toml").chmod(0o644)
+            os.link(root / "shared/config.toml", root / "home/config.toml")
+        for setup in (writable, symlink, hardlink):
+            with self.subTest(setup=setup.__name__):
+                result, records, upstream, state = test_super_launch.SuperLaunchTests().run_launch(
+                    binary=MODEX, shared_config=config, shared_setup=setup,
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual((records, upstream, state["leftovers"], state["config"]), ([], [], [], config))
+
+        oversized = config + "#" + "x" * 1048576 + "\n"
+        result, records, upstream, state = test_super_launch.SuperLaunchTests().run_launch(
+            binary=MODEX, shared_config=oversized,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b"Super Codex config exceeds the supported size", result.stderr)
+        self.assertEqual((records, upstream, state["leftovers"], state["config"]), ([], [], [], oversized))
 
     def assert_mode_matches(self, mode, request, scenario, status, path):
         reference = observe(ORACLE, mode, request, scenario)

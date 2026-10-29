@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+DeepSeek Super now accepts a private shared config containing only
+`deepseek.web_search_mode`, preserving it in the isolated child home and
+giving it precedence over the environment. Real-process controls compare
+both pinned releases and Modex for four modes and invalid values; unsafe
+permissions, symlinks and exposed hard links remain rejected before launch.
+Other config keys and existing home data remain guarded, and broader config,
+profile lifecycle and transport parity remain unfinished. Evidence:
+`docs/evidence/deepseek-web-search-mode-04392.md`.
+
 Gateway CLI parsing now treats a literal `--` as the option terminator and
 reports the first following token as unexpected, matching checksum-pinned
 0.165.1 and 0.439.2 processes. The production build, native Gateway argument

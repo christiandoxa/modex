@@ -60,15 +60,19 @@ responses in both binaries. `/v1/chat/completions` returns 200 with
 Content-Length 0. `/v1/responses` receives a successful bodyless upstream HEAD
 but returns the oracle's 502 translation error with Content-Length 40; Modex
 now suppresses that error body on the wire. Direct shared-server controls also
-check buffered HEAD length preservation, streamed HEAD without chunk data or a
-terminator, and HEAD 204/304 with chunked headers but no terminator. Independent
-raw oracle probes, now reproducible in the oracle matrix, found that HEAD 204
-and 304 with `text/event-stream` include `Transfer-Encoding: chunked` and the
-terminal `0\r\n\r\n` chunk in 0.165.1; Modex now matches those bodyless
-cases. A HEAD 200 SSE response also emits the terminal chunk in the release,
-while Modex suppresses it, so broader HEAD event-stream parity is not claimed.
-Normal POST SSE chunking and
-disconnect cancellation continue to pass.
+check buffered HEAD length preservation and keep the generic streamed-HEAD
+default free of body chunks and the terminal chunk. They cover HEAD 204/304
+with chunked headers and the terminal chunk. The production local relay opts
+into the terminal chunk for streamed HEAD responses, matching the release
+while leaving other writer callers on the existing default.
+
+Raw production controls compare HEAD 200 SSE and HEAD 204/304 SSE for both
+HTTP/1.0 and HTTP/1.1 against checksum-pinned 0.165.1 and 0.439.2 processes.
+Both releases return HTTP/1.1 chunked framing with the terminal
+`0\r\n\r\n` chunk for these streaming or bodyless SSE responses. GET SSE still
+matches, and a pipelined HEAD SSE followed by a translated Responses request
+keeps the second response readable. Normal POST SSE chunking and disconnect
+cancellation continue to pass.
 
 The frozen TinyHTTP reader accumulates request-head lines without a byte cap.
 The local relay now admits selected larger heads with a 1 MiB total capture
@@ -261,15 +265,23 @@ remain unqualified.
 A real-process HEAD SSE control sends a complete pipelined POST with and
 without `shutdown(SHUT_WR)`. The pinned 0.165.1 oracle and Modex both dispatch
 both requests and return the HEAD response followed by the buffered request's
-response. TinyHTTP emits `0\r\n\r\n` after its HEAD event-stream response;
-Modex suppresses that terminal chunk, so the test drains and records the raw
-oracle framing before parsing the next response. This is the existing HEAD SSE
-wire mismatch, not lost buffered input. In `LoopbackHTTPStream._read_head`,
+response. TinyHTTP emits `0\r\n\r\n` after its HEAD event-stream response; the
+local relay now matches that terminal chunk and the test drains it before
+parsing the next response. In `LoopbackHTTPStream._read_head`,
 `src/modex/loopback_http.mojo` sets HEAD length to zero and finishes response
 reading before nonempty bytes can reach downstream
 `LoopbackHTTPConnection.write_chunk`; this fixture therefore does not confirm
 the review's proposed disconnect path. Native
 `test_head_stream_cancellation_is_still_detected` and
 `test_peer_reset_is_detected_and_connection_move_keeps_ownership` continue to
-verify RST cancellation. The 23-test shared loopback suite passed after the
-probe change.
+verify RST cancellation. The shared loopback suite confirms the generic stream
+writer keeps its default HEAD suppression. The production relay explicitly
+opts into the release's terminal chunk, verified by the raw 0.165.1 and
+0.439.2 process controls above.
+
+Validation for this framing change: production Modex and both native drivers
+build with Mojo 1.2.0. The 0.165.1 oracle module passes 16 tests; the active
+0.439.2 oracle module passes seven. Shared loopback and local-rewrite tests
+pass 48 tests together. The dependency audit covers 71 Mojo files, and Python
+compilation plus `git diff --check` pass. These process comparisons use
+synthetic loopback traffic on Linux x86-64 only.

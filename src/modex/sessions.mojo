@@ -1,6 +1,6 @@
 from std.collections import Dict, List, Optional, Span
 from std.io import FileHandle, RawFileDescriptor
-from std.os import getuid, isatty, listdir, lstat, stat, stat_result
+from std.os import getenv, getuid, isatty, listdir, lstat, stat, stat_result
 from std.os.path import exists
 from std.pathlib import cwd
 from std.time.time import _realtime_nanoseconds
@@ -77,6 +77,15 @@ def session_query_lowercase(value: String) -> String:
         if not is_case_ignorable(code):
             before_cased = is_cased(code)
     return output^
+
+
+def inline_session_tui_allowed() -> Bool:
+    if getenv("PRODEX_FORCE_TUI", "\0") != "\0":
+        return True
+    if getenv("CODEX_CI", "\0") != "\0":
+        return False
+    var strict = session_query_lowercase(trim_text(getenv("PRODEX_TUI_STRICT", "")))
+    return strict != "1" and strict != "true" and strict != "yes"
 
 
 @fieldwise_init
@@ -625,7 +634,8 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
                 output += "modex run "
             output += reports[index].id + "\n"
         return output^
-    if isatty(1):
+    # shortcut: interactive session TUI rendering is unavailable, when to upgrade: when Mojo exposes terminal viewport and input controls.
+    if isatty(1) and inline_session_tui_allowed():
         raise Error("session terminal rendering is not implemented")
     var width = cli_width()
     if count == 0:

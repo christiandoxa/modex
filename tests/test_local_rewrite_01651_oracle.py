@@ -1044,9 +1044,37 @@ def head_bodyless_sse_case(status, version=b"HTTP/1.1"):
             method=b"HEAD",
             version=version,
         ),
-        **({"expected_response_line": f"HTTP/1.1 {status} {'No Content' if status == 204 else 'Not Modified'}"} if version == b"HTTP/1.0" else {}),
+        "expected_response_line": f"HTTP/1.1 {status} {'No Content' if status == 204 else 'Not Modified'}",
         "expected_status": status,
         "expected_reason": "No Content" if status == 204 else "Not Modified",
+        "expected_body": b"",
+        "expected_headers": {
+            "content-type": "text/event-stream",
+            "transfer-encoding": "chunked",
+        },
+        "expected_wire_body": {"oracle": b"0\r\n\r\n", "modex": b"0\r\n\r\n"},
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "expected_upstream_method": "HEAD",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
+    }
+
+
+def head_sse_case(version=b"HTTP/1.1"):
+    suffix = "_http_1_0" if version == b"HTTP/1.0" else ""
+    return {
+        "name": f"head_chat_completions_200_sse_framing{suffix}",
+        "request": request_bytes(
+            (("Connection", "close"), ("X-Oracle-Response", "sse")),
+            target=b"/v1/chat/completions",
+            method=b"HEAD",
+            version=version,
+        ),
+        "expected_response_line": "HTTP/1.1 200 OK",
+        "expected_status": 200,
+        "expected_reason": "OK",
         "expected_body": b"",
         "expected_headers": {
             "content-type": "text/event-stream",
@@ -1682,6 +1710,8 @@ CASES = (
         b"/v1/chat/completions",
         response_kind="sse",
     ),
+    head_sse_case(),
+    head_sse_case(version=b"HTTP/1.0"),
     {
         "name": "http_1_0_sse_stream_starts_before_upstream_eof",
         "request": request_bytes(
@@ -2365,7 +2395,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                 "half_close": True,
                 "check_close": True,
                 "expected": [(200, b""), (200, RESPONSES_RESPONSE)],
-                "expected_head_wire_body": {"oracle": b"0\r\n\r\n", "modex": b""},
+                "expected_head_wire_body": {"oracle": b"0\r\n\r\n", "modex": b"0\r\n\r\n"},
                 "upstream_count": 2,
             },
             {
@@ -2373,7 +2403,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                 "request": head_sse,
                 "pipelined_requests": [head_sse, second],
                 "expected": [(200, b""), (200, RESPONSES_RESPONSE)],
-                "expected_head_wire_body": {"oracle": b"0\r\n\r\n", "modex": b""},
+                "expected_head_wire_body": {"oracle": b"0\r\n\r\n", "modex": b"0\r\n\r\n"},
                 "upstream_count": 2,
             },
             {

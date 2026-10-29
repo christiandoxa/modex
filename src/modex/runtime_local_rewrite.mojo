@@ -379,7 +379,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
                     bindings.remember(0, response_id)
             except:
                 pass
-        connection.finish_stream(30000)
+        connection.finish_stream(30000, include_head_terminal_chunk=True)
     except:
         stream.close()
         connection.close()
@@ -612,7 +612,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                 if event.startswith("event: response.completed\r\n") and trim_text(exchange.reader.state.response_id):
                     conversations.insert(exchange.reader.state.response_id, _stream_history(exchange), namespace)
                 _write_event(connection, event)
-        connection.finish_stream(30000)
+        connection.finish_stream(30000, include_head_terminal_chunk=True)
     except:
         exchange.close()
         connection.close()

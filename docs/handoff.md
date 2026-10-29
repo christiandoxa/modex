@@ -1,5 +1,25 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Anthropic Messages now forwards validated output-token limits and tested alias
+precedence instead of rejecting nondefault values. Terminal session output now
+falls back to plain text under tested `CODEX_CI` and `PRODEX_TUI_STRICT`
+controls without changing the state lock guard. The local relay now emits the
+terminal chunk for tested HEAD event streams, including pipelined follow-up
+requests. Each behavior is compared to checksum-pinned 0.165.1 and 0.439.2
+Linux releases. The combined production build, native session/Super checks,
+19 provider/session process tests, five framing controls, three Super launch
+tests, six CI-routing
+tests, 71-file import audit and 130-module test census passed. The initial
+framing invocation also had two test-class-name errors; a corrected five-test
+rerun passed. See `docs/evidence/baseline-0.165.1/anthropic-output-token-limits.md`,
+`docs/evidence/baseline-0.165.1/session-terminal-fallback.md` and
+`docs/evidence/baseline-0.165.1/local-relay-http.md`.
+
+Hosted Fast run `40835269269` on `e760cf6805bac76e6535737a4c466905eaa55250`
+failed after the focused build and native checks because the required 0.439.2
+tag is unavailable. Both helper shards passed; oracle-dependent tests and
+the artifact consumer did not run.
+
 The guarded DeepSeek Super path now forwards explicit Codex `--ephemeral`
 and `--image`/`-i` arguments. Synthetic child argv matches the pinned 0.165.1
 and 0.439.2 releases for separate, attached and repeated image arguments;
@@ -391,7 +411,8 @@ token before an invalid suffix also selects the matching final status-line
 version; absent/invalid versions keep HTTP/1.1. The real-path regression
 matches 16 selected response and streaming controls against historical 0.439.2,
 with 0.439.1 controls. Default Server/Date headers, non-token method
-admission, and HEAD event-stream terminal chunks remain an explicit gap. SSE
+admission, and HEAD event-stream terminal chunks remained an explicit gap at
+that checkpoint. SSE
 streaming stays incremental and uses HTTP/1.1 response framing.
 
 The official Linux binary and
@@ -526,14 +547,14 @@ retains parseable escapes for them. See
 The local response writer now matches the pinned TinyHTTP final-status reason
 table. Production controls cover 200, 204, 206, 302, 404, 418, 422 and 500
 against 0.165.1 and historical 0.439.2. The HEAD 204/304 terminal-chunk and
-large-header gaps remain. See
+large-header gaps remained at that checkpoint. See
 `docs/evidence/baseline-0.165.1/local-relay-status-reasons.md`.
 
 The local relay now forwards tested HTTP methods on both supported routes,
 including extension methods. GET JSON and SSE responses and selected HEAD
 framing match 0.165.1, including the terminal chunk for HEAD 204/304 event
-streams. Modex still suppresses the release's terminal chunk for HEAD 200
-event streams. Large request heads now match
+streams. Modex still suppressed the release's terminal chunk for HEAD 200
+event streams at that checkpoint. Large request heads now match
 selected 65,535/65,536/65,537-byte boundaries, 128 KiB fields, and 1 MiB
 aggregate/token cases against 0.165.1 and 0.439.2. The relay is bounded at
 1 MiB, while both releases accept 1 MiB + 1; this mismatch remains open. Other

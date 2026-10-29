@@ -20,7 +20,12 @@ CASE_NAMES = (
     "http_1_0_expect_continue_uses_http_1_0_interim",
     "http_1_0_unsupported_expect_returns_417",
     "http_1_0_sse_stream_starts_before_upstream_eof",
+    "successful_get_chat_completions_sse",
+    "head_chat_completions_200_sse_framing",
+    "head_chat_completions_200_sse_framing_http_1_0",
+    "head_chat_completions_204_sse_framing",
     "head_chat_completions_204_sse_framing_http_1_0",
+    "head_chat_completions_304_sse_framing",
     "head_chat_completions_304_sse_framing_http_1_0",
     "http_1_0_chat_completions_status_302",
     "http_1_0_chat_completions_status_404",
@@ -123,7 +128,7 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
             upstream.server_close()
             worker.join(timeout=2)
 
-    def test_http_1_0_responses_and_stream_controls_match_released_oracle(self):
+    def test_http_responses_and_stream_controls_match_released_oracle(self):
         upstream = transport.Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)
         worker.start()
@@ -137,13 +142,11 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
                         self.assertEqual(response["process_exit"], 0, response["stderr"])
                         self.assertEqual(response["status"], case["expected_status"], label)
                         self.assertEqual(response["reason"], case.get("expected_reason", response["reason"]), label)
-                        self.assertEqual(response["response_line"], case["expected_response_line"], label)
+                        if "expected_response_line" in case:
+                            self.assertEqual(response["response_line"], case["expected_response_line"], label)
                         raw_lines = response["raw_response_head"].split(b"\r\n")
-                        self.assertEqual(
-                            raw_lines[0].decode("iso-8859-1"),
-                            case["expected_response_line"],
-                            label,
-                        )
+                        if "expected_response_line" in case:
+                            self.assertEqual(raw_lines[0].decode("iso-8859-1"), case["expected_response_line"], label)
                         self.assertEqual(raw_lines[-2:], [b"", b""], label)
                         raw_headers = {}
                         for raw_header in raw_lines[1:-2]:
@@ -206,6 +209,49 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
                             transport.normalize_response_body(case, oracle["body"]),
                             transport.normalize_response_body(case, modex["body"]),
                         )
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_head_sse_terminal_chunk_preserves_pipelined_response(self):
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            first = transport.request_bytes(
+                (("X-Oracle-Response", "sse"),),
+                target=b"/v1/chat/completions",
+                method=b"HEAD",
+            )
+            second = transport.request_bytes(
+                (("Connection", "close"),),
+                body=b'{"model":"deepseek-chat","input":"pipeline-followup"}',
+            )
+            case = {
+                "name": "pipelined_head_sse_then_responses",
+                "request": first,
+                "pipelined_requests": [first, second],
+            }
+            results = {
+                label: transport.run_probe(binary, case, upstream)
+                for label, binary in (("oracle", ORACLE), ("modex", transport.MODEX))
+            }
+            for label, (response, records) in results.items():
+                with self.subTest(label=label):
+                    self.assertEqual(response["process_exit"], 0, response["stderr"])
+                    self.assertEqual(
+                        [(item["status"], item["body"]) for item in response["pipelined_responses"]],
+                        [(200, b""), (200, transport.RESPONSES_RESPONSE)],
+                    )
+                    self.assertEqual(
+                        response["pipelined_responses"][0]["head_wire_body"],
+                        b"0\r\n\r\n",
+                    )
+                    self.assertEqual(
+                        [(record["method"], record["path"]) for record in records],
+                        [("HEAD", "/v1/chat/completions"), ("POST", "/v1/chat/completions")],
+                    )
         finally:
             upstream.shutdown()
             upstream.server_close()

@@ -47,7 +47,8 @@ overflow socket waits while ready parked requests are serviced; admission
 evicts the oldest socket with no request bytes. The pool has no idle expiry. A
 partial request on a reused socket blocks other clients until completion or
 close; parent EOF does not interrupt that in-progress read. Active requests
-remain serial. HEAD `text/event-stream` terminal-chunk framing also differs.
+remain serial. Selected HEAD `text/event-stream` terminal-chunk controls now
+match both pinned Linux releases; broader response framing remains unverified.
 The local-rewrite route's 426 fallback does not implement the separate
 runtime-proxy WebSocket path.
 Idle keep-alive sockets are capped at 128 but have no expiry. The oversized-body

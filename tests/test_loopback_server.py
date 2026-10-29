@@ -410,6 +410,17 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         self.assertEqual(payload, b"")
         self.assertIn("HEAD_STREAM_DONE", stdout)
 
+    def test_head_stream_can_write_only_the_terminal_chunk(self):
+        process, client = start("head-stream-terminal")
+        client.sendall(request(body=b"", method=b"HEAD"))
+        response, stdout = finish(process, client)
+        headers, separator, payload = response.partition(b"\r\n\r\n")
+        self.assertEqual(separator, b"\r\n\r\n")
+        self.assertEqual(status(response), 200)
+        self.assertIn(b"Transfer-Encoding: chunked\r\n", headers + b"\r\n")
+        self.assertEqual(payload, b"0\r\n\r\n")
+        self.assertIn("HEAD_STREAM_DONE", stdout)
+
     def test_head_bodyless_chunked_reply_has_terminator(self):
         for response_status in (204, 304):
             with self.subTest(status=response_status):

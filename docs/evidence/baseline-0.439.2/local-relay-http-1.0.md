@@ -35,10 +35,14 @@ result match for the tested case. Before that change, the captured raw heads wer
 Modex:   HTTP/1.0 200 OK\r\nContent-Length: 254\r\nConnection: close\r\ncontent-type: application/json; charset=utf-8\r\n\r\n
 ```
 
-For HTTP/1.0 HEAD 204/304 event-stream responses, both references return
-HTTP/1.1 with `Transfer-Encoding: chunked` and the terminal `0\r\n\r\n` bytes.
-Modex now returns the same HTTP/1.1 status and chunked header, including the
-terminal bytes, for the tested Linux path.
+For HEAD 200 and 204/304 event-stream responses, 0.439.2 returns HTTP/1.1 with
+`Transfer-Encoding: chunked` and the terminal `0\r\n\r\n` bytes for HTTP/1.0
+and HTTP/1.1 requests. The same controls pass against 0.165.1. Modex's
+production local relay now returns the same framing. GET SSE controls retain
+their event body, and a pipelined HEAD SSE followed by a translated Responses
+request confirms the terminal chunk does not hide the next response. The
+generic loopback writer keeps its default HEAD suppression; only the
+production relay opts in.
 
 TinyHTTP accepts the synthetic method token `G@T` and returns HTTP/1.0 404 for
 an unsupported route. Modex rejects that non-token method and returns HTTP/1.1
@@ -47,10 +51,10 @@ the response version when a valid HTTP/1.0 or HTTP/1.1 token is present in the
 request line.
 
 Validation: production Modex and the local-rewrite and shared-loopback native
-drivers build with Mojo 1.2.0. The focused 0.439.2 oracle module passes both
-tests, including 16 selected response/stream controls and the explicit header
-and method-admission gaps. The historical 0.165.1 raw relay module, shared
-loopback-server tests and local-rewrite tests pass 48 methods together. The
-production dependency audit, Python compilation and `git diff --check` pass.
-This evidence covers selected Linux x86-64 behavior only; it does not promote
-full platform or contract parity.
+drivers build with Mojo 1.2.0. The focused 0.439.2 oracle module passes seven
+tests, including 21 selected response/stream controls, HEAD SSE pipeline
+safety and the explicit header and method-admission gaps. The historical
+0.165.1 raw relay module, shared loopback-server tests and local-rewrite tests
+pass the expanded controls. The production dependency audit, Python
+compilation and `git diff --check` pass. This evidence covers selected Linux
+x86-64 behavior only; it does not promote full platform or contract parity.

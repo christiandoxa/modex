@@ -1,17 +1,23 @@
 """Compare unmodified plain session output in identical disposable homes."""
 
+import errno
+import fcntl
+import hashlib
 import itertools
 import json
 import os
 from pathlib import Path
 import random
 import shutil
+import struct
 import subprocess
 import tempfile
+import termios
 import unittest
 
 from session_oracle import fixture, sandbox_command
 import test_cli
+from test_cli_01651 import ORACLE as ORACLE_01651, ORACLE_SHA256 as SHA256_01651
 from test_cli import MODEX, ORACLE
 from test_unicode_width import emoji_sequence_cases, properties
 
@@ -38,10 +44,58 @@ def compare_text(arguments, *, columns=None, change=None):
         return outputs
 
 
+def compare_tty(arguments, *, environment=None, change=None):
+    outputs = []
+    with tempfile.TemporaryDirectory(prefix="modex-session-tty-") as directory:
+        for name, binary in (
+            ("prodex-01651", ORACLE_01651),
+            ("prodex-04392", ORACLE),
+            ("modex", MODEX),
+        ):
+            root = Path(directory) / name
+            root.mkdir()
+            fixture(root)
+            if change:
+                change(root)
+            master, slave = os.openpty()
+            fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
+            try:
+                result = subprocess.run(
+                    sandbox_command(binary, root, arguments, environment=environment),
+                    stdin=subprocess.DEVNULL, stdout=slave, stderr=subprocess.PIPE,
+                    timeout=10, check=False,
+                )
+            finally:
+                os.close(slave)
+            output = bytearray()
+            try:
+                while True:
+                    block = os.read(master, 65536)
+                    if not block:
+                        break
+                    output.extend(block)
+            except OSError as error:
+                if error.errno != errno.EIO:
+                    raise
+            finally:
+                os.close(master)
+            outputs.append((
+                result.returncode,
+                bytes(output).replace(str(root).encode(), b"<ROOT>"),
+                result.stderr.replace(str(root).encode(), b"<ROOT>"),
+            ))
+    return outputs
+
+
 class SessionTextTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         test_cli.CliTests.setUpClass()
+        if (
+            not ORACLE_01651.is_file()
+            or hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest() != SHA256_01651
+        ):
+            raise AssertionError("PRODEX_ORACLE_01651 must identify the verified 0.165.1 release")
 
     def assert_title_batch(self, values):
         def change(root):
@@ -231,6 +285,46 @@ class SessionTextTests(unittest.TestCase):
             finally:
                 os.close(slave)
                 os.close(master)
+
+    def test_ci_tty_fallback_matches_both_releases(self):
+        for environment in (
+            {"CODEX_CI": "1"},
+            {"CODEX_CI": ""},
+            {"PRODEX_TUI_STRICT": "TRUE"},
+        ):
+            with self.subTest(environment=environment):
+                old, current, modex = compare_tty(["session", "list"], environment=environment)
+                self.assertEqual(old[0:1] + old[2:3], (0, b""))
+                self.assertEqual(current[0:1] + current[2:3], (0, b""))
+                self.assertEqual(modex[0:1] + modex[2:3], (0, b""))
+                self.assertEqual(old[1], current[1])
+                self.assertEqual(modex[1], old[1])
+
+    def test_unset_and_false_tui_controls_keep_the_tty_guard(self):
+        for environment in ({}, {"PRODEX_TUI_STRICT": "0"}, {"PRODEX_TUI_STRICT": "false"}):
+            with self.subTest(environment=environment):
+                old, current, modex = compare_tty(["session", "list"], environment=environment)
+                self.assertEqual(old[0:1] + old[2:3], (0, b""))
+                self.assertEqual(current[0:1] + current[2:3], (0, b""))
+                self.assertEqual(old[1], current[1])
+                self.assertEqual(modex, (
+                    1, b"", b"Error: session terminal rendering is not implemented\n",
+                ))
+
+    def test_tty_fallback_does_not_bypass_session_state_guard(self):
+        def locked_without_primary(root):
+            state_root = root / "home/.prodex"
+            state_root.mkdir(mode=0o700)
+            (state_root / "state.json.lock").write_bytes(b"synthetic held lock marker\n")
+
+        old, current, modex = compare_tty(
+            ["session", "list"], environment={"CODEX_CI": "1"}, change=locked_without_primary,
+        )
+        self.assertEqual(old[0:1] + old[2:3], (0, b""))
+        self.assertEqual(current[0:1] + current[2:3], (0, b""))
+        self.assertEqual(modex, (
+            1, b"", b"Error: locked state loading and recovery are not implemented\n",
+        ))
 
 
 if __name__ == "__main__":

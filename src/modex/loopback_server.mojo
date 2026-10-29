@@ -368,12 +368,12 @@ struct LoopbackHTTPConnection(Movable):
             self.close()
             raise
 
-    def finish_stream(mut self, timeout_ms: UInt64) raises:
+    def finish_stream(mut self, timeout_ms: UInt64, include_head_terminal_chunk: Bool = False) raises:
         try:
             if not self.streaming or self.done:
                 raise Error("loopback HTTP response stream is not active")
             var final = List[UInt8]()
-            if not self.head_request:
+            if not self.head_request or include_head_terminal_chunk:
                 for byte in "0\r\n\r\n".as_bytes():
                     final.append(byte)
                 _send_all(self.fd, final, _deadline(timeout_ms))

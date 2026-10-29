@@ -338,22 +338,6 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                     "tools": [{"type": "web_search_preview"}],
                 },
             ),
-            (
-                "mixed_function_and_web_tools",
-                {
-                    "model": "deepseek-chat",
-                    "input": "preserve every tool",
-                    "stream": False,
-                    "tools": [
-                        {
-                            "type": "function",
-                            "name": "lookup",
-                            "parameters": {"type": "object", "properties": {"query": {"type": "string"}}},
-                        },
-                        {"type": "web_search_preview"},
-                    ],
-                },
-            ),
         ]
         for name, request in cases:
             with self.subTest(name=name):
@@ -369,12 +353,34 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                         reference["upstream_body"]["messages"][0]["content"][0]["text"],
                         "preserve typed text",
                     )
-                else:
-                    self.assertEqual(len(reference["upstream_body"]["tools"]), 2)
-                    self.assertEqual(reference["upstream_body"]["tools"][0]["name"], "lookup")
                 self.assertEqual((modex["exit_code"], modex["status"]), (1, 502))
                 self.assertEqual(modex["upstream"], [])
                 self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_mixed_function_and_web_tools_match_historical_release(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "preserve every tool",
+            "stream": False,
+            "tools": [
+                {"type": "function", "name": "lookup", "parameters": {
+                    "type": "object", "properties": {"query": {"type": "string"}},
+                }},
+                {"type": "web_search_preview"},
+            ],
+        }
+        reference = _run(ORACLE_04392, request, scenario="anthropic-buffered")
+        modex = _run(MODEX, request, scenario="anthropic-buffered")
+        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(len(reference["upstream"]), 1)
+        self.assertEqual(len(modex["upstream"]), 1)
+        self.assertEqual(modex["upstream_body"], reference["upstream_body"])
+        expected = json.loads(reference["response_body"])
+        actual = json.loads(modex["response_body"])
+        for key in ("id", "model", "output", "usage"):
+            self.assertEqual(actual.get(key), expected.get(key), key)
+        self.assertEqual((reference["state"]["leftovers"], modex["state"]["leftovers"]), ([], []))
 
     def test_unsupported_anthropic_buffered_content_and_citations_fail_closed(self):
         request = {

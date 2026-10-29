@@ -17,8 +17,8 @@ from .logs import LogEvent, RUNTIME_TAIL_BYTES, RuntimeRecord, TokenEvent, Upstr
 from .paths import ensure_app_root
 
 
-def stream_payload_event(record: RuntimeRecord) -> Optional[LogEvent]:
-    if not record.envelope or record.event != "stream_payload" or not record.has("source"):
+def stream_payload_event(record: RuntimeRecord, line: String) -> Optional[LogEvent]:
+    if "stream_payload" not in line or not record.envelope or record.event != "stream_payload" or not record.has("source"):
         return None
     var text = record.field("stream") if record.has("stream") else record.field("message")
     var source = record.field("source")
@@ -68,7 +68,7 @@ def initial_stream_events(runtime: List[String], sessions: List[String], json: B
             continue
         for line in contents.split("\n"):
             var record = RuntimeRecord(String(line))
-            var stream_item = stream_payload_event(record)
+            var stream_item = stream_payload_event(record, String(line))
             if stream_item and (not stream or timestamp_wins(stream.value().timestamp, stream_item.value().timestamp)):
                 stream = stream_item^
             var upstream_item = upstream_event(record)
@@ -96,7 +96,7 @@ def print_runtime_stream_lines(lines: List[String], json: Bool) raises:
         var operational = operational_event(record)
         if operational:
             print_stream_event(operational.value(), json)
-        var stream = stream_payload_event(record)
+        var stream = stream_payload_event(record, line)
         if stream:
             print_stream_event(stream.value(), json)
         var upstream = upstream_event(record)

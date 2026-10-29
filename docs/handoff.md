@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Detached log streaming now checks for the literal raw `stream_payload` text
+before projecting an event, like both pinned releases. Escaped event names
+without that raw substring are ignored; a literal occurrence elsewhere on the
+line still admits the event. Real-process JSON and plain comparisons cover
+initial snapshots and appended records. Redaction remains unchanged. See
+`docs/evidence/baseline-0.165.1/log-stream-escaped-event.md`.
+
 ## Relay worker concurrency (2026-10-30)
 
 The exact `36ab8ca` Linux build admitted at most eight synthetic provider

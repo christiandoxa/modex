@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+DeepSeek Super now starts without an explicit `--model` on its supported
+synthetic loopback path. It leaves the child model override absent and uses the
+shared config's string model, or `deepseek-v4-pro`, for the generated catalog.
+Real-process controls against both pinned releases cover missing, blank,
+non-string, whitespace and escaped model values, with one matching synthetic
+provider request. This does not establish general provider, profile or model
+selection parity. Evidence:
+`docs/evidence/baseline-0.165.1/super-shared-config.md`.
+
 The next aggregate-budget relay admission prototype remains unmerged. In an
 isolated 246-partial-head load with eight blocked workers, the current relay
 used 0.55 CPU seconds over two seconds with 146 accepted client descriptors;

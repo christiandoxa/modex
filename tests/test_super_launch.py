@@ -1125,9 +1125,12 @@ class SuperLaunchTests(unittest.TestCase):
                 environment["PRODEX_CODEX_BIN"] = codex_setting
             environment.update(environment_overrides or {})
             command = [str(binary), "super", "--provider", "deepseek", "--api-key", "synthetic-provider-key",
-                       "--base-url", f"http://127.0.0.1:{server.server_port}{base_path}", "--model", model,
-                       "--no-presidio", "--sub-agent" if sub_agent else "--no-sub-agent", "--skip-quota-check", *super_arguments,
+                       "--base-url", f"http://127.0.0.1:{server.server_port}{base_path}"]
+            if model is not None:
+                command.extend(("--model", model))
+            command.extend(["--no-presidio", "--sub-agent" if sub_agent else "--no-sub-agent", "--skip-quota-check", *super_arguments,
                        *codex_arguments]
+            )
             try:
                 if stderr_tty:
                     master, slave = os.openpty()

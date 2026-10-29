@@ -61,6 +61,36 @@ class SuperSharedConfigTests(unittest.TestCase):
             self.assertEqual(upstream_bodies[0], upstream_bodies[1])
             self.assertEqual(upstream_bodies[1], upstream_bodies[2])
 
+    def test_omitted_model_uses_shared_config_or_default(self):
+        for config, expected in ((None, "deepseek-v4-pro"),
+                                 ('model = "synthetic-model"\n', "synthetic-model"),
+                                 ('model = "  synthetic-model  "\n', "synthetic-model"),
+                                 ('model = "synthetic\\nmodel"\n', "synthetic\nmodel"),
+                                 ('model = "synthetic\\\"model"\n', 'synthetic"model'),
+                                 ('model = ""\n', "deepseek-v4-pro"),
+                                 ('model = 4\n', "deepseek-v4-pro")):
+            captures = []
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                with self.subTest(config=config, binary=str(binary)):
+                    result, records, upstream, state = test_super_launch.SuperLaunchTests().run_launch(
+                        binary=binary, scenario="buffered", model=None, shared_config=config,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(state["config"], config)
+                    self.assertEqual(state["leftovers"], [])
+                    self.assertEqual(len(upstream), 1)
+                    self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
+                    headers = {key.lower(): value for key, value in upstream[0]["headers"].items()}
+                    self.assertEqual(headers["authorization"], "Bearer synthetic-provider-key")
+                    launch = next(row for row in records if row["kind"] == "launch")
+                    self.assertNotIn("model", launch["config"])
+                    self.assertEqual(launch["catalog"]["models"][0]["slug"], expected)
+                    self.assertEqual(launch["runtime_config"], config or "")
+                    captures.append((launch["catalog"], json.loads(bytes.fromhex(upstream[0]["body"]))))
+            self.assertEqual(captures[1][0], captures[2][0])
+            self.assertEqual(captures[0][1], captures[1][1])
+            self.assertEqual(captures[1][1], captures[2][1])
+
     def test_invalid_string_catalog_limits_fail_before_child_or_provider(self):
         cases = (('""', "cannot be empty"), ('"1"', "must be greater than 1"),
                  ('"2 3"', "must not contain whitespace"),

@@ -31,6 +31,15 @@ for every setting. Profile lifecycle, persistent home merging, malformed-TOML
 diagnostic equivalence, non-Linux targets, and general config behavior remain
 unverified.
 
+The guarded DeepSeek Super path also accepts omitted `--model`. With no model
+option, both pinned releases omit the child's `model` override and construct
+the catalog using the shared config's trimmed string model or the default
+`deepseek-v4-pro` for absent, blank, or non-string settings. A real-process
+comparison checks those cases plus escaped model values, the child arguments,
+preserved config, and a single synthetic provider request. Explicit model
+behavior is retained. This does not qualify other launch modes or provider
+selection.
+
 On Linux x86-64, the production build, eight shared-config/DeepSeek cross-release
 methods, 19 Super launch methods, 34 provider-tools/web-search methods, the
 native Super argument program, the 71-file production import audit, and the

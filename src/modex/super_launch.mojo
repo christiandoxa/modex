@@ -511,7 +511,7 @@ def _codex_version_parts(value: String) -> List[UInt64]:
     return parts^
 
 
-def _exec(binary: String, child_path: String, argv0: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64, web_search_mode: String, strict_tools: Optional[String], beta_base_url: Optional[String]) raises -> Int:
+def _exec(binary: String, child_path: String, argv0: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64, web_search_mode: String, strict_tools: Optional[String], beta_base_url: Optional[String], model_supplied: Bool) raises -> Int:
     var environment = _child_environment(home)
     var probe_environment = _codex_probe_environment(environment)
     var version = _capture_codex_probe(binary, [String("--version")], probe_environment, "Codex version probe")
@@ -559,7 +559,8 @@ def _exec(binary: String, child_path: String, argv0: String, home: String, model
         _config(args, "model_catalog_json", quote_json(home + "/prodex-deepseek-model-catalog.json"))
         _config(args, "projects", "{" + quote_json(String(cwd())) + "={trust_level=\"trusted\"}}")
         _config(args, "model_provider", "\"prodex-deepseek\"")
-        _config(args, "model", _toml_model_literal(model))
+        if model_supplied:
+            _config(args, "model", _toml_model_literal(model))
         _config(args, "model_providers.prodex-deepseek.name", "\"DeepSeek\"")
         _config(args, "model_providers.prodex-deepseek.base_url", quote_json("http://" + address + "/v1"))
         _config(args, "model_providers.prodex-deepseek.wire_api", "\"responses\"")
@@ -603,7 +604,7 @@ def _exec(binary: String, child_path: String, argv0: String, home: String, model
         raise
 
 
-def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64 = 0, compact_limit: UInt64 = 0, profile: String = "", profile_supplied: Bool = False) raises -> Int:
+def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64 = 0, compact_limit: UInt64 = 0, profile: String = "", profile_supplied: Bool = False, model_supplied: Bool = True) raises -> Int:
     _deepseek_launch_progress()
     _ = local_rewrite_upstream(upstream)
     _ = deepseek_request_headers([], key)
@@ -612,11 +613,6 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
     var launch_model = trim_text(model)
     if not launch_model:
         launch_model = "deepseek-v4-pro"
-    var model_literal = quote_json(launch_model)
-    # The frozen catalog's config scanner strips quotes without unescaping them.
-    var catalog_model = trim_text(String(model_literal[byte=1:model_literal.byte_length() - 1]))
-    if catalog_model.byte_length() > 4096:
-        raise Error("DeepSeek model identifier exceeds 4096 bytes")
     var root = app_root()
     var shared = shared_root(root)
     var shared_config = _clean_home(root, shared, profile_supplied)
@@ -624,6 +620,17 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
         raise Error("profile '" + profile + "' does not exist")
     var route = deepseek_runtime_route(shared_config[1], shared_config[2], shared_config[3])
     var catalog_config = TOMLDocument(shared_config[0])
+    var catalog_model = String()
+    if model_supplied:
+        var model_literal = quote_json(launch_model)
+        # The frozen catalog's CLI config scanner strips quotes without unescaping them.
+        catalog_model = trim_text(String(model_literal[byte=1:model_literal.byte_length() - 1]))
+    else:
+        catalog_model = trim_text(catalog_config.string(catalog_config.get(catalog_config.root, "model")))
+        if not catalog_model:
+            catalog_model = "deepseek-v4-pro"
+    if catalog_model.byte_length() > 4096:
+        raise Error("DeepSeek model identifier exceeds 4096 bytes")
     var catalog_context = _catalog_config_number(catalog_config, "model_context_window", UInt64(1048576))
     var catalog_compact = min(_catalog_config_number(catalog_config, "model_auto_compact_token_limit", UInt64(900000)), catalog_context - 1)
     _ = ensure_app_root()
@@ -647,7 +654,7 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
             # Frozen exact-value lookup ignores numeric -c overrides when building the catalog.
             catalog.write(deepseek_model_catalog(catalog_model, catalog_context, catalog_compact))
         var codex = _codex_binary()
-        var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, key, prompt, launch_context, launch_compact, route[3], shared_config[2], shared_config[3])
+        var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, key, prompt, launch_context, launch_compact, route[3], shared_config[2], shared_config[3], model_supplied)
         _remove_overlay(home)
         return result
     except:

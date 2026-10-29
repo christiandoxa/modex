@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 import unittest
 
-import test_cli
+from test_cli import MODEX
 from session_oracle import sandbox_command
 
 
@@ -17,6 +17,10 @@ ORACLE_01651 = Path(os.environ.get(
     Path.home() / ".cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
 ))
 SHA256_01651 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
+ORACLE_04392 = Path(os.environ.get(
+    "PRODEX_ORACLE_04392",
+    Path.home() / ".cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+))
 SHA256_04392 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 SYNTHETIC_SECRET = "synthetic-profile-secret-not-for-network-use"
 RELEASE_LOCK_FILES = {
@@ -82,14 +86,21 @@ def run_profile(binary, root, arguments, argv0):
 class ProfileState01651Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if not test_cli.MODEX.is_file():
+        if not MODEX.is_file():
             raise AssertionError("Build the actual Modex CLI first")
-        for oracle, checksum in (
-            (ORACLE_01651, SHA256_01651),
-            (test_cli.ORACLE, SHA256_04392),
-        ):
+        oracles = [(ORACLE_01651, SHA256_01651)]
+        if "PRODEX_ORACLE_04392" in os.environ or ORACLE_04392.is_file():
+            oracles.append((ORACLE_04392, SHA256_04392))
+        for oracle, checksum in oracles:
             if not oracle.is_file() or hashlib.sha256(oracle.read_bytes()).hexdigest() != checksum:
                 raise AssertionError(f"Oracle checksum mismatch: {oracle}")
+
+    @classmethod
+    def state_oracles(cls):
+        references = [(ORACLE_01651, "prodex")]
+        if ORACLE_04392.is_file():
+            references.append((ORACLE_04392, "prodex"))
+        return references
 
     def test_stateless_profile_help_and_parser_match_01651_without_mutation(self):
         for arguments, status in (
@@ -102,7 +113,7 @@ class ProfileState01651Tests(unittest.TestCase):
         ):
             with self.subTest(arguments=arguments):
                 results = []
-                for binary, argv0 in ((ORACLE_01651, "prodex"), (test_cli.MODEX, "modex")):
+                for binary, argv0 in ((ORACLE_01651, "prodex"), (MODEX, "modex")):
                     with tempfile.TemporaryDirectory(prefix="modex-profile-cli-01651-") as directory:
                         root = Path(directory)
                         (root / "home").mkdir(mode=0o700)
@@ -123,7 +134,7 @@ class ProfileState01651Tests(unittest.TestCase):
                 )
 
     def test_populated_profile_listing_remains_fail_closed_without_release_locks(self):
-        for oracle, argv0 in ((ORACLE_01651, "prodex"), (test_cli.ORACLE, "prodex")):
+        for oracle, argv0 in self.state_oracles():
             with self.subTest(oracle=oracle):
                 with tempfile.TemporaryDirectory(prefix="modex-profile-state-01651-") as directory:
                     baseline_root = Path(directory) / "baseline"
@@ -147,7 +158,7 @@ class ProfileState01651Tests(unittest.TestCase):
                     modex_state, modex_auth = profile_fixture(modex_root)
                     modex_files = files_under(modex_root)
 
-                    modex = run_profile(test_cli.MODEX, modex_root, ["profile", "list"], "modex")
+                    modex = run_profile(MODEX, modex_root, ["profile", "list"], "modex")
 
                     self.assertEqual(modex.returncode, 1)
                     self.assertEqual(modex.stdout, b"")
@@ -160,7 +171,7 @@ class ProfileState01651Tests(unittest.TestCase):
                     self.assertEqual(files_under(modex_root), modex_files)
 
     def test_releases_repair_missing_active_profile_while_modex_preserves_it(self):
-        for oracle in (ORACLE_01651, test_cli.ORACLE):
+        for oracle, _ in self.state_oracles():
             with self.subTest(oracle=oracle):
                 with tempfile.TemporaryDirectory(prefix="modex-profile-repair-01651-") as directory:
                     baseline_root = Path(directory) / "baseline"
@@ -190,7 +201,7 @@ class ProfileState01651Tests(unittest.TestCase):
                     modex_before_state = modex_state.read_bytes()
 
                     modex = run_profile(
-                        test_cli.MODEX, modex_root, ["profile", "list"], "modex"
+                        MODEX, modex_root, ["profile", "list"], "modex"
                     )
 
                     self.assertEqual(modex.returncode, 1)

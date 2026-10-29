@@ -60,3 +60,15 @@ credentials, provider traffic, account login, native bindings, or product
 dependencies were used. The existing 12-method 0.439.2 profile CLI suite also
 passes. The production import audit passes for all 71 Mojo files; the test
 census passes with 50 native test sources and 141 Python modules.
+
+`tests/test_profile_state_01651.py` reads the active-release oracle from
+`PRODEX_ORACLE_04392` and checks its pinned SHA-256 directly. Its 0.439.2
+controls are optional when that binary is absent; the stateless and 0.165.1
+tests still run. Both `scripts/ci/run-fast.sh` and `scripts/ci/run-full.sh`
+register the module in the historical lane, which clears `PRODEX_ORACLE` but
+retains `PRODEX_ORACLE_04392`.
+
+The module passes in the historical environment with only
+`PRODEX_ORACLE_04392` for the active oracle, and in an isolated environment
+with neither active-oracle variable nor a cached 0.439.2 binary. The second
+run exercises only the 0.165.1 oracle and Modex.

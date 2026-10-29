@@ -16,7 +16,10 @@ state, housekeeping, and update locks. Modex remains fail-closed and leaves
 synthetic state and auth unchanged. The stateless profile help/parser controls
 pass against 0.165.1. Mojo 1.2.0 lacks compatible flock, atomic replace,
 fsync, and permission APIs, so no safe profile-state implementation was
-available. See `docs/evidence/baseline-0.165.1/profile-state-locks.md`.
+available. The new historical-lane tests route 0.439.2 through
+`PRODEX_ORACLE_04392` while `PRODEX_ORACLE` is unset, and the 0.165.1-only
+controls run without a cached 0.439.2 binary. See
+`docs/evidence/baseline-0.165.1/profile-state-locks.md`.
 
 The local full suite on `b9b52d5` finished 1,006 tests with 53 failures and
 one error. Most failures exposed a single-key provider-panel punctuation

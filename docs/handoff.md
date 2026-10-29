@@ -1,5 +1,15 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The local full suite on `b9b52d5` finished 1,006 tests with 53 failures and
+one error. Most failures exposed a single-key provider-panel punctuation
+regression and a stale probe-environment assertion; the combined Super and
+app-server recheck passes all 53 tests after their fixes. Two Expect/framing
+expectations were also stale; both release-specific matrices pass after
+checking the actual 417 wire responses. The JSON log-follow rotation marker
+timed out once in the full run but passed five focused reruns; its cause is
+still unresolved. The complete suite has not been rerun on these fixes. See
+`docs/evidence/log-follow-rotation-recheck-20261030.md`.
+
 Native Anthropic Responses requests now accept missing, empty, and text-only
 `modalities` values and omit them from provider requests. Audio-only, mixed,
 and wrong-type values still return matching 502 errors without provider I/O.

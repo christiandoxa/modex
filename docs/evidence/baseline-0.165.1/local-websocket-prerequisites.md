@@ -108,6 +108,9 @@ ping frames on two other connections receive their matching pongs, and no
 connection reaches the synthetic upstream. This is a bounded control for idle
 parking and partial-frame isolation, not a measurement of the eviction limit,
 message admission, interruption, or Modex behavior.
+Another reference-only control sends a masked binary message: the broker
+returns an `invalid_request_error` with status 400 in a text frame, keeps the
+connection usable for ping/pong, and makes no upstream connection.
 
 The harness verifies the official Linux binary SHA-256
 `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51` before

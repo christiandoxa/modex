@@ -265,6 +265,50 @@ class RuntimeProxyWebsocket01651OracleTests(unittest.TestCase):
             for connection in clients:
                 connection.close()
 
+    def test_binary_message_returns_error_and_keeps_connection_usable(self):
+        connection = socket.create_connection(("127.0.0.1", self.listen_port), timeout=3)
+        connection.settimeout(3)
+        try:
+            key = base64.b64encode(b"0123456789abcdef").decode("ascii")
+            connection.sendall((
+                "GET /backend-api/prodex/responses HTTP/1.1\r\n"
+                f"Host: 127.0.0.1:{self.listen_port}\r\n"
+                "Connection: Upgrade\r\nUpgrade: websocket\r\n"
+                "Sec-WebSocket-Version: 13\r\n"
+                f"Sec-WebSocket-Key: {key}\r\n\r\n"
+            ).encode("ascii"))
+            status, _, extra = read_response_head(connection)
+            self.assertEqual(status, "HTTP/1.1 101 Switching Protocols")
+            self.assertEqual(extra, b"")
+            connection.sendall(b"\x82\x81\x01\x02\x03\x04\x79")
+
+            def receive_exact(size):
+                data = bytearray()
+                while len(data) < size:
+                    chunk = connection.recv(size - len(data))
+                    if not chunk:
+                        self.fail("reference closed inside a WebSocket frame")
+                    data.extend(chunk)
+                return bytes(data)
+
+            head = receive_exact(2)
+            self.assertEqual(head, b"\x81\x7e")
+            size = int.from_bytes(receive_exact(2), "big")
+            self.assertEqual(json.loads(receive_exact(size)), {
+                "error": {
+                    "code": "invalid_request_error",
+                    "message": "Binary websocket messages are not supported by the runtime auto-rotate proxy.",
+                },
+                "status": 400,
+                "type": "error",
+            })
+            connection.sendall(b"\x89\x81\x01\x02\x03\x04\x79")
+            self.assertEqual(receive_exact(3), b"\x8a\x01x")
+            with self.assertRaises(TimeoutError):
+                self.upstream.accept()
+        finally:
+            connection.close()
+
     def test_unsupported_path_precedes_missing_key_validation(self):
         status, _, body = self.request("/backend-api/prodex/not-supported")
         self.assertEqual(status, "HTTP/1.1 404 Not Found")

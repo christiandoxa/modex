@@ -3291,3 +3291,17 @@ production build; the 71-file dependency audit and 50-native/135-Python test
 census passed. Broader Anthropic parity and the other release targets remain
 open; all six targets stay in the denominator. Evidence:
 `docs/evidence/baseline-0.165.1/anthropic-mixed-tools.md`.
+
+Anthropic buffered and streamed responses now ignore unknown metadata on the
+tested content blocks and events. Search results use `query` first, then
+`queries`; buffered arrays keep strings, streamed arrays retain all values, as
+both pinned releases do. Missing streamed function-call IDs use the existing
+`call_deepseek_...` fallback; buffered calls without IDs still fail. The earlier
+53-test `test_anthropic_mixed_tools_01651.py` run and production build passed.
+After the final test-only edits, the buffered query-shape test and numeric-
+fragment mismatch test passed in a focused run.
+One mismatch remains explicit: both releases complete a numeric
+`input_json_delta.partial_json` as empty arguments, while Modex fails the
+stream. Continuation, unsupported content blocks, other stream event orders,
+transport security, and other release targets remain unqualified. See
+`docs/evidence/baseline-0.165.1/anthropic-response-shapes.md`.

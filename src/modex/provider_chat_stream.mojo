@@ -8,7 +8,7 @@ from .provider_chat_items import tool_added_item, tool_output_item, wrap_tool_ar
 from .provider_chat_metadata import merge_chat_metadata
 from .provider_chat_tools import chat_tool_delta, incremental_arguments
 from .provider_chat_usage import chat_usage, json_unsigned
-from .provider_anthropic_messages import AnthropicWebSearch, _only_fields, _search_sources
+from .provider_anthropic_messages import AnthropicWebSearch, _only_fields, _search_queries, _search_sources
 from .provider_sse_events import sse_event, sse_failed_event, sse_text_item_added, sse_text_item_done
 from .text import trim_text
 from .uuid7 import new_uuid7
@@ -175,7 +175,6 @@ struct DeepSeekChatState:
             raise Error("Anthropic stream event must be an object")
         var kind = doc.string(doc.get(doc.root, "type"))
         if kind == "ping":
-            _only_fields(doc, doc.root, ["type"], "ping event")
             return List[String]()
         if kind == "error":
             self.anthropic_stream_terminal = True
@@ -221,31 +220,25 @@ struct DeepSeekChatState:
                 or doc.string(doc.get(block, "name")) != "web_search"
             ):
                 return List[String]()
-            _only_fields(doc, doc.root, ["type", "index", "content_block"], "content_block_start event")
             var index = json_unsigned(doc, doc.get(doc.root, "index"))
             var block_index = UInt64(0)
             if index: block_index = index.value()
             if block_type == "server_tool_use" and doc.string(doc.get(block, "name")) == "web_search":
-                _only_fields(doc, block, ["type", "id", "name", "input"], "web-search tool use")
-                var input = doc.get(block, "input")
-                _only_fields(doc, input, ["query"], "web-search input")
                 return self.start_anthropic_search(doc, block, block_index)
             if block_type == "tool_use":
-                _only_fields(doc, block, ["type", "id", "name", "input"], "tool-use block")
-                var id = doc.get(block, "id")
-                var name = doc.get(block, "name")
-                if id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text:
-                    raise Error("Anthropic tool-use block requires an id")
-                if name < 0 or doc.nodes[name].kind != JSON_STRING or not doc.nodes[name].text:
+                var id = optional_string(doc, block, "id")
+                var name = optional_string(doc, block, "name")
+                if not name or not name.value():
                     raise Error("Anthropic tool-use block requires a name")
+                var id_field = String()
+                if id: id_field = ',"id":' + quote_json(id.value())
                 return self.observe(
                     '{"choices":[{"delta":{"tool_calls":[{"index":' + String(block_index)
-                    + ',"id":' + quote_json(doc.nodes[id].text)
-                    + ',"type":"function","function":{"name":' + quote_json(doc.nodes[name].text)
+                    + id_field
+                    + ',"type":"function","function":{"name":' + quote_json(name.value())
                     + ',"arguments":""}}]},"finish_reason":null}]}'
                 )
             if block_type == "web_search_tool_result":
-                _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
                 var search_id = doc.string(doc.get(block, "tool_use_id"))
                 if self.anthropic_search_index_by_id(search_id) < 0:
                     raise Error("Anthropic web-search result does not match a tool use")
@@ -286,7 +279,6 @@ struct DeepSeekChatState:
                     return List[String]()
                 return self.observe('{"choices":[{"delta":{"content":' + quote_json(doc.nodes[text_value].text) + '},"finish_reason":null}]}')
             if delta_type == "input_json_delta":
-                _only_fields(doc, delta, ["type", "partial_json"], "input JSON delta")
                 var fragment = doc.string(doc.get(delta, "partial_json"))
                 var fragment_value = doc.get(delta, "partial_json")
                 if fragment_value < 0 or doc.nodes[fragment_value].kind != JSON_STRING:
@@ -339,7 +331,6 @@ struct DeepSeekChatState:
             return events^
         if kind == "message_stop":
             self.anthropic_stream_terminal = True
-            _only_fields(doc, doc.root, ["type"], "message_stop event")
             var emit_created = self.anthropic_message_delta_seen
             # The release completes searches still pending at message_stop.
             var events = self.complete_anthropic_searches()
@@ -619,16 +610,10 @@ def json_array(values: List[String]) -> String:
 
 def _stream_anthropic_search_item(search: AnthropicWebSearch, in_progress: Bool) -> String:
     var queries = String("[]")
-    if search.input_json and search.input_json != "{}":
-        # The pinned stream adapter drops unparseable or non-string query fragments.
-        try:
-            var input = JsonDocument(search.input_json)
-            if input.nodes[input.root].kind == JSON_OBJECT:
-                var query = input.get(input.root, "query")
-                if query >= 0 and input.nodes[query].kind == JSON_STRING and input.nodes[query].text:
-                    queries = "[" + serialize_json(input, query) + "]"
-        except:
-            pass
+    try:
+        queries = _search_queries(search.input_json, True)
+    except:
+        pass
     return (
         '{"type":"web_search_call","id":' + quote_json(search.id)
         + ',"status":' + quote_json("in_progress" if in_progress else "completed")

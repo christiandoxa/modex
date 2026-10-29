@@ -134,8 +134,11 @@ return different errors.
 
 Buffered and SSE response conversion retains guarded unsupported shapes.
 Selected buffered thinking blocks, web-search sources, mixed tool output and
-streamed image omission now match the releases. Citations, other reasoning and
-image shapes and broader event behavior remain unverified. Broader request/message shapes, tool-result/history round trips, complete
+streamed image omission now match the releases. Unknown fields on selected
+known content blocks and events are ignored like the releases; web-search
+`query`/`queries` arrays and missing streamed function IDs follow the observed
+release projections. Citations, other reasoning and image shapes and broader
+event behavior remain unverified. Broader request/message shapes, tool-result/history round trips, complete
 metadata/citation behavior, TLS/DNS/proxies, resource behavior and full
 stream/error equivalence remain open. The tested ordered search/result/text
 shape and text-only or empty streams with a final `message_stop` are supported;
@@ -143,7 +146,8 @@ other Anthropic event orders remain unverified. Selected initial text-block
 values are ignored as in the 0.165.1 release; subsequent text deltas remain
 covered by the production comparison. The exact empty-string request is rejected with the observed 400
 before POST, while whitespace-only input is accepted. See
-`docs/evidence/anthropic-web-search-04392.md`.
+`docs/evidence/anthropic-web-search-04392.md` and
+`docs/evidence/baseline-0.165.1/anthropic-response-shapes.md`.
 An orphan buffered `web_search_tool_result`, following text or as the only
 content block, is also ignored as in both pinned releases; these remain selected
 response shapes only. See

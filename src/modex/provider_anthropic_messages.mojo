@@ -446,17 +446,27 @@ def _search_sources(doc: JsonDocument, block: Int) raises -> String:
     return "[" + ",".join(output) + "]"
 
 
+def _search_queries(input_json: String, preserve_non_string_values: Bool) raises -> String:
+    if not input_json:
+        return "[]"
+    var input = JsonDocument(input_json)
+    if input.nodes[input.root].kind != JSON_OBJECT:
+        return "[]"
+    var query = input.get(input.root, "query")
+    if query >= 0 and input.nodes[query].kind == JSON_STRING:
+        return "[" + serialize_json(input, query) + "]"
+    var values = input.get(input.root, "queries")
+    if values < 0 or input.nodes[values].kind != JSON_ARRAY:
+        return "[]"
+    var output = List[String]()
+    for value in input.nodes[values].children:
+        if preserve_non_string_values or input.nodes[value].kind == JSON_STRING:
+            output.append(serialize_json(input, value))
+    return "[" + ",".join(output) + "]"
+
+
 def _web_search_item(search: AnthropicWebSearch, in_progress: Bool) raises -> String:
-    var queries: String
-    if in_progress and (not search.input_json or search.input_json == "{}"):
-        queries = "[]"
-    else:
-        var input = JsonDocument(search.input_json)
-        _only_fields(input, input.root, ["query"], "web-search input")
-        var query = input.get(input.root, "query")
-        if query < 0 or input.nodes[query].kind != JSON_STRING or not input.nodes[query].text:
-            raise Error("Anthropic web-search input requires a non-empty query")
-        queries = "[" + serialize_json(input, query) + "]"
+    var queries = _search_queries(search.input_json, False)
     return '{"type":"web_search_call","id":' + quote_json(search.id) + ',"status":' + quote_json("in_progress" if in_progress else "completed") + ',"action":{"type":"search","queries":' + queries + ',"sources":' + search.sources + "}}"
 
 
@@ -485,7 +495,6 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
                 if text < 0 or doc.nodes[text].kind != JSON_STRING:
                     raise Error("Anthropic Messages text block is invalid")
             elif kind == "tool_use":
-                _only_fields(doc, block, ["type", "id", "name", "input"], "tool-use block")
                 var id = doc.get(block, "id")
                 var name = doc.get(block, "name")
                 if id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text:
@@ -494,18 +503,11 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
                     raise Error("Anthropic tool_use block requires a name")
                 tool_count += 1
             elif kind == "server_tool_use":
-                _only_fields(doc, block, ["type", "id", "name", "input"], "web-search tool use")
                 var id = doc.get(block, "id")
                 var name = doc.get(block, "name")
-                var input = doc.get(block, "input")
-                if doc.string(doc.get(block, "type")) != "server_tool_use" or doc.string(name) != "web_search" or id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text or input < 0 or doc.nodes[input].kind != JSON_OBJECT:
+                if doc.string(doc.get(block, "type")) != "server_tool_use" or doc.string(name) != "web_search" or id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text:
                     raise Error("Anthropic web-search tool use is invalid")
-                _only_fields(doc, input, ["query"], "web-search input")
-                var query = doc.get(input, "query")
-                if query < 0 or doc.nodes[query].kind != JSON_STRING or not doc.nodes[query].text:
-                    raise Error("Anthropic web-search input requires a non-empty query")
             elif kind == "web_search_tool_result":
-                _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
                 var id = doc.get(block, "tool_use_id")
                 if id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text:
                     raise Error("Anthropic web-search result requires a tool_use_id")
@@ -523,7 +525,6 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         if kind == "thinking":
             continue
         if kind == "web_search_tool_result":
-            _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
             var result_id = doc.get(block, "tool_use_id")
             if result_id < 0 or doc.nodes[result_id].kind != JSON_STRING or not doc.nodes[result_id].text:
                 raise Error("Anthropic web-search result requires a tool_use_id")
@@ -556,21 +557,12 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
     if shape_index != 3:
         raise Error("Anthropic Messages content is outside the supported web-search shape")
     var search = search_index
-    _only_fields(doc, search, ["type", "id", "name", "input"], "web-search tool use")
     if doc.string(doc.get(search, "type")) != "server_tool_use" or doc.string(doc.get(search, "name")) != "web_search":
         raise Error("Anthropic Messages content starts with an unsupported block")
     var search_id = doc.get(search, "id")
     if search_id < 0 or doc.nodes[search_id].kind != JSON_STRING or not doc.nodes[search_id].text:
         raise Error("Anthropic web-search tool use requires an id")
-    var input = doc.get(search, "input")
-    if input < 0 or doc.nodes[input].kind != JSON_OBJECT:
-        raise Error("Anthropic web-search tool input must be an object")
-    _only_fields(doc, input, ["query"], "web-search input")
-    var query = doc.get(input, "query")
-    if query < 0 or doc.nodes[query].kind != JSON_STRING or not doc.nodes[query].text:
-        raise Error("Anthropic web-search input requires a non-empty query")
     var result = result_index
-    _only_fields(doc, result, ["type", "tool_use_id", "content"], "web-search result block")
     if doc.string(doc.get(result, "type")) != "web_search_tool_result" or doc.string(doc.get(result, "tool_use_id")) != doc.nodes[search_id].text:
         raise Error("Anthropic web-search result does not match its tool use")
     _ = _search_sources(doc, result)

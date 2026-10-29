@@ -168,7 +168,7 @@ def _normalize(value):
             key: "<time>" if key == "created_at" else _normalize(item)
             for key, item in value.items()
         }
-    if isinstance(value, str) and value.startswith(("resp_deepseek_", "msg_deepseek_")):
+    if isinstance(value, str) and value.startswith(("resp_deepseek_", "msg_deepseek_", "call_deepseek_")):
         return "<generated-id>"
     return value
 
@@ -799,6 +799,26 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                 ["Search summary"],
             ),
             (
+                "mixed tool and search blocks with unknown metadata",
+                [
+                    {"type": "server_tool_use", "id": "srv_metadata", "name": "web_search",
+                     "input": {"query": "synthetic", "future_field": "ignored"},
+                     "future_field": {"marker": "synthetic"}},
+                    {"type": "web_search_tool_result", "tool_use_id": "srv_metadata",
+                     "content": [{"type": "web_search_result",
+                                  "url": "https://example.test/source",
+                                  "title": "Synthetic source",
+                                  "future_field": "ignored"}],
+                     "future_field": "ignored"},
+                    {"type": "text", "text": "Search summary", "future_field": "ignored"},
+                    {"type": "tool_use", "id": "call_metadata", "name": "lookup",
+                     "input": {"query": "synthetic"}, "future_field": "ignored"},
+                ],
+                "tool_use",
+                ["web_search_call", "message", "function_call"],
+                ["Search summary"],
+            ),
+            (
                 "tool-use text with extra fields",
                 [
                     {"type": "text", "text": "Before call", "citations": 7,
@@ -836,6 +856,189 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                     self.assertNotIn("future_field", json.dumps(result))
                     captures.append((json.loads(posts[0]["body"]), result))
                 self.assertEqual(captures[1:], captures[:1] * 2)
+
+    def test_buffered_search_query_shapes_match_both_releases(self):
+        query_shapes = (
+            ("array filters nonstrings", {"queries": ["first", 7, "", None, "last"],
+                                            "future_field": "ignored"}, ["first", "", "last"]),
+            ("invalid singular query falls back to array", {"query": 7,
+                                                              "queries": ["fallback", False]},
+             ["fallback"]),
+            ("singular query takes precedence", {"query": "single", "queries": ["ignored"]},
+             ["single"]),
+            ("empty singular query takes precedence", {"query": "", "queries": ["ignored"]},
+             [""]),
+            ("missing input", None, []),
+            ("missing query fields", {}, []),
+        )
+        content = []
+        expected_queries = []
+        for index, (label, search_input, expected) in enumerate(query_shapes):
+            search_id = f"srv_query_{index}"
+            search = {"type": "server_tool_use", "id": search_id, "name": "web_search",
+                      "future_field": label}
+            if search_input is not None:
+                search["input"] = search_input
+            content.extend((
+                search,
+                {"type": "web_search_tool_result", "tool_use_id": search_id,
+                 "content": [], "future_field": "ignored"},
+            ))
+            expected_queries.append(expected)
+        content.extend((
+            {"type": "text", "text": "done"},
+            {"type": "tool_use", "id": "call_query_shapes", "name": "lookup", "input": {}},
+        ))
+        captures = []
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            posts, responses = observe_turns(binary, [_request()], [_buffered_reply(content)])
+            self.assertEqual(len(posts), 1)
+            self.assertEqual(len(responses), 1)
+            self.assertEqual(responses[0]["status"], 200)
+            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+            response = _normalize(_json_body(responses[0]))
+            searches = [item for item in response["output"] if item["type"] == "web_search_call"]
+            self.assertEqual([item["action"]["queries"] for item in searches], expected_queries)
+            self.assertNotIn("future_field", json.dumps(response))
+            captures.append((json.loads(posts[0]["body"]), response))
+        self.assertEqual(captures[1:], captures[:1] * 2)
+
+        malformed = _buffered_reply([
+            {"type": "tool_use", "name": "lookup", "input": {},
+             "future_field": "synthetic"},
+        ])
+        outcomes = []
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            posts, responses = observe_turns(binary, [_request()], [malformed])
+            self.assertEqual(len(posts), 1)
+            self.assertEqual(len(responses), 1)
+            self.assertEqual(responses[0]["status"], 502)
+            outcomes.append((posts[0]["path"], responses[0]["status"],
+                             bytes.fromhex(responses[0]["body"])))
+        self.assertEqual(outcomes[1:], outcomes[:1] * 2)
+
+    def test_stream_search_query_shapes_and_metadata_match_both_releases(self):
+        reply = _stream([
+            {"type": "ping", "future_field": "synthetic"},
+            {"type": "message_start", "message": {
+                "id": "msg_stream_metadata", "model": "deepseek-chat",
+                "usage": {"input_tokens": 3, "future_field": "ignored"},
+                "future_field": "ignored",
+            }, "future_event": "ignored"},
+            {"type": "content_block_start", "index": 0, "content_block": {
+                "type": "server_tool_use", "id": "srv_stream_metadata", "name": "web_search",
+                "input": {"queries": ["first", 7, "", None, "last"],
+                           "future_field": "ignored"},
+                "future_field": "ignored",
+            }, "future_event": "ignored"},
+            {"type": "content_block_stop", "index": 0, "future_event": "ignored"},
+            {"type": "content_block_start", "index": 1, "content_block": {
+                "type": "web_search_tool_result", "tool_use_id": "srv_stream_metadata",
+                "content": [{"type": "web_search_result",
+                             "url": "https://example.test/source",
+                             "title": "Synthetic source",
+                             "future_field": "ignored"}],
+                "future_field": "ignored",
+            }, "future_event": "ignored"},
+            {"type": "content_block_stop", "index": 1, "future_event": "ignored"},
+            {"type": "content_block_start", "index": 2, "content_block": {
+                "type": "text", "future_field": "ignored",
+            }, "future_event": "ignored"},
+            {"type": "content_block_delta", "index": 2, "delta": {
+                "type": "text_delta", "text": "done", "future_field": "ignored",
+            }, "future_event": "ignored"},
+            {"type": "content_block_stop", "index": 2, "future_event": "ignored"},
+            {"type": "message_delta", "delta": {
+                "stop_reason": "end_turn", "future_field": "ignored",
+            }, "usage": {"output_tokens": 5, "future_field": "ignored"},
+                "future_event": "ignored"},
+            {"type": "message_stop", "future_event": "ignored"},
+        ])
+        request = _request(stream=True)
+        captures = []
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            posts, responses = observe_turns(binary, [request], [reply])
+            self.assertEqual(len(posts), 1)
+            self.assertEqual(len(responses), 1)
+            self.assertEqual(responses[0]["status"], 200)
+            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+            events = _events(bytes.fromhex(responses[0]["body"]))
+            self.assertEqual(events[-1][0], "response.completed")
+            searches = [item for item in events[-1][1]["response"]["output"]
+                        if item["type"] == "web_search_call"]
+            self.assertEqual(searches[0]["action"]["queries"], ["first", 7, "", None, "last"])
+            self.assertEqual([event["delta"] for name, event in events
+                              if name == "response.output_text.delta"], ["done"])
+            self.assertNotIn("future_field", json.dumps(events))
+            captures.append((json.loads(posts[0]["body"]), events))
+        self.assertEqual(captures[1:], captures[:1] * 2)
+
+    def test_stream_missing_function_id_uses_release_fallback(self):
+        reply = _stream([
+            {"type": "message_start", "message": {}},
+            {"type": "content_block_start", "index": 0, "content_block": {
+                "type": "tool_use", "name": "lookup", "future_field": "synthetic",
+            }, "future_event": "synthetic"},
+            {"type": "content_block_delta", "index": 0, "delta": {
+                "type": "input_json_delta", "partial_json": "{}", "future_field": "synthetic",
+            }, "future_event": "synthetic"},
+            {"type": "message_delta", "delta": {"stop_reason": "tool_use"}, "usage": {}},
+            {"type": "message_stop", "future_event": "synthetic"},
+        ])
+        captures = []
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            posts, responses = observe_turns(binary, [_request(stream=True)], [reply])
+            self.assertEqual(len(posts), 1)
+            self.assertEqual(len(responses), 1)
+            self.assertEqual(responses[0]["status"], 200)
+            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+            events = _events(bytes.fromhex(responses[0]["body"]))
+            self.assertEqual(events[-1][0], "response.completed")
+            call = next(item for item in events[-1][1]["response"]["output"]
+                        if item["type"] == "function_call")
+            self.assertEqual(call["call_id"], "<generated-id>")
+            self.assertEqual(call["arguments"], "{}")
+            self.assertNotIn("future_field", json.dumps(events))
+            captures.append((json.loads(posts[0]["body"]), events))
+        self.assertEqual(captures[1:], captures[:1] * 2)
+
+    def test_stream_numeric_function_argument_fragment_remains_strict(self):
+        reply = _stream([
+            {"type": "message_start", "message": {}},
+            {"type": "content_block_start", "index": 0, "content_block": {
+                "type": "tool_use", "id": "call_numeric", "name": "lookup",
+            }},
+            {"type": "content_block_delta", "index": 0, "delta": {
+                "type": "input_json_delta", "partial_json": 3, "future_field": "ignored",
+            }},
+            {"type": "message_delta", "delta": {"stop_reason": "tool_use"}, "usage": {}},
+            {"type": "message_stop"},
+        ])
+        request = _request(stream=True)
+        releases = []
+        for binary in (ORACLE_01651, ORACLE):
+            posts, responses = observe_turns(binary, [request], [reply])
+            self.assertEqual(len(posts), 1)
+            self.assertEqual(responses[0]["status"], 200)
+            events = _events(bytes.fromhex(responses[0]["body"]))
+            self.assertEqual(events[-1][0], "response.completed")
+            call = next(item for item in events[-1][1]["response"]["output"]
+                        if item["type"] == "function_call")
+            self.assertEqual(call["arguments"], "")
+            releases.append(events)
+        self.assertEqual(releases[1], releases[0])
+
+        posts, responses = observe_turns(MODEX, [request], [reply])
+        self.assertEqual(len(posts), 1)
+        self.assertEqual(responses[0]["status"], 200)
+        events = _events(bytes.fromhex(responses[0]["body"]))
+        self.assertEqual([name for name, _ in events], [
+            "response.created", "response.output_item.added", "response.failed",
+        ])
+        self.assertEqual(events[-1][1]["response"]["error"], {
+            "code": "provider_stream_error",
+            "message": "Anthropic input JSON delta must be a string",
+        })
 
     def test_buffered_envelope_extensions_and_usage_normalization_match_releases(self):
         cases = (

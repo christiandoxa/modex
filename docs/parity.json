@@ -1734,13 +1734,14 @@
       "prerequisites": [
         "configured provider endpoint"
       ],
-      "implementation": "src/modex/gateway_cli.mojo; src/main.mojo (help, sampled argument diagnostics and two captured DeepSeek startup-output cases; operational gateway still unfinished); boolean switch value-error Usage is verified against 0.439.1",
+      "implementation": "src/modex/gateway_cli.mojo; src/main.mojo (help, sampled argument diagnostics including the literal option terminator, and two captured DeepSeek startup-output cases; operational gateway still unfinished); boolean switch value-error Usage is verified against 0.439.1",
       "tests": [
         "tests/test_gateway_cli.mojo",
         "tests/test_gateway.py",
         "tests/capture_gateway.py",
         "tests/capture_gateway_mismatches.py",
         "tests/capture_gateway_permissions.py",
+        "tests/test_gateway_cli_01651.py",
         "tests/test_gateway_cli.py",
         "tests/test_relay_streams.py"
       ],
@@ -1750,6 +1751,7 @@
         "docs/evidence/runtime-local-tests.txt",
         "docs/evidence/runtime-local-link.txt",
         "docs/evidence/gateway-permissions-mismatch.json",
+        "docs/evidence/baseline-0.165.1/cli-observations.md",
         "docs/evidence/checkpoint2-reference.json",
         "docs/evidence/checkpoint2-tests.txt",
         "docs/evidence/checkpoint2-dependencies.txt",

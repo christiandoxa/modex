@@ -41,6 +41,20 @@ attached `--help=value` diagnostics. The 0.439.2 process regression also checks
 Clap's generated usage after switches and attached versus split values, with a
 synthetic API-key sentinel absent from both output streams.
 
+`GatewayArgs` at 0.165.1 commit
+`10ae15b5d1806302b60f051e4e6fec788044f4c2` and 0.439.2 commit
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9` declares options and no positional
+argument in `crates/prodex-cli/src/runtime_args.rs`. Their parsers treat `--` as the
+option terminator and report the first following token as unexpected, even
+after a recognized switch or API-key value. Modex now reports that same token
+with the baseline's generic `[OPTIONS]` usage. Real-process controls for
+`gateway -- synthetic-positional`, `gateway --no-presidio -- --help`, and a
+synthetic API key followed by the terminator pass against both 0.165.1 and
+0.439.2. These parser errors do not qualify successful Gateway startup.
+On 2026-10-29, the production build, native Gateway argument program, six
+Gateway CLI process-test methods, 71-file production import audit, test census
+(50 native test sources and 136 Python modules), and `git diff --check` passed.
+
 The profileless DeepSeek startup classification now matches all three pinned
 references when the shared Codex config has unrelated top-level or nested
 settings in addition to `model_provider = "prodex-deepseek"`. The actual

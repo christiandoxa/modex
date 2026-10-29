@@ -45,6 +45,13 @@ def parse_gateway_arguments(args: List[String], executable: String) raises -> Ga
     var index = 2
     while index < len(args):
         var argument = args[index]
+        if argument == "--":
+            if index + 1 < len(args):
+                raise session_cli_error(
+                    "unexpected argument '" + args[index + 1] + "' found",
+                    executable + " gateway [OPTIONS]",
+                )
+            break
         if argument == "--help" or (argument.startswith("-h") and not argument.startswith("--")):
             options.help = True
             return options^

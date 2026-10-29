@@ -36,6 +36,12 @@ def main() raises:
     assert_true(options.no_presidio and not options.presidio)
     assert_true(gateway_help("modex").find("Usage: modex gateway [OPTIONS]") >= 0)
     assert_true(parse_gateway_arguments(["modex", "gateway", "--help"], "modex").help)
+    var terminator_error = String()
+    try:
+        _ = parse_gateway_arguments(["modex", "gateway", "--no-presidio", "--", "--help"], "modex")
+    except error:
+        terminator_error = String(error)
+    assert_equal(terminator_error, "error: unexpected argument '--help' found\n\nUsage: modex gateway [OPTIONS]\n\nFor more information, try '--help'.\n")
     for invalid in [
         List[String](copy=["modex", "gateway", "--presidio", "--no-presidio"]),
         List[String](copy=["modex", "gateway", "--provider"]),

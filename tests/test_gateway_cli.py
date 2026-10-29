@@ -121,6 +121,32 @@ class GatewayCLIDifferentialTests(unittest.TestCase):
                 )
                 self.assertNotIn(b"synthetic-gateway-key", actual.stdout + actual.stderr)
 
+    def test_option_terminator_reports_first_trailing_argument(self):
+        cases = (
+            (("gateway", "--", "synthetic-positional"), b"synthetic-positional"),
+            (("gateway", "--no-presidio", "--", "--help"), b"--help"),
+            (("gateway", "--api-key", "synthetic-gateway-key", "--", "synthetic-positional"),
+             b"synthetic-positional"),
+        )
+        for arguments, first_trailing_argument in cases:
+            with self.subTest(arguments=arguments):
+                baseline = run_cli(ORACLE, "prodex", arguments)
+                actual = run_cli(MODEX, "modex", arguments)
+                self.assertEqual(baseline.returncode, 2)
+                self.assertIn(
+                    b"unexpected argument '" + first_trailing_argument + b"' found",
+                    baseline.stderr,
+                )
+                self.assertEqual(
+                    (actual.returncode, actual.stdout, actual.stderr),
+                    (
+                        baseline.returncode,
+                        baseline.stdout.replace(b"Usage: prodex ", b"Usage: modex "),
+                        baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex "),
+                    ),
+                )
+                self.assertNotIn(b"synthetic-gateway-key", actual.stdout + actual.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

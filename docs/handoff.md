@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Gateway CLI parsing now treats a literal `--` as the option terminator and
+reports the first following token as unexpected, matching checksum-pinned
+0.165.1 and 0.439.2 processes. The production build, native Gateway argument
+program, six real-process test methods, production import audit, test census
+and diff check passed. This selected parser behavior does not qualify Gateway
+startup; its operational path and remaining argument combinations are
+unfinished. Evidence: `docs/evidence/baseline-0.165.1/cli-observations.md`.
+
 The Anthropic Messages adapter now maps untyped `role: "tool"` input items
 with missing or unusable IDs to `call_prodex` and groups results before text,
 matching the checksum-pinned 0.165.1 and 0.439.2 processes. Selected function

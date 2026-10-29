@@ -49,8 +49,9 @@ chunked pipelined requests now match selected controls, including fragmented
 and coalesced delivery, ordered HEAD/error/SSE replies, and the body-size cap.
 The relay parks up to 128 idle sockets in FIFO order and
 polls one new connection before each readiness scan. When full, one accepted
-overflow socket waits while ready parked requests are serviced; admission
-evicts the oldest socket with no request bytes. The pool has no idle expiry.
+overflow socket can capture and dispatch its head while ready parked requests
+are serviced; admission evicts the oldest socket with no request bytes when
+available. The pool has no idle expiry.
 Headers are captured before worker admission; incomplete bodies consume worker
 lanes and enough can still block other clients. The bounded capture and worker
 pool differ from baseline task and worker configuration. Selected HEAD

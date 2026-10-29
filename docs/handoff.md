@@ -4,8 +4,8 @@ The production relay trims ASCII boundary whitespace around request header
 lines and values only in TinyHTTP compatibility mode. Real-process controls
 match checksum-pinned 0.165.1 and 0.439.2 for boundary whitespace, CRLF field
 separation, and rejection of embedded value controls before upstream I/O.
-Framing mismatches remain visible: both releases dispatch duplicate equal
-`Content-Length` while Modex rejects it. Both releases close without a response
+Identical duplicate `Content-Length` values are now accepted as described
+below; differing values remain rejected by Modex. Both releases close without a response
 for conflicting `Content-Length` and `Transfer-Encoding`, while Modex returns
 502. Both releases also close without a response for raw UTF-8 whitespace,
 while Modex returns 400. Embedded-control, conflicting-framing, and raw-UTF-8
@@ -3564,3 +3564,19 @@ build, focused matrix, 71-file import audit, and `git diff --check` pass. This
 qualifies only the tested request control on Linux x86-64; all six release
 targets remain in the parity denominator. See
 `docs/evidence/baseline-0.165.1/anthropic-request-store-control.md`.
+
+The production TinyHTTP-compatible request parser now accepts and collapses
+only duplicate `Content-Length` values with identical trimmed digit text. The
+shared parser still rejects duplicates. Both pinned releases and Modex return
+404 for duplicate zero lengths on an unsupported route, and dispatch equal
+duplicate lengths with one normalized upstream length, including both
+pipelined request orders. Numeric variants such as `N`/`0N` and `N`/`N+1`
+remain intentionally fail-closed in Modex while both releases dispatch using
+the first value. Duplicate transfer encoding and content-length plus transfer
+encoding also remain response differences: the releases close without a
+response while Modex returns 502, with no upstream dispatch. These are recorded
+differences, not parity passes. The four-test real-process relay suite, 29-test
+loopback suite, production build, 71-file dependency audit, and diff check
+passed. Only selected Linux x86-64 behavior is qualified; the six-target
+denominator and broader transport/security gaps remain unchanged. See
+`docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.

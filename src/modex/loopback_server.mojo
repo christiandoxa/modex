@@ -677,6 +677,7 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
                 raise Error("malformed HTTP request target")
     var headers = List[Tuple[String, String]]()
     var content_length = -1
+    var content_length_value = String()
     var has_content_length = False
     var has_transfer_encoding = False
     var chunked = False
@@ -720,11 +721,16 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
             value = String(parsed_line[byte=value_start:value_end])
         else:
             value = String(parsed_line[byte=colon + 1:].strip(" \t"))
+        var append_header = True
         if lower == "content-length":
             if has_content_length:
-                raise Error("duplicate HTTP content length")
-            has_content_length = True
-            content_length = _number(value)
+                if not tiny_http_request_line_compat or value != content_length_value:
+                    raise Error("duplicate HTTP content length")
+                append_header = False
+            else:
+                has_content_length = True
+                content_length_value = value
+                content_length = _number(value)
         elif lower == "transfer-encoding":
             if has_transfer_encoding:
                 raise Error("duplicate HTTP transfer encoding")
@@ -753,7 +759,8 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
                 raise Error("HTTP protocol upgrades are unsupported")
             if value.lower() != "websocket":
                 has_non_websocket_upgrade = True
-        headers.append((name, value))
+        if append_header:
+            headers.append((name, value))
     if has_content_length and has_transfer_encoding:
         raise Error("ambiguous HTTP request framing")
     if defer_expectation_errors:

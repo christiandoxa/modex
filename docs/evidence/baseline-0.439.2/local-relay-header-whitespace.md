@@ -23,32 +23,33 @@ release and Modex to a synthetic loopback upstream:
 | ASCII whitespace around header line/value and `Content-Length` | 200 | 200 | 200 | One request; trimmed value is `value` |
 | Valid CRLF starts another header | 200 | 200 | 200 | One request; `x-injected: yes` preserved |
 | Embedded VT, FF, bare CR or bare LF in a value | 502 `upstream request failed` | Same | Same | No request |
-| Duplicate equal `Content-Length` | 200 | 200 | 502 `gateway request capture failed` | Releases dispatch; Modex does not |
-| Conflicting `Content-Length` and `Transfer-Encoding` | Connection closes without response | Same | 502 | No request |
+| Equal duplicate `Content-Length`, including trimmed boundary whitespace | 200 | 200 | 200 | One request; duplicates collapse and outbound length is normalized |
+| Equal duplicate zero lengths on an unsupported route | 404 | 404 | 404 | No request |
+| Different numeric text (`0N` then `N`) or values (`N` then `N+1`) | 200 | 200 | 502 `gateway request capture failed` | Releases dispatch using the first length; Modex does not |
+| Duplicate equal `Content-Length` plus `Transfer-Encoding`, or duplicate `Transfer-Encoding` | Connection closes without response | Same | 502 | No request |
 | Raw UTF-8 whitespace at header boundaries | Connection closes without response | Same | 400 | No request |
 
-The duplicate and conflicting framing cases remain explicit differences, not
-parity passes. Raw UTF-8 whitespace is not accepted by TinyHTTP's ASCII line
-reader; Modex's different 400 response remains unqualified. Embedded-control,
-conflicting-framing, and raw-UTF-8 cases avoid upstream dispatch. Both releases
-dispatch the duplicate-length control while Modex rejects it.
+Only lexically identical duplicate lengths after TinyHTTP-compatible trimming
+are collapsed. Numeric variants and conflicting framing stay fail-closed in
+Modex even though the releases dispatch numeric variants using the first
+length, and close without a response for ambiguous transfer encoding. These
+are recorded differences, not parity passes. Raw UTF-8 whitespace is not
+accepted by TinyHTTP's ASCII line reader; Modex's different 400 response
+remains unqualified. Embedded-control, mismatched-length, and conflicting-
+framing cases avoid upstream dispatch in Modex.
 
-The focused three-method process suite passed:
+The focused four-test process suite passed:
 
 ```text
-PYTHONPATH=tests python3 -m unittest -v test_loopback_header_whitespace
-Ran 3 tests in 24.442s
+PYTHONPATH=tests MODEX_BINARY=/tmp/modex-relay-duplicate-length-build/modex python3 -m unittest -v test_loopback_header_whitespace
+Ran 4 tests in 40.462s
 OK
 ```
 
-The CI runner also passed:
-`python3 scripts/ci/run-unittest.py test_loopback_header_whitespace.py`.
-
-The 28-test `test_loopback_server` suite passed. The test census reports 50
-native sources and 140 Python modules with one discovery owner. The new module
+The 29-test `test_loopback_server` suite also passed. The test census reports
+50 native sources and 140 Python modules with one discovery owner. The module
 runs in the `focused-python-active-cross-release` groups in `run-fast.sh` and
-`run-full.sh`, after both pinned oracles are acquired. `make ci-dependencies`
-audited 71 production Mojo files and found only standard-library and internal
-imports. `git diff --check` passed. This qualifies selected Linux x86-64
-behavior only; it does not reduce the six-target denominator or establish full
-parity.
+`run-full.sh`, after both pinned oracles are acquired. Dependency audit and
+`git diff --check` results for this change are recorded in `docs/handoff.md`.
+This qualifies selected Linux x86-64 behavior only; it does not reduce the
+six-target denominator or establish full parity.

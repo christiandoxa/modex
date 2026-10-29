@@ -235,6 +235,30 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         self.assertEqual(status(response), 400)
         self.assertIn("malformed HTTP header value", stdout)
 
+    def test_tiny_http_compat_collapses_only_identical_content_lengths(self):
+        raw = (
+            b"POST / HTTP/1.1\r\nHost: local\r\n"
+            b"Content-Length: 0\r\ncontent-length: 0\r\n\r\n"
+        )
+        process, client = start("tiny-http-compat")
+        client.sendall(raw)
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 200)
+        request_line = next(line for line in stdout.splitlines() if line.startswith("REQUEST "))
+        headers = json.loads(request_line.removeprefix("REQUEST "))["headers"]
+        self.assertEqual([header for header in headers if header[0].lower() == "content-length"], [["Content-Length", "0"]])
+
+        for mode, framing in (
+            ("tiny-http-compat", b"Content-Length: 0\r\nContent-Length: 1\r\n"),
+            ("echo", b"Content-Length: 0\r\nContent-Length: 0\r\n"),
+        ):
+            with self.subTest(mode=mode, framing=framing):
+                process, client = start(mode)
+                client.sendall(b"POST / HTTP/1.1\r\nHost: local\r\n" + framing + b"\r\n")
+                response, stdout = finish(process, client)
+                self.assertEqual(status(response), 400)
+                self.assertIn("duplicate HTTP content length", stdout)
+
     def test_default_loopback_parser_keeps_upgrade_headers_rejected(self):
         process, client = start("echo")
         client.sendall(

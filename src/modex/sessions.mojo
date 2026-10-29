@@ -226,7 +226,10 @@ def valid_session_name(name: String) -> Optional[String]:
 
 def read_private_state_file(path: String) raises -> List[UInt8]:
     var before = lstat(path)
-    if (before.st_mode & 0o170000) != 0o100000 or before.st_uid != getuid() or (before.st_mode & 0o077) != 0 or before.st_size > STATE_FILE_LIMIT:
+    var permissions = before.st_mode & 0o077
+    # Group/other writable state and externally exposed read aliases are unsafe.
+    var unsafe_permissions = (permissions & 0o022) != 0 or (before.st_nlink > 1 and (permissions & 0o044) != 0)
+    if (before.st_mode & 0o170000) != 0o100000 or before.st_uid != getuid() or unsafe_permissions or before.st_size > STATE_FILE_LIMIT:
         raise Error("unsafe state file")
     var file = open(path, "r")
     var descriptor = RawFileDescriptor(file).value
@@ -247,7 +250,7 @@ def read_private_state_file(path: String) raises -> List[UInt8]:
 
 
 def same_private_state_file(left: stat_result, right: stat_result) -> Bool:
-    return (right.st_mode & 0o170000) == 0o100000 and right.st_uid == getuid() and (right.st_mode & 0o077) == 0 and left.st_mode == right.st_mode and left.st_uid == right.st_uid and left.st_nlink == right.st_nlink and left.st_ino == right.st_ino and left.st_dev == right.st_dev and left.st_size == right.st_size and left.st_mtimespec.tv_sec == right.st_mtimespec.tv_sec and left.st_mtimespec.tv_nsec == right.st_mtimespec.tv_nsec and left.st_ctimespec.tv_sec == right.st_ctimespec.tv_sec and left.st_ctimespec.tv_nsec == right.st_ctimespec.tv_nsec
+    return (right.st_mode & 0o170000) == 0o100000 and right.st_uid == getuid() and left.st_mode == right.st_mode and left.st_uid == right.st_uid and left.st_nlink == right.st_nlink and left.st_ino == right.st_ino and left.st_dev == right.st_dev and left.st_size == right.st_size and left.st_mtimespec.tv_sec == right.st_mtimespec.tv_sec and left.st_mtimespec.tv_nsec == right.st_mtimespec.tv_nsec and left.st_ctimespec.tv_sec == right.st_ctimespec.tv_sec and left.st_ctimespec.tv_nsec == right.st_ctimespec.tv_nsec
 
 
 def state_field(document: JsonDocument, node: Int, name: String) raises -> Int:

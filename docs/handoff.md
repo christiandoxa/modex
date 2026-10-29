@@ -313,18 +313,21 @@ and symlink exclusions. The app-root marker scan also ignores malformed
 journal and ASCII temporary-file guards. Real-process comparisons are in
 `docs/evidence/session-invalid-utf8-04392.md`.
 
-Session listing now reads a valid private `state.json` primary without
-repairing it, attaches profile bindings, and applies profile filters. Indexed
-binding processing matches last-key and 2,048-entry retention behavior; a
-16,384-entry response-map stress case and 2,048-session report case match both
-0.165.1 and 0.439.2. All 68 focused Python session tests and native
-`test_sessions` pass; the dependency audit and test census pass. Modex still
-does not lock or recover state: an
-invalid primary with a valid `.last-good` remains fail-closed, world-readable
-state and dangling symlinks are rejected, while the releases accept those
-cases as readable or absent. A live symlink is rejected by the tested
-releases. Descriptor checks are not interprocess exclusion. Details and exact
-artifacts are in `docs/evidence/session-profile-state-04392.md`.
+Session listing now reads valid owner-owned state without repair, attaches
+profile bindings, and applies profile filters. A single-linked, world-readable
+`state.json` inside the verified mode-0700 app root now matches both releases;
+group/other-writable state and group/other-readable state with hard-link
+aliases remain fail-closed. Five focused session-state process methods passed
+against both release binaries; the app-root guard passed with the 0.439.2
+oracle. Indexed binding processing matches last-key and 2,048-entry retention
+behavior; a 16,384-entry response-map stress case and
+2,048-session report case match both 0.165.1 and 0.439.2. Modex still does not
+lock or recover state: an invalid primary with a valid `.last-good` remains
+fail-closed, dangling symlinks are treated as absent, and live symlinks are
+rejected. The existing mode-0755 app-root control also remains fail-closed
+because Mojo 1.2.0's allowed stdlib has no chmod operation. Descriptor checks
+are not interprocess exclusion. Details and exact artifacts are in
+`docs/evidence/session-profile-state-04392.md`.
 
 Both releases and Modex also accept a stable private state file with a
 hard-link alias. The process regression verifies that Modex leaves the file,

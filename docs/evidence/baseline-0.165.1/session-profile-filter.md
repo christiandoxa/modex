@@ -15,6 +15,19 @@ session binding and filtering without repair. It still fails closed if the
 primary is invalid or unsafe because matching the release's interprocess lock
 and backup recovery behavior is not implemented.
 
+The release's `crates/prodex-app/src/runtime_store/io.rs` reader rejects
+symlinks and non-regular files, bounds the file size, and verifies the opened
+file still matches the named path. It does not reject a readable state file by
+its group/other permission bits. The process controls confirm mode 0644 is
+accepted by 0.165.1 when the `.prodex` parent remains mode 0700.
+
+A process control with an owner-owned, single-linked `state.json` at mode 0644
+inside the verified mode-0700 `.prodex` directory now returns the same bound
+profile report as 0.165.1 without changing the file. Modex still rejects
+group/other-writable state and group/other-readable state with a hard-link
+alias. Shared write bits stay fail-closed by policy; a readable alias outside
+the owner-only app directory would bypass the directory's access control.
+
 ## Reproduction
 
 `tests/test_session_report_01651.py` and
@@ -36,9 +49,27 @@ lookups.
   observed startup side effects; neither executable changes session data.
 
 Valid-primary profile binding and filtering match the two tested release
-binaries. Recovery and security differences remain open: Modex rejects
-world-readable state and dangling symlink primaries that the tested releases
-accept as readable or absent, and it does not recover malformed primary state from
-`.last-good`. The primary-file metadata checks are observations, not
+binaries for the checked mode and link cases. Recovery and security differences
+remain open: Modex rejects group/other-writable state and group/other-readable
+state with a hard-link alias, treats dangling symlink primaries as absent, and
+does not recover malformed primary state from `.last-good`. The primary-file
+metadata checks are observations, not
 interprocess locking or proof of race freedom. Do not count these selected
 fixtures as full parity. All six release targets remain in the denominator.
+
+## Read-only state permissions
+
+The 0.165.1 process accepts an owner-owned `state.json` at mode 0644 when it is
+single-linked inside a mode-0700 `.prodex` directory. Modex now reads the same
+binding and returns the same session report without changing the state file.
+It retains owner, regular-file, size, descriptor identity, stable-mode, and
+link-count checks; group/other-writable files and group/other-readable files
+with hard-link aliases remain fail-closed. Shared write bits are denied by
+policy, and a readable hard-link alias could expose the inode outside the
+protected app directory.
+
+On 2026-10-29, five synthetic session-state test methods passed against both
+checksum-verified release binaries: readable single-link state, writable mode
+rejection, readable hard-link rejection, live/dangling symlink and private
+hardlink controls, and atomic replacement stress. The separate unsafe app-root
+guard passed against 0.439.2.

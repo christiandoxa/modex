@@ -544,7 +544,7 @@ class SessionProfile04392Tests(unittest.TestCase):
                 if link_target == "live":
                     self.assertNotEqual(observations["modex"].stderr, b"")
 
-    def test_world_readable_state_is_rejected_without_exposing_profile_data(self):
+    def test_world_readable_single_link_state_inside_private_root_matches_releases(self):
         for reference in (ORACLE_01651, test_cli.ORACLE):
             with tempfile.TemporaryDirectory(prefix="modex-session-state-mode-04392-") as directory:
                 root = Path(directory)
@@ -552,14 +552,46 @@ class SessionProfile04392Tests(unittest.TestCase):
                 state_path = write_state(root, profile_state(root))
                 state_bytes = state_path.read_bytes()
                 state_path.chmod(0o644)
+                self.assertEqual(state_path.stat().st_nlink, 1)
                 baseline = command_output(reference, root, ["session", "list", "--json", "--profile", "main"])
                 modex = command_output(test_cli.MODEX, root, ["session", "list", "--json", "--profile", "main"])
                 self.assertEqual(baseline.returncode, 0, baseline.stderr.decode())
                 self.assertEqual(json.loads(baseline.stdout)[0]["profile"], "main")
-                self.assertEqual(modex.returncode, 1)
-                self.assertEqual(modex.stdout, b"")
-                self.assertIn(b"locked state loading and recovery", modex.stderr)
+                self.assertEqual((modex.returncode, modex.stderr), (0, b""))
+                self.assertEqual(json.loads(modex.stdout), json.loads(baseline.stdout))
+                self.assertEqual((root / "home/.prodex").stat().st_mode & 0o777, 0o700)
+                self.assertEqual(state_path.stat().st_mode & 0o777, 0o644)
                 self.assertEqual(state_path.read_bytes(), state_bytes)
+
+    def test_writable_and_publicly_hardlinked_state_remain_fail_closed(self):
+        cases = (("group-writable", 0o620, False), ("other-writable", 0o602, False),
+                 ("public-hardlink", 0o644, True))
+        for reference in (ORACLE_01651, test_cli.ORACLE):
+            for label, mode, hardlink in cases:
+                with self.subTest(reference=reference.name, case=label), tempfile.TemporaryDirectory(
+                    prefix="modex-session-state-mode-04392-"
+                ) as directory:
+                    root = Path(directory)
+                    fixture(root)
+                    state_path = write_state(root, profile_state(root))
+                    state_bytes = state_path.read_bytes()
+                    state_path.chmod(mode)
+                    alias = root / "workspace/state-alias.json"
+                    if hardlink:
+                        os.link(state_path, alias)
+                        self.assertEqual(state_path.stat().st_nlink, 2)
+                    baseline = command_output(reference, root, ["session", "list", "--json", "--profile", "main"])
+                    modex = command_output(test_cli.MODEX, root, ["session", "list", "--json", "--profile", "main"])
+                    self.assertEqual(baseline.returncode, 0, baseline.stderr.decode())
+                    self.assertEqual(json.loads(baseline.stdout)[0]["profile"], "main")
+                    self.assertEqual((modex.returncode, modex.stdout), (1, b""))
+                    self.assertIn(b"locked state loading and recovery", modex.stderr)
+                    self.assertEqual(state_path.read_bytes(), state_bytes)
+                    self.assertEqual(state_path.stat().st_mode & 0o777, mode)
+                    self.assertEqual((root / "home/.prodex").stat().st_mode & 0o777, 0o700)
+                    if hardlink:
+                        self.assertEqual(state_path.stat().st_nlink, 2)
+                        self.assertEqual(alias.read_bytes(), state_bytes)
 
     def test_private_hardlinked_state_matches_both_releases_without_mutation(self):
         for reference in (ORACLE_01651, test_cli.ORACLE):

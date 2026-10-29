@@ -9,11 +9,13 @@ credentials or provider traffic are involved.
 
 The production `session list` path reads a valid `state.json` primary without
 repairing it, attaches matching `session_profile_bindings`, and applies the
-profile filter. The read rejects non-regular, unowned, world-accessible, and
-oversized primary files. It compares the opened descriptor and link count with
-the path before and after the read. Existing lock and last-good files do not
-block a valid primary, and the test verifies that Modex leaves the primary,
-backup, lock marker, session file, and file set unchanged.
+profile filter. The read rejects non-regular, unowned, group/other-writable,
+oversized, and multiply-linked group/other-readable primary files. It accepts
+a single-linked group/other-readable primary only inside the verified
+owner-only `.prodex` directory. The reader compares the opened descriptor,
+mode, and link count with the path before and after the read. Existing lock and
+last-good files do not block a valid primary, and the test verifies that Modex
+leaves the primary, backup, lock marker, session file, and file set unchanged.
 
 Binding processing uses a hash index for profile membership and the final
 occurrence of each binding key, matching JSON/Serde last-key behavior. One
@@ -44,13 +46,14 @@ check, without reading or changing the synthetic external target. A concurrent
 replacement is not a general race-freedom claim: the standard-library reader
 still has no `O_NOFOLLOW` or interprocess exclusion. A pre-existing lock or
 last-good marker alongside a dangling link remains fail-closed. The releases
-accept a world-readable state primary; Modex rejects it. A private primary with a
-pre-existing hard-link alias is accepted by both releases and Modex; the
-process test verifies that Modex preserves both paths and the link count. The
-reader compares link counts during its descriptor/path checks but does not
-reject a stable, multiply linked primary. These selected security differences
-are not parity claims. A live symlink is rejected by both tested release
-binaries and by Modex.
+accept a world-readable state primary; Modex does too when the primary has one
+link and the containing `.prodex` directory is mode 0700. Group/other-writable
+primaries and group/other-readable primaries with a hard-link alias remain
+fail-closed in Modex even though the releases read the synthetic controls. A
+private primary with a pre-existing hard-link alias is accepted by both
+releases and Modex; the process test verifies that Modex preserves both paths
+and the link count. A live symlink is rejected by both tested release binaries
+and by Modex.
 
 This read path does not implement cross-process locking or recovery. The
 observed descriptor and metadata checks do not exclude concurrent writers or
@@ -75,3 +78,32 @@ All 17 tests across `test_session_profile_04392.py` and
 `test_session_state_backup_04395.py` passed on the follow-up worktree. This
 does not establish general TOCTOU safety, cross-process state locking or
 recovery parity.
+
+## State permission follow-up
+
+On 2026-10-29, Modex was rebuilt with Mojo 1.2.0 and five focused session-state
+test methods passed against the pinned 0.165.1 and 0.439.2 binaries. A separate
+app-root permission guard passed against 0.439.2. The checks cover a
+single-linked mode-0644 primary in a mode-0700 app root, group/other-writable
+primaries, a world-readable hard-link alias, live and dangling symlinks, a
+private hard-link alias, concurrent atomic replacements, and an unsafe
+mode-0755 app root. The writable and public-alias controls remain documented
+safe mismatches; the other listed controls matched the expected behavior.
+
+The production import audit passed for all 71 Mojo files, the test census
+reported 50 native sources and 135 Python modules with one suite owner each,
+and `git diff --check` passed. The process tests use synthetic state only.
+
+```text
+make build BUILD_DIR=/tmp/modex-session-storage-follow-build
+PYTHONPATH=tests MODEX_BINARY=/tmp/modex-session-storage-follow-build/modex python3 -m unittest -v \
+  test_session_profile_04392.SessionProfile04392Tests.test_world_readable_single_link_state_inside_private_root_matches_releases \
+  test_session_profile_04392.SessionProfile04392Tests.test_writable_and_publicly_hardlinked_state_remain_fail_closed \
+  test_session_profile_04392.SessionProfile04392Tests.test_unsafe_state_paths_fail_closed \
+  test_session_profile_04392.SessionProfile04392Tests.test_private_hardlinked_state_matches_both_releases_without_mutation \
+  test_session_profile_04392.SessionProfile04392Tests.test_concurrent_atomic_state_replacements_never_yield_mixed_profile_data \
+  test_logs.LogLastTests.test_unsafe_existing_app_root_reports_known_repair_gap
+make ci-dependencies
+python3 scripts/ci/check-test-census.py
+git diff --check
+```

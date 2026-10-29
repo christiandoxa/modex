@@ -198,6 +198,41 @@ class CIOracleRoutingTests(unittest.TestCase):
                 with self.assertRaisesRegex(AssertionError, "pinned Prodex release"):
                     cross_release_suite.require_oracle_04392()
 
+    def test_provider_stream_cross_release_uses_pinned_cache_defaults_without_overrides(self):
+        import test_provider_stream_cross_release_characterization as cross_release_suite
+
+        with tempfile.TemporaryDirectory(prefix="modex-cross-release-oracle-cache-") as temporary:
+            home = Path(temporary)
+            cache = home / ".cache/modex/oracles"
+            historical = cache / "0.165.1/prodex-x86_64-unknown-linux-gnu"
+            active = cache / "0.439.2/prodex-x86_64-unknown-linux-gnu"
+            historical.parent.mkdir(parents=True)
+            active.parent.mkdir(parents=True)
+            historical_bytes = b"synthetic cached historical oracle"
+            active_bytes = b"synthetic cached active oracle"
+            historical.write_bytes(historical_bytes)
+            active.write_bytes(active_bytes)
+            modex = home / "modex"
+            modex.write_bytes(b"synthetic modex binary")
+            with (
+                patch.dict(os.environ, {}, clear=True),
+                patch.object(Path, "home", return_value=home),
+                patch.object(
+                    cross_release_suite,
+                    "ORACLE_01651_SHA256",
+                    hashlib.sha256(historical_bytes).hexdigest(),
+                ),
+                patch.object(
+                    cross_release_suite,
+                    "ORACLE_04392_SHA256",
+                    hashlib.sha256(active_bytes).hexdigest(),
+                ),
+                patch.object(cross_release_suite, "MODEX", modex),
+            ):
+                self.assertEqual(cross_release_suite.require_oracle_01651(), historical)
+                self.assertEqual(cross_release_suite.require_oracle_04392(), active)
+                cross_release_suite.ProviderStreamCrossReleaseCharacterizationTests.setUpClass()
+
     def run_fast_with_fake_tools(self, *, missing_active):
         with tempfile.TemporaryDirectory(prefix="modex-ci-oracle-routing-") as temporary:
             temp = Path(temporary)

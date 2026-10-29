@@ -15,11 +15,14 @@ ORACLE_01651_SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e30
 ORACLE_04392_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 
 
-def _require_oracle(environment_name, expected_sha256):
+def _require_oracle(environment_name, release, expected_sha256):
     value = os.environ.get(environment_name)
-    if not value:
+    if value is None:
+        oracle = Path.home() / ".cache/modex/oracles" / release / "prodex-x86_64-unknown-linux-gnu"
+    elif value:
+        oracle = Path(value)
+    else:
         raise AssertionError(f"{environment_name} must identify its pinned Prodex release")
-    oracle = Path(value)
     if not oracle.is_file():
         raise AssertionError(f"{environment_name} is missing: {oracle}")
     if hashlib.sha256(oracle.read_bytes()).hexdigest() != expected_sha256:
@@ -28,11 +31,11 @@ def _require_oracle(environment_name, expected_sha256):
 
 
 def require_oracle_01651():
-    return _require_oracle("PRODEX_ORACLE_01651", ORACLE_01651_SHA256)
+    return _require_oracle("PRODEX_ORACLE_01651", "0.165.1", ORACLE_01651_SHA256)
 
 
 def require_oracle_04392():
-    return _require_oracle("PRODEX_ORACLE_04392", ORACLE_04392_SHA256)
+    return _require_oracle("PRODEX_ORACLE_04392", "0.439.2", ORACLE_04392_SHA256)
 
 
 def _normalize_fallback_tool_call_ids(events):

@@ -68,6 +68,33 @@ reported for comparison only. These are Linux-specific observations under
 one local run and do not establish cross-platform resource bounds or full
 admission parity.
 
+## Isolated origin/main recheck (2026-10-30)
+
+From a fresh worktree created from `origin/main` at commit `6210413`,
+`test_admission_eviction_compares_preconnected_idle_and_keepalive_sockets`
+passed in 18.344 seconds. It reproduced the three-process results above: both
+releases preserved the preconnected client and returned HTTP 200 in the first
+two floods; Modex closed it without an upstream request. In the seven-blocker
+case, both releases served the two healthy requests before release, while
+Modex served them only after the blockers closed.
+
+The same worktree passed the parent-EOF retained-overflow test and the
+0.165.1/0.439.2 duplicate-Expect and framing tests. The latter includes
+fragmented, half-closed rejection cases; Modex remains fail-closed for valid
+ambiguous framing. The two framing tests took 21.607 seconds; the parent-EOF
+test took 1.003 seconds. The production and native driver builds, 71-file
+dependency audit, and `git diff --check` passed. These are regression guards,
+not admission-parity results.
+
+The path explains why no production policy changed: `serve_local_rewrite`
+stops accepting when `overflow` reaches `max(2, worker_count)`, while both
+TinyHTTP snapshots create a worker whenever no worker is waiting. A larger cap
+or one reserved slot moves the eviction boundary; selecting a partial request
+to evict defines a new overload policy and can disconnect a slow valid client.
+The aggregate-budget prototype also remains unqualified for CPU and accounting
+reasons above. This investigation found no bounded overload policy that avoids
+moving the tested eviction or starvation boundaries; keep this mismatch visible.
+
 Reproduce after `make build` with:
 
 ```sh

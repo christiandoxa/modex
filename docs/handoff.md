@@ -414,7 +414,15 @@ process-tree probe excludes fake Codex and counts the supervisor plus relay
 child; the earlier prototype probe's `/proc/<ppid>` numbers target Modex's
 supervisor only and remain invalid.
 These tests do not combine the backlog with parent EOF, large request heads,
-or header timers. No admission contract or platform status is promoted.
+or header timers. A fresh worktree based on `origin/main` commit `6210413`
+reran the three-scenario admission test (18.344 seconds), both release framing
+guards, and the retained-overflow parent-EOF test. The guard tests passed;
+admission mismatch remains, and these checks do not qualify parity. This
+investigation found no bounded production policy that avoids raising resource
+limits or moving the eviction boundary. Keep the admission
+gap and fail-closed ambiguous-framing behavior visible; no platform status is
+promoted. See
+`docs/evidence/baseline-0.165.1/local-relay-admission.md`.
 
 DeepSeek Super now preserves a safely checked shared `config.toml` in the
 isolated child home. The three DeepSeek runtime settings take precedence over

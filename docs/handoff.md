@@ -16,6 +16,21 @@ line still admits the event. Real-process JSON and plain comparisons cover
 initial snapshots and appended records. Redaction remains unchanged. See
 `docs/evidence/baseline-0.165.1/log-stream-escaped-event.md`.
 
+## Local relay Expect/framing precedence (2026-10-30)
+
+The production relay now matches both pinned releases when `Expect: 100-wait`
+arrives with conflicting or malformed framing: it returns 417 before reading a
+body, sending interim 100, or dispatching upstream. Real-process tests also
+cover fragmented headers, client half-close, a pipelined valid request behind
+the rejection, and the unchanged single valid `100-continue` control. The
+shared parser remains strict by default. Valid ambiguous chunk framing stays
+fail-closed in Modex: both releases dispatch it, while Modex returns 502 with
+no upstream request. Do not count that security difference as parity. The
+0.439.2 test path now uses only `PRODEX_ORACLE_04392` or its pinned cache path;
+a focused test passed with generic `PRODEX_ORACLE` deliberately set to 0.165.1.
+See `docs/evidence/baseline-0.439.2/local-relay-expect-framing.md` and
+`docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.
+
 ## Relay worker concurrency (2026-10-30)
 
 The exact `36ab8ca` Linux build admitted at most eight synthetic provider
@@ -138,13 +153,15 @@ lines and values only in TinyHTTP compatibility mode. Real-process controls
 match checksum-pinned 0.165.1 and 0.439.2 for boundary whitespace, CRLF field
 separation, and rejection of embedded value controls before upstream I/O.
 Identical duplicate `Content-Length` values are now accepted as described
-below; differing values remain rejected by Modex. Both releases close without a response
-for conflicting `Content-Length` and `Transfer-Encoding`, while Modex returns
-502. Both releases also close without a response for raw UTF-8 whitespace,
-while Modex returns 400. Embedded-control, conflicting-framing, and raw-UTF-8
-cases do not dispatch upstream; the duplicate-length release controls do. This
-qualifies selected Linux x86-64 behavior only and keeps all six baseline
-targets in the denominator. Evidence:
+below; differing values remain rejected by Modex. With valid chunked bodies,
+both releases dispatch conflicting `Content-Length`/`Transfer-Encoding` and
+duplicate `Transfer-Encoding`; Modex returns 502 without upstream dispatch.
+This is a recorded fail-closed security difference, not parity. An earlier
+fixture used a decimal rather than hexadecimal chunk size and did not establish
+release behavior for valid framing. Both releases and Modex now close without
+a response for raw UTF-8 header bytes. Embedded-control and mismatched-length
+cases also avoid upstream dispatch in Modex. These are selected Linux x86-64
+controls; all six baseline targets stay in the denominator. Evidence:
 `docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.
 
 The raw requests `Expect: 100-continue\x00bad` with `Content-Length: 0` and
@@ -3795,9 +3812,10 @@ shared parser still rejects duplicates. Both pinned releases and Modex return
 duplicate lengths with one normalized upstream length, including both
 pipelined request orders. Numeric variants such as `N`/`0N` and `N`/`N+1`
 remain intentionally fail-closed in Modex while both releases dispatch using
-the first value. Duplicate transfer encoding and content-length plus transfer
-encoding also remain response differences: the releases close without a
-response while Modex returns 502, with no upstream dispatch. These are recorded
+the first value. With valid chunk bodies, both releases dispatch duplicate
+transfer encoding and content-length plus transfer encoding, while Modex
+returns 502 without upstream dispatch. The earlier no-response observation
+used an invalid decimal chunk size. These remain documented security
 differences, not parity passes. The four-test real-process relay suite, 29-test
 loopback suite, production build, 71-file dependency audit, and diff check
 passed. Only selected Linux x86-64 behavior is qualified; the six-target

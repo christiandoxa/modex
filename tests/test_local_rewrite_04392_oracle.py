@@ -1,15 +1,22 @@
 """Exercise the local HTTP relay against released Prodex 0.439.2."""
 
 import hashlib
+import os
+from pathlib import Path
 import threading
 import time
 import unittest
 from unittest.mock import patch
 
-from test_cli import ORACLE, ORACLE_SHA256
+from test_cli import MODEX
 import test_local_rewrite_01651_oracle as transport
 
 
+ORACLE = Path(os.environ.get(
+    "PRODEX_ORACLE_04392",
+    Path.home() / ".cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+))
+ORACLE_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 CASE_NAMES = (
     "leading_request_line_whitespace_is_trimmed",
     "http_1_2_request_line_is_malformed",

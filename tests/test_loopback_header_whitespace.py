@@ -1,15 +1,22 @@
 """Compare TinyHTTP header whitespace through the real isolated relay."""
 
 import hashlib
+import os
 import threading
 import unittest
+from pathlib import Path
 
-from test_cli import MODEX, ORACLE as ORACLE_04392, ORACLE_SHA256 as ORACLE_04392_SHA256
+from test_cli import MODEX
 from test_cli_01651 import ORACLE as ORACLE_01651, ORACLE_SHA256 as ORACLE_01651_SHA256
 import test_local_rewrite_01651_oracle as transport
 
 
 BODY = transport.REQUEST_BODY
+ORACLE_04392 = Path(os.environ.get(
+    "PRODEX_ORACLE_04392",
+    Path.home() / ".cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+))
+ORACLE_04392_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 COMMON = (
     b"POST /v1/responses HTTP/1.1\r\n"
     b"Host: 127.0.0.1\r\n"
@@ -298,7 +305,7 @@ class LoopbackHeaderWhitespaceTests(unittest.TestCase):
             upstream.server_close()
             worker.join(timeout=2)
 
-    def test_ambiguous_framing_matches_recorded_release_differences(self):
+    def test_ambiguous_framing_release_dispatch_remains_modex_fail_closed(self):
         mismatched_lengths = (
             (
                 "different_numeric_text",
@@ -311,7 +318,7 @@ class LoopbackHeaderWhitespaceTests(unittest.TestCase):
                 b"Content-Length: " + str(len(BODY) + 1).encode() + b"\r\n",
             ),
         )
-        chunked_body = str(len(BODY)).encode() + b"\r\n" + BODY + b"\r\n0\r\n\r\n"
+        chunked_body = format(len(BODY), "X").encode() + b"\r\n" + BODY + b"\r\n0\r\n\r\n"
         conflicting_framing = (
             b"Content-Length: " + str(len(BODY)).encode() + b"\r\n"
             b"Content-Length: " + str(len(BODY)).encode() + b"\r\n"
@@ -356,15 +363,20 @@ class LoopbackHeaderWhitespaceTests(unittest.TestCase):
                         binary, name,
                         raw_request(framing=framing, body=chunked_body), upstream,
                     )
-                    self.assertEqual(records, [], label)
                     if label == "Modex":
                         self.assertEqual(
                             (response["status"], response["body"]),
                             (502, b"gateway request capture failed"),
                             label,
                         )
+                        self.assertEqual(records, [], label)
                     else:
-                        self.assertIsNone(response["status"], label)
+                        self.assertEqual(
+                            (response["status"], response["body"]),
+                            (200, transport.RESPONSES_RESPONSE),
+                            label,
+                        )
+                        self.assertEqual(len(records), 1, label)
         finally:
             upstream.shutdown()
             upstream.server_close()

@@ -684,6 +684,7 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
     var has_host = False
     var expect_continue = False
     var unsupported_expectation = False
+    var deferred_error = String()
     var has_connection_upgrade = False
     var has_non_websocket_upgrade = False
     var offset = lines[0].byte_length() + 2
@@ -725,18 +726,36 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
         if lower == "content-length":
             if has_content_length:
                 if not tiny_http_request_line_compat or value != content_length_value:
-                    raise Error("duplicate HTTP content length")
+                    if defer_expectation_errors:
+                        if not deferred_error:
+                            deferred_error = "duplicate HTTP content length"
+                    else:
+                        raise Error("duplicate HTTP content length")
                 append_header = False
             else:
                 has_content_length = True
                 content_length_value = value
-                content_length = _number(value)
+                try:
+                    content_length = _number(value)
+                except error:
+                    if defer_expectation_errors:
+                        deferred_error = String(error)
+                    else:
+                        raise
         elif lower == "transfer-encoding":
             if has_transfer_encoding:
-                raise Error("duplicate HTTP transfer encoding")
+                if defer_expectation_errors:
+                    if not deferred_error:
+                        deferred_error = "duplicate HTTP transfer encoding"
+                else:
+                    raise Error("duplicate HTTP transfer encoding")
             has_transfer_encoding = True
             if value.lower() != "chunked":
-                raise Error("unsupported HTTP transfer encoding")
+                if defer_expectation_errors:
+                    if not deferred_error:
+                        deferred_error = "unsupported HTTP transfer encoding"
+                else:
+                    raise Error("unsupported HTTP transfer encoding")
             chunked = True
         elif lower == "host":
             if has_host or not value:
@@ -761,15 +780,19 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
                 has_non_websocket_upgrade = True
         if append_header:
             headers.append((name, value))
-    if has_content_length and has_transfer_encoding:
-        raise Error("ambiguous HTTP request framing")
+    if has_content_length and has_transfer_encoding and not deferred_error:
+        deferred_error = "ambiguous HTTP request framing"
     if defer_expectation_errors:
         if unsupported_expectation:
             return ParsedRequestHead(String(request_line[0]), String(request_line[1]), version, headers^, content_length, chunked, expect_continue, True)
+        if deferred_error:
+            raise Error(deferred_error)
         if malformed_suffix:
             raise Error("malformed HTTP request line suffix")
         if malformed_target:
             raise Error("malformed HTTP request target")
+    elif deferred_error:
+        raise Error(deferred_error)
     if has_connection_upgrade and has_non_websocket_upgrade and not defer_expectation_errors:
         raise Error("HTTP protocol upgrades are unsupported")
     if version == "HTTP/1.1" and not has_host:

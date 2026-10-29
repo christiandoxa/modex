@@ -29,10 +29,7 @@ ORACLE_01651 = ORACLE
 ORACLE_SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
 ORACLE_04392 = Path(os.environ.get(
     "PRODEX_ORACLE_04392",
-    os.environ.get(
-        "PRODEX_ORACLE",
-        Path.home() / ".cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
-    ),
+    Path.home() / ".cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
 ))
 ORACLE_04392_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 SYNTHETIC_API_KEY = "synthetic-provider-key"
@@ -2986,6 +2983,10 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
         assert_large_request_head_cases(self, ORACLE, MODEX)
 
     def test_duplicate_expect_and_framing_rejections_remain_fail_closed(self):
+        single_valid_expect = expectation_request_case(
+            "single_valid_expect_control",
+            ["100-continue"],
+        )
         request_with_expect = expectation_request_case(
             "duplicate_valid_expect",
             ["100-continue", "100-continue"],
@@ -3011,25 +3012,63 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
         )
         duplicate_transfer_encoding = raw_expectation_case(
             "unsupported_expect_with_duplicate_transfer_encoding",
-            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-wait\r\n"
-            b"Transfer-Encoding: chunked\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Transfer-Encoding: chunked\r\nTransfer-Encoding: chunked\r\n"
+            b"Expect: 100-wait\r\n\r\n0\r\n\r\n",
         )
         malformed_content_length = raw_expectation_case(
             "unsupported_expect_with_malformed_content_length",
-            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-wait\r\n"
-            b"Content-Length: x\r\n\r\n",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Content-Length: x\r\nExpect: 100-wait\r\n\r\n",
         )
         unsupported_transfer_encoding = raw_expectation_case(
             "unsupported_expect_with_unsupported_transfer_encoding",
-            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-wait\r\n"
-            b"Transfer-Encoding: gzip\r\n\r\n",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Transfer-Encoding: gzip\r\nExpect: 100-wait\r\n\r\n",
         )
+        valid_expect_ambiguous_framing = raw_expectation_case(
+            "valid_expect_with_ambiguous_framing",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Content-Length: " + str(len(REQUEST_BODY)).encode() + b"\r\n"
+            b"Content-Length: " + str(len(REQUEST_BODY)).encode() + b"\r\n"
+            b"Transfer-Encoding: chunked\r\nExpect: 100-continue\r\nConnection: close\r\n\r\n",
+        )
+        valid_expect_ambiguous_framing["body_after_continue"] = (
+            format(len(REQUEST_BODY), "X").encode("ascii")
+            + b"\r\n" + REQUEST_BODY + b"\r\n0\r\n\r\n"
+        )
+        fragmented_unsupported_expect = raw_expectation_case(
+            "fragmented_unsupported_expect_half_closed",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Content-Length: x\r\nTransfer-Encoding: chunked\r\nExpect: 100-wait\r\n"
+            b"Connection: close\r\n\r\n",
+            half_close=True,
+        )
+        split = fragmented_unsupported_expect["request"].index(b"Transfer-Encoding") + 8
+        fragmented_unsupported_expect["request_parts"] = [
+            fragmented_unsupported_expect["request"][:split],
+            fragmented_unsupported_expect["request"][split:],
+        ]
+        fragmented_unsupported_expect["request_part_delay_ms"] = 5
+        pipelined_unsupported_expect = raw_expectation_case(
+            "unsupported_expect_framing_closes_before_pipeline_tail",
+            fragmented_unsupported_expect["request"],
+        )
+        pipelined_unsupported_expect["pipelined_requests"] = [
+            fragmented_unsupported_expect["request"],
+            request_bytes((("Connection", "close"),)),
+        ]
+        pipelined_unsupported_expect["pipelined_response_count"] = 1
         malformed_expect_value = raw_expectation_case(
             "malformed_expect_value_token",
             b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
             b"Expect: 100-continue\x00bad\r\nContent-Length: 0\r\n\r\n",
         )
         cases = (
+            (single_valid_expect, {
+                "oracle": (200, "OK", RESPONSES_RESPONSE, [100], 1, False),
+                "modex": (200, "OK", RESPONSES_RESPONSE, [100], 1, False),
+            }),
             (request_with_expect, {
                 "oracle": (200, "OK", RESPONSES_RESPONSE, [100], 1, False),
                 "modex": (417, "Expectation Failed", b"", [], 0, True),
@@ -3044,7 +3083,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             }),
             (conflicting_framing, {
                 "oracle": (417, "Expectation Failed", b"", [], 0, True),
-                "modex": (502, "Bad Gateway", b"gateway request capture failed", [], 0, True),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
             }),
             (duplicate_content_length, {
                 "oracle": (417, "Expectation Failed", b"", [], 0, True),
@@ -3052,14 +3091,26 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             }),
             (duplicate_transfer_encoding, {
                 "oracle": (417, "Expectation Failed", b"", [], 0, True),
-                "modex": (502, "Bad Gateway", b"gateway request capture failed", [], 0, True),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
             }),
             (malformed_content_length, {
                 "oracle": (417, "Expectation Failed", b"", [], 0, True),
-                "modex": (502, "Bad Gateway", b"gateway request capture failed", [], 0, True),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
             }),
             (unsupported_transfer_encoding, {
                 "oracle": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
+            }),
+            (fragmented_unsupported_expect, {
+                "oracle": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
+            }),
+            (pipelined_unsupported_expect, {
+                "oracle": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
+            }),
+            (valid_expect_ambiguous_framing, {
+                "oracle": (200, "OK", RESPONSES_RESPONSE, [100], 1, True),
                 "modex": (502, "Bad Gateway", b"gateway request capture failed", [], 0, True),
             }),
             (malformed_expect_value, {
@@ -3088,6 +3139,12 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                         self.assertEqual(response["read_error"], "", label)
                         self.assertEqual(response["connection_closed"], closed, label)
                         self.assertEqual(len(records), upstream_count, label)
+                    if case["name"] == "unsupported_expect_framing_closes_before_pipeline_tail":
+                        for response in (oracle_response, modex_response):
+                            self.assertEqual(
+                                [(item["status"], item["body"]) for item in response["pipelined_responses"]],
+                                [(417, b"")],
+                            )
                     if case["name"] in (
                         "malformed_expect_value_token",
                         "unsupported_expect_with_duplicate_content_length",

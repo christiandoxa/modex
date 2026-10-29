@@ -64,9 +64,10 @@ check buffered HEAD length preservation, streamed HEAD without chunk data or a
 terminator, and HEAD 204/304 with chunked headers but no terminator. Independent
 raw oracle probes, now reproducible in the oracle matrix, found that HEAD 204
 and 304 with `text/event-stream` include `Transfer-Encoding: chunked` and the
-terminal `0\r\n\r\n` chunk in 0.165.1. A HEAD 200 SSE response emits the same
-terminal chunk. Modex suppresses those terminators for HEAD, so raw-wire parity
-for HEAD event-stream cases is not claimed. Normal POST SSE chunking and
+terminal `0\r\n\r\n` chunk in 0.165.1; Modex now matches those bodyless
+cases. A HEAD 200 SSE response also emits the terminal chunk in the release,
+while Modex suppresses it, so broader HEAD event-stream parity is not claimed.
+Normal POST SSE chunking and
 disconnect cancellation continue to pass.
 
 The frozen TinyHTTP reader accumulates request-head lines without a byte cap.

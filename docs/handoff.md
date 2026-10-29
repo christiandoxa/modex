@@ -421,8 +421,9 @@ large-header gaps remain. See
 
 The local relay now forwards tested HTTP methods on both supported routes,
 including extension methods. GET JSON and SSE responses and selected HEAD
-framing match 0.165.1; for HEAD 204/304 event streams, Modex suppresses the
-terminal chunk that the reference sends. Large request heads now match
+framing match 0.165.1, including the terminal chunk for HEAD 204/304 event
+streams. Modex still suppresses the release's terminal chunk for HEAD 200
+event streams. Large request heads now match
 selected 65,535/65,536/65,537-byte boundaries, 128 KiB fields, and 1 MiB
 aggregate/token cases against 0.165.1 and 0.439.2. The relay is bounded at
 1 MiB, while both releases accept 1 MiB + 1; this mismatch remains open. Other

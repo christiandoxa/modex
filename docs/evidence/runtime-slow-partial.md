@@ -68,14 +68,20 @@ returns 413 without upstream traffic.
 
 `tests/test_runtime_slow_partial.py` runs the real isolated Super process
 against both checksum-pinned releases and Modex. It covers eight incomplete
-headers under default and one-worker settings, sixteen incomplete bodies,
+headers under default and one-worker settings, a 127/128-client partial-header
+admission boundary, sixteen incomplete bodies,
 client half-close, an incomplete header followed by EOF, 1,024- and 2,048-byte
 declared bodies truncated after one byte, a zero-length body, a valid header
 split across five sends, and the declared body limit. It first requires the
 two frozen releases to agree. Modex must match their response timing for the
-incomplete header and body pools, exact truncated-body status and body,
-header-EOF close, zero-length-body status, fragmented-header status, and
-body-limit status.
+existing eight-header and sixteen-body pools, plus the exact truncated-body
+status and body, header-EOF close, zero-length-body status, fragmented-header
+status, and body-limit status.
+
+The 127/128-client case is an explicit allowed gap. Both releases must serve a
+healthy request before partial-header clients close at either count. Modex may
+serve it before close or wait until close; the test requires eventual 200 and
+does not assert that the candidate mismatch is required behavior.
 
 Request-head boundaries and large-header limits remain covered by
 `test_local_rewrite_01651_oracle.py` and
@@ -93,7 +99,7 @@ PRODEX_ORACLE_04392=/path/to/prodex-0.439.2 \
 python3 scripts/ci/run-unittest.py test_runtime_slow_partial.py
 ```
 
-On 2026-10-29, the expanded eight-test process matrix passed against Modex at
+On 2026-10-29, the expanded nine-test process matrix passed against Modex at
 `/tmp/modex-truncated-body-eof-build/modex`, built with Mojo 1.2.0
 (`2016d0cd`), `-O3 --target-cpu=x86-64-v3 -I src`, from base revision
 `30901e73c3dd1a3503fc7f39c6e2ff08994e9fe9`. Its SHA-256 was
@@ -150,3 +156,12 @@ both checksum-pinned releases and a Modex build from commit
 `21f1064fa4af4c424ae220c3db69b54bfb31c69ab6588acb51cd851e9c4c5ea1`. The
 suite took 29 seconds. This Linux x86-64 process evidence covers only these
 request sizes and cases; it does not establish full HTTP or release parity.
+
+The focused process matrix also measured parked-header admission with 127 and
+128 held partial requests. At 127, both releases and Modex served the healthy
+request before release. At 128, both releases served it in about 2 ms, while
+Modex waited through the 1,000 ms hold and served it after the partial sockets
+closed. The maintained test accepts either Modex timing and requires eventual
+200; it preserves the observed cap without claiming that the mismatch is
+required. The 128 parked-socket limit and its fairness tradeoff remain a
+known runtime difference.

@@ -77,6 +77,12 @@ class RuntimeSlowPartialTests(unittest.TestCase):
             )
         if scenario == "slow-partial-fragmented-header":
             return probe["fragments"], probe["status"]
+        if scenario == "slow-partial-flood":
+            return (
+                probe["partial_clients"],
+                probe["before_release_status"],
+                probe["status"],
+            )
         if scenario in ("truncated-header-eof", "empty-request-body"):
             return probe["status"]
         if scenario in ("truncated-body-eof", "truncated-small-body-eof"):
@@ -103,6 +109,16 @@ class RuntimeSlowPartialTests(unittest.TestCase):
                 signature, modex = self._compare("slow-partial", environment)
                 self.assertEqual(signature, (True, 200, 200))
                 self.assertEqual(self._signature("slow-partial", modex), signature)
+
+    def test_parked_partial_header_cap_matches_releases_without_requiring_parity(self):
+        for count in (127, 128):
+            with self.subTest(partial_clients=count):
+                environment = {"MODEX_SLOW_PARTIAL_HEADER_COUNT": str(count)}
+                signature, modex = self._compare("slow-partial-flood", environment)
+                self.assertEqual(signature, (count, 200, 200))
+                self.assertEqual(modex["partial_clients"], count)
+                self.assertIn(modex["before_release_status"], (None, 200))
+                self.assertEqual(modex["status"], 200)
 
     def test_incomplete_bodies_hold_workers_until_client_cancellation(self):
         signature, modex = self._compare("slow-partial-body")

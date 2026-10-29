@@ -3107,7 +3107,11 @@ and the existing 2 MiB request-header limit and 128 parked-socket cap bound
 capture. Admitted workers still parse headers and read request bodies, so slow
 or incomplete bodies can occupy every lane. The per-connection cap, FIFO
 admission, and configured worker-count behavior still differ from the
-releases. Fixed-length bodies of 1,024 bytes or less remain in parser capture;
+releases. A production flood probe measured that difference: at 128 held
+incomplete headers, both releases served a healthy 129th request in about 2 ms;
+Modex waited through a 1,000 ms hold and served it after the partial clients
+closed. The maintained test allows that mismatch and requires eventual 200.
+Fixed-length bodies of 1,024 bytes or less remain in parser capture;
 EOF there closes without a response as both releases do. Deferred-body EOF now
 returns the baseline 502 and `upstream request failed` body for tested large
 fixed-length bodies, chunk-data EOF, and `Expect: 100-continue`. Large

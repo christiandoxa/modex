@@ -110,7 +110,7 @@ if scenario == "extra-state":
     (home/"synthetic-user-state").write_text("preserve this data")
     raise SystemExit(0)
 if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-header",
-                "slow-partial-body-limit", "truncated-header-eof", "truncated-body-eof",
+                "slow-partial-body-limit", "slow-partial-flood", "truncated-header-eof", "truncated-body-eof",
                 "truncated-small-body-eof", "empty-request-body") or scenario.startswith("request-head-"):
     import select
     import socket
@@ -309,6 +309,30 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
               "status":status, "elapsed_ms":round((time.monotonic()-started)*1000)})
         for partial in partials:
             partial.close()
+        healthy.close()
+        print("synthetic-client-complete")
+        raise SystemExit(0 if status == 200 else 1)
+    if scenario == "slow-partial-flood":
+        partials = []
+        count = int(os.environ["MODEX_SLOW_PARTIAL_HEADER_COUNT"])
+        for index in range(count):
+            partial = socket.create_connection((host, port), timeout=5)
+            partial.sendall((f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+                             f"Content-Length: 2\r\nX-Slow-Partial: {index}\r\n").encode())
+            partials.append(partial)
+        time.sleep(0.25)
+        healthy = socket.create_connection((host, port), timeout=5)
+        started = time.monotonic()
+        healthy.sendall(request)
+        before_release = read_status(healthy, 1.0)
+        before_release_elapsed = round((time.monotonic() - started) * 1000)
+        for partial in partials:
+            partial.close()
+        status = before_release if before_release is not None else read_status(healthy, 5.0)
+        save({"kind":scenario, "partial_clients":count,
+              "before_release_status":before_release,
+              "before_release_elapsed_ms":before_release_elapsed,
+              "status":status})
         healthy.close()
         print("synthetic-client-complete")
         raise SystemExit(0 if status == 200 else 1)

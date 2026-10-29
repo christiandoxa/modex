@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The isolated full `make test` run on `0023b4669e547e27bc4d660786f791c33546d79c`
+completed successfully: production and native checks passed and 1,050 Python
+tests passed in 3,356.477 seconds. The local log is
+`/tmp/modex-full-0023b46-20261030.log` (SHA-256
+`441ad6b5926568c88ab3331b0adc996696818bbcde4747b84a986ce701bc623a`). This
+run predates later dry-run, provider, and log changes; it does not qualify the
+current revision, non-host targets, or security behavior.
+
 ## Buffered first-choice history shaping (2026-10-30)
 
 The buffered DeepSeek history shaper now rejects a present non-object first

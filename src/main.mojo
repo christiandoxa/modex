@@ -10,7 +10,7 @@ from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
 from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_short_help
 from modex.root_help import root_help, update_help
-from modex.sessions import inspect_sessions
+from modex.sessions import inspect_sessions, resolve_session_id_from_store
 from modex.super_cli import parse_super_arguments, run_super
 from modex.super_help import super_help
 from modex.super_launch import run_local_rewrite_child
@@ -214,7 +214,16 @@ def main():
                 print(session_help(options.query, String(executable_parts[len(executable_parts) - 1])), end="")
                 return
             if options.output == "resume":
-                print("Error: session resume is not implemented", file=stderr)
+                try:
+                    _ = resolve_session_id_from_store(options.query)
+                except error:
+                    print("Error:", error, file=stderr)
+                    exit(1)
+                print(
+                    "Error: session resume requires managed profile authorization and launch, "
+                    + "which are not implemented",
+                    file=stderr,
+                )
                 exit(1)
             try:
                 var output = inspect_sessions(options^)

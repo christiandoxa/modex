@@ -655,6 +655,59 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
     return output^
 
 
+def session_id_matches(id: String, selector: String, exact: Bool) -> Bool:
+    if selector.byte_length() > id.byte_length() or (
+        exact and selector.byte_length() != id.byte_length()
+    ):
+        return False
+    var id_bytes = id.as_bytes()
+    var selector_bytes = selector.as_bytes()
+    # The frozen selector folds ASCII only, preserving arbitrary ID bytes.
+    for index in range(selector.byte_length()):
+        var left = Int(id_bytes[index])
+        var right = Int(selector_bytes[index])
+        if 65 <= left <= 90:
+            left += 32
+        if 65 <= right <= 90:
+            right += 32
+        if left != right:
+            return False
+    return True
+
+
+def resolve_session_id(ids: List[String], selector: String) raises -> String:
+    var selected = trim_text(selector)
+    if not selected:
+        raise Error("session could not be resolved")
+    var exact_count = 0
+    var exact_id = String()
+    var prefix_count = 0
+    var prefix_id = String()
+    for id in ids:
+        if session_id_matches(id, selected, True):
+            exact_count += 1
+            exact_id = id
+        elif session_id_matches(id, selected, False):
+            prefix_count += 1
+            prefix_id = id
+    if exact_count == 1:
+        return exact_id^
+    if exact_count > 1 or prefix_count > 1:
+        raise Error("session selector is ambiguous")
+    if prefix_count == 1:
+        return prefix_id^
+    raise Error("session could not be resolved")
+
+
+def resolve_session_id_from_store(selector: String) raises -> String:
+    var options = SessionOptions(False, "id-only", None, "", None, None, False)
+    var ids = List[String]()
+    for id in inspect_sessions(options^).split("\n"):
+        if id:
+            ids.append(String(id))
+    return resolve_session_id(ids, selector)
+
+
 def session_row(fields: List[String], widths: List[Int]) raises -> String:
     var output = String()
     for index in range(len(fields)):

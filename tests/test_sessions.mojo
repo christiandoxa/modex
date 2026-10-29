@@ -1,10 +1,10 @@
-from std.collections import Optional
+from std.collections import List, Optional
 from std.testing import assert_equal, assert_false, assert_true
 
 from modex.cli import jaro_similarity, parse_session_options, unsigned_value
 from modex.json import JsonDocument
 from modex.session_time import integer_timestamp, timestamp_key
-from modex.sessions import SessionReport, session_child_path, session_query_lowercase, starts_session
+from modex.sessions import SessionReport, resolve_session_id, session_child_path, session_query_lowercase, starts_session
 from modex.text import character_width, fit_cell, pad_cell, section_header, text_width, trim_text, wrap_text
 
 
@@ -84,6 +84,24 @@ def main() raises:
     report.apply(empty_type)
     assert_equal(report.id, "session-a")
     assert_false(starts_session(empty_type))
+    var ids = List[String]()
+    ids.append("019a1234-5678-7123-8123-0123456789ab")
+    ids.append("019a1234-9999-7123-8123-0123456789ab")
+    ids.append("019a1234-5678-7123-8123-0123456789ab-long")
+    assert_equal(resolve_session_id(ids, "019A1234-5678-7123-8123-0123456789AB"), ids[0])
+    assert_equal(resolve_session_id(ids, "019a1234-9999"), ids[1])
+    var missing = False
+    try:
+        _ = resolve_session_id(ids, "not-found")
+    except error:
+        missing = String(error) == "session could not be resolved"
+    assert_true(missing)
+    var ambiguous = False
+    try:
+        _ = resolve_session_id(ids, "019a1234")
+    except error:
+        ambiguous = String(error) == "session selector is ambiguous"
+    assert_true(ambiguous)
     var options = parse_session_options(["modex", "session", "list", "--json", "--limit=0", "--parent-only"])
     assert_equal(options.output, "json")
     assert_equal(options.limit.value(), UInt64(0))

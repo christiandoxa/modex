@@ -27,6 +27,20 @@ output. The production build, native parser program and focused process checks
 pass; this covers CLI parsing only. Evidence:
 `docs/evidence/baseline-0.165.1/cli-observations.md`.
 
+Session resume now resolves IDs on the production CLI path using the existing
+session reader. Five synthetic real-process tests against the checksum-pinned
+0.165.1 and 0.439.2 Linux binaries cover missing/ambiguous errors, exact-ID
+precedence over longer prefixes, ASCII case, ASCII/Unicode surrounding
+whitespace and blank whitespace selectors, duplicate exact IDs, and state
+failure ordering. Missing and ambiguous outputs match both releases. Valid
+selections stop before direct Codex launch because Modex still lacks the
+managed profile authorization and runtime path. The stricter lock-only and malformed-state refusals remain
+fail-closed differences; metadata repair and state database-only candidates
+remain open. The native session test, 28 listing/report tests, production
+dependency audit, production build, strict-runner test, and test census passed.
+The census found 50 native test sources and 129 Python modules. See
+`docs/evidence/session-resume-selection-01651-04392.md`.
+
 After integrating the Super argument, bounded large-header and image-start
 changes, the production build and four native checks passed. Sixteen focused
 image, header and Super process tests passed, including comparisons against

@@ -476,9 +476,15 @@ Session help and argument-error output match 271 captured frozen-release
 cases and 152 seeded generated comparisons, including suggestions, short-flag
 clusters, literal boundaries, help routing and ordered conflicts. This does
 not establish complete CLI coverage. Other commands and remaining combinations
-are unverified. Valid session resume execution still fails explicitly as
-unimplemented. Valid-command startup mutations are outside these output
-claims. Evidence: `docs/evidence/session-arguments-tests.txt`.
+are unverified. Resume now matches both pinned releases for missing/ambiguous
+selection, exact-ID precedence, ASCII casing, surrounding and blank
+whitespace, and duplicate IDs. Valid selection still stops before launch
+because managed profile authorization and runtime launch are not connected. Metadata repair
+and state database-only candidates remain unimplemented. Modex also retains a
+stricter rejection for a lock marker without a primary state file; malformed
+state is rejected before ID selection with a different diagnostic. These are
+not full parity. Evidence: `docs/evidence/session-resume-selection-01651-04392.md`
+and `docs/evidence/session-arguments-tests.txt`.
 Root `--help`, `-h`, bare `help`, ignored help-flag tails and custom executable
 Usage now match isolated release checks. Remaining help routes and command
 execution are unfinished. Evidence: `docs/evidence/unicode-width-tests.txt`.

@@ -1170,19 +1170,22 @@
       "prerequisites": [
         "Codex"
       ],
-      "implementation": null,
+      "implementation": "src/main.mojo; src/modex/sessions.mojo",
       "tests": [
-        "tests/test_session_cli.mojo"
+        "tests/test_session_cli.mojo",
+        "tests/test_sessions.mojo",
+        "tests/test_session_resume.py"
       ],
       "evidence": [
         "docs/evidence/checkpoint2-reference.json",
         "docs/evidence/checkpoint2-tests.txt",
         "docs/evidence/checkpoint2-dependencies.txt",
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/session-resume-selection-01651-04392.md"
       ],
-      "status": "NOT_STARTED",
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -1190,7 +1193,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Production exact/unique-prefix selection and missing/ambiguous errors are connected and tested against both pinned Linux releases. Valid selections still fail closed before Codex launch because managed profile authorization, metadata repair, state-database-only candidates, and runtime ownership are unimplemented. The lock-only and malformed-state differences are retained; see docs/evidence/session-resume-selection-01651-04392.md."
       ]
     },
     {

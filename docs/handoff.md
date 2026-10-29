@@ -62,10 +62,12 @@ and state-guard suite passed 29 tests, and nine shared stream/concurrency
 tests passed. The CI helper/routing suite passed 11 tests; the dependency audit
 and 126-module census passed. These do not establish full parity.
 
-Selected Anthropic message metadata, text/input deltas and ignored unknown
-delta types now match both releases in real-process stream comparisons,
-including `citation_delta`. Thinking deltas and malformed-type diagnostic
-details remain mismatches. See
+Selected Anthropic message metadata, text/input and thinking deltas, unknown
+string delta types, and unmatched block stops now match both releases in
+real-process stream comparisons. Missing, null, and numeric delta types fail
+in all three processes, but their failure codes and event sequences differ.
+The overlapping-result control covers 128 open indexes; no aggregate cap
+limits retained per-stream search and tool state. See
 `docs/evidence/anthropic-stream-optional-metadata-shared.md`.
 
 The combined production build, three native provider/parser checks, nine

@@ -322,7 +322,7 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                     self.assertIn("response.failed", [event for event, _ in events])
                     self.assertNotIn("response.completed", [event for event, _ in events])
 
-    def test_thinking_delta_is_a_known_release_mismatch_in_and_out_of_order(self):
+    def test_thinking_delta_matches_both_releases_in_and_out_of_order(self):
         message_start = {
             "type": "message_start",
             "message": {"id": "msg_reason", "role": "assistant", "model": "claude-sonnet-4-6"},
@@ -330,17 +330,60 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
         thinking_delta = {
             "type": "content_block_delta", "index": 0,
             "delta": {"type": "thinking_delta", "thinking": "considering"},
+            "future_event_field": "ignored",
         }
         cases = [
             ("in_order", [
                 message_start,
                 {"type": "content_block_start", "index": 0,
-                 "content_block": {"type": "thinking", "thinking": ""}},
+                 "content_block": {"type": "thinking", "thinking": ""},
+                 "future_event_field": "ignored"},
                 thinking_delta,
+                {"type": "content_block_stop", "index": 0, "future_event_field": "ignored"},
                 {"type": "message_stop"},
             ]),
-            ("out_of_order", [message_start, thinking_delta, {"type": "message_stop"}]),
+            ("out_of_order", [
+                message_start, thinking_delta,
+                {"type": "content_block_stop", "index": 0, "future_event_field": "ignored"},
+                {"type": "message_stop"},
+            ]),
         ]
+        overlapping = [message_start]
+        for index in range(256):
+            overlapping.append({
+                "type": "content_block_start", "index": index,
+                "content_block": {"type": "thinking", "thinking": ""},
+            })
+        final_delta = dict(thinking_delta)
+        final_delta["index"] = 255
+        overlapping.append(final_delta)
+        for index in range(256):
+            overlapping.append({"type": "content_block_stop", "index": index})
+        overlapping.append({"type": "message_stop"})
+        cases.append(("many_overlapping_blocks", overlapping))
+        overlapping_results = [message_start]
+        result_indexes = []
+        for index in range(128):
+            search_index = index * 2
+            result_index = search_index + 1
+            search_id = f"search_{index}"
+            overlapping_results.extend((
+                {"type": "content_block_start", "index": search_index, "content_block": {
+                    "type": "server_tool_use", "id": search_id, "name": "web_search",
+                    "input": {"query": f"query {index}"},
+                }},
+                {"type": "content_block_stop", "index": search_index},
+                {"type": "content_block_start", "index": result_index, "content_block": {
+                    "type": "web_search_tool_result", "tool_use_id": search_id, "content": [],
+                }},
+                {"type": "content_block_delta", "index": result_index,
+                 "delta": {"type": "thinking_delta", "thinking": "ignored"}},
+            ))
+            result_indexes.append(result_index)
+        for index in reversed(result_indexes):
+            overlapping_results.append({"type": "content_block_stop", "index": index})
+        overlapping_results.append({"type": "message_stop"})
+        cases.append(("overlapping_search_results", overlapping_results))
         turns = [
             {"model": "deepseek-chat", "input": name, "stream": True,
              "tools": [{"type": "web_search_preview"}]}
@@ -363,22 +406,69 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
             self.assertEqual(len(responses), len(cases), label)
             self.assertTrue(all(response["status"] == 200 for response in responses), label)
             captures[label] = [
-                _normalized_events(bytes.fromhex(response["body"])) for response in responses
+                (post["body"], _normalized_events(bytes.fromhex(response["body"])))
+                for post, response in zip(posts, responses)
             ]
         self.assertEqual(captures["0.165.1"], captures["0.439.2"])
-        for (name, _), events in zip(cases, captures["0.439.2"]):
+        self.assertEqual(captures["Modex"], captures["0.439.2"])
+        for (name, _), (_, events) in zip(cases, captures["0.439.2"]):
             with self.subTest(case=name):
-                self.assertIn("response.reasoning_summary_text.delta", [event for event, _ in events])
-                self.assertIn("considering", json.dumps(events))
+                if name == "overlapping_search_results":
+                    self.assertNotIn("response.reasoning_summary_text.delta", [event for event, _ in events])
+                    self.assertNotIn("ignored", json.dumps(events))
+                else:
+                    self.assertIn("response.reasoning_summary_text.delta", [event for event, _ in events])
+                    self.assertIn("considering", json.dumps(events))
                 self.assertEqual(events[-1][0], "response.completed")
-        expected_modex_errors = {
-            "in_order": "Anthropic content block type is not supported",
-            "out_of_order": "Anthropic content delta type is not supported",
+
+    def test_unmatched_content_block_stops_are_ignored_against_both_releases(self):
+        message_start = {
+            "type": "message_start",
+            "message": {"id": "msg_stop", "role": "assistant", "model": "claude-sonnet-4-6"},
         }
-        for (name, _), events in zip(cases, captures["Modex"]):
-            with self.subTest(modex_case=name):
-                self.assertEqual(events[-1][0], "response.failed")
-                self.assertEqual(events[-1][1]["response"]["error"]["message"], expected_modex_errors[name])
+        message_delta = {
+            "type": "message_delta", "delta": {"stop_reason": "end_turn"},
+            "usage": {"output_tokens": 5},
+        }
+        cases = [
+            ("orphan_extra_root", {"type": "content_block_stop", "index": 99,
+                                    "future_event_field": "ignored"}),
+            ("missing_index", {"type": "content_block_stop"}),
+            ("nonnumeric_index", {"type": "content_block_stop", "index": "zero"}),
+        ]
+        turns = [
+            {"model": "deepseek-chat", "input": name, "stream": True,
+             "tools": [{"type": "web_search_preview"}]}
+            for name, _ in cases
+        ]
+        replies = [
+            _stream([message_start, stop, message_delta, {"type": "message_stop"}])
+            for _, stop in cases
+        ]
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, turns, replies)
+            self.assertEqual(len(posts), len(cases), label)
+            self.assertTrue(all(post["path"] == "/anthropic/v1/messages" for post in posts), label)
+            for post in posts:
+                headers = {key.lower(): value for key, value in post["headers"].items()}
+                self.assertEqual(headers["x-api-key"], "synthetic-provider-key", label)
+                self.assertNotIn("authorization", headers, label)
+            self.assertEqual(len(responses), len(cases), label)
+            self.assertTrue(all(response["status"] == 200 for response in responses), label)
+            captures[label] = [
+                (post["body"], _normalized_events(bytes.fromhex(response["body"])))
+                for post, response in zip(posts, responses)
+            ]
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        self.assertEqual(captures["Modex"], captures["0.439.2"])
+        for (name, _), (_, events) in zip(cases, captures["0.439.2"]):
+            with self.subTest(case=name):
+                self.assertEqual(events[-1][0], "response.completed")
 
 
 if __name__ == "__main__":

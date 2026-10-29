@@ -701,18 +701,13 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
             "anthropic-tool-use-missing-stop": True,
             "anthropic-tool-use-orphan-delta": False,
             "anthropic-tool-use-mismatched-index": False,
-            "anthropic-tool-use-duplicate-stop": False,
-            "anthropic-tool-use-orphan-stop": False,
-            "anthropic-tool-use-mismatched-stop": False,
+            "anthropic-tool-use-duplicate-stop": True,
+            "anthropic-tool-use-orphan-stop": True,
+            "anthropic-tool-use-mismatched-stop": True,
             "anthropic-tool-use-delta-after-stop": False,
             "anthropic-tool-use-reopened-index": False,
         }
-        release_completes = {
-            "anthropic-tool-use-duplicate-stop",
-            "anthropic-tool-use-orphan-stop",
-            "anthropic-tool-use-mismatched-stop",
-            "anthropic-tool-use-reopened-index",
-        }
+        release_completes = {"anthropic-tool-use-reopened-index"}
         for scenario, exact_match in cases.items():
             with self.subTest(scenario=scenario):
                 reference = _run(ORACLE_01651, request, scenario=scenario)

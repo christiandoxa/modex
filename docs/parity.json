@@ -2732,6 +2732,7 @@
       "implementation": null,
       "tests": [
         "tests/test_provider_stream_01651_characterization.py",
+        "tests/test_provider_stream_cross_release_characterization.py",
         "tests/test_anthropic_mixed_tools_01651.py"
       ],
       "evidence": [
@@ -2937,6 +2938,7 @@
         "tests/test_provider_request_untyped_content_04395.py",
         "tests/test_provider_embedded_tool_calls_04395.py",
         "tests/test_provider_tools_04392_characterization.py",
+        "tests/test_provider_stream_cross_release_characterization.py",
         "tests/test_anthropic_message_arrays_04392.py",
         "tests/test_anthropic_text_stream_04392.py",
         "tests/test_anthropic_buffered_payload_04392.py",

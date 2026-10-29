@@ -47,6 +47,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         active = script.index("reference.py oracle active")
         historical = script.index("reference.py oracle 0.165.1")
         cross_release = script.index("run_logged focused-python-active-cross-release")
+        cross_release_tests = script[cross_release:script.index("\n", cross_release)]
         active_source = script.index("reference.py source active")
         active_suite = script.index("run_logged focused-python-active ")
 
@@ -60,13 +61,16 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_gateway_cli.py", active_tests)
         self.assertIn("test_anthropic_stream_optional_metadata_shared.py", script)
         self.assertIn("test_provider_stream_repeated_search_04392.py", script)
+        self.assertIn("test_provider_stream_cross_release_characterization.py", cross_release_tests)
         self.assertIn("run_logged focused-python-active-cross-release", script)
         self.assertIn("test_anthropic_mixed_tools_01651.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_anthropic_request_max_output_tokens_01651.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_anthropic_request_unknown_fields_01651_04392.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_cli.py", script[cross_release:script.index("\n", cross_release)])
         historical_suite = script.index("run_logged historical-python-01651")
-        self.assertNotIn("test_anthropic_mixed_tools_01651.py", script[historical_suite:script.index("\n", historical_suite)])
+        historical_tests = script[historical_suite:script.index("\n", historical_suite)]
+        self.assertNotIn("test_anthropic_mixed_tools_01651.py", historical_tests)
+        self.assertNotIn("test_provider_stream_cross_release_characterization.py", historical_tests)
         self.assertIn("test_session_invalid_utf8_04392.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_resume.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_text.py", script[cross_release:script.index("\n", cross_release)])
@@ -86,6 +90,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         active = script.index("reference.py oracle active")
         historical = script.index("reference.py oracle 0.165.1")
         cross_release = script.index("run_logged focused-python-active-cross-release")
+        cross_release_tests = script[cross_release:script.index("\n", cross_release)]
         active_source = script.index("reference.py source active")
         active_suite = script.index("run_logged focused-python-active ")
 
@@ -98,13 +103,16 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_app_server_rpc_04392.py", active_tests)
         self.assertIn("test_anthropic_stream_optional_metadata_shared.py", script)
         self.assertIn("test_provider_stream_repeated_search_04392.py", script)
+        self.assertIn("test_provider_stream_cross_release_characterization.py", cross_release_tests)
         self.assertIn("run_logged focused-python-active-cross-release", script)
         self.assertIn("test_anthropic_mixed_tools_01651.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_anthropic_request_max_output_tokens_01651.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_anthropic_request_unknown_fields_01651_04392.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_cli.py", script[cross_release:script.index("\n", cross_release)])
         historical_suite = script.index("run_logged historical-python-01651")
-        self.assertNotIn("test_anthropic_mixed_tools_01651.py", script[historical_suite:script.index("\n", historical_suite)])
+        historical_tests = script[historical_suite:script.index("\n", historical_suite)]
+        self.assertNotIn("test_anthropic_mixed_tools_01651.py", historical_tests)
+        self.assertNotIn("test_provider_stream_cross_release_characterization.py", historical_tests)
         self.assertIn("test_session_invalid_utf8_04392.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_resume.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_text.py", script[cross_release:script.index("\n", cross_release)])
@@ -136,7 +144,7 @@ class CIOracleRoutingTests(unittest.TestCase):
             with (
                 patch.dict(os.environ, {
                     "PRODEX_ORACLE": str(missing_active),
-                    "PRODEX_ORACLE_04392": str(missing_active),
+                    "PRODEX_ORACLE_04392": "",
                     "PRODEX_GATEWAY_ORACLE": str(missing_active),
                 }),
                 patch.object(historical_suite, "ORACLE_01651", active_oracle),
@@ -144,6 +152,51 @@ class CIOracleRoutingTests(unittest.TestCase):
                 patch.object(historical_suite, "MODEX", modex),
             ):
                 historical_suite.ProviderStream01651CharacterizationTests.setUpClass()
+
+    def test_provider_stream_cross_release_uses_explicit_active_oracle_override(self):
+        import test_provider_stream_cross_release_characterization as cross_release_suite
+
+        with tempfile.TemporaryDirectory(prefix="modex-cross-release-oracle-") as temporary:
+            root = Path(temporary)
+            historical = root / "oracle-01651"
+            active = root / "oracle-04392"
+            historical.write_bytes(b"synthetic historical oracle")
+            active_bytes = b"synthetic active oracle"
+            active.write_bytes(active_bytes)
+            with (
+                patch.dict(os.environ, {
+                    "PRODEX_ORACLE": str(historical),
+                    "PRODEX_ORACLE_01651": str(historical),
+                    "PRODEX_ORACLE_04392": str(active),
+                }),
+                patch.object(
+                    cross_release_suite,
+                    "ORACLE_01651_SHA256",
+                    hashlib.sha256(historical.read_bytes()).hexdigest(),
+                ),
+                patch.object(
+                    cross_release_suite,
+                    "ORACLE_04392_SHA256",
+                    hashlib.sha256(active_bytes).hexdigest(),
+                ),
+            ):
+                self.assertEqual(cross_release_suite.require_oracle_01651(), historical)
+                self.assertEqual(cross_release_suite.require_oracle_04392(), active)
+
+            with patch.dict(os.environ, {
+                "PRODEX_ORACLE": str(active),
+                "PRODEX_ORACLE_01651": str(historical),
+                "PRODEX_ORACLE_04392": "",
+            }):
+                with self.assertRaisesRegex(AssertionError, "PRODEX_ORACLE_04392"):
+                    cross_release_suite.require_oracle_04392()
+
+            with (
+                patch.dict(os.environ, {"PRODEX_ORACLE_04392": str(active)}),
+                patch.object(cross_release_suite, "ORACLE_04392_SHA256", "0" * 64),
+            ):
+                with self.assertRaisesRegex(AssertionError, "pinned Prodex release"):
+                    cross_release_suite.require_oracle_04392()
 
     def run_fast_with_fake_tools(self, *, missing_active):
         with tempfile.TemporaryDirectory(prefix="modex-ci-oracle-routing-") as temporary:

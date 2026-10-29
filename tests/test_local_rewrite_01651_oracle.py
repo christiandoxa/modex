@@ -1578,6 +1578,22 @@ def ordinary_http_upgrade_case(name, value):
     }
 
 
+def websocket_upgrade_declared_body_case(target=b"/v1/responses"):
+    request = request_bytes(
+        (("Connection", "Upgrade"), ("Upgrade", "websocket")),
+        body=b"x" * 100, target=target,
+    ).split(b"\r\n\r\n", 1)[0] + b"\r\n\r\n"
+    return {
+        "name": "websocket_upgrade_does_not_wait_for_declared_body",
+        "request": request,
+        "request_parts": [request],
+        "expected_status": 426,
+        "expected_reason": "Upgrade Required",
+        "expected_body": WEBSOCKET_FALLBACK,
+        "upstream": False,
+    }
+
+
 CASES = (
     {
         "name": "leading_request_line_whitespace_is_trimmed",
@@ -2612,6 +2628,115 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             raise AssertionError("Prodex oracle checksum does not match pinned 0.165.1")
         if not MODEX.is_file():
             raise AssertionError(f"Build Modex first: {MODEX}")
+
+    def test_websocket_upgrade_rejects_before_reading_declared_body(self):
+        invalid_target_case = websocket_upgrade_declared_body_case(
+            target=b"http://example.test/v1/responses",
+        )
+        invalid_target_case["name"] = "websocket_invalid_target_precedes_upgrade_fallback"
+        unsupported_expect_case = expectation_request_case(
+            "websocket_unsupported_expect_precedes_upgrade_fallback",
+            ["100-wait"],
+            extra_headers=(("Connection", "Upgrade"), ("Upgrade", "websocket")),
+        )
+        unsupported_expect_case.update({
+            "expected_status": 417,
+            "expected_reason": "Expectation Failed",
+            "expected_body": b"",
+            "expected_interim_statuses": [],
+            "upstream": False,
+        })
+        ambiguous_framing_case = raw_expectation_case(
+            "websocket_ambiguous_framing_precedes_upgrade_fallback",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Connection: Upgrade\r\nUpgrade: websocket\r\n"
+            b"Content-Length: 0\r\nContent-Length: 100\r\n\r\n",
+        )
+        scenarios = (
+            (websocket_upgrade_declared_body_case(), {
+                "0.165.1": (426, WEBSOCKET_FALLBACK),
+                "0.439.2": (426, WEBSOCKET_FALLBACK),
+                "Modex": (426, WEBSOCKET_FALLBACK),
+            }),
+            (invalid_target_case, {
+                "0.165.1": (400, INVALID_REQUEST_TARGET_BODY),
+                "0.439.2": (400, INVALID_REQUEST_TARGET_BODY),
+                "Modex": (400, INVALID_REQUEST_TARGET_BODY),
+            }),
+            (unsupported_expect_case, {
+                "0.165.1": (417, b""),
+                "0.439.2": (417, b""),
+                "Modex": (417, b""),
+            }),
+            (ambiguous_framing_case, {
+                "0.165.1": (426, WEBSOCKET_FALLBACK),
+                "0.439.2": (426, WEBSOCKET_FALLBACK),
+                "Modex": (502, b"gateway request capture failed"),
+            }),
+        )
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        binaries = (
+            ("0.165.1", ORACLE, ORACLE_SHA256),
+            ("0.439.2", ORACLE_04392, ORACLE_04392_SHA256),
+            ("Modex", MODEX, None),
+        )
+        reasons = {
+            400: "Bad Request",
+            417: "Expectation Failed",
+            426: "Upgrade Required",
+            502: "Bad Gateway",
+        }
+
+        def stable_wire_head(response):
+            lines = response["raw_response_head"].split(b"\r\n")
+            fields = []
+            for line in lines[1:-2]:
+                name, separator, value = line.partition(b":")
+                if separator and name.lower() != b"date":
+                    fields.append((name.lower(), value.strip()))
+            return lines[0], fields
+
+        try:
+            for case, expected in scenarios:
+                observed = {}
+                for label, binary, expected_hash in binaries:
+                    with self.subTest(case=case["name"], binary=label):
+                        if expected_hash:
+                            self.assertTrue(binary.is_file(), f"pinned {label} oracle is missing: {binary}")
+                            self.assertEqual(hashlib.sha256(binary.read_bytes()).hexdigest(), expected_hash)
+                        response, records = run_probe(binary, case, upstream)
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        status, body = expected[label]
+                        self.assertEqual(
+                            (response["status"], response["reason"], response["body"]),
+                            (status, reasons[status], body),
+                        )
+                        self.assertEqual(response["read_error"], "")
+                        self.assertEqual(response["request_parts_sent_at_response"], 1)
+                        self.assertEqual(response["interim_statuses"], [])
+                        self.assertTrue(response["raw_response_head"].endswith(b"\r\n\r\n"))
+                        dates = [
+                            line.partition(b":")[2].strip()
+                            for line in response["raw_response_head"].split(b"\r\n")
+                            if line.lower().startswith(b"date:")
+                        ]
+                        self.assertEqual(len(dates), 1)
+                        self.assertIsNotNone(parsedate_to_datetime(dates[0].decode("ascii")))
+                        self.assertEqual(
+                            dict(stable_wire_head(response)[1])[b"content-length"],
+                            str(len(body)).encode("ascii"),
+                        )
+                        self.assertEqual(records, [])
+                        observed[label] = (stable_wire_head(response), body)
+                self.assertEqual(observed["0.165.1"], observed["0.439.2"])
+                if expected["Modex"] == expected["0.165.1"]:
+                    self.assertEqual(observed["Modex"], observed["0.165.1"])
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
 
     def test_raw_http_production_path_matches_pinned_oracle_controls(self):
         upstream = Upstream()

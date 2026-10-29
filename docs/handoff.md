@@ -4041,3 +4041,18 @@ per pinned release consistently showed cursor-hide before cursor-show. The
 test now checks each release's TUI lifecycle independently and keeps Modex's
 plain TTY fallback gap visible. This corrects the harness; it adds no TUI
 parity. See `docs/evidence/baseline-0.165.1/session-terminal-fallback.md`.
+
+The local rewrite now rejects a valid `Connection: Upgrade` plus
+`Upgrade: websocket` after request headers, before reading a declared body.
+Real-process controls using checksum-pinned 0.165.1 and 0.439.2 binaries confirm
+the existing 426 response, no body bytes, and no upstream request. Invalid-
+target 400 and unsupported-`Expect` 417 precedence stay intact. The check
+compares complete status, normalized non-Date headers, and body; it does not
+claim a socket-close timing contract.
+Conflicting content lengths remain fail-closed in Modex with 502; both releases
+return 426 for that malformed WebSocket request, so this is a visible behavior
+difference. The pinned WebSocket characterization passed 5 tests, the focused
+three-process controls passed, the loopback parser passed 30 tests, and the
+HTTP/1.1 sequential and HTTP/1.1/0.9 pipeline checks passed. The full
+profile-backed WebSocket/WSS route remains unimplemented. See
+`docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.

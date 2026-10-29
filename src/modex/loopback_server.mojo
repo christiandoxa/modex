@@ -347,22 +347,28 @@ struct LoopbackHTTPConnection(Movable):
         var upgrade_body = False
         var saw_connection = False
         var websocket_upgrade = False
+        var websocket_connection_upgrade = False
         if allow_upgrade_headers and defer_expectation_errors:
             for header in head.headers:
                 var name = String(header[0]).lower()
                 var value = String(header[1]).lower()
-                if name == "connection" and not saw_connection:
-                    saw_connection = True
-                    upgrade_body = "upgrade" in value
+                if name == "connection":
+                    if not saw_connection:
+                        saw_connection = True
+                        upgrade_body = "upgrade" in value
+                    for token in value.split(","):
+                        if String(token).strip(" \t") == "upgrade":
+                            websocket_connection_upgrade = True
                 elif name == "upgrade" and value == "websocket":
                     websocket_upgrade = True
             upgrade_body = upgrade_body and not websocket_upgrade
         if invalid_target and (head.expect_continue or head.length > max_body_bytes or (defer_expectation_errors and head.length > HTTP_DEFERRED_BODY_THRESHOLD)):
             raise Error("invalid HTTP request target")
-        if defer_expectation_errors and (head.expect_continue or head.chunked or head.length > HTTP_DEFERRED_BODY_THRESHOLD):
-            for header in head.headers:
-                if String(header[0]).lower() == "upgrade" and String(header[1]).lower() == "websocket":
-                    raise Error("websocket upgrade fallback")
+        if defer_expectation_errors and websocket_upgrade and websocket_connection_upgrade:
+            if invalid_target:
+                raise Error("invalid HTTP request target")
+            # A WebSocket upgrade has no HTTP request body; reject before reading one.
+            raise Error("websocket upgrade fallback")
         if preflight_body_limit_before_continue and head.length > max_body_bytes:
             raise Error("oversized HTTP request body")
         var body_start = header_end + 4

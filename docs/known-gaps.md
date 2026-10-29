@@ -125,7 +125,9 @@ backlog. See
 `docs/evidence/baseline-0.165.1/local-relay-admission.md`.
 
 The local rewrite adapter's 426 WebSocket fallback matches its selected
-0.165.1 behavior. The separate runtime-proxy route requires bounded idle
+0.165.1 behavior and rejects a valid upgrade after headers without reading a
+declared body. Conflicting content lengths remain a stricter Modex 502 versus
+the release 426 fallback. The separate runtime-proxy route requires bounded idle
 WebSocket parking, independently reclaimed handshake capacity,
 message-level admission, connection-owned interruption, and acknowledgement
 ordering. Modex has no production WebSocket transport; these requirements

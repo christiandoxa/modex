@@ -154,7 +154,7 @@ Prodex process, not Modex. `mojo build probes/gaps/network.mojo` was also run
 with Mojo 1.2.0 (`2016d0cd`) and fails because the official `std.net` package
 does not export `TcpListener`, `TcpStream`, or `TlsStream`.
 
-No connected implementation slice is added. Modex's `src/main.mojo` exposes
+No end-to-end runtime WebSocket implementation is added. Modex's `src/main.mojo` exposes
 `__modex-local-rewrite` but no runtime-broker command. The production Super
 path in `src/modex/super_launch.mojo` intentionally creates an isolated
 DeepSeek API-key home, sets `supports_websockets=false`, and launches only the
@@ -177,3 +177,24 @@ standard-library transport surface prevents that end-to-end milestone under
 the no-new-bindings/no-third-party rules. WSS, frame handling, admission,
 continuation ownership, recovery, and non-host platform behavior remain
 unimplemented.
+
+## Local rewrite WebSocket fallback (2026-10-30)
+
+The production local rewrite now rejects a valid `Connection: Upgrade` plus
+`Upgrade: websocket` request after parsing its headers, before reading a
+declared HTTP body. A stalled peer cannot retain a request worker with an
+irrelevant body. Invalid request targets and unsupported `Expect` values keep
+their earlier 400 and 417 errors. A checksum-pinned process test sends only
+the header block with `Content-Length: 100`; 0.165.1, 0.439.2, and Modex return
+complete responses without any body bytes or upstream request. It compares
+status, normalized response headers except generated `Date`, and the complete
+body. It does not assert socket-close timing or claim a `Connection: close`
+contract. The test also records the strict framing divergence: for conflicting
+content lengths, Modex rejects the request with 502 before its WebSocket
+fallback, while both releases return 426. See
+`test_websocket_upgrade_rejects_before_reading_declared_body` in
+`tests/test_local_rewrite_01651_oracle.py`.
+
+This only secures the local rewrite fallback. It does not implement the
+separate profile-backed runtime-proxy WebSocket path or WSS; those remain
+unimplemented and are not counted as parity.

@@ -212,17 +212,39 @@ class CIOracleRoutingTests(unittest.TestCase):
                 str(historical_oracle),
             )
 
-    def test_missing_active_oracle_fails_before_build_and_tests(self):
+    def test_missing_active_oracle_still_builds_but_skips_oracle_tests_and_artifacts(self):
         result, events, summary, _, _ = self.run_fast_with_fake_tools(missing_active=True)
 
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertIn("synthetic missing Prodex 0.439.2 oracle", result.stdout)
         active_reference = events.index("reference\toracle active")
-        self.assertFalse(any(event.startswith("make\tbuild unit\t") for event in events))
+        build_input_check = events.index("call\tscripts/ci/check-build-inputs.py")
+        self.assertTrue(any(event.startswith("make\tbuild unit\t") for event in events))
+        build_index = next(i for i, event in enumerate(events) if event.startswith("make\tbuild unit\t"))
+        self.assertLess(build_input_check, build_index)
+        self.assertLess(build_index, active_reference)
         self.assertFalse(any(event.startswith("active-test\t") for event in events))
         self.assertFalse(any(event.startswith("historical-test\t") for event in events))
         self.assertIn("reference-helper-tests: PASS", summary)
-        self.assertNotIn("focused-build: PASS", summary)
+        self.assertIn("build-input-check: PASS", summary)
+        self.assertIn("focused-build: PASS", summary)
+
+        workflow = (ROOT / ".github/workflows/ci-fast.yml").read_text(encoding="utf-8")
+        self.assertLess(
+            workflow.index("- name: Run fast CI"),
+            workflow.index("- name: Package the verified Modex executable"),
+        )
+        package = workflow.split("- name: Package the verified Modex executable\n", 1)[1].split(
+            "- name: Upload the Modex build handoff\n", 1,
+        )[0]
+        handoff = workflow.split("- name: Upload the Modex build handoff\n", 1)[1].split(
+            "- name: Upload CI evidence\n", 1,
+        )[0]
+        self.assertNotIn("if:", package)
+        self.assertNotIn("if:", handoff)
+        consumer = workflow.split("\n  artifact-consumer:\n", 1)[1]
+        self.assertTrue(consumer.startswith("    needs: linux-x86_64\n"))
+        self.assertNotIn("if:", consumer)
 
     def test_active_and_historical_suites_receive_their_pinned_oracles(self):
         result, events, _, active_oracle_path, historical_oracle_path = self.run_fast_with_fake_tools(missing_active=False)

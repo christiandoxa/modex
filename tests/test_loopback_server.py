@@ -340,7 +340,7 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         self.assertEqual(payload, b"")
         self.assertIn("HEAD_STREAM_DONE", stdout)
 
-    def test_head_bodyless_chunked_reply_has_no_terminator(self):
+    def test_head_bodyless_chunked_reply_has_terminator(self):
         for response_status in (204, 304):
             with self.subTest(status=response_status):
                 process, client = start(f"bodyless-sse-{response_status}")
@@ -351,7 +351,7 @@ class LoopbackHTTPServerTests(unittest.TestCase):
                 self.assertEqual(status(response), response_status)
                 self.assertIn(b"Transfer-Encoding: chunked\r\n", headers + b"\r\n")
                 self.assertNotIn(b"Content-Length:", headers)
-                self.assertEqual(payload, b"")
+                self.assertEqual(payload, b"0\r\n\r\n")
                 self.assertIn("BODYLESS_SENT", stdout)
 
     def test_head_stream_cancellation_is_still_detected(self):

@@ -112,7 +112,9 @@ buffered text and search outputs, search sources, SSE ordering and stream
 truncation. It now rejects requests before upstream unless they use string
 input or selected arrays of plain messages, one `web_search_preview` tool,
 optional `allowed_domains`, validated token limits and selected mixed function
-tools. Rich message content and other request fields remain fail-closed.
+tools. `temperature`, `top_p`, and `stop`/`stop_sequences`/`stopSequences`
+now pass through to Anthropic Messages like both pinned releases. Rich message
+content and other request fields remain fail-closed.
 Oracle controls record additional coercion and metadata behavior; complete
 request translation remains unverified. Empty and system-only arrays also
 return different errors.

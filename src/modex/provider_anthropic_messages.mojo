@@ -14,7 +14,7 @@ comptime ANTHROPIC_BUFFERED_MAX_CONTENT_BLOCKS = 65_536
 
 def validate_deepseek_anthropic_request(source: String) raises:
     var doc = JsonDocument(source)
-    _only_fields(doc, doc.root, ["model", "input", "stream", "tools", "tool_choice", "max_output_tokens", "max_tokens", "max_completion_tokens"], "request")
+    _only_fields(doc, doc.root, ["model", "input", "stream", "tools", "tool_choice", "max_output_tokens", "max_tokens", "max_completion_tokens", "temperature", "top_p", "stop", "stop_sequences", "stopSequences"], "request")
     var model = doc.get(doc.root, "model")
     if model >= 0 and doc.nodes[model].kind != JSON_STRING:
         raise Error("Anthropic Messages slice requires a string model")
@@ -112,7 +112,7 @@ def _has_both_domain_filters(doc: JsonDocument, node: Int) -> Bool:
 def deepseek_anthropic_messages_body(source: String) raises -> String:
     var prepared = JsonDocument(source)
     var body = JsonDocument(serialize_json(prepared, prepared.get(prepared.root, "body")))
-    _only_fields(body, body.root, ["max_tokens", "messages", "model", "stream", "stream_options", "tool_choice", "tools", "web_search_options"], "translated request")
+    _only_fields(body, body.root, ["max_tokens", "messages", "model", "stream", "stream_options", "tool_choice", "tools", "web_search_options", "temperature", "top_p", "stop"], "translated request")
     var model = body.get(body.root, "model")
     if model < 0 or body.nodes[model].kind != JSON_STRING:
         raise Error("Anthropic Messages model must be a string")

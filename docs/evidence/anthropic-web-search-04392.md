@@ -95,11 +95,13 @@ index omitted. Both preserve the surrounding text order and discard the image
 source and delta marker. Other image delta types and malformed block sequences
 remain unverified.
 
-Full normalized release comparisons now match `stop_sequence`, null and
-unknown string reasons, `tool_use`, `max_tokens`, a non-null stop sequence with
-`end_turn`, and a missing `message_delta`. Missing or non-string stop reasons
-and non-string stop sequences remain explicit, unapproved fail-closed differences: the release
-completes while Modex emits `response.failed`.
+Full normalized release comparisons now match `stop_sequence`, null, missing
+and non-string reasons, non-string stop sequences, unknown string reasons,
+`tool_use`, `max_tokens`, a non-null stop sequence with `end_turn`, and a
+missing `message_delta`. The current 0.439.2 stop-variant test and the shared
+0.165.1 characterization both compare complete normalized events and pass;
+the prior claim that malformed optional stop fields remain a mismatch was
+stale. Other stream metadata and event shapes remain unverified.
 
 Checks run in an isolated workspace copy:
 

@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The DeepSeek Anthropic web-search route now forwards `temperature`, `top_p`,
+and the `stop`, `stop_sequences`, and `stopSequences` aliases, matching the
+normalized request bodies from checksum-pinned 0.165.1 and 0.439.2. Invalid
+types still fail before provider I/O. The production build and two real-process
+comparison methods passed. The import audit covered 71 Mojo files; the census
+covered 50 native sources and 133 Python modules. Other request fields remain
+guarded. Evidence:
+`docs/evidence/baseline-0.165.1/anthropic-request-sampling.md`.
+
 The Mojo 1.2.0 (`2016d0cd`) source audit found no production standard-library
 WSS/TLS or DNS path. `std.net` exposes only internal POSIX socket building
 blocks; `std.hash` provides AHash/FNV-1a, and `std.random` is explicitly not

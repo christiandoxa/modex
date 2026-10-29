@@ -47,6 +47,7 @@ def add_invalid_entries(root):
     app_root = root / "home/.prodex"
     app_root.mkdir(mode=0o700)
     add_empty_file(os.fsencode(app_root), b"\x80-root")
+    add_empty_file(os.fsencode(app_root), b"state.json.\x80.tmp")
 
     sessions = root / "home/.codex/sessions"
     date = sessions / "2026/10/24"
@@ -140,11 +141,14 @@ class SessionInvalidUtf8Tests(unittest.TestCase):
             for name, binary, argv0 in commands:
                 root = parent / name
                 root.mkdir()
-                add_invalid_entries(root)
+                app_root = add_invalid_entries(root)
                 results = [run(binary, root, argv, argv0) for argv in arguments]
                 for result in results:
                     self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
                     self.assertEqual(result.stderr, b"")
+                self.assertTrue(os.path.lexists(
+                    os.fsencode(app_root) + b"/state.json.\x80.tmp"
+                ))
                 observations[name] = (
                     normalize_reports(results[0].stdout, root),
                     results[1].stdout,
@@ -164,7 +168,11 @@ class SessionInvalidUtf8Tests(unittest.TestCase):
         self.assertEqual(observations["modex"][2], f"{DEEP_SESSION_ID}\n".encode())
 
     def test_malformed_root_names_do_not_bypass_state_guards(self):
-        for protected_name in (b"state.json.lock", b"profile-lifecycle-journal", b"state.json.\x80.tmp"):
+        for protected_name in (
+            b"state.json.lock",
+            b"profile-lifecycle-journal",
+            b"state.json.123.456.0.tmp",
+        ):
             with self.subTest(protected_name=protected_name):
                 with tempfile.TemporaryDirectory(prefix="modex-state-guard-") as directory:
                     root = Path(directory)
@@ -173,22 +181,11 @@ class SessionInvalidUtf8Tests(unittest.TestCase):
                     app_root.mkdir(mode=0o700)
                     app_bytes = os.fsencode(app_root)
                     add_empty_file(app_bytes, b"\x80-root")
+                    add_empty_file(app_bytes, b"state.json.\x80.tmp")
                     if protected_name == b"profile-lifecycle-journal":
                         os.mkdir(app_bytes + b"/" + protected_name, 0o700)
                     else:
                         add_empty_file(app_bytes, protected_name)
-                    if protected_name == b"state.json.\x80.tmp":
-                        for name, binary, argv0 in (
-                            ("prodex-01651", ORACLE_01651, "prodex"),
-                            ("prodex-04392", test_cli.ORACLE, "prodex"),
-                        ):
-                            oracle = run(binary, root, ["session", "list", "--json"], argv0)
-                            with self.subTest(protected_name=protected_name, oracle=name):
-                                self.assertEqual(oracle.returncode, 0, oracle.stderr.decode("utf-8", "replace"))
-                                self.assertEqual(oracle.stderr, b"")
-                                self.assertEqual(
-                                    [row["id"] for row in json.loads(oracle.stdout)], [SESSION_ID]
-                                )
                     result = run(test_cli.MODEX, root, ["session", "list", "--json"], "modex")
                     self.assertEqual(result.returncode, 1)
                     self.assertIn(

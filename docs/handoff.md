@@ -32,11 +32,12 @@ Non-strict DeepSeek beta URL preflight now rejects selected malformed hosts
 before launch. Fullwidth IDNA normalization, TOML precedence and public beta
 transport remain gaps; see `docs/evidence/deepseek-strict-tools-04392.md`.
 
-Session listing now skips tested invalid UTF-8 leaf names and traverses tested
-invalid-byte directories, matching both releases' displayed paths, ordering,
-queries and symlink exclusions. Modex still fails closed for a malformed
-`state.json.\x80.tmp` entry that both releases ignore. The process comparisons
-and remaining difference are in `docs/evidence/session-invalid-utf8-04392.md`.
+Session listing skips tested invalid UTF-8 leaf names, traverses invalid-byte
+directories, and matches both releases' displayed paths, ordering, queries
+and symlink exclusions. The app-root marker scan also ignores malformed
+`state.json.\x80.tmp` names, matching both releases while retaining valid lock,
+journal and ASCII temporary-file guards. Real-process comparisons are in
+`docs/evidence/session-invalid-utf8-04392.md`.
 
 Session listing now reads a valid private `state.json` primary without
 repairing it, attaches profile bindings, and applies profile filters. Indexed

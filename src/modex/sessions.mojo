@@ -575,7 +575,9 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
     var has_last_good = False
     for raw_name in listdir(root):
         var name = valid_session_name(raw_name)
-        var candidate = name.value() if name else String(from_utf8_lossy=raw_name.as_bytes())
+        if not name:
+            continue
+        var candidate = name.value()
         if candidate == "state.json":
             has_state_file = True
         elif candidate == "state.json.lock":

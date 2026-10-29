@@ -39,6 +39,11 @@ def model_attempts() raises:
     assert_equal(deepseek_request_model_attempts(request), List[String](copy=[""]))
     request = JsonDocument('{"model":7}')
     assert_equal(deepseek_request_model_attempts(request), List[String](copy=[""]))
+    var candidates = List[String]()
+    for index in range(2049):
+        candidates.append("synthetic-model-" + String(index))
+    request = JsonDocument('{"model":"combo:' + ",".join(candidates) + '"}')
+    assert_equal(len(deepseek_request_model_attempts(request)), 2049)
 
 
 def model_retry_classification() raises:

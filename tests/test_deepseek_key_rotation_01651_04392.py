@@ -603,6 +603,27 @@ class DeepSeekKeyRotationTests(unittest.TestCase):
                 )
                 self.assertEqual([response["status"] for response in responses], [200])
 
+    def test_combo_model_candidates_accept_large_chains_without_quadratic_scan(self):
+        candidate_sets = (
+            ("2,049 candidates", [f"synthetic-model-{index}" for index in range(2049)]),
+            ("2,048 long candidates", [
+                f"synthetic-{index:04d}-" + "x" * (256 - len(f"synthetic-{index:04d}-"))
+                for index in range(2048)
+            ]),
+        )
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            for scenario, models in candidate_sets:
+                with self.subTest(binary=str(binary), scenario=scenario):
+                    posts, responses = observe_turns(
+                        binary,
+                        [{"model": "combo:" + ",".join(models), "input": "synthetic large model chain"}],
+                        [buffered_reply()],
+                        api_keys="synthetic-key-a",
+                    )
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual(json.loads(posts[0]["body"])["model"], models[0])
+                    self.assertEqual([response["status"] for response in responses], [200])
+
     def test_combo_model_exhaustion_preserves_final_error_and_advances_cursor_once(self):
         turns = [
             {"model": "combo:flash,pro", "input": "synthetic exhaust model chain"},

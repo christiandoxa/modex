@@ -849,7 +849,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     try:
         model_attempts = deepseek_request_model_attempts(doc)
     except:
-        connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"DeepSeek model fallback exceeds limit","type":"invalid_request_error"}}'), 30000)
+        connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"DeepSeek model fallback could not be parsed","type":"invalid_request_error"}}'), 30000)
         return
     var exchange: DeepSeekExchange
     var prebuffered_error = List[UInt8]()

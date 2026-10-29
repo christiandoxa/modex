@@ -49,7 +49,7 @@ synthetic provider request carries the resolved key.
 
 ## Rotation and replay boundaries
 
-`tests/test_deepseek_key_rotation_01651_04392.py` contains 25 real-process
+`tests/test_deepseek_key_rotation_01651_04392.py` contains 26 real-process
 methods comparing both pinned processes and Modex with synthetic keys and a
 loopback provider. The matrix covers unbound round-robin selection, unknown
 previous-response/session/turn IDs, known-ID 503 gates, HTTP status fallback,
@@ -57,7 +57,8 @@ the pinned structured-code set, case-sensitive JSON field names, last-value
 duplicate-key handling, rejected aliases, final-error pass-through,
 retryable native Anthropic first-event errors, precommit transport failures,
 combo model fallback before credential rotation, a 256-candidate model retry
-budget that resets on credential rotation, and a concurrent owner conflict.
+budget that resets on credential rotation, large combo chains, and a concurrent
+owner conflict.
 HTTP 429 rotates only for recognized
 structured codes. The HTTP retry matrix now checks both Responses and Chat
 Completions against each pinned release and Modex, including malformed 503s,

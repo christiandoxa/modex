@@ -60,6 +60,12 @@ Native Anthropic first-event retries apply the same model-candidate cap before
 considering credential rotation. The synthetic boundary comparison is covered
 by `test_combo_model_retry_budget_caps_and_resets_per_credential`.
 
+The pinned single-chain parser accepts more than 2,048 candidates; a 2,049-model
+request reaches the provider on all three processes. Candidate deduplication
+also needs to handle long names efficiently: 2,048 distinct 256-byte candidates
+complete through the synthetic provider fixture. Both cases are covered by
+`test_combo_model_candidates_accept_large_chains_without_quadratic_scan`.
+
 The first-event exhaustion controls match both releases exactly: after the
 final retry-classified event frame is consumed, the response contains
 `response.failed` with `provider_stream_error` / `unexpected end of stream`.
@@ -76,6 +82,8 @@ Checks performed on Linux x86-64:
   committed-stream method also passed individually;
 - `test_combo_model_retry_budget_caps_and_resets_per_credential` passed against
   both pinned releases and the fixed Modex build;
+- `test_combo_model_candidates_accept_large_chains_without_quadratic_scan`
+  passed against both pinned releases and the fixed Modex build;
 - `test_provider_nonstring_model_04395` compares the unchanged direct model
   mapping with 0.439.5, 0.439.2, and Modex, and asserts the version-specific
   combo Flash alias difference;

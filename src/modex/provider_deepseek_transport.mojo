@@ -169,20 +169,17 @@ def deepseek_request_model_attempts(document: JsonDocument) raises -> List[Strin
     if not model.startswith("combo:"):
         return List[String](copy=[""])
     var candidates = List[String]()
-    var seen = List[String]()
+    var seen = Dict[String, Bool]()
     var start = 6
     for index in range(6, model.byte_length() + 1):
         if index == model.byte_length() or model.as_bytes()[index] == 44 or model.as_bytes()[index] == 59 or model.as_bytes()[index] == 124 or model.as_bytes()[index] == 62:
             var candidate = trim_text(String(model[byte=start:index]))
             if candidate:
-                var duplicate = False
-                for prior in seen:
-                    duplicate = duplicate or prior.lower() == candidate.lower()
+                var key = candidate.lower()
+                var duplicate = seen.get(key)
                 if not duplicate:
-                    if len(seen) >= 2048:
-                        raise Error("DeepSeek model fallback exceeds limit")
-                    seen.append(candidate.copy())
-                    candidates.append("deepseek-flash" if candidate.lower() == "flash" else candidate^)
+                    seen[key] = True
+                    candidates.append("deepseek-flash" if key == "flash" else candidate^)
             start = index + 1
     if candidates:
         return candidates^

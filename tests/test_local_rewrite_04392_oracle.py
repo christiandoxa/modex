@@ -306,7 +306,7 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
             upstream.server_close()
             worker.join(timeout=2)
 
-    def test_method_admission_mismatch_remains_visible(self):
+    def test_nonstandard_ascii_method_matches_pinned_tinyhttp(self):
         upstream = transport.Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)
         worker.start()
@@ -338,21 +338,57 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
                 "check_close": True,
                 "upstream": False,
             }
-            oracle, oracle_records = transport.run_probe(ORACLE, non_token_method, upstream)
-            modex, modex_records = transport.run_probe(transport.MODEX, non_token_method, upstream)
-            self.assertEqual((oracle["status"], oracle["response_line"], oracle["body"]), (
-                404,
-                "HTTP/1.0 404 Not Found",
-                transport.UNSUPPORTED_ROUTE_BODY,
-            ))
-            self.assertEqual((modex["status"], modex["response_line"], modex["body"]), (
-                400,
-                "HTTP/1.1 400 Bad Request",
-                b"",
-            ))
-            self.assertEqual((oracle_records, modex_records), ([], []))
-            self.assertTrue(oracle["connection_closed"])
-            self.assertTrue(modex["connection_closed"])
+            binaries = (
+                ("0.439.2", ORACLE),
+                ("Modex", transport.MODEX),
+            )
+            for label, binary in binaries:
+                with self.subTest(method="G@T", binary=label):
+                    before = time.time()
+                    response, records = transport.run_probe(binary, non_token_method, upstream)
+                    after = time.time()
+                    transport.assert_response_headers(self, response, before, after, label)
+                    self.assertEqual(response["process_exit"], 0, response["stderr"])
+                    self.assertEqual(
+                        (response["status"], response["response_line"], response["body"]),
+                        (404, "HTTP/1.0 404 Not Found", transport.UNSUPPORTED_ROUTE_BODY),
+                        label,
+                    )
+                    self.assertEqual(records, [], label)
+                    self.assertTrue(response["connection_closed"], label)
+
+            supported_route = {
+                "name": "nonstandard_method_supported_route",
+                "request": transport.request_bytes(
+                    headers=(("X-Oracle-Response", "json"),),
+                    body=transport.REQUEST_BODY,
+                    target=b"/v1/chat/completions",
+                    method=b"G@T",
+                    version=b"HTTP/1.0",
+                ),
+                "check_close": True,
+                "upstream": True,
+            }
+            with patch.object(
+                transport.UpstreamHandler,
+                "do_G@T",
+                transport.UpstreamHandler._serve_request,
+                create=True,
+            ):
+                for label, binary in binaries:
+                    with self.subTest(method="G@T", route="supported", binary=label):
+                        before = time.time()
+                        response, records = transport.run_probe(binary, supported_route, upstream)
+                        after = time.time()
+                        transport.assert_response_headers(self, response, before, after, label)
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(
+                            (response["status"], response["response_line"], response["body"]),
+                            (502, "HTTP/1.0 502 Bad Gateway", b"upstream request failed"),
+                            label,
+                        )
+                        self.assertEqual(records, [], label)
+                        self.assertTrue(response["connection_closed"], label)
         finally:
             upstream.shutdown()
             upstream.server_close()

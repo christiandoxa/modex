@@ -658,9 +658,10 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
     # shortcut: HTTP/2.0 and HTTP/3.0 response behavior is unqualified; revisit when raw oracle controls are stable.
     if version != "HTTP/1.0" and version != "HTTP/1.1" and not (tiny_http_request_line_compat and version == "HTTP/0.9"):
         raise Error("unsupported HTTP request version")
-    for byte in request_line[0].as_bytes():
-        if not _http_token_byte(byte):
-            raise Error("malformed HTTP method")
+    if not tiny_http_request_line_compat:
+        for byte in request_line[0].as_bytes():
+            if not _http_token_byte(byte):
+                raise Error("malformed HTTP method")
     var malformed_target = False
     for byte in request_line[1].as_bytes():
         if byte <= 32 or byte == 127 or byte == 35:
@@ -862,9 +863,10 @@ def _request_line_version(bytes: List[UInt8], max_request_line_bytes: Int, tiny_
     var parts = line.split(" ")
     if len(parts) < 3 or parts[0].byte_length() == 0 or parts[1].byte_length() == 0:
         return "HTTP/1.1"
-    for byte in parts[0].as_bytes():
-        if not _http_token_byte(byte):
-            return "HTTP/1.1"
+    if not tiny_http_request_line_compat:
+        for byte in parts[0].as_bytes():
+            if not _http_token_byte(byte):
+                return "HTTP/1.1"
     var version = String(parts[2])
     if version == "HTTP/1.0" or version == "HTTP/1.1" or (tiny_http_request_line_compat and version == "HTTP/0.9"):
         return version

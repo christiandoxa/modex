@@ -7,6 +7,13 @@ Codex client, local relay and loopback upstream exercised the production Super
 path with isolated HOME, config, data, cache and temporary directories. No
 real credentials or paid provider traffic were used.
 
+The pinned TinyHTTP source trace in `vendor/tiny_http/src/client.rs` splits the
+request line on spaces and parses its first field with the `Method::from_str`
+implementation in `vendor/tiny_http/src/common.rs`; any ASCII method not in
+the standard list becomes `NonStandard`. Modex applies this admission only in
+its TinyHTTP compatibility mode. The loopback outbound request builder still
+validates methods with the existing HTTP token rule.
+
 For valid HTTP/1.0 requests, buffered local-relay responses now use HTTP/1.0
 status lines. The tested cases include a translated 200 response, HEAD 200,
 unsupported-route 404, invalid-target 400, fragment-target 400, malformed
@@ -48,18 +55,21 @@ request confirms the terminal chunk does not hide the next response. The
 generic loopback writer keeps its default HEAD suppression; only the
 production relay opts in.
 
-TinyHTTP accepts the synthetic method token `G@T` and returns HTTP/1.0 404 for
-an unsupported route. Modex rejects that non-token method and returns HTTP/1.1
-400. Method-parser admission remains a separate gap; this slice only recovers
-the response version when a valid HTTP/1.0 or HTTP/1.1 token is present in the
-request line.
+TinyHTTP accepts the synthetic ASCII method `G@T` and returns HTTP/1.0 404 for
+an unsupported route. Modex's production compatibility parser now matches both
+pinned releases: all three processes return the same status line and route
+error body. On the supported Chat Completions path, all three return HTTP/1.0
+502 and the synthetic upstream records no request. Modex keeps its strict
+outbound method check, so accepting TinyHTTP's ASCII method syntax does not put
+the non-token method on the provider connection. Non-ASCII request bytes remain
+rejected by the existing ASCII header decoder.
 
-Validation: production Modex and the local-rewrite and shared-loopback native
-drivers build with Mojo 1.2.0. The focused 0.439.2 oracle module passes eight
-tests, including selected response/stream controls, header override/filtering
-comparisons, HEAD SSE pipeline safety and the explicit method-admission gap.
-The historical 0.165.1 raw relay matrix and focused header controls, 26
-shared-loopback tests, 22 local-rewrite tests, native time checks, production
-dependency audit, Python compilation and `git diff --check` pass. This evidence
-covers selected Linux x86-64 behavior only; it does not promote full platform
-or contract parity.
+For this change, `rtk make build` and the focused real-process comparison
+`PYTHONPATH=tests python3 -m unittest
+test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_nonstandard_ascii_method_matches_pinned_tinyhttp`
+pass. The method comparison checks the unsupported and supported routes against
+checksum-verified 0.165.1, 0.439.2 and Modex. The production dependency audit
+passes for all 71 Mojo files; the test census reports 50 native sources and 139
+Python modules. Python compilation and `git diff --check` pass. This is selected
+Linux x86-64 behavior only; it does not promote full platform or contract
+parity.

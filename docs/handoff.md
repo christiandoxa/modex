@@ -9,6 +9,14 @@ combinations, security behavior, the remaining five release targets and full
 parity remain open. Evidence:
 `docs/evidence/baseline-0.439.2/log-cli-unknown-option-usage.md`.
 
+The production relay now accepts TinyHTTP's ASCII nonstandard method syntax
+such as `G@T`, retaining the parsed HTTP version. Checksum-verified 0.165.1,
+0.439.2 and Modex processes agree on a selected unsupported-route 404 and on a
+supported Chat Completions request that returns 502 before any synthetic
+upstream request. The outbound method validator remains in place. Evidence and
+the focused real-process comparison are in
+`docs/evidence/baseline-0.439.2/local-relay-http-1.0.md`.
+
 Multi-key DeepSeek rotation remains unimplemented. New real-process controls
 show both pinned releases rotate unbound requests, retry selected precommit
 HTTP errors, and reject a tested bound continuation without a second POST.

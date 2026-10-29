@@ -56,6 +56,99 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
         if missing:
             raise AssertionError(f"Local relay oracle cases are missing: {sorted(missing)}")
 
+    def test_bodyless_invalid_target_expect_can_reuse_connection(self):
+        references = (
+            ("0.165.1", transport.ORACLE, transport.ORACLE_SHA256),
+            ("0.439.2", ORACLE, ORACLE_SHA256),
+        )
+        for label, binary, expected_hash in references:
+            self.assertEqual(hashlib.sha256(binary.read_bytes()).hexdigest(), expected_hash, label)
+
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            valid_request = transport.request_bytes(
+                (("Connection", "close"),), body=transport.REQUEST_BODY,
+            )
+            for framing in (b"", b"Content-Length: 0\r\n"):
+                bad_request = (
+                    b"POST http://example.test/v1/responses HTTP/1.1\r\n"
+                    b"Host: 127.0.0.1\r\nExpect: 100-continue\r\n"
+                    + framing + b"\r\n"
+                )
+                case = {
+                    "name": "bodyless_invalid_target_expect_reuse",
+                    "request": bad_request,
+                    "process_timeout": 15,
+                }
+                for mode, requests in (
+                    ("sequential", {"sequential_requests": [bad_request, valid_request]}),
+                    ("pipelined", {"pipelined_requests": [bad_request, valid_request]}),
+                ):
+                    case.update(requests)
+                    for label, binary in (
+                        ("0.165.1", transport.ORACLE),
+                        ("0.439.2", ORACLE),
+                        ("Modex", transport.MODEX),
+                    ):
+                        with self.subTest(framing=framing, mode=mode, binary=label):
+                            response, records = transport.run_probe(binary, case, upstream)
+                            self.assertEqual(response["process_exit"], 0, response["stderr"])
+                            self.assertEqual(response["read_error"], "")
+                            observed = response[f"{mode}_responses"]
+                            self.assertEqual(
+                                [(item["status"], item["body"]) for item in observed],
+                                [
+                                    (400, transport.INVALID_REQUEST_TARGET_BODY),
+                                    (200, transport.RESPONSES_RESPONSE),
+                                ],
+                            )
+                            self.assertEqual(len(records), 1)
+                            self.assertEqual(records[0]["path"], "/v1/chat/completions")
+                    case.pop("sequential_requests", None)
+                    case.pop("pipelined_requests", None)
+
+            unsafe_cases = (
+                (
+                    "nonzero_expect_body",
+                    b"POST http://example.test/v1/responses HTTP/1.1\r\n"
+                    b"Host: 127.0.0.1\r\nExpect: 100-continue\r\nContent-Length: 40\r\n\r\n",
+                    True,
+                ),
+                (
+                    "chunked_body",
+                    b"POST http://example.test/v1/responses HTTP/1.1\r\n"
+                    b"Host: 127.0.0.1\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n",
+                    False,
+                ),
+            )
+            for name, request, expect_handshake in unsafe_cases:
+                case = {
+                    "name": name,
+                    "request": request,
+                    "expect_handshake": expect_handshake,
+                    "check_close": True,
+                    "process_timeout": 15,
+                }
+                for label, binary in (
+                    ("0.165.1", transport.ORACLE),
+                    ("0.439.2", ORACLE),
+                    ("Modex", transport.MODEX),
+                ):
+                    with self.subTest(case=name, binary=label):
+                        response, records = transport.run_probe(binary, case, upstream)
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(response["status"], 400)
+                        self.assertEqual(response["body"], transport.INVALID_REQUEST_TARGET_BODY)
+                        self.assertEqual(response["interim_statuses"], [])
+                        self.assertEqual(response["connection_closed"], label == "Modex")
+                        self.assertEqual(records, [])
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
     def test_two_codex_requests_overlap_at_the_provider(self):
         with patch.object(transport, "ORACLE", ORACLE):
             transport.LocalRewrite01651OracleTests.test_two_codex_requests_overlap_at_the_provider(self)

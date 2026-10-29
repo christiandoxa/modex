@@ -338,6 +338,12 @@ struct LoopbackHTTPConnection(Movable):
         self.head_request = head.method == "HEAD"
         if head.unsupported_expectation:
             raise Error("unsupported HTTP expectation")
+        var invalid_target = validate_request_target and not request_target_valid(head.target)
+        if invalid_target and head.expect_continue and not head.chunked and head.length <= 0:
+            self.keep_alive = _request_keep_alive(head.version, head.headers)
+            # Drop this bodyless rejected head while preserving any pipelined request.
+            self.input = self.input[header_end + 4:len(self.input):1]
+            self.wire_bytes = len(self.input)
         var upgrade_body = False
         var saw_connection = False
         var websocket_upgrade = False
@@ -351,7 +357,7 @@ struct LoopbackHTTPConnection(Movable):
                 elif name == "upgrade" and value == "websocket":
                     websocket_upgrade = True
             upgrade_body = upgrade_body and not websocket_upgrade
-        if validate_request_target and not request_target_valid(head.target) and (head.expect_continue or head.length > max_body_bytes or (defer_expectation_errors and head.length > HTTP_DEFERRED_BODY_THRESHOLD)):
+        if invalid_target and (head.expect_continue or head.length > max_body_bytes or (defer_expectation_errors and head.length > HTTP_DEFERRED_BODY_THRESHOLD)):
             raise Error("invalid HTTP request target")
         if defer_expectation_errors and (head.expect_continue or head.chunked or head.length > HTTP_DEFERRED_BODY_THRESHOLD):
             for header in head.headers:
@@ -362,10 +368,10 @@ struct LoopbackHTTPConnection(Movable):
         var body_start = header_end + 4
         var request_end = body_start
         var body = List[UInt8]()
-        if upgrade_body and validate_request_target and not request_target_valid(head.target):
+        if upgrade_body and invalid_target:
             self.request_read = True
             return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
-        if validate_request_target and reject_chunked_trailers and head.chunked and not request_target_valid(head.target):
+        if reject_chunked_trailers and head.chunked and invalid_target:
             self.request_read = True
             return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
         if head.expect_continue:
@@ -388,7 +394,7 @@ struct LoopbackHTTPConnection(Movable):
             for index in range(body_start, request_end):
                 body.append(self.input[index])
         elif head.chunked:
-            body = self._read_chunked(body_start, max_body_bytes, deadline, wire_limit, request_end, validate_request_target and not request_target_valid(head.target), reject_chunked_trailers, self.keep_alive_enabled)
+            body = self._read_chunked(body_start, max_body_bytes, deadline, wire_limit, request_end, invalid_target, reject_chunked_trailers, self.keep_alive_enabled)
         elif head.length >= 0:
             if head.length > max_body_bytes:
                 raise Error("oversized HTTP request body")

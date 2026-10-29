@@ -32,7 +32,8 @@ calls retain the same syntax error. Truncated declared-length bodies without
 400 before body capture: controls cover a header-only half-close, truncated
 chunk data, a missing zero-chunk terminator, and a delayed nonempty trailer.
 The delayed control confirms both binaries reply before the body fragment
-arrives. Prodex keeps that client socket open after its 400; Modex closes it.
+arrives. For invalid-target rejections with request bytes still unread, Prodex
+keeps the client socket open after its 400; Modex closes it.
 With invalid targets and `Expect: 100-continue`, both binaries return the final
 400 directly for valid and oversized declared body lengths, without an interim
 100 response. A two-connection production control gets 400 for the invalid
@@ -381,3 +382,28 @@ passed against both releases and Modex. The leading-whitespace request-line
 control passed against both releases and Modex. The shared loopback suite passed
 all 27 tests, including its explicit check that HTTP/0.9 remains rejected by
 default.
+
+## Bodyless invalid-target `Expect` connection reuse
+
+The checksum-pinned 0.165.1 and 0.439.2 processes both answer an invalid-target
+HTTP/1.1 request with `Expect: 100-continue` and either no body framing or
+`Content-Length: 0` with a 400 and no interim 100. Both keep the same socket
+usable: a following valid request receives 200, both when sent after the 400
+and when pipelined with the rejected request. Modex now matches those controls
+and discards only the rejected header while retaining any buffered next
+request.
+
+For invalid-target requests with a nonzero declared body or chunked framing,
+both releases also leave the socket open after the 400, while Modex closes it.
+Those bodies remain unread when the target is rejected, so Modex retains the
+safer close behavior instead of attempting to parse body bytes as another
+request. This remains a documented difference, not full connection parity.
+
+Validation on Linux x86-64: the full 16-test 0.439.2 production relay module
+passed, including both bodyless framing variants, sequential and pipelined
+reuse, and the nonzero and chunked fail-closed controls against both
+checksum-verified releases and Modex. The production build and shared loopback
+suite (27 tests) passed. The 71-file production import audit and the test
+census (50 native, 139 Python) passed with no dependency changes. The synthetic
+Codex peer, provider, credentials, homes and ports were isolated; no real
+provider or account was used.

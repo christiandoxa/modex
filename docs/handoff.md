@@ -3466,3 +3466,15 @@ passes across synthetic process comparisons. Continuation, unsupported content
 blocks, other stream event orders, transport security, and other release
 targets remain unqualified. See
 `docs/evidence/baseline-0.165.1/anthropic-response-shapes.md`.
+
+The local relay now matches both checksum-pinned releases when an invalid-target
+`Expect: 100-continue` request has no body framing or `Content-Length: 0`: it
+returns 400 without an interim 100, then accepts a valid request on the same
+socket. Sequential and pipelined controls pass through the production relay
+against 0.165.1, 0.439.2 and Modex. Invalid-target requests with a nonzero
+declared body or chunked framing still close in Modex, while both releases leave
+those connections open after 400; Modex keeps the safer behavior because those
+request bodies remain unread. No full transport parity is claimed. Evidence:
+`docs/evidence/baseline-0.165.1/local-relay-http.md`. The full 16-test
+0.439.2 relay module, 27 shared loopback tests, production import audit and
+test census passed; no dependency was added.

@@ -12,6 +12,11 @@ or invalid query fields produce `queries: []`. The stream also generates a
 `call_deepseek_...` ID when a function `tool_use` omits its ID. Buffered
 function calls without an ID still fail.
 
+For streamed function calls, both releases ignore a non-string or missing
+`input_json_delta.partial_json` value and complete the call with an empty
+argument string. Numeric values are covered by a synthetic real-process
+comparison against both pinned Linux executables and Modex.
+
 Frozen source trace:
 
 - Prodex 0.165.1 commit
@@ -28,26 +33,37 @@ Frozen source trace:
   state in `crates/prodex-app/src/runtime_launch/proxy_startup/anthropic_messages_sse_reader.rs:135-148`;
   the shared state creates missing call IDs in
   `crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_sse.rs:129-139`.
+- At both commits, the Anthropic reader forwards the original
+  `partial_json` value at
+  `crates/prodex-app/src/runtime_launch/proxy_startup/anthropic_messages_sse_reader.rs:162-167`.
+  `DeepSeekProviderCoreStreamToolCallDelta.argument_delta` uses
+  `deserialize_optional_string` in
+  `crates/prodex-provider-core/src/translators/deepseek/stream.rs:35-68`, which
+  maps only JSON strings to `Some`; the shared accumulator appends only a
+  present string in
+  `crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_sse/tool_calls.rs:50-56`.
 
 `test_buffered_text_block_citations_and_extra_fields_match_both_releases`,
 `test_buffered_search_query_shapes_match_both_releases`,
-`test_stream_search_query_shapes_and_metadata_match_both_releases`, and
-`test_stream_missing_function_id_uses_release_fallback` compare complete
-responses, events, upstream requests, and cleanup against the checksum-pinned
-0.165.1 and 0.439.2 Linux processes. The tests use synthetic provider replies,
-keys, Codex peers, isolated directories, and loopback traffic.
+`test_stream_search_query_shapes_and_metadata_match_both_releases`,
+`test_stream_missing_function_id_uses_release_fallback`, and
+`test_stream_numeric_function_argument_fragment_matches_releases` compare
+the relevant complete responses and event sequences against the checksum-pinned
+0.165.1 and 0.439.2 Linux processes, including normalized provider request
+bodies where asserted. The tests use synthetic provider replies, keys, Codex
+peers, isolated directories, and loopback traffic.
 
-Validation: `make build` passed. The earlier 53-method run of
-`test_anthropic_mixed_tools_01651.py` passed on Linux x86-64. After the final
-test-only edits, `test_buffered_search_query_shapes_match_both_releases` and
-`test_stream_numeric_function_argument_fragment_remains_strict` passed in a
-focused run; a full rerun was stopped before completion. Oracle hashes are
+Validation: the production build passed, and all 54 methods in
+`test_anthropic_mixed_tools_01651.py` passed on Linux x86-64, including
+`test_stream_numeric_function_argument_fragment_matches_releases`.
+That numeric regression also passed in a focused rerun after tightening its
+provider-request check to compare parsed JSON objects and complete events.
+The production import audit also passed for 71 Mojo files, with only standard
+library/internal imports. Oracle hashes are
 `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51` for
 0.165.1 and `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`
 for 0.439.2.
 
-One stream mismatch remains guarded: when `input_json_delta.partial_json` is
-numeric, both releases complete with an empty function-call argument string;
-Modex fails the stream because the fragment is not a string. Other Anthropic
-content blocks, broader event orders, continuation, transport security, and
-non-Linux release targets remain unqualified.
+The numeric-fragment mismatch is resolved. Other Anthropic content blocks,
+broader event orders, continuation, transport security, and non-Linux release
+targets remain unqualified.

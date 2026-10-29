@@ -279,10 +279,10 @@ struct DeepSeekChatState:
                     return List[String]()
                 return self.observe('{"choices":[{"delta":{"content":' + quote_json(doc.nodes[text_value].text) + '},"finish_reason":null}]}')
             if delta_type == "input_json_delta":
-                var fragment = doc.string(doc.get(delta, "partial_json"))
                 var fragment_value = doc.get(delta, "partial_json")
                 if fragment_value < 0 or doc.nodes[fragment_value].kind != JSON_STRING:
-                    raise Error("Anthropic input JSON delta must be a string")
+                    return List[String]()
+                var fragment = doc.nodes[fragment_value].text
                 if search >= 0:
                     self.anthropic_searches[search].input_json += fragment
                     return List[String]()

@@ -1002,7 +1002,7 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
             captures.append((json.loads(posts[0]["body"]), events))
         self.assertEqual(captures[1:], captures[:1] * 2)
 
-    def test_stream_numeric_function_argument_fragment_remains_strict(self):
+    def test_stream_numeric_function_argument_fragment_matches_releases(self):
         reply = _stream([
             {"type": "message_start", "message": {}},
             {"type": "content_block_start", "index": 0, "content_block": {
@@ -1019,26 +1019,25 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
         for binary in (ORACLE_01651, ORACLE):
             posts, responses = observe_turns(binary, [request], [reply])
             self.assertEqual(len(posts), 1)
+            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
             self.assertEqual(responses[0]["status"], 200)
             events = _events(bytes.fromhex(responses[0]["body"]))
             self.assertEqual(events[-1][0], "response.completed")
             call = next(item for item in events[-1][1]["response"]["output"]
                         if item["type"] == "function_call")
             self.assertEqual(call["arguments"], "")
-            releases.append(events)
+            releases.append((json.loads(posts[0]["body"]), events))
         self.assertEqual(releases[1], releases[0])
 
         posts, responses = observe_turns(MODEX, [request], [reply])
         self.assertEqual(len(posts), 1)
+        self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
         self.assertEqual(responses[0]["status"], 200)
         events = _events(bytes.fromhex(responses[0]["body"]))
-        self.assertEqual([name for name, _ in events], [
-            "response.created", "response.output_item.added", "response.failed",
-        ])
-        self.assertEqual(events[-1][1]["response"]["error"], {
-            "code": "provider_stream_error",
-            "message": "Anthropic input JSON delta must be a string",
-        })
+        self.assertEqual((json.loads(posts[0]["body"]), events), releases[0])
+        call = next(item for item in events[-1][1]["response"]["output"]
+                    if item["type"] == "function_call")
+        self.assertEqual(call["arguments"], "")
 
     def test_buffered_envelope_extensions_and_usage_normalization_match_releases(self):
         cases = (

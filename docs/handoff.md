@@ -11,6 +11,14 @@ parity remain unfinished. Evidence:
 `docs/evidence/baseline-0.165.1/super-shared-config.md` and
 `docs/evidence/deepseek-strict-tools-04392.md`.
 
+Anthropic streamed function calls now ignore non-string or missing
+`input_json_delta.partial_json` fragments like both pinned releases. The
+function call completes with its existing empty argument string; a three-way
+synthetic process comparison covers 0.165.1, 0.439.2, and Modex. The 54-test
+mixed-tools process suite passed. Other Anthropic content and event shapes,
+continuation, transport security, and non-Linux targets remain unqualified.
+Evidence: `docs/evidence/baseline-0.165.1/anthropic-response-shapes.md`.
+
 Buffered Anthropic response envelopes now ignore unrecognized top-level and
 usage fields, fall back for invalid or missing IDs/models, default invalid
 usage counters to zero, omit missing/non-object usage, and project valid
@@ -3305,12 +3313,11 @@ Anthropic buffered and streamed responses now ignore unknown metadata on the
 tested content blocks and events. Search results use `query` first, then
 `queries`; buffered arrays keep strings, streamed arrays retain all values, as
 both pinned releases do. Missing streamed function-call IDs use the existing
-`call_deepseek_...` fallback; buffered calls without IDs still fail. The earlier
-53-test `test_anthropic_mixed_tools_01651.py` run and production build passed.
-After the final test-only edits, the buffered query-shape test and numeric-
-fragment mismatch test passed in a focused run.
-One mismatch remains explicit: both releases complete a numeric
-`input_json_delta.partial_json` as empty arguments, while Modex fails the
-stream. Continuation, unsupported content blocks, other stream event orders,
-transport security, and other release targets remain unqualified. See
+`call_deepseek_...` fallback; buffered calls without IDs still fail. Earlier
+evidence documented that a numeric `input_json_delta.partial_json` failed the
+Modex stream although both releases completed with empty arguments. The shared
+parser now ignores that fragment, and the updated 54-test mixed-tools suite
+passes across synthetic process comparisons. Continuation, unsupported content
+blocks, other stream event orders, transport security, and other release
+targets remain unqualified. See
 `docs/evidence/baseline-0.165.1/anthropic-response-shapes.md`.

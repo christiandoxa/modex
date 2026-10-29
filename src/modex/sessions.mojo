@@ -97,7 +97,7 @@ struct SessionReport(Copyable):
     var updated_at: String
     var directory: String
     var provider: String
-    var profile: String
+    var profile: Optional[String]
     var parent: String
     var path: String
     var sort_key: Int
@@ -147,13 +147,13 @@ struct SessionReport(Copyable):
     def matches(self, options: SessionOptions) -> Bool:
         if options.parent_only and self.parent:
             return False
-        if options.profile and self.profile != options.profile.value():
+        if options.profile and self.profile != options.profile:
             return False
         if options.current and (not self.directory or comparable_path(self.directory) != comparable_path(options.directory.value())):
             return False
         var query = session_query_lowercase(trim_text(options.query))
         if query:
-            for field in [self.id, self.thread_name, self.directory, self.profile, self.provider, self.path]:
+            for field in [self.id, self.thread_name, self.directory, self.profile.value() if self.profile else String(), self.provider, self.path]:
                 if query in session_query_lowercase(field):
                     return True
             return False
@@ -164,7 +164,7 @@ struct SessionReport(Copyable):
         output += ",\n    \"thread_name\": " + nullable_json(self.thread_name)
         output += ",\n    \"updated_at\": " + nullable_json(self.updated_at)
         output += ",\n    \"cwd\": " + nullable_json(self.directory)
-        output += ",\n    \"profile\": " + nullable_json(self.profile)
+        output += ",\n    \"profile\": " + (quote_json(self.profile.value()) if self.profile else "null")
         if self.provider:
             output += ",\n    \"model_provider\": " + quote_json(self.provider)
         output += ",\n    \"path\": " + quote_json(self.path)
@@ -409,11 +409,8 @@ def load_session_profile_bindings(root: String, has_state_file: Bool) raises -> 
     return bindings^
 
 
-def state_profile_for_session(bindings: Dict[String, String], session_id: String) -> String:
-    var profile = bindings.get(session_id)
-    if profile:
-        return profile.value()
-    return ""
+def state_profile_for_session(bindings: Dict[String, String], session_id: String) -> Optional[String]:
+    return bindings.get(session_id)
 
 
 def first_string(document: JsonDocument, paths: List[String]) -> String:
@@ -506,7 +503,7 @@ def read_session(path: String) raises -> Optional[SessionReport]:
     var suffix = 10 if compressed else 5 if path.endswith(".json") else 6
     var identifier = String(filename[byte=:filename.byte_length() - suffix])
     var display_path = String(from_utf8_lossy=path.as_bytes())
-    var report = SessionReport(identifier^, "", "", "", "", "", "", display_path^, stat(path).st_mtimespec.tv_sec)
+    var report = SessionReport(identifier^, "", "", "", "", Optional[String](), "", display_path^, stat(path).st_mtimespec.tv_sec)
     var started = False
     if compressed:
         var decoder = ZstdReader(checked_session_file(path))

@@ -116,6 +116,43 @@ class SessionProfile04392Tests(unittest.TestCase):
             self.assertEqual(json.loads(outputs["modex"][2]), [])
             self.assertEqual(outputs["modex"][3], f"{SESSION_ID}\n".encode())
 
+    def test_empty_profile_and_session_identifiers_preserve_presence(self):
+        bound_at = int(time.time())
+        cases = (("bound-empty-profile", "", ""), ("empty-session-id", "main", None))
+        arguments = (
+            ["session", "list", "--json"],
+            ["session", "list", "--json", "--profile", ""],
+            ["session", "list", "--json", "--profile", "main"],
+        )
+        for reference in (ORACLE_01651, test_cli.ORACLE):
+            for label, profile_name, expected_profile in cases:
+                with tempfile.TemporaryDirectory(prefix="modex-session-empty-id-04392-") as directory:
+                    root = Path(directory)
+                    fixture(root)
+                    profiles = {
+                        profile_name: {"codex_home": str(root / "home/.codex"), "managed": False},
+                    }
+                    state = profile_state(root, profile_name=profile_name, bound_at=bound_at, profiles=profiles)
+                    if not profile_name:
+                        state["active_profile"] = ""
+                    if label == "empty-session-id":
+                        state["session_profile_bindings"] = {
+                            "": {"profile_name": profile_name, "bound_at": bound_at},
+                        }
+                    write_state(root, state)
+                    outputs = {}
+                    for name, binary in (("reference", reference), ("modex", test_cli.MODEX)):
+                        rows = []
+                        for argv in arguments:
+                            result = command_output(binary, root, argv)
+                            self.assertEqual(result.returncode, 0, result.stderr.decode())
+                            rows.append(normalize_root(result.stdout, root))
+                        outputs[name] = rows
+                self.assertEqual(outputs["modex"], outputs["reference"], label)
+                self.assertEqual(json.loads(outputs["modex"][0])[0]["profile"], expected_profile)
+                self.assertEqual(json.loads(outputs["modex"][1]), json.loads(outputs["modex"][0]) if expected_profile == "" else [])
+                self.assertEqual(json.loads(outputs["modex"][2]), [])
+
     def test_binding_retention_identity_and_conflict_match_both_releases(self):
         now = int(time.time())
         identity = {

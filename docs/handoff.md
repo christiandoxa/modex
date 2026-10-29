@@ -1,5 +1,15 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Native Anthropic Responses requests now accept missing, empty, and text-only
+`modalities` values and omit them from provider requests. Audio-only, mixed,
+and wrong-type values still return matching 502 errors without provider I/O.
+The three-process matrix covers auto, forced Anthropic, and forced Chat routes
+with buffered and streamed requests against both pinned releases and Modex.
+The production build, focused matrix, 71-file dependency audit, 50-native/140-
+Python test census, and diff check pass. This qualifies Linux x86-64 only; all
+six baseline release targets remain in the denominator. See
+`docs/evidence/baseline-0.165.1/anthropic-text-modalities.md`.
+
 The production relay trims ASCII boundary whitespace around request header
 lines and values only in TinyHTTP compatibility mode. Real-process controls
 match checksum-pinned 0.165.1 and 0.439.2 for boundary whitespace, CRLF field

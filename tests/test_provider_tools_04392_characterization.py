@@ -10,7 +10,6 @@ import unittest
 import test_super_launch
 from test_cli import MODEX, ORACLE as ORACLE_04392, ORACLE_SHA256 as ORACLE_04392_SHA256
 
-
 CODEX_REQUEST = r'body = b"\x00synthetic\xff" if passthrough else json.dumps({"model":"deepseek-chat","input":"synthetic prompt","stream":scenario == "stream"},separators=(",",":")).encode()'
 
 
@@ -316,7 +315,7 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                 self.assertEqual(reference["state"]["leftovers"], [])
                 self.assertEqual(modex["state"]["leftovers"], [])
 
-    def test_unsupported_anthropic_request_shapes_fail_before_upstream(self):
+    def test_untyped_role_and_typed_text_content_match_release(self):
         cases = [
             (
                 "untyped_role",
@@ -343,21 +342,30 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
         ]
         for name, request in cases:
             with self.subTest(name=name):
-                reference = _run(ORACLE_04392, request, scenario="anthropic-buffered")
-                modex = _run(MODEX, request, scenario="anthropic-buffered")
-                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
-                self.assertEqual(len(reference["upstream"]), 1)
+                captures = [
+                    _run(binary, request, scenario="anthropic-buffered")
+                    for binary in (ORACLE_04392, MODEX)
+                ]
+                for capture in captures:
+                    self.assertEqual((capture["exit_code"], capture["status"]), (0, 200))
+                    self.assertEqual(len(capture["upstream"]), 1)
+                    self.assertEqual(capture["upstream"][0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual(capture["state"]["leftovers"], [])
                 if name == "untyped_role":
-                    self.assertEqual(reference["upstream_body"]["messages"][0]["role"], "user")
-                    self.assertEqual(reference["upstream_body"]["messages"][0]["content"][0]["text"], "preserve this role content")
+                    expected_text = "preserve this role content"
                 elif name == "typed_text_content":
-                    self.assertEqual(
-                        reference["upstream_body"]["messages"][0]["content"][0]["text"],
-                        "preserve typed text",
-                    )
-                self.assertEqual((modex["exit_code"], modex["status"]), (1, 502))
-                self.assertEqual(modex["upstream"], [])
-                self.assertEqual(modex["state"]["leftovers"], [])
+                    expected_text = "preserve typed text"
+                for capture in captures:
+                    message = capture["upstream_body"]["messages"][0]
+                    self.assertEqual(message["role"], "user")
+                    self.assertEqual(message["content"][0]["text"], expected_text)
+                expected_request = captures[0]["upstream_body"]
+                self.assertEqual([capture["upstream_body"] for capture in captures[1:]],
+                                 [expected_request])
+                responses = [json.loads(capture["response_body"]) for capture in captures]
+                for response in responses:
+                    response.pop("created_at", None)
+                self.assertEqual(responses[1:], responses[:1])
 
     def test_mixed_function_and_web_tools_match_historical_release(self):
         request = {

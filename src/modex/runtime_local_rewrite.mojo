@@ -20,7 +20,7 @@ from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnecti
 from .log_operational import valid_url_authority
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
 from .provider_conversations import ProviderConversationStore
-from .provider_anthropic_messages import anthropic_search_filters_conflict
+from .provider_anthropic_messages import anthropic_auto_chat_fallback_safe, anthropic_search_filters_conflict, deepseek_anthropic_messages_body
 from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
 from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
@@ -762,7 +762,25 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             if input >= 0 and doc.nodes[input].kind == JSON_STRING and not doc.nodes[input].text:
                 connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
                 return
-            _ = translate_deepseek_request(source, history, strict_tools, web_search_mode, ignore_web_search=fallback_web_search)
+            var translated = translate_deepseek_request(source, history, strict_tools, web_search_mode, ignore_web_search=fallback_web_search)
+            try:
+                _ = deepseek_anthropic_messages_body(translated)
+            except error:
+                var reason = String(error)
+                if reason == "Anthropic Messages slice requires a user or assistant message":
+                    connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
+                    return
+                elif anthropic_auto_chat_fallback_safe(reason):
+                    if web_search_mode == "auto":
+                        web = False
+                        fallback_web_search = True
+                    elif web_search_mode == "anthropic":
+                        connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
+                        return
+                    else:
+                        raise
+                else:
+                    raise
     except:
         _reply(connection, 502, "upstream request failed")
         return

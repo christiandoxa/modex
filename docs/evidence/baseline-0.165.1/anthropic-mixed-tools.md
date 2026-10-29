@@ -135,3 +135,30 @@ change; this follow-up reruns the malformed content shapes against both
 releases. The 71-file dependency audit and `git diff --check` passed. These
 process checks do not qualify other release targets or general Anthropic
 parity.
+
+## Top-level options without tools and fallback
+
+The pinned 0.439.2 path carries top-level `web_search_options` through
+`deepseek_rewrite/tools.rs`, then selects Anthropic Messages or chat fallback
+before dispatch in `local_rewrite_deepseek_send.rs`. An unsupported Anthropic
+translation may fall back in `auto`; explicit `anthropic` mode rejects it.
+The Responses-to-chat translator consumes `parallel_tool_calls=true` and
+omits it from the provider body; `false` remains unsupported.
+
+`test_top_level_web_search_options_without_tool_match_both_releases` compares
+requests with `tools` omitted or empty, in buffered and streamed mode, against
+both pinned releases. All three processes create the native web-search tool
+from top-level options. The process controls also verify that an unknown option
+falls back to one chat request in `auto`, while forced `anthropic` rejects
+before dispatch, and that `parallel_tool_calls=true` is omitted upstream.
+The corrected 0.439.2 characterization compares untyped roles and typed text
+content against 0.439.2; those requests succeed and match Modex. The separate
+0.165.1 mixed-tools suite keeps its own pinned-oracle comparisons and runs in
+the cross-release CI lane after that oracle is acquired.
+
+Linux x86-64 validation: `rtk make build`; the four focused and adjacent
+process modules passed 75 tests, and direct request/transport modules passed
+35 tests. The 71-file production import audit, 50-native/135-Python test
+census, and `git diff --check` passed.
+These controls do not qualify other release targets or general Anthropic
+parity; the six-target denominator and remaining provider gaps are unchanged.

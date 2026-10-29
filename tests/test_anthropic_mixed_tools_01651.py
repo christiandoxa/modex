@@ -400,6 +400,144 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
         self.assertEqual(_normalize(json.loads(captures[0]["response_body"])),
                          _normalize(json.loads(captures[1]["response_body"])))
 
+    def test_top_level_web_search_options_without_tool_match_both_releases(self):
+        base = {
+            "model": "deepseek-chat",
+            "input": "synthetic query",
+            "web_search_options": {
+                "search_context_size": "low",
+                "allowed_domains": ["example.test"],
+            },
+        }
+        for stream, scenario in ((False, "anthropic-buffered"), (True, "anthropic-stream")):
+            for tools in (None, []):
+                with self.subTest(stream=stream, tools=tools):
+                    request = {**base, "stream": stream}
+                    if tools is not None:
+                        request["tools"] = tools
+                    captures = [
+                        _run(binary, request, scenario=scenario)
+                        for binary in (ORACLE_01651, ORACLE, MODEX)
+                    ]
+                    for capture in captures:
+                        self.assertEqual((capture["exit_code"], capture["status"]), (0, 200))
+                        self.assertEqual(len(capture["upstream"]), 1)
+                        self.assertEqual(capture["upstream"][0]["path"], "/anthropic/v1/messages")
+                        self.assertEqual(capture["state"]["leftovers"], [])
+                    expected_body = captures[0]["upstream_body"]
+                    self.assertEqual(expected_body["tools"], [{
+                        "name": "web_search",
+                        "type": "web_search_20250305",
+                        "allowed_domains": ["example.test"],
+                    }])
+                    for capture in captures[1:]:
+                        self.assertEqual(capture["upstream_body"], expected_body)
+                        if stream:
+                            self.assertEqual(_events(capture["response_body"]),
+                                             _events(captures[0]["response_body"]))
+                        else:
+                            self.assertEqual(
+                                _normalize(json.loads(capture["response_body"])),
+                                _normalize(json.loads(captures[0]["response_body"])),
+                            )
+
+    def test_malformed_tools_and_top_level_web_search_options_fail_before_post(self):
+        base = {"model": "deepseek-chat", "input": "synthetic query", "stream": False}
+        cases = (
+            ("null tools", {"tools": None, "web_search_options": {"search_context_size": "low"}}),
+            ("object tools", {"tools": {}, "web_search_options": {"search_context_size": "low"}}),
+            ("string tools", {"tools": "bad", "web_search_options": {"search_context_size": "low"}}),
+            ("null options", {"web_search_options": None}),
+            ("string options", {"web_search_options": "bad"}),
+            ("invalid context", {"web_search_options": {"search_context_size": "instant"}}),
+            ("invalid domain type", {"web_search_options": {"allowed_domains": "example.test"}}),
+            ("false parallel calls", {"web_search_options": {"search_context_size": "low"},
+                                       "parallel_tool_calls": False}),
+        )
+        for name, overrides in cases:
+            with self.subTest(case=name):
+                request = {**base, **overrides}
+                captures = [
+                    _run(binary, request, scenario="anthropic-buffered")
+                    for binary in (ORACLE_01651, ORACLE, MODEX)
+                ]
+                for capture in captures:
+                    self.assertEqual((capture["exit_code"], capture["status"]), (1, 502))
+                    self.assertEqual(capture["upstream"], [])
+                    self.assertEqual(capture["response_body"], b"upstream request failed")
+                    self.assertEqual(capture["state"]["leftovers"], [])
+
+    def test_parallel_tool_calls_true_is_accepted_and_omitted(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic query",
+            "stream": False,
+            "parallel_tool_calls": True,
+            "web_search_options": {"search_context_size": "low"},
+        }
+        captures = [
+            _run(binary, request, scenario="anthropic-buffered")
+            for binary in (ORACLE_01651, ORACLE, MODEX)
+        ]
+        for capture in captures:
+            self.assertEqual((capture["exit_code"], capture["status"]), (0, 200))
+            self.assertEqual(len(capture["upstream"]), 1)
+            self.assertEqual(capture["upstream"][0]["path"], "/anthropic/v1/messages")
+            self.assertNotIn("parallel_tool_calls", capture["upstream_body"])
+            self.assertEqual(capture["state"]["leftovers"], [])
+        self.assertEqual([capture["upstream_body"] for capture in captures[1:]],
+                         [captures[0]["upstream_body"]] * 2)
+        self.assertEqual([_normalize(json.loads(capture["response_body"]))
+                          for capture in captures[1:]],
+                         [_normalize(json.loads(captures[0]["response_body"]))] * 2)
+
+    def test_untranslatable_web_option_falls_back_only_in_auto_mode(self):
+        for stream, chat_scenario, anthropic_scenario in (
+            (False, "buffered", "anthropic-buffered"),
+            (True, "stream", "anthropic-stream"),
+        ):
+            request = {
+                "model": "deepseek-chat",
+                "input": "synthetic query",
+                "stream": stream,
+                "web_search_options": {
+                    "search_context_size": "low",
+                    "future_option": "synthetic ignored value",
+                },
+            }
+            with self.subTest(stream=stream):
+                auto = [
+                    _run_mode(binary, request, chat_scenario, mode="auto")
+                    for binary in (ORACLE_01651, ORACLE, MODEX)
+                ]
+                for result, response, upstream, state in auto:
+                    self.assertEqual((result.returncode, response["status"]), (0, 200))
+                    self.assertEqual(len(upstream), 1)
+                    self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
+                    self.assertEqual(state["leftovers"], [])
+                chat_bodies = [json.loads(bytes.fromhex(upstream[0]["body"]))
+                               for _, _, upstream, _ in auto]
+                self.assertEqual(chat_bodies[1:], chat_bodies[:1] * 2)
+                self.assertNotIn("web_search_options", chat_bodies[0])
+                self.assertNotIn("future_option", json.dumps(chat_bodies[0]))
+                if stream:
+                    responses = [_events(bytes.fromhex(response["body"]))
+                                 for _, response, _, _ in auto]
+                else:
+                    responses = [_normalize(json.loads(bytes.fromhex(response["body"])))
+                                 for _, response, _, _ in auto]
+                self.assertEqual(responses[1:], responses[:1] * 2)
+
+                forced = [
+                    _run_mode(binary, request, anthropic_scenario, mode="anthropic")
+                    for binary in (ORACLE_01651, ORACLE, MODEX)
+                ]
+                for result, response, upstream, state in forced:
+                    self.assertEqual((result.returncode, response["status"]), (1, 400))
+                    self.assertEqual(upstream, [])
+                    self.assertEqual(bytes.fromhex(response["body"]), bytes.fromhex(forced[0][1]["body"]))
+                    self.assertEqual(state["leftovers"], [])
+
     def test_function_search_tools_and_tool_choices_match_release(self):
         reply = _buffered_reply([
             {"type": "server_tool_use", "id": "srv_lookup", "name": "web_search",

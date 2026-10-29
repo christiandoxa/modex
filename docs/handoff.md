@@ -3166,9 +3166,8 @@ returns the baseline 502 and `upstream request failed` body for tested large
 fixed-length bodies, chunk-data EOF, and `Expect: 100-continue`. Large
 invalid-target and WebSocket heads now return the baseline 400 or 426 before
 waiting for body completion. A failed Anthropic stream with an unfinished
-downstream body drains unusable pipelined input to detect client closure.
-Stream event byte counts also differ in a separate eight-client failure probe,
-which only established worker recovery. Full concurrency, signal, platform,
+downstream body returns its connection for subsequent request handling.
+A separate eight-client failure probe still exposes an admission timing gap. Full concurrency, signal, platform,
 and security behavior remain unqualified; all six release targets stay in the
 parity denominator. See
 `docs/evidence/baseline-0.165.1/local-relay-concurrency.md` and
@@ -3188,3 +3187,16 @@ unfinished. The complete 1 MiB parent-EOF control can finish naturally after
 the raw 502, so explicit shutdown is checked separately with a truncated body
 and a truncated head. See `docs/evidence/baseline-0.165.1/local-relay-concurrency.md`
 and `docs/evidence/anthropic-stream-optional-metadata-shared.md`.
+
+Top-level `web_search_options` without a `tools` declaration now reaches the
+native Anthropic search mapping like pinned releases 0.165.1 and 0.439.2.
+Unknown options fall back to Chat Completions only in auto mode, while forced
+Anthropic mode rejects before dispatch. `parallel_tool_calls=true` is accepted
+and omitted from the provider request. Stale 0.439.2 assertions for untyped
+roles and typed text content now compare the active release process and Modex;
+the active CI lane no longer depends on the 0.165.1 oracle before acquisition.
+The focused 75-process-test and 35-request/transport-test runs passed after the
+production build; the 71-file dependency audit and 50-native/135-Python test
+census passed. Broader Anthropic parity and the other release targets remain
+open; all six targets stay in the denominator. Evidence:
+`docs/evidence/baseline-0.165.1/anthropic-mixed-tools.md`.

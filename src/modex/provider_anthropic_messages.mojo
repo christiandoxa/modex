@@ -14,7 +14,7 @@ comptime ANTHROPIC_BUFFERED_MAX_CONTENT_BLOCKS = 65_536
 
 def validate_deepseek_anthropic_request(source: String) raises:
     var doc = JsonDocument(source)
-    _only_fields(doc, doc.root, ["model", "input", "stream", "tools", "tool_choice", "max_output_tokens", "max_tokens", "max_completion_tokens", "temperature", "top_p", "stop", "stop_sequences", "stopSequences"], "request")
+    _only_fields(doc, doc.root, ["model", "input", "stream", "tools", "web_search_options", "parallel_tool_calls", "tool_choice", "max_output_tokens", "max_tokens", "max_completion_tokens", "temperature", "top_p", "stop", "stop_sequences", "stopSequences"], "request")
     var model = doc.get(doc.root, "model")
     if model >= 0 and doc.nodes[model].kind != JSON_STRING:
         raise Error("Anthropic Messages slice requires a string model")
@@ -47,48 +47,55 @@ def validate_deepseek_anthropic_request(source: String) raises:
     var stream = doc.get(doc.root, "stream")
     if stream >= 0 and doc.nodes[stream].kind != JSON_BOOL:
         raise Error("Anthropic Messages stream must be a boolean")
+    var parallel = doc.get(doc.root, "parallel_tool_calls")
+    if parallel >= 0 and (doc.nodes[parallel].kind != JSON_BOOL or doc.nodes[parallel].text != "true"):
+        raise Error("Anthropic Messages only accepts `parallel_tool_calls=true`")
     var tools = doc.get(doc.root, "tools")
-    if tools < 0 or doc.nodes[tools].kind != JSON_ARRAY:
+    var web_search_options = doc.get(doc.root, "web_search_options")
+    if tools < 0 and web_search_options < 0:
+        raise Error("Anthropic Messages slice requires a web_search_preview tool")
+    if tools >= 0 and doc.nodes[tools].kind != JSON_ARRAY:
         raise Error("Anthropic Messages slice requires a web_search_preview tool")
     var web_count = 0
-    for tool in doc.nodes[tools].children:
-        if doc.nodes[tool].kind != JSON_OBJECT:
-            raise Error("Anthropic Messages tool must be an object")
-        var kind = doc.string(doc.get(tool, "type"))
-        if kind == "function":
-            # The shared Responses tool mapper validates names, schemas, and strict mode.
-            continue
-        if kind != "web_search_preview":
-            raise Error("Anthropic Messages slice supports function and web_search_preview tools")
-        _only_fields(doc, tool, ["type", "allowed_domains", "blocked_domains", "user_location", "max_uses", "search_context_size"], "web search tool")
-        web_count += 1
-        var allowed_domains = doc.get(tool, "allowed_domains")
-        var blocked_domains = doc.get(tool, "blocked_domains")
-        if allowed_domains >= 0 and blocked_domains >= 0:
-            raise Error("Anthropic web search cannot combine allowed_domains and blocked_domains")
-        for key in [String("allowed_domains"), "blocked_domains"]:
-            var domains = doc.get(tool, key)
-            if domains >= 0:
-                if doc.nodes[domains].kind != JSON_ARRAY:
-                    raise Error("Anthropic web_search " + key + " must be an array")
-                for domain in doc.nodes[domains].children:
-                    if doc.nodes[domain].kind != JSON_STRING or not doc.nodes[domain].text:
-                        raise Error("Anthropic web_search " + key + " entries must be non-empty strings")
-        var max_uses = doc.get(tool, "max_uses")
-        if max_uses >= 0:
-            var count = json_unsigned(doc, max_uses)
-            if not count or count.value() == 0:
-                raise Error("Anthropic web search max_uses must be a positive integer")
-        var location = doc.get(tool, "user_location")
-        if location >= 0 and doc.nodes[location].kind != JSON_OBJECT:
-            raise Error("Anthropic web search user_location must be an object")
-        var search_context = doc.get(tool, "search_context_size")
-        if search_context >= 0 and (
-            doc.nodes[search_context].kind != JSON_STRING
-            or (doc.nodes[search_context].text != "low" and doc.nodes[search_context].text != "medium" and doc.nodes[search_context].text != "high")
-        ):
-            raise Error("Anthropic web search search_context_size must be low, medium, or high")
-    if web_count != 1:
+    if tools >= 0:
+        for tool in doc.nodes[tools].children:
+            if doc.nodes[tool].kind != JSON_OBJECT:
+                raise Error("Anthropic Messages tool must be an object")
+            var kind = doc.string(doc.get(tool, "type"))
+            if kind == "function":
+                # The shared Responses tool mapper validates names, schemas, and strict mode.
+                continue
+            if kind != "web_search_preview":
+                raise Error("Anthropic Messages slice supports function and web_search_preview tools")
+            _only_fields(doc, tool, ["type", "allowed_domains", "blocked_domains", "user_location", "max_uses", "search_context_size"], "web search tool")
+            web_count += 1
+            var allowed_domains = doc.get(tool, "allowed_domains")
+            var blocked_domains = doc.get(tool, "blocked_domains")
+            if allowed_domains >= 0 and blocked_domains >= 0:
+                raise Error("Anthropic web search cannot combine allowed_domains and blocked_domains")
+            for key in [String("allowed_domains"), "blocked_domains"]:
+                var domains = doc.get(tool, key)
+                if domains >= 0:
+                    if doc.nodes[domains].kind != JSON_ARRAY:
+                        raise Error("Anthropic web_search " + key + " must be an array")
+                    for domain in doc.nodes[domains].children:
+                        if doc.nodes[domain].kind != JSON_STRING or not doc.nodes[domain].text:
+                            raise Error("Anthropic web_search " + key + " entries must be non-empty strings")
+            var max_uses = doc.get(tool, "max_uses")
+            if max_uses >= 0:
+                var count = json_unsigned(doc, max_uses)
+                if not count or count.value() == 0:
+                    raise Error("Anthropic web search max_uses must be a positive integer")
+            var location = doc.get(tool, "user_location")
+            if location >= 0 and doc.nodes[location].kind != JSON_OBJECT:
+                raise Error("Anthropic web search user_location must be an object")
+            var search_context = doc.get(tool, "search_context_size")
+            if search_context >= 0 and (
+                doc.nodes[search_context].kind != JSON_STRING
+                or (doc.nodes[search_context].text != "low" and doc.nodes[search_context].text != "medium" and doc.nodes[search_context].text != "high")
+            ):
+                raise Error("Anthropic web search search_context_size must be low, medium, or high")
+    if web_count != 1 and not (web_count == 0 and web_search_options >= 0):
         raise Error("Anthropic Messages slice requires exactly one web_search_preview tool")
 
 
@@ -103,6 +110,15 @@ def anthropic_search_filters_conflict(source: String) raises -> Bool:
             if doc.string(doc.get(tool, "type")) == "web_search_preview" and _has_both_domain_filters(doc, tool):
                 return True
     return False
+
+
+def anthropic_auto_chat_fallback_safe(reason: String) -> Bool:
+    return (
+        reason.startswith("Anthropic Messages does not translate chat field ")
+        or reason.startswith("Anthropic Messages does not translate web_search_options field ")
+        or reason.startswith("Anthropic web_search_options field ")
+        or reason.startswith("Anthropic web search ")
+    )
 
 
 def _has_both_domain_filters(doc: JsonDocument, node: Int) -> Bool:

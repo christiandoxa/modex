@@ -83,6 +83,20 @@ def _run_mode(binary, request, scenario, mode=None, strict_tools=False, raw_requ
     return result, response, upstream, state
 
 
+def _observe_mode_turns(binary, turns, replies, mode):
+    original_run = test_super_launch.subprocess.run
+
+    def run_with_mode(*args, **kwargs):
+        kwargs["env"] = {
+            **kwargs["env"],
+            "PRODEX_DEEPSEEK_WEB_SEARCH_MODE": mode,
+        }
+        return original_run(*args, **kwargs)
+
+    with patch.object(test_super_launch.subprocess, "run", side_effect=run_with_mode):
+        return observe_turns(binary, turns, replies)
+
+
 def _request(stream=False):
     return {
         "model": "deepseek-chat",
@@ -319,6 +333,108 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                         self.assertEqual(response["state"]["leftovers"], [])
                     self.assertEqual(responses[1]["response_body"], responses[0]["response_body"])
                     self.assertEqual(responses[2]["response_body"], responses[0]["response_body"])
+
+    def test_store_defaults_are_ignored_on_anthropic_provider_requests(self):
+        values = ("missing", False, True, None, "false")
+        binaries = (ORACLE_01651, ORACLE, MODEX)
+        for mode in ("auto", "anthropic", "openai_chat"):
+            for streaming in (False, True):
+                with self.subTest(mode=mode, stream=streaming):
+                    turns = []
+                    for value in values:
+                        turn = {
+                            "model": "deepseek-chat",
+                            "input": "synthetic store control",
+                            "stream": streaming,
+                            "tools": [{"type": "web_search_preview"}],
+                        }
+                        if value != "missing":
+                            turn["store"] = value
+                        turns.append(turn)
+
+                    if mode == "openai_chat":
+                        if streaming:
+                            chunks = [
+                                {"id": "chat_store", "created": 42, "model": "deepseek-chat",
+                                 "choices": [{"index": 0, "delta": {"role": "assistant", "content": "ok"},
+                                              "finish_reason": None}]},
+                                {"id": "chat_store", "created": 42, "model": "deepseek-chat",
+                                 "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
+                            ]
+                            reply = {
+                                "status": 200,
+                                "content_type": "text/event-stream",
+                                "body": b"".join(
+                                    b"data: " + json.dumps(chunk, separators=(",", ":")).encode() + b"\n\n"
+                                    for chunk in chunks
+                                ) + b"data: [DONE]\n\n",
+                            }
+                        else:
+                            reply = {
+                                "status": 200,
+                                "content_type": "application/json",
+                                "body": json.dumps({
+                                    "id": "chat_store", "model": "deepseek-chat",
+                                    "choices": [{"index": 0,
+                                                  "message": {"role": "assistant", "content": "ok"},
+                                                  "finish_reason": "stop"}],
+                                }, separators=(",", ":")).encode(),
+                            }
+                    elif streaming:
+                        reply = _stream([
+                            {"type": "message_start", "message": {
+                                "id": "msg_store", "role": "assistant", "model": "deepseek-chat",
+                                "usage": {"input_tokens": 1, "output_tokens": 0},
+                            }},
+                            {"type": "content_block_start", "index": 0,
+                             "content_block": {"type": "text", "text": ""}},
+                            {"type": "content_block_delta", "index": 0,
+                             "delta": {"type": "text_delta", "text": "ok"}},
+                            {"type": "content_block_stop", "index": 0},
+                            {"type": "message_delta", "delta": {"stop_reason": "end_turn"},
+                             "usage": {"output_tokens": 1}},
+                            {"type": "message_stop"},
+                        ])
+                    else:
+                        reply = _buffered_reply(
+                            content=[{"type": "text", "text": "ok"}],
+                            stop_reason="end_turn",
+                        )
+
+                    captures = [
+                        _observe_mode_turns(binary, turns, [reply] * len(turns), mode)
+                        for binary in binaries
+                    ]
+                    expected_path = "/v1/chat/completions" if mode == "openai_chat" else "/anthropic/v1/messages"
+                    for posts, responses in captures:
+                        self.assertEqual([response["status"] for response in responses], [200, 200, 200, 502, 502])
+                        self.assertEqual(len(posts), 3)
+                        self.assertEqual([post["path"] for post in posts], [expected_path] * 3)
+                        bodies = [json.loads(post["body"]) for post in posts]
+                        self.assertTrue(all("store" not in body for body in bodies))
+                        self.assertEqual([post["body"] for post in posts], [posts[0]["body"]] * 3)
+
+                    expected_posts = [post["body"] for post in captures[0][0]]
+                    self.assertEqual([post["body"] for post in captures[1][0]], expected_posts)
+                    self.assertEqual([post["body"] for post in captures[2][0]], expected_posts)
+                    for response_index in range(3):
+                        if streaming:
+                            normalized = [
+                                _normalized_events(bytes.fromhex(responses[response_index]["body"]))
+                                for _, responses in captures
+                            ]
+                        else:
+                            normalized = [
+                                _normalize(json.loads(bytes.fromhex(responses[response_index]["body"])))
+                                for _, responses in captures
+                            ]
+                        self.assertEqual(normalized[1:], normalized[:1] * 2)
+                    for response_index in (3, 4):
+                        errors = [
+                            bytes.fromhex(responses[response_index]["body"])
+                            for _, responses in captures
+                        ]
+                        self.assertEqual(errors[1:], errors[:1] * 2)
 
     def test_native_anthropic_unsupported_chat_fields_fallback_safely(self):
         base = {

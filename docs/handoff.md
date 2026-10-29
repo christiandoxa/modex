@@ -3554,3 +3554,13 @@ all other Anthropic shapes remain unqualified. The focused matrix, production
 build, 71-file import audit, and `git diff --check` pass. See
 `docs/evidence/baseline-0.165.1/anthropic-function-call-output-aliases.md`.
 All six baseline release targets remain in the parity denominator.
+
+Native Anthropic Responses requests now accept the boolean `store` control and
+omit it from provider requests, matching Prodex. Both pinned releases also
+reject null and non-boolean values before provider I/O. The real-process
+matrix covers missing/false/true/null/string values, auto, forced Anthropic,
+and forced Chat routes, with buffered and streamed requests. The production
+build, focused matrix, 71-file import audit, and `git diff --check` pass. This
+qualifies only the tested request control on Linux x86-64; all six release
+targets remain in the parity denominator. See
+`docs/evidence/baseline-0.165.1/anthropic-request-store-control.md`.

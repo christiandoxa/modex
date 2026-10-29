@@ -83,3 +83,48 @@ upstream response; neither client response exposes the image data. Responses
 processes. The streaming image block has a different release behavior and is
 covered in `anthropic-stream.md`; this buffered rejection does not imply that
 image request or response support is implemented.
+
+## Buffered response envelope fields and usage
+
+The frozen 0.439.2 response translator requires a `content` array, then passes
+the full provider object to the Anthropic response-envelope kernel. The kernel
+reads `id`, `model`, `usage.input_tokens`, `usage.output_tokens`, optional
+`usage.server_tool_use.web_search_requests`, and `stop_reason`; it ignores
+unknown envelope and usage fields. Missing or non-string IDs and models become
+`resp_anthropic` and `unknown`. A missing or non-object usage value is omitted;
+an object with absent or non-unsigned token counts produces zero counts. A
+valid web-search request count maps to
+`tool_usage.web_search.num_requests`.
+
+`tests/test_anthropic_mixed_tools_01651.py::test_buffered_envelope_extensions_and_usage_normalization_match_releases`
+compares the production Super path against checksum-pinned 0.165.1 and 0.439.2
+Linux processes. Its cases cover extra top-level fields (including
+`stop_sequence`, `context_management`, and a conflicting top-level
+`tool_usage`), extra cached-token usage fields, nested web-search counts,
+invalid ID/model/token field types, missing and non-object usage, and a missing
+stop reason. A non-array `content` field still returns the release's 502; the
+existing exact/over-limit content-block tests retain the 65,536-block bound.
+The tests use synthetic responses, isolated state, and loopback provider
+traffic.
+
+Frozen-source trace: Prodex 0.439.2 commit
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9`,
+`crates/prodex-provider-core/src/translators/anthropic/messages.rs:141-150`,
+`crates/prodex-provider-core/src/translators/anthropic/messages/response.rs:72-103`,
+and `mojo/prodex_core/anthropic_request.mojo:2088-2187`. The pinned 0.165.1
+comparison is process evidence only. Oracle SHA-256 values are
+`dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51` and
+`a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`.
+
+Validation on Linux x86-64: `make build` passed; the full
+`python3 scripts/ci/run-unittest.py test_anthropic_mixed_tools_01651.py` suite
+passed all 50 tests, including the new envelope comparison and the existing
+65,536/65,537 content-block boundary. The focused native
+`test_provider_chat_buffered` unit, 71-file production import audit, test
+census (50 native test sources and 136 Python modules), and `git diff --check`
+also passed.
+
+This covers only the tested envelope fields on Linux x86-64. Existing content
+block validation, the response-size limit, unsupported response blocks,
+continuation behavior, transport security, other release targets, and general
+Anthropic parity remain open.

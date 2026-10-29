@@ -837,6 +837,110 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                     captures.append((json.loads(posts[0]["body"]), result))
                 self.assertEqual(captures[1:], captures[:1] * 2)
 
+    def test_buffered_envelope_extensions_and_usage_normalization_match_releases(self):
+        cases = (
+            (
+                "envelope and usage extensions",
+                {
+                    "type": "future_message",
+                    "role": 7,
+                    "stop_sequence": None,
+                    "context_management": {"applied_edits": []},
+                    "tool_usage": {"web_search": {"num_requests": 99}},
+                    "future_field": "ignored",
+                },
+                {
+                    "input_tokens": 3,
+                    "output_tokens": 5,
+                    "cache_creation_input_tokens": 4,
+                    "cache_read_input_tokens": 2,
+                    "server_tool_use": {"web_search_requests": 7, "future_field": True},
+                },
+                (),
+                {
+                    "id": "msg_mixed",
+                    "model": "deepseek-chat",
+                    "usage": {"input_tokens": 3, "output_tokens": 5, "total_tokens": 8},
+                    "tool_usage": {"web_search": {"num_requests": 7}},
+                    "metadata": {"anthropic": {"stop_reason": "end_turn"}},
+                },
+            ),
+            (
+                "invalid id, model, and usage counters normalize",
+                {"id": 7, "model": None, "type": None, "role": "user"},
+                {
+                    "input_tokens": "3",
+                    "output_tokens": None,
+                    "server_tool_use": {"web_search_requests": "7"},
+                },
+                ("stop_reason",),
+                {
+                    "id": "resp_anthropic",
+                    "model": "unknown",
+                    "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+                },
+            ),
+            (
+                "missing usage and stop reason",
+                {},
+                None,
+                ("usage", "stop_reason"),
+                {"id": "msg_mixed", "model": "deepseek-chat"},
+            ),
+            (
+                "non-object usage is omitted",
+                {},
+                "future usage shape",
+                (),
+                {
+                    "id": "msg_mixed",
+                    "model": "deepseek-chat",
+                    "metadata": {"anthropic": {"stop_reason": "end_turn"}},
+                },
+            ),
+            (
+                "content must remain an array",
+                {},
+                {"input_tokens": 3, "output_tokens": 5},
+                (),
+                None,
+            ),
+        )
+        for label, envelope_fields, usage, removed, expected in cases:
+            with self.subTest(case=label):
+                captures = []
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    reply = _buffered_reply([{"type": "text", "text": "Synthetic response"}], "end_turn")
+                    payload = json.loads(reply["body"])
+                    payload.update(envelope_fields)
+                    if usage is not None:
+                        payload["usage"] = usage
+                    for field in removed:
+                        payload.pop(field)
+                    if expected is None:
+                        payload["content"] = "not an array"
+                    reply["body"] = json.dumps(payload, separators=(",", ":")).encode()
+                    posts, responses = observe_turns(binary, [_request()], [reply])
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual(len(responses), 1)
+                    if expected is None:
+                        self.assertEqual(responses[0]["status"], 502)
+                        self.assertEqual(bytes.fromhex(responses[0]["body"]),
+                                         b"provider response could not be processed")
+                        captures.append((json.loads(posts[0]["body"]), responses[0]["status"],
+                                         bytes.fromhex(responses[0]["body"])))
+                        continue
+                    self.assertEqual(responses[0]["status"], 200)
+                    response = _normalize(_json_body(responses[0]))
+                    for key, value in expected.items():
+                        self.assertEqual(response.get(key), value, key)
+                    self.assertNotIn("stop_sequence", response)
+                    self.assertNotIn("context_management", response)
+                    self.assertNotIn("future_field", json.dumps(response))
+                    captures.append((json.loads(posts[0]["body"]), response))
+                self.assertEqual(captures[1:], captures[:1] * 2)
+
     def test_buffered_text_only_malformed_shapes_still_fail_closed(self):
         cases = (
             ("missing text", [{"type": "text"}]),

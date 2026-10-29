@@ -9,6 +9,17 @@ Other config keys and existing home data remain guarded, and broader config,
 profile lifecycle and transport parity remain unfinished. Evidence:
 `docs/evidence/deepseek-web-search-mode-04392.md`.
 
+Buffered Anthropic response envelopes now ignore unrecognized top-level and
+usage fields, fall back for invalid or missing IDs/models, default invalid
+usage counters to zero, omit missing/non-object usage, and project valid
+`server_tool_use.web_search_requests` into Responses `tool_usage`. Both pinned
+Linux releases match these cases through production Super process comparisons.
+The content array and 65,536-block bound remain enforced; other malformed
+content and full provider behavior remain open. The 50-test mixed-tools suite,
+focused native buffered test, production build/import audit, test census, and
+diff check passed. Evidence:
+`docs/evidence/baseline-0.165.1/anthropic-buffered.md`.
+
 Gateway CLI parsing now treats a literal `--` as the option terminator and
 reports the first following token as unexpected, matching checksum-pinned
 0.165.1 and 0.439.2 processes. The production build, native Gateway argument

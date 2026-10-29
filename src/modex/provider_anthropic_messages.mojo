@@ -314,8 +314,10 @@ def _choice(doc: JsonDocument) raises -> String:
 def anthropic_buffered_response(source: String, created_at: UInt64, request_metadata: String = "null") raises -> String:
     var doc = JsonDocument(source)
     _validate_anthropic_buffered_response(doc)
-    var id = doc.string(doc.get(doc.root, "id"))
-    var model = doc.string(doc.get(doc.root, "model"))
+    var id_node = doc.get(doc.root, "id")
+    var id = doc.string(id_node) if id_node >= 0 and doc.nodes[id_node].kind == JSON_STRING else "resp_anthropic"
+    var model_node = doc.get(doc.root, "model")
+    var model = doc.string(model_node) if model_node >= 0 and doc.nodes[model_node].kind == JSON_STRING else "unknown"
     var output = List[String]()
     var text_runs = List[String]()
     var searches = List[AnthropicWebSearch]()
@@ -386,13 +388,18 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
             raise Error("Anthropic buffered response output plan is invalid")
     var result = '{"id":' + quote_json(id) + ',"object":"response","created_at":' + String(created_at) + ',"model":' + quote_json(model) + ',"output":[' + ",".join(items) + ']'
     var usage = doc.get(doc.root, "usage")
-    if usage >= 0:
+    if usage >= 0 and doc.nodes[usage].kind == JSON_OBJECT:
         var input_tokens = json_unsigned(doc, doc.get(usage, "input_tokens"))
         var output_tokens = json_unsigned(doc, doc.get(usage, "output_tokens"))
         var input_count = input_tokens.value() if input_tokens else UInt64(0)
         var output_count = output_tokens.value() if output_tokens else UInt64(0)
         var total_count = UInt64.MAX if output_count > UInt64.MAX - input_count else input_count + output_count
         result += ',"usage":{"input_tokens":' + String(input_count) + ',"output_tokens":' + String(output_count) + ',"total_tokens":' + String(total_count) + "}"
+        var server_tool_use = doc.get(usage, "server_tool_use")
+        if server_tool_use >= 0 and doc.nodes[server_tool_use].kind == JSON_OBJECT:
+            var web_search_requests = json_unsigned(doc, doc.get(server_tool_use, "web_search_requests"))
+            if web_search_requests:
+                result += ',"tool_usage":{"web_search":{"num_requests":' + String(web_search_requests.value()) + "}}"
     var stop_reason = doc.get(doc.root, "stop_reason")
     var provider_metadata = "{}"
     if stop_reason >= 0:
@@ -456,21 +463,6 @@ def _web_search_item(search: AnthropicWebSearch, in_progress: Bool) raises -> St
 def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
     if doc.nodes[doc.root].kind != JSON_OBJECT:
         raise Error("Anthropic Messages response must be an object")
-    _only_fields(doc, doc.root, ["id", "type", "role", "model", "content", "stop_reason", "usage"], "response")
-    if doc.string(doc.get(doc.root, "type")) != "message" or doc.string(doc.get(doc.root, "role")) != "assistant":
-        raise Error("Anthropic Messages response must be an assistant message")
-    var id = doc.get(doc.root, "id")
-    var model = doc.get(doc.root, "model")
-    if id < 0 or doc.nodes[id].kind != JSON_STRING or model < 0 or doc.nodes[model].kind != JSON_STRING:
-        raise Error("Anthropic Messages response requires string id and model")
-    var usage = doc.get(doc.root, "usage")
-    if usage < 0 or doc.nodes[usage].kind != JSON_OBJECT:
-        raise Error("Anthropic Messages response usage is missing")
-    _only_fields(doc, usage, ["input_tokens", "output_tokens"], "usage")
-    var input_tokens = json_unsigned(doc, doc.get(usage, "input_tokens"))
-    var output_tokens = json_unsigned(doc, doc.get(usage, "output_tokens"))
-    if not input_tokens or not output_tokens:
-        raise Error("Anthropic Messages token usage is invalid")
     var content = doc.get(doc.root, "content")
     if content < 0 or doc.nodes[content].kind != JSON_ARRAY:
         raise Error("Anthropic Messages content must be an array")
@@ -525,8 +517,6 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         if tool_count == 0:
             raise Error("Anthropic Messages tool-use content requires a tool_use block")
         return
-    if doc.string(doc.get(doc.root, "stop_reason")) != "end_turn":
-        raise Error("Anthropic Messages stop reason is not supported")
     var text_and_orphan_results = True
     for block in doc.nodes[content].children:
         var kind = doc.string(doc.get(block, "type"))

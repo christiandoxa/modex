@@ -8,6 +8,16 @@ tests passed in 3,356.477 seconds. The local log is
 run predates later dry-run, provider, and log changes; it does not qualify the
 current revision, non-host targets, or security behavior.
 
+## Super reasoning-effort CLI values (2026-10-30)
+
+Super now trims and ASCII-lowercases `--sub-agent-model-reasoning-effort` before
+validation, and invalid values return the matching Clap diagnostic and exit 2.
+Real-process tests compare 0.165.1, frozen 0.439.2, and Modex for accepted
+mixed-case input, whitespace, attached values, and Unicode case-folding
+controls. No filesystem state is created. This is parser parity on Linux
+x86-64; sub-agent execution and the other five release targets remain outside
+this result. Evidence: `docs/evidence/baseline-0.165.1/super-sub-agent-reasoning-effort.md`.
+
 ## Buffered first-choice history shaping (2026-10-30)
 
 The buffered DeepSeek history shaper now rejects a present non-object first

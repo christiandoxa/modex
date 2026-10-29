@@ -45,6 +45,14 @@ def trim_text(text: StringSlice) -> String:
     return String(text[byte=start:end])
 
 
+def ascii_lower(value: String) -> String:
+    var result = String()
+    for character in value.codepoints():
+        var code = Int(character)
+        result += chr(code + 32 if 65 <= code <= 90 else code)
+    return result^
+
+
 def cli_width() raises -> Int:
     var width: UInt64
     try:

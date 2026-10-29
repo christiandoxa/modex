@@ -22,7 +22,7 @@ from .provider_deepseek_transport import deepseek_request_headers
 from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, local_rewrite_worker_count, serve_local_rewrite
 from .sessions import read_private_state_file
 from .sha256 import hash_file
-from .text import cli_width, is_whitespace, section_header, trim_text, unsigned_value, wrap_text
+from .text import ascii_lower, cli_width, is_whitespace, section_header, trim_text, unsigned_value, wrap_text
 from .toml import TOMLDocument, TOML_BOOLEAN, TOML_STRING, TOML_TABLE
 from .uuid7 import new_uuid7
 
@@ -107,14 +107,6 @@ def _clean_home(root: String, shared: String, skip_config: Bool = False, read_on
     return config_source^, search_mode^, strict_tools^, beta_base_url^
 
 
-def _ascii_lower(value: String) -> String:
-    var result = String()
-    for character in value.codepoints():
-        var code = Int(character)
-        result += chr(code + 32 if 65 <= code <= 90 else code)
-    return result
-
-
 def _path_candidates(command: String, path: String) -> List[String]:
     var candidates = List[String]()
     if path == "\0":
@@ -140,7 +132,7 @@ def _executable_path(candidate: String) -> String:
 
 def _is_prodex_wrapper(path: String) -> Bool:
     var parts = path.split("/")
-    var basename = _ascii_lower(String(parts[len(parts) - 1]))
+    var basename = ascii_lower(String(parts[len(parts) - 1]))
     if basename == "prodex" or basename == "prodex.exe":
         return True
     try:
@@ -162,11 +154,11 @@ def _is_prodex_wrapper(path: String) -> Bool:
         source = String(from_utf8=Span(bytes))
     except:
         return False
-    var lowered = _ascii_lower(source)
+    var lowered = ascii_lower(source)
     if lowered.find("codex-shim") >= 0 or lowered.find("@christiandoxa/prodex") >= 0:
         return True
     for line in source.split("\n"):
-        var normalized = _ascii_lower(trim_text(line))
+        var normalized = ascii_lower(trim_text(line))
         if (normalized.startswith("exec ") or normalized.find("spawn") >= 0) and normalized.find("prodex") >= 0:
             return True
     return False
@@ -274,7 +266,7 @@ def deepseek_model_catalog(launch_model: String, context_window: UInt64, compact
         slugs.append(preset[0])
     var seen = List[String]()
     for slug in slugs:
-        var folded = _ascii_lower(slug)
+        var folded = ascii_lower(slug)
         if folded in seen:
             continue
         seen.append(folded)
@@ -311,7 +303,7 @@ def _child_environment(home: String) -> List[String]:
             var value = String(part.strip())
             var duplicate = False
             for previous in bypass:
-                duplicate = duplicate or _ascii_lower(previous) == _ascii_lower(value)
+                duplicate = duplicate or ascii_lower(previous) == ascii_lower(value)
             if value and not duplicate:
                 bypass.append(value)
     var merged = String(",").join(bypass)
@@ -717,7 +709,7 @@ def _toml_model_literal(value: String) -> String:
 
 
 def _truthy_environment_value(value: String) -> Bool:
-    var normalized = _ascii_lower(trim_text(value))
+    var normalized = ascii_lower(trim_text(value))
     return normalized == "1" or normalized == "true" or normalized == "yes"
 
 
@@ -890,7 +882,7 @@ def _exec(binary: String, child_path: String, argv0: String, home: String, model
             + String(_child_exit_code(version.status)) + ". " + CODEX_INSTALL_GUIDANCE
         )
     var version_output = String(from_utf8_lossy=Span(version.stdout)) + "\n" + String(from_utf8_lossy=Span(version.stderr))
-    if _ascii_lower(version_output).find("codex") < 0:
+    if ascii_lower(version_output).find("codex") < 0:
         raise Error("Codex CLI at " + binary + " did not report a recognizable version. " + CODEX_INSTALL_GUIDANCE)
     var reported_version = _codex_probe_version(version_output)
     var parts = _codex_version_parts(reported_version)

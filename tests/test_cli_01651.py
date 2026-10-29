@@ -166,6 +166,27 @@ class SuperProviderCli01651Tests(unittest.TestCase):
                                  (2, baseline.stdout, expected_stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_sub_agent_reasoning_effort_matches_clap(self):
+        cases = (
+            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort", "HIGH", "--help"], 0),
+            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort", " INSTANT "], 2),
+            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort=instant"], 2),
+            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort", "İNSTANT"], 2),
+        )
+        for arguments, expected_code in cases:
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(ORACLE, arguments, "prodex", "01651-super-effort")
+                modex, modex_created = isolated_run(MODEX, arguments, "modex", "modex-super-effort")
+                self.assertEqual((baseline.returncode, modex.returncode), (expected_code, expected_code))
+                if expected_code == 0:
+                    self.assertTrue(baseline.stdout.startswith(b"YOLO shortcut for the Super tool stack"))
+                    self.assertTrue(modex.stdout.startswith(b"YOLO shortcut for the Super tool stack"))
+                    self.assertEqual((baseline.stderr, modex.stderr), (b"", b""))
+                else:
+                    self.assertEqual((modex.stdout, modex.stderr),
+                                     (baseline.stdout, baseline.stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
     def test_positional_provider_error_keeps_runtime_diagnostic(self):
         arguments = ["super", "exec", "--provider=local", "--help"]
         expected_stderr = (

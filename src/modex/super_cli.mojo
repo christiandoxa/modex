@@ -3,9 +3,10 @@
 from std.collections import List
 
 from .cli import session_cli_error
+from .json import quote_json
 from .log_operational import valid_url_authority
 from .super_launch import run_clean_deepseek_super
-from .text import trim_text, unsigned_value
+from .text import ascii_lower, trim_text, unsigned_value
 
 
 @fieldwise_init
@@ -141,8 +142,11 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
         raise Error("only --cli agy is retained; use --provider gemini|copilot|kiro for other providers")
     if name == "--sub-agent-model" and not trim_text(value):
         raise _typed_value_error(name, value, "--sub-agent-model must be nonempty", clap_diagnostic)
-    if name == "--sub-agent-model-reasoning-effort" and value not in ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]:
-        raise Error("invalid sub-agent reasoning effort")
+    if name == "--sub-agent-model-reasoning-effort":
+        var effort = ascii_lower(trim_text(value))
+        if effort not in ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]:
+            raise _typed_value_error(name, value, "invalid sub-agent reasoning effort: expected none, minimal, low, medium, high, xhigh, max, or ultra, got " + quote_json(effort), clap_diagnostic)
+        return effort^
     if name == "--web-search" and value not in ["disabled", "cached", "indexed", "live"]:
         raise Error("invalid --web-search: supported values are disabled, cached, indexed, live")
     if name == "--current-time-clock-source" and value not in ["system", "external"]:

@@ -48,6 +48,11 @@ def main() raises:
     assert_equal(options.value("--sub-agent-model"), "  雪 model  ")
     validate_super_options(options)
     rejects([String("modex"), "super", "--sub-agent", "--sub-agent-model", "  "], "error: invalid value '  ' for '--sub-agent-model <MODEL>': --sub-agent-model must be nonempty\n\nFor more information, try '--help'.\n")
+    options = parse_super_arguments([String("modex"), "super", "--sub-agent", "--sub-agent-model-reasoning-effort", " HIGH "], "modex")
+    assert_equal(options.value("--sub-agent-model-reasoning-effort"), "high")
+    validate_super_options(options)
+    rejects([String("modex"), "super", "--sub-agent", "--sub-agent-model-reasoning-effort", " INSTANT "], "error: invalid value ' INSTANT ' for '--sub-agent-model-reasoning-effort <EFFORT>': invalid sub-agent reasoning effort: expected none, minimal, low, medium, high, xhigh, max, or ultra, got \"instant\"\n\nFor more information, try '--help'.\n")
+    rejects([String("modex"), "super", "--sub-agent", "--sub-agent-model-reasoning-effort", "İNSTANT"], "error: invalid value 'İNSTANT' for '--sub-agent-model-reasoning-effort <EFFORT>': invalid sub-agent reasoning effort: expected none, minimal, low, medium, high, xhigh, max, or ultra, got \"İnstant\"\n\nFor more information, try '--help'.\n")
     for value in ["default", "4", "8", "16", "32", "23", "64"]:
         options = parse_super_arguments([String("modex"), "super", "exec", "--sub-agent", "--sub-agent-max-concurrency", value], "modex")
         assert_equal(options.value("--sub-agent-max-concurrency"), value)

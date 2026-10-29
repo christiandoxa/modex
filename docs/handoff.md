@@ -80,8 +80,13 @@ and 126-module census passed. These do not establish full parity.
 
 Selected Anthropic message metadata, text/input and thinking deltas, unknown
 string delta types, and unmatched block stops now match both releases in
-real-process stream comparisons. Missing, null, and numeric delta types fail
-in all three processes, but their failure codes and event sequences differ.
+real-process stream comparisons. Selected missing, null, and numeric delta
+types now match the release failure diagnostic and event sequence; active
+search and open result blocks follow the observed ignore precedence. After a
+closed search result, the releases continue after a malformed delta and accept
+a text delta, while Modex stops in both cases. These remain reproducible gaps.
+The integrated stream, model, session and historical mixed-tool suites passed
+40 tests; the worker's separate text and historical stream suite passed 28.
 The overlapping-result control covers 128 open indexes; no aggregate cap
 limits retained per-stream search and tool state. See
 `docs/evidence/anthropic-stream-optional-metadata-shared.md`.

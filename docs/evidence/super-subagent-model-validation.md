@@ -14,3 +14,6 @@ the releases create application state while Modex still exits without it.
 Valid model values preserve help ordering; the native test also verifies that
 Modex keeps the original padded model value. This does not establish sub-agent
 launch or state-lifecycle parity.
+
+With both pinned oracles available, reproduce with `make build` followed by
+`python3 scripts/ci/run-unittest.py test_super_subagent_model_shared.py`.

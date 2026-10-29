@@ -138,8 +138,57 @@ def _validate_deepseek_beta_url(value: String) raises:
         if found >= 0 and found < authority_end:
             authority_end = found
     var authority = String(value[byte=authority_start:authority_end])
-    if authority.find("@") >= 0 or not valid_url_authority(authority):
+    if authority.find("@") >= 0 or not valid_url_authority(authority) or not _valid_deepseek_beta_host(authority):
         raise Error(invalid)
+
+
+# shortcut: full UTS #46 mapping is absent; add it to match Unicode hostname normalization.
+def _valid_deepseek_beta_host(authority: String) -> Bool:
+    if authority.startswith("["):
+        return True
+    var end = authority.find(":")
+    var host = String(authority[byte=:end]) if end >= 0 else authority
+    var decoded_host = List[UInt8]()
+    var index = 0
+    while index < host.byte_length():
+        var byte = Int(host.as_bytes()[index])
+        if byte == 60 or byte == 62 or byte == 91 or byte == 93 or byte == 94 or byte == 124:
+            return False
+        if byte == 37:
+            if index + 2 >= host.byte_length():
+                return False
+            var high = _url_host_hex_value(Int(host.as_bytes()[index + 1]))
+            var low = _url_host_hex_value(Int(host.as_bytes()[index + 2]))
+            if high < 0 or low < 0:
+                return False
+            var decoded = high * 16 + low
+            if decoded <= 32 or decoded == 127 or decoded in [
+                35, 37, 47, 58, 60, 62, 63, 64, 91, 92, 93, 94, 124,
+            ]:
+                return False
+            decoded_host.append(UInt8(decoded))
+            index += 2
+        else:
+            decoded_host.append(UInt8(byte))
+        index += 1
+    var decoded_text: String
+    try:
+        decoded_text = String(from_utf8=Span(decoded_host))
+    except:
+        return False
+    if decoded_text.byte_length() != len(decoded_host):
+        return False
+    return valid_url_authority(decoded_text)
+
+
+def _url_host_hex_value(byte: Int) -> Int:
+    if 48 <= byte <= 57:
+        return byte - 48
+    if 65 <= byte <= 70:
+        return byte - 55
+    if 97 <= byte <= 102:
+        return byte - 87
+    return -1
 
 
 def _web_search_mode() raises -> String:

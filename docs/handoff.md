@@ -662,7 +662,12 @@ TOML settings and public beta TLS/DNS remain open. A source-traced follow-up
 now rejects a present invalid beta URL before Codex/provider work even when
 strict tools are off, while a valid public URL remains unused for routing.
 This closes that environment-only case against 0.439.2 and does not establish
-full 0.165.1 behavior. A separate 0.165.1 launch with `not-a-url` also fails
+full 0.165.1 behavior. Beta host validation now rejects forbidden raw and
+percent-decoded delimiters, malformed percent escapes, invalid decoded UTF-8,
+and percent-encoded invalid numeric hosts. Valid encoded Unicode IDNs remain
+accepted. Fullwidth characters that UTS #46 maps to forbidden delimiters
+remain a known 0.439.2 mismatch; complete Unicode hostname normalization is
+not implemented. A separate 0.165.1 launch with `not-a-url` also fails
 before provider I/O with no launch or overlay side effects; the release adds
 `relative URL without a base` to stderr while Modex keeps the generic message.
 The selected active-release HTTP and URL controls do not qualify the broader

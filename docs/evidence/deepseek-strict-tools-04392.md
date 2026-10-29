@@ -58,19 +58,21 @@ present environment value before launching Codex, while keeping valid public
 URLs unused when strict mode is off.
 
 The real-process comparison covers an empty value, malformed URL, unsupported
-scheme, credentials, query, fragment and whitespace. Modex and the pinned
-release both fail before Codex launch or provider I/O, with no profile overlay
-left behind. Synthetic credentials in invalid values are not echoed. The
-existing valid public URL and strict loopback-route controls still pass.
+scheme, credentials, query, fragment, whitespace, forbidden authority bytes,
+malformed percent escapes, invalid decoded UTF-8, and percent-encoded invalid
+numeric hosts. Modex and the pinned release both fail before Codex launch or
+provider I/O, with no profile overlay left behind. Synthetic credentials in
+invalid values are not echoed. Valid percent escapes, numeric hosts, raw and
+encoded Unicode IDNs, punycode, and the strict loopback-route controls still
+pass. Full UTS #46 hostname normalization remains incomplete: fullwidth
+characters that map to forbidden ASCII delimiters are still accepted by
+Modex, while 0.439.2 rejects them. This remains an explicit parity gap.
 
-Validation on Linux x86-64: `make build` and the targeted
-`local_rewrite_driver` build passed with Mojo 1.2.0. The three focused
-`test_provider_tools_04392_characterization` methods passed, as did all 22
-`test_local_rewrite.py` methods and the active 0.165.1 raw HTTP production
-control. A separate active 0.165.1 launch with `not-a-url` also failed before
-provider I/O; Modex and 0.165.1 had no launch/upstream side effects, while the
-release added `relative URL without a base` to its stderr diagnostic and Modex
-kept the generic message. The 71-file production import audit passed. This
-closes only the environment-backed URL validation case; TOML propagation and
-public beta transport remain unsupported, and the selected 0.165.1 checks do
-not qualify its full behavior.
+Validation on Linux x86-64: `make build` and
+`make unit-build UNIT_BUILD_PROGRAMS='local_rewrite_driver'` passed with Mojo
+1.2.0. The full `test_provider_tools_04392_characterization` module passed all
+18 tests against the checksum-verified release and production Modex CLI. The
+earlier active 0.165.1 raw HTTP and invalid-URL launch controls remain
+historical checks; they do not qualify full 0.165.1 behavior. This closes only
+the environment-backed URL validation case; TOML propagation, public beta
+transport, and complete Unicode hostname normalization remain unsupported.

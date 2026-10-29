@@ -578,15 +578,39 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
 
     def test_non_strict_launch_does_not_resolve_unused_public_beta_url(self):
         request = {"model": "deepseek-chat", "input": "synthetic beta fallback control"}
-        beta_url = "https://api.deepseek.com/beta"
-        reference = _run(ORACLE_04392, request, beta_override=beta_url)
-        modex = _run(MODEX, request, beta_override=beta_url)
+        for beta_url in (
+            "https://api.deepseek.com/beta",
+            "https://a%41b/beta",
+            "https://a%2eb/beta",
+            "https://127.0.0.%39/beta",
+            "https://例え.テスト/beta",
+            "https://%E4%BE%8B%E3%81%88.%E3%83%86%E3%82%B9%E3%83%88/beta",
+            "https://xn--r8jz45g.xn--zckzah/beta",
+        ):
+            with self.subTest(beta_url=beta_url):
+                reference = _run(ORACLE_04392, request, beta_override=beta_url)
+                modex = _run(MODEX, request, beta_override=beta_url)
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+                self.assertEqual(reference["upstream"][0]["path"], "/v1/chat/completions")
+                self.assertEqual(modex["upstream"][0]["path"], "/v1/chat/completions")
+                self.assertEqual(reference["state"]["leftovers"], [])
+                self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_toml_beta_url_precedes_invalid_environment_override(self):
+        request = {"model": "deepseek-chat", "input": "synthetic config precedence control"}
+        reference = _run(
+            ORACLE_04392, request, strict_config=True, beta_override="not-a-url",
+        )
+        modex = _run(
+            MODEX, request, strict_config=True, beta_override="not-a-url",
+        )
         self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
-        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
-        self.assertEqual(reference["upstream"][0]["path"], "/v1/chat/completions")
-        self.assertEqual(modex["upstream"][0]["path"], "/v1/chat/completions")
-        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(reference["upstream"][0]["path"], "/beta/chat/completions")
+        self.assertEqual((modex["exit_code"], modex["status"]), (1, None))
+        self.assertEqual(modex["upstream"], [])
         self.assertEqual(modex["state"]["leftovers"], [])
+        self.assertIn("beta_base_url =", modex["state"]["config"])
 
     def test_non_strict_invalid_beta_urls_fail_before_codex_or_provider(self):
         request = {"model": "deepseek-chat", "input": "synthetic invalid beta control"}
@@ -594,6 +618,21 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
             ("", b"PRODEX_DEEPSEEK_BETA_BASE_URL cannot be empty"),
             ("not-a-url", b"PRODEX_DEEPSEEK_BETA_BASE_URL must be an http(s) URL"),
             ("ftp://example.test/beta", b"must be an http(s) URL"),
+            ("https://a|b/beta", b"must be an http(s) URL"),
+            ("https://a^b/beta", b"must be an http(s) URL"),
+            ("https://a<b/beta", b"must be an http(s) URL"),
+            ("https://a>b/beta", b"must be an http(s) URL"),
+            ("https://a[b/beta", b"must be an http(s) URL"),
+            ("https://a]b/beta", b"must be an http(s) URL"),
+            ("https://a%40b/beta", b"must be an http(s) URL"),
+            ("https://a%7Cb/beta", b"must be an http(s) URL"),
+            ("https://a%25b/beta", b"must be an http(s) URL"),
+            ("https://a%b/beta", b"must be an http(s) URL"),
+            ("https://a%20b/beta", b"must be an http(s) URL"),
+            ("https://a%FFb/beta", b"must be an http(s) URL"),
+            ("https://a%C3%28b/beta", b"must be an http(s) URL"),
+            ("https://a%80b/beta", b"must be an http(s) URL"),
+            ("https://127.0.0.%32%35%36/beta", b"must be an http(s) URL"),
             ("https://synthetic-user:synthetic-secret@example.test/beta", b"must be an http(s) URL"),
             ("https://example.test/beta?token=synthetic-secret", b"must be an http(s) URL"),
             ("https://example.test/beta#token=synthetic-secret", b"must be an http(s) URL"),
@@ -614,6 +653,25 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                     expected_diagnostic,
                     modex["stderr"],
                 )
+
+    def test_fullwidth_idna_beta_hosts_remain_a_known_gap(self):
+        request = {"model": "deepseek-chat", "input": "synthetic IDNA host control"}
+        beta_urls = (
+            "https://a＠b/beta",
+            "https://a｜b/beta",
+            "https://a＜b/beta",
+            "https://a%EF%BC%A0b/beta",
+        )
+        for beta_url in beta_urls:
+            with self.subTest(beta_url=beta_url):
+                reference = _run(ORACLE_04392, request, beta_override=beta_url)
+                modex = _run(MODEX, request, beta_override=beta_url)
+                self.assertEqual((reference["exit_code"], reference["status"]), (1, None))
+                self.assertEqual(reference["upstream"], [])
+                self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+                self.assertEqual(modex["upstream"][0]["path"], "/v1/chat/completions")
+                self.assertEqual(reference["state"]["leftovers"], [])
+                self.assertEqual(modex["state"]["leftovers"], [])
 
 
 if __name__ == "__main__":

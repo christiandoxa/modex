@@ -2974,6 +2974,9 @@ this is not a Fast pass.
 Fast run 40845949112 on `08098b666be8c5ecd09cea693fd09832a00d48f6` likewise
 passed the dependency audit and focused build/native checks, then stopped at
 the missing 0.439.2 tag before oracle-backed tests. It is not a Fast pass.
+Fast run 40847657930 on `dc4ea1ff04f9dc64e9070a2a446ed1f5581838a0` also
+passed the dependency audit and focused build/native checks, then failed at the
+missing 0.439.2 tag. Oracle-backed tests did not run; this is not a Fast pass.
 
 Full 0.165.1 parity remains incomplete: profile-backed WebSocket capacity and
 interruption, managed session launch and recovery, interactive TUI, DNS, TLS,
@@ -3013,3 +3016,28 @@ After integration, the production build and four provider/session native
 programs passed, as did all eight resume tests and five focused provider
 process tests against the pinned releases. The 71-file import audit and test
 census passed; these checks do not establish a complete contract or platform.
+
+Anthropic web-search input now admits selected text-part arrays and object
+content through the existing Responses mapper, ignores tested message metadata,
+and maps untyped unknown roles as the pinned releases do. Typed invalid roles,
+prefix overrides, malformed text and typed images still reject. Both releases
+also omit untyped image parts in arrays; a standalone untyped image object is
+forwarded as serialized text in both releases and Modex. Production process
+comparisons cover both releases, buffered
+and streaming requests, and blank/mixed inputs. The five-method 0.439.2 array
+suite, focused 0.165.1 controls, 25 transport tests, production build, import
+audit and test census passed. Other request shapes remain unqualified; see
+`docs/evidence/anthropic-web-search-04392.md`.
+Session-resume process controls also confirm that both releases and Modex
+ignore a symlinked rollout and reject symlinked state without altering its
+target. The releases create four lock files before the state error; Modex
+creates none, and the diagnostics differ. All 10 resume tests pass; state
+transactions, recovery, and launch remain unfinished.
+
+Buffered Anthropic text blocks now ignore citations and other text metadata,
+as both pinned releases do, while retaining the string-text requirement and
+tool/search validation. The worker's 37-test mixed-tool process suite passed;
+after integration, five focused request/response comparisons, 10 resume
+tests, the production build, native provider checks, import audit and census
+passed. Broader provider behavior remains unqualified. Evidence:
+`docs/evidence/baseline-0.165.1/anthropic-text-metadata.md`.

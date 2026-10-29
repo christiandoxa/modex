@@ -128,12 +128,16 @@ class AnthropicMessageArrayTests(unittest.TestCase):
                     self.assertEqual(actual["response_body"], reference["response_body"])
                 self.assertEqual(reference["state"]["leftovers"], [])
 
-    def test_unknown_roles_and_message_metadata_fail_closed(self):
+    def test_unknown_roles_and_message_metadata_match_release(self):
         cases = {
             "typed unknown role": [{"type": "message", "role": "critic", "content": "synthetic text"}],
             "untyped unknown role": [{"role": "critic", "content": "synthetic text"}],
+            "untyped null role": [{"role": None, "content": "synthetic text"}],
+            "untyped numeric role": [{"role": 7, "content": "synthetic text"}],
             "message id": [{"type": "message", "role": "user", "content": "synthetic text", "id": "keep this ID"}],
             "message status": [{"type": "message", "role": "user", "content": "synthetic text", "status": "incomplete"}],
+            "additional metadata": [{"type": "message", "role": "user", "content": "synthetic text", "extra": {"marker": "synthetic"}}],
+            "prefix remains rejected": [{"type": "message", "role": "user", "content": "synthetic text", "prefix": False}],
         }
         for name, input_messages in cases.items():
             with self.subTest(case=name):
@@ -145,21 +149,21 @@ class AnthropicMessageArrayTests(unittest.TestCase):
                 }
                 reference = _run(ORACLE, request, scenario="anthropic-buffered")
                 actual = _run(MODEX, request, scenario="anthropic-buffered")
-                self.assertEqual((actual["exit_code"], actual["status"]), (1, 502))
-                self.assertEqual(actual["upstream"], [])
-                self.assertEqual(actual["response_body"], b"upstream request failed")
                 self.assertEqual(actual["state"]["leftovers"], [])
-                if name == "typed unknown role":
+                if name in ("typed unknown role", "prefix remains rejected"):
                     self.assertEqual((reference["exit_code"], reference["status"]), (1, 502))
                     self.assertEqual(reference["upstream"], [])
+                    self.assertEqual((actual["exit_code"], actual["status"]), (1, 502))
+                    self.assertEqual(actual["upstream"], [])
                     self.assertEqual(reference["response_body"], actual["response_body"])
                 else:
                     self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
                     self.assertEqual(len(reference["upstream"]), 1)
-                    if name == "untyped unknown role":
+                    self.assertEqual((actual["exit_code"], actual["status"]), (0, 200))
+                    self.assertEqual(len(actual["upstream"]), 1)
+                    self.assertEqual(actual["upstream_body"], reference["upstream_body"])
+                    if name.startswith("untyped "):
                         self.assertEqual(reference["upstream_body"]["messages"][0]["role"], "user")
-                    else:
-                        self.assertNotIn(name.split()[1], reference["upstream_body"]["messages"][0])
                 self.assertEqual(reference["state"]["leftovers"], [])
 
     def test_mixed_rich_content_fails_closed(self):
@@ -186,30 +190,38 @@ class AnthropicMessageArrayTests(unittest.TestCase):
         self.assertEqual(reference["state"]["leftovers"], [])
         self.assertEqual(actual["state"]["leftovers"], [])
 
-    def test_message_array_rich_content_fails_closed(self):
-        request = {
-            "model": "deepseek-chat",
-            "input": [{
-                "type": "message",
-                "role": "user",
-                "content": [{
-                    "type": "input_text",
-                    "text": "synthetic text",
-                    "annotations": {"marker": "preserve this metadata"},
-                }],
-            }],
-            "stream": False,
-            "tools": [{"type": "web_search_preview"}],
+    def test_message_text_content_shapes_match_release(self):
+        cases = {
+            "annotated": ([{"type": "input_text", "text": "synthetic text", "annotations": {"marker": "synthetic"}}], 200),
+            "multiple parts": ([{"type": "input_text", "text": "alpha"}, {"type": "output_text", "text": "beta"}], 200),
+            "mixed scalar parts": (["alpha", 123, None, {"text": "beta"}], 200),
+            "preserved spacing": ([{"type": "input_text", "text": " "}, {"type": "input_text", "text": "beta"}], 200),
+            "object": ({"type": "input_text", "text": "alpha"}, 200),
+            "empty array": ([], 400),
+            "blank array": ([{"type": "input_text", "text": " \t"}], 400),
+            "missing text": ([{"type": "input_text"}], 502),
+            "image": ([{"type": "input_image", "image_url": "https://example.test/a"}], 502),
         }
-        reference = _run(ORACLE, request, scenario="anthropic-buffered")
-        actual = _run(MODEX, request, scenario="anthropic-buffered")
-        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
-        self.assertEqual(reference["upstream_body"]["messages"][0]["content"], [{"text": "synthetic text", "type": "text"}])
-        self.assertEqual((actual["exit_code"], actual["status"]), (1, 502))
-        self.assertEqual(actual["upstream"], [])
-        self.assertEqual(actual["response_body"], b"upstream request failed")
-        self.assertEqual(reference["state"]["leftovers"], [])
-        self.assertEqual(actual["state"]["leftovers"], [])
+        for name, (content, status) in cases.items():
+            with self.subTest(case=name):
+                request = {"model": "deepseek-chat", "input": [{"type": "message", "role": "user", "content": content}],
+                           "stream": False, "tools": [{"type": "web_search_preview"}]}
+                reference = _run(ORACLE, request, scenario="anthropic-buffered")
+                actual = _run(MODEX, request, scenario="anthropic-buffered")
+                self.assertEqual(reference["status"], status)
+                self.assertEqual((actual["exit_code"], actual["status"]), (reference["exit_code"], status))
+                self.assertEqual(len(actual["upstream"]), len(reference["upstream"]))
+                if status == 200:
+                    self.assertEqual(actual["upstream_body"], reference["upstream_body"])
+                    expected = json.loads(reference["response_body"])
+                    observed = json.loads(actual["response_body"])
+                    expected.pop("created_at")
+                    observed.pop("created_at")
+                    self.assertEqual(observed, expected)
+                else:
+                    self.assertEqual(actual["response_body"], reference["response_body"])
+                self.assertEqual(reference["state"]["leftovers"], [])
+                self.assertEqual(actual["state"]["leftovers"], [])
 
 
 if __name__ == "__main__":

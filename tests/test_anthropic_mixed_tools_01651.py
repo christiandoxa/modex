@@ -193,6 +193,56 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
         with patch.object(message_arrays, "ORACLE", ORACLE_01651):
             message_arrays.AnthropicMessageArrayTests.test_empty_and_whitespace_arrays_match_release(self)
 
+    def test_message_text_content_shapes_match_01651(self):
+        with patch.object(message_arrays, "ORACLE", ORACLE_01651):
+            message_arrays.AnthropicMessageArrayTests.test_message_text_content_shapes_match_release(self)
+
+    def test_message_roles_and_metadata_match_01651(self):
+        with patch.object(message_arrays, "ORACLE", ORACLE_01651):
+            message_arrays.AnthropicMessageArrayTests.test_unknown_roles_and_message_metadata_match_release(self)
+
+    def test_streamed_text_parts_and_metadata_match_both_releases(self):
+        request = {"model": "deepseek-chat", "input": [{
+            "type": "message", "role": "user", "id": "synthetic-id",
+            "content": [{"type": "input_text", "text": "alpha", "annotations": []},
+                        {"type": "input_text", "text": "beta"}],
+        }], "stream": True, "tools": [{"type": "web_search_preview"}]}
+        results = [_run(binary, request, scenario="anthropic-stream")
+                   for binary in (ORACLE_01651, ORACLE, MODEX)]
+        for result in results:
+            self.assertEqual((result["exit_code"], result["status"]), (0, 200))
+            self.assertEqual(len(result["upstream"]), 1)
+            self.assertEqual(result["upstream_body"], results[0]["upstream_body"])
+            self.assertEqual(_normalized_events(result["response_body"]),
+                             _normalized_events(results[0]["response_body"]))
+            self.assertEqual(result["state"]["leftovers"], [])
+
+    def test_untyped_image_content_matches_both_releases(self):
+        image = {"type": "input_image", "image_url": "https://example.test/synthetic-image"}
+        for parts, status in (([image], 400), ([{"type": "input_text", "text": "text"}, image], 200)):
+            request = {"model": "deepseek-chat", "input": [{"role": "user", "content": parts}],
+                       "stream": False, "tools": [{"type": "web_search_preview"}]}
+            results = [_run(binary, request, scenario="anthropic-buffered")
+                       for binary in (ORACLE_01651, ORACLE, MODEX)]
+            for result in results:
+                self.assertEqual(result["status"], status)
+                self.assertEqual(len(result["upstream"]), 1 if status == 200 else 0)
+                self.assertEqual(result["state"]["leftovers"], [])
+                if status == 200:
+                    self.assertEqual(result["upstream_body"], results[0]["upstream_body"])
+                    self.assertNotIn("synthetic-image", json.dumps(result["upstream_body"]))
+                else:
+                    self.assertEqual(result["response_body"], message_arrays.INVALID_REQUEST_BODY)
+
+        request = {"model": "deepseek-chat", "input": [{"role": "user", "content": image}],
+                   "stream": False, "tools": [{"type": "web_search_preview"}]}
+        results = [_run(binary, request, scenario="anthropic-buffered")
+                   for binary in (ORACLE_01651, ORACLE, MODEX)]
+        for result in results:
+            self.assertEqual((result["exit_code"], result["status"]), (0, 200))
+            self.assertEqual(result["upstream_body"], results[0]["upstream_body"])
+            self.assertIn("synthetic-image", json.dumps(result["upstream_body"]))
+
     def test_blank_arrays_obey_web_search_modes(self):
         for name, items in (
             ("empty", []),
@@ -448,10 +498,84 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                     captures.append((json.loads(posts[0]["body"]), result))
                 self.assertEqual(captures[1:], captures[:1] * 2)
 
+    def test_buffered_text_block_citations_and_extra_fields_match_both_releases(self):
+        cases = (
+            (
+                "text-only citations and arbitrary fields",
+                [
+                    {"type": "text", "text": "before",
+                     "citations": [{"type": "char_location", "cited_text": "before",
+                                    "document_index": 0, "document_title": "Synthetic",
+                                    "start_char_index": 0, "end_char_index": 6}],
+                     "future_field": {"version": 2}},
+                    {"type": "text", "text": " after", "citations": {"malformed": "shape"},
+                     "future_field": [1, 2]},
+                ],
+                "end_turn",
+                ["message"],
+                ["before", " after"],
+            ),
+            (
+                "web-search text with malformed citations",
+                [
+                    {"type": "server_tool_use", "id": "srv_citation", "name": "web_search",
+                     "input": {"query": "synthetic"}},
+                    {"type": "web_search_tool_result", "tool_use_id": "srv_citation",
+                     "content": [{"type": "web_search_result",
+                                  "url": "https://example.test/source",
+                                  "title": "Synthetic source"}]},
+                    {"type": "text", "text": "Search summary", "citations": "malformed",
+                     "future_field": None},
+                ],
+                "end_turn",
+                ["web_search_call", "message"],
+                ["Search summary"],
+            ),
+            (
+                "tool-use text with extra fields",
+                [
+                    {"type": "text", "text": "Before call", "citations": 7,
+                     "future_field": "ignored"},
+                    {"type": "tool_use", "id": "call_citation", "name": "lookup",
+                     "input": {"query": "synthetic"}},
+                ],
+                "tool_use",
+                ["message", "function_call"],
+                ["Before call"],
+            ),
+        )
+        for label, content, stop_reason, expected_types, expected_texts in cases:
+            with self.subTest(case=label):
+                captures = []
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    posts, responses = observe_turns(
+                        binary, [_request()], [_buffered_reply(content, stop_reason)],
+                    )
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual(len(responses), 1)
+                    self.assertEqual(responses[0]["status"], 200)
+                    self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+                    headers = {name.lower(): value for name, value in posts[0]["headers"].items()}
+                    self.assertEqual(headers["x-api-key"], SYNTHETIC_API_KEY)
+                    self.assertEqual(headers["anthropic-version"], "2023-06-01")
+                    result = _normalize(_json_body(responses[0]))
+                    self.assertEqual([item["type"] for item in result["output"]], expected_types)
+                    self.assertEqual([
+                        part["text"]
+                        for item in result["output"] if item["type"] == "message"
+                        for part in item["content"]
+                    ], expected_texts)
+                    self.assertNotIn("citations", json.dumps(result))
+                    self.assertNotIn("future_field", json.dumps(result))
+                    captures.append((json.loads(posts[0]["body"]), result))
+                self.assertEqual(captures[1:], captures[:1] * 2)
+
     def test_buffered_text_only_malformed_shapes_still_fail_closed(self):
         cases = (
             ("missing text", [{"type": "text"}]),
+            ("missing text with citations", [{"type": "text", "citations": [{"type": "char_location"}]}]),
             ("non-string text", [{"type": "text", "text": 7}]),
+            ("non-string text with citations", [{"type": "text", "text": 7, "citations": "malformed"}]),
             ("unsupported block", [{"type": "future_block"}]),
         )
         for label, content in cases:

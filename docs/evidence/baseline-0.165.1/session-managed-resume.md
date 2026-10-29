@@ -41,21 +41,53 @@ This prevents the no-state diagnostic from masking a profile source outside
 
 The process fixtures use temporary HOME, synthetic session JSONL and state,
 `bwrap --unshare-all`, empty `PATH`, and no account login, provider traffic, or
-credentials. The comparisons cover Linux x86-64 only. They do not establish
-managed launch, state-lock parity, metadata-repair parity, interactive TUI
-parity, or support for the other five release targets. All six targets remain
-in the parity denominator.
+credentials. New real-process controls also move a synthetic rollout outside
+the session tree and replace its original path with a symlink. Prodex 0.165.1,
+0.439.2, and Modex all ignore the symlink and report the selector as unresolved;
+the link and its target remain unchanged.
+
+A separate control points `state.json` at a valid synthetic state file through
+a symlink. Both releases reject it with a symlink-specific diagnostic and
+leave the target and link unchanged, but create
+`profile-lifecycle.json.lock`, `runtime-housekeeping.lock`, `state.json.lock`,
+and `update-check.lock` before failing. Modex also rejects it and leaves both
+paths unchanged, before creating any lock files. The safety result matches;
+the diagnostic and side effects do not, so this is not counted as parity.
+
+The official Mojo 1.2.0 stdlib cannot express the baseline's safe repair
+transaction: `std.sys._libc` does not export `flock` or `fsync`,
+`FcntlCommands` has no `F_SETLK`, `FileHandle` has neither `flush` nor
+`sync_all`, `std.os` and `std.os.path` expose no atomic rename/replace, and
+`std.sqlite` is unavailable. The baseline's `SessionRepairTransaction` uses
+`File::lock`, identity checks, an exclusive private backup, atomic replacement,
+file sync, and parent-directory sync; resume resolution also consults the
+Codex state database. A `mkdir` marker or guessed `fcntl` command would not
+coordinate with Prodex's `flock` users, and a plain write would not preserve
+the transaction's crash-safety. Under the current stdlib-only rule, the safe
+next implementation step is to add these primitives to the official Mojo
+stdlib, including SQLite access, before porting the state load/recovery and
+session repair transactions. Then connect report/state-database resolution to
+managed profile selection and runtime launch, and verify with synthetic
+concurrent-process, crash-recovery, symlink, hard-link, and compressed-session
+fixtures. No Codex stub or replacement TUI was used here.
+
+These comparisons cover Linux x86-64 only. They do not establish managed
+launch, state-lock parity, metadata-repair parity, interactive TUI parity, or
+support for the other five release targets. All six targets remain in the
+parity denominator.
 
 Validation on 2026-10-29 with Mojo 1.2.0:
 
 ```text
-make build
-python3 scripts/ci/run-unittest.py test_session_resume.py
+make build BUILD_DIR=/tmp/modex-session-recovery-build
+MODEX_BINARY=/tmp/modex-session-recovery-build/modex \
+  PRODEX_ORACLE_01651=/home/doxa/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu \
+  python3 -m unittest test_session_resume
 make ci-dependencies
 python3 scripts/ci/check-test-census.py
 ```
 
-The production build passed. All 8 session-resume process tests passed against
-the pinned 0.165.1 and 0.439.2 Linux oracles. The production import audit
-passed for 71 Mojo files; the test census found 50 native test sources and 130
-Python modules with one suite owner each.
+The production build passed. All 10 session-resume process tests passed,
+including the new symlinked rollout and state controls against the pinned
+0.165.1 and 0.439.2 Linux oracles. The stdlib limitation probes were temporary
+Mojo files under `/tmp`; they are not product or test dependencies.

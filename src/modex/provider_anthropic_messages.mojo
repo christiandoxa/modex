@@ -33,16 +33,15 @@ def validate_deepseek_anthropic_request(source: String) raises:
                 if call_id < 0 or doc.nodes[call_id].kind != JSON_STRING or not doc.nodes[call_id].text or output < 0:
                     raise Error("Anthropic function call output requires a call_id and output")
                 continue
-            _only_fields(doc, item, ["type", "role", "content"], "input message")
             var type_node = doc.get(item, "type")
             if type_node >= 0 and (doc.nodes[type_node].kind != JSON_STRING or doc.nodes[type_node].text != "message"):
                 raise Error("Anthropic Messages slice supports only message input items")
             var role = doc.get(item, "role")
-            if role >= 0 and (doc.nodes[role].kind != JSON_STRING or (doc.nodes[role].text != "user" and doc.nodes[role].text != "assistant" and doc.nodes[role].text != "system" and doc.nodes[role].text != "developer")):
+            if type_node >= 0 and role >= 0 and (doc.nodes[role].kind != JSON_STRING or (doc.nodes[role].text != "user" and doc.nodes[role].text != "assistant" and doc.nodes[role].text != "system" and doc.nodes[role].text != "developer")):
                 raise Error("Anthropic Messages slice supports only user, assistant, system, and developer message roles")
             var content = doc.get(item, "content")
-            if content < 0 or doc.nodes[content].kind != JSON_STRING:
-                raise Error("Anthropic Messages slice supports only string message content")
+            if content < 0 or (doc.nodes[content].kind != JSON_STRING and doc.nodes[content].kind != JSON_ARRAY and doc.nodes[content].kind != JSON_OBJECT):
+                raise Error("Anthropic Messages slice supports only text message content")
     else:
         raise Error("Anthropic Messages slice supports only string input or simple message arrays")
     var stream = doc.get(doc.root, "stream")
@@ -447,6 +446,7 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         raise Error("Anthropic Messages content must be an array")
     if len(doc.nodes[content].children) > ANTHROPIC_BUFFERED_MAX_CONTENT_BLOCKS:
         raise Error("Anthropic Messages content has too many blocks")
+    # Both pinned releases project text blocks from text and ignore other fields.
     var has_tool_use = False
     for block in doc.nodes[content].children:
         if doc.string(doc.get(block, "type")) == "tool_use":
@@ -459,7 +459,6 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         for block in doc.nodes[content].children:
             var kind = doc.string(doc.get(block, "type"))
             if kind == "text":
-                _only_fields(doc, block, ["type", "text"], "text block")
                 var text = doc.get(block, "text")
                 if text < 0 or doc.nodes[text].kind != JSON_STRING:
                     raise Error("Anthropic Messages text block is invalid")
@@ -506,7 +505,6 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         if kind != "text":
             text_only = False
             continue
-        _only_fields(doc, block, ["type", "text"], "text block")
         var text = doc.get(block, "text")
         if text < 0 or doc.nodes[text].kind != JSON_STRING:
             raise Error("Anthropic Messages text block is invalid")
@@ -550,7 +548,6 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         raise Error("Anthropic web-search result does not match its tool use")
     _ = _search_sources(doc, result)
     var text = text_index
-    _only_fields(doc, text, ["type", "text"], "text block")
     var text_value = doc.get(text, "text")
     if doc.string(doc.get(text, "type")) != "text" or text_value < 0 or doc.nodes[text_value].kind != JSON_STRING:
         raise Error("Anthropic Messages text block is invalid")

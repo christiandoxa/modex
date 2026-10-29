@@ -22,15 +22,23 @@ error code and message.
 Incoming Anthropic auth headers are replaced only on the Messages route;
 ordinary DeepSeek and raw passthrough keep forwarding those headers as before.
 
-The production adapter accepts string input and selected arrays of
-plain string messages, with user, assistant, system and developer roles, one
-`web_search_preview` tool, optional `allowed_domains`, the default token limit
-and no other request fields. Adjacent messages with the same conversation
+The production adapter accepts string input and selected arrays of messages,
+with user, assistant, system and developer roles and web-search tools.
+Adjacent messages with the same conversation
 role are combined; system and developer text becomes the Messages `system`
 field. Synthetic release comparisons cover Unicode and role transitions.
-Unsupported input shapes fail before the upstream POST. The release coerces an
-untyped `critic` role and omits some message metadata; Modex rejects these
-shapes. Blank array entries are dropped by
+Selected message content arrays are flattened to text by the existing shared
+Responses mapper, including annotated input text, text parts separated by a
+newline, and non-text scalar array entries ignored by the release. Selected
+object content is serialized as text. The releases and Modex discard the
+tested message metadata and map untyped unknown or non-string roles to user.
+Typed unsupported roles and typed image parts reject before dispatch. Untyped
+image parts are omitted by both releases and Modex; when no text remains the
+request returns 400, otherwise only text reaches the synthetic upstream. An
+untyped image object used as the entire content is instead serialized as text
+and forwarded, matching both releases; it is not image decoding support.
+The pinned `deepseek_bridge/input_items.rs` applies the same shared mapper
+before the Anthropic request translation. Blank array entries are dropped by
 the shared Responses-to-chat mapper. Empty, whitespace-only and system-only
 arrays now return the release's HTTP 400 JSON error when no conversation
 message remains; blank entries alongside nonblank messages are omitted. The
@@ -46,14 +54,17 @@ blank/nonblank arrays. A two-turn control confirms a blank continuation still
 hits the same bound-provider-unavailable response without a second POST.
 The native request-message test, 71-file product import audit, and test census
 also passed. These are Linux x86-64 synthetic process tests, not full parity.
+The full five-method message-array suite passed against 0.439.2; separate
+0.165.1 controls passed for the expanded text/metadata shapes and web-search
+mode routing. A streamed annotated-text request also matched both releases.
 An exactly empty string input returns the release's HTTP 400 JSON error before
 any upstream POST. Whitespace-only inputs, including NBSP and U+200B, remain
 accepted by the tested release and Modex controls.
 
-Buffered response handling still fails closed for the tested citation shape.
-Oracle controls show the release omits citations from text output and maps a
-`thinking` block into reasoning output; Modex now matches the tested thinking
-case. The release ignores a
+Buffered response handling now omits citations and other tested text-block
+metadata like both releases, while requiring string text. The releases map a
+`thinking` block into reasoning output; Modex matches the tested thinking
+case. The releases ignore a
 streamed image block without preserving its data. Modex now matches the
 complete normalized stream for that image case. A buffered image block in the
 tested search response shape still returns 502 after one synthetic upstream

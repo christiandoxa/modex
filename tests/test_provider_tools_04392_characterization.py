@@ -384,7 +384,7 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
             self.assertEqual(actual.get(key), expected.get(key), key)
         self.assertEqual((reference["state"]["leftovers"], modex["state"]["leftovers"]), ([], []))
 
-    def test_anthropic_buffered_citations_fail_closed(self):
+    def test_anthropic_buffered_citations_match_04392_release(self):
         request = {
             "model": "deepseek-chat",
             "input": "synthetic web query",
@@ -394,12 +394,23 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
         reference = _run(ORACLE_04392, request, scenario="anthropic-buffered-citations")
         modex = _run(MODEX, request, scenario="anthropic-buffered-citations")
         self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
-        released = json.loads(reference["response_body"])
-        self.assertNotIn("citations", json.dumps(released["output"]))
-        self.assertIn("Found it.", reference["response_body"].decode())
-        self.assertEqual((modex["exit_code"], modex["status"]), (1, 502))
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(len(reference["upstream"]), 1)
         self.assertEqual(len(modex["upstream"]), 1)
-        self.assertEqual(modex["state"]["leftovers"], [])
+        self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+        self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+        expected = json.loads(reference["response_body"])
+        actual = json.loads(modex["response_body"])
+        for response in (expected, actual):
+            self.assertIsInstance(response.pop("created_at"), int)
+            self.assertNotIn("citations", json.dumps(response["output"]))
+            self.assertEqual([
+                part["text"]
+                for item in response["output"] if item["type"] == "message"
+                for part in item["content"]
+            ], ["Found it."])
+        self.assertEqual(actual, expected)
+        self.assertEqual((reference["state"]["leftovers"], modex["state"]["leftovers"]), ([], []))
 
     def test_anthropic_buffered_thinking_matches_pinned_release(self):
         request = {

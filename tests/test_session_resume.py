@@ -71,6 +71,60 @@ def run_resume(
         )
 
 
+def run_symlinked_session_resume(binary):
+    with tempfile.TemporaryDirectory(prefix="modex-session-symlink-resume-") as directory:
+        root = Path(directory)
+        fixture(root)
+        source = next((root / "home/.codex/sessions").rglob("*.jsonl"))
+        target = root / "external-session.jsonl"
+        source.rename(target)
+        contents = target.read_bytes()
+        source.symlink_to(target)
+        result = subprocess.run(
+            sandbox_command(binary, root, ["session", "resume", SESSION_ID]),
+            capture_output=True,
+            timeout=15,
+            check=False,
+        )
+        return (
+            result.returncode,
+            result.stdout.replace(str(root).encode(), b"<ROOT>"),
+            result.stderr.replace(str(root).encode(), b"<ROOT>"),
+            source.is_symlink(),
+            target.read_bytes() == contents,
+        )
+
+
+def run_symlinked_state_resume(binary):
+    with tempfile.TemporaryDirectory(prefix="modex-state-symlink-resume-") as directory:
+        root = Path(directory)
+        fixture(root)
+        app_state = write_state(root, profile_state(root))
+        target = root / "external-state.json"
+        app_state.replace(target)
+        target.chmod(0o600)
+        contents = target.read_bytes()
+        app_state.symlink_to(target)
+        result = subprocess.run(
+            sandbox_command(binary, root, ["session", "resume", SESSION_ID]),
+            capture_output=True,
+            timeout=15,
+            check=False,
+        )
+        return (
+            result.returncode,
+            result.stdout.replace(str(root).encode(), b"<ROOT>"),
+            result.stderr.replace(str(root).encode(), b"<ROOT>"),
+            app_state.is_symlink(),
+            target.read_bytes() == contents,
+            sorted(
+                str(path.relative_to(root))
+                for path in (root / "home/.prodex").rglob("*")
+                if path.name.endswith(".lock")
+            ),
+        )
+
+
 def run_unconfigured_resume(binary, selector, *, prefix_collision=False):
     with tempfile.TemporaryDirectory(prefix="modex-session-empty-resume-") as directory:
         root = Path(directory)
@@ -274,6 +328,49 @@ class SessionResumeTests(unittest.TestCase):
                 self.assertEqual(run_resume(oracle, "missing-session", locked=True), (
                     1, b"", b"Error: session could not be resolved\n"
                 ))
+
+    def test_symlinked_rollout_candidate_is_ignored_by_both_releases(self):
+        expected = (
+            1,
+            b"",
+            b"Error: session could not be resolved\n",
+            True,
+            True,
+        )
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            with self.subTest(release=label):
+                self.assertEqual(run_symlinked_session_resume(binary), expected)
+
+    def test_resume_rejects_symlinked_state_without_mutating_its_target(self):
+        release_locks = [
+            "home/.prodex/profile-lifecycle.json.lock",
+            "home/.prodex/runtime-housekeeping.lock",
+            "home/.prodex/state.json.lock",
+            "home/.prodex/update-check.lock",
+        ]
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            with self.subTest(release=label):
+                result = run_symlinked_state_resume(binary)
+                self.assertEqual(result[0:2], (1, b""))
+                self.assertTrue(result[3])
+                self.assertTrue(result[4])
+                if label == "Modex":
+                    self.assertEqual(
+                        result[2],
+                        b"Error: locked state loading and recovery are not implemented\n",
+                    )
+                    self.assertEqual(result[5], [])
+                else:
+                    self.assertIn(b"refusing to read json through symlink", result[2])
+                    self.assertEqual(result[5], release_locks)
 
     def test_bound_session_resume_requires_managed_launch(self):
         baseline_runs = []

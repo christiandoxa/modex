@@ -3906,3 +3906,12 @@ secondary socket-state sample after EOF. Numeric duplicate lengths and
 conflicting framing remain fail-closed differences. See
 `docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md` and
 `docs/evidence/baseline-0.165.1/local-relay-http.md`.
+
+The file-backed upstream log parser now checks both the raw
+`upstream_payload` substring and the parsed event name across `log last`,
+`log stream`, and `log upstream`. Both pinned release processes reject escaped
+event names without the literal substring and unrelated events with payload
+fields; they accept escaped names when another field supplies the substring.
+The prior Modex behavior and selected process comparisons are recorded in
+`docs/evidence/baseline-0.165.1/log-upstream-selection.md`. This does not verify
+live log sources, security behavior, or non-host release targets.

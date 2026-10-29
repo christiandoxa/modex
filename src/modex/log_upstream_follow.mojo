@@ -49,7 +49,7 @@ def follow_upstream(json: Bool) raises:
         except:
             continue
         for line in contents.split("\n"):
-            var event = upstream_event(RuntimeRecord(String(line)))
+            var event = upstream_event(RuntimeRecord(String(line)), String(line))
             if event and (not latest or timestamp_wins(latest.value().timestamp, event.value().timestamp)):
                 latest = event^
     if latest:
@@ -71,7 +71,7 @@ def follow_upstream(json: Bool) raises:
         for index in range(len(paths)):
             var lines = collect_new_followed_lines(paths[index], states[index])
             for line in lines:
-                var event = upstream_event(RuntimeRecord(line))
+                var event = upstream_event(RuntimeRecord(line), line)
                 if event:
                     print_upstream(event.value(), json)
         sleep(0.1)

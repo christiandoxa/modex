@@ -120,7 +120,7 @@ def log_last(json: Bool) raises -> String:
             var line = String(line_span)
             var record = RuntimeRecord(line)
             if record.event == "upstream_payload":
-                var candidate = upstream_event(record)
+                var candidate = upstream_event(record, line)
                 if candidate and (not upstream or timestamp_wins(upstream.value().timestamp, candidate.value().timestamp)):
                     upstream = candidate^
             elif record.event == "token_usage":
@@ -348,8 +348,8 @@ def positive_log_decimal(value: String) -> Bool:
         return False
 
 
-def upstream_event(record: RuntimeRecord) raises -> Optional[UpstreamEvent]:
-    if not record.envelope or not record.has("payload_b64"):
+def upstream_event(record: RuntimeRecord, line: String) raises -> Optional[UpstreamEvent]:
+    if "upstream_payload" not in line or not record.envelope or record.event != "upstream_payload" or not record.has("payload_b64"):
         return None
     var decoded = decode_base64(record.field("payload_b64"))
     if not decoded:

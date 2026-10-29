@@ -71,7 +71,7 @@ def initial_stream_events(runtime: List[String], sessions: List[String], json: B
             var stream_item = stream_payload_event(record, String(line))
             if stream_item and (not stream or timestamp_wins(stream.value().timestamp, stream_item.value().timestamp)):
                 stream = stream_item^
-            var upstream_item = upstream_event(record)
+            var upstream_item = upstream_event(record, String(line))
             if upstream_item and (not upstream or timestamp_wins(upstream.value().timestamp, upstream_item.value().timestamp)):
                 upstream = upstream_item^
             var token_item = token_event(record)
@@ -99,7 +99,7 @@ def print_runtime_stream_lines(lines: List[String], json: Bool) raises:
         var stream = stream_payload_event(record, line)
         if stream:
             print_stream_event(stream.value(), json)
-        var upstream = upstream_event(record)
+        var upstream = upstream_event(record, line)
         if upstream:
             print_upstream(upstream.value(), json)
         var token = token_event(record)

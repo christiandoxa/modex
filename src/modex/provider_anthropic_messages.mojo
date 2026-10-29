@@ -584,6 +584,8 @@ def _only_fields(doc: JsonDocument, node: Int, allowed: List[String], context: S
     for index in range(len(doc.nodes[node].names)):
         var name = doc.nodes[node].names[index]
         if name not in allowed:
+            if context == "translated request":
+                raise Error("Anthropic Messages does not translate chat field `" + name + "`")
             raise Error("Anthropic " + context + " field " + name + " is not supported")
 
 

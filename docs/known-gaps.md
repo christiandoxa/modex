@@ -137,6 +137,11 @@ from the Anthropic request like both releases; invalid top-level types still
 fail before provider dispatch. Automatic, forced Anthropic, and explicit Chat
 routes are covered in
 `docs/evidence/baseline-0.165.1/anthropic-request-metadata-include.md`.
+Valid `logprobs` and supported reasoning effort also use the pinned automatic
+Chat fallback; forced Anthropic rejects before POST, while malformed fields and
+unsupported `service_tier` remain pre-POST errors. Buffered and streamed
+comparisons are recorded in
+`docs/evidence/baseline-0.165.1/anthropic-chat-fallback-fields.md`.
 JSON-object and JSON-schema output with web search follows the release's Chat
 fallback in `auto` mode; explicit `anthropic` mode rejects that combination with 400.
 Oracle controls record additional coercion and metadata behavior; complete

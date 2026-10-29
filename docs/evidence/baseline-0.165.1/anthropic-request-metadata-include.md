@@ -44,4 +44,5 @@ requests use synthetic credentials, isolated homes, and loopback peers.
 
 This qualifies only the tested request fields and route shapes on Linux x86-64.
 Complete Anthropic provider behavior, other compiler targets, and all release
-qualifications remain open.
+qualifications remain open. The separate Chat-only-field fallback slice is
+documented in `anthropic-chat-fallback-fields.md`.

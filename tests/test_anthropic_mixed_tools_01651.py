@@ -320,6 +320,96 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                     self.assertEqual(responses[1]["response_body"], responses[0]["response_body"])
                     self.assertEqual(responses[2]["response_body"], responses[0]["response_body"])
 
+    def test_native_anthropic_unsupported_chat_fields_fallback_safely(self):
+        base = {
+            "model": "deepseek-chat",
+            "input": "synthetic query",
+            "stream": False,
+            "tools": [SEARCH, FUNCTION],
+        }
+
+        def run(binary, request, scenario, mode):
+            if mode == "auto":
+                return _run(binary, request, scenario=scenario)
+            process, response, upstream, state = _run_mode(
+                binary, request, scenario, mode=mode,
+            )
+            return {
+                "exit_code": process.returncode,
+                "status": response["status"] if response else None,
+                "response_body": bytes.fromhex(response["body"]) if response else b"",
+                "upstream": upstream,
+                "upstream_body": json.loads(bytes.fromhex(upstream[0]["body"])) if upstream else None,
+                "state": state,
+            }
+
+        cases = (
+            ("logprobs", {"logprobs": True}, {"logprobs": True}),
+            ("reasoning", {"reasoning": {"effort": "high"}}, {
+                "reasoning_effort": "high", "thinking": {"type": "enabled"},
+            }),
+        )
+        for label, fields, expected_fields in cases:
+            request = {**base, **fields}
+            with self.subTest(case=label):
+                for mode in ("auto", "openai_chat"):
+                    captures = [run(binary, request, "anthropic-buffered", mode) for binary in (ORACLE_01651, ORACLE, MODEX)]
+                    for capture in captures:
+                        self.assertEqual((capture["exit_code"], capture["status"]), (0, 200))
+                        self.assertEqual(len(capture["upstream"]), 1)
+                        self.assertEqual(capture["upstream"][0]["path"], "/v1/chat/completions")
+                        for key, value in expected_fields.items():
+                            self.assertEqual(capture["upstream_body"].get(key), value)
+                        self.assertTrue(all(tool.get("type") == "function" for tool in capture["upstream_body"].get("tools", [])))
+                        self.assertEqual(capture["state"]["leftovers"], [])
+                    self.assertEqual(captures[1]["upstream_body"], captures[0]["upstream_body"])
+                    self.assertEqual(captures[2]["upstream_body"], captures[0]["upstream_body"])
+                    expected = _normalize(json.loads(captures[0]["response_body"]))
+                    self.assertEqual(_normalize(json.loads(captures[1]["response_body"])), expected)
+                    self.assertEqual(_normalize(json.loads(captures[2]["response_body"])), expected)
+
+                rejected = [run(binary, request, "anthropic-buffered", "anthropic") for binary in (ORACLE_01651, ORACLE, MODEX)]
+                for capture in rejected:
+                    self.assertEqual((capture["exit_code"], capture["status"]), (1, 400))
+                    self.assertEqual(capture["upstream"], [])
+                    self.assertEqual(capture["state"]["leftovers"], [])
+                self.assertEqual(rejected[1]["response_body"], rejected[0]["response_body"])
+                self.assertEqual(rejected[2]["response_body"], rejected[0]["response_body"])
+
+        streaming = {**base, "stream": True, "logprobs": True, "reasoning": {"effort": "high"}}
+        for mode in ("auto", "openai_chat"):
+            captures = [run(binary, streaming, "stream", mode) for binary in (ORACLE_01651, ORACLE, MODEX)]
+            for capture in captures:
+                self.assertEqual((capture["exit_code"], capture["status"]), (0, 200))
+                self.assertEqual(len(capture["upstream"]), 1)
+                self.assertEqual(capture["upstream"][0]["path"], "/v1/chat/completions")
+                self.assertEqual(capture["upstream_body"].get("logprobs"), True)
+                self.assertEqual(capture["upstream_body"].get("reasoning_effort"), "high")
+                self.assertEqual(capture["upstream_body"].get("thinking"), {"type": "enabled"})
+                self.assertEqual(capture["state"]["leftovers"], [])
+            self.assertEqual(captures[1]["upstream_body"], captures[0]["upstream_body"])
+            self.assertEqual(captures[2]["upstream_body"], captures[0]["upstream_body"])
+            expected = _normalized_events(captures[0]["response_body"])
+            self.assertEqual(_normalized_events(captures[1]["response_body"]), expected)
+            self.assertEqual(_normalized_events(captures[2]["response_body"]), expected)
+
+        invalid = (
+            {"logprobs": "true"},
+            {"reasoning": {"effort": 7}},
+            {"reasoning": []},
+            {"service_tier": "priority"},
+        )
+        for mode in ("auto", "anthropic", "openai_chat"):
+            for fields in invalid:
+                with self.subTest(mode=mode, fields=fields):
+                    captures = [run(binary, {**base, **fields}, "anthropic-buffered", mode) for binary in (ORACLE_01651, ORACLE, MODEX)]
+                    for capture in captures:
+                        self.assertEqual((capture["exit_code"], capture["status"]), (1, 502))
+                        self.assertEqual(capture["upstream"], [])
+                        self.assertEqual(capture["state"]["leftovers"], [])
+                    self.assertEqual(captures[1]["response_body"], captures[0]["response_body"])
+                    self.assertEqual(captures[2]["response_body"], captures[0]["response_body"])
+
     def test_empty_and_whitespace_arrays_match_01651(self):
         with patch.object(message_arrays, "ORACLE", ORACLE_01651):
             message_arrays.AnthropicMessageArrayTests.test_empty_and_whitespace_arrays_match_release(self)

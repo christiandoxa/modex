@@ -18,6 +18,15 @@ forced-Anthropic requests. Invalid top-level types return the same pre-POST
 no provider parity status is promoted. Evidence:
 `docs/evidence/baseline-0.165.1/anthropic-request-metadata-include.md`.
 
+The Anthropic adapter now labels unsupported translated Chat fields with the
+same safe-reason prefix as Prodex. This restores auto-mode Chat fallback for
+valid `logprobs` and supported reasoning effort, while explicit Anthropic mode
+returns 400 before POST. Malformed values and unsupported `service_tier` still
+fail before provider I/O. Buffered/streaming process comparisons pass across
+both releases and Modex. No relay routing changes or parity statuses were
+needed. Evidence:
+`docs/evidence/baseline-0.165.1/anthropic-chat-fallback-fields.md`.
+
 Further admission profiling compared both pinned processes, the current relay,
 and the unmerged aggregate-budget prototype under 246 incomplete heads. With
 six 200 KiB heads held in active workers, the prototype served two healthy

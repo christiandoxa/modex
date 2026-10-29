@@ -104,6 +104,8 @@ def run_git(*args: str, timeout: int = 30, **kwargs):
 def acquire_oracle(reference: dict, *, active: bool = False) -> Path:
     _, name, oracle_sha, manifest_sha = metadata_for(reference)
     configured = os.environ.get("PRODEX_ORACLE") if active else None
+    if not configured:
+        configured = os.environ.get(f"PRODEX_ORACLE_{reference['tag'].replace('.', '')}")
     cache = Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
     target = Path(configured).expanduser() if configured else cache / "oracles" / reference["tag"] / name
     if target.is_file():

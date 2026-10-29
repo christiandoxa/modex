@@ -420,7 +420,7 @@
       "docs/evidence/checkpoint14-dependencies.txt"
     ]
   },
-  "baseline_evidence_policy": "Each description and artifact retains its original version; 0.439.5 and 0.439.1 observations are not automatically 0.439.2 behavioral verification.",
+  "baseline_evidence_policy": "Each description and artifact retains its original version; 0.165.1, 0.439.5 and 0.439.1 observations are not automatically 0.439.2 behavioral verification.",
   "continuation_binding_foundation": {
     "implementation": "In-process DeepSeek relay hashes credential and endpoint identity, remembers accepted response/session/turn bindings with bounded in-memory maps, and validates them before subsequent dispatch. The passthrough SSE observer validates JSON incrementally with existing Mojo standard-library and local helpers.",
     "new_application_dependencies": [],

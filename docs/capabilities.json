@@ -476,5 +476,5 @@
   "historical_target_evidence": [
     "docs/evidence/baseline-0.439.5/reference-verification.json"
   ],
-  "parity_note": "These local capability checks retain their original evidence and do not independently establish behavior against Prodex 0.165.1."
+  "parity_note": "These local capability checks retain their original evidence and do not establish complete parity against Prodex 0.439.2."
 }

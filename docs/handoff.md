@@ -1,10 +1,26 @@
-# Current work: Prodex 0.165.1 parity and CI
+# Current work: Prodex 0.439.2 parity and CI
 
-The active goal freezes Prodex 0.165.1 at commit
-`10ae15b5d1806302b60f051e4e6fec788044f4c2`. `docs/baseline.json` and CI
-select this release; comparisons with 0.439.x are historical regression
-evidence. All six release targets and unverified security behavior remain in
-the denominator. The full inventory and production parity remain unfinished.
+The frozen active reference is officially released Prodex 0.439.2 at commit
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9`. Prodex 0.165.1 and 0.439.1
+observations retain historical provenance; 0.439.1 is regression-only. CI
+routes active oracle checks to 0.439.2 and keeps all six release targets in the
+parity denominator. The 76-contract inventory and complete production parity
+remain unfinished, with all six release qualifications BLOCKED.
+
+Production hook-trust initialization now reports client version 0.439.2. The
+production build, its real-process comparison, native hook-trust test,
+dependency audit and data-plane rerun passed. The combined RPC run exposed
+three reproducible state/lock-file mismatches in the imported
+`test_super_launch` suite. An isolated identity/RPC/replay rerun passed 21
+tests. No full-suite PASS or parity promotion is claimed. The standalone
+`test_app_server_rpc_04392.py` and cross-release streaming checks are in the
+active CI path; the streaming test also requires the pinned historical 0.165.1
+oracle.
+
+The notes below retain their original release-specific evidence and CI results.
+They do not become current-target proof when the active baseline changes.
+
+## Historical implementation and validation record
 
 Hosted Fast CI run `40801262569` failed in the relay suite because its strict
 mixed-tools test still expected rejection after mixed Anthropic tools were

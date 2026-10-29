@@ -30,22 +30,22 @@ address that path. `make ci-parity` is expected to fail until parity is complete
 The original `make build`, `make unit`, and `make test` entrypoints remain
 available. Set `PYTHON` when the required interpreter is not `python3`.
 
-The reference helper obtains the frozen active release and the explicitly
-historical source snapshots outside the repository, verifies release and
+The reference helper obtains the frozen 0.439.2 active release and the
+explicitly historical source snapshots outside the repository, verifies release and
 source identities, and accepts `MODEX_REFERENCE_CACHE` for its cache location.
 If a successful official tag lookup returns no refs, source acquisition may
 fetch only the previously pinned commit and verifies its complete Git tree.
 Moved or malformed tags and lookup errors still fail. This recovers source
 only: oracle acquisition still requires the pinned release bytes, so missing
 release assets keep reference-dependent CI fail-closed.
-`PRODEX_ORACLE_01651` selects the current 0.165.1 executable; its SHA-256
-must match the pinned release. CI builds and runs current-release checks before
-acquiring the separately pinned 0.439.2 and 0.439.5 historical oracles. Legacy
-tests use `PRODEX_ORACLE` and `PRODEX_ORACLE_04392` for 0.439.2 and
-`PRODEX_ORACLE_04395` for 0.439.5. Missing mandatory historical assets still
-fail CI after the current evidence is recorded. Tests use synthetic credentials
-and loopback peers. Required sandbox or reference checks fail if their
-prerequisites are missing; a skip is not a pass.
+`PRODEX_ORACLE` selects the active 0.439.2 executable; its SHA-256 must match
+the pinned release. CI records active 0.439.2 checks before acquiring the
+0.165.1 and 0.439.5 historical oracles. Historical oracle tests use
+`PRODEX_ORACLE_01651` and `PRODEX_ORACLE_04395`. Full CI retains the pinned
+0.439.1 source snapshot for regression-only source checks. Missing required
+reference assets fail CI. Tests use synthetic credentials and loopback peers.
+Required sandbox or reference checks fail if their prerequisites are missing;
+a skip is not a pass.
 
 Native unit programs compile with bounded parallelism; set `MODEX_UNIT_JOBS`
 to override the default of four. Reuse requires a fingerprint of the Mojo

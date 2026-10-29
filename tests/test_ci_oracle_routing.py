@@ -14,83 +14,81 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class CIOracleRoutingTests(unittest.TestCase):
-    def test_fast_ci_builds_and_checks_active_baseline_before_required_history(self):
+    def test_fast_ci_checks_04392_before_historical_oracles(self):
         script = (ROOT / "scripts/ci/run-fast.sh").read_text(encoding="utf-8")
         active = script.index("reference.py oracle active")
-        historical = script.index("reference.py oracle 0.439.2")
+        historical = script.index("reference.py oracle 0.165.1")
+        cross_release = script.index("run_logged focused-python-active-cross-release")
+        active_source = script.index("reference.py source active")
+        active_suite = script.index("run_logged focused-python-active ")
 
         self.assertLess(active, historical)
+        self.assertLess(active_source, active_suite)
+        self.assertLess(historical, cross_release)
         self.assertLess(script.index("run_logged build-input-check"), historical)
         self.assertLess(script.index("run_logged focused-build make build unit"), historical)
-        self.assertLess(script.index("run_logged focused-python-01651"), historical)
-        active_tests = script[script.index("run_logged focused-python-01651"):historical]
-        self.assertIn("test_super_model_toml_01651.py", active_tests)
-        self.assertIn("test_super_launch_01651.py", active_tests)
-        self.assertNotIn("test_provider_stream_repeated_search_04392.py", active_tests)
-        historical_tests = script[historical:]
-        self.assertIn("test_provider_stream_repeated_search_04392.py", historical_tests)
+        active_tests = script[script.index("run_logged focused-python-active"):historical]
+        self.assertIn("test_app_server_rpc_04392.py", active_tests)
+        self.assertIn("test_provider_stream_repeated_search_04392.py", script)
+        self.assertIn("run_logged focused-python-active-cross-release", script)
         self.assertIn("test_ci_parity_baseline.py", script)
-        self.assertIn("test_anthropic_mixed_tools_01651.py", active_tests)
-        self.assertIn("test_runtime_proxy_websocket_01651_oracle.py", active_tests)
-        self.assertIn("test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py", script)
-        self.assertIn("test_session_query_01651.py test_unicode_case_properties.py", script)
-        self.assertIn("test_session_report_01651.py", script)
-        self.assertIn("test_log_01651.py", active_tests)
-        self.assertIn('export PRODEX_ORACLE_01651="$(cat "$EVIDENCE_DIR/oracle-path-active.txt")"', script)
-        self.assertIn('export PRODEX_ORACLE_04392="$(cat "$EVIDENCE_DIR/oracle-path-04392.txt")"', script)
+        self.assertIn("run_logged historical-python-01651", script)
+        self.assertIn("test_provider_stream_01651_characterization.py", script)
+        self.assertIn('export PRODEX_ORACLE_04392="$(cat "$EVIDENCE_DIR/oracle-path-active.txt")"', script)
         self.assertIn('export PRODEX_ORACLE="$PRODEX_ORACLE_04392"', script)
         self.assertIn('export PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE_04392"', script)
-        self.assertNotIn('export PRODEX_ORACLE_04392="$PRODEX_ORACLE"', script)
 
-    def test_full_ci_preserves_active_evidence_before_required_history(self):
+    def test_full_ci_checks_04392_before_historical_oracles(self):
         script = (ROOT / "scripts/ci/run-full.sh").read_text(encoding="utf-8")
         active = script.index("reference.py oracle active")
-        historical = script.index("reference.py oracle 0.439.2")
+        historical = script.index("reference.py oracle 0.165.1")
+        cross_release = script.index("run_logged focused-python-active-cross-release")
+        active_source = script.index("reference.py source active")
+        active_suite = script.index("run_logged focused-python-active ")
 
         self.assertLess(active, historical)
+        self.assertLess(active_source, active_suite)
+        self.assertLess(historical, cross_release)
         self.assertLess(script.index("run_logged build-input-check"), historical)
         self.assertLess(script.index("run_logged focused-build make build"), historical)
-        self.assertLess(script.index("run_logged focused-python-01651"), historical)
-        active_tests = script[script.index("run_logged focused-python-01651"):historical]
-        self.assertIn("test_super_model_toml_01651.py", active_tests)
-        self.assertIn("test_super_launch_01651.py", active_tests)
-        self.assertNotIn("test_provider_stream_repeated_search_04392.py", active_tests)
+        active_tests = script[script.index("run_logged focused-python-active"):historical]
+        self.assertIn("test_app_server_rpc_04392.py", active_tests)
+        self.assertIn("test_provider_stream_repeated_search_04392.py", script)
+        self.assertIn("run_logged focused-python-active-cross-release", script)
         complete_suite = script.index("run_logged complete-suite make test")
         self.assertLess(historical, complete_suite)
-        self.assertIn("test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py", script)
-        self.assertNotIn("test_unicode_case_properties.py", script)
-        self.assertIn("reference.py source 0.439.2", script)
-        self.assertIn('export PRODEX_ORACLE_01651="$(cat "$EVIDENCE_DIR/oracle-path-active.txt")"', script)
-        self.assertIn('export PRODEX_ORACLE_04392="$(cat "$EVIDENCE_DIR/oracle-path-04392.txt")"', script)
+        self.assertIn("run_logged historical-python-01651", script)
+        self.assertIn("reference.py source 0.439.1", script)
+        self.assertIn("reference.py source 0.165.1", script)
+        self.assertIn('export PRODEX_ORACLE_04392="$(cat "$EVIDENCE_DIR/oracle-path-active.txt")"', script)
         self.assertIn('export PRODEX_ORACLE="$PRODEX_ORACLE_04392"', script)
         self.assertIn('export PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE_04392"', script)
-        self.assertIn('export MODEX_REFERENCE_04392_DIR="$(cat "$EVIDENCE_DIR/reference-source-04392.txt")"', script)
-        self.assertNotIn('export PRODEX_ORACLE_04392="$PRODEX_ORACLE"', script)
+        self.assertIn('export MODEX_REFERENCE_04392_DIR="$MODEX_REFERENCE_DIR"', script)
 
-    def test_active_provider_stream_setup_does_not_require_historical_oracle(self):
-        import test_provider_stream_01651_characterization as active_suite
+    def test_historical_provider_stream_setup_does_not_require_active_oracle(self):
+        import test_provider_stream_01651_characterization as historical_suite
 
-        with tempfile.TemporaryDirectory(prefix="modex-active-oracle-setup-") as temporary:
+        with tempfile.TemporaryDirectory(prefix="modex-historical-oracle-setup-") as temporary:
             root = Path(temporary)
             active_oracle = root / "oracle-01651"
             modex = root / "modex"
-            missing_historical = root / "missing-oracle-04392"
-            active_bytes = b"synthetic active oracle"
+            missing_active = root / "missing-oracle-04392"
+            active_bytes = b"synthetic historical oracle"
             active_oracle.write_bytes(active_bytes)
             modex.write_bytes(b"synthetic modex binary")
             with (
                 patch.dict(os.environ, {
-                    "PRODEX_ORACLE": str(missing_historical),
-                    "PRODEX_ORACLE_04392": str(missing_historical),
-                    "PRODEX_GATEWAY_ORACLE": str(missing_historical),
+                    "PRODEX_ORACLE": str(missing_active),
+                    "PRODEX_ORACLE_04392": str(missing_active),
+                    "PRODEX_GATEWAY_ORACLE": str(missing_active),
                 }),
-                patch.object(active_suite, "ORACLE_01651", active_oracle),
-                patch.object(active_suite, "ORACLE_01651_SHA256", hashlib.sha256(active_bytes).hexdigest()),
-                patch.object(active_suite, "MODEX", modex),
+                patch.object(historical_suite, "ORACLE_01651", active_oracle),
+                patch.object(historical_suite, "ORACLE_01651_SHA256", hashlib.sha256(active_bytes).hexdigest()),
+                patch.object(historical_suite, "MODEX", modex),
             ):
-                active_suite.ProviderStream01651CharacterizationTests.setUpClass()
+                historical_suite.ProviderStream01651CharacterizationTests.setUpClass()
 
-    def run_fast_with_fake_tools(self, *, missing_04392):
+    def run_fast_with_fake_tools(self, *, missing_active):
         with tempfile.TemporaryDirectory(prefix="modex-ci-oracle-routing-") as temporary:
             temp = Path(temporary)
             root = temp / "repo"
@@ -115,12 +113,12 @@ class CIOracleRoutingTests(unittest.TestCase):
             )
             ensure_bwrap.chmod(0o755)
 
-            active_oracle = temp / "oracle-01651"
-            legacy_oracle = temp / "oracle-04392"
-            for path in (active_oracle, legacy_oracle):
+            active_oracle = temp / "oracle-04392"
+            historical_oracle = temp / "oracle-01651"
+            later_historical_oracle = temp / "oracle-04395"
+            for path in (active_oracle, historical_oracle, later_historical_oracle):
                 path.write_bytes(b"synthetic test oracle")
-            active_oracle.chmod(0o755)
-            legacy_oracle.chmod(0o755)
+                path.chmod(0o755)
             events = temp / "events.log"
             fake_python = fake_bin / "python"
             fake_python.write_text(
@@ -130,30 +128,27 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "if [[ \"${1-}\" == --version ]]; then echo 'Python 3.14.10'; exit 0; fi\n"
                 "if [[ \"${1-}\" == scripts/ci/reference.py ]]; then\n"
                 "  case \"${2-}:${3-}\" in\n"
-                "    oracle:active) printf 'reference\\toracle active\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_ACTIVE_ORACLE\" ;;\n"
-                "    oracle:0.439.2) printf 'reference\\toracle 0.439.2\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_04392\" == 1 ]]; then echo 'synthetic missing Prodex 0.439.2 oracle' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_LEGACY_ORACLE\" ;;\n"
-                "    oracle:0.439.5) printf '%s\\n' \"$FAKE_LEGACY_ORACLE\" ;;\n"
+                "    oracle:active) printf 'reference\\toracle active\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_ACTIVE\" == 1 ]]; then echo 'synthetic missing Prodex 0.439.2 oracle' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_ACTIVE_ORACLE\" ;;\n"
+                "    oracle:0.165.1) printf 'reference\\toracle 0.165.1\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_HISTORICAL_ORACLE\" ;;\n"
+                "    oracle:0.439.5) printf '%s\\n' \"$FAKE_LATER_HISTORICAL_ORACLE\" ;;\n"
                 "    source:*) printf '%s\\n' \"$FAKE_SOURCE\" ;;\n"
-                "    identity:active) printf '{\"tag\":\"0.165.1\"}\\n' ;;\n"
+                "    identity:active) printf '{\"tag\":\"0.439.2\"}\\n' ;;\n"
                 "    *) echo \"unexpected synthetic reference request: $*\" >&2; exit 2 ;;\n"
                 "  esac\n"
                 "  exit 0\n"
                 "fi\n"
-                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_cli_01651.py '* ]]; then\n"
-                "  printf 'active-test\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE_01651-}\" \"${PRODEX_ORACLE-}\" \"${PRODEX_GATEWAY_ORACLE-}\" >>\"$FAKE_LOG\"\n"
-                "fi\n"
-                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_cli.py '* ]]; then\n"
-                "  printf 'legacy-test\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE-}\" \"${PRODEX_ORACLE_04392-}\" \"${PRODEX_GATEWAY_ORACLE-}\" >>\"$FAKE_LOG\"\n"
-                "fi\n"
                 "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_provider_stream_repeated_search_04392.py '* ]]; then\n"
-                "  printf 'stream-history-test\\t%s\\t%s\\n' \"${PRODEX_ORACLE_01651-}\" \"${PRODEX_ORACLE_04392-}\" >>\"$FAKE_LOG\"\n"
+                "  printf 'active-test\\t%s\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE-}\" \"${PRODEX_ORACLE_04392-}\" \"${PRODEX_GATEWAY_ORACLE-}\" \"${PRODEX_ORACLE_01651-}\" >>\"$FAKE_LOG\"\n"
+                "fi\n"
+                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_cli_01651.py '* ]]; then\n"
+                "  printf 'historical-test\\t%s\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE_01651-}\" \"${PRODEX_ORACLE-}\" \"${PRODEX_GATEWAY_ORACLE-}\" \"${PRODEX_ORACLE_04392-}\" >>\"$FAKE_LOG\"\n"
                 "fi\n"
                 "echo 'synthetic command passed'\n",
                 encoding="utf-8",
             )
             fake_python.chmod(0o755)
             for name, body in (
-                ("make", "printf 'make\\t%s\\t%s\\t%s\\t%s\\n' \"$*\" \"${PRODEX_ORACLE_01651-}\" \"${PRODEX_ORACLE-}\" \"${PRODEX_ORACLE_04392-}\" >>\"$FAKE_LOG\"\nexit 0\n"),
+                ("make", "printf 'make\\t%s\\t%s\\t%s\\n' \"$*\" \"${PRODEX_ORACLE-}\" \"${PRODEX_ORACLE_04392-}\" >>\"$FAKE_LOG\"\nexit 0\n"),
                 ("git", "if [[ \"${1-}\" == rev-parse && \"${2-}\" == HEAD ]]; then printf '%040d\\n' 0; else exit 2; fi\n"),
             ):
                 path = fake_bin / name
@@ -176,10 +171,11 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "TMPDIR": str(temp / "tmp"),
                 "FAKE_BWRAP": str(fake_bwrap),
                 "FAKE_ACTIVE_ORACLE": str(active_oracle),
-                "FAKE_LEGACY_ORACLE": str(legacy_oracle),
+                "FAKE_HISTORICAL_ORACLE": str(historical_oracle),
+                "FAKE_LATER_HISTORICAL_ORACLE": str(later_historical_oracle),
                 "FAKE_SOURCE": str(temp / "reference-source"),
                 "FAKE_LOG": str(events),
-                "FAKE_MISSING_04392": "1" if missing_04392 else "0",
+                "FAKE_MISSING_ACTIVE": "1" if missing_active else "0",
                 "MODEX_CI_ARTIFACT_PRODUCER": "1",
                 "PRODEX_ORACLE": "/synthetic/inherited-old-oracle",
                 "PRODEX_GATEWAY_ORACLE": "/synthetic/inherited-old-gateway-oracle",
@@ -203,47 +199,38 @@ class CIOracleRoutingTests(unittest.TestCase):
                 events.read_text(encoding="utf-8").splitlines(),
                 summary,
                 str(active_oracle),
-                str(legacy_oracle),
+                str(historical_oracle),
             )
 
-    def test_missing_historical_oracle_fails_after_active_build_and_test(self):
-        result, events, summary, active_oracle_path, _ = self.run_fast_with_fake_tools(missing_04392=True)
+    def test_missing_active_oracle_fails_before_build_and_tests(self):
+        result, events, summary, _, _ = self.run_fast_with_fake_tools(missing_active=True)
 
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertIn("synthetic missing Prodex 0.439.2 oracle", result.stdout)
         active_reference = events.index("reference\toracle active")
-        build = next(i for i, event in enumerate(events) if event.startswith("make\tbuild unit\t"))
-        active_test = next(i for i, event in enumerate(events) if event.startswith("active-test\t"))
-        missing_oracle = events.index("reference\toracle 0.439.2")
+        self.assertFalse(any(event.startswith("make\tbuild unit\t") for event in events))
+        self.assertFalse(any(event.startswith("active-test\t") for event in events))
+        self.assertFalse(any(event.startswith("historical-test\t") for event in events))
+        self.assertIn("reference-helper-tests: PASS", summary)
+        self.assertNotIn("focused-build: PASS", summary)
 
-        self.assertLess(active_reference, build)
-        self.assertLess(build, active_test)
-        self.assertLess(active_test, missing_oracle)
-        self.assertFalse(any(event.startswith("legacy-test\t") for event in events))
-        self.assertFalse(any(event.startswith("stream-history-test\t") for event in events))
-        active_environment = events[active_test].split("\t")
-        self.assertEqual(active_environment[1], active_oracle_path)
-        self.assertEqual(active_environment[2:], ["", ""])
-        self.assertIn("focused-build: PASS", summary)
-        self.assertIn("focused-python-01651: PASS", summary)
-
-    def test_legacy_suite_receives_only_the_explicit_04392_oracle(self):
-        result, events, _, active_oracle_path, legacy_oracle_path = self.run_fast_with_fake_tools(missing_04392=False)
+    def test_active_and_historical_suites_receive_their_pinned_oracles(self):
+        result, events, _, active_oracle_path, historical_oracle_path = self.run_fast_with_fake_tools(missing_active=False)
 
         self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertTrue(any(event.startswith("active-test\t") for event in events), f"events={events!r}; output={result.stdout}")
         active = next(event for event in events if event.startswith("active-test\t"))
-        legacy = next(event for event in events if event.startswith("legacy-test\t"))
-        stream_history = next(event for event in events if event.startswith("stream-history-test\t"))
+        historical = next(event for event in events if event.startswith("historical-test\t"))
+        active_test_index = next(i for i, event in enumerate(events) if event.startswith("active-test\t"))
         active_environment = active.split("\t")
-        legacy_environment = legacy.split("\t")
-        self.assertEqual(active_environment[1], active_oracle_path)
-        self.assertEqual(active_environment[2:], ["", ""])
-        self.assertEqual(legacy_environment[1], legacy_oracle_path)
-        self.assertEqual(legacy_environment[1], legacy_environment[2])
-        self.assertEqual(legacy_environment[2], legacy_environment[3])
-        history_environment = stream_history.split("\t")
-        self.assertEqual(history_environment[1:], [active_oracle_path, legacy_oracle_path])
-        self.assertLess(events.index("reference\toracle 0.439.2"), events.index(stream_history))
+        self.assertEqual(active_environment[1:4], [active_oracle_path] * 3)
+        self.assertEqual(active_environment[4], historical_oracle_path)
+        historical_environment = historical.split("\t")
+        self.assertEqual(historical_environment[1], historical_oracle_path)
+        self.assertEqual(historical_environment[2:4], ["", ""])
+        self.assertEqual(historical_environment[4], active_oracle_path)
+        self.assertLess(events.index("reference\toracle active"), active_test_index)
+        self.assertLess(events.index("reference\toracle 0.165.1"), active_test_index)
         self.assertIn("Fast CI checks passed.", result.stdout)
 
 

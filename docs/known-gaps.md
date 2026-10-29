@@ -1,12 +1,12 @@
 # Verified gaps
 
-Complete parity remains unfinished against officially released Prodex 0.165.1 at
-`10ae15b5d1806302b60f051e4e6fec788044f4c2`. The incomplete inventory retains
+Complete parity remains unfinished against officially released Prodex 0.439.2 at
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9`. The incomplete inventory retains
 76 contracts and 456 platform obligations. All six complete release
 qualifications are explicitly BLOCKED; focused host tests do not establish a
-release PASS. All 0.439.x observations below retain their original provenance and do not
-by themselves establish 0.165.1 behavior. The inherited inventory and its
-source traces have not yet been fully revalidated against 0.165.1.
+release PASS. The observations below retain their original release provenance;
+0.165.1 and 0.439.1 comparisons do not establish 0.439.2 behavior. The
+inventory and source traces have not yet been fully revalidated against 0.439.2.
 
 The production Super model override matches the pinned app-server argv for a
 literal TAB. Prodex emits raw LF/CR and other controls inside a quoted value;

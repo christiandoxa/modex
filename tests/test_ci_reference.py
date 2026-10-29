@@ -230,11 +230,11 @@ class CachedSourceIntegrityTests(unittest.TestCase):
     def test_active_and_historical_tags_resolve_to_their_frozen_references(self):
         self.assertIs(reference_for("active"), BASELINE["reference"])
         self.assertIs(reference_for(BASELINE["reference"]["tag"]), BASELINE["reference"])
-        self.assertEqual(reference_for("0.439.2")["commit"], "72b77478a5198fc5da6b4d2253137f9cdbf43be9")
+        self.assertEqual(reference_for("active")["tag"], "0.439.2")
+        self.assertEqual(reference_for("active")["commit"], "72b77478a5198fc5da6b4d2253137f9cdbf43be9")
         self.assertEqual(reference_for("0.439.5")["commit"], "ac9aad08f25d6dc8cda96463ce2045b40f35f510")
-        self.assertEqual(reference_for("active")["commit"], "10ae15b5d1806302b60f051e4e6fec788044f4c2")
-        self.assertEqual(reference_for("0.165.1"), reference_for("active"))
-        self.assertEqual(reference_for("previous")["tag"], "0.439.2")
+        self.assertEqual(reference_for("0.165.1")["commit"], "10ae15b5d1806302b60f051e4e6fec788044f4c2")
+        self.assertEqual(reference_for("previous")["tag"], "0.439.1")
         self.assertEqual(reference_for("0.439.1")["commit"], "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3")
 
     def test_uncached_oracle_is_not_replaced_when_the_official_release_is_missing(self):
@@ -253,15 +253,24 @@ class CachedSourceIntegrityTests(unittest.TestCase):
         run.assert_not_called()
         self.assertFalse((cache / "oracles" / reference["tag"]).exists())
 
-    def test_active_release_uses_01651_asset_checksums(self):
+    def test_active_release_uses_04392_asset_checksums(self):
         _, _, oracle_sha, manifest_sha = metadata_for(reference_for("active"))
-        self.assertEqual(oracle_sha, "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51")
-        self.assertEqual(manifest_sha, "c549f193d217b28f86516bba9ab5d4500d963fa96271022d0a0d5672b3ae8d67")
+        self.assertEqual(oracle_sha, "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e")
+        self.assertEqual(manifest_sha, "c0d810169f539e50b3eaf875d81b1eb510430cf691d228472d537b12d11822c6")
 
-    def test_previous_release_uses_recorded_historical_asset_checksums(self):
+    def test_04391_regression_uses_recorded_historical_asset_checksums(self):
         _, _, oracle_sha, manifest_sha = metadata_for(reference_for("0.439.1"))
         self.assertEqual(oracle_sha, "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a")
         self.assertEqual(manifest_sha, "f5f4269d90de95c1cde06043df21c00a253681fcc96a8589cae067beb2fb95d9")
+
+    def test_historical_oracle_accepts_its_version_specific_override(self):
+        reference = reference_for("0.165.1")
+        configured = Path(self.temporary.name) / "historical-oracle"
+        configured.write_bytes(b"historical oracle")
+        expected = hashlib.sha256(configured.read_bytes()).hexdigest()
+        with patch.dict(os.environ, {"PRODEX_ORACLE_01651": str(configured)}):
+            with patch("scripts.ci.reference.metadata_for", return_value=(Path("evidence"), "prodex", expected, "0" * 64)):
+                self.assertEqual(acquire_oracle(reference), configured.resolve())
 
     def test_source_acquisition_requires_recorded_tag_and_matching_evidence_commit(self):
         reference = reference_for("active").copy()

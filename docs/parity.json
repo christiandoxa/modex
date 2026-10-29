@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_commit": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
+  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
   "inventory_complete": false,
   "counting_policy": "Initial coarse contracts are not the final denominator. Each contract retains all applicable platform obligations. PASS requires reproducible evidence; compile-only, mock-only and unverified results never count. No full parity percentage until inventory completion.",
   "inventory_history": [
@@ -143,6 +143,10 @@
     {
       "date": "2026-10-29",
       "change": "Retarget the incomplete inventory to 0.165.1. Existing source traces and comparisons remain historical, not evidence of current-target behavior. Clear historical PASS and FAIL platform verdicts pending recapture; retain all 76 contracts and six targets."
+    },
+    {
+      "date": "2026-10-29",
+      "change": "Promote the frozen 0.439.2 reference at 72b77478a5198fc5da6b4d2253137f9cdbf43be9. Retain 0.165.1, 0.439.1, 0.439.5 and 0.439.0 observations with original provenance. Keep all 76 contracts and six platform obligations; promote no parity status."
     }
   ],
   "contracts": [
@@ -4418,9 +4422,9 @@
       ]
     }
   ],
-  "previous_baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
-  "baseline_version": "0.165.1",
-  "evidence_policy": "Per-contract source traces and evidence retain their listed source commits. 0.439.x evidence is historical and does not establish 0.165.1 behavior; every contract and all six targets require current-target verification.",
+  "previous_baseline_commit": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
+  "baseline_version": "0.439.2",
+  "evidence_policy": "Per-contract source traces and evidence retain their listed source commits. 0.165.1, 0.439.1, 0.439.5 and 0.439.0 observations do not by themselves establish 0.439.2 behavior; every contract and all six targets require current-target verification.",
   "release_qualification": {
     "x86_64-unknown-linux-gnu": {
       "status": "BLOCKED",
@@ -4490,10 +4494,10 @@
       "role": "Historical fixtures retain their original provenance."
     },
     {
-      "version": "0.439.2",
-      "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
-      "evidence": "docs/evidence/baseline-0.439.2/reference-verification.json",
-      "role": "Historical comparisons only; not automatically counted as 0.165.1 behavior."
+      "version": "0.165.1",
+      "commit": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
+      "evidence": "docs/evidence/baseline-0.165.1/reference-verification.json",
+      "role": "Historical comparisons retain original provenance and do not establish 0.439.2 behavior."
     }
   ]
 }

@@ -4,17 +4,23 @@
   "repository": "https://github.com/christiandoxa/modex",
   "reference": {
     "repository": "https://github.com/christiandoxa/prodex",
-    "tag": "0.165.1",
-    "commit": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
+    "tag": "0.439.2",
+    "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
     "tag_resolution_matches": true,
-    "snapshot_outside_product_graph": "~/.cache/modex/prodex-0.165.1",
-    "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.165.1",
+    "remote_availability": {
+      "checked_at": "2026-10-28",
+      "tag_present": false,
+      "release_assets_present": false,
+      "recovery_evidence": "docs/evidence/reference-recovery-20261028.json"
+    },
+    "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+    "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.2",
     "release_features": [
       "mojo-core"
     ],
-    "release_implementation": "mojo-compiled-in; reference only",
-    "oracle": "~/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
-    "checksum_verification": "Linux binary and release manifest match official SHA256SUMS and GitHub release asset digests. Linux binary provenance attestation verifies the pinned source commit and release workflow.",
+    "release_implementation": "mojo-compiled-in with Rust host; reference only",
+    "oracle": "~/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+    "checksum_verification": "Linux binary SHA-256 matches official SHA256SUMS; cached SHA256SUMS and release-manifest.json match newly downloaded official release assets. Entire frozen Git archive matches all 3,280 Git-tree blobs.",
     "release_targets": [
       "x86_64-unknown-linux-gnu",
       "aarch64-unknown-linux-gnu",
@@ -23,7 +29,7 @@
       "x86_64-pc-windows-msvc",
       "aarch64-pc-windows-msvc"
     ],
-    "evidence": "docs/evidence/baseline-0.165.1/reference-verification.json"
+    "evidence": "docs/evidence/baseline-0.439.2/reference-verification.json"
   },
   "toolchain": {
     "compiler": "Mojo",
@@ -57,7 +63,7 @@
       "modex": "modex"
     },
     "version": {
-      "baseline": "0.165.1",
+      "baseline": "0.439.2",
       "modex": "0.1.0-dev"
     },
     "distribution_repository": {
@@ -75,23 +81,24 @@
   },
   "previous_reference": {
     "repository": "https://github.com/christiandoxa/prodex",
-    "tag": "0.439.2",
-    "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+    "tag": "0.439.1",
+    "commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
     "tag_resolution_matches": true,
+    "historical_role": "Regression-only; never counted as 0.439.2 behavior.",
     "remote_availability": {
       "checked_at": "2026-10-28",
       "tag_present": false,
       "release_assets_present": false,
       "recovery_evidence": "docs/evidence/reference-recovery-20261028.json"
     },
-    "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-72b77478a5198fc5da6b4d2253137f9cdbf43be9",
-    "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.2",
+    "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+    "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.1",
     "release_features": [
       "mojo-core"
     ],
     "release_implementation": "mojo-compiled-in with Rust host; reference only",
-    "oracle": "~/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
-    "checksum_verification": "Linux binary SHA-256 matches official SHA256SUMS; cached SHA256SUMS and release-manifest.json match newly downloaded official release assets. Entire frozen Git archive matches all 3,280 Git-tree blobs.",
+    "oracle": "~/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+    "checksum_verification": "sha256sum --check --ignore-missing SHA256SUMS: Linux binary, release-manifest.json, release-manifest.tsv and release-sbom.spdx.json all OK",
     "release_targets": [
       "x86_64-unknown-linux-gnu",
       "aarch64-unknown-linux-gnu",
@@ -100,9 +107,9 @@
       "x86_64-pc-windows-msvc",
       "aarch64-pc-windows-msvc"
     ],
-    "evidence": "docs/evidence/baseline-0.439.2/reference-verification.json"
+    "evidence": "docs/evidence/baseline-0.439.1/reference-verification.json"
   },
-  "evidence_policy": "Each observation retains its original version and commit. Historical comparisons do not establish 0.165.1 behavior; changing the target does not promote parity statuses.",
+  "evidence_policy": "Each observation retains its pinned release and source commit. Historical 0.165.1, 0.439.1, 0.439.5 and 0.439.0 comparisons do not establish 0.439.2 behavior. Changing the target does not promote parity statuses.",
   "historical_references": [
     {
       "repository": "https://github.com/christiandoxa/prodex",
@@ -151,23 +158,17 @@
     },
     {
       "repository": "https://github.com/christiandoxa/prodex",
-      "tag": "0.439.1",
-      "commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+      "tag": "0.165.1",
+      "commit": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
       "tag_resolution_matches": true,
-      "remote_availability": {
-        "checked_at": "2026-10-28",
-        "tag_present": false,
-        "release_assets_present": false,
-        "recovery_evidence": "docs/evidence/reference-recovery-20261028.json"
-      },
-      "snapshot_outside_product_graph": "~/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
-      "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.1",
+      "snapshot_outside_product_graph": "~/.cache/modex/prodex-0.165.1",
+      "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.165.1",
       "release_features": [
         "mojo-core"
       ],
-      "release_implementation": "mojo-compiled-in with Rust host; reference only",
-      "oracle": "~/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
-      "checksum_verification": "sha256sum --check --ignore-missing SHA256SUMS: Linux binary, release-manifest.json, release-manifest.tsv and release-sbom.spdx.json all OK",
+      "release_implementation": "mojo-compiled-in; reference only",
+      "oracle": "~/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
+      "checksum_verification": "Linux binary and release manifest match official SHA256SUMS and GitHub release asset digests. Linux binary provenance attestation verifies the pinned source commit and release workflow.",
       "release_targets": [
         "x86_64-unknown-linux-gnu",
         "aarch64-unknown-linux-gnu",
@@ -176,7 +177,8 @@
         "x86_64-pc-windows-msvc",
         "aarch64-pc-windows-msvc"
       ],
-      "evidence": "docs/evidence/baseline-0.439.1/reference-verification.json"
+      "evidence": "docs/evidence/baseline-0.165.1/reference-verification.json",
+      "historical_role": "Historical comparisons retain original provenance and do not establish 0.439.2 behavior."
     }
   ]
 }

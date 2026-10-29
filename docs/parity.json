@@ -842,12 +842,12 @@
         "path": "crates/prodex-app/src/app_commands/log_command_tui.rs",
         "symbol": "handle_log",
         "trace_verified": true,
-        "source_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+        "source_commit": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
         "previous_trace": {
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true,
+        "unchanged_from_previous_trace": false,
         "target_trace_verified": false
       },
       "required_behavior": "Redacted stream/last/upstream output, JSON envelopes, session/runtime event selection and terminal rendering.",
@@ -897,7 +897,8 @@
         "tests/test_policy_corpus.py",
         "tests/test_toml.mojo",
         "tests/test_toml.py",
-        "tests/test_unicode_properties.py"
+        "tests/test_unicode_properties.py",
+        "tests/test_log_01651.py"
       ],
       "evidence": [
         "docs/evidence/log-tests.txt",
@@ -921,7 +922,8 @@
         "docs/evidence/checkpoint2-reference.json",
         "docs/evidence/checkpoint2-tests.txt",
         "docs/evidence/checkpoint2-dependencies.txt",
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/baseline-0.165.1/log-01651-tests.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {
@@ -948,12 +950,12 @@
         "path": "crates/prodex-app/src/app_commands/session.rs",
         "symbol": "handle_session, load_session_reports",
         "trace_verified": true,
-        "source_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+        "source_commit": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
         "previous_trace": {
           "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
           "trace_verified": true
         },
-        "unchanged_from_previous_trace": true,
+        "unchanged_from_previous_trace": false,
         "target_trace_verified": false
       },
       "required_behavior": "List shared sessions newest first with profile/query/limit/subagent filters and output modes.",
@@ -993,7 +995,8 @@
         "tests/test_session_query_04392.py",
         "tests/test_session_query_04395.py",
         "tests/test_session_json_whitespace_04395.py",
-        "tests/test_session_query_01651.py"
+        "tests/test_session_query_01651.py",
+        "tests/test_session_report_01651.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -1018,7 +1021,8 @@
         "docs/evidence/checkpoint2-dependencies.txt",
         "docs/evidence/baseline-0.439.2/reference-verification.json",
         "docs/evidence/baseline-0.165.1/session-query-unicode.md",
-        "docs/evidence/baseline-0.165.1/session-paths.md"
+        "docs/evidence/baseline-0.165.1/session-paths.md",
+        "docs/evidence/baseline-0.165.1/session-profile-filter.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {

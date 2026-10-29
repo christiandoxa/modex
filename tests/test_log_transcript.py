@@ -23,7 +23,9 @@ def project(record_type, payload):
     return json.loads(result.stdout)
 
 
-def oracle(record_type, payload, binary=ORACLE, json_output=True, columns="110"):
+def oracle(record_type, payload, binary=None, json_output=True, columns="110"):
+    if binary is None:
+        binary = ORACLE
     with tempfile.TemporaryDirectory(prefix="modex-transcript-oracle-") as directory:
         root = Path(directory)
         (root / "home").mkdir(mode=0o700)

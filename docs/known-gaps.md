@@ -139,6 +139,15 @@ listing now ignores selected unrelated state-like filenames in the same way as
 0.439.2 and the historical 0.439.5 control. Actual state, last-good snapshots,
 locks, atomic temporary files and profile journals remain fail-closed because
 state recovery and locking are not implemented.
+The active 0.165.1 oracle confirms that `session list --profile main` returns a
+session whose ID has a matching `session_profile_bindings` entry in
+`state.json`; Modex fails closed before listing it. The production trace is
+`app_commands/session.rs::load_session_reports` to
+`prodex-session-store::read_session_report`, which attaches the binding to the
+report before profile filtering. On malformed primary state the release locks
+`state.json.lock` and restores from `.last-good`; do not read or repair this
+state until Modex can reproduce that lock and recovery behavior. See
+`docs/evidence/baseline-0.165.1/session-profile-filter.md`.
 Selected dotted-I expansion and contextual Greek sigma queries now match both
 the historical 0.439.2 and separately pinned 0.439.5 oracles. The 0.165.1 session selector now uses the full Unicode 17 Cased and
 Case_Ignorable properties for sigma context, checked against all scalars and

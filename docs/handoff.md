@@ -46,6 +46,20 @@ The session-report regression suite now also runs against the verified
 0.165.1 Linux binary. It covers selected listing, filters, metadata, ordering,
 timestamps and timezones; one safe handling test exercises Modex alone and is
 not a parity claim. Session state locking and non-host targets remain gaps.
+The new `session list --profile main` process comparison reproduces the state
+gap: 0.165.1 returns the bound synthetic session, while Modex exits 1 with
+`locked state loading and recovery are not implemented`. The release loads
+valid state directly, but locks and repairs from `.last-good` when primary
+state parsing fails; Modex keeps failing closed because its stdlib cannot yet
+match that recovery contract. The test confirms the state JSON stays unchanged.
+See `docs/evidence/baseline-0.165.1/session-profile-filter.md`.
+
+The existing bounded logging suite now also runs in an isolated active-0.165.1
+lane. All 36 selected log snapshot, payload, redaction, runtime parsing,
+transcript, text and timestamp checks passed against the verified Linux
+binary; historical 0.439.2 comparisons remain separate. This does not verify
+live-source registry locking/recovery, terminal rendering or non-host targets.
+See `docs/evidence/baseline-0.165.1/log-01651-tests.md`.
 
 The production Super Codex version and app-server help probes now run with
 `CODEX_HOME` and the five `TEST_CODEX_*` logging variables removed. A synthetic

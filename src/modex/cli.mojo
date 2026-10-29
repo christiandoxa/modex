@@ -346,6 +346,18 @@ def parse_session_options(args: List[String]) raises -> SessionOptions:
             try:
                 limit = unsigned_value(value)
             except error:
+                # Clap reports a direct stray argument before split-limit conversion.
+                if len(pieces) == 1 and index + 1 < len(args):
+                    var following = args[index + 1]
+                    if following == "--":
+                        if index + 2 < len(args):
+                            raise unknown_argument(args[index + 2], usage, command, seen, True)
+                    elif not following.startswith("-") or following == "-":
+                        raise unknown_argument(following, usage, command, seen, True)
+                    else:
+                        var following_name = argument_name(following)
+                        if following_name not in flags and following_name != "-h":
+                            raise unknown_argument(following, usage, command, seen)
                 raise session_cli_error("invalid value '" + value + "' for '--limit <N>': " + String(error))
         index += 1
     if command == "resume" and not resume_id:

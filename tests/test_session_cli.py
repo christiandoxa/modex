@@ -1,5 +1,6 @@
 """Compare session help and argument errors with official-release fixtures."""
 
+import hashlib
 import json
 from pathlib import Path
 import random
@@ -11,6 +12,10 @@ from session_oracle import fixture, sandbox_command
 import test_cli
 from test_cli import HISTORICAL_04391_ORACLE_SHA256, MODEX, ORACLE, ROOT
 from capture_session_cli import map_executable
+from test_cli_01651 import (
+    ORACLE as ORACLE_01651,
+    ORACLE_SHA256 as ORACLE_01651_SHA256,
+)
 
 
 class SessionCliTests(unittest.TestCase):
@@ -109,6 +114,72 @@ class SessionCliTests(unittest.TestCase):
                         after = {str(path.relative_to(root)): path.read_bytes() if path.is_file() else None
                                  for path in root.rglob("*")}
                         self.assertEqual(after, before)
+                    self.assertEqual(outputs[1], outputs[0])
+
+    def test_split_limit_error_precedence_matches_both_releases(self):
+        if (
+            not ORACLE_01651.is_file()
+            or hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest() != ORACLE_01651_SHA256
+        ):
+            raise AssertionError("PRODEX_ORACLE_01651 must identify the verified 0.165.1 Linux release")
+        limit_error = "invalid value 'bad' for '--limit <N>': invalid digit found in string"
+        cases = (
+            (
+                ["session", "list", "--limit", "bad", "extra"],
+                "unexpected argument 'extra' found", "[OPTIONS]",
+            ),
+            (
+                ["session", "list", "--limit", "bad", "--unknown"],
+                "unexpected argument '--unknown' found", "--limit <N>",
+            ),
+            (
+                ["session", "list", "--limit", "bad", "--", "--unknown"],
+                "unexpected argument '--unknown' found", "[OPTIONS]",
+            ),
+            (
+                ["session", "list", "--limit", "bad", "--", "extra"],
+                "unexpected argument 'extra' found", "[OPTIONS]",
+            ),
+            (["session", "list", "--limit=bad", "extra"], limit_error, ""),
+            (
+                ["session", "list", "--limit", "bad", "--profile", "main", "--unknown"],
+                limit_error, "",
+            ),
+            (
+                ["session", "list", "--limit", "bad", "--query", "text", "--unknown"],
+                limit_error, "",
+            ),
+            (["session", "list", "--limit", "bad", "--limit", "1"], limit_error, ""),
+            (["session", "list", "--limit", "bad", "--profile"], limit_error, ""),
+            (["session", "list", "--limit", "bad", "--"], limit_error, ""),
+            (
+                ["session", "current", "--limit", "bad", "--cwd", "/tmp", "--unknown"],
+                limit_error, "",
+            ),
+            (["session", "list", "--limit", "bad", "--help"], limit_error, ""),
+        )
+        for reference in (ORACLE_01651, ORACLE):
+            for arguments, message, usage in cases:
+                expected = "error: " + message
+                if usage:
+                    expected += "\n\nUsage: modex session list " + usage
+                expected += "\n\nFor more information, try '--help'.\n"
+                with self.subTest(reference=reference.name, arguments=arguments):
+                    outputs = []
+                    for label, binary in (("prodex", reference), ("modex", MODEX)):
+                        with tempfile.TemporaryDirectory(prefix="modex-session-limit-error-") as directory:
+                            root = Path(directory)
+                            fixture(root)
+                            result = subprocess.run(
+                                sandbox_command(binary, root, arguments, argv0=label),
+                                capture_output=True, timeout=10, check=False,
+                            )
+                            outputs.append((
+                                result.returncode,
+                                map_executable(result.stdout.decode().replace(str(root), "<ROOT>")),
+                                map_executable(result.stderr.decode().replace(str(root), "<ROOT>")),
+                            ))
+                    self.assertEqual(outputs[0], (2, "", expected))
                     self.assertEqual(outputs[1], outputs[0])
 
     def test_generated_argument_sequences(self):

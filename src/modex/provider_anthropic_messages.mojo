@@ -353,22 +353,16 @@ def anthropic_buffered_assistant_messages(source: String) raises -> String:
 
 def _search_sources(doc: JsonDocument, block: Int) raises -> String:
     var content = doc.get(block, "content")
-    if content < 0 or doc.nodes[content].kind != JSON_ARRAY:
-        raise Error("Anthropic web-search result content must be an array")
     var output = List[String]()
+    if content < 0 or doc.nodes[content].kind != JSON_ARRAY:
+        return "[]"
     for item in doc.nodes[content].children:
-        if doc.nodes[item].kind != JSON_OBJECT:
-            raise Error("Anthropic web-search results must be objects")
-        _only_fields(doc, item, ["type", "url", "title"], "web-search result")
-        if doc.string(doc.get(item, "type")) != "web_search_result":
-            raise Error("Anthropic web-search result type is not supported")
         var url = doc.get(item, "url")
         if url < 0 or doc.nodes[url].kind != JSON_STRING:
-            raise Error("Anthropic web-search result requires a URL")
+            continue
         var value = '{"type":"url","url":' + serialize_json(doc, url)
         var title = doc.get(item, "title")
-        if title >= 0:
-            if doc.nodes[title].kind != JSON_STRING: raise Error("Anthropic web-search result title must be a string")
+        if title >= 0 and doc.nodes[title].kind == JSON_STRING:
             value += ',"title":' + serialize_json(doc, title)
         output.append(value + "}")
     return "[" + ",".join(output) + "]"
@@ -452,9 +446,6 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
                 var id = doc.get(block, "tool_use_id")
                 if id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text:
                     raise Error("Anthropic web-search result requires a tool_use_id")
-                var result_content = doc.get(block, "content")
-                if result_content < 0 or doc.nodes[result_content].kind != JSON_ARRAY or len(doc.nodes[result_content].children) == 0:
-                    raise Error("Anthropic web-search result must contain at least one source")
                 _ = _search_sources(doc, block)
             else:
                 raise Error("Anthropic Messages tool-use content has an unsupported block")
@@ -483,9 +474,6 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
     _only_fields(doc, result, ["type", "tool_use_id", "content"], "web-search result block")
     if doc.string(doc.get(result, "type")) != "web_search_tool_result" or doc.string(doc.get(result, "tool_use_id")) != doc.nodes[search_id].text:
         raise Error("Anthropic web-search result does not match its tool use")
-    var result_content = doc.get(result, "content")
-    if result_content < 0 or doc.nodes[result_content].kind != JSON_ARRAY or len(doc.nodes[result_content].children) == 0:
-        raise Error("Anthropic web-search result must contain at least one source")
     _ = _search_sources(doc, result)
     var text = doc.nodes[content].children[2]
     _only_fields(doc, text, ["type", "text"], "text block")

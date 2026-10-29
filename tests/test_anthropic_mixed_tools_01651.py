@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import unittest
 
-from test_cli import MODEX
+from test_cli import MODEX, ORACLE, ORACLE_SHA256
 from test_deepseek_continuation import observe_turns
 from test_local_rewrite import SYNTHETIC_API_KEY
 from test_provider_tools_04392_characterization import _run
@@ -150,6 +150,8 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
             raise AssertionError(f"Pinned Prodex 0.165.1 oracle is missing: {ORACLE_01651}")
         if hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest() != ORACLE_01651_SHA256:
             raise AssertionError("The Prodex oracle does not match pinned release 0.165.1")
+        if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
+            raise AssertionError("The Prodex oracle does not match pinned release 0.439.2")
         if not MODEX.is_file():
             raise AssertionError(f"Build Modex first: {MODEX}")
 
@@ -384,6 +386,212 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
         ])
         self.assertEqual(result["output"][1]["content"][0]["text"], "Before result.")
         self.assertEqual(result["output"][2]["content"][0]["text"], "After result.")
+
+    def test_search_result_sources_project_release_fields(self):
+        sources = [
+            {"url": "https://example.test/one", "title": "One", "page_age": "today",
+             "type": "future_result"},
+            {"url": "https://example.test/no-title", "title": 17},
+            {"url": 7, "title": "invalid URL"},
+            {"title": "missing URL"},
+            {"url": "https://example.test/no-type"},
+            "not an object",
+        ]
+        result_block = {
+            "type": "web_search_tool_result", "tool_use_id": "search_sources",
+            "content": sources,
+        }
+        expected_sources = [
+            {"type": "url", "url": "https://example.test/one", "title": "One"},
+            {"type": "url", "url": "https://example.test/no-title"},
+            {"type": "url", "url": "https://example.test/no-type"},
+        ]
+
+        for stream in (False, True):
+            request = _request(stream=stream)
+            if stream:
+                reply = _stream([
+                    {"type": "message_start", "message": {
+                        "id": "msg_sources", "model": "deepseek-chat",
+                        "usage": {"input_tokens": 1},
+                    }},
+                    {"type": "content_block_start", "index": 0, "content_block": {
+                        "type": "server_tool_use", "id": "search_sources", "name": "web_search",
+                        "input": {"query": "synthetic"},
+                    }},
+                    {"type": "content_block_start", "index": 1, "content_block": result_block},
+                    {"type": "content_block_stop", "index": 1},
+                    {"type": "message_delta", "delta": {"stop_reason": "end_turn"},
+                     "usage": {"output_tokens": 1}},
+                    {"type": "message_stop"},
+                ])
+            else:
+                reply = _buffered_reply([
+                    {"type": "server_tool_use", "id": "search_sources", "name": "web_search",
+                     "input": {"query": "synthetic"}},
+                    result_block,
+                    {"type": "text", "text": "done"},
+                ], stop_reason="end_turn")
+            normalized = []
+            request_bodies = []
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                posts, responses = observe_turns(binary, [request], [reply])
+                self.assertEqual(len(posts), 1)
+                self.assertEqual(len(responses), 1)
+                self.assertEqual(responses[0]["status"], 200)
+                self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+                request_bodies.append(json.loads(posts[0]["body"]))
+                if stream:
+                    events = _events(bytes.fromhex(responses[0]["body"]))
+                    self.assertEqual(events[-1][0], "response.completed")
+                    response = events[-1][1]["response"]
+                    normalized.append(events)
+                else:
+                    response = _normalize(_json_body(responses[0]))
+                    normalized.append(response)
+                search = next(item for item in response["output"]
+                              if item["type"] == "web_search_call")
+                self.assertEqual(search["action"]["sources"], expected_sources)
+            self.assertEqual(normalized[1:], normalized[:1] * 2)
+            self.assertEqual(request_bodies[1:], request_bodies[:1] * 2)
+
+    def test_search_result_content_shapes_match_both_releases(self):
+        cases = (
+            ("missing", False, None),
+            ("empty array", True, []),
+            ("null", True, None),
+            ("string", True, "synthetic result"),
+            ("object", True, {"url": "https://example.test/ignored"}),
+        )
+        search_id = "search_content_shape"
+        for label, include_content, content in cases:
+            result = {"type": "web_search_tool_result", "tool_use_id": search_id}
+            if include_content:
+                result["content"] = content
+            for stream in (False, True):
+                with self.subTest(content=label, stream=stream):
+                    request = _request(stream=stream)
+                    if stream:
+                        reply = _stream([
+                            {"type": "message_start", "message": {
+                                "id": "msg_content_shape", "model": "deepseek-chat",
+                                "usage": {"input_tokens": 1},
+                            }},
+                            {"type": "content_block_start", "index": 0, "content_block": {
+                                "type": "server_tool_use", "id": search_id, "name": "web_search",
+                                "input": {"query": "synthetic"},
+                            }},
+                            {"type": "content_block_start", "index": 1, "content_block": result},
+                            {"type": "content_block_stop", "index": 1},
+                            {"type": "message_delta", "delta": {"stop_reason": "end_turn"},
+                             "usage": {"output_tokens": 1}},
+                            {"type": "message_stop"},
+                        ])
+                    else:
+                        reply = _buffered_reply([
+                            {"type": "server_tool_use", "id": search_id, "name": "web_search",
+                             "input": {"query": "synthetic"}},
+                            result,
+                            {"type": "text", "text": "done"},
+                        ], stop_reason="end_turn")
+                    normalized = []
+                    request_bodies = []
+                    for binary in (ORACLE_01651, ORACLE, MODEX):
+                        posts, responses = observe_turns(binary, [request], [reply])
+                        self.assertEqual(len(posts), 1)
+                        self.assertEqual(len(responses), 1)
+                        self.assertEqual(responses[0]["status"], 200)
+                        self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+                        request_bodies.append(json.loads(posts[0]["body"]))
+                        if stream:
+                            events = _events(bytes.fromhex(responses[0]["body"]))
+                            self.assertEqual(events[-1][0], "response.completed")
+                            response = events[-1][1]["response"]
+                            normalized.append(events)
+                        else:
+                            response = _normalize(_json_body(responses[0]))
+                            normalized.append(response)
+                        search = next(item for item in response["output"]
+                                      if item["type"] == "web_search_call")
+                        self.assertEqual(search["action"]["sources"], [])
+                    self.assertEqual(normalized[1:], normalized[:1] * 2)
+                    self.assertEqual(request_bodies[1:], request_bodies[:1] * 2)
+
+    def test_mixed_tool_search_result_without_content_matches_both_releases(self):
+        content = [
+            {"type": "server_tool_use", "id": "search_mixed_content", "name": "web_search",
+             "input": {"query": "synthetic"}},
+            {"type": "web_search_tool_result", "tool_use_id": "search_mixed_content",
+             "content": None},
+            {"type": "tool_use", "id": "call_lookup", "name": "lookup", "input": {}},
+        ]
+        request = _request()
+        reply = _buffered_reply(content)
+        outcomes = []
+        request_bodies = []
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            posts, responses = observe_turns(binary, [request], [reply])
+            self.assertEqual(len(posts), 1)
+            self.assertEqual(len(responses), 1)
+            self.assertEqual(responses[0]["status"], 200)
+            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+            request_bodies.append(json.loads(posts[0]["body"]))
+            response = _normalize(_json_body(responses[0]))
+            search = next(item for item in response["output"]
+                          if item["type"] == "web_search_call")
+            self.assertEqual(search["action"]["sources"], [])
+            outcomes.append(response)
+        self.assertEqual(outcomes[1:], outcomes[:1] * 2)
+        self.assertEqual(request_bodies[1:], request_bodies[:1] * 2)
+
+    def test_invalid_utf8_search_result_matches_both_releases(self):
+        search_id = "search_invalid_utf8"
+        result = {"type": "web_search_tool_result", "tool_use_id": search_id,
+                  "content": [{"type": "web_search_result", "url": "https://example.test/one",
+                               "title": "invalid-utf8-marker"}]}
+        events = [
+            {"type": "message_start", "message": {
+                "id": "msg_invalid_utf8", "model": "deepseek-chat", "usage": {"input_tokens": 1},
+            }},
+            {"type": "content_block_start", "index": 0, "content_block": {
+                "type": "server_tool_use", "id": search_id, "name": "web_search",
+                "input": {"query": "synthetic"},
+            }},
+            {"type": "content_block_start", "index": 1, "content_block": result},
+            {"type": "message_stop"},
+        ]
+
+        for stream in (False, True):
+            request = _request(stream=stream)
+            if stream:
+                reply = _stream(events)
+            else:
+                reply = _buffered_reply([
+                    {"type": "server_tool_use", "id": search_id, "name": "web_search",
+                     "input": {"query": "synthetic"}},
+                    result,
+                    {"type": "text", "text": "done"},
+                ], stop_reason="end_turn")
+            reply["body"] = reply["body"].replace(b'"invalid-utf8-marker"', b'"\xff"')
+            outcomes = []
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                posts, responses = observe_turns(binary, [request], [reply])
+                self.assertEqual(len(posts), 1)
+                self.assertEqual(len(responses), 1)
+                if stream:
+                    self.assertEqual(responses[0]["status"], 200)
+                    events = _events(bytes.fromhex(responses[0]["body"]))
+                    self.assertEqual(events[-1][0], "response.failed")
+                    self.assertEqual(events[-1][1]["response"]["error"], {
+                        "code": "provider_stream_error", "message": "stream did not contain valid UTF-8",
+                    })
+                    outcomes.append(events)
+                else:
+                    self.assertEqual(responses[0]["status"], 502)
+                    self.assertEqual(bytes.fromhex(responses[0]["body"]),
+                                     b"provider response could not be processed")
+                    outcomes.append((responses[0]["status"], responses[0]["body"]))
+            self.assertEqual(outcomes[1:], outcomes[:1] * 2)
 
     def test_two_mixed_search_pairs_with_reused_id_keep_individual_queries_and_sources(self):
         content = [

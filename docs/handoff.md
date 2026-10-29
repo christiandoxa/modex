@@ -1,5 +1,22 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Anthropic web-search source projection now matches selected 0.165.1 and
+0.439.2 buffered and streamed responses: entries with string URLs are kept,
+string titles are included, and other entries and fields are ignored. Invalid
+UTF-8 retains the tested release failures. Session parsing also matches twelve
+two-release controls for split `--limit` errors and later arguments. After
+integration with the Super and Gateway changes, the production build, native
+session parser, 26 provider/session/Gateway process tests, three Super process
+tests, five CI-routing tests, dependency audit and test census passed.
+The final combined build also passed four provider process controls covering
+missing, empty and non-array source content and malformed UTF-8, and two
+session/Gateway parser controls. The worker's full mixed-tool and 0.439.2
+provider suites passed 20 and 22 tests respectively after the final guard fix.
+The two newly cross-release-dependent modules run after both oracles in Fast
+and Full CI. Evidence: `docs/evidence/baseline-0.165.1/anthropic-mixed-tools.md`
+and `docs/evidence/session-limit-error-precedence-01651-04392.md`. Gateway
+startup, managed session launch and full provider behavior remain incomplete.
+
 Gateway option parsing now treats a lone `-` as a value. The invalid-provider
 diagnostic and the missing-value control match the checksum-pinned 0.165.1 and
 0.439.2 releases. The combined production build, native Gateway check, four

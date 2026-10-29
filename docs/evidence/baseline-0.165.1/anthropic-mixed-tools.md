@@ -57,3 +57,37 @@ in streams, interleaved
 search events, malformed provider responses beyond the tested schema rejection,
 other release targets, and general Anthropic parity remain open. No contract or
 release qualification is promoted.
+
+## Web-search source projection
+
+The pinned 0.165.1 request kernel projects each web-search result from a string
+`url` and an optional string `title`. It drops entries without a string URL and
+ignores extra fields, non-string titles, and non-object entries. The same
+behavior is present in the frozen 0.439.2 kernel. Modex applies this projection
+to both buffered and streamed results instead of rejecting those provider
+shapes.
+
+Both pinned kernels also produce an empty source list when result `content` is
+missing, empty, or not an array. Modex now keeps the block and matching search
+ID checks but accepts missing, empty-array, null, string, and object content in
+both buffered validation branches and in streaming.
+
+`test_search_result_sources_project_release_fields` compares full production
+Super responses and captured Anthropic requests against checksum-verified
+0.165.1 and 0.439.2 executables. Its synthetic source list covers extra fields,
+an unknown type, missing and non-string URLs, a non-string title, and a
+non-object entry. `test_search_result_content_shapes_match_both_releases` covers
+the five content shapes through buffered and streamed production paths;
+`test_mixed_tool_search_result_without_content_matches_both_releases` exercises
+the mixed function/search validator branch. `test_invalid_utf8_search_result_matches_both_releases`
+retains malformed UTF-8 controls: buffered responses return 502, while streams
+emit `response.failed` with `stream did not contain valid UTF-8` in all three
+processes. Tests use loopback providers, synthetic keys, and isolated homes.
+
+Latest Linux x86-64 validation: `make build`; the mixed-tool characterization
+passed 20 tests and the 0.439.2 provider characterization passed 22 tests. The
+30-test 0.165.1 stream characterization passed in the preceding provider
+change; this follow-up reruns the malformed content shapes against both
+releases. The 71-file dependency audit and `git diff --check` passed. These
+process checks do not qualify other release targets or general Anthropic
+parity.

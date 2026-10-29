@@ -33,6 +33,12 @@ SUPER_VALUE_OPTIONS = (
     "--rollout-budget-prefill-weight", "--current-time-reminder-interval",
     "--current-time-clock-source",
 )
+SUPER_REASONING_EFFORT_INVALID_VALUES = (
+    " INSTANT ", "instant", "İNSTANT", 'bad"quote', "bad\\quote", "bad💡quote",
+    "bad\x1b[31mquote\x1b[0m",
+) + tuple("bad" + chr(code) + "quote" for code in range(1, 32)) + tuple(
+    "bad" + chr(code) + "quote" for code in range(127, 160)
+)
 SUPER_POSITIONAL_VALUE_CASES = (
     ("provider", ("super", "exec", "--provider")),
     ("api-key", ("super", "exec", "--api-key")),
@@ -182,12 +188,10 @@ class HistoricalSuperProviderCliTests(unittest.TestCase):
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
     def test_sub_agent_reasoning_effort_matches_clap(self):
-        cases = (
-            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort", "HIGH", "--help"], 0),
-            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort", " INSTANT "], 2),
-            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort=instant"], 2),
-            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort", "İNSTANT"], 2),
-        )
+        option = "--sub-agent-model-reasoning-effort"
+        cases = [(["super", "--sub-agent", option, "HIGH", "--help"], 0)]
+        cases.extend(((["super", "--sub-agent", option, value], 2)
+                      for value in SUPER_REASONING_EFFORT_INVALID_VALUES))
         for arguments, expected_code in cases:
             with self.subTest(arguments=arguments):
                 baseline, baseline_created = self._run(ORACLE, arguments, "prodex", "04392-super-effort")

@@ -11,6 +11,7 @@ from test_cli import (
     SUPER_INTEGER_ERROR_CASES,
     SUPER_NEGATIVE_INTEGER_CASES,
     SUPER_POSITIONAL_VALUE_CASES,
+    SUPER_REASONING_EFFORT_INVALID_VALUES,
     SUPER_SUB_AGENT_CONCURRENCY_ACCEPT_CASES,
     SUPER_SUB_AGENT_CONCURRENCY_ERROR_CASES,
     SUPER_VALUE_OPTIONS,
@@ -167,12 +168,10 @@ class SuperProviderCli01651Tests(unittest.TestCase):
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
     def test_sub_agent_reasoning_effort_matches_clap(self):
-        cases = (
-            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort", "HIGH", "--help"], 0),
-            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort", " INSTANT "], 2),
-            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort=instant"], 2),
-            (["super", "--sub-agent", "--sub-agent-model-reasoning-effort", "İNSTANT"], 2),
-        )
+        option = "--sub-agent-model-reasoning-effort"
+        cases = [(["super", "--sub-agent", option, "HIGH", "--help"], 0)]
+        cases.extend(((["super", "--sub-agent", option, value], 2)
+                      for value in SUPER_REASONING_EFFORT_INVALID_VALUES))
         for arguments, expected_code in cases:
             with self.subTest(arguments=arguments):
                 baseline, baseline_created = isolated_run(ORACLE, arguments, "prodex", "01651-super-effort")

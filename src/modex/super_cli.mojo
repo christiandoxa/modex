@@ -3,7 +3,6 @@
 from std.collections import List
 
 from .cli import session_cli_error
-from .json import quote_json
 from .log_operational import valid_url_authority
 from .super_launch import run_clean_deepseek_super
 from .text import ascii_lower, trim_text, unsigned_value
@@ -77,6 +76,57 @@ def _typed_value_error(name: String, value: String, reason: String, clap_diagnos
     return Error(reason)
 
 
+def _hex_codepoint(value: Int) -> String:
+    var digits = String()
+    var remaining = value
+    while remaining > 0:
+        var digit = remaining % 16
+        digits = String(chr(48 + digit if digit < 10 else 87 + digit)) + digits
+        remaining = remaining // 16
+    return String("0") if not digits else digits^
+
+
+def _debug_quoted(value: String) -> String:
+    # shortcut: non-ASCII nonprintables remain literal; add a version-pinned table for full Rust Debug Unicode parity.
+    var output = String("\"")
+    for character in value.codepoints():
+        var code = Int(character)
+        if code == 0: output += "\\0"
+        elif code == 9: output += "\\t"
+        elif code == 10: output += "\\n"
+        elif code == 13: output += "\\r"
+        elif code == 34: output += "\\\""
+        elif code == 92: output += "\\\\"
+        elif code < 32 or 127 <= code <= 159:
+            output += "\\u{" + _hex_codepoint(code) + "}"
+        else:
+            output += chr(code)
+    return output + "\""
+
+
+def _clap_value(value: String) -> String:
+    # shortcut: OSC sequences are not stripped; add OSC termination handling if ANSI diagnostics need full parity.
+    var output = String()
+    var escape = False
+    var csi = False
+    for character in value.codepoints():
+        var code = Int(character)
+        if csi:
+            if 0x40 <= code <= 0x7E: csi = False
+            continue
+        if escape:
+            escape = False
+            if code == 91: csi = True
+            continue
+        if code == 27:
+            escape = True
+        elif code == 127 or (code < 32 and code not in [9, 10, 12, 13]):
+            continue
+        else:
+            output += chr(code)
+    return output^
+
+
 def _validate_unsigned_value(name: String, value: String, parsed_value: String, clap_diagnostic: Bool) raises:
     try:
         _ = unsigned_value(parsed_value)
@@ -145,7 +195,7 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
     if name == "--sub-agent-model-reasoning-effort":
         var effort = ascii_lower(trim_text(value))
         if effort not in ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]:
-            raise _typed_value_error(name, value, "invalid sub-agent reasoning effort: expected none, minimal, low, medium, high, xhigh, max, or ultra, got " + quote_json(effort), clap_diagnostic)
+            raise _typed_value_error(name, _clap_value(value), "invalid sub-agent reasoning effort: expected none, minimal, low, medium, high, xhigh, max, or ultra, got " + _debug_quoted(effort), clap_diagnostic)
         return effort^
     if name == "--web-search" and value not in ["disabled", "cached", "indexed", "live"]:
         raise Error("invalid --web-search: supported values are disabled, cached, indexed, live")

@@ -39,9 +39,8 @@ python3 scripts/ci/run-unittest.py test_runtime_slow_partial.py
 ```
 
 The earlier candidate observation is retained above as a reproducible gap. The
-current regression checks derive expected behavior from both releases and do
-not require Modex to reproduce that gap: the header case may answer during the
-hold or after the partial clients close, but it must complete with 200.
+current regression requires Modex to match both releases and answer during the
+hold for the tested header case.
 
 ## Frozen source trace and expanded controls
 
@@ -72,7 +71,7 @@ against both checksum-pinned releases and Modex. It covers eight incomplete
 headers under default and one-worker settings, sixteen incomplete bodies,
 client half-close, a valid header split across five sends, and the declared
 body limit. It first requires the two frozen releases to agree. For Modex, the
-header case accepts either response timing while requiring eventual 200; the
+header case requires the release response during the hold; the
 body case permits either timing and either no response or 502 on the cancelled
 request, while requiring the queued healthy request to finish with 200. The
 fragmented-header and body-limit cases require their release status and no
@@ -106,3 +105,9 @@ scenario. This confirms the tested candidate's behavior for these scenarios;
 it does not qualify the other release targets or establish full runtime
 parity. The older prototype result above remains as historical evidence of
 the original gap.
+
+An independent candidate run returned 200 during the partial-header hold in
+5 ms, matching the release behavior. In the sixteen-partial-body control, the
+healthy request waited for cancellation in both, but Modex produced no response
+for the half-closed partial request while both releases returned 502. This
+truncated-body response remains a reproducible gap.

@@ -95,8 +95,7 @@ class RuntimeSlowPartialTests(unittest.TestCase):
                 }
                 signature, modex = self._compare("slow-partial", environment)
                 self.assertEqual(signature, (True, 200, 200))
-                self.assertIn(modex["before_release_status"], (None, 200))
-                self.assertEqual(modex["status"], 200)
+                self.assertEqual(self._signature("slow-partial", modex), signature)
 
     def test_incomplete_bodies_hold_workers_until_client_cancellation(self):
         signature, modex = self._compare("slow-partial-body")

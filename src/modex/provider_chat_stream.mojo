@@ -189,7 +189,7 @@ struct DeepSeekChatState:
                 message = doc.string(message_node)
             return self.fail(code, message)
         if kind == "message_start":
-            # shortcut: message_start metadata is ignored, translate fields as oracle cases require.
+            # shortcut: late/repeated start metadata is missing; upgrade after source/process order is traced.
             if self.completed and not self.anthropic_stream_terminal:
                 var output = List[String]()
                 var message = doc.get(doc.root, "message")
@@ -247,7 +247,6 @@ struct DeepSeekChatState:
                 return self.finish_anthropic_search(doc, block)
             return List[String]()
         if kind == "content_block_delta":
-            if not self.anthropic_message_started: return List[String]()
             var event_index = json_unsigned(doc, doc.get(doc.root, "index"))
             var block_index = UInt64(0)
             if event_index: block_index = event_index.value()
@@ -303,7 +302,7 @@ struct DeepSeekChatState:
                 _ = self.anthropic_open_result_indices.pop(block_index)
             return List[String]()
         if kind == "message_delta":
-            if not self.anthropic_message_started: return List[String]()
+            if not self.anthropic_message_started and not self.created: return List[String]()
             var delta = doc.get(doc.root, "delta")
             var stop_reason = doc.get(delta, "stop_reason")
             # The release reads string stop_reason only and ignores stop_sequence.

@@ -153,6 +153,133 @@ class ProviderStreamCrossReleaseCharacterizationTests(unittest.TestCase):
             self.assertEqual(_normalized_events(observed["response_body"]), reference_events)
             self.assertEqual(observed["upstream"][0]["body"], observations[0]["upstream"][0]["body"])
 
+    def test_anthropic_out_of_order_stream_matrix_and_start_metadata_gap(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": True,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        start = lambda ident, tokens: {
+            "type": "message_start",
+            "message": {
+                "id": ident,
+                "role": "assistant",
+                "model": "model-" + ident,
+                "usage": {"input_tokens": tokens, "output_tokens": 0},
+            },
+        }
+        text_block = {"type": "content_block_start", "index": 0,
+                      "content_block": {"type": "text", "text": ""}}
+        text_delta = {"type": "content_block_delta", "index": 0,
+                      "delta": {"type": "text_delta", "text": "synthetic delta"}}
+        message_delta = {
+            "type": "message_delta",
+            "delta": {"stop_reason": "end_turn"},
+            "usage": {"output_tokens": 5},
+        }
+        message_stop = {"type": "message_stop"}
+        cases = (
+            (
+                "canonical control",
+                [start("msg_canonical", 3), text_block, text_delta, message_delta, message_stop],
+                True,
+                None,
+            ),
+            (
+                "pre-start text delta without message_start",
+                [text_block, text_delta, message_delta, message_stop],
+                True,
+                None,
+            ),
+            (
+                "pre-start function arguments fail without a name",
+                [
+                    {"type": "content_block_start", "index": 0, "content_block": {
+                        "type": "tool_use", "id": "toolu_pre", "name": "lookup", "input": {},
+                    }},
+                    {"type": "content_block_delta", "index": 0, "delta": {
+                        "type": "input_json_delta", "partial_json": "{\"q\":1}",
+                    }},
+                    {"type": "message_delta", "delta": {"stop_reason": "tool_use"},
+                     "usage": {"output_tokens": 5}},
+                    message_stop,
+                ],
+                True,
+                None,
+            ),
+            (
+                "late start after text",
+                [text_block, text_delta, start("msg_late", 3), message_delta, message_stop],
+                False,
+                ("msg_late", "model-msg_late", {"input_tokens": 3, "output_tokens": 5, "total_tokens": 8}),
+            ),
+            (
+                "late start after message_delta",
+                [text_block, text_delta, message_delta, start("msg_late", 3), message_stop],
+                False,
+                ("msg_late", "model-msg_late", {"input_tokens": 3, "output_tokens": 0, "total_tokens": 3}),
+            ),
+            (
+                "duplicate starts before content",
+                [start("msg_a", 3), start("msg_b", 9), text_block, text_delta, message_delta, message_stop],
+                False,
+                ("msg_b", "model-msg_b", {"input_tokens": 9, "output_tokens": 5, "total_tokens": 14}),
+            ),
+            (
+                "duplicate starts after content",
+                [text_block, text_delta, start("msg_a", 3), start("msg_b", 9), message_delta, message_stop],
+                False,
+                ("msg_a", "model-msg_b", {"input_tokens": 9, "output_tokens": 5, "total_tokens": 14}),
+            ),
+            (
+                "empty block before start",
+                [text_block, start("msg_empty", 3), message_delta, message_stop],
+                False,
+                ("msg_empty", "model-msg_empty", {"input_tokens": 3, "output_tokens": 5, "total_tokens": 8}),
+            ),
+            (
+                "custom generated-prefix ID followed by another start",
+                [text_block, text_delta, start("resp_deepseek_custom", 3), start("msg_next", 9), message_delta, message_stop],
+                False,
+                ("msg_next", "model-msg_next", {"input_tokens": 9, "output_tokens": 5, "total_tokens": 14}),
+            ),
+        )
+        for label, events, matches_modex, release_final in cases:
+            with self.subTest(case=label):
+                observations = [
+                    _run(binary, request, scenario="anthropic-custom-events", anthropic_events=events)
+                    for binary in (self.oracle_01651, self.oracle_04392, MODEX)
+                ]
+                for observed in observations:
+                    self.assertEqual((observed["exit_code"], observed["status"]), (0, 200))
+                    self.assertEqual(len(observed["upstream"]), 1)
+                    self.assertEqual(observed["upstream"][0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual(observed["state"]["leftovers"], [])
+
+                normalized = [
+                    _normalize_fallback_tool_call_ids(_normalized_events(item["response_body"]))
+                    for item in observations
+                ]
+                self.assertEqual(normalized[0], normalized[1])
+                self.assertEqual(observations[1]["upstream"][0]["body"], observations[0]["upstream"][0]["body"])
+                if matches_modex:
+                    self.assertEqual(normalized[2], normalized[0])
+                else:
+                    self.assertNotEqual(normalized[2], normalized[0])
+                    release_response = normalized[0][-1][1]["response"]
+                    modex_response = normalized[2][-1][1]["response"]
+                    self.assertEqual(
+                        (release_response["id"], release_response["model"], release_response["usage"]),
+                        release_final,
+                    )
+                    self.assertEqual(modex_response["id"], "<generated-id>")
+                    self.assertNotIn("model", modex_response)
+                    self.assertEqual(
+                        modex_response["usage"],
+                        {"input_tokens": 0, "output_tokens": 5, "total_tokens": 5},
+                    )
+
     def test_anthropic_tool_use_name_validation_matches_both_releases(self):
         request = {
             "model": "deepseek-chat",

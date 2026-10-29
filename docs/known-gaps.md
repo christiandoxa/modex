@@ -207,9 +207,16 @@ event behavior remain unverified. Broader request/message shapes, tool-result/hi
 metadata/citation behavior, TLS/DNS/proxies, resource behavior and full
 stream/error equivalence remain open. The tested ordered search/result/text
 shape and text-only or empty streams with a final `message_stop` are supported;
-other Anthropic event orders remain unverified. Selected initial text-block
-values are ignored as in the 0.165.1 release; subsequent text deltas remain
-covered by the production comparison. The exact empty-string request is rejected with the observed 400
+other Anthropic event orders remain unverified. Selected text and function
+argument deltas before `message_start`, plus a standalone pre-start
+`message_delta`, now match both pinned processes. Late and repeated
+`message_start` metadata remains a measured difference: the releases update
+response ID/model/input usage for tested out-of-order cases while Modex retains
+its fallback ID and usage. See
+`docs/evidence/baseline-0.165.1/anthropic-stream-message-delta-order.md`.
+Selected initial text-block values are ignored as in the 0.165.1 release;
+subsequent text deltas remain covered by the production comparison. The exact
+empty-string request is rejected with the observed 400
 before POST, while whitespace-only input is accepted. See
 `docs/evidence/anthropic-web-search-04392.md` and
 `docs/evidence/baseline-0.165.1/anthropic-response-shapes.md`.

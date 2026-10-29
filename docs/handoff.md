@@ -30,14 +30,14 @@ this result. Evidence: `docs/evidence/baseline-0.165.1/super-sub-agent-reasoning
 
 ## Anthropic stream message-delta ordering (2026-10-30)
 
-Modex now ignores `message_delta` until an Anthropic `message_start` has been
-observed. A synthetic out-of-order stream with only `message_delta` and
-`message_stop` previously produced `response.created`, finish metadata, and
-usage in Modex; checksum-verified Prodex 0.165.1 and 0.439.2 returned only an
-empty `response.completed`. A three-process comparison covers both releases
-and Modex, and the existing valid stop-reason matrix remains green. The build,
-production import audit, test census, and diff check pass. This qualifies only
-this Linux x86-64 event order. See
+Modex now ignores a standalone `message_delta` before `message_start`, while
+translating selected text and function-argument deltas that arrive before
+`message_start`. The cross-release process matrix matches both releases for
+those cases, the standalone delta case, and its function-name error path.
+Late and repeated `message_start` events still expose ID/model/usage differences
+in Modex; the exact event matrix records these as gaps rather than parity. The
+source trace, build, focused process tests, production import audit, test
+census, and diff check are in
 `docs/evidence/baseline-0.165.1/anthropic-stream-message-delta-order.md`.
 
 ## Buffered first-choice history shaping (2026-10-30)

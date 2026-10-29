@@ -70,6 +70,22 @@ a focused test passed with generic `PRODEX_ORACLE` deliberately set to 0.165.1.
 See `docs/evidence/baseline-0.439.2/local-relay-expect-framing.md` and
 `docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.
 
+## Identical local relay Expect duplicates (2026-10-30)
+
+The TinyHTTP-compatible production path now accepts repeated identical
+`Expect: 100-continue` values and sends one interim 100. The shared parser's
+default remains strict. Synthetic process comparisons cover both pinned
+releases, a valid-first mixed expectation, the reversed mixed order, invalid
+targets, and ambiguous framing. Modex keeps mixed values fail-closed: a valid
+`100-continue` followed by `100-wait` returns 417 without dispatch, while both
+releases use the first field and dispatch. A valid chunked body with both
+`Content-Length` and `Transfer-Encoding` remains rejected by Modex before body
+read or provider I/O, although both releases dispatch it. Invalid-target
+requests with unread nonzero bodies still close the Modex client socket after
+400. These differences remain visible. Only Linux x86-64 is qualified; all six
+release targets stay in the denominator. Evidence:
+`docs/evidence/baseline-0.165.1/local-relay-identical-expect.md`.
+
 ## Anthropic web-search ID handling (2026-10-30)
 
 Native Anthropic streaming now uses the releases' `web_search_<index>` fallback

@@ -42,7 +42,7 @@ Content-Length: 0\r\n\r\n
 ```
 
 Both controls run against both checksum-pinned releases and Modex in
-`test_duplicate_expect_and_framing_rejections_remain_fail_closed`; the former
+`test_identical_expectation_duplicates_match_and_ambiguous_framing_stays_fail_closed`; the former
 Modex-only 400 and 502 expectations were stale.
 
 Only lexically identical duplicate lengths after TinyHTTP-compatible trimming
@@ -100,6 +100,6 @@ Reproduce the Expect control on both releases and Modex with:
 
 ```sh
 MODEX_BINARY="$PWD/build/modex" PYTHONPATH=tests rtk python3 -m unittest \
-  test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_duplicate_expect_and_framing_rejections_remain_fail_closed \
-  test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_duplicate_expect_and_framing_rejections_remain_fail_closed
+  test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_identical_expectation_duplicates_match_and_ambiguous_framing_stays_fail_closed \
+  test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_identical_expectation_duplicates_match_and_ambiguous_framing_stays_fail_closed
 ```

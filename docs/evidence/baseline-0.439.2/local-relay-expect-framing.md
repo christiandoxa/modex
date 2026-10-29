@@ -69,8 +69,8 @@ control:
 PRODEX_ORACLE_04392="$HOME/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu" \
 PRODEX_ORACLE="$HOME/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu" \
 MODEX_BINARY="$PWD/build/modex" PYTHONPATH=tests rtk python3 -m unittest -v \
-  test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_duplicate_expect_and_framing_rejections_remain_fail_closed \
-  test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_duplicate_expect_and_framing_rejections_remain_fail_closed \
+  test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_identical_expectation_duplicates_match_and_ambiguous_framing_stays_fail_closed \
+  test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_identical_expectation_duplicates_match_and_ambiguous_framing_stays_fail_closed \
   test_loopback_header_whitespace.LoopbackHeaderWhitespaceTests.test_ambiguous_framing_release_dispatch_remains_modex_fail_closed
 ```
 

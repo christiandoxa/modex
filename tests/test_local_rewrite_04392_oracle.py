@@ -175,9 +175,9 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
         with patch.object(transport, "ORACLE", ORACLE):
             transport.LocalRewrite01651OracleTests.test_connection_keep_alive_selection_matches_pinned_tinyhttp_rules(self)
 
-    def test_duplicate_expect_and_framing_rejections_remain_fail_closed(self):
+    def test_identical_expectation_duplicates_match_and_ambiguous_framing_stays_fail_closed(self):
         with patch.object(transport, "ORACLE", ORACLE):
-            transport.LocalRewrite01651OracleTests.test_duplicate_expect_and_framing_rejections_remain_fail_closed(self)
+            transport.LocalRewrite01651OracleTests.test_identical_expectation_duplicates_match_and_ambiguous_framing_stays_fail_closed(self)
 
     def test_non_websocket_connection_upgrade_reads_through_eof(self):
         upstream = transport.Upstream()

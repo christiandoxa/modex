@@ -762,7 +762,10 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
                 raise Error("invalid HTTP host header")
             has_host = True
         elif lower == "expect":
-            if expect_continue or value.lower() != "100-continue":
+            # Identical continue values do not change framing; mixed values stay fail-closed.
+            if expect_continue and tiny_http_request_line_compat and value.lower() == "100-continue":
+                pass
+            elif expect_continue or value.lower() != "100-continue":
                 if defer_expectation_errors:
                     unsupported_expectation = True
                 else:

@@ -259,6 +259,31 @@ class LoopbackHTTPServerTests(unittest.TestCase):
                 self.assertEqual(status(response), 400)
                 self.assertIn("duplicate HTTP content length", stdout)
 
+    def test_tiny_http_compat_accepts_only_duplicate_continue_expectations(self):
+        repeated = (
+            b"POST / HTTP/1.1\r\nHost: local\r\nContent-Length: 0\r\n"
+            b"Expect: 100-continue\r\nexpect: 100-continue\r\n\r\n"
+        )
+        process, client = start("tiny-http-compat")
+        client.sendall(repeated)
+        response, _ = finish(process, client)
+        self.assertTrue(response.startswith(b"HTTP/1.1 100 Continue\r\n\r\n"), response)
+        self.assertIn(b"HTTP/1.1 200 OK\r\n", response)
+
+        for expectations in (
+            b"Expect: 100-continue\r\nExpect: 100-wait\r\n",
+            b"Expect: 100-wait\r\nExpect: 100-continue\r\n",
+        ):
+            with self.subTest(expectations=expectations):
+                process, client = start("tiny-http-compat")
+                client.sendall(
+                    b"POST / HTTP/1.1\r\nHost: local\r\nContent-Length: 0\r\n"
+                    + expectations + b"\r\n"
+                )
+                response, stdout = finish(process, client)
+                self.assertEqual(status(response), 400)
+                self.assertIn("unsupported HTTP expectation", stdout)
+
     def test_default_loopback_parser_keeps_upgrade_headers_rejected(self):
         process, client = start("echo")
         client.sendall(

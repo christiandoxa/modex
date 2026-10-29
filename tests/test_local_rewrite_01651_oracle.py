@@ -2982,7 +2982,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
     def test_large_request_heads_use_bounded_linear_capture(self):
         assert_large_request_head_cases(self, ORACLE, MODEX)
 
-    def test_duplicate_expect_and_framing_rejections_remain_fail_closed(self):
+    def test_identical_expectation_duplicates_match_and_ambiguous_framing_stays_fail_closed(self):
         single_valid_expect = expectation_request_case(
             "single_valid_expect_control",
             ["100-continue"],
@@ -2994,6 +2994,10 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
         mixed_expect = expectation_request_case(
             "valid_expect_before_unknown_duplicate",
             ["100-continue", "100-wait"],
+        )
+        mixed_expect_reverse = expectation_request_case(
+            "unknown_expect_before_valid_duplicate",
+            ["100-wait", "100-continue"],
         )
         invalid_target_duplicate = expectation_request_case(
             "invalid_target_duplicate_valid_expect",
@@ -3071,15 +3075,19 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             }),
             (request_with_expect, {
                 "oracle": (200, "OK", RESPONSES_RESPONSE, [100], 1, False),
-                "modex": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (200, "OK", RESPONSES_RESPONSE, [100], 1, False),
             }),
             (mixed_expect, {
                 "oracle": (200, "OK", RESPONSES_RESPONSE, [100], 1, False),
                 "modex": (417, "Expectation Failed", b"", [], 0, True),
             }),
+            (mixed_expect_reverse, {
+                "oracle": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
+            }),
             (invalid_target_duplicate, {
                 "oracle": (400, "Bad Request", INVALID_REQUEST_TARGET_BODY, [], 0, False),
-                "modex": (417, "Expectation Failed", b"", [], 0, True),
+                "modex": (400, "Bad Request", INVALID_REQUEST_TARGET_BODY, [], 0, True),
             }),
             (conflicting_framing, {
                 "oracle": (417, "Expectation Failed", b"", [], 0, True),
@@ -3126,6 +3134,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                 with self.subTest(case=case["name"]):
                     oracle_response, oracle_records = run_probe(ORACLE, case, upstream)
                     modex_response, modex_records = run_probe(MODEX, case, upstream)
+                    upstream_bodies = {}
                     for label, response, records in (
                         ("oracle", oracle_response, oracle_records),
                         ("modex", modex_response, modex_records),
@@ -3139,6 +3148,10 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                         self.assertEqual(response["read_error"], "", label)
                         self.assertEqual(response["connection_closed"], closed, label)
                         self.assertEqual(len(records), upstream_count, label)
+                        if records:
+                            upstream_bodies[label] = records[0]["body"]
+                    if case["name"] in ("single_valid_expect_control", "duplicate_valid_expect"):
+                        self.assertEqual(upstream_bodies["oracle"], upstream_bodies["modex"])
                     if case["name"] == "unsupported_expect_framing_closes_before_pipeline_tail":
                         for response in (oracle_response, modex_response):
                             self.assertEqual(

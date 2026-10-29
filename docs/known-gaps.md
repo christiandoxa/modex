@@ -34,6 +34,12 @@ diagnostics remain incomplete. See
 `docs/evidence/baseline-0.165.1/super-cli-missing-values.md` and
 `docs/evidence/baseline-0.165.1/super-sub-agent-concurrency.md`.
 
+The production Super path also forwards tested `codex exec --cd` and `-C`
+forms, including attached path values, as both frozen releases do. The
+synthetic child verifies launch arguments but not Codex path validation or
+working-directory changes. Other Codex arguments remain guarded; see
+`docs/evidence/baseline-0.165.1/super-exec-working-directory.md`.
+
 Selected local-relay malformed syntax, method forwarding, GET response framing,
 HEAD controls, final response status phrases, WebSocket fallback and
 truncated-request behavior now match selected 0.165.1 controls. Sequential

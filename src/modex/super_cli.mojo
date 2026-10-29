@@ -262,6 +262,17 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
         if argument in ["--json", "--skip-git-repo-check", "--ephemeral"]:
             index += 1
             continue
+        if argument in ["--cd", "-C"]:
+            if index + 1 >= len(arguments):
+                return False
+            var directory = arguments[index + 1]
+            if not directory or (directory.startswith("-") and directory != "-"):
+                return False
+            index += 2
+            continue
+        if argument.startswith("--cd=") or (argument.startswith("-C") and argument.byte_length() > 2):
+            index += 1
+            continue
         if argument in ["--output-last-message", "--output-schema", "-o", "--image", "-i"]:
             if index + 1 >= len(arguments):
                 return False

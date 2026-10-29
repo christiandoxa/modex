@@ -42,6 +42,10 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
             ("exec", "--output-schema", "--config=model_provider=unsafe", "prompt"),
             ("exec", "--image"),
             ("exec", "-i", "--config=model_provider=unsafe", "prompt"),
+            ("exec", "--cd"),
+            ("exec", "-C"),
+            ("exec", "--cd", "--json", "prompt"),
+            ("exec", "-C", "--json", "prompt"),
             ("exec", "--ephemeral", "-c", "model_provider=unsafe", "prompt"),
         ):
             with self.subTest(arguments=arguments):

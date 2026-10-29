@@ -11,6 +11,14 @@ arguments and request bodies. The production build, three process tests,
 dependency audit and test census passed. Public proxy, DNS and TLS behavior
 remain open. See `docs/evidence/baseline-0.165.1/super-no-proxy.md`.
 
+The guarded DeepSeek Super path now forwards tested Codex `exec --cd` and `-C`
+arguments, including attached values, matching checksum-pinned 0.165.1 and
+0.439.2 child argv. Missing or option-looking separate values remain guarded.
+The production build, three process methods, dependency audit and test census
+passed. The synthetic Codex child records arguments but does not verify actual
+working-directory changes. See
+`docs/evidence/baseline-0.165.1/super-exec-working-directory.md`.
+
 Buffered Anthropic thinking blocks now produce reasoning items in tested
 search and mixed-tool responses. Session text reports include bound profile
 details; C0/C1 control characters are escaped, unlike the releases' raw output.

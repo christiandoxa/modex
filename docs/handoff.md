@@ -467,6 +467,13 @@ Modex's synthetic process tests reject missing, option-looking, and empty
 this external-binary check is not in the automated suite. See
 `docs/evidence/baseline-0.165.1/super-exec-value-options.md`.
 
+The same guarded path forwards `--strict-config`, `--worktree`, and a nonempty
+`--thread-source` value. Synthetic child comparisons cover both pinned Linux
+releases, including separated and attached values and a literal `--` boundary.
+The child fixture does not exercise real Codex configuration or worktree
+behavior; malformed thread-source values remain guarded before launch. See
+`docs/evidence/baseline-0.165.1/super-exec-worktree-options.md`.
+
 Buffered Anthropic thinking blocks now produce reasoning items in tested
 search and mixed-tool responses. Session text reports include bound profile
 details; C0/C1 control characters are escaped, unlike the releases' raw output.

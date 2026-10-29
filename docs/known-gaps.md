@@ -58,7 +58,9 @@ and `--disable` arguments in separated or attached-value form without adding
 them to Modex configuration. Missing and option-looking values are rejected
 before launch. A one-time local Codex CLI 0.165.0 run observed the releases
 defer these errors to Codex; this is not automated evidence. Other Codex
-arguments remain guarded. See
+arguments remain guarded. `--strict-config`, `--worktree`, and nonempty
+`--thread-source` also reach the child; their real Codex effects have not been
+verified. See `docs/evidence/baseline-0.165.1/super-exec-worktree-options.md`,
 `docs/evidence/baseline-0.165.1/super-exec-working-directory.md` and
 `docs/evidence/baseline-0.165.1/super-exec-value-options.md`.
 

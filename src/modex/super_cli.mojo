@@ -259,7 +259,7 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
         var argument = arguments[index]
         if argument == "--":
             return True
-        if argument in ["--json", "--skip-git-repo-check", "--ephemeral"]:
+        if argument in ["--json", "--skip-git-repo-check", "--ephemeral", "--strict-config", "--worktree"]:
             index += 1
             continue
         if argument in ["--cd", "-C"]:
@@ -273,7 +273,7 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
         if argument.startswith("--cd=") or (argument.startswith("-C") and argument.byte_length() > 2):
             index += 1
             continue
-        if argument in ["--add-dir", "--enable", "--disable"]:
+        if argument in ["--add-dir", "--enable", "--disable", "--thread-source"]:
             if index + 1 >= len(arguments):
                 return False
             var value = arguments[index + 1]
@@ -281,7 +281,7 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
                 return False
             index += 2
             continue
-        if argument.startswith("--add-dir=") or argument.startswith("--enable=") or argument.startswith("--disable="):
+        if argument.startswith("--add-dir=") or argument.startswith("--enable=") or argument.startswith("--disable=") or argument.startswith("--thread-source="):
             if argument.endswith("="):
                 return False
             index += 1

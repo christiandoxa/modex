@@ -53,6 +53,9 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
             ("exec", "--enable"),
             ("exec", "--enable", "--json", "prompt"),
             ("exec", "--disable=", "prompt"),
+            ("exec", "--thread-source"),
+            ("exec", "--thread-source", "--json", "prompt"),
+            ("exec", "--thread-source=", "prompt"),
         ):
             with self.subTest(arguments=arguments):
                 result, records, upstream, state = launch_support.run_private_launch(

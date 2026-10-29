@@ -71,7 +71,10 @@ def deepseek_buffered_response(
 
 def deepseek_buffered_assistant_messages(source: String) raises -> String:
     var doc = JsonDocument(source)
-    var message = doc.get(_first_choice(doc), "message")
+    var choice = _first_choice(doc)
+    if choice >= 0 and doc.nodes[choice].kind != JSON_OBJECT:
+        raise Error("DeepSeek chat response choice is not an object")
+    var message = doc.get(choice, "message")
     var content = _string_member(doc, message, "content")
     var reasoning = _string_member(doc, message, "reasoning_content")
     var calls = doc.get(message, "tool_calls")

@@ -936,8 +936,12 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         var body: String
         try:
             body = exchange.read_buffered()
-        except:
-            _reply(connection, 502, "provider response could not be processed")
+        except error:
+            # Match the releases' internal failure for a non-object first choice.
+            if String(error) == "DeepSeek chat response choice is not an object":
+                connection.respond(500, [], List[UInt8](), 30000)
+            else:
+                _reply(connection, 502, "provider response could not be processed")
             return
         var response = JsonDocument(body)
         state_ptr[].remember_binding(0, _binding_response_id(body), key_index)

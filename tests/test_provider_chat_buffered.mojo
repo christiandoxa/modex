@@ -125,9 +125,18 @@ def main() raises:
         rejected = String(error) == "buffered response exceeded safe size limit (4194304)"
     assert_true(rejected)
     assert_equal(deepseek_buffered_assistant_messages("{}"), "[]")
+    assert_equal(deepseek_buffered_assistant_messages('{"choices":[]}'), "[]")
     assert_equal(deepseek_buffered_assistant_messages('{"choices":[{"message":{"content":"","refusal":"ignored"}}]}'), "[]")
+    assert_equal(deepseek_buffered_assistant_messages('{"choices":[{"message":{"content":"first"}},null]}'), '[{"content":"first","role":"assistant"}]')
     assert_equal(deepseek_buffered_assistant_messages('{"choices":[{"message":{"content":null,"reasoning_content":" ","tool_calls":null}}]}'), '[{"content":"","reasoning_content":" ","role":"assistant","tool_calls":null}]')
     assert_equal(deepseek_buffered_assistant_messages('{"choices":[{"message":{"content":false,"reasoning_content":"think"}}]}'), '[{"content":null,"reasoning_content":"think","role":"assistant"}]')
+    for source in ['{"choices":[null,{"message":{"content":"ignored"}}]}', '{"choices":[7]}']:
+        rejected = False
+        try:
+            _ = deepseek_buffered_assistant_messages(source)
+        except error:
+            rejected = String(error) == "DeepSeek chat response choice is not an object"
+        assert_true(rejected)
     assert_equal(deepseek_buffered_assistant_messages('{"choices":[{"message":{"content":null,"tool_calls":[{"id":"original-call","function":{"name":"shell","arguments":"{\\"cmd\\":\\"cargo test\\"}"},"extra_content":{"google":{"thought_signature":"original-signature"}}}]}}]}'), '[{"content":"","role":"assistant","tool_calls":[{"extra_content":{"google":{"thought_signature":"original-signature"}},"function":{"arguments":"{\\"cmd\\":\\"rtk cargo test\\"}","name":"shell"},"id":"original-call"}]}]')
     assert_equal(deepseek_buffered_assistant_messages('{"choices":[{"message":{"content":"first"}},{"message":{"content":"ignored"}}]}'), '[{"content":"first","role":"assistant"}]')
 

@@ -1,5 +1,17 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+## Buffered first-choice history shaping (2026-10-30)
+
+The buffered DeepSeek history shaper now rejects a present non-object first
+choice. The production relay returns the same empty HTTP 500 response as
+checksum-verified Prodex 0.439.2. Missing or empty `choices` and malformed
+later choices still match the selected release cases. One synthetic real-process
+test compares both releases and Modex, and runs in fast and full cross-release
+CI. It resolves 0.439.2 through `PRODEX_ORACLE_04392` or its pinned cache
+fallback. The native buffered unit, focused process comparison, production
+dependency audit, and `git diff --check` pass. Evidence:
+`docs/evidence/baseline-0.439.2/provider-buffered-choice-history.md`.
+
 The completed `23bb0b1` local full run had 1 failure in 1,036 tests: an old
 combo-model assertion expected 0.439.2's Flash alias despite the 0.165.1 combo
 mapping. Three-process follow-up also found direct `flash` still used 0.439.2's

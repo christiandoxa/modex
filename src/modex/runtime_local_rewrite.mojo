@@ -629,7 +629,13 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                 if event.startswith("event: response.completed\r\n") and trim_text(exchange.reader.state.response_id):
                     conversations.insert(exchange.reader.state.response_id, _stream_history(exchange), namespace)
                 _write_event(connection, event)
-        connection.finish_stream(30000, include_head_terminal_chunk=True)
+        if exchange.downstream_body_incomplete:
+            # The frozen writer leaves this body open after a post-failure read error.
+            while not connection.client_disconnected():
+                sleep(0.001)
+            connection.close()
+        else:
+            connection.finish_stream(30000, include_head_terminal_chunk=True)
     except:
         exchange.close()
         connection.close()

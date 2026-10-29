@@ -161,15 +161,20 @@ and `test_provider_chat_reader`, and 66 tests across
 `test_provider_tools_04392_characterization.py`,
 `test_anthropic_stream_optional_metadata_shared.py`, and
 `test_anthropic_text_stream_04392.py` passed. These focused checks do not
-qualify other release targets or general Anthropic parity. The test
-`test_invalid_utf8_after_response_failed_records_release_open_body` records the
-remaining body-close difference: both pinned releases keep reading the chunked
-upstream body after `response.failed`, while Modex returns the same failure
-events and closes the downstream response. When the synthetic peer leaves that
-body open, the release comparisons hit the caller's read timeout. Matching that
-wait would keep reading after an invalid SSE comment and can leave the caller
-waiting if the peer never terminates its body; no unbounded drain was added.
-Broader malformed shapes and aggregate stream-state limits remain unverified.
+qualify other release targets or general Anthropic parity. The shared suite's
+`test_invalid_utf8_after_response_failed_records_release_open_body` now matches
+both pinned releases: after a closed-result delta emits `response.failed`, an
+invalid UTF-8 byte in an ignored comment line leaves all three downstream
+chunked bodies open until the five-second synthetic client timeout closes its
+socket. Additional real-process probes verify that ordinary upstream EOF after
+the failure closes the body, a 100 ms upstream idle timeout leaves it open
+until client disconnect, and an upstream reset after the failure has the same
+open-body result. An immediate client disconnect after the failure releases
+Modex promptly. Valid continuation through `message_stop` still
+closes normally. The relay waits for client disconnect without a separate
+downstream idle deadline; clients that retain their socket after a read timeout
+were not tested. These cases cover only the probed framing positions. Broader
+malformed shapes and aggregate stream-state limits remain unverified.
 
 The first four-module run reported four failures and one test-helper error.
 Three failures came from terminating a stream after `response.failed` instead

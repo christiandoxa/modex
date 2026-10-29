@@ -89,7 +89,7 @@ class UpstreamHandler(BaseHTTPRequestHandler):
                 self.wfile.flush()
                 if response.get("delay"):
                     time.sleep(response["delay"])
-            if response.get("chunked") and not response.get("hold_open"):
+            if response.get("chunked") and not response.get("hold_open") and not response.get("reset_after_body"):
                 self.wfile.write(b"0\r\n\r\n")
                 self.wfile.flush()
         except OSError:
@@ -105,6 +105,11 @@ class UpstreamHandler(BaseHTTPRequestHandler):
                 self.server.hold_timed_out.set()
             except OSError:
                 self.server.client_closed.set()
+        if response.get("reset_after_body"):
+            self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+            self.connection.close()
+            self.close_connection = True
+            return
         self.close_connection = True
 
     def log_message(self, *_args):

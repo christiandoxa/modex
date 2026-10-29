@@ -122,6 +122,7 @@ struct DeepSeekExchange(Movable):
     var read_mode: Int
     var done: Bool
     var cancelled: Bool
+    var downstream_body_incomplete: Bool
 
     var native_messages: Bool
 
@@ -144,6 +145,7 @@ struct DeepSeekExchange(Movable):
         self.read_mode = 0
         self.done = False
         self.cancelled = False
+        self.downstream_body_incomplete = False
         var bytes = List[UInt8]()
         for byte in self.body.as_bytes():
             bytes.append(byte)
@@ -239,10 +241,16 @@ struct DeepSeekExchange(Movable):
             self._finish()
             raise Error("DeepSeek event reader requires a text/event-stream response")
         self.read_mode = 2
+        var provider_stream_read_error = False
         try:
             while True:
                 if self.pending_offset < len(self.pending):
-                    var result = self.reader.consume(Span(self.pending)[self.pending_offset:])
+                    var result: Tuple[Int, List[String]]
+                    try:
+                        result = self.reader.consume(Span(self.pending)[self.pending_offset:])
+                    except:
+                        provider_stream_read_error = True
+                        raise
                     if result[0] <= 0:
                         raise Error("DeepSeek event reader made no progress")
                     self.pending_offset += result[0]
@@ -253,24 +261,39 @@ struct DeepSeekExchange(Movable):
                     continue
                 if self.pending_error:
                     self.pending_error = False
+                    provider_stream_read_error = True
                     raise Error("error decoding response body")
                 try:
                     self.pending = self.http.read_chunk()
                 except:
                     # The frozen Rust body reader reports framing and read failures generically.
+                    provider_stream_read_error = True
                     raise Error("error decoding response body")
                 self.pending_offset = 0
                 if not self.pending:
-                    var events = self.reader.finish()
+                    var events: List[String]
+                    try:
+                        events = self.reader.finish()
+                    except:
+                        provider_stream_read_error = True
+                        raise
                     self._finish()
                     return events^
         except error:
+            var leave_downstream_body_open = (
+                provider_stream_read_error and self.native_messages
+                and self.reader.state.completed
+                and not self.reader.state.anthropic_stream_terminal
+            )
             self._finish()
             if self.reader.state.completed and (
                 not self.native_messages or self.reader.state.anthropic_stream_terminal
             ):
                 raise
             self.reader.done = True
+            if leave_downstream_body_open:
+                self.downstream_body_incomplete = True
+                return List[String]()
             return self.reader.state.fail("provider_stream_error", String(error))
 
     def read_buffered(mut self) raises -> String:

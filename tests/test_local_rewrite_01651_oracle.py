@@ -2469,7 +2469,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
         try:
             results = [
                 run_probe(binary, case, upstream)
-                for binary in (ORACLE, Path.home() / ".cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu", MODEX)
+                for binary in (ORACLE, MODEX)
             ]
         finally:
             upstream.shutdown()
@@ -2486,7 +2486,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             self.assertEqual(len(records), 2)
         self.assertEqual(
             [(record["method"], record["path"]) for record in results[0][1]],
-            [(record["method"], record["path"]) for record in results[2][1]],
+            [(record["method"], record["path"]) for record in results[1][1]],
         )
 
     def test_response_header_overrides_filtering_and_invalid_values_match_oracle(self):

@@ -19,7 +19,9 @@ at the first candidate; a successful candidate retains request context and
 credential binding. Native Anthropic not-found first events can use the same
 one-retry model budget before commitment, while text already emitted is not
 replayed. Three-candidate, one-key, exhausted-stream, auth-precedence and
-committed-output comparisons match both pinned Linux processes. Modex follows
+committed-output comparisons match both pinned Linux processes. The provider's
+8-bit retry counter limits model fallback to 256 candidates per credential;
+transient retries can rotate keys and restart at the first candidate. Modex follows
 the 0.165.1 `combo:flash` alias (`deepseek-flash`); 0.439.2 sends
 `deepseek-v4-flash`, so this slice remains a recorded mismatch against the
 official baseline. See

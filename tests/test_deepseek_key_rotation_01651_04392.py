@@ -539,6 +539,70 @@ class DeepSeekKeyRotationTests(unittest.TestCase):
                 )
                 self.assertEqual([response["status"] for response in responses], [200])
 
+    def test_combo_model_retry_budget_caps_and_resets_per_credential(self):
+        models = [f"synthetic-budget-model-{index}" for index in range(257)]
+        request = [{
+            "model": "combo:" + ",".join(models),
+            "input": "synthetic model retry budget",
+        }]
+        rate_limit = {
+            "status": 429, "content_type": "application/json",
+            "body": b'{"error":{"code":"rate_limit_error"}}',
+        }
+        request_with_search = [{
+            **request[0],
+            "tools": [{"type": "web_search_preview"}],
+        }]
+        first_event_error = (
+            b'data: {"type":"error","error":{"type":"rate_limit_error"}}\n\n'
+        )
+        success = b"".join((
+            b'data: {"type":"message_start","message":{"id":"msg-ok","role":"assistant","model":"synthetic-budget-model-0","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',
+            b'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}\n\n',
+            b'data: {"type":"message_stop"}\n\n',
+        ))
+        not_found = {
+            "status": 404, "content_type": "application/json",
+            "body": b'{"error":{"code":"model_not_supported"}}',
+        }
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary), scenario="HTTP cap and credential reset"):
+                posts, responses = observe_turns(
+                    binary, request,
+                    [rate_limit] * 257 + [buffered_reply(1)],
+                    api_keys=KEYS,
+                )
+                self.assertEqual(len(posts), 258)
+                self.assertEqual(
+                    [post["headers"]["authorization"] for post in posts],
+                    [KEY_A] * 256 + [KEY_B, KEY_B],
+                )
+                self.assertEqual(
+                    [json.loads(post["body"])["model"] for post in posts],
+                    models[:256] + models[:2],
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
+
+            with self.subTest(binary=str(binary), scenario="native first event at model budget edge"):
+                posts, responses = observe_turns(
+                    binary, request_with_search,
+                    [not_found] * 255 + [
+                        {"status": 200, "content_type": "text/event-stream", "body": first_event_error},
+                        {"status": 200, "content_type": "text/event-stream", "body": success},
+                    ],
+                    api_keys=KEYS,
+                )
+                self.assertEqual(len(posts), 257)
+                self.assertEqual(
+                    [post["headers"].get("x-api-key") for post in posts],
+                    ["synthetic-key-a"] * 256 + ["synthetic-key-b"],
+                )
+                self.assertEqual(
+                    [json.loads(post["body"])["model"] for post in posts],
+                    models[:256] + [models[0]],
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
+
     def test_combo_model_exhaustion_preserves_final_error_and_advances_cursor_once(self):
         turns = [
             {"model": "combo:flash,pro", "input": "synthetic exhaust model chain"},

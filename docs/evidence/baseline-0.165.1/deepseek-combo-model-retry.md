@@ -53,6 +53,13 @@ only two POSTs on credential A; the third candidate is not attempted. An
 auth-class first event rotates to credential B and restarts at the first model
 instead of trying the next model on credential A.
 
+The provider policy caps model fallback at 256 candidates per credential
+because its precommit retry count is an unsigned 8-bit value. HTTP rate-limit
+errors can then rotate to the next credential and restart from candidate 1.
+Native Anthropic first-event retries apply the same model-candidate cap before
+considering credential rotation. The synthetic boundary comparison is covered
+by `test_combo_model_retry_budget_caps_and_resets_per_credential`.
+
 The first-event exhaustion controls match both releases exactly: after the
 final retry-classified event frame is consumed, the response contains
 `response.failed` with `provider_stream_error` / `unexpected end of stream`.
@@ -67,6 +74,8 @@ Checks performed on Linux x86-64:
 - all 20 methods in `test_deepseek_key_rotation_01651_04392` passed before four
   additional focused methods were added; the four later methods and updated
   committed-stream method also passed individually;
+- `test_combo_model_retry_budget_caps_and_resets_per_credential` passed against
+  both pinned releases and the fixed Modex build;
 - `test_provider_nonstring_model_04395` compares the unchanged direct model
   mapping with 0.439.5, 0.439.2, and Modex, and asserts the version-specific
   combo Flash alias difference;

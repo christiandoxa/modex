@@ -18,7 +18,7 @@ from .json import JSON_ARRAY, JSON_STRING, JsonDocument
 from .loopback_http import HTTP_HEADER_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, HTTP_REQUEST_FIELD_LIMIT, LoopbackHTTPStream, _number
 from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
 from .log_operational import valid_url_authority
-from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_api_key_response, deepseek_retryable_model_response
+from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_model_retry_available, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_api_key_response, deepseek_retryable_model_response
 from .provider_conversations import ProviderConversationStore
 from .provider_anthropic_messages import anthropic_auto_chat_fallback_safe, anthropic_search_filters_conflict, deepseek_anthropic_messages_body
 from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
@@ -908,7 +908,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                     _reply(connection, 502, "upstream request failed")
                     return
                 if web and first_event_class >= 0 and native_first_event_retries == 0:
-                    var can_retry_model = first_event_class >= 1 and first_event_class <= 4 and model_index + 1 < len(model_attempts)
+                    var can_retry_model = first_event_class >= 1 and first_event_class <= 4 and deepseek_model_retry_available(model_index, len(model_attempts))
                     var can_retry_key = first_event_class <= 3 and attempt_index + 1 < attempt_count
                     if can_retry_model:
                         native_first_event_retries += 1

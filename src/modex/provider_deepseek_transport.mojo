@@ -150,8 +150,12 @@ def deepseek_retryable_api_key_response(status: Int, body: List[UInt8], attempt_
     return error_class <= 3
 
 
+def deepseek_model_retry_available(attempt_index: Int, attempt_count: Int) -> Bool:
+    return attempt_index < 255 and attempt_index + 1 < attempt_count
+
+
 def deepseek_retryable_model_response(status: Int, body: List[UInt8], attempt_index: Int, attempt_count: Int) -> Bool:
-    if attempt_index + 1 >= attempt_count:
+    if not deepseek_model_retry_available(attempt_index, attempt_count):
         return False
     var error_class = _deepseek_error_response_class(status, body)
     return 1 <= error_class <= 4

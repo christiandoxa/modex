@@ -4,7 +4,7 @@ from std.testing import assert_equal, assert_true
 
 from modex.json import JsonDocument, serialize_json
 from modex.loopback_http import LoopbackHTTPStream
-from modex.provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_model_response
+from modex.provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_model_retry_available, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_model_response
 from modex.provider_rate_limits import _reset_epoch, deepseek_codex_rate_limit_headers
 
 
@@ -51,6 +51,10 @@ def model_retry_classification() raises:
     assert_true(not deepseek_retryable_model_response(401, auth, 0, 2))
     assert_true(not deepseek_retryable_model_response(429, generic_rate_limit, 0, 2))
     assert_true(not deepseek_retryable_model_response(404, not_found, 1, 2))
+    assert_true(deepseek_model_retry_available(254, 257))
+    assert_true(not deepseek_model_retry_available(255, 257))
+    assert_true(deepseek_retryable_model_response(404, not_found, 254, 257))
+    assert_true(not deepseek_retryable_model_response(404, not_found, 255, 257))
 
 
 def rate_limits() raises:

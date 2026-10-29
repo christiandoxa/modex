@@ -58,8 +58,8 @@ CPU seconds over one second):
 
 | Case | Prodex 0.165.1 | Prodex 0.439.2 | Modex |
 |---|---:|---:|---:|
-| Preconnected plus partial headers | `+2,332`, `+408`, `0.000` | `+2,248`, `+272`, `0.000` | `+400`, `+135`, `0.290` |
-| Preconnected plus idle clients | `+2,256`, `+408`, `0.000` | `+2,260`, `+272`, `0.000` | `+52`, `+127`, `0.030` |
+| Preconnected plus partial headers | `+2,124`, `+408`, `0.000` | `+2,192`, `+272`, `0.000` | `+400`, `+135`, `0.320` |
+| Preconnected plus idle clients | `+2,200`, `+408`, `0.000` | `+1,896`, `+272`, `0.000` | `+52`, `+127`, `0.030` |
 | Seven blockers plus partial-header backlog | `+5,300`, `+432`, `0.000` | `+4,484`, `+288`, `0.010` | `+588`, `+143`, `0.290` |
 
 The Modex FD check allows 40 non-client descriptors beyond the synthetic

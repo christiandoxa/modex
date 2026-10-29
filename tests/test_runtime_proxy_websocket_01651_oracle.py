@@ -227,6 +227,44 @@ class RuntimeProxyWebsocket01651OracleTests(unittest.TestCase):
             body,
         )
 
+    def test_idle_connections_and_partial_frame_do_not_block_other_pings(self):
+        clients = []
+        try:
+            for index in range(16):
+                connection = socket.create_connection(("127.0.0.1", self.listen_port), timeout=3)
+                clients.append(connection)
+                connection.settimeout(3)
+                key = base64.b64encode(index.to_bytes(16, "big")).decode("ascii")
+                connection.sendall((
+                    "GET /backend-api/prodex/responses HTTP/1.1\r\n"
+                    f"Host: 127.0.0.1:{self.listen_port}\r\n"
+                    "Connection: Upgrade\r\nUpgrade: websocket\r\n"
+                    "Sec-WebSocket-Version: 13\r\n"
+                    f"Sec-WebSocket-Key: {key}\r\n\r\n"
+                ).encode("ascii"))
+                status, headers, extra = read_response_head(connection)
+                self.assertEqual(status, "HTTP/1.1 101 Switching Protocols")
+                expected = base64.b64encode(hashlib.sha1((key + WEBSOCKET_GUID).encode()).digest()).decode()
+                self.assertEqual(headers.get("sec-websocket-accept"), expected)
+                self.assertEqual(extra, b"")
+
+            clients[0].sendall(b"\x81")  # Hold an incomplete masked text frame.
+            for connection in (clients[1], clients[-1]):
+                connection.sendall(b"\x89\x81\x01\x02\x03\x04\x79")
+                response = bytearray()
+                while len(response) < 3:
+                    block = connection.recv(3 - len(response))
+                    if not block:
+                        break
+                    response.extend(block)
+                self.assertEqual(bytes(response), b"\x8a\x01x")
+            self.assertIsNone(self.process.poll())
+            with self.assertRaises(TimeoutError):
+                self.upstream.accept()
+        finally:
+            for connection in clients:
+                connection.close()
+
     def test_unsupported_path_precedes_missing_key_validation(self):
         status, _, body = self.request("/backend-api/prodex/not-supported")
         self.assertEqual(status, "HTTP/1.1 404 Not Found")

@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+A pinned 0.165.1 broker process control holds 16 idle local WebSockets and an
+incomplete text-frame header on one, then receives matching pongs on two other
+connections without upstream I/O. This adds a reproducible requirement for the
+release's idle parking and partial-frame isolation; it is reference-only, not
+Modex parity. The bounded idle-cache limit, message admission and interruption
+remain unverified in Modex. See
+`docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
+
 The DeepSeek Anthropic web-search route now forwards `temperature`, `top_p`,
 and the `stop`, `stop_sequences`, and `stopSequences` aliases, matching the
 normalized request bodies from checksum-pinned 0.165.1 and 0.439.2. Invalid

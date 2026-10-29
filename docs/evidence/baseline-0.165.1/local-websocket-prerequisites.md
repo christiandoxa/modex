@@ -102,6 +102,13 @@ Modex. Run them with:
 python3 -m unittest tests/test_runtime_proxy_websocket_01651_oracle.py -v
 ```
 
+The reference process also accepts 16 simultaneous idle Responses WebSockets.
+With an incomplete text-frame header held on the first connection, masked
+ping frames on two other connections receive their matching pongs, and no
+connection reaches the synthetic upstream. This is a bounded control for idle
+parking and partial-frame isolation, not a measurement of the eviction limit,
+message admission, interruption, or Modex behavior.
+
 The harness verifies the official Linux binary SHA-256
 `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51` before
 starting it. It uses synthetic credentials and makes no external requests.

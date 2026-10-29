@@ -47,12 +47,12 @@ def _events():
 
 
 def _observe_turns_with_read_errors(binary, turns, replies):
-    client = continuation.CLIENT.replace("timeout=15)", "timeout=2)")
+    client = continuation.CLIENT.replace("timeout=15)", "timeout=5)")
     client = client.replace(
         'payload = response.read()\n    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),\n          "body": payload.hex(), "started": started, "finished": int(time.time())})',
         'payload = bytearray()\n    body_error = None\n    try:\n        while True:\n            piece = response.read1(4096)\n            if not piece: break\n            payload.extend(piece)\n    except Exception as error:\n        body_error = type(error).__name__ + ": " + str(error)\n    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),\n          "body": bytes(payload).hex(), "body_error": body_error, "started": started, "finished": int(time.time())})',
     )
-    if client == continuation.CLIENT or "timeout=2)" not in client or "body_error" not in client:
+    if client == continuation.CLIENT or "timeout=5)" not in client or "body_error" not in client:
         raise AssertionError("synthetic client could not capture incomplete stream reads")
     original = continuation.CLIENT
     continuation.CLIENT = client

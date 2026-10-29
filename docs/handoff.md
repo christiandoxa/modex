@@ -28,6 +28,15 @@ The local relay now captures non-WebSocket upgraded request bodies through EOF,
 matching selected 0.165.1 and 0.439.2 controls while retaining its byte cap and
 timeout. This does not implement h2c or HTTP/2. See
 `docs/evidence/baseline-0.165.1/local-relay-http.md`.
+After integrating the EOF, session-name and beta-host changes, the production
+build and four native checks passed. Seven focused process tests passed against
+the pinned releases, followed by the five-second malformed-stream control;
+nine CI routing and cleanliness checks passed. The preceding relay run passed
+70 local parser/relay tests and 17 release-oracle tests; after preserving the
+non-deferred parser behavior, both upgrade-oracle tests and the bounded-capture
+controls were rerun. The import audit covers 71 Mojo files and the census covers
+50 native sources and 127 Python modules. These checks do not establish full
+parity or qualify the other targets.
 The rebuilt production path passed 36 launch and RPC tests, followed by
 focused real-process checks for both releases, including empty and relative
 PATH entries. The native spawn check retains absolute-only defaults.
@@ -92,8 +101,9 @@ search and open result blocks follow the observed ignore precedence. Selected
 closed-result text and post-failure continuation sequences now match both
 releases, including malformed follow-up frames and terminal markers. A real
 process probe with an invalid UTF-8 comment after `response.failed` records a
-separate mismatch: both releases leave the downstream chunked body open, while
-Modex closes it with the same events. Most other malformed stream shapes and
+separate mismatch: both releases leave the downstream chunked body open for
+the five-second client timeout, while Modex closes it with the same events.
+Most other malformed stream shapes and
 after-failure UTF-8 positions remain unverified. The focused shared-stream
 suite passed 12 tests; the production dependency audit and test census passed.
 See `docs/evidence/anthropic-stream-optional-metadata-shared.md`.

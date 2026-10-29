@@ -15,6 +15,7 @@ PROBE_ENVIRONMENT = (
     "TEST_CODEX_ARGS_LOG_APPEND",
     "TEST_CODEX_STDIN_LOG",
 )
+NATIVE_CODEX = launch_support.MODEX.parent / "tests/codex_argv_child"
 SENTINEL_ENVIRONMENT = {
     name: f"synthetic-probe-sentinel-{name.lower()}" for name in PROBE_ENVIRONMENT
 }
@@ -27,6 +28,8 @@ class ActiveSuperLaunchTests(unittest.TestCase):
             raise AssertionError("PRODEX_ORACLE_01651 must identify the verified 0.165.1 Linux release")
         if not launch_support.MODEX.is_file():
             raise AssertionError("Build Modex first with make build")
+        if not NATIVE_CODEX.is_file() or NATIVE_CODEX.stat().st_mode & 0o111 == 0:
+            raise AssertionError("Build the native Codex fixture with make unit-build")
 
     def test_probe_failure_and_environment_match_01651(self):
         outputs = []
@@ -113,6 +116,44 @@ class ActiveSuperLaunchTests(unittest.TestCase):
                 )
                 self.assertIn("shared/sessions/.prodex-maintenance.lock", states[0]["managed"])
                 self.assertNotIn("shared/sessions/.prodex-maintenance.lock", states[1]["managed"])
+
+    def test_native_codex_argv0_matches_01651_for_probe_and_child_roles(self):
+        canonical = str(NATIVE_CODEX.resolve())
+        cases = (
+            ("relative", "../codex"),
+            ("symlink", "../codex-alias"),
+            ("command", "codex"),
+            ("path", canonical),
+            ("relative-path", canonical),
+            ("path-skips-wrapper", canonical),
+        )
+        expected_args = [["--version"], ["app-server", "--help"]]
+        for mode, requested_argv0 in cases:
+            with self.subTest(mode=mode):
+                outputs = []
+                for binary in (active_cli.ORACLE, launch_support.MODEX):
+                    result, records, upstream, state = launch_support.SuperLaunchTests().run_launch(
+                        binary=binary,
+                        scenario="exit-seven",
+                        codex_mode=mode,
+                        codex_binary=NATIVE_CODEX,
+                    )
+                    self.assertEqual((result.returncode, result.stdout), (7, b""), result.stderr)
+                    self.assertEqual(upstream, [])
+                    self.assertEqual(state["leftovers"], [])
+                    self.assertEqual([record["args"] for record in records[:2]], expected_args)
+                    self.assertIn("app-server", records[2]["args"])
+                    self.assertIn("--stdio", records[2]["args"])
+                    self.assertIn("exec", records[3]["args"])
+                    trace = [(record["kind"], record["argv0"]) for record in records]
+                    self.assertEqual(trace, [
+                        ("probe", canonical),
+                        ("probe", canonical),
+                        ("preflight", requested_argv0),
+                        ("launch", requested_argv0),
+                    ])
+                    outputs.append(trace)
+                self.assertEqual(outputs[0], outputs[1])
 
     def test_missing_codex_path_matches_01651_without_startup_side_effects(self):
         outputs = []

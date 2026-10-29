@@ -196,7 +196,7 @@ class SuperLaunchTests(unittest.TestCase):
     def run_launch(
         self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat",
         super_arguments=(), environment_overrides=None, base_path="/v1", sub_agent=False,
-        temporary_directory=None, stderr_tty=False, codex_mode="explicit",
+        temporary_directory=None, stderr_tty=False, codex_mode="explicit", codex_binary=None,
     ):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-", dir=temporary_directory) as directory:
             root = Path(directory)
@@ -204,8 +204,11 @@ class SuperLaunchTests(unittest.TestCase):
                 (root / name).mkdir(mode=0o700)
             (root / "state/update-check.json").write_text(json.dumps({"source": "GitHub", "latest_version": "0.439.2", "checked_at": int(time.time())}))
             codex = root / "codex"
-            codex.write_text("#!" + sys.executable + "\n" + CODEX)
-            codex.chmod(0o700)
+            if codex_binary is None:
+                codex.write_text("#!" + sys.executable + "\n" + CODEX)
+                codex.chmod(0o700)
+            else:
+                codex.symlink_to(Path(codex_binary).resolve())
             path_dir = root / "work/bin"
             if codex_mode in ("path", "command", "relative-path", "path-skips-wrapper"):
                 path_dir.mkdir()
@@ -239,6 +242,7 @@ class SuperLaunchTests(unittest.TestCase):
             elif codex_mode != "explicit":
                 raise ValueError(f"unknown Codex selection fixture: {codex_mode}")
             capture = root / "capture.jsonl"
+            native_capture = root / "native-capture.jsonl"
             if existing:
                 (root / "shared/config.toml").write_text('model="preserve-me"\n')
             observed = []
@@ -546,6 +550,8 @@ class SuperLaunchTests(unittest.TestCase):
                            "MODEX_LAUNCH_CAPTURE": str(capture),
                            "MODEX_LAUNCH_SCENARIO": scenario, "CODEX_SANDBOX_SENTINEL": "remove-from-child", "TMPDIR": str(root),
                            **{key: str(root / "home") for key in ("XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME")}}
+            if codex_binary is not None:
+                environment["MODEX_NATIVE_CODEX_LOG"] = str(native_capture)
             if codex_setting:
                 environment["PRODEX_CODEX_BIN"] = codex_setting
             environment.update(environment_overrides or {})
@@ -587,6 +593,8 @@ class SuperLaunchTests(unittest.TestCase):
                 worker.join(2)
                 server.server_close()
             records = [json.loads(line) for line in capture.read_text().splitlines()] if capture.exists() else []
+            if native_capture.exists():
+                records = [json.loads(line) for line in native_capture.read_text().splitlines()]
             saved = root / "shared/sessions/synthetic-session.jsonl"
             overlays = list((root / "state/profiles").glob("*"))
             state = {"leftovers": [str(path) for path in overlays], "session": saved.read_text() if saved.exists() else None,

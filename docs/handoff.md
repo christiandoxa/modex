@@ -140,11 +140,13 @@ directly under `/tmp`; it now handles nested private temp roots. Both the
 Codex binary selection now follows the pinned 0.165.1 source for tested
 `PRODEX_CODEX_BIN` relative paths and command names, default and relative PATH
 entries, symlink targets, Prodex shim skipping and missing executables. The
-resolved canonical path reaches version and capability probes, hook preflight
-and the real synthetic child launch; the selected invocation name remains
-`argv[0]`. The active-oracle suite compares full output/status, probe and launch
-arguments, zero provider requests, and temporary-overlay cleanup across six
-selection modes. The new process-spawn unit also checks a custom `argv[0]`.
+resolved canonical path reaches version and capability probes with its path in
+`argv[0]`; hook preflight and final launch preserve the selected invocation
+spelling in `argv[0]` while executing that canonical path. A native Mojo ELF
+Codex fixture records the raw argument vector, and the active-oracle suite
+compares it across six selection modes. The suite also compares full
+output/status, zero provider requests, and temporary-overlay cleanup. The
+process-spawn unit checks an explicit custom `argv[0]`.
 Missing-path diagnostics match exactly and start no Codex process. The release
 still creates session, profile and housekeeping locks that Modex does not, so
 full storage side-effect parity remains open. Modex pins the resolved path

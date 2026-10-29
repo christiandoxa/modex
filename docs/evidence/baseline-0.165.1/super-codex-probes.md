@@ -64,14 +64,17 @@ symlinks before checking the executable, while the later child command uses
 the selected path spelling.
 
 Modex now resolves the same tested forms using Mojo stdlib path, mode and SHA
-helpers. It retains the selected spelling as child `argv[0]` and uses the
-canonical executable path for version/app-server probes, hook preflight and
-the child launch. `tests/test_super_launch_01651.py` compares full redirected
-stdout/stderr, exit code, probe and launch arguments, no-request behavior and
-overlay cleanup through the actual compiled Modex CLI and the checksum-pinned
-oracle. Synthetic Codex controls cover a relative explicit path, a relative
-symlink, a configured bare command, default PATH discovery, a relative PATH
-entry, a Prodex shim before the valid PATH entry, and a missing executable.
+helpers. Version and capability probes use the canonical executable path as
+`argv[0]`. Hook preflight and final launch execute that canonical path while
+preserving the selected spelling as `argv[0]`. `tests/codex_argv_child.mojo`
+is a native synthetic ELF that records the raw argument vector, including
+`argv[0]`, and serves the hook-trust RPC. `tests/test_super_launch_01651.py`
+compares those arguments against the checksum-pinned oracle across a relative
+path, relative symlink, configured bare command, default PATH discovery,
+relative PATH entry and shim skip. It also compares full redirected
+stdout/stderr, exit code, no-request behavior and overlay cleanup through the
+actual compiled Modex CLI. Synthetic Codex controls also cover a missing
+executable.
 The selected launch cases reach the final child, which exits 7 before making
 any provider request. The missing case matches the release diagnostic and
 starts no Codex or provider peer.
@@ -91,6 +94,8 @@ x86-64 cases; other release targets and full Super startup remain open.
 Reproduce with:
 
 ```sh
+make build
+make unit-build
 python3 scripts/ci/run-unittest.py test_super_launch_01651.py
 ```
 

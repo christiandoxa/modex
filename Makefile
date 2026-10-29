@@ -111,6 +111,7 @@ UNIT_BUILD_PROGRAMS ?= \
 	test_process_stdio \
 	process_capture_child \
 	test_process_capture \
+	codex_argv_child \
 	process_child \
 	test_process_spawn
 UNIT_RUNS ?= \

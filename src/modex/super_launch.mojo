@@ -380,9 +380,9 @@ def _deepseek_provider_panel() raises:
     )
 
 
-def _capture_codex_probe(binary: String, argv0: String, args: List[String], environment: List[String], label: String) raises -> CapturedProcessOutput:
+def _capture_codex_probe(binary: String, args: List[String], environment: List[String], label: String) raises -> CapturedProcessOutput:
     try:
-        return capture_with_env(binary, args, environment, label, argv0=argv0)
+        return capture_with_env(binary, args, environment, label, argv0=binary)
     except error:
         raise Error("failed to probe Codex CLI at " + binary + ": " + String(error))
 
@@ -451,7 +451,7 @@ def _codex_version_parts(value: String) -> List[UInt64]:
 def _exec(binary: String, argv0: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64) raises -> Int:
     var environment = _child_environment(home)
     var probe_environment = _codex_probe_environment(environment)
-    var version = _capture_codex_probe(binary, argv0, [String("--version")], probe_environment, "Codex version probe")
+    var version = _capture_codex_probe(binary, [String("--version")], probe_environment, "Codex version probe")
     if not version.status.exit_code or version.status.exit_code.value() != 0:
         raise Error(
             "Codex version probe failed for " + binary + " with status "
@@ -469,7 +469,7 @@ def _exec(binary: String, argv0: String, home: String, model: String, upstream: 
             "Codex CLI at " + binary + " reports " + String(parts[0]) + "." + String(parts[1]) + "." + String(parts[2])
             + "; Prodex requires 0.153.2 or newer. " + CODEX_INSTALL_GUIDANCE
         )
-    var capability = _capture_codex_probe(binary, argv0, [String("app-server"), String("--help")], probe_environment, "Codex app-server capability probe")
+    var capability = _capture_codex_probe(binary, [String("app-server"), String("--help")], probe_environment, "Codex app-server capability probe")
     if not capability.status.exit_code or capability.status.exit_code.value() != 0:
         raise Error(
             "Codex app-server capability probe failed for " + binary + " with status "

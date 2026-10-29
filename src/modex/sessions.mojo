@@ -173,7 +173,24 @@ def member_path(document: JsonDocument, path: StringSlice) -> Int:
 
 
 def session_child_path(root: String, name: String) -> String:
-    return root + name if root.endswith("/") else root + "/" + name
+    var root_bytes = root.as_bytes()
+    if len(root_bytes) > 0 and root_bytes[len(root_bytes) - 1] == 0x2F:
+        return root + name
+    return root + "/" + name
+
+
+def valid_session_name(name: String) -> Optional[String]:
+    try:
+        return String(from_utf8=name.as_bytes())
+    except:
+        return None
+
+
+def blocks_session_state_name(name: String) -> Bool:
+    var checked_name = valid_session_name(name)
+    # Keep the ASCII temp-file guard fail-closed around malformed wildcard bytes.
+    var candidate = checked_name.value() if checked_name else String(from_utf8_lossy=name.as_bytes())
+    return candidate in ["state.json", "state.json.lock", "state.json.last-good", "profile-lifecycle-journal", "profile-import-auth-journal"] or (candidate.startswith("state.json.") and candidate.endswith(".tmp"))
 
 
 def first_string(document: JsonDocument, paths: List[String]) -> String:
@@ -197,13 +214,15 @@ def starts_session(document: JsonDocument) -> Bool:
 def session_paths(root: String, mut paths: List[String]) raises:
     if not exists(root):
         return
-    for name in listdir(root):
-        var path = session_child_path(root, name)
+    for raw_name in listdir(root):
+        var path = session_child_path(root, raw_name)
         var mode = lstat(path).st_mode & 0o170000
         if mode == 0o040000:
             session_paths(path, paths)
-        elif mode == 0o100000 and (name.endswith(".json") or name.endswith(".jsonl") or name.endswith(".jsonl.zst")):
-            paths.append(path^)
+        elif mode == 0o100000:
+            var name = valid_session_name(raw_name)
+            if name and (name.value().endswith(".json") or name.value().endswith(".jsonl") or name.value().endswith(".jsonl.zst")):
+                paths.append(path^)
 
 
 def checked_session_file(path: String) raises -> FileHandle:
@@ -263,7 +282,8 @@ def read_session(path: String) raises -> Optional[SessionReport]:
     var filename = components[len(components) - 1]
     var suffix = 10 if compressed else 5 if path.endswith(".json") else 6
     var identifier = String(filename[byte=:filename.byte_length() - suffix])
-    var report = SessionReport(identifier^, "", "", "", "", "", path, stat(path).st_mtimespec.tv_sec)
+    var display_path = String(from_utf8_lossy=path.as_bytes())
+    var report = SessionReport(identifier^, "", "", "", "", "", display_path^, stat(path).st_mtimespec.tv_sec)
     var started = False
     if compressed:
         var decoder = ZstdReader(checked_session_file(path))
@@ -331,8 +351,8 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
         options.directory = absolute_path(options.directory.value()) if options.directory else String(cwd())
     var root = ensure_app_root()
     # shortcut: state/journal recovery is unavailable; reject these homes until locking and durable writes are proven.
-    for name in listdir(root):
-        if name in ["state.json", "state.json.lock", "state.json.last-good", "profile-lifecycle-journal", "profile-import-auth-journal"] or (name.startswith("state.json.") and name.endswith(".tmp")):
+    for raw_name in listdir(root):
+        if blocks_session_state_name(raw_name):
             raise Error("locked state loading and recovery are not implemented")
     var paths = List[String]()
     var shared = shared_root(root)

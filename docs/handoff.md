@@ -35,6 +35,23 @@ qualifies selected Linux x86-64 behavior only and keeps all six baseline
 targets in the denominator. Evidence:
 `docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.
 
+The raw requests `Expect: 100-continue\x00bad` with `Content-Length: 0` and
+`Expect: 100-wait` with duplicate zero `Content-Length` fields return 417 with
+no interim response, an empty body, a closed client socket, and no upstream
+request on 0.165.1, 0.439.2, and Modex. Raw response heads have the same status
+line and stable headers; only the dynamic `Date` value varies. The stale Modex
+400 and 502 assertions are corrected and the exact stable wire is checked in
+both release comparisons. These are selected Linux x86-64 controls.
+
+Full-suite validation at `b9b52d5` also recorded an intermittent
+`test_truncation_and_rotation_reopen_followed_file` failure in JSON mode: the
+follower emitted no output for the `after-rotation` marker within the test's
+five-second wait. On clean `2d1217d`, the focused test passed once and then
+three consecutive repeats under quiet conditions. The full-suite failure was
+not reproduced or fixed; retain it as an unqualified intermittent log-follow
+gap until it is reproduced and addressed. Run details are recorded in
+`docs/evidence/log-follow-rotation-recheck-20261030.md`.
+
 Native Anthropic Responses requests now accept `background: false` and
 `truncation: "disabled"`, validating and omitting both through the shared
 request mapper like Prodex 0.165.1 and 0.439.2. Both releases and Modex agree on

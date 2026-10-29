@@ -2643,7 +2643,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             }),
             (duplicate_content_length, {
                 "oracle": (417, "Expectation Failed", b"", [], 0, True),
-                "modex": (502, "Bad Gateway", b"gateway request capture failed", [], 0, True),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
             }),
             (duplicate_transfer_encoding, {
                 "oracle": (417, "Expectation Failed", b"", [], 0, True),
@@ -2659,7 +2659,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             }),
             (malformed_expect_value, {
                 "oracle": (417, "Expectation Failed", b"", [], 0, True),
-                "modex": (400, "Bad Request", b"", [], 0, True),
+                "modex": (417, "Expectation Failed", b"", [], 0, True),
             }),
         )
         upstream = Upstream()
@@ -2683,6 +2683,21 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                         self.assertEqual(response["read_error"], "", label)
                         self.assertEqual(response["connection_closed"], closed, label)
                         self.assertEqual(len(records), upstream_count, label)
+                    if case["name"] in (
+                        "malformed_expect_value_token",
+                        "unsupported_expect_with_duplicate_content_length",
+                    ):
+                        stable_head = lambda response: b"\r\n".join(
+                            line for line in response["raw_response_head"].split(b"\r\n")
+                            if not line.lower().startswith(b"date:")
+                        )
+                        expected_head = (
+                            b"HTTP/1.1 417 Expectation Failed\r\n"
+                            b"Server: tiny-http (Rust)\r\nContent-Length: 0\r\n\r\n"
+                        )
+                        self.assertEqual(stable_head(oracle_response), expected_head)
+                        self.assertEqual(stable_head(modex_response), expected_head)
+                        self.assertEqual(stable_head(oracle_response), stable_head(modex_response))
         finally:
             upstream.shutdown()
             upstream.server_close()

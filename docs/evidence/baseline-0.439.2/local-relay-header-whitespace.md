@@ -29,6 +29,22 @@ release and Modex to a synthetic loopback upstream:
 | Duplicate equal `Content-Length` plus `Transfer-Encoding`, or duplicate `Transfer-Encoding` | Connection closes without response | Same | 502 | No request |
 | Raw UTF-8 whitespace at header boundaries | Connection closes without response | Same | 400 | No request |
 
+For `Expect: 100-continue\x00bad` with `Content-Length: 0`, and unsupported
+`Expect: 100-wait` with duplicate `Content-Length: 0` fields, both releases
+and Modex return `417 Expectation Failed`, send no interim `100`, return an
+empty body, close the client connection, and make no upstream request. The raw
+response heads match after removing the dynamic `Date` field:
+
+```text
+HTTP/1.1 417 Expectation Failed\r\n
+Server: tiny-http (Rust)\r\n
+Content-Length: 0\r\n\r\n
+```
+
+Both controls run against both checksum-pinned releases and Modex in
+`test_duplicate_expect_and_framing_rejections_remain_fail_closed`; the former
+Modex-only 400 and 502 expectations were stale.
+
 Only lexically identical duplicate lengths after TinyHTTP-compatible trimming
 are collapsed. Numeric variants and conflicting framing stay fail-closed in
 Modex even though the releases dispatch numeric variants using the first
@@ -53,3 +69,11 @@ runs in the `focused-python-active-cross-release` groups in `run-fast.sh` and
 `git diff --check` results for this change are recorded in `docs/handoff.md`.
 This qualifies selected Linux x86-64 behavior only; it does not reduce the
 six-target denominator or establish full parity.
+
+Reproduce the Expect control on both releases and Modex with:
+
+```sh
+MODEX_BINARY="$PWD/build/modex" PYTHONPATH=tests rtk python3 -m unittest \
+  test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_duplicate_expect_and_framing_rejections_remain_fail_closed \
+  test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_duplicate_expect_and_framing_rejections_remain_fail_closed
+```

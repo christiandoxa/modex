@@ -243,9 +243,6 @@ struct DeepSeekChatState:
                     + '"arguments":""}}]},"finish_reason":null}]}'
                 )
             if block_type == "web_search_tool_result":
-                var search_id = doc.string(doc.get(block, "tool_use_id"))
-                if self.anthropic_search_index_by_id(search_id) < 0:
-                    raise Error("Anthropic web-search result does not match a tool use")
                 self.anthropic_open_result_indices[block_index] = True
                 return self.finish_anthropic_search(doc, block)
             return List[String]()
@@ -347,8 +344,10 @@ struct DeepSeekChatState:
         return List[String]()
 
     def start_anthropic_search(mut self, doc: JsonDocument, block: Int, index: UInt64) raises -> List[String]:
-        var id = doc.string(doc.get(block, "id"))
-        if not id: raise Error("Anthropic web-search tool use requires an id")
+        var id_node = doc.get(block, "id")
+        var id = "web_search_" + String(index)
+        if id_node >= 0 and doc.nodes[id_node].kind == JSON_STRING:
+            id = doc.nodes[id_node].text
         var input = doc.get(block, "input")
         var input_json = serialize_json(doc, input) if input >= 0 and len(doc.nodes[input].children) != 0 else String()
         var search = AnthropicWebSearch(index, id, input_json, "[]", False)
@@ -365,12 +364,14 @@ struct DeepSeekChatState:
         return output^
 
     def finish_anthropic_search(mut self, doc: JsonDocument, block: Int) raises -> List[String]:
-        var id = doc.string(doc.get(block, "tool_use_id"))
-        if not id: raise Error("Anthropic web-search result requires tool_use_id")
-        var sources = _search_sources(doc, block)
+        var id_node = doc.get(block, "tool_use_id")
+        if id_node < 0 or doc.nodes[id_node].kind != JSON_STRING:
+            return List[String]()
+        var id = doc.nodes[id_node].text
         var position = self.anthropic_search_index_by_id(id)
         if position < 0:
-            raise Error("Anthropic web-search result does not match a tool use")
+            return List[String]()
+        var sources = _search_sources(doc, block)
         var output = List[String]()
         self.anthropic_searches[position].sources = sources
         if not self.anthropic_searches[position].done:

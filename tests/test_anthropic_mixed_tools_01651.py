@@ -2755,6 +2755,63 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
             self.assertEqual(upstream, [])
             self.assertEqual(state["leftovers"], [])
 
+    def test_buffered_search_ids_require_strings_but_preserve_empty_strings(self):
+        missing = object()
+        cases = []
+        for name, search_id, expected_status in (
+            ("valid", "srv_valid", 200),
+            ("empty", "", 200),
+            ("missing", missing, 502),
+            ("null", None, 502),
+            ("number", 42, 502),
+        ):
+            block = {"type": "server_tool_use", "name": "web_search",
+                     "input": {"query": "synthetic"}}
+            if search_id is not missing:
+                block["id"] = search_id
+            result = {
+                "type": "web_search_tool_result",
+                "tool_use_id": search_id if isinstance(search_id, str) else "unmatched",
+                "content": [{"type": "web_search_result", "url": "https://example.test/source",
+                             "title": "Synthetic source"}],
+            }
+            cases.append((name, expected_status,
+                          _buffered_reply([block, result], stop_reason="end_turn")))
+
+        turns = [_request() for _ in cases]
+        replies = [reply for _, _, reply in cases]
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, turns, replies)
+            self.assertEqual(len(posts), len(cases), label)
+            self.assertEqual(len(responses), len(cases), label)
+            self.assertTrue(all(post["path"] == "/anthropic/v1/messages" for post in posts), label)
+            for post in posts:
+                headers = {key.lower(): value for key, value in post["headers"].items()}
+                self.assertEqual(headers["x-api-key"], SYNTHETIC_API_KEY, label)
+                self.assertNotIn("authorization", headers, label)
+            captures[label] = []
+            for (name, expected_status, _), post, response in zip(cases, posts, responses):
+                self.assertEqual(response["status"], expected_status, (label, name))
+                body = bytes.fromhex(response["body"])
+                parsed = json.loads(body) if expected_status == 200 else body.decode()
+                captures[label].append((response["status"], _normalize(parsed)))
+
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        self.assertEqual(captures["Modex"], captures["0.439.2"])
+        for (name, expected_status, _), (status, body) in zip(cases, captures["0.439.2"]):
+            with self.subTest(case=name):
+                self.assertEqual(status, expected_status)
+                if expected_status == 200:
+                    search = next(item for item in body["output"] if item["type"] == "web_search_call")
+                    self.assertEqual(search["id"], "" if name == "empty" else "srv_valid")
+                    self.assertEqual(search["action"]["queries"], ["synthetic"])
+                    self.assertEqual(search["action"]["sources"][0]["url"], "https://example.test/source")
+
 
 if __name__ == "__main__":
     unittest.main()

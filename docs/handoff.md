@@ -31,6 +31,21 @@ a focused test passed with generic `PRODEX_ORACLE` deliberately set to 0.165.1.
 See `docs/evidence/baseline-0.439.2/local-relay-expect-framing.md` and
 `docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.
 
+## Anthropic web-search ID handling (2026-10-30)
+
+Native Anthropic streaming now uses the releases' `web_search_<index>` fallback
+for absent or non-string search IDs, preserves empty string IDs, and ignores
+unmatched results before parsing their source content. Buffered responses still
+require string IDs while accepting empty strings, matching both releases.
+Three-process loopback tests cover fallback and result association, default and
+reused indices, duplicate and colliding IDs, interleaving, and buffered error
+controls. The full shared stream module, focused buffered ID checks, buffered
+content-block boundaries, no-replay-after-commit control, production import
+audit, and diff check pass on Linux x86-64. See
+`docs/evidence/baseline-0.165.1/anthropic-search-id-handling.md`. This qualifies
+only these tested cases; complete provider parity and all six release targets
+remain open.
+
 ## Relay worker concurrency (2026-10-30)
 
 The exact `36ab8ca` Linux build admitted at most eight synthetic provider

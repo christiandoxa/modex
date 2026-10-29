@@ -1908,6 +1908,150 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                         "response.reasoning_summary_text.delta", [event for event, _ in events],
                     )
 
+    def test_search_id_fallback_and_result_matching_match_both_releases(self):
+        missing = object()
+
+        def message_start():
+            return {"type": "message_start", "message": {"model": "deepseek-chat"}}
+
+        def search_start(index, search_id, query):
+            event = {"type": "content_block_start", "content_block": {
+                "type": "server_tool_use", "name": "web_search", "input": {},
+            }}
+            if index is not missing:
+                event["index"] = index
+            if search_id is not missing:
+                event["content_block"]["id"] = search_id
+            delta = {"type": "content_block_delta", "delta": {
+                "type": "input_json_delta", "partial_json": json.dumps(
+                    {"query": query}, separators=(",", ":"),
+                ),
+            }}
+            if index is not missing:
+                delta["index"] = index
+            return [event, delta]
+
+        def search_result(index, search_id, content=None):
+            block = {"type": "web_search_tool_result"}
+            if search_id is not missing:
+                block["tool_use_id"] = search_id
+            if content is None:
+                content = [{"type": "web_search_result", "url": "https://example.test/source",
+                            "title": "Synthetic source"}]
+            block["content"] = content
+            return [
+                {"type": "content_block_start", "index": index, "content_block": block},
+                {"type": "content_block_stop", "index": index},
+            ]
+
+        def finish(events):
+            return events + [
+                {"type": "message_delta", "delta": {"stop_reason": "end_turn"},
+                 "usage": {"output_tokens": 5}},
+                {"type": "message_stop"},
+            ]
+
+        cases = []
+        for name, source_id, expected_id in (
+            ("missing", missing, "web_search_7"),
+            ("null", None, "web_search_7"),
+            ("number", 42, "web_search_7"),
+            ("empty", "", ""),
+        ):
+            events = [message_start()]
+            events += search_start(7, source_id, name)
+            events += search_result(20, expected_id)
+            cases.append((name, finish(events), [(expected_id, [name], [
+                {"type": "url", "url": "https://example.test/source", "title": "Synthetic source"},
+            ])]))
+
+        events = [message_start()]
+        events += search_start(missing, missing, "default-index")
+        events += search_result(1, "web_search_0")
+        cases.append(("default_index", finish(events), [("web_search_0", ["default-index"], [
+            {"type": "url", "url": "https://example.test/source", "title": "Synthetic source"},
+        ])]))
+
+        events = [message_start()]
+        events += search_start(9, missing, "nine")
+        events += search_start(3, None, "three")
+        events += search_result(10, "web_search_9")
+        events += search_result(11, "web_search_3")
+        cases.append(("interleaved_fallback_ids", finish(events), [
+            ("web_search_9", ["nine"], [{"type": "url", "url": "https://example.test/source",
+                                           "title": "Synthetic source"}]),
+            ("web_search_3", ["three"], [{"type": "url", "url": "https://example.test/source",
+                                            "title": "Synthetic source"}]),
+        ]))
+
+        events = [message_start()]
+        events += search_start(9, "duplicate", "nine")
+        events += search_start(3, "duplicate", "three")
+        events += search_result(10, "duplicate")
+        cases.append(("duplicate_ids", finish(events), [
+            ("duplicate", ["three"], [{"type": "url", "url": "https://example.test/source",
+                                         "title": "Synthetic source"}]),
+            ("duplicate", ["nine"], []),
+        ]))
+
+        events = [message_start()]
+        events += search_start(1, missing, "generated")
+        events += search_start(2, "web_search_1", "explicit collision")
+        events += search_result(3, "web_search_1")
+        cases.append(("generated_id_collision", finish(events), [
+            ("web_search_1", ["generated"], [{"type": "url", "url": "https://example.test/source",
+                                               "title": "Synthetic source"}]),
+            ("web_search_1", ["explicit collision"], []),
+        ]))
+
+        events = [message_start()]
+        events += search_start(5, missing, "old index")
+        events += search_start(5, "replacement", "replacement index")
+        events += search_result(6, "replacement")
+        cases.append(("duplicate_index", finish(events), [
+            ("replacement", ["replacement index"], [{
+                "type": "url", "url": "https://example.test/source", "title": "Synthetic source",
+            }]),
+        ]))
+
+        events = [message_start()]
+        events += search_start(4, "known", "pending")
+        for index, result_id in enumerate((missing, None, 42, "orphan"), start=10):
+            events += search_result(index, result_id, content="ignored unmatched content")
+        cases.append(("unmatched_result_ids", finish(events), [("known", ["pending"], [])]))
+
+        turns = [
+            {"model": "deepseek-chat", "input": name, "stream": True,
+             "tools": [{"type": "web_search_preview"}]}
+            for name, _, _ in cases
+        ]
+        replies = [_stream(events) for _, events, _ in cases]
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, turns, replies)
+            self.assertEqual(len(posts), len(cases), label)
+            self.assertEqual(len(responses), len(cases), label)
+            self.assertTrue(all(response["status"] == 200 for response in responses), label)
+            captures[label] = [
+                (post["body"], _normalized_events(bytes.fromhex(response["body"])))
+                for post, response in zip(posts, responses)
+            ]
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        self.assertEqual(captures["Modex"], captures["0.439.2"])
+        for (name, _, expected_searches), (_, events) in zip(cases, captures["0.439.2"]):
+            with self.subTest(case=name):
+                self.assertEqual(events[-1][0], "response.completed")
+                response = events[-1][1]["response"]
+                observed_searches = [
+                    (item["id"], item["action"]["queries"], item["action"]["sources"])
+                    for item in response["output"] if item.get("type") == "web_search_call"
+                ]
+                self.assertEqual(observed_searches, expected_searches)
+
 
 if __name__ == "__main__":
     unittest.main()

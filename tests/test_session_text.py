@@ -25,11 +25,11 @@ from test_session_profile_04392 import profile_state, write_state
 from test_unicode_width import emoji_sequence_cases, properties
 
 
-def compare_text(arguments, *, columns=None, change=None):
+def compare_text(arguments, *, columns=None, change=None, reference=ORACLE):
     with tempfile.TemporaryDirectory(prefix="modex-session-text-") as directory:
         root = Path(directory) / "fixture with spaces"
         outputs = []
-        for binary in (ORACLE, MODEX):
+        for binary in (reference, MODEX):
             root.mkdir()
             fixture(root)
             if change:
@@ -263,8 +263,8 @@ class SessionTextTests(unittest.TestCase):
 
     def test_unicode_path_wrapping(self):
         for text in ("caf\u00e9", "\u754c\u9762", "\u306f\u3058\u3081\u3066", "\ud55c\uad6d\uc5b4",
-                     "Cafe\u0301", "\u0301", "A\u00a0B", "A\u3000B", "A\tB",
-                     "line\r\nnext", "line\n\nnext\n", "\u0644\u0627", "\u05d0\u200d\u05dc",
+                     "Cafe\u0301", "\u0301", "A\u00a0B", "A\u3000B",
+                     "\u0644\u0627", "\u05d0\u200d\u05dc",
                      "\u2d4f\u2d7f\u2d3e", "\U0001f600", "\U0001f469\u200d\U0001f4bb",
                      "\U0001f44d\U0001f3fd", "1\ufe0f\u20e3"):
             arguments = ["session", "current", "--cwd", "/missing/" + text * 20]
@@ -286,10 +286,11 @@ class SessionTextTests(unittest.TestCase):
                 if code + 1 not in values:
                     codes.update((code, code + 1))
         values = ["P" + chr(code) * 6 + "Q" for code in sorted(codes)
-                  if 0 <= code <= 0x10FFFF and not 0xD800 <= code <= 0xDFFF]
+                  if 0 <= code <= 0x10FFFF and not 0xD800 <= code <= 0xDFFF
+                  and not (code < 0x20 or 0x7F <= code <= 0x9F)]
         self.assert_title_batch(values)
 
-    def test_emoji_script_ligatures_and_control_cells(self):
+    def test_emoji_script_ligatures_and_combining_text(self):
         values = ("\U0001f600", "\U0001f600\ufe0e", "\u2764\ufe0f", "\u2764\ufe0e",
                   "\U0001f44d\U0001f3fd", "\U0001f469\u200d\U0001f4bb", "\U0001f469\u200d\u2764\ufe0f\u200d\U0001f469",
                   "\U0001f1fa\U0001f1f8", "1\ufe0f\u20e3", "1\u20e3", "\u261d\U0001f3fb",
@@ -299,8 +300,7 @@ class SessionTextTests(unittest.TestCase):
                   "\U00016d67\U00016d67", "\U00016d63\U00016d67\U00016d67",
                   "\U00016d63", "\U00016d6a", "\u0644\ufff9\u0627", "\u2d4f\u2d7f\u2d3e\u2d7f\u2d4f",
                   "\u2018\ufe01", "\u2019\ufe00", "\u201c\ufe02", "\u115f\u1161\u11a8",
-                  "\u0939\u093f\u0928\u094d\u0926\u0940", "\u0e44\u0e17\u0e22", "\u1acf", "\U0001faea",
-                  "A\0B", "A\tB", "A\r\nB", "A\x1fB", "A\x7fB", "A\x85B", "A\x1b[31mB")
+                  "\u0939\u093f\u0928\u094d\u0926\u0940", "\u0e44\u0e17\u0e22", "\u1acf", "\U0001faea")
         for value in values:
             def change(root):
                 original = next((root / "home/.codex").rglob("*.jsonl"))
@@ -405,6 +405,72 @@ class SessionTextTests(unittest.TestCase):
                 safe_output = modex[1].replace(b"\r\n", b"")
                 for code in controls:
                     self.assertNotIn(chr(code).encode(), safe_output)
+
+    def test_untrusted_session_controls_are_escaped_in_text(self):
+        controls = list(range(0x20)) + list(range(0x7F, 0xA0))
+        value = "".join(map(chr, controls))
+
+        def add_controls(root):
+            original = next((root / "home/.codex").rglob("*.jsonl"))
+            metadata = json.loads(original.read_text().splitlines()[0])
+            metadata["timestamp"] = "updated" + value + "end"
+            metadata["payload"]["id"] = "id" + value + "end"
+            metadata["payload"]["thread_name"] = "title" + value + "end"
+            metadata["payload"]["cwd"] = "/workspace/" + value + "end"
+            original.unlink()
+            path_controls = "".join(chr(code) for code in controls if code != 0)
+            (original.parent / ("rollout-path" + path_controls + ".jsonl")).write_text(
+                json.dumps(metadata) + "\n"
+            )
+
+        for reference in (ORACLE_01651, ORACLE):
+            with self.subTest(reference=reference.name):
+                baseline, modex = compare_text(
+                    ["session", "list"], columns="300", change=add_controls,
+                    reference=reference,
+                )
+                baseline_text = baseline.decode()
+                modex_text = modex.decode()
+                for code in controls:
+                    self.assertIn(f"\\x{code:02x}", modex_text)
+                    self.assertIn(chr(code), baseline_text)
+                    if code != 0x0A:
+                        self.assertNotIn(chr(code), modex_text)
+                self.assertGreater(baseline_text.count("\n"), modex_text.count("\n"))
+                for columns in ("1", "20", "110"):
+                    _, modex = compare_text(
+                        ["session", "list"], columns=columns, change=add_controls,
+                        reference=reference,
+                    )
+                    for code in controls:
+                        if code != 0x0A:
+                            self.assertNotIn(chr(code), modex.decode())
+
+                cwd = "/missing/" + "".join(
+                    chr(code) for code in controls if code != 0
+                ) + "/end"
+                baseline, modex = compare_text(
+                    ["session", "current", "--cwd", cwd], columns="300",
+                    reference=reference,
+                )
+                baseline_text = baseline.decode()
+                modex_text = modex.decode()
+                for code in controls:
+                    if code == 0:
+                        continue  # Exec cannot pass NUL in an argument.
+                    self.assertIn(f"\\x{code:02x}", modex_text)
+                    if code != 0x0A:
+                        self.assertNotIn(chr(code), modex_text)
+                    if code not in {0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x85}:
+                        self.assertIn(chr(code), baseline_text)
+                for columns in ("1", "20", "110"):
+                    _, modex = compare_text(
+                        ["session", "current", "--cwd", cwd], columns=columns,
+                        reference=reference,
+                    )
+                    for code in controls:
+                        if code != 0x0A:
+                            self.assertNotIn(chr(code), modex.decode())
 
     def test_nonterminal_stdin_keeps_the_release_text_fallback(self):
         for environment in ({}, {"PRODEX_TUI_STRICT": "0"}, {"PRODEX_TUI_STRICT": "false"}):

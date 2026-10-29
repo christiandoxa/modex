@@ -27,6 +27,15 @@ production import audit passed on Linux x86-64. TUI interaction and the other
 five release targets remain open. See
 `docs/evidence/baseline-0.165.1/session-terminal-fallback.md`.
 
+Human-readable session output now escapes C0/C1 controls in session fields and
+`session current --cwd`, preventing terminal control injection from synthetic
+rollout metadata and arguments. Both pinned releases emit these bytes raw, so
+this is a deliberate safe difference, not parity. JSON and selector behavior
+stay unchanged. The 68 focused report/profile/state/text/CLI tests and 13
+query/resume checks passed against the pinned Linux releases; the import audit
+covered 71 Mojo files. See
+`docs/evidence/baseline-0.165.1/session-display-controls.md`.
+
 The Anthropic web-search route now maps Responses `instructions` strings into
 the leading Anthropic `system` field, then joins input system/developer messages
 with `\n\n`, matching 0.165.1 and 0.439.2. Unicode whitespace-only values are

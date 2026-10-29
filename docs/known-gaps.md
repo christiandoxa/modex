@@ -8,6 +8,13 @@ release PASS. The observations below retain their original release provenance;
 0.165.1 and 0.439.1 comparisons do not establish 0.439.2 behavior. The
 inventory and source traces have not yet been fully revalidated against 0.439.2.
 
+Modex escapes C0/C1 controls from fields in the human-readable session table
+and from `session current --cwd`; both pinned releases display them raw. This is
+an intentional safe difference, not a parity result. JSON, ID-only and resume
+command outputs preserve their existing values. Interactive session TUI parity
+and the other five release targets remain open. Evidence:
+`docs/evidence/baseline-0.165.1/session-display-controls.md`.
+
 The production Super model override matches the pinned app-server argv for a
 literal TAB. Prodex emits raw LF/CR and other controls inside a quoted value;
 these are rejected by the TOML parser, so Modex keeps escaped, parseable values.

@@ -177,7 +177,7 @@ def nullable_json(text: String) -> String:
     return quote_json(text) if text else "null"
 
 
-def session_profile_display(value: String) -> String:
+def escape_terminal_controls(value: String) -> String:
     var output = String()
     for character in value.codepoints():
         var code = Int(character)
@@ -648,7 +648,7 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
     if count == 0:
         var message = String("No sessions found")
         if options.current:
-            message += " for " + options.directory.value()
+            message += " for " + escape_terminal_controls(options.directory.value())
         return status_panel("Sessions", message, width)
     var available = max(width - 8, 5)
     var fifth = available // 5
@@ -667,10 +667,11 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
             report.directory if report.directory else String("-"),
             report.path,
         ], widths)
-        if text_width(report.id) > widths[0]:
-            output += "\n  id: " + report.id
+        var display_id = escape_terminal_controls(report.id)
+        if text_width(display_id) > widths[0]:
+            output += "\n  id: " + display_id
         if report.profile:
-            output += "\n  profile: " + session_profile_display(report.profile.value())
+            output += "\n  profile: " + escape_terminal_controls(report.profile.value())
     return output^
 
 
@@ -744,5 +745,5 @@ def session_row(fields: List[String], widths: List[Int]) raises -> String:
     for index in range(len(fields)):
         if index:
             output += "  "
-        output += pad_cell(fields[index], widths[index])
+        output += pad_cell(escape_terminal_controls(fields[index]), widths[index])
     return output^

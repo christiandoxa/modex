@@ -20,9 +20,13 @@ terminal and otherwise writes the plain report.
 
 Default `session list` text output now always uses Modex's existing plain
 report renderer, including on a TTY. This removes the previous terminal error
-without changing session scanning, state validation, or report formatting.
-The report path remains read-only and escapes control characters in profile
-names.
+without changing session scanning or state validation. Ordinary report
+formatting remains unchanged. The report path is read-only and escapes control
+characters in profile names. Human-readable table fields and the empty
+`session current` panel also escape C0/C1 controls from session metadata and
+`--cwd`; this intentional safe
+difference from both pinned releases is recorded in
+`docs/evidence/baseline-0.165.1/session-display-controls.md`.
 
 With a fully attached PTY, both release binaries render the interactive
 `Prodex Sessions` screen and wait for a key. Modex prints its plain report and

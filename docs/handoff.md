@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Log CLI suggested-option usage now matches checksum-pinned 0.439.2 when an
+unknown option resembling `--json` follows a positional value. Three real
+process regressions cover valid, invalid and dash positionals. The production
+build and focused log CLI suite passed with isolated temporary homes. This
+qualifies only these selected parser diagnostics; log output, other argument
+combinations, security behavior, the remaining five release targets and full
+parity remain open. Evidence:
+`docs/evidence/baseline-0.439.2/log-cli-unknown-option-usage.md`.
+
 Multi-key DeepSeek rotation remains unimplemented. New real-process controls
 show both pinned releases rotate unbound requests, retry selected precommit
 HTTP errors, and reject a tested bound continuation without a second POST.

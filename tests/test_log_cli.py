@@ -20,6 +20,7 @@ CASES = [
     ["log", "--json=true"], ["log", "--json="], ["log", "--json", "--json=bad"],
     ["log", "--verbose"], ["log", "last", "--verbose"],
     ["log", "--jso"], ["log", "--jso", "last"], ["log", "-j"],
+    ["log", "last", "--jso"], ["log", "bad", "--jso"], ["log", "-", "--jso"],
     ["log", "last", "stream"], ["log", "wat", "extra"],
     ["log", "--", "last"], ["log", "--", "--help"], ["log", "--", "--json"],
     ["log", "--help", "--verbose"], ["log", "--help", "--json=bad"],

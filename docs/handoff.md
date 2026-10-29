@@ -38,10 +38,16 @@ queries and symlink exclusions. Modex still fails closed for a malformed
 `state.json.\x80.tmp` entry that both releases ignore. The process comparisons
 and remaining difference are in `docs/evidence/session-invalid-utf8-04392.md`.
 
-Selected Anthropic message metadata and text/input deltas now match both
-releases in real-process stream comparisons. A `citation_delta` with an extra
-event-root field still fails in Modex while both references complete the
-response. See `docs/evidence/anthropic-stream-optional-metadata-shared.md`.
+Selected Anthropic message metadata, text/input deltas and ignored unknown
+delta types now match both releases in real-process stream comparisons,
+including `citation_delta`. Thinking deltas and malformed-type diagnostic
+details remain mismatches. See
+`docs/evidence/anthropic-stream-optional-metadata-shared.md`.
+
+The combined production build, three native provider/parser checks, nine
+cross-release stream and concurrency tests, and eleven CI helper/routing
+tests passed locally. The dependency audit covered 71 Mojo files and the
+test census covered 125 Python modules; this is not a full parity result.
 
 The combined production and native builds passed. Seven cross-release tests,
 34 session regression tests, and 11 CI routing and helper tests passed after

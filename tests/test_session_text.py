@@ -19,6 +19,7 @@ from session_oracle import fixture, sandbox_command
 import test_cli
 from test_cli_01651 import ORACLE as ORACLE_01651, ORACLE_SHA256 as SHA256_01651
 from test_cli import MODEX, ORACLE
+from test_session_profile_04392 import profile_state, write_state
 from test_unicode_width import emoji_sequence_cases, properties
 
 
@@ -299,6 +300,51 @@ class SessionTextTests(unittest.TestCase):
                 self.assertEqual(modex[0:1] + modex[2:3], (0, b""))
                 self.assertEqual(old[1], current[1])
                 self.assertEqual(modex[1], old[1])
+
+    def test_profile_details_are_safe_on_ci_tty_fallback(self):
+        controls = list(range(0x20)) + list(range(0x7F, 0xA0))
+        profiles = (
+            "Résumé界e\u0301 🚀",
+            "Résumé界e\u0301" + "".join(map(chr, controls)) + "終🚀",
+        )
+        for profile in profiles:
+            label = "controls" if any(
+                ord(char) < 0x20 or 0x7F <= ord(char) <= 0x9F for char in profile
+            ) else "unicode"
+            with self.subTest(profile=label):
+                def bind_profile(root):
+                    state = profile_state(
+                        root,
+                        profile_name=profile,
+                        profiles={profile: {"codex_home": "/private/CODEX_HOME_SENTINEL", "managed": False}},
+                    )
+                    state["active_profile"] = profile
+                    write_state(root, state)
+
+                old, current, modex = compare_tty(
+                    ["session", "list"],
+                    environment={"CODEX_CI": "1", "PRODEX_TERM_COLUMNS": "20"},
+                    change=bind_profile,
+                )
+                for result in (old, current, modex):
+                    self.assertEqual(result[0], 0)
+                    self.assertEqual(result[2], b"")
+                self.assertEqual(old[1], current[1])
+                if profile == profiles[0]:
+                    self.assertEqual(modex[1], old[1])
+                    continue
+
+                escaped = "Résumé界e\u0301" + "".join(f"\\x{code:02x}" for code in controls) + "終🚀"
+                tty_profile = profile.replace("\n", "\r\n").encode()
+                self.assertIn(tty_profile, old[1])
+                self.assertEqual(modex[1], old[1].replace(tty_profile, escaped.encode()))
+                profile_line = modex[1].split(b"  profile: ", 1)[1].split(b"\r\n", 1)[0]
+                self.assertEqual(profile_line, escaped.encode())
+                for code in controls:
+                    self.assertNotIn(chr(code).encode(), profile_line)
+                safe_output = modex[1].replace(b"\r\n", b"")
+                for code in controls:
+                    self.assertNotIn(chr(code).encode(), safe_output)
 
     def test_unset_and_false_tui_controls_keep_the_tty_guard(self):
         for environment in ({}, {"PRODEX_TUI_STRICT": "0"}, {"PRODEX_TUI_STRICT": "false"}):

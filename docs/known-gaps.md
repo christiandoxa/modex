@@ -96,18 +96,16 @@ suffixes and prefixes, dot-segment normalization, request body/auth conversion,
 buffered text and search outputs, search sources, SSE ordering and stream
 truncation. It now rejects requests before upstream unless they use string
 input or selected arrays of plain messages, one `web_search_preview` tool,
-optional `allowed_domains`, the default token limit and no other request
-fields. Rich message content, metadata and mixed function/web tools are
-fail-closed. Oracle controls record that the release coerces untyped roles,
-accepts mixed tools and drops some metadata and blank items; these differences
-remain explicit gaps. Empty and system-only arrays also return different errors.
+optional `allowed_domains`, validated token limits and selected mixed function
+tools. Rich message content and other request fields remain fail-closed.
+Oracle controls record additional coercion and metadata behavior; complete
+request translation remains unverified. Empty and system-only arrays also
+return different errors.
 
-Buffered and SSE response conversion rejects unsupported content, citations,
-result fields and event shapes rather than returning successful partial output.
-Oracle controls record citation omission, reasoning conversion from a
-`thinking` block and completion after an image block without retaining its data.
-Successful handling remains limited to one tested search call/result with
-text. Broader request/message shapes, tool-result/history round trips, complete
+Buffered and SSE response conversion retains guarded unsupported shapes.
+Selected buffered thinking blocks, web-search sources, mixed tool output and
+streamed image omission now match the releases. Citations, other reasoning and
+image shapes and broader event behavior remain unverified. Broader request/message shapes, tool-result/history round trips, complete
 metadata/citation behavior, TLS/DNS/proxies, resource behavior and full
 stream/error equivalence remain open. The tested ordered search/result/text
 shape and text-only or empty streams with a final `message_stop` are supported;
@@ -117,10 +115,9 @@ covered by the production comparison. The exact empty-string request is rejected
 before POST, while whitespace-only input is accepted. See
 `docs/evidence/anthropic-web-search-04392.md`.
 Selected Anthropic function-tool streams and split JSON fragments now match
-0.165.1. Duplicate or orphan stops and reopened tool indices remain rejected
-where the reference completes, and image blocks remain unsupported.
-Selected buffered function calls and tool-result continuation also match
-0.165.1; mixed server-side web search and function blocks remain unverified.
+0.165.1, including selected duplicate and orphan stops, reopened indices and
+image omission. Selected buffered function calls and mixed server-side web
+search blocks also match 0.165.1; broader continuation remains incomplete.
 See `docs/evidence/baseline-0.165.1/anthropic-buffered.md`.
 
 Selected stop reasons, missing or non-string reasons, non-string stop sequences

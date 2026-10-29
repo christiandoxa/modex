@@ -53,10 +53,10 @@ def write_state_text(root, contents):
     return path
 
 
-def command_output(binary, root, arguments, timeout=15):
+def command_output(binary, root, arguments, timeout=15, *, environment=None):
     argv0 = "modex" if binary == test_cli.MODEX else "prodex"
     return subprocess.run(
-        sandbox_command(binary, root, arguments, argv0=argv0),
+        sandbox_command(binary, root, arguments, argv0=argv0, environment=environment),
         capture_output=True, timeout=timeout, check=False,
     )
 
@@ -152,6 +152,139 @@ class SessionProfile04392Tests(unittest.TestCase):
                 self.assertEqual(json.loads(outputs["modex"][0])[0]["profile"], expected_profile)
                 self.assertEqual(json.loads(outputs["modex"][1]), json.loads(outputs["modex"][0]) if expected_profile == "" else [])
                 self.assertEqual(json.loads(outputs["modex"][2]), [])
+
+    def test_text_profile_details_match_both_releases(self):
+        bound_at = int(time.time())
+        long_profile = ("界面 Cafe\u0301 🚀 " * 20).strip()
+        second_id = "archived-" + "x" * 56
+        all_outputs = {}
+
+        for reference in (ORACLE_01651, test_cli.ORACLE):
+            for case in ("absent", "empty", "multiple-unicode"):
+                outputs = {}
+                for label, binary in (("reference", reference), ("modex", test_cli.MODEX)):
+                    with tempfile.TemporaryDirectory(prefix="modex-session-profile-text-") as directory:
+                        root = Path(directory)
+                        fixture(root)
+                        if case == "absent":
+                            state = profile_state(root, bound_at=bound_at)
+                            state["session_profile_bindings"] = {}
+                        elif case == "empty":
+                            profiles = {
+                                "": {"codex_home": "/private/CODEX_HOME_SENTINEL", "managed": False},
+                            }
+                            state = profile_state(root, profile_name="", bound_at=bound_at, profiles=profiles)
+                            state["active_profile"] = ""
+                        else:
+                            profiles = {
+                                name: {
+                                    "codex_home": "/private/CODEX_HOME_SENTINEL",
+                                    "managed": False,
+                                    "provider": {
+                                        "provider_kind": "openai",
+                                        "api_key": "SYNTHETIC_API_KEY_SENTINEL",
+                                    },
+                                }
+                                for name in (long_profile, "secondary")
+                            }
+                            state = profile_state(
+                                root, profile_name=long_profile, bound_at=bound_at, profiles=profiles,
+                            )
+                            state["active_profile"] = long_profile
+                            state["session_profile_bindings"] = {
+                                SESSION_ID: {
+                                    "profile_name": long_profile,
+                                    "bound_at": bound_at,
+                                    "binding_identity": {
+                                        "provider": "openai",
+                                        "credential_identity": "sha256:" + "a" * 64,
+                                        "endpoint_identity": "sha256:" + "b" * 64,
+                                    },
+                                    "private_marker": "SYNTHETIC_BINDING_SENTINEL",
+                                },
+                                second_id: {"profile_name": "secondary", "bound_at": bound_at},
+                            }
+                            source = next((root / "home/.codex/sessions").rglob("*.jsonl"))
+                            metadata = json.loads(source.read_text().splitlines()[0])
+                            metadata["timestamp"] = "2026-10-24T02:00:00Z"
+                            metadata["payload"]["id"] = second_id
+                            metadata["payload"]["timestamp"] = "2026-10-24T02:00:00Z"
+                            metadata["payload"]["thread_name"] = "Second session"
+                            archive = root / "home/.codex/archived_sessions"
+                            archive.mkdir(parents=True)
+                            (archive / f"rollout-{second_id}.jsonl").write_text(
+                                json.dumps(metadata) + "\n"
+                            )
+                        write_state(root, state)
+                        result = command_output(
+                            binary, root, ["session", "list"],
+                            environment={"PRODEX_TERM_COLUMNS": "20"},
+                        )
+                        self.assertEqual(result.returncode, 0, result.stderr.decode())
+                        self.assertEqual(result.stderr, b"")
+                        outputs[label] = normalize_root(result.stdout, root).decode()
+
+                self.assertEqual(outputs["modex"], outputs["reference"], case)
+                all_outputs[(reference, case)] = outputs["modex"]
+
+        for reference in (ORACLE_01651, test_cli.ORACLE):
+            self.assertNotIn("  profile:", all_outputs[(reference, "absent")])
+            self.assertTrue(all_outputs[(reference, "empty")].endswith("  profile: "))
+            multiple = all_outputs[(reference, "multiple-unicode")]
+            lines = multiple.splitlines()
+            id_details = [line for line in lines if line.startswith("  id: ")]
+            self.assertEqual(id_details, [f"  id: {second_id}", f"  id: {SESSION_ID}"])
+            self.assertEqual(
+                [line for line in lines if line.startswith("  profile:")],
+                ["  profile: secondary", f"  profile: {long_profile}"],
+            )
+            for identifier, profile in ((second_id, "secondary"), (SESSION_ID, long_profile)):
+                id_index = lines.index(f"  id: {identifier}")
+                self.assertEqual(lines[id_index + 1], f"  profile: {profile}")
+            for private_value in (
+                "CODEX_HOME_SENTINEL", "SYNTHETIC_API_KEY_SENTINEL",
+                "SYNTHETIC_BINDING_SENTINEL", "credential_identity", "binding_identity",
+            ):
+                self.assertNotIn(private_value, multiple)
+
+    def test_control_profile_bytes_are_escaped_in_redirected_output(self):
+        bound_at = int(time.time())
+        controls = list(range(0x20)) + list(range(0x7F, 0xA0))
+        profile_name = "Résumé界e\u0301" + "".join(map(chr, controls)) + "終🚀"
+        escaped_name = "Résumé界e\u0301" + "".join(f"\\x{code:02x}" for code in controls) + "終🚀"
+        release_outputs = []
+
+        for reference in (ORACLE_01651, test_cli.ORACLE):
+            outputs = {}
+            for label, binary in (("reference", reference), ("modex", test_cli.MODEX)):
+                with tempfile.TemporaryDirectory(prefix="modex-session-profile-controls-") as directory:
+                    root = Path(directory)
+                    fixture(root)
+                    profiles = {
+                        profile_name: {"codex_home": "/private/CODEX_HOME_SENTINEL", "managed": False},
+                    }
+                    write_state(root, profile_state(root, profile_name, bound_at, profiles=profiles))
+                    result = command_output(
+                        binary, root, ["session", "list"],
+                        environment={"PRODEX_TERM_COLUMNS": "20"},
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr.decode())
+                    self.assertEqual(result.stderr, b"")
+                    outputs[label] = normalize_root(result.stdout, root)
+            self.assertEqual(
+                outputs["modex"],
+                outputs["reference"].replace(profile_name.encode(), escaped_name.encode()),
+            )
+            self.assertIn(profile_name.encode(), outputs["reference"])
+            profile_line = outputs["modex"].split(b"  profile: ", 1)[1].split(b"\n", 1)[0]
+            self.assertEqual(profile_line, escaped_name.encode())
+            for code in controls:
+                self.assertNotIn(chr(code).encode(), profile_line)
+            for code in controls:
+                self.assertNotIn(chr(code).encode(), outputs["modex"].replace(b"\n", b""))
+            release_outputs.append(outputs["reference"])
+
+        self.assertEqual(release_outputs[0], release_outputs[1])
 
     def test_binding_retention_identity_and_conflict_match_both_releases(self):
         now = int(time.time())

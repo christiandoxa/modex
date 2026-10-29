@@ -258,6 +258,7 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
     var searches = List[AnthropicWebSearch]()
     var latest_search_by_id = Dict[String, Int]()
     var tool_calls = List[String]()
+    var reasoning_items = List[String]()
     var content = doc.get(doc.root, "content")
     if content >= 0:
         for block in doc.nodes[content].children:
@@ -282,6 +283,13 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
                 var arguments = "{}" if input < 0 else serialize_json(doc, input)
                 tool_calls.append(tool_output_item(id, name, arguments, Optional[String]()))
                 output.append("$tool$" + String(len(tool_calls) - 1))
+            elif kind == "thinking":
+                var thinking = doc.get(block, "thinking")
+                if thinking >= 0 and doc.nodes[thinking].kind == JSON_STRING:
+                    reasoning_items.append('{"type":"reasoning","summary":[{"type":"summary_text","text":' + serialize_json(doc, thinking) + "}]}")
+                    output.append("$reasoning$" + String(len(reasoning_items) - 1))
+                else:
+                    output.append("$break$")
             elif kind == "web_search_tool_result":
                 var search_id = doc.string(doc.get(block, "tool_use_id"))
                 var search_position = latest_search_by_id.get(search_id)
@@ -305,6 +313,9 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
             output_index += 1
         elif value.startswith("$tool$"):
             items.append(tool_calls[unsigned_value(String(value[byte=6:]))])
+            output_index += 1
+        elif value.startswith("$reasoning$"):
+            items.append(reasoning_items[unsigned_value(String(value[byte=11:]))])
             output_index += 1
         elif value == "$break$":
             output_index += 1
@@ -444,6 +455,8 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
                 if id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text:
                     raise Error("Anthropic web-search result requires a tool_use_id")
                 _ = _search_sources(doc, block)
+            elif kind == "thinking":
+                pass
             else:
                 raise Error("Anthropic Messages tool-use content has an unsupported block")
         if tool_count == 0:
@@ -451,9 +464,25 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         return
     if doc.string(doc.get(doc.root, "stop_reason")) != "end_turn":
         raise Error("Anthropic Messages stop reason is not supported")
-    if len(doc.nodes[content].children) != 3:
+    var search_index = Int(-1)
+    var result_index = Int(-1)
+    var text_index = Int(-1)
+    var shape_index = 0
+    for block in doc.nodes[content].children:
+        if doc.string(doc.get(block, "type")) == "thinking":
+            continue
+        if shape_index == 0:
+            search_index = block
+        elif shape_index == 1:
+            result_index = block
+        elif shape_index == 2:
+            text_index = block
+        else:
+            raise Error("Anthropic Messages content is outside the supported web-search shape")
+        shape_index += 1
+    if shape_index != 3:
         raise Error("Anthropic Messages content is outside the supported web-search shape")
-    var search = doc.nodes[content].children[0]
+    var search = search_index
     _only_fields(doc, search, ["type", "id", "name", "input"], "web-search tool use")
     if doc.string(doc.get(search, "type")) != "server_tool_use" or doc.string(doc.get(search, "name")) != "web_search":
         raise Error("Anthropic Messages content starts with an unsupported block")
@@ -467,12 +496,12 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
     var query = doc.get(input, "query")
     if query < 0 or doc.nodes[query].kind != JSON_STRING or not doc.nodes[query].text:
         raise Error("Anthropic web-search input requires a non-empty query")
-    var result = doc.nodes[content].children[1]
+    var result = result_index
     _only_fields(doc, result, ["type", "tool_use_id", "content"], "web-search result block")
     if doc.string(doc.get(result, "type")) != "web_search_tool_result" or doc.string(doc.get(result, "tool_use_id")) != doc.nodes[search_id].text:
         raise Error("Anthropic web-search result does not match its tool use")
     _ = _search_sources(doc, result)
-    var text = doc.nodes[content].children[2]
+    var text = text_index
     _only_fields(doc, text, ["type", "text"], "text block")
     var text_value = doc.get(text, "text")
     if doc.string(doc.get(text, "type")) != "text" or text_value < 0 or doc.nodes[text_value].kind != JSON_STRING:

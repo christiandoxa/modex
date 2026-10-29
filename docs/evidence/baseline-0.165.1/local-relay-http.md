@@ -285,3 +285,34 @@ build with Mojo 1.2.0. The 0.165.1 oracle module passes 16 tests; the active
 pass 48 tests together. The dependency audit covers 71 Mojo files, and Python
 compilation plus `git diff --check` pass. These process comparisons use
 synthetic loopback traffic on Linux x86-64 only.
+
+Follow-up: the frozen TinyHTTP source does not set a total request-head limit.
+`client.rs::read_next_line` appends bytes to a `Vec` through CRLF, and
+`client.rs::read` appends headers to another `Vec` until the blank line.
+Modex keeps a bounded production capture limit at 2 MiB; shared parser callers
+retain the 65,536-byte default. This is an explicit resource bound, not full
+parity with the unbounded reference. The existing outbound writer still caps
+aggregate headers at 2 MiB + 2,048 bytes and each field at 1 MiB.
+
+The checksum-pinned production controls now accept 1 MiB + 1-byte and exactly
+2 MiB many-field heads through `/v1/responses`; exactly 2 MiB also reaches the
+upstream through `/v1/chat/completions`. At 2 MiB + 1 byte, Prodex still
+dispatches and returns 200 while Modex returns 502 before upstream dispatch.
+An exactly 1 MiB User-Agent field is duplicated to the synthetic upstream by
+both products; a 1 MiB + 1-byte field still reaches the Prodex upstream but
+Modex rejects it under its existing outbound per-field limit. Larger reference
+heads and some header distributions that expand during outbound translation
+remain unqualified and may fail earlier than the aggregate inbound cap.
+
+Validation on Linux x86-64: the full 16-test 0.165.1 production oracle module
+passed, including the new 1 MiB + 1-byte, 2 MiB, and 2 MiB + 1-byte many-field
+controls and exact 1 MiB / 1 MiB + 1-byte User-Agent controls. `rtk make build`
+passed. Both focused native drivers built, and the local-rewrite and shared
+loopback suites passed 48 tests. Controls use isolated temporary state, a
+synthetic Codex peer, and a synthetic loopback upstream with the checksum-pinned
+oracle; no credentials or paid services were used.
+
+The shared size and field controls also pass against the checksum-pinned
+0.439.2 oracle: it accepts the tested 2 MiB + 1-byte head and 1 MiB + 1-byte
+User-Agent field, while Modex retains its explicit capture and outbound field
+bounds. Both focused 0.439.2 large-head oracle tests passed.

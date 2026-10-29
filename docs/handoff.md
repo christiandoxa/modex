@@ -1,5 +1,23 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Buffered Anthropic thinking blocks now produce reasoning items in tested
+search and mixed-tool responses. Session text reports include bound profile
+details; C0/C1 control characters are escaped, unlike the releases' raw output.
+The local relay's bounded request-head cap is now 2 MiB; both releases accept
+larger heads and some smaller layouts still hit outbound limits. The combined
+production build, 54 provider/session process tests, two large-head oracle
+controls, two Super launch controls, dependency audit and test census passed.
+Worker suites additionally passed 16 historical relay and 48 local relay/shared
+parser tests. The reasoning continuation control returns the same 503 before a
+second provider POST in both releases and Modex, leaving retained-history
+behavior unqualified. See `docs/evidence/baseline-0.165.1/anthropic-buffered.md`,
+`docs/evidence/baseline-0.165.1/session-profile-text.md` and
+`docs/evidence/baseline-0.165.1/local-relay-http.md`.
+
+Hosted Fast run `40837992499` on `3ef8a2b58a5ab63c8fa6422079d09207b06a7937`
+failed after the focused build and native checks passed: the required 0.439.2
+tag was unavailable. Oracle-dependent tests did not run.
+
 Hosted Fast run `40837362548` on `736098a5c599ed797e27879db2a56f306c1d6ab5`
 failed after its focused build and native checks passed because the required
 0.439.2 tag was unavailable. Oracle-dependent tests did not run.
@@ -567,8 +585,9 @@ framing match 0.165.1, including the terminal chunk for HEAD 204/304 event
 streams. Modex still suppressed the release's terminal chunk for HEAD 200
 event streams at that checkpoint. Large request heads now match
 selected 65,535/65,536/65,537-byte boundaries, 128 KiB fields, and 1 MiB
-aggregate/token cases against 0.165.1 and 0.439.2. The relay is bounded at
-1 MiB, while both releases accept 1 MiB + 1; this mismatch remains open. Other
+aggregate/token cases against 0.165.1 and 0.439.2. At that checkpoint the relay
+was bounded at 1 MiB; its current 2 MiB limit and remaining mismatch are noted
+above. Other
 callers retain 64 KiB request-head and direct-stream defaults. Concurrency,
 WebSocket transport and broader security behavior remain open. See
 `docs/evidence/baseline-0.165.1/local-relay-http.md`.

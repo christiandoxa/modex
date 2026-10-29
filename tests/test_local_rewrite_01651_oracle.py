@@ -46,6 +46,7 @@ RESPONSES_RESPONSE = b'{"created_at":1,"id":"chatcmpl_transport_oracle","metadat
 TARGET_PREFIX = b"/v1/responses?x="
 MAX_LENGTH_VALID_TARGET = TARGET_PREFIX + b"a" * (8192 - len(TARGET_PREFIX))
 OVER_LENGTH_INVALID_TARGET = MAX_LENGTH_VALID_TARGET + b"a"
+LOCAL_RELAY_REQUEST_HEADER_LIMIT = 2 * 1024 * 1024
 
 
 class Upstream(ThreadingHTTPServer):
@@ -713,6 +714,19 @@ def large_user_agent_case(head_bytes=1024 * 1024):
         "expected_body": RESPONSES_RESPONSE,
         "upstream": True,
         "expected_user_agent_count": 2,
+    }
+
+
+def large_user_agent_value_case(value_bytes):
+    request = request_bytes(headers=(("User-Agent", "u" * value_bytes),))
+    return {
+        "name": f"large_user_agent_value_{value_bytes}",
+        "request": request,
+        "expected_status": 200,
+        "expected_body": RESPONSES_RESPONSE,
+        "upstream": True,
+        "expected_user_agent_count": 2,
+        "expected_error_body": b"upstream request failed",
     }
 
 
@@ -1921,9 +1935,14 @@ def assert_large_request_head_cases(test, oracle, modex):
             (large_request_head_case(131072), 200, 200),
             (large_request_head_case(131072, target=b"/v1/chat/completions"), 200, 200),
             (large_user_agent_case(), 200, 200),
+            (large_user_agent_value_case(1024 * 1024), 200, 200),
+            (large_user_agent_value_case(1024 * 1024 + 1), 200, 502),
             (many_small_header_case(1024 * 1024), 200, 200),
             (many_connection_token_headers_case(), 200, 200),
-            (many_small_header_case(1024 * 1024 + 1), 200, 502),
+            (many_small_header_case(1024 * 1024 + 1), 200, 200),
+            (many_small_header_case(LOCAL_RELAY_REQUEST_HEADER_LIMIT), 200, 200),
+            (many_small_header_case(LOCAL_RELAY_REQUEST_HEADER_LIMIT, target=b"/v1/chat/completions"), 200, 200),
+            (many_small_header_case(LOCAL_RELAY_REQUEST_HEADER_LIMIT + 1), 200, 502),
         )
         for case, oracle_status, modex_status in cases:
             with test.subTest(case=case["name"]):
@@ -1972,7 +1991,7 @@ def assert_large_request_head_cases(test, oracle, modex):
                             )
                             test.assertNotEqual(records[0]["headers"].get("connection"), input_connection, label)
                     else:
-                        test.assertEqual(response["body"], b"gateway request capture failed", label)
+                        test.assertEqual(response["body"], case.get("expected_error_body", b"gateway request capture failed"), label)
                         test.assertEqual(records, [], label)
                 if oracle_status == modex_status:
                     test.assertEqual(modex_records[0]["body"], oracle_records[0]["body"])

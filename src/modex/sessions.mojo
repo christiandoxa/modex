@@ -186,6 +186,21 @@ def nullable_json(text: String) -> String:
     return quote_json(text) if text else "null"
 
 
+def session_profile_display(value: String) -> String:
+    var output = String()
+    for character in value.codepoints():
+        var code = Int(character)
+        if code < 0x20 or 0x7F <= code <= 0x9F:
+            var high = code // 16
+            var low = code % 16
+            output += "\\x"
+            output += String(chr(48 + high)) if high < 10 else String(chr(87 + high))
+            output += String(chr(48 + low)) if low < 10 else String(chr(87 + low))
+        else:
+            output += chr(code)
+    return output^
+
+
 def member_path(document: JsonDocument, path: StringSlice) -> Int:
     var index = document.root
     for name in path.split("."):
@@ -662,6 +677,8 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
         ], widths)
         if text_width(report.id) > widths[0]:
             output += "\n  id: " + report.id
+        if report.profile:
+            output += "\n  profile: " + session_profile_display(report.profile.value())
     return output^
 
 

@@ -15,8 +15,8 @@ from std.sys._libc_errno import ErrNo, get_errno
 from std.time import perf_counter, sleep
 
 comptime HTTP_HEADER_LIMIT = 65536
-# shortcut: cap relay request heads at 1 MiB; raise only with broader oracle evidence.
-comptime HTTP_MAX_REQUEST_HEADER_LIMIT = 1024 * 1024
+# shortcut: cap unbounded baseline heads at 2 MiB, below the outbound cap; raise with larger oracle evidence.
+comptime HTTP_MAX_REQUEST_HEADER_LIMIT = 2 * 1024 * 1024
 comptime HTTP_DEFAULT_BODY_LIMIT = 64 * 1024 * 1024
 comptime HTTP_MAX_BODY_LIMIT = 64 * 1024 * 1024
 comptime HTTP_MAX_RESPONSE_BODY_BYTES = 16777216

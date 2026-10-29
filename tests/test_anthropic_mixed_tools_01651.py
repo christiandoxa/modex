@@ -298,6 +298,163 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
         ])
         self.assertEqual(result["output"][2]["call_id"], "call_lookup")
 
+    def test_buffered_thinking_blocks_match_release(self):
+        cases = (
+            (
+                "search with UTF-8, empty, and non-string reasoning",
+                [
+                    {"type": "server_tool_use", "id": "srv_thinking", "name": "web_search",
+                     "input": {"query": "release"}},
+                    {"type": "thinking", "thinking": "Café 🧠\nSynthetic reasoning",
+                     "signature": "synthetic signature"},
+                    {"type": "web_search_tool_result", "tool_use_id": "srv_thinking",
+                     "content": [{"type": "web_search_result",
+                                  "url": "https://example.test/release"}]},
+                    {"type": "thinking", "thinking": ""},
+                    {"type": "thinking", "thinking": 7},
+                    {"type": "text", "text": "Found it."},
+                ],
+                "end_turn",
+                ["web_search_call", "reasoning", "reasoning", "message"],
+                ["Café 🧠\nSynthetic reasoning", ""],
+            ),
+            (
+                "repeated reasoning interleaves with search and function calls",
+                [
+                    {"type": "text", "text": "Before."},
+                    {"type": "thinking", "thinking": "First thought."},
+                    {"type": "server_tool_use", "id": "srv_first", "name": "web_search",
+                     "input": {"query": "first"}},
+                    {"type": "tool_use", "id": "call_first", "name": "lookup",
+                     "input": {"query": "first"}},
+                    {"type": "thinking", "thinking": "Second thought."},
+                    {"type": "web_search_tool_result", "tool_use_id": "srv_first",
+                     "content": [{"type": "web_search_result",
+                                  "url": "https://example.test/first"}]},
+                    {"type": "server_tool_use", "id": "srv_second", "name": "web_search",
+                     "input": {"query": "second"}},
+                    {"type": "thinking", "thinking": False},
+                    {"type": "text", "text": "Middle."},
+                    {"type": "tool_use", "id": "call_second", "name": "lookup",
+                     "input": {"query": "second"}},
+                    {"type": "web_search_tool_result", "tool_use_id": "srv_second",
+                     "content": [{"type": "web_search_result",
+                                  "url": "https://example.test/second"}]},
+                    {"type": "thinking", "thinking": "Third thought."},
+                    {"type": "text", "text": "After."},
+                ],
+                "tool_use",
+                ["message", "reasoning", "web_search_call", "function_call",
+                 "reasoning", "web_search_call", "message", "function_call",
+                 "reasoning", "message"],
+                ["First thought.", "Second thought.", "Third thought."],
+            ),
+            (
+                "missing and non-string reasoning separate text messages",
+                [
+                    {"type": "text", "text": "Before."},
+                    {"type": "thinking", "thinking": False},
+                    {"type": "text", "text": "Middle."},
+                    {"type": "thinking"},
+                    {"type": "text", "text": "After."},
+                    {"type": "tool_use", "id": "call_lookup", "name": "lookup",
+                     "input": {"query": "release"}},
+                ],
+                "tool_use",
+                ["message", "message", "message", "function_call"],
+                [],
+            ),
+            (
+                "ordinary response control has no reasoning",
+                None,
+                "tool_use",
+                ["message", "web_search_call", "function_call", "message"],
+                [],
+            ),
+        )
+        for label, content, stop_reason, expected_types, expected_reasoning in cases:
+            with self.subTest(case=label):
+                request = _request()
+                reply = _buffered_reply(content, stop_reason)
+                captures = []
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    posts, responses = observe_turns(binary, [request], [reply])
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual(len(responses), 1)
+                    self.assertEqual(responses[0]["status"], 200)
+                    self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+                    headers = {name.lower(): value for name, value in posts[0]["headers"].items()}
+                    self.assertEqual(headers["x-api-key"], SYNTHETIC_API_KEY)
+                    self.assertEqual(headers["anthropic-version"], "2023-06-01")
+                    captures.append((json.loads(posts[0]["body"]),
+                                     _normalize(_json_body(responses[0]))))
+                self.assertEqual(captures[1:], captures[:1] * 2)
+                self.assertEqual([item["type"] for item in captures[0][1]["output"]],
+                                 expected_types)
+                self.assertEqual([
+                    item["summary"][0]["text"]
+                    for item in captures[0][1]["output"]
+                    if item["type"] == "reasoning"
+                ], expected_reasoning)
+
+    def test_thinking_support_keeps_tool_use_validation(self):
+        reply = _buffered_reply([
+            {"type": "thinking", "thinking": "Synthetic reasoning"},
+            {"type": "tool_use", "id": "call_missing_name", "input": {}},
+        ])
+        captures = []
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            posts, responses = observe_turns(binary, [_request()], [reply])
+            self.assertEqual(len(posts), 1)
+            self.assertEqual(len(responses), 1)
+            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+            captures.append((json.loads(posts[0]["body"]), responses[0]["status"],
+                             bytes.fromhex(responses[0]["body"])))
+        self.assertEqual(captures[1:], captures[:1] * 2)
+        self.assertEqual(captures[0][1], 502)
+
+    def test_reasoning_response_continuation_matches_unavailable_boundary(self):
+        first = _request()
+        first["input"] = "Synthetic first turn"
+        second = {
+            "model": "deepseek-chat",
+            "input": [
+                {"type": "function_call_output", "call_id": "call_lookup",
+                 "output": "synthetic result"},
+                {"type": "message", "role": "user", "content": "Continue synthetically."},
+            ],
+            "stream": False,
+            "tools": _request()["tools"],
+            "use_previous": True,
+        }
+        replies = [
+            _buffered_reply([
+                {"type": "thinking", "thinking": "Synthetic retained reasoning"},
+                {"type": "tool_use", "id": "call_lookup", "name": "lookup",
+                 "input": {"query": "first"}},
+            ], "tool_use"),
+            _buffered_reply([
+                {"type": "server_tool_use", "id": "srv_next", "name": "web_search",
+                 "input": {"query": "second"}},
+                {"type": "web_search_tool_result", "tool_use_id": "srv_next", "content": []},
+                {"type": "text", "text": "Second turn done."},
+            ], "end_turn"),
+        ]
+        captures = []
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            posts, responses = observe_turns(binary, [first, second], replies)
+            self.assertEqual([response["status"] for response in responses], [200, 503])
+            self.assertEqual(len(posts), 1)
+            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+            self.assertEqual(
+                [item["type"] for item in _json_body(responses[0])["output"]],
+                ["reasoning", "function_call"],
+            )
+            captures.append((json.loads(posts[0]["body"]),
+                             bytes.fromhex(responses[1]["body"])))
+        self.assertEqual(captures[1:], captures[:1] * 2)
+        self.assertEqual(captures[0][1], b'{"error":{"code":"bound_continuation_unavailable","message":"bound continuation provider is unavailable"}}')
+
     def test_mixed_search_and_function_stream_matches_release(self):
         events = [
             {"type": "message_start", "message": {

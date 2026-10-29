@@ -27,20 +27,25 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
                 scenario="exit-seven",
                 environment_overrides={"MODEX_TEST_CODEX_VERSION_OVERSIZE": "1"},
             )
-            diagnostic = launch_support.normalized_codex_path(result.stderr).splitlines()[-1:]
             self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
             self.assertEqual(
                 [record["args"] for record in records if record["kind"] == "probe"],
                 [["--version"]],
             )
             self.assertEqual((upstream, state["leftovers"]), ([], []))
-            observations.append(diagnostic)
+            self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+            observations.append((
+                result.returncode,
+                result.stdout,
+                launch_support.normalized_codex_path(result.stderr),
+            ))
 
         expected = [
             b"Error: failed to probe Codex CLI at <CODEX>: "
             b"Codex version probe output exceeded the limit"
         ]
-        self.assertEqual(observations, [expected, expected])
+        self.assertEqual(observations[0], observations[1])
+        self.assertTrue(observations[0][2].endswith(expected[0] + b"\n"))
 
     def test_oversized_app_server_help_probe_matches_reference_context(self):
         observations = []
@@ -50,20 +55,25 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
                 scenario="exit-seven",
                 environment_overrides={"MODEX_TEST_CODEX_HELP_OVERSIZE": "1"},
             )
-            diagnostic = launch_support.normalized_codex_path(result.stderr).splitlines()[-1:]
             self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
             self.assertEqual(
                 [record["args"] for record in records if record["kind"] == "probe"],
                 [["--version"], ["app-server", "--help"]],
             )
             self.assertEqual((upstream, state["leftovers"]), ([], []))
-            observations.append(diagnostic)
+            self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+            observations.append((
+                result.returncode,
+                result.stdout,
+                launch_support.normalized_codex_path(result.stderr),
+            ))
 
         expected = [
             b"Error: failed to probe Codex CLI at <CODEX>: "
             b"Codex app-server capability probe output exceeded the limit"
         ]
-        self.assertEqual(observations, [expected, expected])
+        self.assertEqual(observations[0], observations[1])
+        self.assertTrue(observations[0][2].endswith(expected[0] + b"\n"))
 
     def test_minimum_codex_version_remains_04392_compatible(self):
         cases = (
@@ -77,7 +87,7 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
         )
         for environment, accepted in cases:
             with self.subTest(environment=environment):
-                diagnostics = []
+                observations = []
                 for binary in (test_cli.ORACLE, launch_support.MODEX):
                     result, records, upstream, state = launch_support.run_private_launch(
                         binary,
@@ -86,6 +96,12 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
                     )
                     probes = [record["args"] for record in records if record["kind"] == "probe"]
                     self.assertEqual((upstream, state["leftovers"]), ([], []))
+                    self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                    observations.append((
+                        result.returncode,
+                        result.stdout,
+                        launch_support.normalized_codex_path(result.stderr),
+                    ))
                     if accepted:
                         self.assertEqual((result.returncode, result.stdout), (7, b""), result.stderr)
                         self.assertEqual(probes, [["--version"], ["app-server", "--help"]])
@@ -95,15 +111,10 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
                         self.assertEqual(probes, [["--version"]])
                         self.assertEqual([record["kind"] for record in records], ["probe"])
                         self.assertIn(b"requires 0.153.2 or newer", result.stderr)
-                        diagnostics.append(
-                            launch_support.normalized_codex_path(result.stderr)
-                            .splitlines()[-1]
-                        )
-                if not accepted:
-                    self.assertEqual(diagnostics[0], diagnostics[1])
+                self.assertEqual(observations[0], observations[1])
 
     def test_nonzero_version_probe_matches_04392(self):
-        diagnostics = []
+        observations = []
         for binary in (test_cli.ORACLE, launch_support.MODEX):
             result, records, upstream, state = launch_support.run_private_launch(
                 binary,
@@ -114,9 +125,11 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
             self.assertEqual([record["kind"] for record in records], ["probe"])
             self.assertEqual(records[0]["args"], ["--version"])
             self.assertEqual((upstream, state["leftovers"]), ([], []))
-            diagnostics.append(
-                launch_support.normalized_codex_path(result.stderr)
-                .splitlines()[-1]
-            )
-        self.assertEqual(diagnostics[0], diagnostics[1])
-        self.assertIn(b"Codex version probe failed for <CODEX> with status 7.", diagnostics[0])
+            self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+            observations.append((
+                result.returncode,
+                result.stdout,
+                launch_support.normalized_codex_path(result.stderr),
+            ))
+        self.assertEqual(observations[0], observations[1])
+        self.assertIn(b"Codex version probe failed for <CODEX> with status 7.", observations[0][2])

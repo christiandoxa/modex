@@ -3,7 +3,7 @@
 from std.collections import List, Span
 from std.io import RawFileDescriptor
 from std.net._sys.unix import F_GETFL, F_SETFL, O_NONBLOCK
-from std.os import getenv, getuid, listdir, lstat, mkdir, remove, rmdir, symlink
+from std.os import getenv, getuid, isatty, listdir, lstat, mkdir, remove, rmdir, symlink
 from std.os.path import exists, lexists, realpath
 from std.os.process import Pipe, Process, ProcessStatus
 from std.pathlib import cwd
@@ -230,6 +230,27 @@ def _toml_model_literal(value: String) -> String:
     return result
 
 
+def _launch_progress_fallback() -> Bool:
+    # Interactive launch progress uses a live terminal panel, which Modex does not render yet.
+    return not isatty(2) or getenv("CODEX_CI", "\0") != "\0"
+
+
+def _deepseek_launch_progress():
+    if not _launch_progress_fallback():
+        return
+    print("Prodex launch: preparing runtime launch...", file=stderr)
+    print("Prodex launch: Smart Context runtime proxy requested.", file=stderr)
+    print("Prodex launch: local provider bridge requested.", file=stderr)
+
+
+def _deepseek_provider_panel():
+    if isatty(2) and getenv("CODEX_CI", "\0") == "\0":
+        return
+    print("[ Runtime Provider ] =========================================================================================", file=stderr)
+    print("Using provider 'deepseek' through the local compatibility proxy. Smart Context rewrites require a proven", file=stderr)
+    print("tokenizer. Using one provider API key; API-key rotation is skipped and quota preflight stays disabled.", file=stderr)
+
+
 def _capture_codex_probe(binary: String, args: List[String], environment: List[String], label: String) raises -> CapturedProcessOutput:
     try:
         return capture_with_env(binary, args, environment, label)
@@ -361,6 +382,8 @@ def _exec(binary: String, home: String, model: String, upstream: String, key: St
         launch.append("exec")
         launch.extend(args^)
         launch.extend(prompt.copy())
+        if _launch_progress_fallback():
+            print("Prodex launch: starting child process...", file=stderr)
         var child = spawn_with_env(binary, launch, environment)
         var result: ProcessStatus
         try:
@@ -382,6 +405,7 @@ def _exec(binary: String, home: String, model: String, upstream: String, key: St
 
 
 def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64 = 0, compact_limit: UInt64 = 0) raises -> Int:
+    _deepseek_launch_progress()
     _ = local_rewrite_upstream(upstream)
     _ = deepseek_request_headers([], key)
     _ = deepseek_runtime_route()
@@ -404,6 +428,7 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
     _ = ensure_app_root()
     _private_directory(shared)
     _private_directory(root + "/profiles")
+    _deepseek_provider_panel()
     var home = root + "/profiles/.prodex-overlay-" + new_uuid7()
     mkdir(home, 0o700)
     try:

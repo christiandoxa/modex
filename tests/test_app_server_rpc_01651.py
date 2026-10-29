@@ -38,6 +38,11 @@ class AppServerRpc01651Tests(unittest.TestCase):
         self.assertEqual((baseline.returncode, modex.returncode), (0, 0))
         self.assertEqual((len(baseline_upstream), len(modex_upstream)), (1, 1))
         self.assertEqual(
+            test_super_launch.normalized_codex_path(baseline.stderr),
+            test_super_launch.normalized_codex_path(modex.stderr),
+        )
+        self.assertNotIn(b"synthetic-provider-key", baseline.stdout + baseline.stderr + modex.stdout + modex.stderr)
+        self.assertEqual(
             client_info(baseline_records),
             {"name": "prodex-hook-trust", "version": "0.165.1"},
         )
@@ -64,6 +69,10 @@ class AppServerRpc01651Tests(unittest.TestCase):
         self.assertEqual((baseline.stdout, modex.stdout), (b"", b""))
         self.assertEqual((baseline_upstream, modex_upstream), ([], []))
         self.assertEqual((baseline_state["leftovers"], modex_state["leftovers"]), ([], []))
+        self.assertEqual(
+            test_super_launch.normalized_codex_path(baseline.stderr),
+            test_super_launch.normalized_codex_path(modex.stderr),
+        )
         self.assertEqual((request_methods(baseline_records), request_methods(modex_records)),
                          (["initialize"], ["initialize"]))
         self.assertEqual(baseline.stderr.decode().splitlines()[-1], expected)
@@ -89,6 +98,10 @@ class AppServerRpc01651Tests(unittest.TestCase):
         self.assertEqual((baseline.stdout, modex.stdout), (b"", b""))
         self.assertEqual((baseline_upstream, modex_upstream), ([], []))
         self.assertEqual((baseline_state["leftovers"], modex_state["leftovers"]), ([], []))
+        self.assertEqual(
+            test_super_launch.normalized_codex_path(baseline.stderr),
+            test_super_launch.normalized_codex_path(modex.stderr),
+        )
         self.assertEqual((request_methods(baseline_records), request_methods(modex_records)),
                          (["initialize"], ["initialize"]))
         self.assertEqual(baseline.stderr.decode().splitlines()[-1], expected)
@@ -116,6 +129,10 @@ class AppServerRpc01651Tests(unittest.TestCase):
                 self.assertEqual((baseline.stdout, modex.stdout), (b"", b""))
                 self.assertEqual((baseline_upstream, modex_upstream), ([], []))
                 self.assertEqual((baseline_state["leftovers"], modex_state["leftovers"]), ([], []))
+                self.assertEqual(
+                    test_super_launch.normalized_codex_path(baseline.stderr),
+                    test_super_launch.normalized_codex_path(modex.stderr),
+                )
                 self.assertEqual((request_methods(baseline_records), request_methods(modex_records)),
                                  (expected_methods, expected_methods))
                 self.assertEqual(baseline.stderr.decode().splitlines()[-1], expected)
@@ -125,6 +142,7 @@ class AppServerRpc01651Tests(unittest.TestCase):
         suite = test_super_launch.SuperLaunchTests()
         responses = []
         methods = []
+        stderr_outputs = []
         for binary in (ORACLE, MODEX):
             result, records, upstream, state = suite.run_launch(
                 binary=binary, scenario="split-utf8-noise"
@@ -135,8 +153,10 @@ class AppServerRpc01651Tests(unittest.TestCase):
             self.assertEqual(state["leftovers"], [])
             responses.append(result.stdout)
             methods.append([record["method"] for record in records if record.get("kind") == "request"])
+            stderr_outputs.append(test_super_launch.normalized_codex_path(result.stderr))
         self.assertEqual(responses[0], responses[1])
         self.assertEqual(methods, [["initialize", "hooks/list", "hooks/list"]] * 2)
+        self.assertEqual(stderr_outputs[0], stderr_outputs[1])
 
 
 if __name__ == "__main__":

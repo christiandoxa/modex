@@ -1,4 +1,5 @@
 """Production Super CLI against isolated synthetic Codex and loopback providers."""
+import errno
 import hashlib
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -195,7 +196,7 @@ class SuperLaunchTests(unittest.TestCase):
     def run_launch(
         self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat",
         super_arguments=(), environment_overrides=None, base_path="/v1", sub_agent=False,
-        temporary_directory=None,
+        temporary_directory=None, stderr_tty=False,
     ):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-", dir=temporary_directory) as directory:
             root = Path(directory)
@@ -519,7 +520,34 @@ class SuperLaunchTests(unittest.TestCase):
                        "--no-presidio", "--sub-agent" if sub_agent else "--no-sub-agent", "--skip-quota-check", *super_arguments,
                        "exec", "--", "synthetic prompt"]
             try:
-                result = subprocess.run(command, env=environment, cwd=root / "work", capture_output=True, timeout=40)
+                if stderr_tty:
+                    master, slave = os.openpty()
+                    try:
+                        try:
+                            process = subprocess.run(
+                                command, env=environment, cwd=root / "work", stdout=subprocess.PIPE,
+                                stderr=slave, stdin=subprocess.DEVNULL, timeout=40,
+                            )
+                        finally:
+                            os.close(slave)
+                        captured_stderr = bytearray()
+                        while True:
+                            try:
+                                chunk = os.read(master, 65536)
+                            except OSError as error:
+                                if error.errno == errno.EIO:
+                                    break
+                                raise
+                            if not chunk:
+                                break
+                            captured_stderr.extend(chunk)
+                    finally:
+                        os.close(master)
+                    result = subprocess.CompletedProcess(
+                        command, process.returncode, process.stdout, bytes(captured_stderr)
+                    )
+                else:
+                    result = subprocess.run(command, env=environment, cwd=root / "work", capture_output=True, timeout=40)
             finally:
                 server.shutdown()
                 worker.join(2)
@@ -669,6 +697,58 @@ class SuperLaunchTests(unittest.TestCase):
                 self.assertEqual(after_upstream[0]["body"], before_upstream[0]["body"])
                 if scenario == "stream": self.assertEqual(event_names(after["body"]), event_names(before["body"]))
                 if scenario == "passthrough": self.assertEqual(after["body"], before["body"])
+
+    def test_launch_progress_and_probe_errors_match_historical_release(self):
+        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        cases = (
+            ("minimum-version", "exit-seven", {"MODEX_TEST_CODEX_VERSION": "codex-cli 0.153.1"}, 1),
+            ("capability-probe", "app-server-help-failure", {}, 1),
+            ("child-start", "exit-seven", {"MODEX_TEST_CODEX_VERSION": "codex-cli 0.153.2"}, 7),
+        )
+        for label, scenario, environment, exit_code in cases:
+            with self.subTest(label=label):
+                observations = []
+                for binary in (ORACLE, MODEX):
+                    result, records, upstream, state = self.run_launch(
+                        binary=binary,
+                        scenario=scenario,
+                        environment_overrides=environment,
+                    )
+                    self.assertEqual(result.returncode, exit_code, result.stderr)
+                    self.assertEqual(upstream, [])
+                    self.assertEqual(state["leftovers"], [])
+                    self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                    probes = [record["args"] for record in records if record["kind"] == "probe"]
+                    self.assertEqual(probes[0], ["--version"])
+                    if label != "minimum-version":
+                        self.assertEqual(probes[1], ["app-server", "--help"])
+                    expected_kinds = {
+                        "minimum-version": ["probe"],
+                        "capability-probe": ["probe", "probe"],
+                        "child-start": ["probe", "probe", "preflight", "request", "request", "request", "launch"],
+                    }[label]
+                    self.assertEqual([record["kind"] for record in records], expected_kinds)
+                    observations.append((
+                        result.returncode,
+                        result.stdout,
+                        normalized_codex_path(result.stderr),
+                        state,
+                    ))
+                self.assertEqual(observations[0], observations[1])
+
+    def test_tty_does_not_receive_the_redirected_progress_fallback(self):
+        result, records, upstream, state = self.run_launch(
+            scenario="exit-seven",
+            environment_overrides={"MODEX_TEST_CODEX_VERSION": "codex-cli 0.153.1"},
+            stderr_tty=True,
+        )
+        self.assertEqual((result.returncode, result.stdout), (1, b""), result.stderr)
+        self.assertEqual([record["args"] for record in records if record["kind"] == "probe"], [["--version"]])
+        self.assertEqual((upstream, state["leftovers"]), ([], []))
+        self.assertNotIn(b"Prodex launch:", result.stderr)
+        self.assertNotIn(b"[ Runtime Provider ]", result.stderr)
+        self.assertNotIn(b"\x1b[", result.stderr)
+        self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
 
     def test_model_catalog_selection_and_metadata_match_release(self):
         for model in ("deepseek-v4-pro", "deepseek-flash", "deepseek-v4-flash", "auto", "flash", "deepseek-chat", "deepseek-reasoner", "synthetic-model-\"quoted\"", "synthetic\\model", "DEEPSEEK-CHAT", "deepsee\u212a-chat"):

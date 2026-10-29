@@ -11,12 +11,13 @@ failed: request write failed` for the same synthetic process. Now only EPIPE
 maps to the observed message and the standard-library errno; `MSG_NOSIGNAL` remains in use, and
 other write errors retain their existing handling.
 
-`python3 tests/test_app_server_rpc_01651.py` compares the last error line from
-both production entrypoints. The isolated synthetic Codex peer closes stdin
-after the initialize request. Both processes exit 1, send no later RPC, and
-make zero upstream requests. Full stderr remains different because Modex does
-not emit the oracle's launch progress lines. No external provider traffic or
-real credentials are used. This qualifies the closed-stdin error only; broader
-transport behavior and the other five release targets remain unqualified.
+`python3 tests/test_app_server_rpc_01651.py` compares the final error and full
+normalized stderr from both production entrypoints. The isolated synthetic
+Codex peer closes stdin after the initialize request. Both processes exit 1,
+send no later RPC, and make zero upstream requests. Full redirected stderr
+now matches, including the launch progress fallback. No external provider
+traffic or real credentials are used. This qualifies the closed-stdin error
+only; interactive TTY progress, broader transport behavior, and the other five
+release targets remain unqualified.
 The numeric errno text is verified only on Linux x86-64; macOS and Windows
 behavior remains unverified.

@@ -14,7 +14,8 @@ environment, then exits 7 for `app-server --help`. Both binaries issue
 `--version` followed by `app-server --help`; all six variables are absent in
 both probes. They return exit 1 with the same final capability diagnostic,
 make no app-server RPC or provider request, and leave no temporary runtime
-overlay.
+overlay. The test compares complete stdout and normalized stderr, including
+the launch progress fallback before probes.
 
 The frozen source requires Codex `0.153.2` or newer in
 `crates/prodex-app/src/codex_binary.rs`. It parses stdout plus stderr through
@@ -25,9 +26,13 @@ stderr with a case-insensitive Codex label and trailing punctuation. The
 noninitial `+` forms `0.+153.2` and `0.153.+2` are accepted like Rust's unsigned
 integer parser. A version probe that exits 7 also matches Prodex's status,
 path, and install guidance. These cases run under a mode-0700 temp directory
-nested below a private temp root, covering diagnostic path normalization. The
-final below-minimum diagnostic matches. Prodex prints startup progress before
-that error; Modex does not, so earlier progress output remains different.
+nested below a private temp root, covering diagnostic path normalization.
+Modex now matches the frozen fallback progress and provider panel before
+version, capability, and bounded-capture errors. It also prints the child-start
+fallback only after capability and hook-trust preflight succeeds. Full output,
+exit status, probe arguments, environment sanitization, no-provider-request
+behavior, and overlay cleanup are compared against 0.165.1. The same progress
+cases compare against historical 0.439.2.
 Hosted Fast CI run `40788779491` failed when the old normalizer assumed the
 fixture was directly under `/tmp`; the shared normalizer now covers nested
 private roots and the 0.439.2 regression suite checks the same path layout.
@@ -35,7 +40,8 @@ private roots and the 0.439.2 regression suite checks the same path layout.
 Oversized synthetic `--version` and `app-server --help` output also produce
 the same path-wrapped capture diagnostics in both binaries. The executable
 and upstream are synthetic; no account, real credential, or provider traffic
-is used. Wrapper/hash qualification, other malformed version inputs, full
+is used. The pipe/CI fallback text is qualified; the interactive TTY progress
+panel, wrapper/hash qualification, other malformed version inputs, full
 startup/storage/security behavior, other targets, and broader Super parity
 remain unverified.
 

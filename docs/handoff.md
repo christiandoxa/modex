@@ -81,22 +81,26 @@ minimum: a synthetic `0.153.1` stops before app-server help, while exact-minimum
 `0.153.2` from stderr and components with leading `+` are accepted. A version
 probe exit 7 also preserves the oracle's path/status/guidance diagnostic. The
 tests use a private nested temp directory; oversized version/help capture
-errors still match. Prodex prints startup progress before the low-version
-error; Modex does not, so only the final error line matches. Wrapper/hash
-qualification, other malformed version inputs, full startup/security behavior
-and other targets remain gaps. Hosted Fast CI run `40788779491` exposed a
-diagnostic normalizer that assumed the fixture lived directly under `/tmp`;
-normalization now handles nested private temp roots, covered by both 0.165.1
-and 0.439.2 production-oracle tests. See
+errors still match. Modex now matches the selected fallback progress lines,
+provider panel, and child-start line on complete redirected stdout/stderr
+comparisons against 0.165.1 and historical 0.439.2, with synthetic child and
+no provider requests. Interactive TTY progress rendering remains unfinished.
+Wrapper/hash qualification, other malformed version inputs, remaining
+startup/security behavior, and other targets remain gaps. Hosted Fast CI run
+`40788779491` exposed a diagnostic normalizer that assumed the fixture was
+directly under `/tmp`; it now handles nested private temp roots. Both the
+0.165.1 and 0.439.2 production-oracle tests cover that layout. See
 `docs/evidence/baseline-0.165.1/super-codex-probes.md`.
 
 The pinned 0.439.2 Codex probe also enforces the `0.153.2` minimum. Its real
 oracle comparison now covers below-minimum rejection, exact-minimum acceptance
 from stderr, leading-plus components, version-probe exit 7, and oversized
 `--version`/`app-server --help` diagnostics under a private nested temp
-directory. The below-minimum final error matches, but Prodex progress output
-remains absent in Modex. These Linux x86-64 synthetic cases do not establish
-broader Super parity. See
+directory. Selected fallback progress output now matches through the full
+stdout/stderr and side-effect controls in `tests/test_super_launch.py` and
+`tests/test_super_probe_diagnostic_04392.py`; interactive TTY rendering remains
+unverified. These Linux x86-64 synthetic cases do not establish broader Super
+parity. See
 `docs/evidence/baseline-0.439.2/super-codex-minimum-version.md` and
 `docs/evidence/baseline-0.439.2/super-codex-probe-output-limit.md`.
 
@@ -156,9 +160,10 @@ protocol regression. This covers `clientInfo` only; see
 When the synthetic Codex app-server closes stdin after `initialize`, production
 Modex now reports the same `Broken pipe (os error 32)` text as the 0.165.1
 oracle, without changing SIGPIPE handling or attempting an upstream request.
-Launch progress stderr and broader transport cases remain different or
-unqualified. The numeric errno text is verified only on Linux x86-64; macOS and
-Windows behavior remains unverified. See
+Full redirected stderr now matches the oracle, including launch progress and
+provider fallback messages. Interactive TTY progress rendering and broader
+transport cases remain unverified. The numeric errno text is verified only on
+Linux x86-64; macOS and Windows behavior remains unverified. See
 `docs/evidence/baseline-0.165.1/app-server-broken-pipe.md`.
 
 When the synthetic app-server closes stdout immediately after `initialize`,

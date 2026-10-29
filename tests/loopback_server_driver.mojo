@@ -65,6 +65,8 @@ def run(mode: String, mut output: RawFileDescriptor) raises:
             request = connection.read_request(request_timeout, allow_upgrade_headers=True)
         elif mode == "upgrade-small" or mode == "upgrade-timeout":
             request = connection.read_request(request_timeout, 3, allow_upgrade_headers=True, defer_expectation_errors=True)
+        elif mode == "tiny-http-compat":
+            request = connection.read_request(request_timeout, tiny_http_request_line_compat=True)
         else:
             request = connection.read_request(request_timeout)
     except error:

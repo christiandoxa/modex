@@ -690,14 +690,36 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
         var line = lines[index]
         if line.byte_length() == 0:
             continue
-        var colon = line.find(":")
+        var line_start = offset
+        var line_end = offset + line.byte_length()
+        if tiny_http_request_line_compat:
+            while line_start < line_end and _tiny_http_whitespace(bytes[line_start]):
+                line_start += 1
+            while line_end > line_start and _tiny_http_whitespace(bytes[line_end - 1]):
+                line_end -= 1
+        var parsed_line = String(line)
+        if tiny_http_request_line_compat:
+            parsed_line = _ascii(bytes, line_start, line_end)
+        var colon = parsed_line.find(":")
         if colon <= 0:
             raise Error("malformed HTTP request header")
-        _validate_header_line(bytes, offset, offset + line.byte_length())
+        # TinyHTTP accepts ASCII value controls; the outbound builder rejects them before sending.
+        _validate_header_line(bytes, line_start, line_end, tiny_http_request_line_compat)
         offset += line.byte_length() + 2
-        var name = String(line[byte=:colon])
+        var name = String(parsed_line[byte=:colon])
         var lower = name.lower()
-        var value = String(line[byte=colon + 1:].strip(" \t"))
+        var value: String
+        if tiny_http_request_line_compat:
+            var value_start = colon + 1
+            var value_end = parsed_line.byte_length()
+            var value_bytes = parsed_line.as_bytes()
+            while value_start < value_end and _tiny_http_whitespace(value_bytes[value_start]):
+                value_start += 1
+            while value_end > value_start and _tiny_http_whitespace(value_bytes[value_end - 1]):
+                value_end -= 1
+            value = String(parsed_line[byte=value_start:value_end])
+        else:
+            value = String(parsed_line[byte=colon + 1:].strip(" \t"))
         if lower == "content-length":
             if has_content_length:
                 raise Error("duplicate HTTP content length")
@@ -821,20 +843,26 @@ def request_target_valid(target: String) -> Bool:
     return True
 
 
-def _validate_header_line(bytes: List[UInt8], start: Int, end: Int) raises:
+def _validate_header_line(bytes: List[UInt8], start: Int, end: Int, allow_invalid_value_bytes: Bool = False) raises:
+    if not allow_invalid_value_bytes:
+        for index in range(start, end):
+            if bytes[index] == 9:
+                continue
+            if bytes[index] < 32 or bytes[index] == 127:
+                raise Error("malformed HTTP header value")
     var colon = -1
     for index in range(start, end):
         if bytes[index] == 58 and colon < 0:
             colon = index
-        if bytes[index] == 9:
-            continue
-        if bytes[index] < 32 or bytes[index] == 127:
-            raise Error("malformed HTTP header value")
     if colon <= start:
         raise Error("malformed HTTP header name")
     for index in range(start, colon):
         if not _http_token_byte(bytes[index]):
             raise Error("malformed HTTP header name")
+
+
+def _tiny_http_whitespace(byte: UInt8) -> Bool:
+    return byte == 32 or (byte >= 9 and byte <= 13)
 
 
 def _header_end(bytes: List[UInt8], start: Int = 0, end: Int = -1) -> Int:

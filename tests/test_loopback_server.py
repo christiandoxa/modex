@@ -217,6 +217,24 @@ class LoopbackHTTPServerTests(unittest.TestCase):
                 self.assertEqual(status(response), 400)
                 self.assertIn("REJECT ", stdout)
 
+    def test_tiny_http_header_whitespace_is_opt_in(self):
+        raw = (
+            b"POST / HTTP/1.1\r\nHost: local\r\n"
+            b"\x0bX-Trim: \x0cvalue\x0b\x0c\r\nContent-Length: 0\r\n\r\n"
+        )
+        process, client = start("tiny-http-compat")
+        client.sendall(raw)
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 200)
+        request_line = next(line for line in stdout.splitlines() if line.startswith("REQUEST "))
+        self.assertIn(["X-Trim", "value"], json.loads(request_line.removeprefix("REQUEST "))["headers"])
+
+        process, client = start("echo")
+        client.sendall(raw)
+        response, stdout = finish(process, client)
+        self.assertEqual(status(response), 400)
+        self.assertIn("malformed HTTP header value", stdout)
+
     def test_default_loopback_parser_keeps_upgrade_headers_rejected(self):
         process, client = start("echo")
         client.sendall(

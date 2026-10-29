@@ -1,5 +1,19 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The production relay trims ASCII boundary whitespace around request header
+lines and values only in TinyHTTP compatibility mode. Real-process controls
+match checksum-pinned 0.165.1 and 0.439.2 for boundary whitespace, CRLF field
+separation, and rejection of embedded value controls before upstream I/O.
+Framing mismatches remain visible: both releases dispatch duplicate equal
+`Content-Length` while Modex rejects it. Both releases close without a response
+for conflicting `Content-Length` and `Transfer-Encoding`, while Modex returns
+502. Both releases also close without a response for raw UTF-8 whitespace,
+while Modex returns 400. Embedded-control, conflicting-framing, and raw-UTF-8
+cases do not dispatch upstream; the duplicate-length release controls do. This
+qualifies selected Linux x86-64 behavior only and keeps all six baseline
+targets in the denominator. Evidence:
+`docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.
+
 Anthropic streamed `tool_use` blocks with missing, null, non-string, empty, or
 whitespace-only names now follow both pinned releases' deferred validation
 path. Three-way real-process comparisons match the complete normalized event

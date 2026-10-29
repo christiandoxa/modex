@@ -71,6 +71,14 @@ verified. See `docs/evidence/baseline-0.165.1/super-exec-worktree-options.md`,
 `docs/evidence/baseline-0.165.1/super-exec-working-directory.md` and
 `docs/evidence/baseline-0.165.1/super-exec-value-options.md`.
 
+DeepSeek Super dry-run supports the guarded exec path and selected missing-tool
+or Node-only environments. With both Node and npx present, or managed optional
+tools detected, Modex fails closed instead of reporting readiness. The releases
+may execute a locally resolved Playwright package to assess that readiness.
+Populated profiles and recovery still fail closed. Modex also masks a chained
+sensitive-flag value that the tested releases expose; this is a security
+non-parity. See `docs/evidence/baseline-0.165.1/super-dry-run-01651.md`.
+
 Selected local-relay malformed syntax, method forwarding, GET response framing,
 HEAD controls, final response status phrases, WebSocket fallback and
 truncated-request behavior now match selected 0.165.1 controls. Sequential

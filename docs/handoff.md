@@ -1,5 +1,17 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The next aggregate-budget relay admission prototype remains unmerged. In an
+isolated 246-partial-head load with eight blocked workers, the current relay
+used 0.55 CPU seconds over two seconds with 146 accepted client descriptors;
+the prototype used 0.82 seconds with 256 descriptors. A separate reserve and
+keep-alive stress case used 1.20 CPU seconds over two seconds and failed its
+1.0-second CPU bound even after reducing repeated scans. The candidate's final
+backoff changes were not revalidated against the release timing or shutdown
+matrix. Its accounting and reserve transitions need further review, including
+active workers retaining large parsed heads. The current bounded queue and
+its documented saturation gap remain in production; these observations are
+not parity evidence.
+
 DeepSeek Super now preserves a safely checked shared `config.toml` in the
 isolated child home. The three DeepSeek runtime settings take precedence over
 environment values, and string-valued catalog context/compaction settings

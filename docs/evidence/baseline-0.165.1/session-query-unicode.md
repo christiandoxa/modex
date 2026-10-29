@@ -34,3 +34,7 @@ session title and one query. One real process each for Prodex 0.165.1, Prodex
 Sigma context, while dotted capital I uses its full lowercase expansion. This
 production-path comparison passed on Linux x86-64; it does not prove every
 Unicode string-casing interaction.
+
+The historical CI lane clears `PRODEX_ORACLE`; this cross-release test uses
+the separately exported `PRODEX_ORACLE_04392` path when supplied, and verifies
+its checksum. It falls back to the usual active oracle path for local runs.

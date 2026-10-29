@@ -18,6 +18,7 @@ ORACLE = Path(os.environ.get(
     Path.home() / ".cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
 ))
 SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
+ORACLE_04392 = Path(os.environ.get("PRODEX_ORACLE_04392", str(test_cli.ORACLE)))
 
 
 class SessionQuery01651Tests(unittest.TestCase):
@@ -25,7 +26,7 @@ class SessionQuery01651Tests(unittest.TestCase):
     def setUpClass(cls):
         for oracle, checksum, release in (
             (ORACLE, SHA256, "0.165.1"),
-            (test_cli.ORACLE, test_cli.ORACLE_SHA256, "0.439.2"),
+            (ORACLE_04392, test_cli.ORACLE_SHA256, "0.439.2"),
         ):
             if not oracle.is_file() or hashlib.sha256(oracle.read_bytes()).hexdigest() != checksum:
                 raise AssertionError(f"Prodex oracle must identify the verified {release} release")
@@ -95,7 +96,7 @@ class SessionQuery01651Tests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="modex-session-query-unicode-all-") as directory:
             for label, binary in (
                 ("prodex-01651", ORACLE),
-                ("prodex-04392", test_cli.ORACLE),
+                ("prodex-04392", ORACLE_04392),
                 ("modex", MODEX),
             ):
                 root = Path(directory) / label

@@ -100,6 +100,29 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
     def test_large_request_heads_use_bounded_linear_capture(self):
         transport.assert_large_request_head_cases(self, ORACLE, transport.MODEX)
 
+    def test_invalid_target_precedes_chunked_body_capture(self):
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for name in (
+                "invalid_target_precedes_malformed_chunked_trailer",
+                "invalid_target_precedes_missing_chunk_terminator",
+            ):
+                with self.subTest(case=name):
+                    case = CASES[name]
+                    for binary in (ORACLE, transport.MODEX):
+                        response, records = transport.run_probe(binary, case, upstream)
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(response["status"], 400)
+                        self.assertEqual(response["body"], transport.INVALID_REQUEST_TARGET_BODY)
+                        self.assertEqual(response["read_error"], "")
+                        self.assertEqual(records, [])
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
     def test_http_1_0_responses_and_stream_controls_match_released_oracle(self):
         upstream = transport.Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)

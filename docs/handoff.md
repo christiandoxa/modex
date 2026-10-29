@@ -1,5 +1,18 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Hosted Fast run `40828238106` on `3ad0a8acca97d45326143fdcaffb8c543b32abdb`
+failed after the focused build and native checks passed: the official 0.439.2
+tag was unavailable. Both CI helper shards passed. Oracle-dependent tests and
+artifact consumers did not run; this is not a Fast CI pass.
+
+Repeated real-process invalid-target probes found that the historical 0.165.1
+oracle sometimes closes a half-closed request with a missing chunk terminator
+within the 500 ms observation window. Its close-state assertion is therefore
+unqualified; Modex's close assertion remains. Both pinned releases and Modex
+return 400 without an upstream request in the selected malformed-trailer and
+missing-terminator controls. The broader connection-lifecycle mismatch remains
+open; see `docs/evidence/baseline-0.165.1/local-relay-http.md`.
+
 The frozen active reference is officially released Prodex 0.439.2 at commit
 `72b77478a5198fc5da6b4d2253137f9cdbf43be9`. Prodex 0.165.1 and 0.439.1
 observations retain historical provenance; 0.439.1 is regression-only. CI

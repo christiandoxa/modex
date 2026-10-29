@@ -105,6 +105,19 @@ The final production build and three focused native driver builds passed, as
 did the 71-file production import audit, Python syntax compilation and
 `git diff --check`. No real credentials or paid services were used.
 
+Subsequent repeated probes used the checksum-pinned releases and isolated
+synthetic peers. For the half-closed missing-terminator case, 0.165.1 closed
+within the 500 ms observation window once and remained open seven times;
+0.439.2 remained open eight times and Modex closed eight times. For the
+malformed-trailer case, each release remained open eight times and Modex
+closed eight times. All 48 responses were 400 with no upstream request. These
+samples do not establish a deterministic close state for either release. The
+historical test no longer asserts a fixed oracle close state for the observed
+variable half-closed case; it still asserts Modex closes. A separate 0.439.2
+production test checks the status, error body and lack of upstream traffic for
+both cases without asserting oracle close state. Connection lifecycle remains a
+known mismatch, and the earlier broad-run failures remain recorded.
+
 The relay remains serial; a separate two-request probe found Prodex accepts both
 upstream requests concurrently while Modex serializes them. WebSocket transport
 is not implemented; the 426 fallback is not WebSocket parity.

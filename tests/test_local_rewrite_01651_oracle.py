@@ -1245,7 +1245,7 @@ CASES = (
         body=b"0\r\n",
         half_close=True,
         fragmented=False,
-    ),
+    ) | {"expected_connection_closed": {"oracle": None, "modex": True}},
     fragmented_chunked_request_case(
         "fragmented_nonempty_chunked_trailer_rejected",
         trailer=b"X-Trace: synthetic\r\n",
@@ -2003,7 +2003,8 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                             )
                         if case.get("check_close"):
                             expected_close = case.get("expected_connection_closed", {}).get(label, True)
-                            self.assertEqual(response["connection_closed"], expected_close, label)
+                            if expected_close is not None:
+                                self.assertEqual(response["connection_closed"], expected_close, label)
                         if "expected_followup_status" in case:
                             self.assertEqual(response["followup_status"], case["expected_followup_status"], label)
                             self.assertTrue(response["followup_body"], label)

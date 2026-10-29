@@ -10,6 +10,14 @@ targets because `SockaddrIn` is unsupported. This is compiler/API evidence,
 not target runtime validation or parity; all six release qualifications stay
 BLOCKED. See `docs/evidence/mojo-1.2.0-network-tls-dns.md`.
 
+Buffered Anthropic response validation now ignores a structurally valid orphan
+`web_search_tool_result`, after text or as the only content block, matching
+both pinned releases through the production Super path. Four cross-release
+process methods, the focused native buffered test, production build, import
+audit, test census and diff check passed. Unsupported blocks and broader
+provider behavior remain unqualified. Evidence:
+`docs/evidence/baseline-0.165.1/anthropic-orphan-result.md`.
+
 Hosted Fast run `40840411893` on `479cd57136ddc9c52b8952d48d095eecf02eef9c`
 failed after focused build and native checks passed because the required
 0.439.2 tag was unavailable. Oracle-dependent checks did not run.

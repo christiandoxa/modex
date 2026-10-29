@@ -497,18 +497,25 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         return
     if doc.string(doc.get(doc.root, "stop_reason")) != "end_turn":
         raise Error("Anthropic Messages stop reason is not supported")
-    var text_only = True
+    var text_and_orphan_results = True
     for block in doc.nodes[content].children:
         var kind = doc.string(doc.get(block, "type"))
         if kind == "thinking":
             continue
+        if kind == "web_search_tool_result":
+            _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
+            var result_id = doc.get(block, "tool_use_id")
+            if result_id < 0 or doc.nodes[result_id].kind != JSON_STRING or not doc.nodes[result_id].text:
+                raise Error("Anthropic web-search result requires a tool_use_id")
+            _ = _search_sources(doc, block)
+            continue
         if kind != "text":
-            text_only = False
+            text_and_orphan_results = False
             continue
         var text = doc.get(block, "text")
         if text < 0 or doc.nodes[text].kind != JSON_STRING:
             raise Error("Anthropic Messages text block is invalid")
-    if text_only:
+    if text_and_orphan_results:
         return
     var search_index = Int(-1)
     var result_index = Int(-1)

@@ -129,6 +129,10 @@ values are ignored as in the 0.165.1 release; subsequent text deltas remain
 covered by the production comparison. The exact empty-string request is rejected with the observed 400
 before POST, while whitespace-only input is accepted. See
 `docs/evidence/anthropic-web-search-04392.md`.
+An orphan buffered `web_search_tool_result`, following text or as the only
+content block, is also ignored as in both pinned releases; these remain selected
+response shapes only. See
+`docs/evidence/baseline-0.165.1/anthropic-orphan-result.md`.
 Selected Anthropic function-tool streams and split JSON fragments now match
 0.165.1, including selected duplicate and orphan stops, reopened indices and
 image omission. Selected buffered function calls and mixed server-side web

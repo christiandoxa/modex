@@ -83,8 +83,10 @@ Buffered Anthropic `end_turn` responses now match both pinned release
 processes for empty content, empty/single/multiple text blocks, and text blocks
 separated by `thinking`. Missing or non-string text and unsupported content
 blocks still return the same 502 response across the two releases and Modex.
-An orphan `web_search_tool_result` remains a known difference outside this
-change: both releases return 200 while Modex rejects it.
+An orphan `web_search_tool_result`, either after text or as the only content
+block, is now ignored like both releases. The source trace, exact synthetic
+responses, before/after process comparison, and remaining limits are recorded in
+`docs/evidence/baseline-0.165.1/anthropic-orphan-result.md`.
 
 Two additional real-process image controls match the full normalized release
 event sequence: a nonempty indexed image source with a same-index `image_delta`

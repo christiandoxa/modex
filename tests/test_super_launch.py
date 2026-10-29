@@ -684,6 +684,31 @@ class SuperLaunchTests(unittest.TestCase):
                             "usage": {"input_tokens": 3, "output_tokens": 5},
                         }, separators=(",", ":")).encode()
                         content_type = "application/json"
+                    elif scenario in (
+                        "anthropic-buffered-orphan-result",
+                        "anthropic-buffered-orphan-result-only",
+                    ):
+                        content = [{
+                            "type": "web_search_tool_result",
+                            "tool_use_id": "missing_search",
+                            "content": [{
+                                "type": "web_search_result",
+                                "url": "https://example.test/orphan",
+                                "title": "Orphan",
+                            }],
+                        }]
+                        if scenario != "anthropic-buffered-orphan-result-only":
+                            content.insert(0, {"type": "text", "text": "Before orphan result."})
+                        payload = json.dumps({
+                            "id": "msg_orphan_result",
+                            "type": "message",
+                            "role": "assistant",
+                            "model": "deepseek-chat",
+                            "content": content,
+                            "stop_reason": "end_turn",
+                            "usage": {"input_tokens": 3, "output_tokens": 5},
+                        }, separators=(",", ":")).encode()
+                        content_type = "application/json"
                     elif scenario.startswith("anthropic-buffered-tool-use") or scenario in (
                         "anthropic-buffered-tool-history",
                         "anthropic-buffered-tool-history-array-output",

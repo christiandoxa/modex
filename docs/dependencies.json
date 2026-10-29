@@ -274,7 +274,7 @@
     "docs/evidence/native-super-tests.txt",
     "docs/evidence/native-super-dependencies.txt"
   ],
-  "super_launch_implementation": "Native clean-home overlay, pinned-source Codex executable selection from PRODEX_CODEX_BIN/PATH, selected plus bundled DeepSeek model catalog/metadata/default budgets, explicit config/environment, version/hook preflight, supervised same-image relay and Codex exec. Path selection and child args match selected 0.165.1 synthetic controls; release lock side effects, existing state and complete storage/config/companion behavior remain blocked. Context/compaction CLI overrides now use the pinned UInt64 fallback/clamping rules and reach native Codex argv; catalog defaults retain the baseline string-only exact-value lookup behavior.",
+  "super_launch_implementation": "Native clean-home overlay, pinned-source Codex executable selection from PRODEX_CODEX_BIN/PATH, selected plus bundled DeepSeek model catalog/metadata/default budgets, explicit config/environment, version/hook preflight, supervised same-image relay and Codex exec. Path selection and raw child arguments match selected 0.165.1 native ELF controls; active shebang tests record a preflight/final interpreter-visible path mismatch for relative and symlink aliases. Release lock side effects, existing state and complete storage/config/companion behavior remain blocked. Context/compaction CLI overrides now use the pinned UInt64 fallback/clamping rules and reach native Codex argv; catalog defaults retain the baseline string-only exact-value lookup behavior.",
   "checkpoint2_dependency_audit": {
     "new_application_dependencies": [],
     "new_native_bindings": [],

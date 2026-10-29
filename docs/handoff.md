@@ -147,11 +147,20 @@ Codex fixture records the raw argument vector, and the active-oracle suite
 compares it across six selection modes. The suite also compares full
 output/status, zero provider requests, and temporary-overlay cleanup. The
 process-spawn unit checks an explicit custom `argv[0]`.
+The pinned shebang-script test separately captures interpreter-visible
+`sys.argv[0]`: probes use the canonical path in both binaries, while Prodex
+preflight/final execution exposes a relative selected spelling and Modex
+exposes the canonical script path. This remains a parity gap because Linux
+shebang execution takes the script path from the executable pathname, not the
+custom `argv[0]` passed to spawn. Native fixture records also carry PIDs so the
+active launch test checks their cleanup.
 Missing-path diagnostics match exactly and start no Codex process. The release
 still creates session, profile and housekeeping locks that Modex does not, so
-full storage side-effect parity remains open. Modex pins the resolved path
-across probes and launch, but cannot prevent replacement of that canonical
-file between those operations with the current pathname-based stdlib spawn.
+full storage side-effect parity remains open. Modex retains the canonical
+pathname across probes and launch, which avoids symlink retargeting after
+resolution. Path resolution does not pin the executable file: replacement of
+that canonical file between probe and spawn remains possible with the current
+pathname-based stdlib spawn.
 Legacy-hash rejection is source-derived; no real legacy Codex binary was run.
 See `docs/evidence/baseline-0.165.1/super-codex-probes.md`.
 

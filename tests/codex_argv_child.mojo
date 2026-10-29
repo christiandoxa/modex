@@ -3,9 +3,15 @@
 from std.collections import List, Span
 from std.io import RawFileDescriptor
 from std.os import getenv
+from std.os.path import realpath
 from std.sys import argv, exit
 
 from modex.json import JsonDocument, quote_json
+
+
+def _pid() raises -> String:
+    var components = realpath("/proc/self").split("/")
+    return String(components[len(components) - 1])
 
 
 def _record(kind: String, arguments: List[String]) raises:
@@ -18,6 +24,7 @@ def _record(kind: String, arguments: List[String]) raises:
     var line = (
         '{"kind":' + quote_json(kind)
         + ',"argv0":' + quote_json(arguments[0])
+        + ',"pid":' + _pid()
         + ',"args":' + rendered_args + "}\n"
     )
     with open(getenv("MODEX_NATIVE_CODEX_LOG"), "a") as log:

@@ -66,8 +66,11 @@ the selected path spelling.
 Modex now resolves the same tested forms using Mojo stdlib path, mode and SHA
 helpers. Version and capability probes use the canonical executable path as
 `argv[0]`. Hook preflight and final launch execute that canonical path while
-preserving the selected spelling as `argv[0]`. `tests/codex_argv_child.mojo`
-is a native synthetic ELF that records the raw argument vector, including
+preserving the selected spelling as `argv[0]` for native ELF Codex processes.
+For shebang scripts, the interpreter instead sees the executed script path:
+the oracle keeps the selected spelling for preflight/final execution while
+Modex uses the canonical path. `tests/codex_argv_child.mojo` is a native
+synthetic ELF that records the raw argument vector, including
 `argv[0]`, and serves the hook-trust RPC. `tests/test_super_launch_01651.py`
 compares those arguments against the checksum-pinned oracle across a relative
 path, relative symlink, configured bare command, default PATH discovery,
@@ -79,14 +82,24 @@ The selected launch cases reach the final child, which exits 7 before making
 any provider request. The missing case matches the release diagnostic and
 starts no Codex or provider peer.
 
+A real shebang-script capture shows an interpreter-visible path difference:
+both binaries pass the canonical path to version and capability probes, but
+Prodex exposes the selected `../codex` or `../codex-alias` spelling to the
+preflight and final script interpreter while Modex exposes the canonical path.
+The native ELF fixture checks raw `argv[0]`, which the Linux shebang loader
+does not use as the interpreter's script path. This remains a parity gap.
+The pinned oracle test records `sys.argv[0]` for both relative-path cases.
+The native fixture records PIDs that the harness checks are reaped.
+
 These controls expose an existing storage difference: 0.165.1 creates profile,
 housekeeping and session lock files during launch and even on the missing
 binary path; Modex does not implement those lock lifecycles. Both remove the
 temporary launch overlay and preserve the synthetic session. This slice does
 not claim matching storage mutations. Modex executes the canonical path chosen
-before probing, which avoids retargeting through a changed symlink alias; a
-replacement of the canonical file between probe and spawn remains possible
-because Mojo 1.2 exposes no file-descriptor-based spawn. The six legacy hashes
+before probing, which avoids retargeting through a changed symlink alias.
+Path resolution does not pin the file: replacement of the canonical executable
+between probe and spawn remains possible because Mojo 1.2 exposes no
+file-descriptor-based spawn. The six legacy hashes
 and wrapper markers are ported from the pinned source, but the test suite does
 not run an actual legacy Codex binary. This qualifies only the selected Linux
 x86-64 cases; other release targets and full Super startup remain open.

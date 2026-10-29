@@ -155,6 +155,46 @@ class ActiveSuperLaunchTests(unittest.TestCase):
                     outputs.append(trace)
                 self.assertEqual(outputs[0], outputs[1])
 
+    def test_shebang_codex_interpreter_path_gap_matches_01651_observation(self):
+        cases = (
+            ("relative", "../codex"),
+            ("symlink", "../codex-alias"),
+        )
+        for mode, selected_script_path in cases:
+            with self.subTest(mode=mode):
+                outputs = []
+                for binary in (active_cli.ORACLE, launch_support.MODEX):
+                    result, records, upstream, state = launch_support.SuperLaunchTests().run_launch(
+                        binary=binary,
+                        scenario="exit-seven",
+                        codex_mode=mode,
+                    )
+                    self.assertEqual((result.returncode, result.stdout), (7, b""), result.stderr)
+                    self.assertEqual((upstream, state["leftovers"]), ([], []))
+                    trace = [
+                        (record["kind"], record["script_argv0"])
+                        for record in records
+                        if record["kind"] in ("probe", "preflight", "launch")
+                    ]
+                    canonical = records[0]["script_argv0"]
+                    self.assertTrue(canonical.startswith("/"), canonical)
+                    self.assertTrue(canonical.endswith("/codex"), canonical)
+                    expected_child_path = (
+                        selected_script_path if binary == active_cli.ORACLE else canonical
+                    )
+                    self.assertEqual(trace, [
+                        ("probe", canonical),
+                        ("probe", canonical),
+                        ("preflight", expected_child_path),
+                        ("launch", expected_child_path),
+                    ])
+                    outputs.append((
+                        result.returncode,
+                        result.stdout,
+                        launch_support.normalized_codex_path(result.stderr),
+                    ))
+                self.assertEqual(outputs[0], outputs[1])
+
     def test_missing_codex_path_matches_01651_without_startup_side_effects(self):
         outputs = []
         states = []

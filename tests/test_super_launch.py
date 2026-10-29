@@ -23,6 +23,7 @@ from urllib.parse import urlsplit
 args = sys.argv[1:]
 capture = pathlib.Path(os.environ["MODEX_LAUNCH_CAPTURE"])
 def save(value):
+    value["script_argv0"] = sys.argv[0]
     with capture.open("a") as handle: handle.write(json.dumps(value) + "\n")
 probe_environment = ("CODEX_HOME", "TEST_CODEX_LOG", "TEST_CODEX_LOG_APPEND",
                      "TEST_CODEX_ARGS_LOG", "TEST_CODEX_ARGS_LOG_APPEND", "TEST_CODEX_STDIN_LOG")

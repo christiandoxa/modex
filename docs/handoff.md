@@ -7,6 +7,16 @@ routes active oracle checks to 0.439.2 and keeps all six release targets in the
 parity denominator. The 76-contract inventory and complete production parity
 remain unfinished, with all six release qualifications BLOCKED.
 
+After integrating the Super argument, bounded large-header and image-start
+changes, the production build and four native checks passed. Sixteen focused
+image, header and Super process tests passed, including comparisons against
+both pinned releases; the
+shared stream and CI-routing run passed 17, and two further process tests
+reproduced the documented image-stop collisions. The production import audit
+covered 71 Mojo files and the census covered 50 native sources and 128 Python
+modules. An earlier broad relay run had two close-state assertion failures;
+they remain recorded below. These checks do not establish full parity.
+
 Production hook-trust initialization now reports client version 0.439.2. The
 production build, its real-process comparison, native hook-trust test,
 dependency audit and data-plane rerun passed. The combined RPC run exposed

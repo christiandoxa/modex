@@ -14,18 +14,53 @@ routes `DeltaText` and `DeltaArguments` through
 `inner.observe_chat_chunk`. The compiled
 `crates/prodex-mojo-core/src/anthropic_stream_policy.rs` dispatches
 `content_block_delta` by event and delta type; its facts do not include a
-`message_start` state. Modex had added a `message_started` gate around all
-content-block deltas, which suppressed validly parsed delta events in the
-synthetic order probes. That gate is removed. The separate content-block-start
-guard remains.
+`message_start` state. The compiled policy is in
+`mojo/prodex_core/anthropic_stream_policy.mojo`. Modex had added a
+`message_started` gate around all content-block deltas, which suppressed
+validly parsed delta events in the synthetic order probes. That gate is
+removed. The separate content-block-start guard remains.
 
-The baseline `MessageStart` arm constructs a chat chunk with the message ID,
-model, and usage, then passes it to `observe_chat_chunk`; the downstream
-`apply_chunk_metadata` updates response ID, model, and usage. Its source does
-not describe the order-dependent admission seen below. The mismatch between
-that source path and the verified process observations remains unresolved, so
-Modex does not implement a sequence or prefix heuristic for message-start
-metadata.
+The complete pinned-source path was traced in both releases. In
+`crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_dispatch.rs`
+and
+`crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_anthropic_messages.rs`,
+a successful native Anthropic event-stream response is routed to
+`RuntimeAnthropicMessagesSseReader`.
+`crates/prodex-app/src/runtime_launch/proxy_startup/provider_sse_reader.rs`
+parses each `data:` JSON value and calls the state observer; the `event:` label
+does not control dispatch. In
+`crates/prodex-app/src/runtime_launch/proxy_startup/anthropic_messages_sse_reader.rs`,
+the `MessageStart` arm converts its message ID, model, and accumulated
+input/output usage into a chat chunk and sends it to
+`RuntimeDeepSeekSseState::observe_chat_chunk`.
+
+In `crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_sse.rs`, that
+state applies chunk metadata before deciding whether to emit
+`response.created`. The ID helper in
+`crates/prodex-provider-core/src/translators/deepseek/stream/shaping.rs` accepts
+a streamed ID only while the current response ID has the generated
+`resp_<provider>_` prefix; model and usage are updated whenever valid projected
+values are present. The prefix check is implemented in
+`mojo/prodex_core/deepseek_stream_policy.mojo`. The compiled Mojo Anthropic
+policy classifies `message_start` by event type without sequence state, and
+`deepseek_put_stream_chunk_metadata` in `mojo/prodex_core/deepseek.mojo`
+selects `model`, `created`, `system_fingerprint`, and `usage`. At completion,
+`crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_sse/completion.rs`
+assembles the response from the current ID, model, and usage. The inspected
+reader and state implementations, ID policy, and relevant Mojo policy/projection
+functions are identical between the two pinned snapshots.
+
+This source predicts ID/model/usage `msg_a`/`model-msg_b`/`9 input + 5 output
+tokens for the case with two starts before content: the first start
+replaces the generated ID, so the second start cannot replace it, while model
+and usage still take the second values.
+The verified release processes instead return `msg_b` with the second
+start's model and usage. For two starts after content, the release returns
+`msg_a` with the second start's model and usage, which does agree with the
+source's one-time ID replacement. Thus the pinned source gives no complete
+rule for the binary's order-dependent ID behavior. The mismatch between source
+and process evidence remains unresolved. Keep the six metadata gaps open; the
+source does not justify changing message-start metadata behavior.
 
 ## Process observations
 
@@ -45,14 +80,20 @@ standalone delta while still accepting `message_delta` after earlier content
 has created a response.
 
 Known differences remain for streams where a start follows earlier content or
-is repeated. Both releases apply selected late/repeated start metadata where a
-single canonical start does not: examples include a late start after text, two
-starts before text, two starts after text, an empty text-block start before a
-message start, and a custom ID beginning `resp_deepseek_` followed by another
-start. In those cases Modex keeps the generated response ID, omits the release
-model field, and retains zero input tokens. The matrix records the exact release
-ID/model/usage values and compares the entire normalized Modex event list so
-these observations stay visible as gaps.
+is repeated. The exact ID contradiction is reproducible with the matrix case
+`duplicate starts before content` in
+`tests/test_provider_stream_cross_release_characterization.py`:
+`[start("msg_a", 3), start("msg_b", 9), text_block, text_delta,
+message_delta(output_tokens=5), message_stop]`: both release processes return
+`msg_b`, `model-msg_b`, and usage `{input_tokens: 9, output_tokens: 5,
+total_tokens: 14}`. Moving both starts after the text delta instead returns
+`msg_a` while retaining the second start's model and usage. Other recorded
+cases include a late start after text, a late start after `message_delta`, an
+empty text-block start before a message start, and a custom ID beginning
+`resp_deepseek_` followed by another start. Modex currently keeps its generated
+response ID and omits late/repeated-start model and input-usage metadata; the
+matrix compares complete normalized event sequences so these differences stay
+visible as gaps.
 
 The regression test uses synthetic credentials only and makes no account login
 or paid provider request.

@@ -39,6 +39,16 @@ in Modex; the exact event matrix records these as gaps rather than parity. The
 source trace, build, focused process tests, production import audit, test
 census, and diff check are in
 `docs/evidence/baseline-0.165.1/anthropic-stream-message-delta-order.md`.
+The trace now follows the production dispatch, SSE frame parser, Anthropic
+reader, shared response state, and compiled Mojo metadata projection. In the
+synthetic sequence `[start("msg_a", 3), start("msg_b", 9), text_block,
+text_delta, message_delta(output_tokens=5), message_stop]`, both release
+processes return ID `msg_b`, model `model-msg_b`, and usage 9 input/5 output
+tokens. The pinned source's generated-ID replacement rule predicts ID `msg_a`
+with the second start's model and usage. When both starts follow the text
+delta, both releases instead return `msg_a` with the second start's model and
+usage. Keep this unimplemented until the discrepancy has a direct explanation;
+do not infer a latest-start or first-start heuristic.
 
 ## Buffered first-choice history shaping (2026-10-30)
 

@@ -420,7 +420,6 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         if len(doc.nodes[content].children) == 0:
             raise Error("Anthropic Messages tool-use content is missing")
         var tool_count = 0
-        var search_count = 0
         for block in doc.nodes[content].children:
             var kind = doc.string(doc.get(block, "type"))
             if kind == "text":
@@ -448,9 +447,6 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
                 var query = doc.get(input, "query")
                 if query < 0 or doc.nodes[query].kind != JSON_STRING or not doc.nodes[query].text:
                     raise Error("Anthropic web-search input requires a non-empty query")
-                # shortcut: two mixed search pairs, expand after broader multi-search replies are qualified.
-                if search_count >= 2: raise Error("Mixed Anthropic replies support at most two web-search tool uses")
-                search_count += 1
             elif kind == "web_search_tool_result":
                 _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
                 var id = doc.get(block, "tool_use_id")

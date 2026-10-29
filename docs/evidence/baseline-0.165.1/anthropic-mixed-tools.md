@@ -34,6 +34,11 @@ and mixed replies match the oracle; both oracle and Modex reject 65,537 blocks
 with a 502 response. Adjacent text blocks are grouped in one pass to keep the
 exact-limit case practical.
 
+The two-search restriction on mixed buffered replies has been removed. The
+production relay matches 0.165.1 for 3, 64 and 1,024 distinct search/result
+pairs followed by a function call; complete normalized output and provider
+request bodies are compared. The 65,536-block and provider-body limits remain.
+
 `tests/test_anthropic_mixed_tools_01651.py` uses the checksum-pinned oracle,
 the production Modex binary, synthetic keys, isolated HOME/state directories,
 and a loopback provider. No paid traffic or real credentials are used.
@@ -47,8 +52,8 @@ and a loopback provider. No paid traffic or real credentials are used.
 - `git diff --check` — pass.
 
 This qualifies only the exercised Linux x86-64 shapes. Custom and namespaced
-function tools, search options beyond `allowed_domains`, more than two search
-pairs in one mixed response, multiple search pairs in streams, interleaved
+function tools, search options beyond `allowed_domains`, multiple search pairs
+in streams, interleaved
 search events, malformed provider responses beyond the tested schema rejection,
 other release targets, and general Anthropic parity remain open. No contract or
 release qualification is promoted.

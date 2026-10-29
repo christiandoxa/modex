@@ -214,6 +214,18 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
     def test_buffered_content_block_limit_for_mixed_replies(self):
         self._assert_content_limit_boundary(1, 1, 65_531, 65_532, 2, 4)
 
+    def test_many_buffered_search_pairs_and_function_match_release(self):
+        for search_pairs in (3, 64, 1024):
+            with self.subTest(search_pairs=search_pairs):
+                _, expected, _, observed = self._compare(
+                    _request(), _counted_buffered_reply(1, search_pairs)
+                )
+                expected_body = _normalize(_json_body(expected))
+                actual_body = _normalize(_json_body(observed))
+                self.assertEqual(actual_body, expected_body)
+                self.assertEqual(len(actual_body["output"]), search_pairs + 1)
+                self.assertEqual(actual_body["output"][-1]["type"], "function_call")
+
     def test_function_search_tools_and_tool_choices_match_release(self):
         reply = _buffered_reply([
             {"type": "server_tool_use", "id": "srv_lookup", "name": "web_search",

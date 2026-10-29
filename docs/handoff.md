@@ -9,8 +9,9 @@ the denominator. The full inventory and production parity remain unfinished.
 The Anthropic Messages adapter now supports selected mixed function and web
 search requests and buffered or streamed replies against 0.165.1. Buffered
 content is capped at the reference's 65,536 blocks; tests cover the boundary,
-text ordering and reused search IDs. More than two mixed search uses and
-multiple mixed search pairs in streams remain gaps. See
+text ordering and reused search IDs. Buffered comparisons now cover 3, 64 and
+1,024 search pairs with a function call; multiple mixed search pairs in streams
+remain unverified. See
 `docs/evidence/baseline-0.165.1/anthropic-mixed-tools.md`.
 
 Hosted Fast CI run `40796304229` passed both helper shards, the active 0.165.1

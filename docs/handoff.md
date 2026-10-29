@@ -3210,8 +3210,9 @@ bodies, and parent EOF controls pass against both releases. A separate eight
 client probe with 32 KiB padded request heads previously exposed a timing gap.
 The listener now polls worker completion at 5 ms while work is pending; in two
 subsequent FIN/RST runs both releases and Modex emitted the raw 502 on 8/8
-connections. The 512-byte fair capture quantum remains, and 5 ms polling adds
-wakeups while workers are active. General pipeline and saturation parity remain
+connections. The 512-byte fair capture quantum remains; 5 ms polling adds
+full parked-socket scans while workers are active, on top of the accept loop's
+existing 1 ms retries. General pipeline and saturation parity remain
 unfinished. The complete 1 MiB parent-EOF control can finish naturally after
 the raw 502, so explicit shutdown is checked separately with a truncated body
 and a truncated head. See `docs/evidence/baseline-0.165.1/local-relay-concurrency.md`

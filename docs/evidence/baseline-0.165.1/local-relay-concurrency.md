@@ -87,9 +87,10 @@ parked socket per pass. In two subsequent eight-client FIN/RST runs, each
 release and Modex returned the 502 on all eight connections. The maintained
 sequential stress control requires at least six of eight in each case within
 the window, while testing follow-up service and disconnect cleanup. These
-timing-sensitive observations do not establish large-head admission parity;
-the shorter wait also means up to 200 listener wakeups per second while work
-is pending.
+timing-sensitive observations do not establish large-head admission parity.
+While work is pending, the listener can perform about 200 full parked-socket
+scans per second. Its existing nonblocking accept loop sleeps for 1 ms between
+retries even during the longer wait; neither figure is a measured CPU cost.
 
 Validation on Linux x86-64 with Mojo 1.2.0 passed the production build and the
 three declared native test drivers:

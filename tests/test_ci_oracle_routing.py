@@ -31,6 +31,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_provider_stream_repeated_search_04392.py", historical_tests)
         self.assertIn("test_ci_parity_baseline.py", script)
         self.assertIn("test_anthropic_mixed_tools_01651.py", active_tests)
+        self.assertIn("test_runtime_proxy_websocket_01651_oracle.py", active_tests)
         self.assertIn("test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py", script)
         self.assertIn("test_session_query_01651.py test_unicode_case_properties.py", script)
         self.assertIn("test_session_report_01651.py", script)

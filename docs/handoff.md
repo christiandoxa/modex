@@ -1,5 +1,15 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The Mojo 1.2.0 (`2016d0cd`) source audit found no production standard-library
+WSS/TLS or DNS path. `std.net` exposes only internal POSIX socket building
+blocks; `std.hash` provides AHash/FNV-1a, and `std.random` is explicitly not
+cryptographically secure. Public TCP/TLS, DNS, SHA-256, and CSPRNG compile
+probes fail. A private IPv4 UDP socket probe runs locally; LLVM address-layout
+probes compile for four Linux/macOS release targets and fail for both Windows
+targets because `SockaddrIn` is unsupported. This is compiler/API evidence,
+not target runtime validation or parity; all six release qualifications stay
+BLOCKED. See `docs/evidence/mojo-1.2.0-network-tls-dns.md`.
+
 Hosted Fast run `40840411893` on `479cd57136ddc9c52b8952d48d095eecf02eef9c`
 failed after focused build and native checks passed because the required
 0.439.2 tag was unavailable. Oracle-dependent checks did not run.

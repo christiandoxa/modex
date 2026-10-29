@@ -133,6 +133,9 @@ and all security, resource, and interruption behavior remain visible gaps
 until their required implementation path exists. The full behavior remains
 unimplemented and unverified on all six release targets.
 
+The later Mojo 1.2.0 standard-library source audit and compile/platform probes
+are recorded in `docs/evidence/mojo-1.2.0-network-tls-dns.md`.
+
 ## Connected-slice feasibility check (2026-10-29)
 
 The 0.165.1 process characterization was rerun: all three tests passed for

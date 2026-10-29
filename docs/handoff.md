@@ -82,11 +82,15 @@ Selected Anthropic message metadata, text/input and thinking deltas, unknown
 string delta types, and unmatched block stops now match both releases in
 real-process stream comparisons. Selected missing, null, and numeric delta
 types now match the release failure diagnostic and event sequence; active
-search and open result blocks follow the observed ignore precedence. After a
-closed search result, the releases continue after a malformed delta and accept
-a text delta, while Modex stops in both cases. These remain reproducible gaps.
+search and open result blocks follow the observed ignore precedence. Selected
+closed-result text and post-failure continuation sequences now match both
+releases, including malformed follow-up frames and terminal markers. Other
+malformed stream shapes and invalid UTF-8 after failure remain unverified.
 The integrated stream, model, session and historical mixed-tool suites passed
 40 tests; the worker's separate text and historical stream suite passed 28.
+After the continuation follow-up, the production build and five native checks
+passed, as did 29 integrated stream, mixed-tool and model tests. The worker's
+final stream and historical characterization run passed 39 tests.
 The overlapping-result control covers 128 open indexes; no aggregate cap
 limits retained per-stream search and tool state. See
 `docs/evidence/anthropic-stream-optional-metadata-shared.md`.

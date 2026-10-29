@@ -316,6 +316,7 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                 _normalized_events(bytes.fromhex(response["body"])) for response in responses
             ]
         self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        self.assertEqual(captures["Modex"], captures["0.439.2"])
         for label in ("0.165.1", "0.439.2", "Modex"):
             for (name, _), events in zip(cases, captures[label]):
                 with self.subTest(label=label, case=name):

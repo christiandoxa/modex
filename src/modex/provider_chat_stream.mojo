@@ -297,7 +297,11 @@ struct DeepSeekChatState:
                 raise Error("Anthropic content delta is missing")
             var delta_type_node = doc.get(delta, "type")
             if delta_type_node < 0 or doc.nodes[delta_type_node].kind != JSON_STRING:
-                raise Error("Anthropic content delta type is missing")
+                var output = self.fail("invalid_anthropic_stream", "content delta type is missing")
+                if output and not self.created:
+                    self.created = True
+                    output.append(self.event("response.created", '"response":{"id":' + quote_json(self.response_id) + "}", True))
+                return output^
             var delta_type = doc.nodes[delta_type_node].text
             if delta_type != "text_delta" and delta_type != "input_json_delta" and delta_type != "thinking_delta":
                 return List[String]()

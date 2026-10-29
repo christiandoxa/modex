@@ -175,8 +175,9 @@ behavior unqualified. See `docs/evidence/baseline-0.165.1/anthropic-buffered.md`
 `docs/evidence/baseline-0.165.1/session-profile-text.md` and
 `docs/evidence/baseline-0.165.1/local-relay-http.md`.
 
-Local-rewrite admission now retains and scans one overflow client while worker
-or parked-slot capacity is unavailable. A direct production-relay regression
+At the initial one-slot checkpoint, local-rewrite admission retained and
+scanned one overflow client while worker or parked-slot capacity was
+unavailable. A direct production-relay regression
 fills all 128 parked slots with partial headers, holds each worker on an
 incomplete body, and queues two complete clients; neither responds before a
 worker is released, and both then receive 200. Parent-channel EOF also closes
@@ -184,10 +185,10 @@ the retained overflow client. The full historical 0.165.1 relay suite passed
 19 tests, the 0.439.2 suite passed 11, and the slow-partial suite passed 11.
 In a separate 128-partial-header test with free workers, a healthy request
 returned 200 in 4.1 ms before the partial clients were released.
-The cap remains 128 parked sockets plus one accepted overflow and a 128-entry
-kernel listen backlog. Further clients wait in that backlog; Prodex 0.439.2
-can add TinyHTTP parser threads and has no hard queue cap, so full admission
-flood and wait-time parity remain open. See
+That checkpoint's cap was 128 parked sockets plus one accepted overflow and a
+128-entry kernel listen backlog. The bounded queue follow-up below supersedes
+this limit. Prodex 0.439.2 can add TinyHTTP parser threads and has no hard
+queue cap, so full admission flood and wait-time parity remain open. See
 `docs/evidence/runtime-overflow-admission.md`.
 
 Hosted Fast run `40837992499` on `3ef8a2b58a5ab63c8fa6422079d09207b06a7937`
@@ -578,14 +579,15 @@ Hosted Fast CI run `40794762417` passed both helper shards, the build, active
 0.439.2 tag was unavailable. Its artifact consumer was skipped. No hosted CI
 success is claimed for that run.
 
-The local relay supports tested sequential and pipelined HTTP/1.1 keep-alive
+At an earlier checkpoint, the local relay supported tested sequential and
+pipelined HTTP/1.1 keep-alive
 requests, honors `Connection: close`, and parks up to 128 idle sockets so a
 second client can run. Pipelined requests are parsed and dispatched in order;
 responses remain serial. The parked queue is FIFO; when full, admission closes
 the oldest idle socket to make room, after ready sockets are dispatched. If no
-socket is safe to evict, one accepted overflow connection is retained until
-admission is safe. This 128-socket cap and FIFO admission policy differ from
-the release's per-connection capture model. Parked sockets have no idle expiry.
+socket is safe to evict, one accepted overflow connection was retained until
+admission was safe. The current bounded overflow queue is described in the
+later local-relay status below. Parked sockets have no idle expiry.
 Parent EOF is checked between requests and does not interrupt an in-progress
 body read. The separate runtime-proxy WebSocket transport remains
 unimplemented; the local rewrite adapter's 426 fallback matches its tested
@@ -3242,13 +3244,20 @@ upstream requests on parent EOF. The accept loop now captures request heads
 incrementally before handler admission; incomplete headers do not occupy
 provider workers. Each pass reads/scans at most 512 bytes per parked socket,
 and the existing 2 MiB request-header limit and 128 parked-socket cap bound
-capture. Admitted workers still parse headers and read request bodies, so slow
-or incomplete bodies can occupy every lane. The per-connection cap, FIFO
-admission, and configured worker-count behavior still differ from the
-releases. An earlier production flood probe found that 128 held incomplete
-headers delayed a healthy 129th request. The overflow socket now captures its
-head too; the focused control receives 200 before the partial clients close.
-Larger floods and full admission fairness remain unqualified.
+capture. The round-robin overflow list is capped at `max(2, worker_count)`;
+completed keep-alive connections enter it when the parked set is full and
+capacity remains. Admitted workers still parse headers and read request bodies,
+so slow or incomplete bodies can occupy every lane. The 129- and 132-client
+flood controls returned 200 before release in 2–3 ms for both releases and
+Modex. At 136 partial clients, both releases answered in 2 ms; Modex waited
+through the 1,000 ms hold and returned 200 after release. Its test requires
+eventual success and records the observed finite-cap mismatch without making
+the timing gap an assertion. A 130-client control also verifies promoted
+overflow completion, same-socket keep-alive reuse, and a later healthy request
+against both releases. Parent EOF with 137 held clients exits and closes peers.
+The 14-test `test_runtime_slow_partial.py` suite and separate parent-EOF test
+pass against the pinned releases and rebuilt candidate. Larger floods and full
+admission fairness remain unqualified.
 Fixed-length bodies of 1,024 bytes or less remain in parser capture;
 EOF there closes without a response as both releases do. Deferred-body EOF now
 returns the baseline 502 and `upstream request failed` body for tested large

@@ -68,9 +68,10 @@ returns 413 without upstream traffic.
 
 `tests/test_runtime_slow_partial.py` runs the real isolated Super process
 against both checksum-pinned releases and Modex. It covers eight incomplete
-headers under default and one-worker settings, a 127/128-client partial-header
-admission boundary, sixteen incomplete bodies,
-client half-close, an incomplete header followed by EOF, 1,024- and 2,048-byte
+headers under default and one-worker settings, 127/128/129- and 136-client
+partial-header floods, a 130-client overflow completion and keep-alive reuse,
+sixteen incomplete bodies, client half-close, an incomplete header followed by
+EOF, 1,024- and 2,048-byte
 declared bodies truncated after one byte, a zero-length body, a valid header
 split across five sends, and the declared body limit. It first requires the
 two frozen releases to agree. Modex must match their response timing for the
@@ -78,10 +79,10 @@ existing eight-header and sixteen-body pools, plus the exact truncated-body
 status and body, header-EOF close, zero-length-body status, fragmented-header
 status, and body-limit status.
 
-The 127/128-client case is an explicit allowed gap. Both releases must serve a
-healthy request before partial-header clients close at either count. Modex may
-serve it before close or wait until close; the test requires eventual 200 and
-does not assert that the candidate mismatch is required behavior.
+At the earlier one-slot checkpoint, the 127/128-client case was an explicit
+allowed gap: both releases served before release, while Modex could serve
+before or after release. The expanded queue controls below supersede that
+checkpoint for the tested 127/128/129-client counts.
 
 Request-head boundaries and large-header limits remain covered by
 `test_local_rewrite_01651_oracle.py` and
@@ -157,11 +158,52 @@ both checksum-pinned releases and a Modex build from commit
 suite took 29 seconds. This Linux x86-64 process evidence covers only these
 request sizes and cases; it does not establish full HTTP or release parity.
 
-The focused process matrix also measured parked-header admission with 127 and
+The earlier focused matrix also measured parked-header admission with 127 and
 128 held partial requests. At 127, both releases and Modex served the healthy
 request before release. At 128, both releases served it in about 2 ms, while
-Modex waited through the 1,000 ms hold and served it after the partial sockets
-closed. The maintained test accepts either Modex timing and requires eventual
-200; it preserves the observed cap without claiming that the mismatch is
-required. The 128 parked-socket limit and its fairness tradeoff remain a
-known runtime difference.
+that Modex candidate waited through the 1,000 ms hold. This one-slot candidate
+observation is retained as history; the updated bounded queue behavior and its
+current flood limit are recorded below.
+
+## Bounded overflow queue controls
+
+On 2026-10-29, the accept loop replaced its single overflow socket with a
+round-robin list capped at `max(2, worker_count)`, where worker count is capped
+at eight. It gives each queued connection the existing 512-byte header-capture
+turn, promotes queued sockets into freed parked slots, and retains completed
+keep-alive connections in the overflow list when the parked set is full and
+queue capacity remains. Excess clients stay in the kernel listen backlog.
+
+The production `super exec` flood controls use isolated homes, synthetic
+credentials, ephemeral loopback listeners, and a loopback-only synthetic
+upstream. In one recorded run, Prodex 0.165.1, Prodex 0.439.2, and Modex each
+served the healthy request before release for 129 and 132 partial headers:
+
+| Partial headers | Prodex 0.165.1 | Prodex 0.439.2 | Modex |
+| ---: | ---: | ---: | ---: |
+| 129 | 200 in 2 ms | 200 in 2 ms | 200 in 3 ms |
+| 132 | 200 in 2 ms | 200 in 2 ms | 200 in 3 ms |
+| 136 | 200 in 2 ms | 200 in 2 ms | no response before release; 200 after 1,001 ms |
+
+The 136-client control records a current finite-cap mismatch. Its assertion
+requires eventual 200 from every product and does not require Modex to miss the
+1,000 ms window. Larger floods and full admission fairness remain unqualified.
+
+The 130-client control completes one parked request to free a slot, completes
+the promoted overflow request, reuses that same keep-alive connection for a
+second request, and then checks a separate healthy connection. All four
+requests returned 200 and reached the synthetic upstream in all three
+products. The recorded elapsed time was 5 ms for Prodex 0.165.1, 6 ms for
+Prodex 0.439.2, and 57 ms for Modex. The parent-EOF test also exits cleanly
+after 137 partial clients and observes every peer closed.
+
+The rebuilt Modex candidate used Mojo 1.2.0 (`2016d0cd`),
+`-O3 --target-cpu=x86-64-v3 -I src`, from worktree base
+`20ede2c2708f469ec67a709570845313281e2405`; its SHA-256 was
+`2e865f940d9f5c7485e2d32b4ac8572aea4799313b92270f65d76e6b880b7579`.
+All 14 tests in `test_runtime_slow_partial.py` passed against both checksum-
+pinned releases and this candidate in 50.836 seconds. The separate parent-EOF
+test passed one test in 0.126 seconds. `git diff --check` and Python syntax
+compilation passed. This evidence covers only these Linux x86-64 process cases;
+all six release targets, wider floods, and full runtime/security parity remain
+unqualified.

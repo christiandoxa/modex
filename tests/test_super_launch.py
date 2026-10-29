@@ -110,7 +110,8 @@ if scenario == "extra-state":
     (home/"synthetic-user-state").write_text("preserve this data")
     raise SystemExit(0)
 if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-header",
-                "slow-partial-body-limit", "slow-partial-flood", "truncated-header-eof", "truncated-body-eof",
+                "slow-partial-body-limit", "slow-partial-flood", "slow-partial-overflow-completes",
+                "truncated-header-eof", "truncated-body-eof",
                 "truncated-small-body-eof", "empty-request-body") or scenario.startswith("request-head-"):
     import select
     import socket
@@ -336,6 +337,77 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
         healthy.close()
         print("synthetic-client-complete")
         raise SystemExit(0 if status == 200 else 1)
+    if scenario == "slow-partial-overflow-completes":
+        partials = []
+        count = int(os.environ["MODEX_SLOW_PARTIAL_HEADER_COUNT"])
+        head = (f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+                f"Content-Type: application/json\r\nAuthorization: Bearer synthetic-codex-key\r\n"
+                f"Content-Length: {len(body)}\r\nConnection: keep-alive\r\n")
+
+        response_buffer = bytearray()
+        def read_complete_response(connection, response_buffer, timeout):
+            deadline = time.monotonic() + timeout
+            while b"\r\n\r\n" not in response_buffer:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0 or not select.select([connection], [], [], remaining)[0]:
+                    return None
+                chunk = connection.recv(65536)
+                if not chunk:
+                    return None
+                response_buffer.extend(chunk)
+            header_end = response_buffer.index(b"\r\n\r\n")
+            header = bytes(response_buffer[:header_end])
+            response_headers = header.split(b"\r\n")[1:]
+            content_lengths = [
+                line.split(b":", 1)[1].strip() for line in response_headers
+                if line.lower().startswith(b"content-length:")
+            ]
+            if len(content_lengths) != 1 or any(
+                line.lower().startswith(b"transfer-encoding:") for line in response_headers
+            ):
+                raise AssertionError("keep-alive probe expected a single Content-Length response")
+            content_length = int(content_lengths[0])
+            response_end = header_end + 4 + content_length
+            while len(response_buffer) < response_end:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0 or not select.select([connection], [], [], remaining)[0]:
+                    return None
+                chunk = connection.recv(65536)
+                if not chunk:
+                    return None
+                response_buffer.extend(chunk)
+            status = int(header.split(b"\r\n", 1)[0].split()[1])
+            del response_buffer[:response_end]
+            return status
+
+        for index in range(count):
+            partial = socket.create_connection((host, port), timeout=5)
+            connection = "close" if index == 0 else "keep-alive"
+            partial.sendall((head.replace("keep-alive", connection) + f"X-Slow-Partial: {index}\r\n").encode())
+            partials.append(partial)
+        time.sleep(0.25)
+        partials[0].sendall(b"\r\n" + body)
+        freed_parked_status = read_complete_response(partials[0], bytearray(), 1.0)
+        started = time.monotonic()
+        partials[128].sendall(b"\r\n" + body)
+        overflow_status = read_complete_response(partials[128], response_buffer, 1.0)
+        partials[128].sendall(request.replace(b"Connection: close", b"Connection: keep-alive"))
+        reused_overflow_status = read_complete_response(partials[128], response_buffer, 1.0)
+        healthy = socket.create_connection((host, port), timeout=5)
+        healthy.sendall(request)
+        healthy_status = read_complete_response(healthy, bytearray(), 1.0)
+        for partial in partials:
+            partial.close()
+        healthy.close()
+        save({"kind":scenario, "partial_clients":count,
+              "freed_parked_status":freed_parked_status,
+              "completed_overflow_status":overflow_status,
+              "reused_overflow_status":reused_overflow_status,
+              "healthy_status":healthy_status,
+              "elapsed_ms":round((time.monotonic()-started)*1000)})
+        print("synthetic-client-complete")
+        raise SystemExit(0 if freed_parked_status == 200 and overflow_status == 200 and reused_overflow_status == 200
+                         and healthy_status == 200 else 1)
     partials = []
     for index in range(8):
         partial = socket.create_connection((host, port), timeout=5)
@@ -1189,6 +1261,50 @@ class SuperLaunchTests(unittest.TestCase):
                 stdout, stderr = process.communicate(timeout=3)
                 self.assertEqual((process.returncode, stdout, stderr), (0, b"", b""))
             finally:
+                if process.poll() is None:
+                    process.kill()
+                    process.wait()
+
+    def test_parent_eof_closes_parked_and_overflow_connections(self):
+        import socket
+
+        with tempfile.TemporaryDirectory(prefix="modex-relay-overflow-parent-") as directory:
+            environment = {"HOME": directory, "PATH": "/usr/bin:/bin", "TMPDIR": directory,
+                           "PRODEX_RUNTIME_LOCAL_UPSTREAM": "http://127.0.0.1:1/v1",
+                           "PRODEX_RUNTIME_LOCAL_KEY": "synthetic-provider-key"}
+            process = subprocess.Popen([str(MODEX), "__modex-local-rewrite"], env=environment,
+                                       stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            clients = []
+            try:
+                ready = process.stdout.readline()
+                self.assertTrue(ready.startswith(b"127.0.0.1:"), ready)
+                host, port = ready.decode("ascii").strip().rsplit(":", 1)
+                for index in range(137):
+                    client = socket.create_connection((host, int(port)), timeout=5)
+                    client.settimeout(1)
+                    client.sendall((f"POST /v1/chat/completions HTTP/1.1\r\nHost: {host}:{port}\r\n"
+                                    f"Content-Length: 2\r\nX-Slow-Partial: {index}\r\n").encode())
+                    clients.append(client)
+                time.sleep(0.1)
+                process.stdin.close()
+                process.wait(timeout=3)
+                self.assertEqual(process.returncode, 0)
+                self.assertEqual(process.stdout.read(), b"")
+                self.assertEqual(process.stderr.read(), b"")
+                for client in clients:
+                    try:
+                        self.assertEqual(client.recv(1), b"")
+                    except ConnectionResetError:
+                        pass
+            finally:
+                for client in clients:
+                    client.close()
+                if process.stdin is not None and not process.stdin.closed:
+                    process.stdin.close()
+                if process.stdout is not None:
+                    process.stdout.close()
+                if process.stderr is not None:
+                    process.stderr.close()
                 if process.poll() is None:
                     process.kill()
                     process.wait()

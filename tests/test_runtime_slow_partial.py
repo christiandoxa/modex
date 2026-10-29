@@ -44,20 +44,22 @@ class RuntimeSlowPartialTests(unittest.TestCase):
         self.assertEqual((result.returncode, result.stdout),
                          (0, b"synthetic-client-complete\n"), result.stderr)
         probe = next(row for row in records if row["kind"] == scenario)
+        expected_upstreams = 4 if scenario == "slow-partial-overflow-completes" else 1
         if scenario in (
             "slow-partial-body-limit", "truncated-header-eof",
             "truncated-body-eof", "truncated-small-body-eof", "empty-request-body",
         ):
             self.assertEqual(upstream, [])
         else:
-            self.assertEqual(len(upstream), 1)
-            self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
-            self.assertEqual(
-                {key.lower(): value for key, value in upstream[0]["headers"].items()}[
-                    "authorization"
-                ],
-                "Bearer synthetic-provider-key",
-            )
+            self.assertEqual(len(upstream), expected_upstreams)
+            for row in upstream:
+                self.assertEqual(row["path"], "/v1/chat/completions")
+                self.assertEqual(
+                    {key.lower(): value for key, value in row["headers"].items()}[
+                        "authorization"
+                    ],
+                    "Bearer synthetic-provider-key",
+                )
         return probe
 
     @staticmethod
@@ -82,6 +84,13 @@ class RuntimeSlowPartialTests(unittest.TestCase):
                 probe["partial_clients"],
                 probe["before_release_status"],
                 probe["status"],
+            )
+        if scenario == "slow-partial-overflow-completes":
+            return (
+                probe["freed_parked_status"],
+                probe["completed_overflow_status"],
+                probe["reused_overflow_status"],
+                probe["healthy_status"],
             )
         if scenario in ("truncated-header-eof", "empty-request-body"):
             return probe["status"]
@@ -110,15 +119,28 @@ class RuntimeSlowPartialTests(unittest.TestCase):
                 self.assertEqual(signature, (True, 200, 200))
                 self.assertEqual(self._signature("slow-partial", modex), signature)
 
-    def test_parked_partial_header_cap_matches_releases_without_requiring_parity(self):
-        for count in (127, 128):
+    def test_partial_header_overflow_queue_keeps_later_clients_moving(self):
+        for count in (127, 128, 129):
             with self.subTest(partial_clients=count):
                 environment = {"MODEX_SLOW_PARTIAL_HEADER_COUNT": str(count)}
                 signature, modex = self._compare("slow-partial-flood", environment)
                 self.assertEqual(signature, (count, 200, 200))
-                self.assertEqual(modex["partial_clients"], count)
-                self.assertIn(modex["before_release_status"], (None, 200))
-                self.assertEqual(modex["status"], 200)
+                self.assertEqual(self._signature("slow-partial-flood", modex), signature)
+
+    def test_incomplete_overflow_heads_remain_open_and_complete_fairly(self):
+        environment = {"MODEX_SLOW_PARTIAL_HEADER_COUNT": "130"}
+        signature, modex = self._compare("slow-partial-overflow-completes", environment)
+        self.assertEqual(signature, (200, 200, 200, 200))
+        self.assertEqual(self._signature("slow-partial-overflow-completes", modex), signature)
+
+    def test_bounded_overflow_flood_preserves_eventual_success(self):
+        environment = {"MODEX_SLOW_PARTIAL_HEADER_COUNT": "136"}
+        signature, modex = self._compare("slow-partial-flood", environment)
+        self.assertEqual(signature[0], 136)
+        self.assertEqual(signature[1:], (200, 200))
+        modex_signature = self._signature("slow-partial-flood", modex)
+        self.assertEqual(modex_signature[0], 136)
+        self.assertEqual(modex_signature[2], 200)
 
     def test_incomplete_bodies_hold_workers_until_client_cancellation(self):
         signature, modex = self._compare("slow-partial-body")

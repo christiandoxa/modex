@@ -7,7 +7,7 @@ from .provider_chat_items import tool_output_item
 from .provider_chat_buffered import deepseek_buffered_assistant_messages
 from .provider_chat_metadata import merge_chat_metadata
 from .provider_chat_usage import json_unsigned
-from .text import trim_text, unsigned_value
+from .text import unsigned_value
 
 comptime ANTHROPIC_BUFFERED_MAX_CONTENT_BLOCKS = 65_536
 
@@ -498,6 +498,20 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         return
     if doc.string(doc.get(doc.root, "stop_reason")) != "end_turn":
         raise Error("Anthropic Messages stop reason is not supported")
+    var text_only = True
+    for block in doc.nodes[content].children:
+        var kind = doc.string(doc.get(block, "type"))
+        if kind == "thinking":
+            continue
+        if kind != "text":
+            text_only = False
+            continue
+        _only_fields(doc, block, ["type", "text"], "text block")
+        var text = doc.get(block, "text")
+        if text < 0 or doc.nodes[text].kind != JSON_STRING:
+            raise Error("Anthropic Messages text block is invalid")
+    if text_only:
+        return
     var search_index = Int(-1)
     var result_index = Int(-1)
     var text_index = Int(-1)

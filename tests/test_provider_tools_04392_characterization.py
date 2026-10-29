@@ -384,30 +384,45 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
             self.assertEqual(actual.get(key), expected.get(key), key)
         self.assertEqual((reference["state"]["leftovers"], modex["state"]["leftovers"]), ([], []))
 
-    def test_unsupported_anthropic_buffered_content_and_citations_fail_closed(self):
+    def test_anthropic_buffered_citations_fail_closed(self):
         request = {
             "model": "deepseek-chat",
             "input": "synthetic web query",
             "stream": False,
             "tools": [{"type": "web_search_preview"}],
         }
-        for scenario in ("anthropic-buffered-citations", "anthropic-buffered-unknown-content"):
-            with self.subTest(scenario=scenario):
-                reference = _run(ORACLE_04392, request, scenario=scenario)
-                modex = _run(MODEX, request, scenario=scenario)
-                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
-                released = json.loads(reference["response_body"])
-                if scenario == "anthropic-buffered-citations":
-                    self.assertNotIn("citations", json.dumps(released["output"]))
-                    self.assertIn("Found it.", reference["response_body"].decode())
-                else:
-                    self.assertIn(
-                        "additional content",
-                        json.dumps(released["output"], ensure_ascii=False),
-                    )
-                self.assertEqual((modex["exit_code"], modex["status"]), (1, 502))
-                self.assertEqual(len(modex["upstream"]), 1)
-                self.assertEqual(modex["state"]["leftovers"], [])
+        reference = _run(ORACLE_04392, request, scenario="anthropic-buffered-citations")
+        modex = _run(MODEX, request, scenario="anthropic-buffered-citations")
+        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+        released = json.loads(reference["response_body"])
+        self.assertNotIn("citations", json.dumps(released["output"]))
+        self.assertIn("Found it.", reference["response_body"].decode())
+        self.assertEqual((modex["exit_code"], modex["status"]), (1, 502))
+        self.assertEqual(len(modex["upstream"]), 1)
+        self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_buffered_thinking_matches_pinned_release(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_04392, request, scenario="anthropic-buffered-thinking")
+        modex = _run(MODEX, request, scenario="anthropic-buffered-thinking")
+        self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(len(reference["upstream"]), 1)
+        self.assertEqual(len(modex["upstream"]), 1)
+        self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+        self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+        released = json.loads(reference["response_body"])
+        actual = json.loads(modex["response_body"])
+        for key in ("id", "model", "output", "usage"):
+            self.assertEqual(actual.get(key), released.get(key), key)
+        self.assertIn("additional content", json.dumps(released["output"], ensure_ascii=False))
+        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(modex["state"]["leftovers"], [])
 
     def test_anthropic_image_sse_content_is_dropped_like_pinned_release(self):
         request = {

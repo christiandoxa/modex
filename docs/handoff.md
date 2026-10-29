@@ -2971,6 +2971,9 @@ Fast run 40844909607 on `f842b8b6f23473cba994c0594096e54c60ca03bd` likewise
 passed its helper shards and focused build/native checks, then failed because
 the required 0.439.2 tag was unavailable. Its oracle-backed tests did not run;
 this is not a Fast pass.
+Fast run 40845949112 on `08098b666be8c5ecd09cea693fd09832a00d48f6` likewise
+passed the dependency audit and focused build/native checks, then stopped at
+the missing 0.439.2 tag before oracle-backed tests. It is not a Fast pass.
 
 Full 0.165.1 parity remains incomplete: profile-backed WebSocket capacity and
 interruption, managed session launch and recovery, interactive TUI, DNS, TLS,
@@ -2984,3 +2987,29 @@ empty, whitespace, system-only, mixed and role-transition cases, and the four
 web-search modes. The build, native request-message test, dependency audit and
 test census passed. Unsupported input shapes and broader continuation remain
 open; see `docs/evidence/anthropic-web-search-04392.md`.
+
+An independent four-module provider run had one failure in an obsolete
+assertion that expected a buffered thinking block to fail. After correction,
+the four-module characterization run passed all 68 tests. A separate two-release
+stream check confirms the invalid-UTF-8-after-failure body-close
+behavior remains different; see `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
+
+Buffered Anthropic responses with empty content or text/thinking-only blocks
+now match the selected 0.165.1 and 0.439.2 process controls; missing or
+non-string text and unknown blocks still reject. The combined production and
+two native provider tests built and passed, as did six focused process tests
+covering the response change, blank inputs, continuation, thinking and
+citations. Dependency and test-census audits passed. Broader response shapes
+and continuation behavior remain unqualified.
+
+For a resolved session with no application state or shared Codex config,
+resume now matches the two tested releases' no-profile diagnostic. State and
+config still preserve the managed-launch refusal; default, absolute and
+relative shared-home config paths have process controls. The releases also
+create repair, maintenance and housekeeping files that Modex does not; bound
+profile launch and state mutation remain unfinished. Evidence:
+`docs/evidence/baseline-0.165.1/session-managed-resume.md`.
+After integration, the production build and four provider/session native
+programs passed, as did all eight resume tests and five focused provider
+process tests against the pinned releases. The 71-file import audit and test
+census passed; these checks do not establish a complete contract or platform.

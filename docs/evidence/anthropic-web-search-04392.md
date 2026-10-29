@@ -50,9 +50,10 @@ An exactly empty string input returns the release's HTTP 400 JSON error before
 any upstream POST. Whitespace-only inputs, including NBSP and U+200B, remain
 accepted by the tested release and Modex controls.
 
-Buffered response handling still fails closed for the tested citation and
-unknown-content shapes. Oracle controls show the release omits citations from
-text output, maps a `thinking` block into reasoning output, and ignores a
+Buffered response handling still fails closed for the tested citation shape.
+Oracle controls show the release omits citations from text output and maps a
+`thinking` block into reasoning output; Modex now matches the tested thinking
+case. The release ignores a
 streamed image block without preserving its data. Modex now matches the
 complete normalized stream for that image case. A buffered image block in the
 tested search response shape still returns 502 after one synthetic upstream
@@ -66,6 +67,13 @@ the release after normalizing generated IDs and timestamps, with or without
 `message_delta`. A bare `[DONE]`, missing start/stop, nonempty initial text and
 unsupported block order fail closed. The release drops a nonempty initial text
 block; Modex rejects that tested shape instead.
+
+Buffered Anthropic `end_turn` responses now match both pinned release
+processes for empty content, empty/single/multiple text blocks, and text blocks
+separated by `thinking`. Missing or non-string text and unsupported content
+blocks still return the same 502 response across the two releases and Modex.
+An orphan `web_search_tool_result` remains a known difference outside this
+change: both releases return 200 while Modex rejects it.
 
 Two additional real-process image controls match the full normalized release
 event sequence: a nonempty indexed image source with a same-index `image_delta`
@@ -104,6 +112,11 @@ The streamed image update passed `make build` and a combined 48-test run of the
 missing-index image-sequence methods then passed against both release
 processes, including nonempty source data, a matching `image_delta` and stop,
 and text before and after. The 71-file production import audit passed.
+
+The focused two-method buffered text-only process run passed against Prodex
+0.165.1, Prodex 0.439.2 and Modex. `make unit-build
+UNIT_BUILD_PROGRAMS=test_provider_chat_buffered` and the rebuilt
+`build/tests/test_provider_chat_buffered` program also passed.
 
 Fixtures use synthetic keys and local loopback providers. No paid provider traffic,
 real credentials or account login were used. This does not qualify general

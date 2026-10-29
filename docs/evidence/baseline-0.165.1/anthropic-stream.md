@@ -161,9 +161,15 @@ and `test_provider_chat_reader`, and 66 tests across
 `test_provider_tools_04392_characterization.py`,
 `test_anthropic_stream_optional_metadata_shared.py`, and
 `test_anthropic_text_stream_04392.py` passed. These focused checks do not
-qualify other release targets or general Anthropic parity. The separately
-recorded invalid-UTF-8-after-failure body-close mismatch remains open; broader
-malformed shapes and aggregate stream-state limits remain unverified.
+qualify other release targets or general Anthropic parity. The test
+`test_invalid_utf8_after_response_failed_records_release_open_body` records the
+remaining body-close difference: both pinned releases keep reading the chunked
+upstream body after `response.failed`, while Modex returns the same failure
+events and closes the downstream response. When the synthetic peer leaves that
+body open, the release comparisons hit the caller's read timeout. Matching that
+wait would keep reading after an invalid SSE comment and can leave the caller
+waiting if the peer never terminates its body; no unbounded drain was added.
+Broader malformed shapes and aggregate stream-state limits remain unverified.
 
 The first four-module run reported four failures and one test-helper error.
 Three failures came from terminating a stream after `response.failed` instead

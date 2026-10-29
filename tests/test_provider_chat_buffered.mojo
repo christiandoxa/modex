@@ -155,6 +155,26 @@ def main() raises:
     var history_tool_call = anthropic_history.nodes[history_tool_calls].children[0]
     var history_function = anthropic_history.get(history_tool_call, "function")
     assert_equal(anthropic_history.string(anthropic_history.get(history_function, "name")), "functions--lookup")
+    var anthropic_text_only_source = '{"id":"msg_text_only","type":"message","role":"assistant","model":"deepseek-chat","content":[{"type":"text","text":"previous reply"}],"stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}'
+    var anthropic_text_only = JsonDocument(anthropic_buffered_response(anthropic_text_only_source, 7))
+    var anthropic_text_output = anthropic_text_only.get(anthropic_text_only.root, "output")
+    assert_equal(len(anthropic_text_only.nodes[anthropic_text_output].children), 1)
+    var anthropic_empty_source = '{"id":"msg_empty","type":"message","role":"assistant","model":"deepseek-chat","content":[],"stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}'
+    var anthropic_empty = JsonDocument(anthropic_buffered_response(anthropic_empty_source, 7))
+    assert_equal(len(anthropic_empty.nodes[anthropic_empty.get(anthropic_empty.root, "output")].children), 0)
+    assert_equal(anthropic_buffered_assistant_messages(anthropic_empty_source), "[]")
+    assert_equal(anthropic_buffered_assistant_messages(
+        '{"id":"msg_empty_text","type":"message","role":"assistant","model":"deepseek-chat","content":[{"type":"text","text":""}],"stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}',
+    ), "[]")
+    var rejected_anthropic_text = False
+    try:
+        _ = anthropic_buffered_response(
+            '{"id":"msg_invalid_text","type":"message","role":"assistant","model":"deepseek-chat","content":[{"type":"text"}],"stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}',
+            7,
+        )
+    except error:
+        rejected_anthropic_text = String(error) == "Anthropic Messages text block is invalid"
+    assert_true(rejected_anthropic_text)
     var anthropic_missing_input = JsonDocument(anthropic_buffered_response(
         '{"id":"msg_tool_default","type":"message","role":"assistant","model":"deepseek-chat","content":[{"type":"tool_use","id":"call_default","name":"lookup"}],"stop_reason":"tool_use","usage":{"input_tokens":1,"output_tokens":1}}',
         7,

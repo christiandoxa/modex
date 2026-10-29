@@ -10,7 +10,7 @@ from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
 from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_short_help
 from modex.root_help import root_help, update_help
-from modex.sessions import inspect_sessions, resolve_session_id_from_store
+from modex.sessions import inspect_sessions, resolve_session_id_from_store, session_resume_has_no_profile_source
 from modex.super_cli import parse_super_arguments, run_super
 from modex.super_help import super_help
 from modex.super_launch import run_local_rewrite_child
@@ -218,6 +218,13 @@ def main():
                     _ = resolve_session_id_from_store(options.query)
                 except error:
                     print("Error:", error, file=stderr)
+                    exit(1)
+                if session_resume_has_no_profile_source():
+                    print("Prodex launch: preparing runtime launch...", file=stderr)
+                    print(
+                        "Error: no active profile selected and no Codex-compatible profiles are available; use `prodex use --profile <name>` or pass --profile",
+                        file=stderr,
+                    )
                     exit(1)
                 print(
                     "Error: session resume requires managed profile authorization and launch, "

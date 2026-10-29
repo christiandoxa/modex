@@ -405,6 +405,72 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
         ])
         self.assertEqual(result["output"][2]["call_id"], "call_lookup")
 
+    def test_buffered_text_only_shapes_match_both_releases(self):
+        cases = (
+            ("empty content", [], [], [], []),
+            ("single text", [{"type": "text", "text": "previous reply"}],
+             ["message"], ["previous reply"], []),
+            ("empty text block", [{"type": "text", "text": ""}],
+             ["message"], [""], []),
+            ("multiple text blocks", [
+                {"type": "text", "text": "first"},
+                {"type": "text", "text": "second"},
+            ], ["message"], ["first", "second"], []),
+            ("thinking between text", [
+                {"type": "text", "text": "before"},
+                {"type": "thinking", "thinking": "synthetic reasoning"},
+                {"type": "text", "text": "after"},
+            ], ["message", "reasoning", "message"], ["before", "after"],
+             ["synthetic reasoning"]),
+        )
+        for label, content, expected_types, expected_texts, expected_reasoning in cases:
+            with self.subTest(case=label):
+                captures = []
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    posts, responses = observe_turns(
+                        binary, [_request()], [_buffered_reply(content, "end_turn")],
+                    )
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual(len(responses), 1)
+                    self.assertEqual(responses[0]["status"], 200)
+                    self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+                    result = _normalize(_json_body(responses[0]))
+                    self.assertEqual([item["type"] for item in result["output"]], expected_types)
+                    self.assertEqual([
+                        part["text"]
+                        for item in result["output"] if item["type"] == "message"
+                        for part in item["content"]
+                    ], expected_texts)
+                    self.assertEqual([
+                        item["summary"][0]["text"]
+                        for item in result["output"] if item["type"] == "reasoning"
+                    ], expected_reasoning)
+                    captures.append((json.loads(posts[0]["body"]), result))
+                self.assertEqual(captures[1:], captures[:1] * 2)
+
+    def test_buffered_text_only_malformed_shapes_still_fail_closed(self):
+        cases = (
+            ("missing text", [{"type": "text"}]),
+            ("non-string text", [{"type": "text", "text": 7}]),
+            ("unsupported block", [{"type": "future_block"}]),
+        )
+        for label, content in cases:
+            with self.subTest(case=label):
+                captures = []
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    posts, responses = observe_turns(
+                        binary, [_request()], [_buffered_reply(content, "end_turn")],
+                    )
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual(len(responses), 1)
+                    self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual(responses[0]["status"], 502)
+                    self.assertEqual(bytes.fromhex(responses[0]["body"]),
+                                     b"provider response could not be processed")
+                    captures.append((json.loads(posts[0]["body"]), responses[0]["status"],
+                                     bytes.fromhex(responses[0]["body"])))
+                self.assertEqual(captures[1:], captures[:1] * 2)
+
     def test_buffered_thinking_blocks_match_release(self):
         cases = (
             (

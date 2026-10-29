@@ -24,13 +24,23 @@ real-process controls cover uppercase IDs, ASCII and Unicode surrounding
 whitespace, whitespace-only selectors, exact-versus-prefix precedence,
 ambiguous prefixes, and duplicate IDs across active and archived session paths.
 
-For a valid ID, both releases proceed into managed runtime authorization. In
-the isolated empty-home fixture they stop with “no active profile selected”;
-Modex instead refuses before launching Codex because it has no managed resume
-authorization/launch path. This is intentional fail-closed behavior: direct
-Codex spawn would bypass profile ownership, auth selection, runtime management,
-and the frozen metadata repair transaction. No Codex process, account login,
-network access, or provider traffic is used by the tests.
+For a valid ID with no `state.json` and no shared-home `config.toml`, both
+releases report that no profile is selected. Modex now matches that status and
+diagnostic after the existing session/state guards pass. Side effects differ:
+both releases create session repair and maintenance locks plus application
+housekeeping files; Modex creates only the private application directory. A
+shared-home config selected through `PRODEX_SHARED_CODEX_HOME` can provide a
+profileless runtime; Modex keeps the managed-launch refusal when that config is
+present. Synthetic state supplied through `PRODEX_HOME` also blocks the
+no-profile fallback. With active-profile state, both releases update state and
+create state/session locks before failing at Codex discovery under an empty
+`PATH`. Modex retains its explicit managed-authorization refusal and leaves
+that state unchanged. This is fail-closed behavior: direct Codex spawn would
+bypass profile ownership, auth selection, state transactions, runtime
+management, and metadata repair. No account login, network access, provider
+traffic, or credentials are used by the tests. See
+`docs/evidence/baseline-0.165.1/session-managed-resume.md` for the reproducible
+status, output, environment, config, and filesystem comparisons.
 
 The same fixtures show two retained state differences. Both releases ignore a
 `state.json.lock` marker when the primary state file is absent, while Modex
@@ -43,21 +53,10 @@ Metadata repair, state database-only candidates, profile ownership checks,
 and managed Codex launch remain unimplemented. The process comparisons cover
 Linux x86-64 only and do not qualify any other release target.
 
-Checks run in the detached `origin/main` worktree with Mojo 1.2.0:
-
-```text
-make build
-mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_sessions.mojo -o build/tests/test_sessions
-build/tests/test_sessions
-PYTHONPATH=tests python3 -m unittest test_session_resume
-PYTHONPATH=tests python3 -m unittest test_sessions test_session_report_01651
-make ci-dependencies
-python3 scripts/ci/check-test-census.py
-python3 scripts/ci/run-unittest.py test_session_resume.py
-```
-
-The native session checks, five resume process tests, 28 listing/report tests,
-and the production import audit passed. The test census found 50 native test
-sources and 129 Python modules with one suite owner each. The strict-runner
-invocation also passed. `test_session_resume.py` is in the active cross-release
+The 2026-10-29 update rebuilt production Modex and ran
+`python3 scripts/ci/run-unittest.py test_session_resume.py`; all 8 resume
+process tests passed. `make ci-dependencies` passed for 71 Mojo files, and the
+test census found 50 native test sources and 130 Python modules with one suite
+owner each. Earlier native session and listing/report checks remain as
+recorded at their run. `test_session_resume.py` is in the active cross-release
 Python shard in both `scripts/ci/run-fast.sh` and `scripts/ci/run-full.sh`.

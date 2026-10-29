@@ -503,7 +503,7 @@ class SuperLaunchTests(unittest.TestCase):
                             "stop_reason": "end_turn", "usage": {"input_tokens": 3, "output_tokens": 5},
                         }, separators=(",", ":")).encode()
                         content_type = "application/json"
-                    elif scenario == "anthropic-buffered-unknown-content":
+                    elif scenario == "anthropic-buffered-thinking":
                         payload = json.dumps({
                             "id": "msg_unknown", "type": "message", "role": "assistant",
                             "model": "deepseek-chat",

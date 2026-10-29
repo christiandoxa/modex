@@ -735,6 +735,18 @@ def resolve_session_id_from_store(selector: String) raises -> String:
     return resolve_session_id(ids, selector)
 
 
+# shortcut: only absent app state and shared config reach this path, when to upgrade: when managed session authorization is implemented.
+def session_resume_has_no_profile_source() raises -> Bool:
+    var root = ensure_app_root()
+    for raw_name in listdir(root):
+        var name = valid_session_name(raw_name)
+        if name and name.value() == "state.json":
+            return False
+    if exists(shared_root(root) + "/config.toml"):
+        return False
+    return True
+
+
 def session_row(fields: List[String], widths: List[Int]) raises -> String:
     var output = String()
     for index in range(len(fields)):

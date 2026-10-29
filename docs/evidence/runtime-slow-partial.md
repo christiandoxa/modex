@@ -111,3 +111,38 @@ An independent candidate run returned 200 during the partial-header hold in
 healthy request waited for cancellation in both, but Modex produced no response
 for the half-closed partial request while both releases returned 502. This
 truncated-body response remains a reproducible gap.
+
+## Production request-head capture controls
+
+The added controls use the real isolated `super exec` process path. They send
+synthetic requests to the relay over loopback, use a synthetic provider
+upstream, and verify its request count and provider authorization. Requested
+head size is the byte offset of the final `\r\n\r\n`; padding is split among
+fields no longer than 60 KiB each.
+
+| Case | Prodex 0.165.1 | Prodex 0.439.2 | Modex candidate |
+| --- | ---: | ---: | ---: |
+| Complete 80 KiB head, one send | 200 | 200 | 200 |
+| Exact 2 MiB head, sent in 512-byte fragments | 200 | 200 | 200 |
+| 2 MiB + 1 byte complete head | 200 | 200 | 502, no upstream request |
+
+For the fragmented 2 MiB case, the fake Codex client opens a second healthy
+request after sending the first 512 bytes of the large head. All three
+processes answer that request with 200 in 8 ms, before the large head is
+complete. The large head completes in about 1.0–1.1 seconds and also returns
+200, with two total upstream requests. This exercises the 512-byte capture
+passes without a 100 ms pause on each pass. The 80 KiB complete request is
+answered in 108 ms by Modex and 3 ms by each release in the recorded run.
+
+The 2 MiB + 1 byte result is an existing production request-head limit gap:
+both releases dispatch it, while Modex rejects it before upstream dispatch.
+This remains recorded in `docs/handoff.md` and
+`docs/evidence/baseline-0.165.1/local-relay-http.md`.
+
+On 2026-10-29, all seven tests in `test_runtime_slow_partial.py` passed against
+both checksum-pinned releases and a Modex build from commit
+`30901e73c3dd1a3503fc7f39c6e2ff08994e9fe9`. The build used Mojo 1.2.0
+(`2016d0cd`), `-O3 --target-cpu=x86-64-v3 -I src`; its SHA-256 was
+`21f1064fa4af4c424ae220c3db69b54bfb31c69ab6588acb51cd851e9c4c5ea1`. The
+suite took 29 seconds. This Linux x86-64 process evidence covers only these
+request sizes and cases; it does not establish full HTTP or release parity.

@@ -109,7 +109,7 @@ if scenario == "exit-seven": raise SystemExit(7)
 if scenario == "extra-state":
     (home/"synthetic-user-state").write_text("preserve this data")
     raise SystemExit(0)
-if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-header", "slow-partial-body-limit"):
+if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-header", "slow-partial-body-limit") or scenario.startswith("request-head-"):
     import select
     import socket
     target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
@@ -161,6 +161,90 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
         oversized.close()
         print("synthetic-client-complete")
         raise SystemExit(0 if status == 413 else 1)
+    if scenario.startswith("request-head-"):
+        body = json.dumps({"model":"deepseek-chat","input":"synthetic large-header probe"},separators=(",",":")).encode()
+        def make_header(head_bytes):
+            prefix = (f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n").encode()
+            suffix = (f"Content-Type: application/json\r\nAuthorization: Bearer synthetic-codex-key\r\n"
+                      f"Content-Length: {len(body)}\r\nConnection: close").encode()
+            padding_bytes = head_bytes - len(prefix) - len(suffix)
+            field_prefix = b"X-Pad: "
+            field_overhead = len(field_prefix) + 2
+            max_value_bytes = 60 * 1024 - field_overhead
+            if padding_bytes < field_overhead: raise ValueError("request head target is too short")
+            field_count = (padding_bytes + max_value_bytes + field_overhead - 1) // (max_value_bytes + field_overhead)
+            value_bytes = padding_bytes - field_count * field_overhead
+            fields = []
+            for _ in range(field_count):
+                value_length = min(max_value_bytes, value_bytes)
+                fields.append(field_prefix + b"x" * value_length + b"\r\n")
+                value_bytes -= value_length
+            if value_bytes: raise ValueError("request head padding did not fit")
+            header = prefix + b"".join(fields) + suffix + b"\r\n\r\n"
+            if header.index(b"\r\n\r\n") != head_bytes: raise ValueError("request head target did not match")
+            return header
+        if scenario == "request-head-80k":
+            head_bytes = 80 * 1024
+            connection = socket.create_connection((host, port), timeout=5)
+            started = time.monotonic()
+            connection.sendall(make_header(head_bytes) + body)
+            status = read_status(connection, 5)
+            elapsed_ms = round((time.monotonic()-started)*1000)
+            save({"kind":scenario, "head_bytes":head_bytes, "status":status,
+                  "elapsed_ms":elapsed_ms, "fragments":1})
+            connection.close()
+            print("synthetic-client-complete")
+            raise SystemExit(0 if status == 200 else 1)
+        if scenario == "request-head-near-limit-fragmented":
+            head_bytes = 2 * 1024 * 1024
+            large = socket.create_connection((host, port), timeout=10)
+            header = make_header(head_bytes)
+            large.sendall(header[:512])
+            healthy = socket.create_connection((host, port), timeout=5)
+            started = time.monotonic()
+            healthy.sendall(request)
+            healthy_status = None
+            healthy_elapsed_ms = None
+            fragments = 0
+            for offset in range(512, len(header), 512):
+                large.sendall(header[offset:offset+512])
+                fragments += 1
+                if healthy_status is None and fragments % 32 == 0 and time.monotonic() - started < 0.75:
+                    healthy_status = read_status(healthy, 0.002)
+                    if healthy_status is not None:
+                        healthy_elapsed_ms = round((time.monotonic()-started)*1000)
+                time.sleep(0.0002)
+            large_header_complete_ms = round((time.monotonic()-started)*1000)
+            large.sendall(body)
+            large_status = read_status(large, 10)
+            large_response_ms = round((time.monotonic()-started)*1000)
+            healthy_before_large_complete = healthy_status is not None
+            if healthy_status is None:
+                healthy_status = read_status(healthy, 5)
+                if healthy_status is not None:
+                    healthy_elapsed_ms = round((time.monotonic()-started)*1000)
+            save({"kind":scenario, "head_bytes":head_bytes, "status":large_status,
+                  "healthy_status":healthy_status, "healthy_elapsed_ms":healthy_elapsed_ms,
+                  "healthy_before_large_complete":healthy_before_large_complete,
+                  "large_header_complete_ms":large_header_complete_ms,
+                  "large_response_ms":large_response_ms, "fragments":fragments + 1,
+                  "fragment_bytes":512})
+            large.close()
+            healthy.close()
+            print("synthetic-client-complete")
+            raise SystemExit(0 if large_status == 200 and healthy_status == 200 else 1)
+        if scenario == "request-head-over-limit":
+            head_bytes = 2 * 1024 * 1024 + 1
+            connection = socket.create_connection((host, port), timeout=10)
+            started = time.monotonic()
+            connection.sendall(make_header(head_bytes) + body)
+            status = read_status(connection, 10)
+            save({"kind":scenario, "head_bytes":head_bytes, "status":status,
+                  "elapsed_ms":round((time.monotonic()-started)*1000)})
+            connection.close()
+            print("synthetic-client-complete")
+            raise SystemExit(0 if status is not None else 1)
+        raise ValueError(f"unknown request-head scenario: {scenario}")
     if scenario == "slow-partial-body":
         partials = []
         for index in range(16):

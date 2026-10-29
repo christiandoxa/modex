@@ -23,9 +23,12 @@ Buffered Anthropic thinking blocks now produce reasoning items in tested
 search and mixed-tool responses. Session text reports include bound profile
 details; C0/C1 control characters are escaped, unlike the releases' raw output.
 The local relay's bounded request-head cap is now 2 MiB; both releases accept
-larger heads and some smaller layouts still hit outbound limits. The combined
-production build, 54 provider/session process tests, two large-head oracle
-controls, two Super launch controls, dependency audit and test census passed.
+larger heads and some smaller layouts still hit outbound limits. Real
+`super exec` controls for an 80 KiB head, fragmented exact-limit head, and the
+2 MiB + 1-byte mismatch are in `docs/evidence/runtime-slow-partial.md`. The
+combined production build, 54 provider/session process tests, two large-head
+oracle controls, two Super launch controls, dependency audit and test census
+passed.
 Worker suites additionally passed 16 historical relay and 48 local relay/shared
 parser tests. The reasoning continuation control returns the same 503 before a
 second provider POST in both releases and Modex, leaving retained-history

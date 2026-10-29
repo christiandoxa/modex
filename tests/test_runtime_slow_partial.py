@@ -114,6 +114,83 @@ class RuntimeSlowPartialTests(unittest.TestCase):
         self.assertEqual(signature, (64 * 1024 * 1024 + 1, 413))
         self.assertEqual(modex["status"], 413)
 
+    def _run_request_head(self, scenario, binary):
+        harness = test_super_launch.SuperLaunchTests()
+        result, records, upstream, _ = harness.run_launch(binary=binary, scenario=scenario)
+        self.assertEqual((result.returncode, result.stdout),
+                         (0, b"synthetic-client-complete\n"), result.stderr)
+        probe = next(row for row in records if row["kind"] == scenario)
+        return probe, upstream
+
+    def _assert_provider_upstreams(self, upstream, count, label):
+        self.assertEqual(len(upstream), count, label)
+        for row in upstream:
+            self.assertEqual(row["path"], "/v1/chat/completions", label)
+            self.assertEqual(
+                {key.lower(): value for key, value in row["headers"].items()}["authorization"],
+                "Bearer synthetic-provider-key",
+                label,
+            )
+
+    def test_80k_complete_header_is_captured_without_per_chunk_admission_delay(self):
+        observations = []
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            with self.subTest(binary=label):
+                probe, upstream = self._run_request_head("request-head-80k", binary)
+                self.assertEqual((probe["head_bytes"], probe["status"], probe["fragments"]),
+                                 (80 * 1024, 200, 1), label)
+                self.assertLess(probe["elapsed_ms"], 1000, (label, probe))
+                self._assert_provider_upstreams(upstream, 1, label)
+                observations.append(probe)
+        self.assertEqual(
+            [(row["head_bytes"], row["status"]) for row in observations],
+            [(80 * 1024, 200)] * 3,
+        )
+
+    def test_fragmented_two_mib_header_yields_to_healthy_request(self):
+        observations = []
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            with self.subTest(binary=label):
+                probe, upstream = self._run_request_head(
+                    "request-head-near-limit-fragmented", binary,
+                )
+                self.assertEqual((probe["head_bytes"], probe["fragment_bytes"], probe["fragments"]),
+                                 (2 * 1024 * 1024, 512, 4097), label)
+                self.assertEqual((probe["status"], probe["healthy_status"]), (200, 200), label)
+                self.assertTrue(probe["healthy_before_large_complete"], (label, probe))
+                self.assertLess(probe["healthy_elapsed_ms"], 750, (label, probe))
+                self.assertLess(probe["large_header_complete_ms"], 5000, (label, probe))
+                self._assert_provider_upstreams(upstream, 2, label)
+                observations.append(probe)
+        self.assertEqual(
+            [(row["head_bytes"], row["status"], row["healthy_status"]) for row in observations],
+            [(2 * 1024 * 1024, 200, 200)] * 3,
+        )
+
+    def test_header_limit_boundary_matches_releases_and_records_over_limit_gap(self):
+        releases = []
+        for label, binary in (("0.165.1", ORACLE_01651), ("0.439.2", ORACLE_04392)):
+            with self.subTest(binary=label):
+                probe, upstream = self._run_request_head("request-head-over-limit", binary)
+                self.assertEqual((probe["head_bytes"], probe["status"]),
+                                 (2 * 1024 * 1024 + 1, 200), label)
+                self._assert_provider_upstreams(upstream, 1, label)
+                releases.append(probe)
+        self.assertEqual([row["status"] for row in releases], [200, 200])
+
+        modex, upstream = self._run_request_head("request-head-over-limit", MODEX)
+        self.assertEqual((modex["head_bytes"], modex["status"]),
+                         (2 * 1024 * 1024 + 1, 502))
+        self._assert_provider_upstreams(upstream, 0, "Modex")
+
 
 if __name__ == "__main__":
     unittest.main()

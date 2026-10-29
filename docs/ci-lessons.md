@@ -1,5 +1,11 @@
 # CI lessons
 
+Fast run [40820069692](https://github.com/christiandoxa/modex/actions/runs/40820069692)
+on `795ad94` passed both helper shards, the production build and native unit
+suite before stopping at the missing required 0.439.2 tag. Oracle comparisons
+and artifact publication did not run. The preceding run `40819640597` was
+canceled after the newer push.
+
 Fast run [40817443892](https://github.com/christiandoxa/modex/actions/runs/40817443892)
 on `7a15fbe` passed both helper shards and the producer's bootstrap, policy,
 dependency and reference-helper checks, then stopped before build because the

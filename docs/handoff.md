@@ -116,6 +116,11 @@ production comparisons against the verified 0.439.2 release. The historical
 passed 39 tests; the 71-file dependency audit and 122-module census passed.
 The full suite and non-Linux targets were not rerun for this integration.
 
+Hosted Fast CI run `40820069692` on `795ad94` passed both helper shards and
+the production build and native suite, then failed at the missing required
+0.439.2 tag. Oracle comparisons and artifact publication did not run. Run
+`40819640597` was canceled after the newer push.
+
 Hosted Fast CI run `40817443892` on `7a15fbe` passed both helper shards and
 stopped before build because the required 0.439.2 tag was absent; artifact
 consumption was skipped. Fast CI now runs the independent build and native

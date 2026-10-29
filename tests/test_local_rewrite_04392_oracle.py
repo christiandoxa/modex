@@ -149,7 +149,7 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
             self.assertTrue(any(line.startswith(b"Date: ") for line in oracle_headers))
             self.assertNotIn(b"Connection: close", oracle_headers)
             self.assertFalse(any(line.lower().startswith((b"server:", b"date:")) for line in modex_headers))
-            self.assertIn(b"Connection: close", modex_headers)
+            self.assertNotIn(b"Connection: close", modex_headers)
 
             non_token_method = {
                 "name": "non_token_method_admission_gap",

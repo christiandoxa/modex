@@ -25,10 +25,10 @@ the first body byte before upstream EOF. The HTTP/1.0 request does not buffer
 or delay the stream.
 
 The server's generated headers remain different. In the sampled buffered 200,
-TinyHTTP sends `Server: tiny-http (Rust)` and a `Date` header without
-`Connection: close`; Modex omits Server and Date and sends `Connection: close`.
-The stable response headers, body and close result match for the tested case.
-The captured raw heads were:
+TinyHTTP sends `Server: tiny-http (Rust)` and a `Date` header; Modex omits both.
+The later keep-alive change also removed the relay's `Connection: close` header,
+matching this reference response. The stable response headers, body and close
+result match for the tested case. Before that change, the captured raw heads were:
 
 ```text
 0.439.2: HTTP/1.0 200 OK\r\nServer: tiny-http (Rust)\r\nDate: <runtime date>\r\ncontent-type: application/json; charset=utf-8\r\nContent-Length: 254\r\n\r\n

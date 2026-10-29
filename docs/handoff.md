@@ -2765,3 +2765,14 @@ comparisons match the pinned oracle, and the full focused stream suite passes
 26 tests after the production build. Evidence:
 `docs/evidence/baseline-0.165.1/anthropic-stream.md`. These cases add no general
 Anthropic or provider parity claim; unsupported shapes and targets remain gaps.
+
+Image blocks that reuse an active text, function-tool, or server-search index
+remain a verified stream gap. Both 0.165.1 and 0.439.2 retain subsequent
+deltas, while current Modex can close the tracked block at the image stop and
+fail on later content. Text, tool, search, repeated-start and result-clearing
+controls are in the two provider characterization suites. The release ignores
+image starts and its stop event only clears ignored result indices; index-only
+stops cannot be safely attributed to overlapping blocks. No production
+heuristic was retained. Fixing this requires a broader stop-state redesign that
+matches the release across text, tool, search and result transitions. Other
+stop orders remain unverified. Evidence: `docs/evidence/baseline-0.165.1/anthropic-stream.md`.

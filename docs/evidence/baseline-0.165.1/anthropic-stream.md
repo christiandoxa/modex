@@ -134,3 +134,23 @@ focused provider characterization modules (48 tests). The two added indexed and
 missing-index image sequence methods also passed against both real oracles. The
 71-file production import audit passed. Other release targets remain
 unverified.
+
+## Reused image indices remain a stream gap
+
+The real-process controls now reuse an image index while a text, function-tool,
+or server-search block is active. Both pinned releases keep the later text or
+argument/query deltas and complete; Modex instead treats the image stop as the
+active block's stop and fails on later content. Repeated image starts/stops and
+a text delta before the image stop reproduce the same text mismatch. A result-
+only collision control still matches because the release clears its ignored
+result index on any stop at that index. String and fractional image indices
+remain ignored, and image source/delta markers do not appear in Responses.
+
+The 0.439.2 reader source classifies image starts as `Ignore`; `BlockStop` only
+removes ignored result indices. The stop event carries only an index, so a local
+image counter cannot reliably distinguish an image stop from a text, tool, or
+search stop when starts overlap or an image stop is absent. The follow-up keeps
+these real-process mismatches as characterization assertions and changes no
+production state. A fix needs a coordinated stop-state redesign aligned with
+the release behavior. The tested ordering controls cover these cases only;
+broader stop sequences remain unverified and no parity status is promoted.

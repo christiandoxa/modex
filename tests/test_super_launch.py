@@ -170,6 +170,91 @@ def normalized_codex_path(output):
     )
 
 
+def _anthropic_image_stop_events(scenario):
+    def block(index, kind, **fields):
+        return {"type": "content_block_start", "index": index,
+                "content_block": {"type": kind, **fields}}
+
+    def delta(index, kind, **fields):
+        return {"type": "content_block_delta", "index": index,
+                "delta": {"type": kind, **fields}}
+
+    def stop(index):
+        return {"type": "content_block_stop", "index": index}
+
+    def image_start(index):
+        return block(index, "image", source={
+            "type": "base64", "media_type": "image/png", "data": "SYNTHETIC_IMAGE_BLOCK_DATA",
+        })
+
+    def image_delta(index):
+        return delta(index, "image_delta", data="SYNTHETIC_IMAGE_DELTA_SECRET")
+
+    def text_delta(index, value):
+        return delta(index, "text_delta", text=value)
+
+    start = {"type": "message_start", "message": {
+        "id": "msg_image_stop", "role": "assistant", "model": "deepseek-chat",
+        "usage": {"input_tokens": 3, "output_tokens": 0},
+    }}
+    message_stop = {"type": "message_stop"}
+
+    def end(reason="end_turn"):
+        return [
+            {"type": "message_delta", "delta": {"stop_reason": reason},
+             "usage": {"output_tokens": 5}},
+            message_stop,
+        ]
+
+    text_start = block(0, "text", text="")
+    if scenario == "anthropic-image-stop-text-collision":
+        return [start, text_start, text_delta(0, "before image"), image_start(0),
+                image_delta(0), stop(0), text_delta(0, " after image"), stop(0), *end()]
+    if scenario == "anthropic-image-stop-text-repeated":
+        return [start, text_start, text_delta(0, "before image"), image_start(0), image_start(0),
+                image_delta(0), stop(0), stop(0), text_delta(0, " after image"), stop(0), *end()]
+    if scenario == "anthropic-image-stop-text-delta-before-stop":
+        return [start, text_start, text_delta(0, "before image"), image_start(0),
+                text_delta(0, " between blocks"), stop(0), text_delta(0, " after image stop"),
+                stop(0), *end()]
+    if scenario in ("anthropic-image-stop-string-index", "anthropic-image-stop-fractional-index"):
+        image_index = "1" if scenario.endswith("string-index") else 1.5
+        return [start, text_start, text_delta(0, "before image"), image_start(image_index),
+                image_delta(image_index), stop(image_index), text_delta(0, " after image"), stop(0), *end()]
+    if scenario == "anthropic-image-stop-tool-collision":
+        return [start, block(0, "tool_use", id="toolu_image_collision", name="lookup", input={}),
+                image_start(0), image_delta(0), stop(0),
+                delta(0, "input_json_delta", partial_json='{"query":"release"}'), stop(0),
+                *end("tool_use")]
+    if scenario == "anthropic-image-stop-tool-delta-before-stop":
+        return [start, block(0, "tool_use", id="toolu_image_delta_before_stop", name="lookup", input={}),
+                image_start(0), image_delta(0), delta(0, "input_json_delta", partial_json='{"query":'),
+                stop(0), delta(0, "input_json_delta", partial_json='"release"}'), stop(0),
+                *end("tool_use")]
+    if scenario == "anthropic-image-stop-search-delta-before-stop":
+        search_id = "search_image_delta_before_stop"
+        return [start, block(0, "server_tool_use", id=search_id, name="web_search", input={}),
+                image_start(0), image_delta(0), delta(0, "input_json_delta", partial_json='{"query":'),
+                stop(0), delta(0, "input_json_delta", partial_json='"release"}'), stop(0),
+                block(1, "web_search_tool_result", tool_use_id=search_id, content=[{
+                    "type": "web_search_result", "url": "https://example.test/release", "title": "Release",
+                }]), stop(1), block(2, "text", text=""), text_delta(2, "Found it."), stop(2), *end()]
+    if scenario == "anthropic-image-stop-result-collision":
+        search_id = "search_image_result_collision"
+        return [start, block(0, "server_tool_use", id=search_id, name="web_search",
+                             input={"query": "release"}), stop(0),
+                block(1, "web_search_tool_result", tool_use_id=search_id, content=[{
+                    "type": "web_search_result", "url": "https://example.test/release", "title": "Release",
+                }]), image_start(1), image_delta(1), stop(1),
+                text_delta(1, "visible after result stop"), stop(1), block(2, "text", text=""),
+                text_delta(2, "Found it."), stop(2), *end()]
+    raise AssertionError(f"unknown Anthropic image stop fixture: {scenario}")
+
+
+def _sse_data_event(value):
+    return b"data: " + json.dumps(value, separators=(",", ":")).encode() + b"\n\n"
+
+
 @contextmanager
 def private_tempdir():
     with tempfile.TemporaryDirectory(prefix="modex probe private tmpdir ") as root:
@@ -526,6 +611,9 @@ class SuperLaunchTests(unittest.TestCase):
                             b'data: {"type":"content_block_start","index":2,"content_block":{"type":"image","source":{"type":"base64","media_type":"image/png","data":"SYNTHETIC_IMAGE_BLOCK_DATA"}}}\n\n',
                             b'data: {"type":"message_stop"}\n\n',
                         ))
+                        content_type = "text/event-stream"
+                    elif scenario.startswith("anthropic-image-stop-"):
+                        payload = b"".join(_sse_data_event(item) for item in _anthropic_image_stop_events(scenario))
                         content_type = "text/event-stream"
                     elif scenario in ("anthropic-stream-image-interleaved", "anthropic-stream-image-missing-index"):
                         image_start = b'data: {"type":"content_block_start","index":1,"content_block":{"type":"image","source":{"type":"base64","media_type":"image/png","data":"U1lOVEhFVElDX0lNQUdFX0JZVEVT"}}}\n\n'

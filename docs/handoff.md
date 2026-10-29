@@ -80,6 +80,12 @@ Empty and whitespace-only sub-agent model arguments now produce the selected
 pre- and post-positional diagnostics of both releases. Post-positional state
 creation remains different; see `docs/evidence/super-subagent-model-validation.md`.
 
+The guarded DeepSeek Super launch now forwards selected Codex `exec` output
+flags and `--skip-git-repo-check`, including the literal `--` boundary. Exact
+launch argv matches both releases in synthetic-child comparisons. Config,
+sandbox and other unverified flags remain guarded; see
+`docs/evidence/baseline-0.165.1/super-exec-output-flags.md`.
+
 The combined production build and four focused native checks passed. The
 sub-agent model and session profile process suites passed 14 tests against
 both releases, and CI routing, workflow, cleanliness and reference helpers
@@ -140,6 +146,10 @@ production comparisons against the verified 0.439.2 release. The historical
 19 tests before the beta-host follow-up. The CI routing and reference helpers
 passed 39 tests; the 71-file dependency audit and 122-module census passed.
 The full suite and non-Linux targets were not rerun for this integration.
+
+Hosted Fast CI run `40823584604` on `aa377d6` passed the production build and
+native suite, then failed at the missing required 0.439.2 tag. Oracle
+comparisons and artifact publication did not run.
 
 Hosted Fast CI run `40822073508` on `5c0803b` passed the production build and
 native suite, then failed at the missing required 0.439.2 tag. Oracle

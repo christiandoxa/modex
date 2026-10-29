@@ -38,7 +38,7 @@ PTY comparisons cover text fallback with `TERM=dumb` and
 `PRODEX_TUI_STRICT=true`, but the test PTY has no controlling-terminal size;
 those checks do not qualify natural TTY width or render the interactive panel.
 `tests/test_terminal_dimensions.py` now creates a controlling 24x42 PTY. Both
-the active 0.165.1 oracle and frozen 0.439.2 render a 42-column fallback panel;
+the 0.165.1 and 0.439.2 oracles render a 42-column fallback panel;
 Modex renders 110 columns. The test records this expected mismatch and confirms
 no upstream/provider request or overlay remains. `mojo build
 probes/gaps/terminal.mojo` directly fails because Mojo 1.2.0's `std.os` exports

@@ -24,8 +24,10 @@ neither symbol. In the pinned Prodex 0.165.1 and 0.439.2 sources,
 size` on Unix before using the 110-column fallback. The explicit
 `PRODEX_TERM_COLUMNS` override path is already implemented in Modex and
 covered against both release oracles. Under the project restriction against
-external `stty` helpers and new native bindings, no production API can acquire
-the controlling-terminal dimensions.
+external `stty` helpers and new native bindings, no suitable official
+standard-library API for controlling-terminal dimensions was identified. The
+standard-library benchmark helper reads `COLUMNS` and `LINES`; it does not query
+the controlling terminal.
 
 The complete `TERMINAL` parity row therefore remains `NOT_STARTED`; only
 fallback and explicit-width slices are characterized. Interactive rendering,

@@ -73,6 +73,6 @@ Validation on Linux x86-64: `make build` and
 1.2.0. The full `test_provider_tools_04392_characterization` module passed all
 18 tests against the checksum-verified release and production Modex CLI. The
 earlier active 0.165.1 raw HTTP and invalid-URL launch controls remain
-historical checks; they do not qualify full 0.165.1 behavior. This closes only
-the environment-backed URL validation case; TOML propagation, public beta
+historical checks; they do not qualify full 0.165.1 behavior. These cover only
+selected environment-backed URL validation cases; TOML propagation, public beta
 transport, and complete Unicode hostname normalization remain unsupported.

@@ -24,6 +24,10 @@ lock and housekeeping files; configured relative and symlink Codex paths also
 retain a shebang-path mismatch. These observations do not qualify Super or
 the other release targets.
 
+Non-strict DeepSeek beta URL preflight now rejects selected malformed hosts
+before launch. Fullwidth IDNA normalization, TOML precedence and public beta
+transport remain gaps; see `docs/evidence/deepseek-strict-tools-04392.md`.
+
 Hosted Fast CI run `40805095414` failed on three 0.165.1 reference-only
 WebSocket handshake timeouts. The same three tests passed locally, including
 with single-CPU affinity; the hosted cause remains unresolved. No hosted CI

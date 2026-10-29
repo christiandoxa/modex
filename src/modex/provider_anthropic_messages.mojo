@@ -172,6 +172,7 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
     if source < 0 or doc.nodes[source].kind != JSON_ARRAY or len(doc.nodes[source].children) == 0:
         raise Error("Anthropic Messages requires a messages array")
     var messages = List[String]()
+    var tool_results = List[String]()
     var content_parts = List[String]()
     var system_parts = List[String]()
     var current_role = String()
@@ -182,17 +183,19 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
         if role == "tool":
             _only_fields(doc, item, ["role", "tool_call_id", "content"], "tool message")
             var call_id = doc.get(item, "tool_call_id")
-            if call_id < 0 or doc.nodes[call_id].kind != JSON_STRING or not doc.nodes[call_id].text:
-                raise Error("Anthropic tool result requires a tool_call_id")
             if content < 0 or doc.nodes[content].kind != JSON_STRING:
                 raise Error("Anthropic tool result content must be a string")
+            var tool_use_id = quote_json("call_prodex")
+            if call_id >= 0 and doc.nodes[call_id].kind == JSON_STRING:
+                tool_use_id = serialize_json(doc, call_id)
             role = "user"
             if has_message and role != current_role:
-                messages.append('{"content":[' + ",".join(content_parts) + '],"role":' + quote_json(current_role) + "}")
+                messages.append(_message(current_role, tool_results, content_parts))
+                tool_results = List[String]()
                 content_parts = List[String]()
             current_role = role
             has_message = True
-            content_parts.append('{"type":"tool_result","tool_use_id":' + serialize_json(doc, call_id) + ',"content":' + serialize_json(doc, content) + "}")
+            tool_results.append('{"type":"tool_result","tool_use_id":' + tool_use_id + ',"content":' + serialize_json(doc, content) + "}")
             continue
         _only_fields(doc, item, ["role", "content", "tool_calls"], "message")
         if role == "developer": role = "system"
@@ -207,7 +210,8 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
         if not doc.nodes[content].text and tool_calls < 0:
             continue
         if has_message and role != current_role:
-            messages.append('{"content":[' + ",".join(content_parts) + '],"role":' + quote_json(current_role) + "}")
+            messages.append(_message(current_role, tool_results, content_parts))
+            tool_results = List[String]()
             content_parts = List[String]()
         current_role = role
         has_message = True
@@ -231,10 +235,17 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
                 content_parts.append('{"type":"tool_use","id":' + serialize_json(doc, call_id) + ',"name":' + serialize_json(doc, name) + ',"input":' + serialize_json(parsed_arguments, parsed_arguments.root) + "}")
     if not has_message:
         raise Error("Anthropic Messages slice requires a user or assistant message")
-    messages.append('{"content":[' + ",".join(content_parts) + '],"role":' + quote_json(current_role) + "}")
+    messages.append(_message(current_role, tool_results, content_parts))
     var system = String()
     if len(system_parts) > 0: system = quote_json("\n\n".join(system_parts))
     return (system, "[" + ",".join(messages) + "]")
+
+
+def _message(role: String, tool_results: List[String], content_parts: List[String]) -> String:
+    var content = List[String]()
+    for block in tool_results: content.append(block)
+    for block in content_parts: content.append(block)
+    return '{"content":[' + ",".join(content) + '],"role":' + quote_json(role) + "}"
 
 
 def _tools(doc: JsonDocument) raises -> String:

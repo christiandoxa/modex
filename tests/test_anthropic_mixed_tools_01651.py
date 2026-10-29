@@ -201,6 +201,77 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
         with patch.object(message_arrays, "ORACLE", ORACLE_01651):
             message_arrays.AnthropicMessageArrayTests.test_unknown_roles_and_message_metadata_match_release(self)
 
+    def test_untyped_tool_message_fallback_order_matches_releases(self):
+        input_items = [
+            {"role": "user", "content": "before"},
+            {"role": "tool", "content": "  missing ID result  "},
+            {"role": "tool", "tool_call_id": None, "content": "null ID result"},
+            {"role": "tool", "tool_call_id": 7, "content": "numeric ID result"},
+            {"role": "tool", "tool_call_id": "", "content": "empty ID result"},
+            {"role": "tool", "tool_call_id": " \t ", "content": "  whitespace content  "},
+            {"role": "user", "content": "after"},
+        ]
+        expected_messages = [{"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": "call_prodex", "content": "  missing ID result  "},
+            {"type": "tool_result", "tool_use_id": "call_prodex", "content": "null ID result"},
+            {"type": "tool_result", "tool_use_id": "call_prodex", "content": "numeric ID result"},
+            {"type": "tool_result", "tool_use_id": "call_prodex", "content": "empty ID result"},
+            {"type": "tool_result", "tool_use_id": "call_prodex", "content": "  whitespace content  "},
+            {"type": "text", "text": "before"},
+            {"type": "text", "text": "after"},
+        ]}]
+        for stream, scenario in ((False, "anthropic-buffered"), (True, "anthropic-stream")):
+            with self.subTest(stream=stream):
+                request = {"model": "deepseek-chat", "input": input_items,
+                           "stream": stream, "tools": [{"type": "web_search_preview"}]}
+                results = [_run(binary, request, scenario=scenario)
+                           for binary in (ORACLE_01651, ORACLE, MODEX)]
+                for result in results:
+                    self.assertEqual((result["exit_code"], result["status"]), (0, 200))
+                    self.assertEqual(len(result["upstream"]), 1)
+                    self.assertEqual(result["upstream"][0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual(result["upstream_body"]["messages"], expected_messages)
+                    self.assertEqual(result["state"]["leftovers"], [])
+                self.assertEqual(results[0]["upstream_body"], results[1]["upstream_body"])
+                self.assertEqual(results[1]["upstream_body"], results[2]["upstream_body"])
+                if stream:
+                    self.assertEqual(_events(results[0]["response_body"]),
+                                     _events(results[1]["response_body"]))
+                    self.assertEqual(_events(results[1]["response_body"]),
+                                     _events(results[2]["response_body"]))
+                else:
+                    expected = json.loads(results[0]["response_body"])
+                    for result in results[1:]:
+                        self.assertEqual(_normalize(json.loads(result["response_body"])),
+                                         _normalize(expected))
+
+        typed_tool = {"model": "deepseek-chat", "input": [
+            {"type": "message", "role": "tool", "content": "typed result"},
+        ], "stream": False, "tools": [{"type": "web_search_preview"}]}
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            result = _run(binary, typed_tool, scenario="anthropic-buffered")
+            self.assertEqual((result["exit_code"], result["status"]), (1, 502))
+            self.assertEqual(result["upstream"], [])
+
+    def test_function_output_id_is_retained_with_grouped_tool_results(self):
+        request = {"model": "deepseek-chat", "input": "synthetic web query",
+                   "stream": False, "tools": [{"type": "web_search_preview"}]}
+        results = [_run(binary, request, scenario="anthropic-buffered-tool-history-array-output")
+                   for binary in (ORACLE_01651, ORACLE, MODEX)]
+        for result in results:
+            self.assertEqual((result["exit_code"], result["status"]), (0, 200))
+            self.assertEqual(len(result["upstream"]), 2)
+            self.assertEqual(result["state"]["leftovers"], [])
+        second_bodies = [json.loads(bytes.fromhex(result["upstream"][1]["body"]))
+                         for result in results]
+        self.assertEqual(second_bodies[1:], second_bodies[:1] * 2)
+        user = next(message for message in second_bodies[0]["messages"]
+                    if message["role"] == "user" and any(
+                        block["type"] == "tool_result" for block in message["content"]))
+        result = next(block for block in user["content"] if block["type"] == "tool_result")
+        self.assertEqual((result["tool_use_id"], result["content"]),
+                         ("call_tool_use", "first\nsecond\nthird"))
+
     def test_streamed_text_parts_and_metadata_match_both_releases(self):
         request = {"model": "deepseek-chat", "input": [{
             "type": "message", "role": "user", "id": "synthetic-id",

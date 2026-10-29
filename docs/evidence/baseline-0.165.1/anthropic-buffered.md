@@ -15,6 +15,27 @@ Anthropic checks are retained separately. These
 cases do not qualify mixed web-search/function blocks, arbitrary malformed
 input, real providers, concurrency or any non-Linux release target.
 
+Untyped `input` items with `role: "tool"` use `call_prodex` when
+`tool_call_id` is missing, null, numeric, empty or whitespace-only. Their
+results keep their input order and precede ordinary text in the grouped user
+message; surrounding result content whitespace is preserved. A typed
+`{"type":"message","role":"tool"}` remains rejected before provider I/O.
+When a function output follows a returned tool call, its ID remains attached
+to the grouped result and multiple output strings are joined in order.
+`test_untyped_tool_message_fallback_order_matches_releases` compares buffered
+requests and responses plus complete normalized stream events across the
+checksum-pinned 0.165.1 and 0.439.2 Linux binaries and Modex. The
+`test_function_output_id_is_retained_with_grouped_tool_results` compares the
+two-turn request bodies and cleanup across all three processes; the existing
+function-output/history controls compare 0.165.1 and Modex. These cases qualify
+only the listed input and grouped-history shapes.
+
+On Linux x86-64, the two new methods and three existing function-output/history
+controls passed. The 71-file production import audit, test census (50 native
+sources and 135 Python modules), and `git diff --check` passed. `make build` had
+passed after the source change; it was not rerun because subsequent changes
+were tests and evidence only.
+
 ## Buffered reasoning blocks
 
 The pinned 0.165.1 source classifies an Anthropic `thinking` block as a

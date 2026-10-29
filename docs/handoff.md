@@ -1,5 +1,15 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The Anthropic Messages adapter now maps untyped `role: "tool"` input items
+with missing or unusable IDs to `call_prodex` and groups results before text,
+matching the checksum-pinned 0.165.1 and 0.439.2 processes. Selected function
+output IDs remain intact in grouped history. Five focused real-process methods
+passed on Linux x86-64, including buffered and streaming comparisons. The
+71-file import audit, 50-native/135-Python test census, and `git diff --check`
+passed. The previous production build covered the unchanged Mojo source.
+Broader tool-result round-trips remain incomplete. See
+`docs/evidence/baseline-0.165.1/anthropic-buffered.md`.
+
 A pinned 0.165.1 broker process control holds 16 idle local WebSockets and an
 incomplete text-frame header on one, then receives matching pongs on two other
 connections without upstream I/O. This adds a reproducible requirement for the

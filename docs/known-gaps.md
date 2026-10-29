@@ -141,7 +141,10 @@ response shapes only. See
 Selected Anthropic function-tool streams and split JSON fragments now match
 0.165.1, including selected duplicate and orphan stops, reopened indices and
 image omission. Selected buffered function calls and mixed server-side web
-search blocks also match 0.165.1; broader continuation remains incomplete.
+search blocks also match 0.165.1. Untyped tool-result inputs with fallback IDs,
+grouped ordering, and selected function-output history now match both pinned
+releases; broader tool-result/history round trips and continuation remain
+incomplete.
 See `docs/evidence/baseline-0.165.1/anthropic-buffered.md`.
 
 Selected stop reasons, missing or non-string reasons, non-string stop sequences

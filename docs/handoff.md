@@ -453,6 +453,19 @@ and recovery behavior. See
 `tests/test_runtime_proxy_websocket_01651_oracle.py` and
 `docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
 
+The bootstrap trace is now tied to the 0.165.1 and frozen 0.439.2 source pins:
+runtime launch selects the profile, sends a bounded versioned private-pipe
+bootstrap to `__runtime-broker`, and the broker loads application state before
+starting the profile-backed listener. The WebSocket message path later reloads
+the selected profile's `auth.json` and adds its bearer token/account ID to the
+upstream handshake. A connected slice still cannot be built safely here:
+Modex Super rejects persisted profile state and has no broker entry point, and
+the pinned Mojo standard library lacks TCP/TLS streams, DNS, and WSS transport.
+A bootstrap parser or 101-only listener would leave upgraded clients without a
+message path. The exact first connected milestone and validation boundary are
+recorded in the prerequisite evidence; the capability remains unimplemented
+and no parity is claimed.
+
 Validation on Linux x86-64: `rtk make build` and the native local-rewrite and
 loopback driver build passed. The focused 0.165.1 oracle module passed 14 tests
 before the final pipeline controls were added. The expanded pipeline matrix

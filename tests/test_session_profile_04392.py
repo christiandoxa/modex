@@ -423,6 +423,33 @@ class SessionProfile04392Tests(unittest.TestCase):
                 self.assertIn(b"locked state loading and recovery", modex.stderr)
                 self.assertEqual(state_path.read_bytes(), state_bytes)
 
+    def test_private_hardlinked_state_matches_both_releases_without_mutation(self):
+        for reference in (ORACLE_01651, test_cli.ORACLE):
+            outputs = []
+            for binary in (reference, test_cli.MODEX):
+                with tempfile.TemporaryDirectory(prefix="modex-session-state-hardlink-04392-") as directory:
+                    root = Path(directory)
+                    fixture(root)
+                    state_path = write_state(root, profile_state(root))
+                    state_bytes = state_path.read_bytes()
+                    alias = root / "workspace/state-alias.json"
+                    os.link(state_path, alias)
+                    self.assertEqual(state_path.stat().st_nlink, 2)
+                    before_paths = {path.relative_to(root).as_posix() for path in root.rglob("*")}
+
+                    result = command_output(binary, root, ["session", "list", "--json", "--profile", "main"])
+
+                    self.assertEqual(result.returncode, 0, result.stderr.decode())
+                    self.assertEqual(json.loads(result.stdout)[0]["profile"], "main")
+                    self.assertEqual(state_path.read_bytes(), state_bytes)
+                    self.assertEqual(alias.read_bytes(), state_bytes)
+                    self.assertEqual(state_path.stat().st_nlink, 2)
+                    if binary == test_cli.MODEX:
+                        after_paths = {path.relative_to(root).as_posix() for path in root.rglob("*")}
+                        self.assertEqual(after_paths, before_paths)
+                    outputs.append(normalize_root(result.stdout, root))
+            self.assertEqual(outputs[0], outputs[1])
+
     def test_concurrent_atomic_state_replacements_never_yield_mixed_profile_data(self):
         with tempfile.TemporaryDirectory(prefix="modex-session-state-race-04392-") as directory:
             root = Path(directory)

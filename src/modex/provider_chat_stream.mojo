@@ -49,8 +49,10 @@ struct DeepSeekChatState:
     var external_output_items: List[String]
     var anthropic_searches: List[AnthropicWebSearch]
     var anthropic_search_first_by_id: Dict[String, Int]
+    var anthropic_search_position_by_index: Dict[UInt64, Int]
     var anthropic_stopped_search_indices: Dict[UInt64, Bool]
     var anthropic_open_result_indices: Dict[UInt64, Bool]
+    var anthropic_seen_result_indices: Dict[UInt64, Bool]
     var anthropic_open_search_count: Int
     var anthropic_tool_indices: List[UInt64]
     var anthropic_stopped_tool_indices: List[UInt64]
@@ -86,8 +88,10 @@ struct DeepSeekChatState:
         self.external_output_items = List[String]()
         self.anthropic_searches = List[AnthropicWebSearch]()
         self.anthropic_search_first_by_id = Dict[String, Int]()
+        self.anthropic_search_position_by_index = Dict[UInt64, Int]()
         self.anthropic_stopped_search_indices = Dict[UInt64, Bool]()
         self.anthropic_open_result_indices = Dict[UInt64, Bool]()
+        self.anthropic_seen_result_indices = Dict[UInt64, Bool]()
         self.anthropic_open_search_count = 0
         self.anthropic_tool_indices = List[UInt64]()
         self.anthropic_stopped_tool_indices = List[UInt64]()
@@ -250,6 +254,8 @@ struct DeepSeekChatState:
                     + ',"arguments":""}}]},"finish_reason":null}]}'
                 )
             if block_type == "web_search_tool_result":
+                if block_index in self.anthropic_seen_result_indices:
+                    return List[String]()
                 if (
                     (
                         self.anthropic_phase != 2
@@ -266,6 +272,7 @@ struct DeepSeekChatState:
                 if not first_search or self.anthropic_searches[first_search.value()].output_index not in self.anthropic_stopped_search_indices:
                     raise Error("Anthropic web-search result does not match a stopped tool use")
                 self.anthropic_result_index = Optional[UInt64](block_index)
+                self.anthropic_seen_result_indices[block_index] = True
                 self.anthropic_open_result_indices[block_index] = True
                 self.anthropic_phase = 4
                 return self.finish_anthropic_search(doc, block)
@@ -419,7 +426,12 @@ struct DeepSeekChatState:
                     self.finish_reason = Optional[String]("stop")
             var total = UInt64.MAX if self.anthropic_output_tokens > UInt64.MAX - self.anthropic_input_tokens else self.anthropic_input_tokens + self.anthropic_output_tokens
             self.usage = Optional[String]('{"input_tokens":' + String(self.anthropic_input_tokens) + ',"output_tokens":' + String(self.anthropic_output_tokens) + ',"total_tokens":' + String(total) + '}')
-            return self.complete_tools()
+            var events = List[String]()
+            if not self.created and self.anthropic_searches:
+                self.created = True
+                events.append(self.event("response.created", '"response":{"id":' + quote_json(self.response_id) + "}", True))
+            events.extend(self.complete_tools())
+            return events^
         if kind == "message_stop":
             _only_fields(doc, doc.root, ["type"], "message_stop event")
             if self.anthropic_phase != 1 and self.anthropic_phase != 3 and self.anthropic_phase != 5 and self.anthropic_phase != 7 and self.anthropic_phase != 8:
@@ -448,6 +460,7 @@ struct DeepSeekChatState:
         if not (id in self.anthropic_search_first_by_id):
             self.anthropic_search_first_by_id[id] = position
         self.anthropic_searches.append(search^)
+        self.anthropic_search_position_by_index[index] = position
         self.anthropic_open_search_count += 1
         self.update_anthropic_search_phase()
         var output = List[String]()
@@ -483,8 +496,13 @@ struct DeepSeekChatState:
 
     def complete_anthropic_searches(mut self) raises -> List[String]:
         var output = List[String]()
+        var pending_indices = List[UInt64]()
         for position in range(len(self.anthropic_searches)):
-            if self.anthropic_searches[position].done: continue
+            if not self.anthropic_searches[position].done:
+                pending_indices.append(self.anthropic_searches[position].output_index)
+        sort(pending_indices)
+        for index in pending_indices:
+            var position = self.anthropic_search_index(index)
             var item = _stream_anthropic_search_item(self.anthropic_searches[position], False)
             self.anthropic_searches[position].done = True
             self.external_output_items.append(item)
@@ -492,16 +510,8 @@ struct DeepSeekChatState:
         return output^
 
     def anthropic_search_index(self, index: UInt64) -> Int:
-        var low = 0
-        var high = len(self.anthropic_searches) - 1
-        while low <= high:
-            var middle = low + (high - low) / 2
-            var candidate = self.anthropic_searches[middle].output_index
-            if candidate == index: return middle
-            if candidate < index:
-                low = middle + 1
-            else:
-                high = middle - 1
+        var position = self.anthropic_search_position_by_index.get(index)
+        if position: return position.value()
         return -1
 
     def apply_metadata(mut self, doc: JsonDocument) raises:

@@ -470,6 +470,91 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
             with self.subTest(case=name):
                 self.assertEqual(events[-1][0], "response.completed")
 
+    def test_anthropic_search_edge_sequences_match_both_releases(self):
+        message_start = {
+            "type": "message_start",
+            "message": {"id": "msg_search_edges", "role": "assistant", "model": "deepseek-chat",
+                        "usage": {"input_tokens": 3, "output_tokens": 0}},
+        }
+
+        def search(index, search_id):
+            return {"type": "content_block_start", "index": index, "content_block": {
+                "type": "server_tool_use", "id": search_id, "name": "web_search",
+                "input": {"query": search_id},
+            }}
+
+        def stop(index):
+            return {"type": "content_block_stop", "index": index}
+
+        message_delta = {
+            "type": "message_delta", "delta": {"stop_reason": "end_turn"},
+            "usage": {"output_tokens": 5},
+        }
+        result = {"type": "content_block_start", "index": 1, "content_block": {
+            "type": "web_search_tool_result", "tool_use_id": "s0", "content": [],
+        }}
+        cases = [
+            ("pending_search_sequence", [
+                message_start, search(0, "s0"), stop(0), message_delta, {"type": "message_stop"},
+            ]),
+            ("repeated_result_index_after_stop", [
+                message_start, search(0, "s0"), stop(0), result, stop(1), result,
+                {"type": "message_stop"},
+            ]),
+            ("decreasing_search_indexes", [
+                message_start, search(4, "s4"), search(2, "s2"),
+                {"type": "content_block_delta", "index": 2,
+                 "delta": {"type": "thinking_delta", "thinking": "ignored"}},
+                stop(2), stop(4), message_delta, {"type": "message_stop"},
+            ]),
+        ]
+        turns = [
+            {"model": "deepseek-chat", "input": name, "stream": True,
+             "tools": [{"type": "web_search_preview"}]}
+            for name, _ in cases
+        ]
+        replies = [_stream(events) for _, events in cases]
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, turns, replies)
+            self.assertEqual(len(posts), len(cases), label)
+            self.assertEqual(len(responses), len(cases), label)
+            self.assertTrue(all(post["path"] == "/anthropic/v1/messages" for post in posts), label)
+            for post in posts:
+                headers = {key.lower(): value for key, value in post["headers"].items()}
+                self.assertEqual(headers["x-api-key"], "synthetic-provider-key", label)
+                self.assertNotIn("authorization", headers, label)
+            self.assertTrue(all(response["status"] == 200 for response in responses), label)
+            captures[label] = [
+                (post["body"], _normalized_events(bytes.fromhex(response["body"])))
+                for post, response in zip(posts, responses)
+            ]
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        self.assertEqual(captures["Modex"], captures["0.439.2"])
+        for (name, _), (_, events) in zip(cases, captures["0.439.2"]):
+            with self.subTest(case=name):
+                self.assertEqual(events[-1][0], "response.completed")
+                if name == "pending_search_sequence":
+                    self.assertEqual(
+                        [(event, payload["sequence_number"]) for event, payload in events],
+                        [
+                            ("response.output_item.added", 0),
+                            ("response.created", 1),
+                            ("response.output_item.done", 2),
+                            ("response.completed", 3),
+                        ],
+                    )
+                elif name == "repeated_result_index_after_stop":
+                    self.assertEqual([event for event, _ in events].count("response.output_item.done"), 1)
+                else:
+                    self.assertNotIn(
+                        "response.reasoning_summary_text.delta", [event for event, _ in events],
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()

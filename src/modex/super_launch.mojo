@@ -279,7 +279,7 @@ def deepseek_model_catalog(launch_model: String, context_window: UInt64, compact
 
 
 def _child_environment(home: String) -> List[String]:
-    var excluded: List[String] = ["CODEX_HOME", "CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT", "NO_PROXY", "no_proxy", "LD_PRELOAD", "LD_AUDIT", "LD_LIBRARY_PATH", "LD_ORIGIN_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH", "PRODEX_RUNTIME_LOCAL_UPSTREAM", "PRODEX_RUNTIME_LOCAL_KEY", "PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE", "PRODEX_RUNTIME_LOCAL_STRICT_TOOLS", "PRODEX_RUNTIME_LOCAL_BETA_BASE_URL"]
+    var excluded: List[String] = ["CODEX_HOME", "CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT", "NO_PROXY", "no_proxy", "LD_PRELOAD", "LD_AUDIT", "LD_LIBRARY_PATH", "LD_ORIGIN_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH", "DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS", "PRODEX_RUNTIME_LOCAL_UPSTREAM", "PRODEX_RUNTIME_LOCAL_KEY", "PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE", "PRODEX_RUNTIME_LOCAL_STRICT_TOOLS", "PRODEX_RUNTIME_LOCAL_BETA_BASE_URL"]
     var environment = inherited_environment(excluded)
     var clean = List[String]()
     for entry in environment:
@@ -443,6 +443,44 @@ def _deepseek_provider_panel() raises:
     )
 
 
+def _checked_deepseek_api_key(value: String, name: String) raises -> String:
+    if not value:
+        raise Error(name + " cannot be empty")
+    for character in value.codepoints():
+        if is_whitespace(Int(character)):
+            raise Error(name + " must not contain whitespace")
+    return String(value)
+
+
+def _deepseek_api_key(value: String, supplied: Bool) raises -> String:
+    if supplied:
+        return _checked_deepseek_api_key(value, "--api-key")
+    var multiple = getenv("DEEPSEEK_API_KEYS", "\0")
+    if multiple != "\0":
+        var keys = List[String]()
+        var start = 0
+        for index in range(multiple.byte_length()):
+            var byte = Int(multiple.as_bytes()[index])
+            if byte == 44 or byte == 59 or byte == 10:
+                var key = trim_text(String(multiple[byte=start:index]))
+                if key:
+                    keys.append(key^)
+                start = index + 1
+        var key = trim_text(String(multiple[byte=start:]))
+        if key:
+            keys.append(key^)
+        if not keys:
+            raise Error("DEEPSEEK_API_KEYS cannot be empty")
+        # shortcut: Modex relay accepts one key, when to upgrade: after per-request key rotation exists.
+        if len(keys) > 1:
+            raise Error("multiple DEEPSEEK_API_KEYS values require key rotation, which is not implemented")
+        return String(keys[0])
+    var single = getenv("DEEPSEEK_API_KEY", "\0")
+    if single != "\0":
+        return _checked_deepseek_api_key(single, "DEEPSEEK_API_KEY")
+    raise Error("DeepSeek provider requires --api-key or DEEPSEEK_API_KEY(S) in the environment")
+
+
 def _capture_codex_probe(binary: String, args: List[String], environment: List[String], label: String) raises -> CapturedProcessOutput:
     try:
         return capture_with_env(binary, args, environment, label, argv0=binary)
@@ -604,10 +642,9 @@ def _exec(binary: String, child_path: String, argv0: String, home: String, model
         raise
 
 
-def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64 = 0, compact_limit: UInt64 = 0, profile: String = "", profile_supplied: Bool = False, model_supplied: Bool = True) raises -> Int:
+def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64 = 0, compact_limit: UInt64 = 0, profile: String = "", profile_supplied: Bool = False, model_supplied: Bool = True, key_supplied: Bool = True) raises -> Int:
     _deepseek_launch_progress()
     _ = local_rewrite_upstream(upstream)
-    _ = deepseek_request_headers([], key)
     var launch_context = context_window if context_window > 1 else UInt64(1048576)
     var launch_compact = min(compact_limit if compact_limit > 0 else UInt64(900000), launch_context - 1)
     var launch_model = trim_text(model)
@@ -637,6 +674,8 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
     _private_directory(shared)
     _private_directory(root + "/profiles")
     _deepseek_provider_panel()
+    var selected_key = _deepseek_api_key(key, key_supplied)
+    _ = deepseek_request_headers([], selected_key)
     var home = root + "/profiles/.prodex-overlay-" + new_uuid7()
     mkdir(home, 0o700)
     try:
@@ -654,7 +693,7 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
             # Frozen exact-value lookup ignores numeric -c overrides when building the catalog.
             catalog.write(deepseek_model_catalog(catalog_model, catalog_context, catalog_compact))
         var codex = _codex_binary()
-        var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, key, prompt, launch_context, launch_compact, route[3], shared_config[2], shared_config[3], model_supplied)
+        var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, selected_key, prompt, launch_context, launch_compact, route[3], shared_config[2], shared_config[3], model_supplied)
         _remove_overlay(home)
         return result
     except:

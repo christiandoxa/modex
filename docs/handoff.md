@@ -9,6 +9,19 @@ provider request. This does not establish general provider, profile or model
 selection parity. Evidence:
 `docs/evidence/baseline-0.165.1/super-shared-config.md`.
 
+DeepSeek Super now resolves API keys through `--api-key`, a singular
+`DEEPSEEK_API_KEY`, or a one-entry `DEEPSEEK_API_KEYS` list. Explicit keys take
+precedence; plural entries accept comma, semicolon, and newline separators.
+Both pinned releases select the first key from a multi-entry list, while Modex
+rejects such lists until per-request rotation exists. The releases also expose
+key environment variables to Codex version/help probes before scrubbing them
+for the final launch. Modex scrubs them from all Codex children, including
+probes; this is a deliberate security difference. Three synthetic real-process
+methods match the singular, singleton plural, precedence, validation, and
+Authorization cases against 0.165.1, 0.439.2, and Modex. No real credentials or
+provider traffic were used. See
+`docs/evidence/baseline-0.165.1/super-api-key-env.md`.
+
 The next aggregate-budget relay admission prototype remains unmerged. In an
 isolated 246-partial-head load with eight blocked workers, the current relay
 used 0.55 CPU seconds over two seconds with 146 accepted client descriptors;

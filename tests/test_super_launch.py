@@ -16,6 +16,7 @@ import time
 import unittest
 
 from test_cli import MODEX, ORACLE, ORACLE_SHA256
+from test_cli_01651 import ORACLE as ORACLE_01651, ORACLE_SHA256 as ORACLE_01651_SHA256
 
 CODEX = r'''
 import http.client, json, os, pathlib, signal, sys, time
@@ -26,7 +27,8 @@ def save(value):
     value["script_argv0"] = sys.argv[0]
     with capture.open("a") as handle: handle.write(json.dumps(value) + "\n")
 probe_environment = ("CODEX_HOME", "TEST_CODEX_LOG", "TEST_CODEX_LOG_APPEND",
-                     "TEST_CODEX_ARGS_LOG", "TEST_CODEX_ARGS_LOG_APPEND", "TEST_CODEX_STDIN_LOG")
+                     "TEST_CODEX_ARGS_LOG", "TEST_CODEX_ARGS_LOG_APPEND", "TEST_CODEX_STDIN_LOG",
+                     "DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS")
 if args == ["--version"]:
     save({"kind":"probe", "args":args,
           "environment":{key:os.environ.get(key) for key in probe_environment}})
@@ -97,7 +99,7 @@ save({"kind":"launch","pid":os.getpid(),"mode":home.stat().st_mode & 0o777,"args
       "catalog":json.loads(pathlib.Path(config["model_catalog_json"]).read_text()) if "model_catalog_json" in config else None,
       "runtime_config":(home/"config.toml").read_text() if (home/"config.toml").exists() else None,
       "auth":json.loads((home/"auth.json").read_text()),"children":children.read_text().split(),
-      "environment":{key:os.environ.get(key) for key in ("CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT","PRODEX_RUNTIME_LOCAL_KEY","CODEX_SANDBOX_SENTINEL")}})
+      "environment":{key:os.environ.get(key) for key in ("CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT","PRODEX_RUNTIME_LOCAL_KEY","CODEX_SANDBOX_SENTINEL","DEEPSEEK_API_KEY","DEEPSEEK_API_KEYS")}})
 (home/"sessions"/"synthetic-session.jsonl").write_text('{"synthetic":true}\n')
 scenario = os.environ["MODEX_LAUNCH_SCENARIO"]
 if scenario in ("kill-relay", "kill-relay-ignores-term"):
@@ -691,11 +693,20 @@ def app_server_config(arguments):
 
 
 class SuperLaunchTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        for binary, digest in ((ORACLE_01651, ORACLE_01651_SHA256), (ORACLE, ORACLE_SHA256)):
+            if not binary.is_file() or hashlib.sha256(binary.read_bytes()).hexdigest() != digest:
+                raise AssertionError("A Prodex oracle does not match its pinned release")
+        if not MODEX.is_file():
+            raise AssertionError("Build Modex first with make build")
+
     def run_launch(
         self, binary=MODEX, scenario="stream", existing=False, model="deepseek-chat",
         super_arguments=(), environment_overrides=None, base_path="/v1", sub_agent=False,
         temporary_directory=None, stderr_tty=False, codex_mode="explicit", codex_binary=None,
         codex_arguments=("exec", "--", "synthetic prompt"), shared_config=None, shared_setup=None,
+        api_key="synthetic-provider-key",
     ):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-", dir=temporary_directory) as directory:
             root = Path(directory)
@@ -1124,13 +1135,15 @@ class SuperLaunchTests(unittest.TestCase):
             if codex_setting:
                 environment["PRODEX_CODEX_BIN"] = codex_setting
             environment.update(environment_overrides or {})
-            command = [str(binary), "super", "--provider", "deepseek", "--api-key", "synthetic-provider-key",
+            command = [str(binary), "super", "--provider", "deepseek",
                        "--base-url", f"http://127.0.0.1:{server.server_port}{base_path}"]
+            if api_key is not None:
+                command.extend(("--api-key", api_key))
             if model is not None:
                 command.extend(("--model", model))
-            command.extend(["--no-presidio", "--sub-agent" if sub_agent else "--no-sub-agent", "--skip-quota-check", *super_arguments,
-                       *codex_arguments]
-            )
+            command.extend(("--no-presidio",
+                            "--sub-agent" if sub_agent else "--no-sub-agent", "--skip-quota-check",
+                            *super_arguments, *codex_arguments))
             try:
                 if stderr_tty:
                     master, slave = os.openpty()
@@ -1200,6 +1213,126 @@ class SuperLaunchTests(unittest.TestCase):
         self.assertEqual(state["leftovers"], [])
         self.assertEqual(state["session"], '{"synthetic":true}\n')
         self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+
+    def test_deepseek_api_key_environment_resolution_and_child_scrubbing(self):
+        cases = (
+            ("singular", None, {"DEEPSEEK_API_KEY": "synthetic-env-singular-key"}, "synthetic-env-singular-key"),
+            ("plural trims entries and precedes singular", None, {
+                "DEEPSEEK_API_KEYS": " , ;\n synthetic-env-plural-key \t, ",
+                "DEEPSEEK_API_KEY": "synthetic-env-fallback-key",
+            }, "synthetic-env-plural-key"),
+            ("one plural key across all separators", None, {
+                "DEEPSEEK_API_KEYS": " ; synthetic-single-plural-key ,\n ; ",
+            }, "synthetic-single-plural-key"),
+            ("explicit key precedes malformed environment", "synthetic-explicit-key", {
+                "DEEPSEEK_API_KEYS": " , synthetic-env-first-key,synthetic-env-second-key ; ",
+                "DEEPSEEK_API_KEY": "synthetic malformed fallback",
+            }, "synthetic-explicit-key"),
+        )
+        for label, api_key, environment, selected in cases:
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                with self.subTest(case=label, binary=binary.name):
+                    result, records, upstream, state = self.run_launch(
+                        binary=binary,
+                        scenario="stream",
+                        api_key=api_key,
+                        environment_overrides=environment,
+                    )
+                    self.assertEqual((result.returncode, result.stdout), (0, b"synthetic-client-complete\n"), result.stderr)
+                    self.assertEqual(len(upstream), 1)
+                    authorization = next(value for name, value in upstream[0]["headers"].items()
+                                         if name.lower() == "authorization")
+                    self.assertEqual(authorization, "Bearer " + selected)
+                    self.assertEqual(state["leftovers"], [])
+                    serialized_records = json.dumps(records)
+                    secret_values = [api_key] if api_key else []
+                    for value in environment.values():
+                        secret_values.extend(part.strip() for part in re.split(r"[,;\n]", value))
+                    for secret in filter(None, secret_values):
+                        self.assertNotIn(secret.encode(), result.stdout + result.stderr)
+                    probes = [record for record in records if record["kind"] == "probe"]
+                    launches = [record for record in records if record["kind"] == "launch"]
+                    self.assertEqual(len(probes), 2)
+                    self.assertEqual(len(launches), 1)
+                    for record in probes + launches:
+                        expected_key = None if binary == MODEX or record["kind"] == "launch" else environment.get("DEEPSEEK_API_KEY")
+                        expected_keys = None if binary == MODEX or record["kind"] == "launch" else environment.get("DEEPSEEK_API_KEYS")
+                        self.assertEqual(record["environment"]["DEEPSEEK_API_KEY"], expected_key)
+                        self.assertEqual(record["environment"]["DEEPSEEK_API_KEYS"], expected_keys)
+                        for secret in secret_values:
+                            self.assertNotIn(secret, record["args"])
+                    if binary == MODEX:
+                        for secret in filter(None, secret_values):
+                            self.assertNotIn(secret, serialized_records)
+
+    def test_deepseek_api_key_invalid_and_missing_environment_errors(self):
+        cases = (
+            ("present empty plural takes precedence", None, {"DEEPSEEK_API_KEYS": " , ;\n ",
+                                                        "DEEPSEEK_API_KEY": "synthetic-fallback-key"},
+             "DEEPSEEK_API_KEYS cannot be empty"),
+            ("empty singular", None, {"DEEPSEEK_API_KEY": ""}, "DEEPSEEK_API_KEY cannot be empty"),
+            ("whitespace singular", None, {"DEEPSEEK_API_KEY": "synthetic key"},
+             "DEEPSEEK_API_KEY must not contain whitespace"),
+            ("missing", None, {}, "DeepSeek provider requires --api-key or DEEPSEEK_API_KEY(S) in the environment"),
+            ("empty explicit key", "", {"DEEPSEEK_API_KEY": "synthetic-explicit-empty-fallback"},
+             "--api-key cannot be empty"),
+            ("whitespace explicit key", "synthetic key", {}, "--api-key must not contain whitespace"),
+        )
+        for label, api_key, environment, diagnostic in cases:
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                with self.subTest(case=label, binary=binary.name):
+                    result, records, upstream, state = self.run_launch(
+                        binary=binary,
+                        scenario="exit-seven",
+                        api_key=api_key,
+                        environment_overrides=environment,
+                    )
+                    output = result.stdout + result.stderr
+                    self.assertEqual(result.returncode, 1, output)
+                    self.assertIn(diagnostic.encode(), output)
+                    self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+                    secret_values = [api_key] if api_key else []
+                    for value in environment.values():
+                        secret_values.extend(part.strip() for part in re.split(r"[,;\n]", value))
+                    for value in filter(None, secret_values):
+                        self.assertNotIn(value.encode(), output)
+
+    def test_deepseek_api_key_rotation_gap_is_explicit(self):
+        values = "synthetic-rotation-first-key;synthetic-rotation-second-key"
+        for binary in (ORACLE_01651, ORACLE):
+            with self.subTest(binary=binary.name):
+                result, records, upstream, state = self.run_launch(
+                    binary=binary,
+                    scenario="stream",
+                    api_key=None,
+                    environment_overrides={"DEEPSEEK_API_KEYS": values},
+                )
+                self.assertEqual((result.returncode, result.stdout), (0, b"synthetic-client-complete\n"), result.stderr)
+                authorization = next(value for name, value in upstream[0]["headers"].items()
+                                     if name.lower() == "authorization")
+                self.assertEqual(authorization, "Bearer synthetic-rotation-first-key")
+                self.assertEqual(state["leftovers"], [])
+                self.assertNotIn(values.encode(), result.stdout + result.stderr)
+                serialized_records = json.dumps(records)
+                for record in [item for item in records if item["kind"] in ("probe", "launch")]:
+                    self.assertIsNone(record["environment"]["DEEPSEEK_API_KEY"])
+                    expected_keys = values if binary != MODEX and record["kind"] == "probe" else None
+                    self.assertEqual(record["environment"]["DEEPSEEK_API_KEYS"], expected_keys)
+                    self.assertNotIn("synthetic-rotation-first-key", record["args"])
+                    self.assertNotIn("synthetic-rotation-second-key", record["args"])
+                if binary == MODEX:
+                    self.assertNotIn(values, serialized_records)
+
+        result, records, upstream, state = self.run_launch(
+            scenario="stream",
+            api_key=None,
+            environment_overrides={"DEEPSEEK_API_KEYS": values},
+        )
+        output = result.stdout + result.stderr
+        self.assertEqual(result.returncode, 1, output)
+        self.assertIn(b"multiple DEEPSEEK_API_KEYS values require key rotation, which is not implemented", output)
+        self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+        self.assertNotIn(values.encode(), output)
 
     def test_buffered_and_binary_passthrough(self):
         for scenario in ("buffered", "passthrough"):

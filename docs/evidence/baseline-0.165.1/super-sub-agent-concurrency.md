@@ -41,13 +41,14 @@ reaches a sub-agent consumer. This is an explicit production startup gap, not
 sub-agent launch parity. The retained test compares the consumer report and
 side effects while using only a synthetic API key and a dry run.
 
-After positional `exec`, negative input still follows the runtime error path:
-Prodex returns exit 1 with the native concurrency error and creates `.prodex`
-lock state; Modex retains the same exit-1 text without state mutation. A dry run
-also confirms a separate whitespace gap after `exec`: Prodex accepts and
-reports both normalized forms, while Modex rejects them with its runtime-style
-invalid-value error and creates no files. The parser change only canonicalizes
-pre-tail values and does not alter this post-tail path. Tests use no real
-credentials, provider traffic or account login. This qualifies only the tested
-Linux x86-64 Super parser behavior, not the other release targets or all
-concurrency/runtime behavior.
+After positional `exec`, the same parser now trims Unicode whitespace, rejects
+signs, and validates all digits before choosing syntax, overflow, or range
+errors. `tests/test_super_concurrency_shared.py` compares the actual Modex CLI
+with the checksum-verified 0.165.1 and 0.439.2 processes on selected invalid
+values, including long leading-zero and overflow-plus-nondigit cases. The
+diagnostics match; the references create `.prodex` state while Modex does not.
+Native checks also cover normalized post-tail values. The two whitespace dry
+run inputs now reach Modex's existing startup guard, rather than failing
+concurrency parsing, but the full dry-run report remains unimplemented.
+Tests use no real credentials, provider traffic or account login. This covers
+selected Linux x86-64 parser behavior, not all concurrency or runtime behavior.

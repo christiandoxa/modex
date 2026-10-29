@@ -1,5 +1,12 @@
 # CI lessons
 
+Fast run [40812724678](https://github.com/christiandoxa/modex/actions/runs/40812724678)
+on `b2f0a705` passed both helper shards and the producer's bootstrap, policy,
+dependency and reference helper checks. The producer stopped before build
+because the required 0.439.2 tag was absent, and the artifact consumer was
+skipped. GitHub's tag and release lookups also returned 404. The frozen oracle
+requirement remains enforced.
+
 Fast run [40809617468](https://github.com/christiandoxa/modex/actions/runs/40809617468)
 on `46b8ba81` failed in two independent jobs. The Linux producer passed the
 policy, dependency and reference helper checks, then refused the missing

@@ -76,7 +76,7 @@ if ! PRODEX_ORACLE="${PRODEX_ORACLE_01651:-}" "$PYTHON" scripts/ci/reference.py 
 fi
 export PRODEX_ORACLE_01651="$(cat "$EVIDENCE_DIR/oracle-path-01651.txt")"
 rm -- "$EVIDENCE_DIR/oracle-path-01651.txt"
-run_logged focused-python-active-cross-release "$PYTHON" scripts/ci/run-unittest.py test_anthropic_stream_optional_metadata_shared.py test_provider_stream_repeated_search_04392.py test_session_invalid_utf8_04392.py
+run_logged focused-python-active-cross-release "$PYTHON" scripts/ci/run-unittest.py test_anthropic_stream_optional_metadata_shared.py test_provider_stream_repeated_search_04392.py test_session_invalid_utf8_04392.py test_super_concurrency_shared.py
 run_logged historical-python-01651 env -u PRODEX_ORACLE -u PRODEX_GATEWAY_ORACLE "$PYTHON" scripts/ci/run-unittest.py test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py test_anthropic_mixed_tools_01651.py test_session_query_01651.py test_unicode_case_properties.py test_session_report_01651.py test_log_01651.py test_local_rewrite_01651_oracle.py test_runtime_proxy_websocket_01651_oracle.py test_app_server_rpc_01651.py test_super_model_toml_01651.py test_super_launch_01651.py
 if ! "$PYTHON" scripts/ci/reference.py oracle 0.439.5 >"$EVIDENCE_DIR/oracle-path-04395.txt" 2>"$EVIDENCE_DIR/reference-04395.log"; then
     cat "$EVIDENCE_DIR/reference-04395.log" >&2

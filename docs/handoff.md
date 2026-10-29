@@ -57,6 +57,11 @@ production comparisons against the verified 0.439.2 release. The historical
 passed 39 tests; the 71-file dependency audit and 122-module census passed.
 The full suite and non-Linux targets were not rerun for this integration.
 
+Hosted Fast CI run `40812724678` on `b2f0a70` failed because the required
+0.439.2 tag and release were unavailable; both helper shards passed, the
+producer stopped before build, and the artifact consumer was skipped. See
+`docs/ci-lessons.md`.
+
 Hosted Fast CI run `40809617468` on `46b8ba8` failed in two independent checks.
 Helper shard 0 used a stale `focused-python` label, and the same stale label in
 `test_ci_build_input_cleanliness.py` would fail later in the producer suite.
@@ -275,9 +280,9 @@ attached values and help ordering checked against both releases. Accepted
 whitespace forms normalize to the typed default or decimal value. A real
 0.165.1 dry run reports the custom/default concurrency, but Modex stops at its
 Super startup guard before a sub-agent consumer; both pre-tail runs leave no
-files. After `exec`, Prodex accepts the whitespace forms in dry run but Modex
-retains its runtime-style rejection. Its invalid-value post-tail exit-1 and
-Prodex lock creation remain different. See
+files. After `exec`, Modex now accepts those whitespace forms and reaches its
+unimplemented startup guard. Selected invalid post-tail diagnostics match both
+releases; reference lock creation remains different. See
 `docs/evidence/baseline-0.165.1/super-cli-missing-values.md` and
 `docs/evidence/baseline-0.165.1/super-sub-agent-concurrency.md`.
 

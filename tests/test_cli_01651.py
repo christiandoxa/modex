@@ -440,7 +440,7 @@ class SuperProviderCli01651Tests(unittest.TestCase):
                 )
                 self.assertEqual(modex_created, [])
 
-    def test_sub_agent_concurrency_post_tail_whitespace_gap_remains_visible(self):
+    def test_sub_agent_concurrency_post_tail_whitespace_reaches_startup_guard(self):
         cases = (
             (" 1 ", b"Maximum active sub-agents: 1 (custom)\n"),
             (" default ", b"Maximum active sub-agents: 4 (Prodex default)\n"),
@@ -465,7 +465,7 @@ class SuperProviderCli01651Tests(unittest.TestCase):
                 self.assertEqual(baseline_created, [])
                 self.assertEqual(
                     (modex.returncode, modex.stdout, modex.stderr),
-                    (1, b"", b"Error: invalid maximum active sub-agents: expected default or an integer from 1 to 64\n"),
+                    (1, b"", b"Error: Super startup is not implemented: secure temporary overlays, Smart Context initialization, and Codex launch supervision remain unavailable\n"),
                 )
                 self.assertEqual(modex_created, [])
 

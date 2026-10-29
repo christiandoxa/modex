@@ -21,13 +21,14 @@ synthetic Codex executable and provider key, make no provider request, and
 verify overlay cleanup. They establish launch-argument behavior; they do not
 test the actual Codex implementation or the semantics of its output flags.
 
-`-c`, `--config`, `--enable`, `--sandbox` and other unverified arguments remain
+`-c`, `--config`, `--sandbox` and other unverified arguments remain
 fail-closed outside the literal `--` boundary. The tests verify selected
 configuration and sandbox overrides do not start a child or provider request.
 The output-path controls cover separated and attached values, the short `-o`
 form and `-` as a path. Missing values and a following option-looking token
 remain guarded, so they cannot hide an unverified Codex option. The synthetic
 child records argv; it does not write output files or interpret schemas.
+`--enable` is now forwarded as described in `super-exec-value-options.md`.
 The same production launch now forwards `--ephemeral` and `--image`/`-i`,
 including attached and repeated image arguments. Synthetic-child comparisons
 verify argv against both releases; they do not verify image decoding, provider

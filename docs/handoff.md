@@ -265,6 +265,8 @@ The guarded DeepSeek exec path now forwards repeatable Codex `--add-dir`,
 `--enable`, and `--disable` options, including attached values, after prompts,
 and across `--` literal boundaries. Tests against both pinned release
 processes confirm identical child argv and unchanged Modex-generated config.
+The effective precedence of `--enable` over generated disabled feature settings
+has not been verified with a real Codex child.
 Modex's synthetic process tests reject missing, option-looking, and empty
 `--add-dir` values before overlay or child launch. A one-time local Codex CLI
 0.165.0 characterization observed that the releases defer the error to Codex;

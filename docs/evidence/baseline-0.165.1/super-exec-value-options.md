@@ -50,3 +50,6 @@ validation command above.
 Other Codex `exec` arguments remain guarded. The synthetic fixture verifies
 wrapper argument preservation; the local Codex characterization does not
 verify model inference or broader Codex runtime effects.
+In particular, the effective precedence of `--enable` over generated feature
+settings, including disabled `apps`, `js_repl`, and `image_generation`, has not
+been verified with a real Codex child.

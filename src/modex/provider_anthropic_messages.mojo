@@ -287,11 +287,14 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
                 var index = 0
                 var found = False
                 while index < len(searches):
-                    if searches[index].id == search_id:
+                    if searches[index].id == search_id and not searches[index].done:
                         searches[index].sources = _search_sources(doc, block)
+                        searches[index].done = True
                         found = True
+                        break
                     index += 1
                 if not found: raise Error("Anthropic web-search result does not match a tool use")
+                output.append("$break$")
     var items = List[String]()
     var output_index = 0
     while output_index < len(output):
@@ -309,6 +312,8 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
             output_index += 1
         elif value.startswith("$tool$"):
             items.append(tool_calls[unsigned_value(String(value[byte=6:]))])
+            output_index += 1
+        elif value == "$break$":
             output_index += 1
         else:
             raise Error("Anthropic buffered response output plan is invalid")
@@ -450,23 +455,21 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
                     raise Error("Anthropic web-search input requires a non-empty query")
                 # shortcut: two mixed search pairs, expand after broader multi-search replies are qualified.
                 if len(search_ids) >= 2: raise Error("Mixed Anthropic replies support at most two web-search tool uses")
-                for prior in search_ids:
-                    if prior == doc.nodes[id].text:
-                        raise Error("Anthropic web-search tool-use id is repeated")
                 search_ids.append(doc.nodes[id].text)
             elif kind == "web_search_tool_result":
                 _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
                 var id = doc.get(block, "tool_use_id")
-                var found = False
-                var repeated = False
+                var available = False
                 if id >= 0 and doc.nodes[id].kind == JSON_STRING:
+                    var search_count = 0
+                    var result_count = 0
                     for prior in search_ids:
-                        if prior == doc.nodes[id].text: found = True
+                        if prior == doc.nodes[id].text: search_count += 1
                     for prior in result_ids:
-                        if prior == doc.nodes[id].text: repeated = True
-                if not found:
+                        if prior == doc.nodes[id].text: result_count += 1
+                    available = result_count < search_count
+                if not available:
                     raise Error("Anthropic web-search result does not match a preceding tool use")
-                if repeated: raise Error("Anthropic web-search tool use has more than one result")
                 var result_content = doc.get(block, "content")
                 if result_content < 0 or doc.nodes[result_content].kind != JSON_ARRAY or len(doc.nodes[result_content].children) == 0:
                     raise Error("Anthropic web-search result must contain at least one source")

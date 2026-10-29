@@ -21,9 +21,12 @@ object and missing-schema defaults, all five choice cases, and rejection of a
 non-object function schema before the provider receives a request. The
 buffered response comparison preserves text, search, function-call, and later
 text order, including two serial search/result pairs plus a function call. The
-SSE comparison covers a search/result pair, a function call with split argument
-deltas, and following text; the complete normalized event sequence matches the
-oracle. Buffered content arrays are capped at the oracle's 65,536 blocks before
+reply planner preserves text-message boundaries around search results and pairs
+reused search IDs with the first preceding unmatched use, retaining each query
+and its result sources. The SSE comparison covers a search/result pair, a
+function call with split argument deltas, and following text; the complete
+normalized event sequence matches the oracle. Buffered content arrays are
+capped at the oracle's 65,536 blocks before
 block classification. Exact-limit function-only (with adjacent text blocks)
 and mixed replies match the oracle; both oracle and Modex reject 65,537 blocks
 with a 502 response. Adjacent text blocks are grouped in one pass to keep the
@@ -36,7 +39,7 @@ and a loopback provider. No paid traffic or real credentials are used.
 ## Validation
 
 - `rtk make build` — pass.
-- `python3 scripts/ci/run-unittest.py test_anthropic_mixed_tools_01651.py` — 8 tests pass, including exact/over-limit boundary comparisons and two mixed search pairs.
+- `python3 scripts/ci/run-unittest.py test_anthropic_mixed_tools_01651.py` — 10 tests pass, including exact/over-limit boundary comparisons, text-run boundaries, and mixed search pairs with distinct or reused IDs.
 - `PYTHONPATH=tests python3 -m unittest test_provider_stream_01651_characterization.ProviderStream01651CharacterizationTests.test_anthropic_repeated_server_search_results_match_release test_provider_stream_01651_characterization.ProviderStream01651CharacterizationTests.test_anthropic_buffered_search_shape_remains_release_compatible test_provider_stream_01651_characterization.ProviderStream01651CharacterizationTests.test_anthropic_function_tool_use_stream_matches_release` — 3 existing pure-search and function-stream controls pass.
 - `python3 scripts/ci/check-product-dependencies.py` — pass.
 - `git diff --check` — pass.

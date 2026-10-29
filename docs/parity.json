@@ -3354,9 +3354,13 @@
       ],
       "prerequisites": [],
       "implementation": null,
-      "tests": [],
+      "tests": [
+        "tests/test_terminal_dimensions.py"
+      ],
       "evidence": [
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/baseline-0.165.1/super-codex-probes.md",
+        "docs/evidence/terminal-dimensions-gap.txt"
       ],
       "status": "NOT_STARTED",
       "platform_status": {

@@ -312,11 +312,15 @@ comparisons against 0.165.1 and historical 0.439.2, with synthetic child and
 no provider requests. Active 0.165.1 also matches redirected provider-panel
 wrapping at columns 50 and 120, plus text fallback output on a PTY with
 `TERM=dumb` or `PRODEX_TUI_STRICT=true`. Interactive TTY panel rendering
-remains unfinished. The PTY has no controlling-terminal size, so its comparison
-uses Modex's 110-column default; columns 50 and 120 are explicit
-`PRODEX_TERM_COLUMNS` overrides. Natural TTY width remains a parity gap: Mojo
-1.2's standard library has no controlling-terminal size query, and project
-rules prohibit an external `stty` helper.
+remains unfinished. A controlling 24x42 PTY now reproduces the natural-width
+mismatch against both 0.165.1 and 0.439.2: the oracles render 42 columns while
+Modex uses its 110-column fallback. The test asserts this known mismatch and
+checks that no provider request or overlay remains. The direct Mojo 1.2.0
+compile probe confirms that `std.os` lacks both `openpty` and `terminal_size`;
+the pinned Prodex sources use `/dev/tty` plus `stty size`, which project rules
+prohibit. Natural TTY width remains a parity gap. See
+`tests/test_terminal_dimensions.py` and
+`docs/evidence/terminal-dimensions-gap.txt`.
 Other malformed version inputs, remaining startup/security behavior, and other
 targets remain gaps. Hosted Fast CI run
 `40788779491` exposed a diagnostic normalizer that assumed the fixture was

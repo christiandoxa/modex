@@ -34,8 +34,10 @@ these tests are synthetic and isolated.
 This is not full concurrency or platform parity. Modex limits handler lanes to
 at most eight and at most the Mojo runtime's parallelism; it does not yet honor
 Prodex's worker-count configuration or its default four-to-twelve worker
-range. Request capture consumes a handler lane, unlike TinyHTTP's separate
-per-client parser tasks; enough incomplete clients can still block service.
+range. Header capture now runs in the listener loop before handler admission;
+body capture consumes a handler lane. Enough incomplete bodies can block
+service. Unlike TinyHTTP's separate dynamic parser tasks, header capture is
+bounded by the parked-connection cap and a 2 MiB header limit.
 The existing 128 parked connections plus one overflow are bounded, whereas the
 release's parsed-request queue is not. Idle connections have no expiry, and
 saturation polling, first-event retries, general interruption, scheduling,

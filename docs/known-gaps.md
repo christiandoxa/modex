@@ -50,10 +50,11 @@ and coalesced delivery, ordered HEAD/error/SSE replies, and the body-size cap.
 The relay parks up to 128 idle sockets in FIFO order and
 polls one new connection before each readiness scan. When full, one accepted
 overflow socket waits while ready parked requests are serviced; admission
-evicts the oldest socket with no request bytes. The pool has no idle expiry. A
-partial request consumes a worker lane; enough partial requests can still
-block other clients. The bounded worker pool does not match baseline worker
-configuration or separate request capture. Selected HEAD `text/event-stream` terminal-chunk controls now
+evicts the oldest socket with no request bytes. The pool has no idle expiry.
+Headers are captured before worker admission; incomplete bodies consume worker
+lanes and enough can still block other clients. The bounded capture and worker
+pool differ from baseline task and worker configuration. Selected HEAD
+`text/event-stream` terminal-chunk controls now
 match both pinned Linux releases; broader response framing remains unverified.
 The local-rewrite route's 426 fallback does not implement the separate
 runtime-proxy WebSocket path.

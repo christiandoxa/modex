@@ -187,8 +187,13 @@ first Modex launch creates session and history paths, then the second rejects
 them before starting Codex. Both pinned releases launch twice and preserve the
 synthetic session and history. The three-process test records this mismatch;
 it is not a parity pass. The release coordinates the child and session
-maintenance with shared and exclusive locks, and the current Modex setup would
-truncate existing history if its guard were simply removed. See
+maintenance with shared and exclusive advisory locks. Mojo 1.2.0 supports
+append-mode history opens, but exposes no compatible lock API; its internal
+`fcntl` wrapper does not provide a supported lock protocol. Removing the guard
+and changing only the history open mode would leave concurrent maintenance
+uncoordinated. Keep the guard until compatible shared/exclusive locking is
+available. Concurrent Modex child behavior remains untested because the
+guard prevents reaching the shared-storage path. See
 `docs/evidence/baseline-0.165.1/super-repeat-launch.md`.
 
 The profile-state follow-up confirms the lock boundary against the verified

@@ -25,6 +25,18 @@ launch and its clean-home setup would otherwise open `history.jsonl` for
 truncating write. Simply allowing the files without changing setup and
 coordinating maintenance would risk data loss and concurrency errors.
 
+The pinned Mojo 1.2.0 (2016d0cd) stdlib source provides `open(path, "a")`,
+implemented with `O_CREAT | O_APPEND`, so it can open history without
+truncating it. It has no `flock` or shared/exclusive file-lock API. The
+internal `fcntl` wrapper in `std/sys/_libc.mojo` does not expose a supported
+lock protocol; a marker-file or directory lock would not coordinate with the
+releases' advisory locks. Append mode alone therefore cannot safely share
+sessions with concurrent Prodex launches or session maintenance. The guard
+remains in place. We did not bypass it to run concurrent Modex children; that
+would test an unsupported and uncoordinated storage path. The sequential
+real-process characterization above still passes as a mismatch and verifies
+that the existing history and session survive the fail-closed second launch.
+
 The focused test passed with both pinned release binaries and Modex using
 synthetic isolated fixtures. This observation covers one sequential clean-home
 case, not concurrent launches, session maintenance, recovery, security, or any

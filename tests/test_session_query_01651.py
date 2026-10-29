@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import unittest
 
+import test_cli
 from session_oracle import sandbox_command
 from test_cli import MODEX
 
@@ -22,8 +23,12 @@ SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
 class SessionQuery01651Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != SHA256:
-            raise AssertionError("PRODEX_ORACLE_01651 must identify the verified 0.165.1 release")
+        for oracle, checksum, release in (
+            (ORACLE, SHA256, "0.165.1"),
+            (test_cli.ORACLE, test_cli.ORACLE_SHA256, "0.439.2"),
+        ):
+            if not oracle.is_file() or hashlib.sha256(oracle.read_bytes()).hexdigest() != checksum:
+                raise AssertionError(f"Prodex oracle must identify the verified {release} release")
         if not MODEX.is_file():
             raise AssertionError("Build Modex first with make build")
 
@@ -65,6 +70,58 @@ class SessionQuery01651Tests(unittest.TestCase):
                         outputs.append((result.returncode, result.stdout, result.stderr))
                 wanted = b"synthetic-id\n" if expected else b""
                 self.assertEqual(outputs, [(0, wanted, b""), (0, wanted, b"")])
+
+    def test_unicode_lowercase_mapping_records_reach_the_production_selector(self):
+        data = Path(__file__).parent / "fixtures/unicode17/UnicodeData.txt"
+        contents = data.read_bytes()
+        if hashlib.sha256(contents).hexdigest() != "2e1efc1dcb59c575eedf5ccae60f95229f706ee6d031835247d843c11d96470c":
+            raise AssertionError("UnicodeData.txt must match the pinned Unicode 17 fixture")
+        title_parts = []
+        query_parts = []
+        for line in contents.decode().splitlines():
+            fields = line.split(";")
+            if not fields[13]:
+                continue
+            code = int(fields[0], 16)
+            title_parts.append(chr(code))
+            # UnicodeData records simple mappings; default full lowercase also
+            # expands dotted capital I, while surrounding periods isolate Sigma.
+            query_parts.append("i\u0307" if code == 0x0130 else chr(int(fields[13], 16)))
+        if len(title_parts) != 1488:
+            raise AssertionError("UnicodeData.txt no longer has the expected 1,488 lowercase mappings")
+        title = ".".join(title_parts)
+        query = ".".join(query_parts)
+        roots = {}
+        with tempfile.TemporaryDirectory(prefix="modex-session-query-unicode-all-") as directory:
+            for label, binary in (
+                ("prodex-01651", ORACLE),
+                ("prodex-04392", test_cli.ORACLE),
+                ("modex", MODEX),
+            ):
+                root = Path(directory) / label
+                root.mkdir()
+                (root / "home").mkdir(mode=0o700)
+                (root / "workspace").mkdir()
+                sessions = root / "home/.codex/sessions/2026/10/24"
+                sessions.mkdir(parents=True)
+                (sessions / "rollout-fixture.jsonl").write_text(json.dumps({
+                    "type": "session_meta",
+                    "payload": {"id": "synthetic-id", "thread_name": title},
+                }) + "\n")
+                result = subprocess.run(
+                    sandbox_command(binary, root, [
+                        "session", "list", "--query", query, "--id-only",
+                    ]),
+                    capture_output=True, timeout=10, check=False,
+                )
+                roots[label] = (result.returncode, result.stdout, result.stderr)
+
+        expected = (0, b"synthetic-id\n", b"")
+        self.assertEqual(roots, {
+            "prodex-01651": expected,
+            "prodex-04392": expected,
+            "modex": expected,
+        })
 
     def test_shared_home_path_join_matches_release(self):
         for suffix, query, query_matches, internal_separator in (

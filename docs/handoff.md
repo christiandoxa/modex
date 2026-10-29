@@ -1005,7 +1005,10 @@ oracle; its artifact consumer was skipped. See `docs/ci-lessons.md`.
 
 A current-release session-query regression also fixes 55 Unicode 17 lowercase
 mappings absent from Mojo 1.2.0, verified against the pinned UnicodeData and
-selected 0.165.1 process cases. See `docs/evidence/baseline-0.165.1/session-query-unicode.md`.
+selected 0.165.1 process cases. An additional aggregate production query now
+compares all 1,488 UnicodeData lowercase mappings across 0.165.1, 0.439.2, and
+Modex; no mapping mismatch appeared. See
+`docs/evidence/baseline-0.165.1/session-query-unicode.md`.
 
 Update help and selected parser diagnostics now match 0.165.1 in isolated
 process tests; update execution remains unimplemented. The session-query selector now uses the complete Unicode 17 Cased and

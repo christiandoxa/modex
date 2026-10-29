@@ -3951,3 +3951,10 @@ fields; they accept escaped names when another field supplies the substring.
 The prior Modex behavior and selected process comparisons are recorded in
 `docs/evidence/baseline-0.165.1/log-upstream-selection.md`. This does not verify
 live log sources, security behavior, or non-host release targets.
+
+Plain runtime log parsing now recognizes the first non-field event after
+leading fields and keeps quoted values intact, matching selected file-backed
+upstream, token, and stream cases in both pinned releases. Empty and duplicate
+fields and malformed quotes are covered by synthetic three-process comparisons.
+See `docs/evidence/baseline-0.165.1/log-plain-parser.md`. Live-source, security,
+and non-host target parity remain open.

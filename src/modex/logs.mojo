@@ -235,6 +235,27 @@ def latest_transcript(path: String) raises -> Optional[LogEvent]:
     return latest^
 
 
+def plain_log_whitespace(byte: Int) -> Bool:
+    return byte == 32 or byte == 9 or byte == 10 or byte == 12 or byte == 13
+
+
+def plain_log_value(raw: String) -> String:
+    if raw.startswith('"'):
+        try:
+            var doc = JsonDocument(raw)
+            if doc.nodes[doc.root].kind == JSON_STRING:
+                return doc.string(doc.root)
+        except:
+            pass
+    var start = 0
+    var end = raw.byte_length()
+    while start < end and raw.as_bytes()[start] == 34:
+        start += 1
+    while end > start and raw.as_bytes()[end - 1] == 34:
+        end -= 1
+    return String(raw[byte=start:end])
+
+
 struct RuntimeRecord:
     var timestamp: String
     var event: String
@@ -268,20 +289,48 @@ struct RuntimeRecord:
             pass
         var message = line
         var closing = line.find("] ")
-        if line.startswith("[") and closing >= 1:
-            self.envelope = True
-            self.timestamp_present = True
-            self.timestamp = String(line[byte=1:closing])
+        if closing >= 0:
             message = String(line[byte=closing + 2:])
-        var first = True
-        for part in message.split():
-            var separator = part.find("=")
-            if first:
-                if separator < 0:
-                    self.event = String(part)
-                first = False
-            if separator > 0:
-                self.fields.append((String(part[byte=0:separator]), String(part[byte=separator + 1:]), True))
+            if line.startswith("[") and closing >= 1:
+                self.envelope = True
+                self.timestamp_present = True
+                self.timestamp = String(line[byte=1:closing])
+        var index = 0
+        var length = message.byte_length()
+        while index < length:
+            while index < length and plain_log_whitespace(Int(message.as_bytes()[index])):
+                index += 1
+            var start = index
+            while index < length and not plain_log_whitespace(Int(message.as_bytes()[index])) and message.as_bytes()[index] != 61:
+                index += 1
+            if index < length and message.as_bytes()[index] == 61:
+                var key_end = index
+                index += 1
+                var value_start = index
+                if index < length and message.as_bytes()[index] == 34:
+                    index += 1
+                    var escaped = False
+                    while index < length:
+                        var byte = Int(message.as_bytes()[index])
+                        index += 1
+                        if escaped:
+                            escaped = False
+                        elif byte == 92:
+                            escaped = True
+                        elif byte == 34:
+                            break
+                else:
+                    while index < length and not plain_log_whitespace(Int(message.as_bytes()[index])):
+                        index += 1
+                if start < key_end and value_start < index:
+                    var raw = String(message[byte=value_start:index])
+                    var value = plain_log_value(raw)
+                    self.fields.append((String(message[byte=start:key_end]), value^, True))
+            else:
+                if start < index and not self.event:
+                    self.event = String(message[byte=start:index])
+                while index < length and not plain_log_whitespace(Int(message.as_bytes()[index])):
+                    index += 1
 
     def has(self, name: String) -> Bool:
         for index in range(len(self.fields) - 1, -1, -1):

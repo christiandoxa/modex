@@ -13,6 +13,7 @@ from test_deepseek_continuation import observe_turns
 from test_local_rewrite import SYNTHETIC_API_KEY
 from test_provider_tools_04392_characterization import CODEX_REQUEST, _codex_with_request, _normalized_events, _run
 import test_super_launch
+import test_anthropic_message_arrays_04392 as message_arrays
 
 
 ORACLE_01651 = Path(os.environ.get(
@@ -188,6 +189,68 @@ def _json_body(record):
 
 
 class AnthropicMixedTool01651Tests(unittest.TestCase):
+    def test_empty_and_whitespace_arrays_match_01651(self):
+        with patch.object(message_arrays, "ORACLE", ORACLE_01651):
+            message_arrays.AnthropicMessageArrayTests.test_empty_and_whitespace_arrays_match_release(self)
+
+    def test_blank_arrays_obey_web_search_modes(self):
+        for name, items in (
+            ("empty", []),
+            ("mixed", [{"role": "user", "content": " "}, {"role": "user", "content": "query"}]),
+        ):
+            request = {"model": "deepseek-chat", "input": items, "stream": False,
+                       "tools": [{"type": "web_search_preview"}]}
+            for mode in ("auto", "anthropic", "openai_chat", "off"):
+                with self.subTest(case=name, mode=mode):
+                    expected = 502 if mode == "off" else 400 if name == "empty" and mode != "openai_chat" else 200
+                    scenario = "anthropic-buffered" if mode in ("auto", "anthropic") else "buffered"
+                    results = [_run_mode(binary, request, scenario, mode)
+                               for binary in (ORACLE_01651, ORACLE, MODEX)]
+                    for result, response, upstream, state in results:
+                        self.assertEqual(response["status"], expected)
+                        self.assertEqual(result.returncode, 0 if expected == 200 else 1)
+                        self.assertEqual(len(upstream), 1 if expected == 200 else 0)
+                        self.assertEqual(state["leftovers"], [])
+                    if expected == 200:
+                        bodies = [json.loads(bytes.fromhex(result[2][0]["body"])) for result in results]
+                        self.assertEqual(bodies[1:], bodies[:1] * 2)
+                    else:
+                        bodies = [bytes.fromhex(result[1]["body"]) for result in results]
+                        self.assertEqual(bodies[1:], bodies[:1] * 2)
+
+    def test_blank_array_entries_in_streaming_requests(self):
+        for items, expected in (([], 400), ([{"role": "user", "content": " "},
+                                             {"role": "user", "content": "query"}], 200)):
+            request = {"model": "deepseek-chat", "input": items, "stream": True,
+                       "tools": [{"type": "web_search_preview"}]}
+            captures = [_run_mode(binary, request, "anthropic-stream")
+                        for binary in (ORACLE_01651, ORACLE, MODEX)]
+            for result, response, upstream, state in captures:
+                self.assertEqual(response["status"], expected)
+                self.assertEqual(result.returncode, 0 if expected == 200 else 1)
+                self.assertEqual(len(upstream), 1 if expected == 200 else 0)
+                self.assertEqual(state["leftovers"], [])
+            if expected == 200:
+                bodies = [json.loads(bytes.fromhex(capture[2][0]["body"])) for capture in captures]
+                self.assertEqual(bodies[1:], bodies[:1] * 2)
+            else:
+                bodies = [bytes.fromhex(capture[1]["body"]) for capture in captures]
+                self.assertEqual(bodies[1:], bodies[:1] * 2)
+
+    def test_blank_array_continuation_respects_binding(self):
+        first = {"model": "deepseek-chat", "input": "query", "stream": False,
+                 "tools": [{"type": "web_search_preview"}]}
+        second = {"model": "deepseek-chat", "input": [{"role": "user", "content": " "}],
+                  "stream": False, "tools": [{"type": "web_search_preview"}],
+                  "use_previous": True}
+        captures = [observe_turns(binary, [first, second], [_buffered_reply(), _buffered_reply()])
+                    for binary in (ORACLE_01651, ORACLE, MODEX)]
+        for posts, responses in captures:
+            self.assertEqual([response["status"] for response in responses], [200, 503])
+            self.assertEqual(len(posts), 1)
+        errors = [bytes.fromhex(responses[1]["body"]) for _, responses in captures]
+        self.assertEqual(errors[1:], errors[:1] * 2)
+
     @classmethod
     def setUpClass(cls):
         if not ORACLE_01651.is_file():

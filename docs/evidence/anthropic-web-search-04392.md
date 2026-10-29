@@ -22,17 +22,30 @@ error code and message.
 Incoming Anthropic auth headers are replaced only on the Messages route;
 ordinary DeepSeek and raw passthrough keep forwarding those headers as before.
 
-The production adapter accepts string input and selected nonempty arrays of
+The production adapter accepts string input and selected arrays of
 plain string messages, with user, assistant, system and developer roles, one
 `web_search_preview` tool, optional `allowed_domains`, the default token limit
 and no other request fields. Adjacent messages with the same conversation
 role are combined; system and developer text becomes the Messages `system`
 field. Synthetic release comparisons cover Unicode and role transitions.
 Unsupported input shapes fail before the upstream POST. The release coerces an
-untyped `critic` role, omits some message metadata and accepts mixed function
-and web tools; Modex rejects these shapes. Empty, whitespace-only and system-only
-arrays return 502 in Modex instead of the release's 400. A blank item alongside
-nonblank text is rejected by Modex while the release drops the blank item.
+untyped `critic` role and omits some message metadata; Modex rejects these
+shapes. Blank array entries are dropped by
+the shared Responses-to-chat mapper. Empty, whitespace-only and system-only
+arrays now return the release's HTTP 400 JSON error when no conversation
+message remains; blank entries alongside nonblank messages are omitted. The
+production process controls compare these cases with checksum-pinned 0.165.1
+and 0.439.2, including Unicode whitespace, blank role transitions, and blank
+system/developer messages alongside a user message. The release's input
+reconstruction omits blank text items, and its Anthropic chat validator rejects
+requests with no translated conversation blocks. History and other input
+shapes remain separately qualified. Focused checks passed after `rtk make
+build`: both array comparison methods, the existing simple-array and rich-input
+controls, the four-mode matrix, and streamed requests with empty or mixed
+blank/nonblank arrays. A two-turn control confirms a blank continuation still
+hits the same bound-provider-unavailable response without a second POST.
+The native request-message test, 71-file product import audit, and test census
+also passed. These are Linux x86-64 synthetic process tests, not full parity.
 An exactly empty string input returns the release's HTTP 400 JSON error before
 any upstream POST. Whitespace-only inputs, including NBSP and U+200B, remain
 accepted by the tested release and Modex controls.

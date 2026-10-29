@@ -23,8 +23,7 @@ def validate_deepseek_anthropic_request(source: String) raises:
         raise Error("Anthropic Messages slice requires input")
     if doc.nodes[input].kind == JSON_STRING:
         pass
-    elif doc.nodes[input].kind == JSON_ARRAY and len(doc.nodes[input].children) > 0:
-        var has_conversation_message = False
+    elif doc.nodes[input].kind == JSON_ARRAY:
         for item in doc.nodes[input].children:
             var type = doc.string(doc.get(item, "type"))
             if type == "function_call_output":
@@ -42,12 +41,8 @@ def validate_deepseek_anthropic_request(source: String) raises:
             if role >= 0 and (doc.nodes[role].kind != JSON_STRING or (doc.nodes[role].text != "user" and doc.nodes[role].text != "assistant" and doc.nodes[role].text != "system" and doc.nodes[role].text != "developer")):
                 raise Error("Anthropic Messages slice supports only user, assistant, system, and developer message roles")
             var content = doc.get(item, "content")
-            if content < 0 or doc.nodes[content].kind != JSON_STRING or not trim_text(doc.nodes[content].text):
-                raise Error("Anthropic Messages slice supports only non-whitespace string message content")
-            if role < 0 or (doc.nodes[role].text != "system" and doc.nodes[role].text != "developer"):
-                has_conversation_message = True
-        if not has_conversation_message:
-            raise Error("Anthropic Messages slice requires a user or assistant message")
+            if content < 0 or doc.nodes[content].kind != JSON_STRING:
+                raise Error("Anthropic Messages slice supports only string message content")
     else:
         raise Error("Anthropic Messages slice supports only string input or simple message arrays")
     var stream = doc.get(doc.root, "stream")
@@ -193,6 +188,8 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
             if tool_calls >= 0:
                 raise Error("Anthropic Messages system messages cannot contain tool calls")
             system_parts.append(doc.nodes[content].text)
+            continue
+        if not doc.nodes[content].text and tool_calls < 0:
             continue
         if has_message and role != current_role:
             messages.append('{"content":[' + ",".join(content_parts) + '],"role":' + quote_json(current_role) + "}")

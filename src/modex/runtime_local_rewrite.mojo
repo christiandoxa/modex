@@ -583,8 +583,11 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         var exchange_address = messages_address if web else (beta_address if strict_tools else address)
         var exchange_path = messages_path if web else (beta_path if strict_tools else path)
         exchange = DeepSeekExchange(exchange_address, exchange_path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search)
-    except:
-        _reply(connection, 502, "upstream request failed")
+    except error:
+        if web and String(error) == "Anthropic Messages slice requires a user or assistant message":
+            connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
+        else:
+            _reply(connection, 502, "upstream request failed")
         return
     if 200 <= exchange.status() < 400 and (not exchange.successful() or not deepseek_event_stream(exchange.headers())):
         bindings.remember_request(previous, turn, session)

@@ -80,7 +80,7 @@ class AnthropicMessageArrayTests(unittest.TestCase):
                 self.assertEqual(reference["state"]["leftovers"], [])
                 self.assertEqual(actual["state"]["leftovers"], [])
 
-    def test_empty_and_whitespace_arrays_fail_closed(self):
+    def test_empty_and_whitespace_arrays_match_release(self):
         cases = {
             "empty array": [],
             "empty content": [{"type": "message", "role": "user", "content": ""}],
@@ -91,6 +91,20 @@ class AnthropicMessageArrayTests(unittest.TestCase):
                 {"type": "message", "role": "user", "content": "preserved query"},
             ],
             "system only": [{"type": "message", "role": "system", "content": "system note"}],
+            "developer and blank user": [
+                {"role": "developer", "content": "system note"},
+                {"role": "user", "content": "\t"},
+            ],
+            "blank between roles": [
+                {"role": "user", "content": "first"},
+                {"role": "assistant", "content": "\u3000"},
+                {"role": "user", "content": "second"},
+            ],
+            "blank system with user": [
+                {"role": "system", "content": ""},
+                {"role": "developer", "content": " \t"},
+                {"role": "user", "content": "query"},
+            ],
         }
         for name, input_messages in cases.items():
             with self.subTest(case=name):
@@ -100,20 +114,18 @@ class AnthropicMessageArrayTests(unittest.TestCase):
                     "stream": False,
                     "tools": [{"type": "web_search_preview"}],
                 }
-                reference = _run(ORACLE, request, scenario="anthropic-buffered")
                 actual = _run(MODEX, request, scenario="anthropic-buffered")
-                self.assertEqual(len(actual["upstream"]), 0)
-                self.assertEqual((actual["exit_code"], actual["status"]), (1, 502))
-                self.assertEqual(actual["response_body"], b"upstream request failed")
                 self.assertEqual(actual["state"]["leftovers"], [])
-                if name == "blank adjacent content":
-                    self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
-                    self.assertEqual(reference["upstream_body"]["messages"][0]["content"], [{"text": "preserved query", "type": "text"}])
+                reference = _run(ORACLE, request, scenario="anthropic-buffered")
+                expected_status = 200 if name in ("blank adjacent content", "blank between roles", "blank system with user") else 400
+                self.assertEqual(reference["status"], expected_status)
+                self.assertEqual((actual["exit_code"], actual["status"]), (reference["exit_code"], reference["status"]))
+                self.assertEqual(len(actual["upstream"]), len(reference["upstream"]))
+                if reference["status"] == 200:
+                    self.assertEqual(actual["upstream_body"], reference["upstream_body"])
                 else:
-                    self.assertEqual((reference["exit_code"], reference["status"]), (1, 400))
-                    self.assertEqual(reference["upstream"], [])
                     self.assertEqual(reference["response_body"], INVALID_REQUEST_BODY)
-                    self.assertNotEqual(actual["response_body"], INVALID_REQUEST_BODY)
+                    self.assertEqual(actual["response_body"], reference["response_body"])
                 self.assertEqual(reference["state"]["leftovers"], [])
 
     def test_unknown_roles_and_message_metadata_fail_closed(self):

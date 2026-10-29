@@ -2938,16 +2938,11 @@ comparisons match the pinned oracle, and the full focused stream suite passes
 `docs/evidence/baseline-0.165.1/anthropic-stream.md`. These cases add no general
 Anthropic or provider parity claim; unsupported shapes and targets remain gaps.
 
-Image blocks that reuse an active text, function-tool, or server-search index
-remain a verified stream gap. Both 0.165.1 and 0.439.2 retain subsequent
-deltas, while current Modex can close the tracked block at the image stop and
-fail on later content. Text, tool, search, repeated-start and result-clearing
-controls are in the two provider characterization suites. The release ignores
-image starts and its stop event only clears ignored result indices; index-only
-stops cannot be safely attributed to overlapping blocks. No production
-heuristic was retained. Fixing this requires a broader stop-state redesign that
-matches the release across text, tool, search and result transitions. Other
-stop orders remain unverified. Evidence: `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
+The earlier image/index collision gap was fixed in `e3e47e5`: the release and
+Modex retain later text, tool and search deltas, and stop events clear ignored
+result indices. The selected collision and stop controls are documented in
+`docs/evidence/baseline-0.165.1/anthropic-stream.md`; other event orders remain
+unverified.
 
 The local relay now supplies the release's default Server and Date headers for
 buffered responses, preserving forwarded values and the existing head-size
@@ -2972,8 +2967,20 @@ Oracle-dependent suites and executable handoff/consumer did not run. This is
 not a Fast pass. An interrupted build in the primary checkout may have touched
 its ignored `build/modex`; its previous hash was not captured and the artifact
 was not restored. Tracked source edits in that checkout were left untouched.
+Fast run 40844909607 on `f842b8b6f23473cba994c0594096e54c60ca03bd` likewise
+passed its helper shards and focused build/native checks, then failed because
+the required 0.439.2 tag was unavailable. Its oracle-backed tests did not run;
+this is not a Fast pass.
 
 Full 0.165.1 parity remains incomplete: profile-backed WebSocket capacity and
 interruption, managed session launch and recovery, interactive TUI, DNS, TLS,
 proxies, security behavior and non-Linux targets remain open. All six release
 targets remain in the denominator.
+
+Anthropic web-search requests now discard blank message-array entries through
+the existing Responses mapper and return the release's 400 error when no
+conversation block remains. Real-process controls compare both releases on
+empty, whitespace, system-only, mixed and role-transition cases, and the four
+web-search modes. The build, native request-message test, dependency audit and
+test census passed. Unsupported input shapes and broader continuation remain
+open; see `docs/evidence/anthropic-web-search-04392.md`.

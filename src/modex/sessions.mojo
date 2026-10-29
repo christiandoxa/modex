@@ -1,10 +1,11 @@
-from std.collections import List, Optional, Span
+from std.collections import Dict, List, Optional, Span
 from std.io import FileHandle, RawFileDescriptor
-from std.os import isatty, listdir, lstat, stat
+from std.os import getuid, isatty, listdir, lstat, stat, stat_result
 from std.os.path import exists
 from std.pathlib import cwd
+from std.time.time import _realtime_nanoseconds
 
-from .json import JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json
+from .json import JSON_BOOL, JSON_NULL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json
 from .local_time import format_local_epoch
 from .paths import absolute_path, comparable_path, ensure_app_root, shared_root
 from .session_time import integer_timestamp, timestamp_key
@@ -13,6 +14,18 @@ from .zstd import ZstdReader
 from .unicode_properties import is_cased, is_case_ignorable
 
 comptime SESSION_LINE_LIMIT = 64 * 1024 * 1024
+comptime STATE_FILE_LIMIT = 64 * 1024 * 1024
+comptime SESSION_BINDING_LIMIT = 2048
+comptime SESSION_BINDING_RETENTION = 30 * 24 * 60 * 60
+comptime HARD_BINDING_CONFLICT_PROFILE = "__prodex_hard_binding_conflict__"
+
+
+@fieldwise_init
+struct SessionProfileBinding(Copyable):
+    var session_id: String
+    var profile_name: String
+    var bound_at: Int
+    var hard_conflict: Bool
 
 
 def session_query_lowercase_override(code: Int) -> Int:
@@ -84,6 +97,7 @@ struct SessionReport(Copyable):
     var updated_at: String
     var directory: String
     var provider: String
+    var profile: String
     var parent: String
     var path: String
     var sort_key: Int
@@ -133,13 +147,13 @@ struct SessionReport(Copyable):
     def matches(self, options: SessionOptions) -> Bool:
         if options.parent_only and self.parent:
             return False
-        if options.profile:
+        if options.profile and self.profile != options.profile.value():
             return False
         if options.current and (not self.directory or comparable_path(self.directory) != comparable_path(options.directory.value())):
             return False
         var query = session_query_lowercase(trim_text(options.query))
         if query:
-            for field in [self.id, self.thread_name, self.directory, self.provider, self.path]:
+            for field in [self.id, self.thread_name, self.directory, self.profile, self.provider, self.path]:
                 if query in session_query_lowercase(field):
                     return True
             return False
@@ -150,7 +164,7 @@ struct SessionReport(Copyable):
         output += ",\n    \"thread_name\": " + nullable_json(self.thread_name)
         output += ",\n    \"updated_at\": " + nullable_json(self.updated_at)
         output += ",\n    \"cwd\": " + nullable_json(self.directory)
-        output += ",\n    \"profile\": null"
+        output += ",\n    \"profile\": " + nullable_json(self.profile)
         if self.provider:
             output += ",\n    \"model_provider\": " + quote_json(self.provider)
         output += ",\n    \"path\": " + quote_json(self.path)
@@ -186,11 +200,220 @@ def valid_session_name(name: String) -> Optional[String]:
         return None
 
 
-def blocks_session_state_name(name: String) -> Bool:
-    var checked_name = valid_session_name(name)
-    # Keep the ASCII temp-file guard fail-closed around malformed wildcard bytes.
-    var candidate = checked_name.value() if checked_name else String(from_utf8_lossy=name.as_bytes())
-    return candidate in ["state.json", "state.json.lock", "state.json.last-good", "profile-lifecycle-journal", "profile-import-auth-journal"] or (candidate.startswith("state.json.") and candidate.endswith(".tmp"))
+def read_private_state_file(path: String) raises -> List[UInt8]:
+    var before = lstat(path)
+    if (before.st_mode & 0o170000) != 0o100000 or before.st_uid != getuid() or (before.st_mode & 0o077) != 0 or before.st_size > STATE_FILE_LIMIT:
+        raise Error("unsafe state file")
+    var file = open(path, "r")
+    var descriptor = RawFileDescriptor(file).value
+    var descriptor_path = "/proc/self/fd/" + String(descriptor)
+    var opened = stat(descriptor_path)
+    var current = lstat(path)
+    if not same_private_state_file(before, opened) or not same_private_state_file(opened, current):
+        raise Error("state path changed while opening")
+    var bytes = file.read_bytes(STATE_FILE_LIMIT + 1)
+    if len(bytes) > STATE_FILE_LIMIT:
+        raise Error("state file exceeds safe size limit")
+    var read_opened = stat(descriptor_path)
+    var read_descriptor = RawFileDescriptor(file).value
+    var read_current = lstat(path)
+    if read_descriptor != descriptor or not same_private_state_file(opened, read_opened) or not same_private_state_file(read_opened, read_current):
+        raise Error("state path changed while reading")
+    return bytes^
+
+
+def same_private_state_file(left: stat_result, right: stat_result) -> Bool:
+    return (right.st_mode & 0o170000) == 0o100000 and right.st_uid == getuid() and (right.st_mode & 0o077) == 0 and left.st_mode == right.st_mode and left.st_uid == right.st_uid and left.st_nlink == right.st_nlink and left.st_ino == right.st_ino and left.st_dev == right.st_dev and left.st_size == right.st_size and left.st_mtimespec.tv_sec == right.st_mtimespec.tv_sec and left.st_mtimespec.tv_nsec == right.st_mtimespec.tv_nsec and left.st_ctimespec.tv_sec == right.st_ctimespec.tv_sec and left.st_ctimespec.tv_nsec == right.st_ctimespec.tv_nsec
+
+
+def state_field(document: JsonDocument, node: Int, name: String) raises -> Int:
+    if node < 0 or document.nodes[node].kind != JSON_OBJECT:
+        raise Error("invalid state object")
+    var count = 0
+    for field in document.nodes[node].names:
+        if field == name:
+            count += 1
+    if count > 1:
+        raise Error("duplicate state field")
+    return document.get(node, name)
+
+
+def state_optional_string(document: JsonDocument, node: Int, name: String) raises:
+    var value = state_field(document, node, name)
+    if value >= 0 and document.nodes[value].kind != JSON_NULL and document.nodes[value].kind != JSON_STRING:
+        raise Error("invalid state string")
+
+
+def state_required_string(document: JsonDocument, node: Int, name: String) raises -> String:
+    var value = state_field(document, node, name)
+    if value < 0 or document.nodes[value].kind != JSON_STRING:
+        raise Error("missing state string")
+    return document.string(value)
+
+
+def state_integer(document: JsonDocument, node: Int) raises -> Int:
+    if node < 0 or document.nodes[node].kind != JSON_NUMBER:
+        raise Error("invalid state integer")
+    var parsed = integer_timestamp(document.nodes[node].text)
+    if not parsed:
+        raise Error("invalid state integer")
+    return parsed.value()
+
+
+def validate_state_identity(document: JsonDocument, node: Int) raises:
+    if node < 0 or document.nodes[node].kind != JSON_OBJECT:
+        raise Error("invalid binding identity")
+    var provider = state_required_string(document, node, "provider")
+    if provider not in ["openai", "anthropic", "copilot", "deepseek", "gemini", "kiro", "local"]:
+        raise Error("invalid binding provider")
+    for field in ["credential_identity", "endpoint_identity"]:
+        if not public_state_digest(state_required_string(document, node, field)):
+            raise Error("invalid binding digest")
+    var profile = state_field(document, node, "profile_identity")
+    if profile >= 0 and document.nodes[profile].kind != JSON_NULL and (document.nodes[profile].kind != JSON_STRING or not public_state_digest(document.string(profile))):
+        raise Error("invalid binding digest")
+
+
+def public_state_digest(value: String) -> Bool:
+    if not value.startswith("sha256:") or value.byte_length() != 71:
+        return False
+    for raw_byte in value.as_bytes()[7:]:
+        var byte = Int(raw_byte)
+        if not (48 <= byte <= 57 or 97 <= byte <= 102):
+            return False
+    return True
+
+
+def validate_state_profile(document: JsonDocument, node: Int) raises:
+    if node < 0 or document.nodes[node].kind != JSON_OBJECT:
+        raise Error("invalid state profile")
+    _ = state_required_string(document, node, "codex_home")
+    var managed = state_field(document, node, "managed")
+    if managed < 0 or document.nodes[managed].kind != JSON_BOOL:
+        raise Error("invalid state profile")
+    state_optional_string(document, node, "email")
+    var provider = state_field(document, node, "provider")
+    if provider < 0:
+        return
+    if document.nodes[provider].kind != JSON_OBJECT:
+        raise Error("invalid state provider")
+    var kind = state_required_string(document, provider, "provider_kind")
+    if kind == "openai":
+        return
+    if kind == "gemini":
+        _ = state_required_string(document, provider, "email")
+        state_optional_string(document, provider, "project_id")
+    elif kind == "anthropic":
+        state_optional_string(document, provider, "account")
+        state_optional_string(document, provider, "auth_method")
+    elif kind == "copilot":
+        _ = state_required_string(document, provider, "host")
+        _ = state_required_string(document, provider, "login")
+        _ = state_required_string(document, provider, "api_url")
+        state_optional_string(document, provider, "access_type_sku")
+        state_optional_string(document, provider, "copilot_plan")
+    elif kind == "kiro":
+        _ = state_required_string(document, provider, "auth_key")
+        for field in ["auth_kind", "profile_arn", "profile_name", "start_url", "region"]:
+            state_optional_string(document, provider, field)
+    elif kind == "agy":
+        state_optional_string(document, provider, "account")
+    else:
+        raise Error("unknown state provider")
+
+
+def validate_state_bindings(document: JsonDocument, node: Int, profile_names: Dict[String, Bool], now: Int, collect: Bool, mut bindings: List[SessionProfileBinding]) raises:
+    if node < 0:
+        return
+    if document.nodes[node].kind != JSON_OBJECT:
+        raise Error("invalid state bindings")
+    var last_indices = Dict[String, Int]()
+    if collect:
+        for index in range(len(document.nodes[node].names)):
+            last_indices[document.nodes[node].names[index]] = index
+    for index in range(len(document.nodes[node].names)):
+        var session_id = document.nodes[node].names[index]
+        var binding = document.nodes[node].children[index]
+        if document.nodes[binding].kind != JSON_OBJECT:
+            raise Error("invalid state binding")
+        var profile_name = state_required_string(document, binding, "profile_name")
+        var bound_at = state_integer(document, state_field(document, binding, "bound_at"))
+        var identity = state_field(document, binding, "binding_identity")
+        var has_identity = identity >= 0 and document.nodes[identity].kind != JSON_NULL
+        if has_identity:
+            validate_state_identity(document, identity)
+        if collect:
+            var keep = profile_name == HARD_BINDING_CONFLICT_PROFILE or ((has_identity or state_profile_exists(profile_names, profile_name)) and bound_at >= max(0, now - SESSION_BINDING_RETENTION))
+            var latest = last_indices.get(session_id)
+            if keep and latest and latest.value() == index:
+                bindings.append(SessionProfileBinding(session_id, profile_name, bound_at, profile_name == HARD_BINDING_CONFLICT_PROFILE))
+
+
+def state_profile_exists(profile_names: Dict[String, Bool], profile_name: String) -> Bool:
+    if profile_names.get(profile_name):
+        return True
+    return False
+
+
+def current_state_time() -> Int:
+    var now = _realtime_nanoseconds()
+    return max(0, now // 1_000_000_000)
+
+
+def load_session_profile_bindings(root: String, has_state_file: Bool) raises -> List[SessionProfileBinding]:
+    var bindings = List[SessionProfileBinding]()
+    if not has_state_file:
+        return bindings^
+    var path = session_child_path(root, "state.json")
+    try:
+        var bytes = read_private_state_file(path)
+        var document = JsonDocument(String(from_utf8=Span(bytes)))
+        if document.nodes[document.root].kind != JSON_OBJECT:
+            raise Error("invalid state root")
+        var schema = state_field(document, document.root, "schema_version")
+        if schema >= 0 and document.nodes[schema].kind != JSON_NUMBER:
+            raise Error("invalid state schema")
+        if schema >= 0 and document.nodes[schema].text != "0" and document.nodes[schema].text != "1":
+            raise Error("unsupported state schema")
+        state_optional_string(document, document.root, "active_profile")
+        var profiles = state_field(document, document.root, "profiles")
+        var profile_names = Dict[String, Bool]()
+        if profiles >= 0:
+            if document.nodes[profiles].kind != JSON_OBJECT:
+                raise Error("invalid state profiles")
+            for index in range(len(document.nodes[profiles].children)):
+                var profile = document.nodes[profiles].children[index]
+                validate_state_profile(document, profile)
+                profile_names[document.nodes[profiles].names[index]] = True
+        var last_run = state_field(document, document.root, "last_run_selected_at")
+        if last_run >= 0:
+            if document.nodes[last_run].kind != JSON_OBJECT:
+                raise Error("invalid state selection")
+            for selected_at in document.nodes[last_run].children:
+                _ = state_integer(document, selected_at)
+        var response_bindings = state_field(document, document.root, "response_profile_bindings")
+        var now = current_state_time()
+        validate_state_bindings(document, response_bindings, profile_names, now, False, bindings)
+        var session_bindings = state_field(document, document.root, "session_profile_bindings")
+        validate_state_bindings(document, session_bindings, profile_names, now, True, bindings)
+    except:
+        raise Error("locked state loading and recovery are not implemented")
+    sort(Span(bindings), lambda (left: SessionProfileBinding, right: SessionProfileBinding) -> Bool:
+         not left.hard_conflict and right.hard_conflict or left.hard_conflict == right.hard_conflict and (left.bound_at < right.bound_at or left.bound_at == right.bound_at and left.session_id < right.session_id))
+    if len(bindings) > SESSION_BINDING_LIMIT:
+        var retained = List[SessionProfileBinding]()
+        for index in range(len(bindings) - SESSION_BINDING_LIMIT, len(bindings)):
+            var binding = bindings[index].copy()
+            retained.append(binding^)
+        return retained^
+    return bindings^
+
+
+def state_profile_for_session(bindings: Dict[String, String], session_id: String) -> String:
+    var profile = bindings.get(session_id)
+    if profile:
+        return profile.value()
+    return ""
 
 
 def first_string(document: JsonDocument, paths: List[String]) -> String:
@@ -283,7 +506,7 @@ def read_session(path: String) raises -> Optional[SessionReport]:
     var suffix = 10 if compressed else 5 if path.endswith(".json") else 6
     var identifier = String(filename[byte=:filename.byte_length() - suffix])
     var display_path = String(from_utf8_lossy=path.as_bytes())
-    var report = SessionReport(identifier^, "", "", "", "", "", display_path^, stat(path).st_mtimespec.tv_sec)
+    var report = SessionReport(identifier^, "", "", "", "", "", "", display_path^, stat(path).st_mtimespec.tv_sec)
     var started = False
     if compressed:
         var decoder = ZstdReader(checked_session_file(path))
@@ -350,10 +573,26 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
     if options.current:
         options.directory = absolute_path(options.directory.value()) if options.directory else String(cwd())
     var root = ensure_app_root()
-    # shortcut: state/journal recovery is unavailable; reject these homes until locking and durable writes are proven.
+    var has_state_file = False
+    var has_state_lock = False
+    var has_last_good = False
     for raw_name in listdir(root):
-        if blocks_session_state_name(raw_name):
+        var name = valid_session_name(raw_name)
+        var candidate = name.value() if name else String(from_utf8_lossy=raw_name.as_bytes())
+        if candidate == "state.json":
+            has_state_file = True
+        elif candidate == "state.json.lock":
+            has_state_lock = True
+        elif candidate == "state.json.last-good":
+            has_last_good = True
+        elif candidate in ["profile-lifecycle-journal", "profile-import-auth-journal"] or (candidate.startswith("state.json.") and candidate.endswith(".tmp")):
             raise Error("locked state loading and recovery are not implemented")
+    if (has_last_good or has_state_lock) and not has_state_file:
+        raise Error("locked state loading and recovery are not implemented")
+    var profile_bindings = load_session_profile_bindings(root, has_state_file)
+    var profile_by_session = Dict[String, String]()
+    for binding in profile_bindings:
+        profile_by_session[binding.session_id] = binding.profile_name
     var paths = List[String]()
     var shared = shared_root(root)
     session_paths(session_child_path(shared, "sessions"), paths)
@@ -362,8 +601,11 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
     var reports = List[SessionReport]()
     for path in paths:
         var report = read_session(path)
-        if report and report.value().matches(options):
-            reports.append(report.take())
+        if report:
+            var value = report.take()
+            value.profile = state_profile_for_session(profile_by_session, value.id)
+            if value.matches(options):
+                reports.append(value^)
     sort(Span(reports), lambda (left: SessionReport, right: SessionReport) -> Bool: left < right)
     var count = len(reports)
     if options.limit:

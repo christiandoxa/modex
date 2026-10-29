@@ -35,7 +35,7 @@ class SessionReport01651Tests(test_sessions.SessionOutputTests):
         self.assertEqual(modex, baseline)
         return baseline
 
-    def test_profile_filter_remains_fail_closed_while_state_recovery_is_unavailable(self):
+    def test_valid_primary_state_profile_filter_matches_release_without_mutation(self):
         outputs = {}
         states = {}
         file_effects = {}
@@ -60,6 +60,9 @@ class SessionReport01651Tests(test_sessions.SessionOutputTests):
                 state_path = app_root / "state.json"
                 state_path.write_text(json.dumps(state))
                 state_path.chmod(0o600)
+                last_good = app_root / "state.json.last-good"
+                last_good.write_bytes(b"ignored while primary state is valid\n")
+                last_good.chmod(0o600)
                 before = {
                     path.relative_to(root).as_posix(): path.read_bytes()
                     for path in root.rglob("*") if path.is_file()
@@ -81,18 +84,15 @@ class SessionReport01651Tests(test_sessions.SessionOutputTests):
                 )
                 outputs[label] = (result.returncode, result.stdout, result.stderr)
 
-        baseline_code, baseline_stdout, baseline_stderr = outputs["baseline"]
-        self.assertEqual((baseline_code, baseline_stderr), (0, b""))
-        report = json.loads(baseline_stdout)
-        self.assertEqual(len(report), 1)
-        self.assertEqual((report[0]["id"], report[0]["profile"]), (SESSION_ID, "main"))
-
-        self.assertEqual(outputs["modex"], (
-            1, b"", b"Error: locked state loading and recovery are not implemented\n",
-        ))
-        self.assertNotEqual(outputs["modex"], outputs["baseline"])
+        for label in ("baseline", "modex"):
+            code, stdout, stderr = outputs[label]
+            self.assertEqual((code, stderr), (0, b""))
+            report = json.loads(stdout)
+            self.assertEqual(len(report), 1)
+            self.assertEqual((report[0]["id"], report[0]["profile"]), (SESSION_ID, "main"))
         self.assertEqual(states["baseline"][0], states["baseline"][1])
         self.assertEqual(states["modex"][0], states["modex"][1])
+        self.assertEqual(file_effects["modex"], (set(), set()))
         self.assertEqual(file_effects["baseline"][0], {
             "home/.prodex/profile-lifecycle.json.lock",
             "home/.prodex/runtime-housekeeping.last-run",
@@ -101,4 +101,56 @@ class SessionReport01651Tests(test_sessions.SessionOutputTests):
             "home/.prodex/update-check.lock",
         })
         self.assertEqual(file_effects["baseline"][1], set())
-        self.assertEqual(file_effects["modex"], (set(), set()))
+
+    def test_invalid_primary_keeps_backup_recovery_fail_closed(self):
+        results = {}
+        states = {}
+        for label, binary in (("baseline", ORACLE), ("modex", MODEX)):
+            with tempfile.TemporaryDirectory(prefix="modex-session-recovery-01651-") as directory:
+                root = Path(directory)
+                fixture(root)
+                app_root = root / "home/.prodex"
+                app_root.mkdir(mode=0o700)
+                state = {
+                    "schema_version": 1,
+                    "active_profile": "main",
+                    "profiles": {
+                        "main": {"codex_home": str(root / "home/.codex"), "managed": False},
+                    },
+                    "last_run_selected_at": {},
+                    "response_profile_bindings": {},
+                    "session_profile_bindings": {
+                        SESSION_ID: {"profile_name": "main", "bound_at": int(time.time())},
+                    },
+                }
+                primary = app_root / "state.json"
+                backup = app_root / "state.json.last-good"
+                primary.write_bytes(b"{invalid primary\n")
+                primary.chmod(0o600)
+                backup_bytes = json.dumps(state).encode()
+                backup.write_bytes(backup_bytes)
+                backup.chmod(0o600)
+                primary_before = primary.read_bytes()
+                result = subprocess.run(
+                    sandbox_command(binary, root, ["session", "list", "--json", "--profile", "main"]),
+                    capture_output=True, timeout=10, check=False,
+                )
+                results[label] = (result.returncode, result.stdout, result.stderr)
+                states[label] = (primary_before, backup_bytes, primary.read_bytes(), backup.read_bytes())
+
+        self.assertEqual(results["baseline"][0], 0, results["baseline"][2])
+        self.assertEqual(json.loads(results["baseline"][1])[0]["profile"], "main")
+        self.assertEqual(results["modex"], (
+            1, b"", b"Error: locked state loading and recovery are not implemented\n",
+        ))
+        recovered = json.loads(states["baseline"][2])
+        backup_state = json.loads(states["baseline"][1])
+        self.assertEqual(recovered["active_profile"], backup_state["active_profile"])
+        self.assertEqual(recovered["profiles"]["main"]["codex_home"], backup_state["profiles"]["main"]["codex_home"])
+        self.assertEqual(recovered["profiles"]["main"]["managed"], backup_state["profiles"]["main"]["managed"])
+        self.assertNotEqual(states["baseline"][2], states["baseline"][0])
+        self.assertEqual(json.loads(states["baseline"][3]), recovered)
+        self.assertEqual(states["modex"], (
+            b"{invalid primary\n", states["modex"][1],
+            b"{invalid primary\n", states["modex"][1],
+        ))

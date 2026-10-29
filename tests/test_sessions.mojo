@@ -71,7 +71,7 @@ def main() raises:
     assert_equal(wrap_text("first\n\nnext\n", 8), ["first", "", "next"])
     var metadata = JsonDocument("{\"type\":\"session_meta\",\"timestamp\":\"2026-10-24T00:00:00Z\",\"payload\":{\"id\":\"session-a\",\"timestamp\":\"2026-10-24T00:00:00Z\",\"cwd\":\"/workspace\",\"originator\":\"test\",\"cli_version\":\"0.162.0\",\"title\":\"  Test title  \"}}")
     assert_true(starts_session(metadata))
-    var report = SessionReport("filename", "", "", "", "", "", "/fixture.jsonl", 0)
+    var report = SessionReport("filename", "", "", "", "", "", "", "/fixture.jsonl", 0)
     report.apply(metadata)
     assert_equal(report.id, "session-a")
     assert_equal(report.thread_name, "Test title")

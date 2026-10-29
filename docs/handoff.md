@@ -38,6 +38,19 @@ queries and symlink exclusions. Modex still fails closed for a malformed
 `state.json.\x80.tmp` entry that both releases ignore. The process comparisons
 and remaining difference are in `docs/evidence/session-invalid-utf8-04392.md`.
 
+Session listing now reads a valid private `state.json` primary without
+repairing it, attaches profile bindings, and applies profile filters. Indexed
+binding processing matches last-key and 2,048-entry retention behavior; a
+16,384-entry response-map stress case and 2,048-session report case match both
+0.165.1 and 0.439.2. All 68 focused Python session tests and native
+`test_sessions` pass; the dependency audit and test census pass. Modex still
+does not lock or recover state: an
+invalid primary with a valid `.last-good` remains fail-closed, world-readable
+state and dangling symlinks are rejected, while the releases accept those
+cases as readable or absent. A live symlink is rejected by the tested
+releases. Descriptor checks are not interprocess exclusion. Details and exact
+artifacts are in `docs/evidence/session-profile-state-04392.md`.
+
 Selected Anthropic message metadata, text/input deltas and ignored unknown
 delta types now match both releases in real-process stream comparisons,
 including `citation_delta`. Thinking deltas and malformed-type diagnostic

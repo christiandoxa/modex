@@ -51,6 +51,12 @@ cases as readable or absent. A live symlink is rejected by the tested
 releases. Descriptor checks are not interprocess exclusion. Details and exact
 artifacts are in `docs/evidence/session-profile-state-04392.md`.
 
+After integration, the production build and four native session, Super and
+provider checks passed. The focused profile, invalid-path, historical session
+and state-guard suite passed 29 tests, and nine shared stream/concurrency
+tests passed. The CI helper/routing suite passed 11 tests; the dependency audit
+and 126-module census passed. These do not establish full parity.
+
 Selected Anthropic message metadata, text/input deltas and ignored unknown
 delta types now match both releases in real-process stream comparisons,
 including `citation_delta`. Thinking deltas and malformed-type diagnostic
@@ -75,6 +81,10 @@ production comparisons against the verified 0.439.2 release. The historical
 19 tests before the beta-host follow-up. The CI routing and reference helpers
 passed 39 tests; the 71-file dependency audit and 122-module census passed.
 The full suite and non-Linux targets were not rerun for this integration.
+
+Hosted Fast CI run `40814263090` on `a33ce8b` failed before build because the
+required 0.439.2 tag was absent; both helper shards passed and the artifact
+consumer was skipped. No hosted product checks or parity gate ran.
 
 Hosted Fast CI run `40812724678` on `b2f0a70` failed because the required
 0.439.2 tag and release were unavailable; both helper shards passed, the

@@ -1,5 +1,10 @@
 # CI lessons
 
+Fast run [40814263090](https://github.com/christiandoxa/modex/actions/runs/40814263090)
+on `a33ce8b` passed both helper shards and failed before build at the missing
+required 0.439.2 tag. Artifact consumption was skipped; no hosted product
+or parity result is claimed.
+
 Fast run [40812724678](https://github.com/christiandoxa/modex/actions/runs/40812724678)
 on `b2f0a705` passed both helper shards and the producer's bootstrap, policy,
 dependency and reference helper checks. The producer stopped before build

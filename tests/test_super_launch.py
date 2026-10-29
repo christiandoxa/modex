@@ -109,7 +109,9 @@ if scenario == "exit-seven": raise SystemExit(7)
 if scenario == "extra-state":
     (home/"synthetic-user-state").write_text("preserve this data")
     raise SystemExit(0)
-if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-header", "slow-partial-body-limit") or scenario.startswith("request-head-"):
+if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-header",
+                "slow-partial-body-limit", "truncated-header-eof", "truncated-body-eof",
+                "truncated-small-body-eof", "empty-request-body") or scenario.startswith("request-head-"):
     import select
     import socket
     target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
@@ -131,6 +133,44 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
     request = (f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
                f"Content-Type: application/json\r\nAuthorization: Bearer synthetic-codex-key\r\n"
                f"Content-Length: {len(body)}\r\nConnection: close\r\n\r\n").encode() + body
+    if scenario in (
+        "truncated-header-eof", "truncated-body-eof", "truncated-small-body-eof",
+        "empty-request-body",
+    ):
+        connection = socket.create_connection((host, port), timeout=5)
+        if scenario == "truncated-header-eof":
+            connection.sendall((f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+                                "Content-Length: 2\r\nX-Slow-Partial: eof\r\n").encode())
+            connection.shutdown(socket.SHUT_WR)
+        elif scenario in ("truncated-body-eof", "truncated-small-body-eof"):
+            declared_length = 2048 if scenario == "truncated-body-eof" else 1024
+            connection.sendall((f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+                                "Content-Type: application/json\r\n"
+                                "Authorization: Bearer synthetic-codex-key\r\n"
+                                f"Content-Length: {declared_length}\r\n"
+                                "Connection: close\r\n\r\n{").encode())
+            connection.shutdown(socket.SHUT_WR)
+            response = http.client.HTTPResponse(connection)
+            try:
+                response.begin()
+                body = response.read()
+                status = response.status
+            except (ConnectionError, OSError, http.client.HTTPException):
+                status, body = None, b""
+            save({"kind":scenario, "status":status, "body":body.hex()})
+            connection.close()
+            print("synthetic-client-complete")
+            raise SystemExit(0)
+        else:
+            connection.sendall((f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+                                "Content-Type: application/json\r\n"
+                                "Authorization: Bearer synthetic-codex-key\r\n"
+                                "Content-Length: 0\r\nConnection: close\r\n\r\n").encode())
+        status = read_status(connection, 3)
+        save({"kind":scenario, "status":status})
+        connection.close()
+        print("synthetic-client-complete")
+        raise SystemExit(0)
     if scenario == "slow-partial-fragmented-header":
         healthy = socket.create_connection((host, port), timeout=5)
         parts = [

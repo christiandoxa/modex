@@ -22,6 +22,7 @@ comptime HTTP_HEADER_LIMIT = 65536
 comptime HTTP_MAX_REQUEST_HEADER_LIMIT = 2 * 1024 * 1024
 comptime HTTP_DEFAULT_BODY_LIMIT = 64 * 1024 * 1024
 comptime HTTP_MAX_BODY_LIMIT = 64 * 1024 * 1024
+comptime HTTP_DEFERRED_BODY_THRESHOLD = 1024
 comptime HTTP_MAX_RESPONSE_BODY_BYTES = 16777216
 
 
@@ -154,6 +155,8 @@ struct LoopbackHTTPConnection(Movable):
     var request_header_deadline: Float64
     var request_capture_error: String
     var request_capture_progress: Bool
+    var request_head_parsed: Bool
+    var request_body_deferred: Bool
     var response_version: String
     var done: Bool
 
@@ -174,6 +177,8 @@ struct LoopbackHTTPConnection(Movable):
         self.request_header_deadline = 0.0
         self.request_capture_error = ""
         self.request_capture_progress = False
+        self.request_head_parsed = False
+        self.request_body_deferred = False
         self.response_version = "HTTP/1.1"
         self.done = False
 
@@ -221,6 +226,12 @@ struct LoopbackHTTPConnection(Movable):
 
     def expect_continue_was_sent(self) -> Bool:
         return self.expect_continue_sent
+
+    def request_head_was_parsed(self) -> Bool:
+        return self.request_head_parsed
+
+    def request_body_was_deferred(self) -> Bool:
+        return self.request_body_deferred
 
     def capture_request_headers(mut self, timeout_ms: UInt64, header_limit: Int, byte_limit: Int) -> Bool:
         self.request_capture_progress = False
@@ -311,6 +322,8 @@ struct LoopbackHTTPConnection(Movable):
     def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False, defer_expectation_errors: Bool = False, preflight_body_limit_before_continue: Bool = False, use_request_version_for_continue: Bool = False, use_request_version_for_response: Bool = False, request_header_limit: Int = HTTP_HEADER_LIMIT) raises -> LoopbackHTTPRequest:
         if self.fd < 0 or self.done or self.request_read:
             raise Error("loopback HTTP connection is closed")
+        self.request_head_parsed = False
+        self.request_body_deferred = False
         if self.request_capture_error:
             raise Error(self.request_capture_error)
         self.request_header_scan = 0
@@ -337,6 +350,8 @@ struct LoopbackHTTPConnection(Movable):
         if use_request_version_for_response:
             self.response_version = _request_line_version(self.input, max_request_line_bytes)
         var head = _parse_request_head(self.input, header_end, allow_upgrade_headers, max_request_line_bytes, defer_expectation_errors)
+        self.request_head_parsed = True
+        self.request_body_deferred = defer_expectation_errors and (head.expect_continue or head.chunked or head.length > HTTP_DEFERRED_BODY_THRESHOLD)
         self.head_request = head.method == "HEAD"
         if head.unsupported_expectation:
             raise Error("unsupported HTTP expectation")
@@ -353,9 +368,9 @@ struct LoopbackHTTPConnection(Movable):
                 elif name == "upgrade" and value == "websocket":
                     websocket_upgrade = True
             upgrade_body = upgrade_body and not websocket_upgrade
-        if validate_request_target and not request_target_valid(head.target) and (head.expect_continue or head.length > max_body_bytes):
+        if validate_request_target and not request_target_valid(head.target) and (head.expect_continue or head.length > max_body_bytes or (defer_expectation_errors and head.length > HTTP_DEFERRED_BODY_THRESHOLD)):
             raise Error("invalid HTTP request target")
-        if defer_expectation_errors and head.expect_continue:
+        if defer_expectation_errors and (head.expect_continue or head.chunked or head.length > HTTP_DEFERRED_BODY_THRESHOLD):
             for header in head.headers:
                 if String(header[0]).lower() == "upgrade" and String(header[1]).lower() == "websocket":
                     raise Error("websocket upgrade fallback")
@@ -524,6 +539,8 @@ struct LoopbackHTTPConnection(Movable):
         self.request_header_deadline = 0.0
         self.request_capture_error = ""
         self.request_capture_progress = False
+        self.request_head_parsed = False
+        self.request_body_deferred = False
 
     def _read_chunked(mut self, start: Int, max_body_bytes: Int, deadline: Float64, wire_limit: Int, mut request_end: Int, invalid_target_before_body_limit: Bool = False, reject_trailers: Bool = False, allow_pipelining: Bool = False) raises -> List[UInt8]:
         var output = List[UInt8]()

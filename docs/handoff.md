@@ -3099,13 +3099,17 @@ and the existing 2 MiB request-header limit and 128 parked-socket cap bound
 capture. Admitted workers still parse headers and read request bodies, so slow
 or incomplete bodies can occupy every lane. The per-connection cap, FIFO
 admission, and configured worker-count behavior still differ from the
-releases. A failed Anthropic stream with an unfinished downstream body drains
-unusable pipelined input to detect client closure. Incomplete-body EOF still
-produces no downstream status where both releases return 502. Stream event
-byte counts also differ in a separate eight-client failure probe, which only
-established worker recovery. Full concurrency, signal, platform and security
-behavior remain unqualified; all six release targets stay in the parity
-denominator. See
+releases. Fixed-length bodies of 1,024 bytes or less remain in parser capture;
+EOF there closes without a response as both releases do. Deferred-body EOF now
+returns the baseline 502 and `upstream request failed` body for tested large
+fixed-length bodies, chunk-data EOF, and `Expect: 100-continue`. Large
+invalid-target and WebSocket heads now return the baseline 400 or 426 before
+waiting for body completion. A failed Anthropic stream with an unfinished
+downstream body drains unusable pipelined input to detect client closure.
+Stream event byte counts also differ in a separate eight-client failure probe,
+which only established worker recovery. Full concurrency, signal, platform,
+and security behavior remain unqualified; all six release targets stay in the
+parity denominator. See
 `docs/evidence/baseline-0.165.1/local-relay-concurrency.md` and
 `docs/evidence/runtime-slow-partial.md`.
 The byte difference includes a raw second 502 response after an unterminated

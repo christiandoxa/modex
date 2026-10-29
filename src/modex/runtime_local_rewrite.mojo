@@ -856,7 +856,7 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
             except:
                 pass
         elif message == "truncated HTTP request":
-            if connection.expect_continue_was_sent():
+            if connection.request_head_was_parsed() and connection.request_body_was_deferred():
                 try:
                     _reply(connection, 502, "upstream request failed")
                 except:

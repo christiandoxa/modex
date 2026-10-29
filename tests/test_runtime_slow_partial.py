@@ -44,7 +44,10 @@ class RuntimeSlowPartialTests(unittest.TestCase):
         self.assertEqual((result.returncode, result.stdout),
                          (0, b"synthetic-client-complete\n"), result.stderr)
         probe = next(row for row in records if row["kind"] == scenario)
-        if scenario == "slow-partial-body-limit":
+        if scenario in (
+            "slow-partial-body-limit", "truncated-header-eof",
+            "truncated-body-eof", "truncated-small-body-eof", "empty-request-body",
+        ):
             self.assertEqual(upstream, [])
         else:
             self.assertEqual(len(upstream), 1)
@@ -74,6 +77,10 @@ class RuntimeSlowPartialTests(unittest.TestCase):
             )
         if scenario == "slow-partial-fragmented-header":
             return probe["fragments"], probe["status"]
+        if scenario in ("truncated-header-eof", "empty-request-body"):
+            return probe["status"]
+        if scenario in ("truncated-body-eof", "truncated-small-body-eof"):
+            return probe["status"], probe["body"]
         return probe["declared_bytes"], probe["status"]
 
     def _compare(self, scenario, environment=None):
@@ -100,9 +107,27 @@ class RuntimeSlowPartialTests(unittest.TestCase):
     def test_incomplete_bodies_hold_workers_until_client_cancellation(self):
         signature, modex = self._compare("slow-partial-body")
         self.assertEqual(signature, (False, None, 502, 200))
-        self.assertIn(modex["before_release_status"], (None, 200))
-        self.assertIn(modex["cancelled_status"], (None, 502))
-        self.assertEqual(modex["status"], 200)
+        self.assertEqual(self._signature("slow-partial-body", modex), signature)
+
+    def test_truncated_headers_still_close_without_a_response(self):
+        signature, modex = self._compare("truncated-header-eof")
+        self.assertIsNone(signature)
+        self.assertIsNone(modex["status"])
+
+    def test_truncated_deferred_body_matches_release_error(self):
+        signature, modex = self._compare("truncated-body-eof")
+        self.assertEqual(signature, (502, b"upstream request failed".hex()))
+        self.assertEqual(self._signature("truncated-body-eof", modex), signature)
+
+    def test_truncated_body_at_defer_threshold_still_closes_silently(self):
+        signature, modex = self._compare("truncated-small-body-eof")
+        self.assertEqual(signature, (None, ""))
+        self.assertEqual(self._signature("truncated-small-body-eof", modex), signature)
+
+    def test_empty_body_is_not_classified_as_truncated(self):
+        signature, modex = self._compare("empty-request-body")
+        self.assertIsNotNone(signature)
+        self.assertEqual(modex["status"], signature)
 
     def test_fragmented_header_completes_and_dispatches(self):
         signature, modex = self._compare("slow-partial-fragmented-header")

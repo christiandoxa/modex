@@ -66,16 +66,16 @@ request-body limit is 64 MiB; `RuntimeLocalRewriteRequest::capture` rejects a
 larger declared length before reading the body. The 67,108,865-byte control
 returns 413 without upstream traffic.
 
-`tests/test_runtime_slow_partial.py` now runs the real isolated Super process
+`tests/test_runtime_slow_partial.py` runs the real isolated Super process
 against both checksum-pinned releases and Modex. It covers eight incomplete
 headers under default and one-worker settings, sixteen incomplete bodies,
-client half-close, a valid header split across five sends, and the declared
-body limit. It first requires the two frozen releases to agree. For Modex, the
-header case requires the release response during the hold; the
-body case permits either timing and either no response or 502 on the cancelled
-request, while requiring the queued healthy request to finish with 200. The
-fragmented-header and body-limit cases require their release status and no
-unexpected upstream traffic.
+client half-close, an incomplete header followed by EOF, 1,024- and 2,048-byte
+declared bodies truncated after one byte, a zero-length body, a valid header
+split across five sends, and the declared body limit. It first requires the
+two frozen releases to agree. Modex must match their response timing for the
+incomplete header and body pools, exact truncated-body status and body,
+header-EOF close, zero-length-body status, fragmented-header status, and
+body-limit status.
 
 Request-head boundaries and large-header limits remain covered by
 `test_local_rewrite_01651_oracle.py` and
@@ -93,24 +93,28 @@ PRODEX_ORACLE_04392=/path/to/prodex-0.439.2 \
 python3 scripts/ci/run-unittest.py test_runtime_slow_partial.py
 ```
 
-On 2026-10-29, the four-test matrix passed against the rebuilt Modex candidate
-at `/tmp/modex-admission-build/modex` in 19 seconds. The candidate was built
-with Mojo 1.2.0 (`2016d0cd`), `-O3 --target-cpu=x86-64-v3 -I src`, from base
-revision `0c251c7def188dd55ba7b64d4a5f0888b9fe3c12` plus the in-progress
-admission and head-capture changes in `src/modex/runtime_local_rewrite.mojo`
-and `src/modex/loopback_server.mojo`. Its SHA-256 was
-`f86d147aac656e9b0cc7aad0d2921efc9d4d842734b3c2a774969dfdff2198a6`. The
-matrix ran both pinned release controls and the Modex binary for each
-scenario. This confirms the tested candidate's behavior for these scenarios;
-it does not qualify the other release targets or establish full runtime
-parity. The older prototype result above remains as historical evidence of
-the original gap.
+On 2026-10-29, the expanded eight-test process matrix passed against Modex at
+`/tmp/modex-truncated-body-eof-build/modex`, built with Mojo 1.2.0
+(`2016d0cd`), `-O3 --target-cpu=x86-64-v3 -I src`, from base revision
+`30901e73c3dd1a3503fc7f39c6e2ff08994e9fe9`. Its SHA-256 was
+`14bb3ff9e53261961c1b15a737feb765878240655acf8dbd4ed4aa4b61c9df5a`.
+Both pinned releases and Modex returned 502 with body `upstream request failed`
+for a complete head declaring 2,048 bytes, one body byte, then client half-close;
+all three closed without a response for an incomplete head. Additional raw
+controls against both releases confirmed the TinyHTTP 1,024-byte boundary:
+fixed-length body EOF at 1,024 bytes closes without a response, while 1,025
+bytes yields that 502. `Expect: 100-continue` and chunk-data EOF also yield that
+502. A WebSocket upgrade or invalid target with a 1,025-byte body is rejected
+from the head with 426 or 400 respectively, before the body arrives; at 1,024
+bytes all three wait for the body. Chunked WebSocket heads receive 426 before
+the body arrives. These controls use synthetic loopback traffic and reach no
+upstream.
 
-An independent candidate run returned 200 during the partial-header hold in
-5 ms, matching the release behavior. In the sixteen-partial-body control, the
-healthy request waited for cancellation in both, but Modex produced no response
-for the half-closed partial request while both releases returned 502. This
-truncated-body response remains a reproducible gap.
+The complete focused 0.165.1 relay oracle suite passed 19 tests, the 0.439.2
+suite passed 11 tests, and the loopback/local-rewrite/relay stream suites passed
+51 tests. This confirms only the tested Linux request cases; the other release
+targets and full runtime parity remain unqualified. The earlier candidate
+observation remains historical evidence of the original mismatch.
 
 ## Production request-head capture controls
 

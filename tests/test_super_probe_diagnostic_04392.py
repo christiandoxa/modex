@@ -25,6 +25,9 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
     def test_explicit_full_access_matches_04392(self):
         launch_support.check_explicit_full_access(self, test_cli.ORACLE)
 
+    def test_no_proxy_matches_04392(self):
+        launch_support.check_no_proxy(self, test_cli.ORACLE)
+
     def test_exec_unverified_arguments_remain_fail_closed(self):
         for arguments in (
             ("exec", "--json", "-c", "model_provider=unsafe", "prompt"),

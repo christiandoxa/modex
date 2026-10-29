@@ -37,6 +37,9 @@ class ActiveSuperLaunchTests(unittest.TestCase):
     def test_explicit_full_access_matches_01651(self):
         launch_support.check_explicit_full_access(self, active_cli.ORACLE)
 
+    def test_no_proxy_matches_01651(self):
+        launch_support.check_no_proxy(self, active_cli.ORACLE)
+
     def test_probe_failure_and_environment_match_01651(self):
         outputs = []
         for binary in (active_cli.ORACLE, launch_support.MODEX):

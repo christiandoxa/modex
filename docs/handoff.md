@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The guarded DeepSeek Super path now accepts explicit `--no-proxy` before or
+after `exec`. Both pinned releases and Modex complete a synthetic loopback
+provider request with unreachable proxy settings and matching normalized child
+arguments and request bodies. The production build, three process tests,
+dependency audit and test census passed. Public proxy, DNS and TLS behavior
+remain open. See `docs/evidence/baseline-0.165.1/super-no-proxy.md`.
+
 Buffered Anthropic thinking blocks now produce reasoning items in tested
 search and mixed-tool responses. Session text reports include bound profile
 details; C0/C1 control characters are escaped, unlike the releases' raw output.

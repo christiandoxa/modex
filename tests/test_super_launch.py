@@ -328,6 +328,30 @@ def check_explicit_full_access(test, oracle):
             test.assertEqual(captures[0], captures[1])
 
 
+def check_no_proxy(test, oracle):
+    environment = {
+        "HTTP_PROXY": "http://127.0.0.1:1", "HTTPS_PROXY": "http://127.0.0.1:1",
+        "ALL_PROXY": "http://127.0.0.1:1", "NO_PROXY": "", "no_proxy": "",
+    }
+    for case in (
+        {"super_arguments": ("--no-proxy",)},
+        {"codex_arguments": ("exec", "--no-proxy", "--", "synthetic prompt")},
+    ):
+        with test.subTest(case=case):
+            captures = []
+            for binary in (oracle, MODEX):
+                result, records, upstream, state = run_private_launch(
+                    binary, scenario="buffered", environment_overrides=environment, **case,
+                )
+                test.assertEqual(result.returncode, 0, result.stderr)
+                test.assertEqual(len(upstream), 1)
+                test.assertEqual(state["leftovers"], [])
+                test.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                launch = next(record for record in records if record["kind"] == "launch")
+                captures.append((normalized_app_server_args(launch["args"]), upstream[0]["path"], upstream[0]["body"]))
+            test.assertEqual(captures[0], captures[1])
+
+
 def app_server_config(arguments):
     return "\n".join(
         arguments[index + 1]

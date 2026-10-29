@@ -167,15 +167,29 @@ def flag_suggestion(name: String, command: String) -> String:
     return "--" + matches[len(matches) - 1] if matches else String()
 
 
-def value_error(usage: String, command: String, name: String, value: String, seen: List[String]) -> Error:
+def value_error(
+    usage: String,
+    command: String,
+    name: String,
+    value: String,
+    seen: List[String],
+    attached_value_seen: Bool = False,
+    pending_value: Bool = False,
+) -> Error:
     var detail = usage
-    if name not in seen:
+    var choice_usage = attached_value_seen or (pending_value and len(seen) > 0)
+    for previous in seen:
+        if not takes_value(previous, command):
+            choice_usage = True
+    if choice_usage and name == "--help":
+        detail += " " + name
+    elif not choice_usage:
         detail += " " + name
     if not command:
         detail += " <COMMAND>"
     elif command == "resume":
         detail += " <ID>"
-    elif seen:
+    elif choice_usage:
         detail += " <"
         var first = True
         for flag in session_flags(command):
@@ -283,6 +297,7 @@ def parse_session_options(args: List[String]) raises -> SessionOptions:
     var seen = List[String]()
     var literal = False
     var resume_id = False
+    var attached_value_seen = False
     var index = 3
     var flags = session_flags(command)
     while index < len(args):
@@ -306,7 +321,14 @@ def parse_session_options(args: List[String]) raises -> SessionOptions:
             raise unknown_argument(argument, usage, command, seen)
         var value_option = takes_value(name, command)
         if not value_option and len(pieces) == 2:
-            raise value_error(usage, command, name, String(pieces[1]), seen)
+            raise value_error(
+                usage,
+                command,
+                name,
+                String(pieces[1]),
+                seen,
+                attached_value_seen,
+            )
         if name == "--help":
             return SessionOptions(False, "help", None, command, None, None, False)
         var value = String()
@@ -321,7 +343,15 @@ def parse_session_options(args: List[String]) raises -> SessionOptions:
                     var next = argument_name(args[index])
                     var next_pieces = args[index].split("=", maxsplit=1)
                     if next in flags and not takes_value(next, command) and len(next_pieces) == 2:
-                        raise value_error(usage, command, next, String(next_pieces[1]), seen)
+                        raise value_error(
+                            usage,
+                            command,
+                            next,
+                            String(next_pieces[1]),
+                            seen,
+                            attached_value_seen,
+                            True,
+                        )
                     if next not in flags and next != "-h":
                         raise unknown_argument(args[index], usage, command, seen)
                 if index >= len(args) or (args[index].startswith("-") and args[index] != "-"):
@@ -332,6 +362,8 @@ def parse_session_options(args: List[String]) raises -> SessionOptions:
         if name in seen:
             raise session_cli_error("the argument '" + option_label(name) + "' cannot be used multiple times", usage + " [OPTIONS]")
         seen.append(name)
+        if value_option and len(pieces) == 2:
+            attached_value_seen = True
         if name == "--json" or name == "--id-only" or name == "--resume-command":
             output = String(name[byte=2:])
         elif name == "--parent-only" or name == "--include-subagents":

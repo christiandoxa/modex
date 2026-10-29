@@ -78,3 +78,15 @@ For `help update`, three unknown subcommands containing `=` now retain the
 whole argument in the diagnostic, matching the 0.165.1 executable and the
 historical 0.439.2 executable. The isolated checks compare exit status, output,
 and home mutations; they do not qualify other argument combinations.
+
+For `session list` and `session current`, malformed attached values on boolean
+switches and missing split-value paths now produce the same context-sensitive
+usage as both pinned releases. The 0.165.1 source declares these as Clap
+switches in `crates/prodex-cli/src/session_context.rs`. Real-process coverage
+checks 288 attached-switch cases and 66 missing-value cases per release,
+including earlier split and attached value options, switches, conflicting
+switches and the hidden `--cwd` value option. Top-level session help and
+`session resume` help-value errors also use the shared formatter. The
+invalid-option diagnostics leave the isolated home unchanged.
+`tests/test_session_cli.py` passed all five methods; the native session CLI
+parser program passed after the production build.

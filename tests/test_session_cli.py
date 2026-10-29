@@ -116,6 +116,114 @@ class SessionCliTests(unittest.TestCase):
                         self.assertEqual(after, before)
                     self.assertEqual(outputs[1], outputs[0])
 
+    def test_attached_switch_value_usage_matches_both_releases_across_parser_state(self):
+        if (
+            not ORACLE_01651.is_file()
+            or hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest() != ORACLE_01651_SHA256
+        ):
+            raise AssertionError("PRODEX_ORACLE_01651 must identify the verified 0.165.1 Linux release")
+        previous_options = (
+            (),
+            ("--profile", "synthetic-profile"),
+            ("--query", "synthetic-query"),
+            ("--limit", "1"),
+            ("--profile=synthetic-profile",),
+            ("--query=synthetic-query",),
+            ("--limit=1",),
+            ("--profile=synthetic-profile", "--query=synthetic-query"),
+            ("--json",),
+            ("--id-only",),
+            ("--resume-command",),
+            ("--parent-only",),
+            ("--include-subagents",),
+            ("--json", "--id-only"),
+            ("--json", "--resume-command"),
+            ("--include-subagents", "--parent-only"),
+            ("--id-only", "--parent-only"),
+            ("--json", "--profile", "synthetic-profile"),
+            ("--profile", "synthetic-profile", "--json"),
+            ("--json", "--profile=synthetic-profile"),
+            ("--profile=synthetic-profile", "--json"),
+            ("--include-subagents", "--limit=1"),
+            ("--limit=1", "--include-subagents"),
+        )
+        invalid_switches = (
+            "--json", "--id-only", "--resume-command", "--include-subagents",
+            "--parent-only", "--help",
+        )
+        references = (("0.165.1", ORACLE_01651), ("0.439.2", ORACLE))
+        cases = []
+        for command in ("list", "current"):
+            prior_sets = list(previous_options)
+            if command == "current":
+                prior_sets.extend((("--cwd", "."), ("--cwd=.",)))
+            for prior in prior_sets:
+                for switch in invalid_switches:
+                    cases.append((
+                        (command, prior, switch),
+                        ["session", command, *prior, switch + "=synthetic-invalid-value"],
+                    ))
+
+        incomplete_values = ("--profile", "--query", "--limit", "--cwd")
+        preceding_contexts = (
+            (),
+            ("--query", "synthetic-query"),
+            ("--query=synthetic-query",),
+            ("--parent-only",),
+            ("--json", "--id-only"),
+        )
+        for command in ("list", "current"):
+            pending = incomplete_values[:-1] if command == "list" else incomplete_values
+            for prior in preceding_contexts:
+                for value_option in pending:
+                    if value_option in prior:
+                        continue
+                    for switch in ("--json", "--help"):
+                        cases.append((
+                            (command, prior, value_option, switch),
+                            [
+                                "session", command, *prior, value_option,
+                                switch + "=synthetic-invalid-value",
+                            ],
+                        ))
+        cases.extend((
+            (("root-help",), ["session", "--help=synthetic-invalid-value"]),
+            (("resume-help",), ["session", "resume", "--help=synthetic-invalid-value"]),
+        ))
+
+        with tempfile.TemporaryDirectory(prefix="modex-session-switch-value-") as directory:
+            base = Path(directory)
+            for release, reference in references:
+                for case_index, (state, arguments) in enumerate(cases):
+                    outputs = []
+                    for label, binary, argv0 in (
+                        ("reference", reference, "prodex"),
+                        ("modex", MODEX, "modex"),
+                    ):
+                        root = base / f"{release}-{case_index}-{label}"
+                        root.mkdir()
+                        (root / "home").mkdir(mode=0o700)
+                        (root / "workspace").mkdir()
+                        result = subprocess.run(
+                            sandbox_command(binary, root, arguments, argv0=argv0),
+                            capture_output=True, timeout=10, check=False,
+                        )
+                        stdout = result.stdout.decode().replace(str(root), "<ROOT>")
+                        stderr = result.stderr.decode().replace(str(root), "<ROOT>")
+                        created = sorted(
+                            str(path.relative_to(root)) for path in root.rglob("*")
+                            if path not in (root / "home", root / "workspace")
+                        )
+                        outputs.append((
+                            result.returncode,
+                            map_executable(stdout),
+                            map_executable(stderr),
+                            created,
+                        ))
+                    with self.subTest(release=release, state=state):
+                        self.assertEqual(outputs[1], outputs[0])
+                        self.assertEqual(outputs[0][3], [])
+
     def test_split_limit_error_precedence_matches_both_releases(self):
         if (
             not ORACLE_01651.is_file()

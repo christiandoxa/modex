@@ -20,6 +20,14 @@ process suite passed. Other Anthropic content and event shapes,
 continuation, transport security, and non-Linux targets remain unqualified.
 Evidence: `docs/evidence/baseline-0.165.1/anthropic-response-shapes.md`.
 
+Session CLI errors for malformed attached values on boolean switches now match
+both pinned Linux releases across split/attached prior values, switches,
+conflicts, missing split values and top-level/resume help errors. The
+356-case-per-release matrix leaves synthetic homes unchanged;
+the full five-method session CLI suite and native parser program passed.
+Session data and lock handling are unchanged. See
+`docs/evidence/baseline-0.165.1/cli-observations.md`.
+
 Buffered Anthropic response envelopes now ignore unrecognized top-level and
 usage fields, fall back for invalid or missing IDs/models, default invalid
 usage counters to zero, omit missing/non-object usage, and project valid

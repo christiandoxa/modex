@@ -47,6 +47,22 @@ class ActiveSuperLaunchTests(unittest.TestCase):
     def test_supported_exec_flags_match_01651(self):
         launch_support.check_safe_exec_flags(self, active_cli.ORACLE)
 
+    def test_repeat_launch_with_shared_history_documents_current_gap(self):
+        for label, binary in (("0.165.1", active_cli.ORACLE), ("0.439.2", ORACLE_04392), ("Modex", launch_support.MODEX)):
+            with self.subTest(binary=label):
+                first, records, upstream, state = launch_support.run_private_launch(
+                    binary, scenario="exit-seven", repeat_launch=True,
+                )
+                self.assertEqual(first.returncode, 7, first.stderr)
+                self.assertEqual(state["repeat"].returncode, 1 if label == "Modex" else 7, state["repeat"].stderr)
+                self.assertEqual(sum(record["kind"] == "launch" for record in records), 1 if label == "Modex" else 2)
+                self.assertEqual(upstream, [])
+                self.assertEqual(state["session"], '{"synthetic":true}\n')
+                self.assertIn('{"synthetic":"preserve history"}\n', state["history"])
+                self.assertEqual(state["leftovers"], [])
+                if label == "Modex":
+                    self.assertIn(b"cannot reconcile existing Codex data", state["repeat"].stderr)
+
     def test_explicit_full_access_matches_01651(self):
         launch_support.check_explicit_full_access(self, active_cli.ORACLE)
 

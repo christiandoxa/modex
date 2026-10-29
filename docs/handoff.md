@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Two sequential DeepSeek Super launches expose a core shared-home gap: the
+first Modex launch creates session and history paths, then the second rejects
+them before starting Codex. Both pinned releases launch twice and preserve the
+synthetic session and history. The three-process test records this mismatch;
+it is not a parity pass. The release coordinates the child and session
+maintenance with shared and exclusive locks, and the current Modex setup would
+truncate existing history if its guard were simply removed. See
+`docs/evidence/baseline-0.165.1/super-repeat-launch.md`.
+
 The local full suite on `b9b52d5` finished 1,006 tests with 53 failures and
 one error. Most failures exposed a single-key provider-panel punctuation
 regression and a stale probe-environment assertion; the combined Super and

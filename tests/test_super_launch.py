@@ -724,7 +724,7 @@ class SuperLaunchTests(unittest.TestCase):
         super_arguments=(), environment_overrides=None, base_path="/v1", sub_agent=False,
         temporary_directory=None, stderr_tty=False, codex_mode="explicit", codex_binary=None,
         codex_arguments=("exec", "--", "synthetic prompt"), shared_config=None, shared_setup=None,
-        api_key="synthetic-provider-key", anthropic_events=None,
+        api_key="synthetic-provider-key", anthropic_events=None, repeat_launch=False,
     ):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-", dir=temporary_directory) as directory:
             root = Path(directory)
@@ -1167,6 +1167,7 @@ class SuperLaunchTests(unittest.TestCase):
             command.extend(("--no-presidio",
                             "--sub-agent" if sub_agent else "--no-sub-agent", "--skip-quota-check",
                             *super_arguments, *codex_arguments))
+            repeated = None
             try:
                 if stderr_tty:
                     master, slave = os.openpty()
@@ -1196,6 +1197,10 @@ class SuperLaunchTests(unittest.TestCase):
                     )
                 else:
                     result = subprocess.run(command, env=environment, cwd=root / "work", capture_output=True, timeout=40)
+                if repeat_launch:
+                    with (root / "shared/history.jsonl").open("a") as history:
+                        history.write('{"synthetic":"preserve history"}\n')
+                    repeated = subprocess.run(command, env=environment, cwd=root / "work", capture_output=True, timeout=40)
             finally:
                 server.shutdown()
                 worker.join(2)
@@ -1206,6 +1211,8 @@ class SuperLaunchTests(unittest.TestCase):
             saved = root / "shared/sessions/synthetic-session.jsonl"
             overlays = list((root / "state/profiles").glob("*"))
             state = {"leftovers": [str(path) for path in overlays], "session": saved.read_text() if saved.exists() else None,
+                     "repeat": repeated,
+                     "history": (root / "shared/history.jsonl").read_text() if (root / "shared/history.jsonl").exists() else None,
                      "extra": [(path / "synthetic-user-state").read_text() for path in overlays if (path / "synthetic-user-state").exists()],
                      "config": (root / "shared/config.toml").read_text() if (root / "shared/config.toml").exists() else None,
                      "managed": sorted(str(path.relative_to(root)) for name in ("home", "state", "shared")

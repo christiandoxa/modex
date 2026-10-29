@@ -1,5 +1,12 @@
 # Verified gaps
 
+The supported clean-home DeepSeek Super launch cannot be repeated in the same
+home: its first invocation creates shared Codex paths that its next invocation
+rejects. Both pinned releases reuse those paths. Existing history must not be
+truncated and session maintenance must be coordinated with child execution;
+the mismatch and synthetic process control are recorded in
+`docs/evidence/baseline-0.165.1/super-repeat-launch.md`.
+
 Complete parity remains unfinished against officially released Prodex 0.439.2 at
 `72b77478a5198fc5da6b4d2253137f9cdbf43be9`. The incomplete inventory retains
 76 contracts and 456 platform obligations. All six complete release

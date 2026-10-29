@@ -748,6 +748,7 @@ class SuperLaunchTests(unittest.TestCase):
             native_capture = root / "native-capture.jsonl"
             if existing:
                 (root / "shared/config.toml").write_text('model="preserve-me"\n')
+                (root / "shared/auth.json").write_text('{"synthetic":"preserve-me"}\n')
             if shared_config is not None:
                 (root / "shared/config.toml").write_text(shared_config)
                 (root / "shared/config.toml").chmod(0o600)
@@ -1315,6 +1316,7 @@ class SuperLaunchTests(unittest.TestCase):
         self.assertEqual(records, [])
         self.assertEqual(upstream, [])
         self.assertEqual(state["config"], 'model="preserve-me"\n')
+        self.assertIn("shared/auth.json", state["managed"])
         self.assertEqual(state["leftovers"], [])
 
     def test_unsafe_beta_url_fails_before_profile_or_codex_launch(self):

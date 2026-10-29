@@ -1,15 +1,15 @@
 # Current work: Prodex 0.439.2 parity and CI
 
-DeepSeek Super now accepts a private shared config containing the runtime
-settings `deepseek.web_search_mode`, `deepseek.strict_tools`, and
-`deepseek.beta_base_url`, preserving it in the isolated child home and giving
-these settings precedence over the environment. Real-process controls compare
-both pinned releases and Modex for combined settings, invalid values and beta
-fallback; unsafe permissions, symlinks and exposed hard links remain rejected.
-Other config keys and existing home data remain guarded, and broader config,
-profile lifecycle and transport parity remain unfinished. Evidence:
-`docs/evidence/deepseek-strict-tools-04392.md` and
-`docs/evidence/deepseek-web-search-mode-04392.md`.
+DeepSeek Super now preserves a safely checked shared `config.toml` in the
+isolated child home. The three DeepSeek runtime settings take precedence over
+environment values, and string-valued catalog context/compaction settings
+affect the generated catalog as in the pinned releases. Real-process controls
+cover selected ordinary config, invalid catalog values and missing-profile
+ordering. Unsafe permissions, symlinks, exposed hard links and existing home
+data remain guarded. General config behavior, profile lifecycle and transport
+parity remain unfinished. Evidence:
+`docs/evidence/baseline-0.165.1/super-shared-config.md` and
+`docs/evidence/deepseek-strict-tools-04392.md`.
 
 Buffered Anthropic response envelopes now ignore unrecognized top-level and
 usage fields, fall back for invalid or missing IDs/models, default invalid

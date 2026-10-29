@@ -43,9 +43,9 @@ copies the config into the isolated child home, preserves the original file,
 and passes the validated effective mode to the local relay. Tests reject
 group-writable files, symlinks, and exposed hard links before launching the
 child. The later strict-tools and beta configuration extension is documented
-in `docs/evidence/deepseek-strict-tools-04392.md`. Other existing home data
-and config keys remain guarded until their lifecycle and configuration
-semantics are implemented. Malformed TOML and
+in `docs/evidence/deepseek-strict-tools-04392.md`, and broader config copying
+in `docs/evidence/baseline-0.165.1/super-shared-config.md`. Existing home data
+remains guarded until its lifecycle is implemented. Malformed TOML and
 unsafe-file diagnostics remain potentially different from the releases.
 
 The production build, 10 mode tests, 40 neighboring local-rewrite and Super

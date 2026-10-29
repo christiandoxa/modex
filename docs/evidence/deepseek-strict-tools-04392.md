@@ -93,8 +93,10 @@ comparison against both checksum-pinned Linux releases checks strict beta
 routing and schema conversion, conflicting and invalid environment values,
 boolean/string strict settings, invalid config and beta fallback. Tests use
 synthetic credentials and a numeric loopback peer. The 1 MiB config limit,
-ownership and file checks remain enforced. Other settings and existing Codex
-state remain guarded; public WSS/TLS/DNS and other targets remain unverified.
+ownership and file checks remain enforced. The later shared-config extension
+preserves other settings; existing Codex state remains guarded, and public
+WSS/TLS/DNS and other targets remain unverified. See
+`docs/evidence/baseline-0.165.1/super-shared-config.md`.
 
 The production build and local-rewrite driver build passed with Mojo 1.2.0.
 The seven focused strict/config and cross-release methods passed; the 34-method

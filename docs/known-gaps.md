@@ -180,9 +180,9 @@ not full release qualification. `tests/test_provider_tools_04392_characterizatio
 checks the 0.439.2 result against the pinned release and synthetic launch
 controls.
 The separate web-search mode environment setting now controls selected
-production routes. A safely checked shared TOML config containing the three
-DeepSeek runtime settings takes precedence; other config and existing-home
-reconciliation remain guarded. See
+production routes. A safely checked shared TOML config is preserved and its
+DeepSeek runtime settings take precedence; existing-home reconciliation and
+general config behavior remain unfinished. See
 `docs/evidence/deepseek-web-search-mode-04392.md`.
 
 DeepSeek requests with a missing, null, non-string or blank model match the

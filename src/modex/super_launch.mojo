@@ -21,7 +21,7 @@ from .provider_deepseek_transport import deepseek_request_headers
 from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, serve_local_rewrite
 from .sessions import read_private_state_file
 from .sha256 import hash_file
-from .text import cli_width, is_whitespace, section_header, trim_text, wrap_text
+from .text import cli_width, is_whitespace, section_header, trim_text, unsigned_value, wrap_text
 from .toml import TOMLDocument, TOML_BOOLEAN, TOML_STRING, TOML_TABLE
 from .uuid7 import new_uuid7
 
@@ -55,8 +55,8 @@ def _remove_overlay(path: String) raises:
     rmdir(path)
 
 
-def _clean_home(root: String, shared: String) raises -> Tuple[String, Optional[String], Optional[String], Optional[String]]:
-    # shortcut: existing profile/config reconciliation needs locked storage; admit only DeepSeek runtime settings and no saved account state.
+def _clean_home(root: String, shared: String, skip_config: Bool = False) raises -> Tuple[String, Optional[String], Optional[String], Optional[String]]:
+    # shortcut: existing profile and session reconciliation needs locked storage; admit config files only.
     var config_source = String()
     var search_mode = Optional[String]()
     var strict_tools = Optional[String]()
@@ -76,26 +76,25 @@ def _clean_home(root: String, shared: String) raises -> Tuple[String, Optional[S
                 raise Error("Super Codex config exceeds the supported size")
             config_source = String(from_utf8=Span(bytes))
             var config = TOMLDocument(config_source)
+            if skip_config:
+                continue
             var deepseek = config.get(config.root, "deepseek")
-            if len(config.nodes[config.root].names) != 1 or deepseek < 0 or config.nodes[deepseek].kind != TOML_TABLE:
-                raise Error("Super clean-home launch cannot reconcile existing Codex data yet")
-            for name in config.nodes[deepseek].names:
-                var node = config.get(deepseek, name)
-                if name == "web_search_mode":
+            if deepseek >= 0 and config.nodes[deepseek].kind == TOML_TABLE:
+                var node = config.get(deepseek, "web_search_mode")
+                if node >= 0:
                     if config.nodes[node].kind != TOML_STRING:
                         raise Error("deepseek.web_search_mode must be a string")
                     search_mode = Optional[String](config.string(node))
-                elif name == "strict_tools":
+                node = config.get(deepseek, "strict_tools")
+                if node >= 0:
                     if config.nodes[node].kind != TOML_STRING and config.nodes[node].kind != TOML_BOOLEAN:
                         raise Error("deepseek.strict_tools must be a boolean")
                     strict_tools = Optional[String](config.nodes[node].text)
-                elif name == "beta_base_url":
-                    if config.nodes[node].kind == TOML_STRING:
-                        var value = config.string(node)
-                        if trim_text(value):
-                            beta_base_url = Optional[String](value^)
-                else:
-                    raise Error("Super clean-home launch cannot reconcile existing Codex data yet")
+                node = config.get(deepseek, "beta_base_url")
+                if node >= 0 and config.nodes[node].kind == TOML_STRING:
+                    var value = config.string(node)
+                    if trim_text(value):
+                        beta_base_url = Optional[String](value^)
     if lexists(root):
         for name in listdir(root):
             if name != "update-check.json" and name != "profiles":
@@ -220,7 +219,28 @@ def _codex_binary() raises -> Tuple[String, String, String]:
     return (resolved, child_path, requested)
 
 
-def deepseek_model_catalog(launch_model: String) -> String:
+def _catalog_config_number(config: TOMLDocument, key: String, fallback: UInt64) raises -> UInt64:
+    var node = config.get(config.root, key)
+    if node < 0 or config.nodes[node].kind != TOML_STRING:
+        return fallback
+    var value = config.string(node)
+    var name = "DeepSeek " + key
+    if not value:
+        raise Error(name + " cannot be empty")
+    for character in value.codepoints():
+        if is_whitespace(Int(character)):
+            raise Error(name + " must not contain whitespace")
+    var parsed: UInt64
+    try:
+        parsed = unsigned_value(value)
+    except error:
+        raise Error(name + " must be an unsigned integer: " + String(error))
+    if parsed <= 1:
+        raise Error(name + " must be greater than 1")
+    return parsed
+
+
+def deepseek_model_catalog(launch_model: String, context_window: UInt64, compact_limit: UInt64) -> String:
     var presets: List[Tuple[String, String, String]] = [
         ("auto", "DeepSeek Auto", "Prodex DeepSeek fallback chain routed through current DeepSeek models."),
         ("pro", "DeepSeek Pro", "Prodex DeepSeek Pro alias routed through DeepSeek V4 Pro."),
@@ -248,9 +268,9 @@ def deepseek_model_catalog(launch_model: String) -> String:
                 name = preset[1]
                 description = preset[2]
                 break
-        var row = String('{"additional_speed_tiers":[],"apply_patch_tool_type":"freeform","auto_compact_token_limit":900000,"availability_nux":null,"base_instructions":') + quote_json(instructions)
-        row += ',"context_window":1048576,"default_reasoning_level":"high","default_reasoning_summary":"none","default_service_tier":null,"default_verbosity":null,"description":' + quote_json(description)
-        row += ',"display_name":' + quote_json(name) + ',"effective_context_window_percent":95,"experimental_supported_tools":[],"input_modalities":["text"],"max_context_window":1048576,"priority":' + String(len(models) + 1)
+        var row = String('{"additional_speed_tiers":[],"apply_patch_tool_type":"freeform","auto_compact_token_limit":') + String(compact_limit) + ',"availability_nux":null,"base_instructions":' + quote_json(instructions)
+        row += ',"context_window":' + String(context_window) + ',"default_reasoning_level":"high","default_reasoning_summary":"none","default_service_tier":null,"default_verbosity":null,"description":' + quote_json(description)
+        row += ',"display_name":' + quote_json(name) + ',"effective_context_window_percent":95,"experimental_supported_tools":[],"input_modalities":["text"],"max_context_window":' + String(context_window) + ',"priority":' + String(len(models) + 1)
         row += ',"service_tiers":[],"shell_type":"shell_command","slug":' + quote_json(slug) + ',"support_verbosity":false,"supported_in_api":true,"supported_reasoning_levels":['
         row += '{"description":"DeepSeek low reasoning effort","effort":"low"},{"description":"DeepSeek medium reasoning effort","effort":"medium"},{"description":"DeepSeek high reasoning effort","effort":"high"},{"description":"DeepSeek max reasoning effort","effort":"xhigh"}]'
         row += ',"supports_image_detail_original":false,"supports_parallel_tool_calls":true,"supports_reasoning_summaries":false,"supports_reasoning_summary_parameter":false,"supports_search_tool":false,"truncation_policy":{"limit":10000,"mode":"tokens"},"upgrade":null,"visibility":"list","web_search_tool_type":"text"}'
@@ -599,10 +619,13 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
         raise Error("DeepSeek model identifier exceeds 4096 bytes")
     var root = app_root()
     var shared = shared_root(root)
-    var shared_config = _clean_home(root, shared)
-    var route = deepseek_runtime_route(shared_config[1], shared_config[2], shared_config[3])
+    var shared_config = _clean_home(root, shared, profile_supplied)
     if profile_supplied:
         raise Error("profile '" + profile + "' does not exist")
+    var route = deepseek_runtime_route(shared_config[1], shared_config[2], shared_config[3])
+    var catalog_config = TOMLDocument(shared_config[0])
+    var catalog_context = _catalog_config_number(catalog_config, "model_context_window", UInt64(1048576))
+    var catalog_compact = min(_catalog_config_number(catalog_config, "model_auto_compact_token_limit", UInt64(900000)), catalog_context - 1)
     _ = ensure_app_root()
     _private_directory(shared)
     _private_directory(root + "/profiles")
@@ -622,7 +645,7 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
             auth.write("{\"OPENAI_API_KEY\":\"prodex-runtime-provider\",\"agent_identity\":null,\"auth_mode\":\"apikey\",\"last_refresh\":null,\"tokens\":null}")
         with open(home + "/prodex-deepseek-model-catalog.json", "w") as catalog:
             # Frozen exact-value lookup ignores numeric -c overrides when building the catalog.
-            catalog.write(deepseek_model_catalog(catalog_model))
+            catalog.write(deepseek_model_catalog(catalog_model, catalog_context, catalog_compact))
         var codex = _codex_binary()
         var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, key, prompt, launch_context, launch_compact, route[3], shared_config[2], shared_config[3])
         _remove_overlay(home)

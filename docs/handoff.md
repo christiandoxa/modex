@@ -1,5 +1,9 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Hosted Fast run `40837362548` on `736098a5c599ed797e27879db2a56f306c1d6ab5`
+failed after its focused build and native checks passed because the required
+0.439.2 tag was unavailable. Oracle-dependent tests did not run.
+
 The guarded DeepSeek Super launch now accepts explicit `--full-access` before
 or after `exec`, matching the already-enabled default in both pinned releases.
 Two real-process comparisons cover normalized child argv and the synthetic

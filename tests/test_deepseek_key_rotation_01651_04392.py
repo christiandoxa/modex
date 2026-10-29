@@ -13,6 +13,7 @@ import test_super_launch
 KEYS = "synthetic-key-a,synthetic-key-b"
 KEY_A = "Bearer synthetic-key-a"
 KEY_B = "Bearer synthetic-key-b"
+KEY_C = "Bearer synthetic-key-c"
 
 
 class DeepSeekKeyRotationTests(unittest.TestCase):
@@ -465,3 +466,25 @@ class DeepSeekKeyRotationTests(unittest.TestCase):
                         [KEY_A, KEY_B] if retry else [KEY_A],
                     )
                     self.assertEqual(responses[0]["status"], 200 if retry else status)
+
+    def test_three_key_retry_exhaustion_keeps_one_cursor_advance(self):
+        keys = "synthetic-key-a,synthetic-key-b,synthetic-key-c"
+        error_body = b'{"error":{"code":"rate_limit_error","message":"synthetic exhausted"}}'
+        retryable_error = {"status": 429, "content_type": "application/json", "body": error_body}
+        turns = [
+            {"model": "deepseek-chat", "input": "synthetic exhaust all three keys"},
+            {"model": "deepseek-chat", "input": "synthetic request after exhaustion"},
+        ]
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                posts, responses = observe_turns(
+                    binary, turns,
+                    [retryable_error, retryable_error, retryable_error, buffered_reply(1)],
+                    api_keys=keys,
+                )
+                self.assertEqual(
+                    [post["headers"]["authorization"] for post in posts],
+                    [KEY_A, KEY_B, KEY_C, KEY_B],
+                )
+                self.assertEqual([response["status"] for response in responses], [429, 200])
+                self.assertEqual(bytes.fromhex(responses[0]["body"]), error_body)

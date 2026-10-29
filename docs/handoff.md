@@ -81,6 +81,11 @@ does not establish the six-target denominator, public network/TLS, persistent
 or profile-backed ownership, or complete provider parity. See
 `docs/evidence/baseline-0.165.1/super-api-key-env.md`.
 
+A three-key exhaustion control now covers retrying A, B, and C on retryable
+429s, returning C's raw error, and starting the next logical request at B.
+The 0.165.1, 0.439.2 and Modex processes match. This verifies one three-key
+sequence only; larger pools and other exhaustion sequences remain unqualified.
+
 The round-robin cursor now matches the pinned request ordering for selected
 sequential cases. An unsupported `/v1/unknown` route and known response, session,
 and turn continuation 503 rejections do not advance it. Raw malformed Responses
@@ -93,11 +98,12 @@ target, or translation-time rejection orderings remain unqualified; no full
 parity status is promoted. See
 `docs/evidence/baseline-0.165.1/super-api-key-env.md`.
 
-The combined rotation and shared Anthropic stream run passed all 38 tests,
-including the 14 rotation methods, error-event compatibility, and pipeline/
-half-close shutdown controls. The synthetic client now edits only the
-sequential request loop, so the generated Codex probe and stream requests run
-as intended.
+The recorded combined rotation and shared Anthropic stream run passed all 38
+tests before the three-key exhaustion method was added; it included the prior
+14 rotation methods, error-event compatibility, and pipeline/half-close
+shutdown controls. The focused new three-key process test passes separately.
+The synthetic client now edits only the sequential request loop, so the
+generated Codex probe and stream requests run as intended.
 
 The Anthropic Messages request path now accepts Responses `metadata` objects
 and `include` arrays, then drops them from the provider request like both

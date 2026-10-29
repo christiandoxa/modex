@@ -49,9 +49,9 @@ synthetic provider request carries the resolved key.
 
 ## Rotation and replay boundaries
 
-`tests/test_deepseek_key_rotation_01651_04392.py` contains 14 real-process
-methods comparing both pinned processes and Modex with two synthetic keys and
-a loopback provider. The matrix covers unbound round-robin selection, unknown
+`tests/test_deepseek_key_rotation_01651_04392.py` contains 15 real-process
+methods comparing both pinned processes and Modex with synthetic keys and a
+loopback provider. The matrix covers unbound round-robin selection, unknown
 previous-response/session/turn IDs, known-ID 503 gates, HTTP status fallback,
 the pinned structured-code set, case-sensitive JSON field names, last-value
 duplicate-key handling, rejected aliases, final-error pass-through,
@@ -72,11 +72,14 @@ error-code and native-event classification. A native event with a top-level
 retryable code rotates only when its type is exactly `error`; `ERROR` and
 whitespace-padded names do not. An explicit `error` member is classified even
 when the event type is uppercase. The four-case real-process comparison matches
-both pinned releases. Modex matches the tested behavior but still has a single
-static endpoint and process-local binding state. Public
-network/TLS, profile-backed ownership, persistence/recovery, key exhaustion
-beyond the tested counts, and the other release targets remain unqualified.
-No full parity status is promoted.
+both pinned releases. A three-key exhaustion case now verifies the first
+request tries A, B, and C, returns C's raw retryable 429, and advances the
+logical-request cursor once so the next request starts at B. This passes on
+both pinned releases and Modex. Modex matches the tested behavior but still has
+a single static endpoint and process-local binding state. Public network/TLS,
+profile-backed ownership, persistence/recovery, exhaustion beyond three keys,
+and the other release targets remain unqualified. No full parity status is
+promoted.
 
 Reproduce with `PYTHONPATH=tests rtk python3 -m unittest
 test_deepseek_key_rotation_01651_04392 -v` using both checksum-pinned Linux

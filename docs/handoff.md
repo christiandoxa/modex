@@ -14,6 +14,17 @@ qualifies selected Linux x86-64 behavior only and keeps all six baseline
 targets in the denominator. Evidence:
 `docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.
 
+Native Anthropic Responses requests now accept `background: false` and
+`truncation: "disabled"`, validating and omitting both through the shared
+request mapper like Prodex 0.165.1 and 0.439.2. Both releases and Modex agree on
+missing/default controls, invalid `background: true` and `truncation: "auto"`,
+upstream bodies, and normalized responses across auto, forced Anthropic, and
+forced Chat routes with buffered and streamed requests. The focused
+three-process matrix, production build, 71-file dependency audit, and diff
+check pass. This qualifies only these controls on Linux x86-64; all six
+baseline targets remain in the parity denominator. See
+`docs/evidence/baseline-0.165.1/anthropic-background-truncation-controls.md`.
+
 Anthropic streamed `tool_use` blocks with missing, null, non-string, empty, or
 whitespace-only names now follow both pinned releases' deferred validation
 path. Three-way real-process comparisons match the complete normalized event

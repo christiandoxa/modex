@@ -14,7 +14,7 @@ comptime ANTHROPIC_BUFFERED_MAX_CONTENT_BLOCKS = 65_536
 
 def validate_deepseek_anthropic_request(source: String) raises:
     var doc = JsonDocument(source)
-    _only_fields(doc, doc.root, ["model", "input", "instructions", "stream", "tools", "web_search_options", "parallel_tool_calls", "tool_choice", "max_output_tokens", "max_tokens", "max_completion_tokens", "temperature", "top_p", "stop", "stop_sequences", "stopSequences", "metadata", "include", "store"], "request")
+    _only_fields(doc, doc.root, ["model", "input", "instructions", "stream", "tools", "web_search_options", "parallel_tool_calls", "tool_choice", "max_output_tokens", "max_tokens", "max_completion_tokens", "temperature", "top_p", "stop", "stop_sequences", "stopSequences", "metadata", "include", "store", "background", "truncation"], "request")
     var metadata = doc.get(doc.root, "metadata")
     if metadata >= 0 and doc.nodes[metadata].kind != JSON_OBJECT:
         raise Error("Anthropic Responses metadata must be an object")

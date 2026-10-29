@@ -14,7 +14,6 @@ comptime ANTHROPIC_BUFFERED_MAX_CONTENT_BLOCKS = 65_536
 
 def validate_deepseek_anthropic_request(source: String) raises:
     var doc = JsonDocument(source)
-    _only_fields(doc, doc.root, ["model", "input", "instructions", "stream", "modalities", "tools", "web_search_options", "parallel_tool_calls", "tool_choice", "max_output_tokens", "max_tokens", "max_completion_tokens", "temperature", "top_p", "stop", "stop_sequences", "stopSequences", "metadata", "include", "store", "background", "truncation"], "request")
     var metadata = doc.get(doc.root, "metadata")
     if metadata >= 0 and doc.nodes[metadata].kind != JSON_OBJECT:
         raise Error("Anthropic Responses metadata must be an object")
@@ -74,7 +73,6 @@ def validate_deepseek_anthropic_request(source: String) raises:
                 continue
             if kind != "web_search_preview":
                 raise Error("Anthropic Messages slice supports function and web_search_preview tools")
-            _only_fields(doc, tool, ["type", "allowed_domains", "blocked_domains", "user_location", "max_uses", "search_context_size"], "web search tool")
             web_count += 1
             var allowed_domains = doc.get(tool, "allowed_domains")
             var blocked_domains = doc.get(tool, "blocked_domains")

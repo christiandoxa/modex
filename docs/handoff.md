@@ -39,6 +39,17 @@ current revision or other release targets. The full log is retained locally at
 `dbd3ed9d59ea42b7664fb6868f9e897a938fc6d5251f904c3a17d6abc663c971`). See
 `docs/evidence/log-follow-rotation-recheck-20261030.md`.
 
+Native Anthropic request handling now ignores unknown top-level Responses
+fields and unknown `web_search_preview` properties, matching both pinned
+releases in auto and forced-Anthropic loopback comparisons. The provider bodies
+and normalized responses match; unknown extension values are not forwarded.
+Malformed `temperature`, unsupported `service_tier`, duplicate known fields,
+duplicate unknown keys, and requests over 4 MiB retain release behavior. The
+three-process tests, fallback and duplicate-key regressions, dependency audit,
+test census, and diff check pass. This qualifies selected Linux x86-64 request
+behavior only; full provider translation and all six release targets remain
+open. See `docs/evidence/baseline-0.165.1/anthropic-request-unknown-fields.md`.
+
 DeepSeek Responses now retries combo model candidates before credentials on
 retryable model-class errors. HTTP auth failures rotate credentials and restart
 at the first candidate; a successful candidate retains request context and

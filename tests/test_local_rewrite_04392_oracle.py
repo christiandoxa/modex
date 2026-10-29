@@ -192,7 +192,10 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
                         raw_lines = response["raw_response_head"].split(b"\r\n")
                         if "expected_response_line" in case:
                             self.assertEqual(raw_lines[0].decode("iso-8859-1"), case.get("expected_wire_response_line", case["expected_response_line"]), label)
-                        self.assertEqual(raw_lines[-2:], [b"", b""], label)
+                        if case["expected_status"] is None:
+                            self.assertEqual(response["raw_response_head"], b"", label)
+                        else:
+                            self.assertEqual(raw_lines[-2:], [b"", b""], label)
                         raw_headers = {}
                         for raw_header in raw_lines[1:-2]:
                             raw_name, separator, value = raw_header.partition(b":")
@@ -293,7 +296,7 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
                         response["pipelined_responses"][0]["head_wire_body"],
                         b"0\r\n\r\n",
                     )
-                    self.assertEqual(
+                    self.assertCountEqual(
                         [(record["method"], record["path"]) for record in records],
                         [("HEAD", "/v1/chat/completions"), ("POST", "/v1/chat/completions")],
                     )

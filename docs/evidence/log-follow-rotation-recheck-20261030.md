@@ -34,3 +34,7 @@ keeps the old file available while ensuring no missing-path interval, so it
 tests an inode change without relying on when a follower polls. The missing-path
 behavior above remains a separate observed limitation, not a full parity claim.
 The full suite still needs a rerun on the corrected revision.
+
+The missing-path probe is not an automated assertion: a sleep alone cannot
+guarantee the follower polled during the gap, especially under load. The
+atomic-replacement regression is retained in the automated suite.

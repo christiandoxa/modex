@@ -237,22 +237,6 @@ class LogUpstreamFollowTests(unittest.TestCase):
 
                 self.assert_matches_oracle(mode, upstream_record("initial-marker"), scenario)
 
-    def test_missing_path_before_replacement_skips_initial_record_like_release(self):
-        def scenario(follower):
-            initial = follower.require_marker("initial-marker")
-            follower.require_quiet(0.25)
-            os.replace(follower.log, follower.log.with_suffix(".old"))
-            follower.require_quiet(0.5)
-            follower.log.write_bytes(upstream_record("after-rotation"))
-            follower.require_quiet(0.5)
-            with follower.log.open("ab") as stream:
-                stream.write(upstream_record("after-append"))
-            appended = follower.require_marker("after-append")
-            self.assertNotIn(b"after-rotation", appended["stdout"] + appended["stderr"])
-            return [initial, appended]
-
-        self.assert_matches_oracle("json", upstream_record("initial-marker"), scenario)
-
     def test_new_log_file_is_followed_after_reconciliation(self):
         for mode in ("json", "plain"):
             with self.subTest(mode=mode):

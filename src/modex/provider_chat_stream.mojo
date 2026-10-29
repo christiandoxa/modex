@@ -283,13 +283,19 @@ struct DeepSeekChatState:
                 return List[String]()
             raise Error("Anthropic content block type is not supported")
         if kind == "content_block_delta":
-            var index = json_unsigned(doc, doc.get(doc.root, "index"))
-            if not index: raise Error("Anthropic content delta index is invalid")
-            var block_index = index.value()
             var delta = doc.get(doc.root, "delta")
             if delta < 0 or doc.nodes[delta].kind != JSON_OBJECT:
                 raise Error("Anthropic content delta is missing")
-            var delta_type = doc.string(doc.get(delta, "type"))
+            var delta_type_node = doc.get(delta, "type")
+            if delta_type_node < 0 or doc.nodes[delta_type_node].kind != JSON_STRING:
+                raise Error("Anthropic content delta type is missing")
+            var delta_type = doc.nodes[delta_type_node].text
+            # thinking_delta is a known release action, not an unknown value to discard.
+            if delta_type != "text_delta" and delta_type != "input_json_delta" and delta_type != "thinking_delta":
+                return List[String]()
+            var index = json_unsigned(doc, doc.get(doc.root, "index"))
+            if not index: raise Error("Anthropic content delta index is invalid")
+            var block_index = index.value()
             if delta_type != "text_delta" and delta_type != "input_json_delta":
                 _only_fields(doc, doc.root, ["type", "index", "delta"], "content_block_delta event")
             if delta_type == "text_delta":

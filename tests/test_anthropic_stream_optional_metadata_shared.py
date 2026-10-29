@@ -215,19 +215,163 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
             json.dumps(captures["0.439.2"][1][-1][1]["response"]["output"]),
         )
 
-    def test_future_delta_types_remain_strict(self):
-        turn = {"model": "deepseek-chat", "input": "synthetic", "stream": True}
-        for extra_root_field in (False, True):
-            with self.subTest(extra_root_field=extra_root_field):
+    def test_unknown_delta_type_strings_ignore_extra_fields_against_both_releases(self):
+        cases = []
+        for delta_type in ("citation_delta", "signature_delta", "future_delta"):
+            for extra_root_field in (False, True):
                 events = _events()
-                events[2]["delta"]["type"] = "future_delta"
+                if delta_type == "citation_delta":
+                    delta = {
+                        "type": delta_type,
+                        "citation": {
+                            "type": "web_search_result_location",
+                            "url": "https://example.test/source",
+                            "title": "Source",
+                            "cited_text": "synthetic",
+                        },
+                    }
+                else:
+                    delta = {
+                        "type": delta_type, "future_payload": {"value": "ignored"},
+                    }
+                event = {"type": "content_block_delta", "index": 0, "delta": delta}
+                if extra_root_field:
+                    event["future_event_field"] = "ignored"
+                events.insert(3, event)
+                cases.append((f"{delta_type}_extra_{extra_root_field}", events))
+        turns = [
+            {"model": "deepseek-chat", "input": name, "stream": True,
+             "tools": [{"type": "web_search_preview"}]}
+            for name, _ in cases
+        ]
+        replies = [_stream(events) for _, events in cases]
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, turns, replies)
+            self.assertEqual(len(posts), len(cases), label)
+            self.assertTrue(all(post["path"] == "/anthropic/v1/messages" for post in posts), label)
+            for post in posts:
+                headers = {key.lower(): value for key, value in post["headers"].items()}
+                self.assertEqual(headers["x-api-key"], "synthetic-provider-key", label)
+                self.assertNotIn("authorization", headers, label)
+            self.assertEqual(len(responses), len(cases), label)
+            self.assertTrue(all(response["status"] == 200 for response in responses), label)
+            captures[label] = [
+                (post["body"], _normalized_events(bytes.fromhex(response["body"])))
+                for post, response in zip(posts, responses)
+            ]
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        self.assertEqual(captures["Modex"], captures["0.439.2"])
+        for (name, _), (_, events) in zip(cases, captures["0.439.2"]):
+            with self.subTest(case=name):
+                self.assertEqual(events[-1][0], "response.completed")
+                self.assertIn("synthetic", json.dumps(events[-1][1]["response"]["output"]))
+
+    def test_missing_or_nonstring_delta_type_fails_closed_against_both_releases(self):
+        cases = []
+        for name, delta in (
+            ("missing", {}),
+            ("null", {"type": None}),
+            ("number", {"type": 42}),
+        ):
+            for extra_root_field in (False, True):
+                events = _events()
+                events[2]["delta"] = delta.copy()
                 if extra_root_field:
                     events[2]["future_event_field"] = "rejected"
-                _, responses = observe_turns(MODEX, [turn], [_stream(events)])
-                self.assertEqual(len(responses), 1)
-                self.assertEqual(responses[0]["status"], 200)
-                actual = _normalized_events(bytes.fromhex(responses[0]["body"]))
-                self.assertEqual(actual[-1][0], "response.failed")
+                cases.append((f"{name}_extra_{extra_root_field}", events))
+        turns = [
+            {"model": "deepseek-chat", "input": name, "stream": True,
+             "tools": [{"type": "web_search_preview"}]}
+            for name, _ in cases
+        ]
+        replies = [_stream(events) for _, events in cases]
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, turns, replies)
+            self.assertEqual(len(posts), len(cases), label)
+            self.assertTrue(all(post["path"] == "/anthropic/v1/messages" for post in posts), label)
+            for post in posts:
+                headers = {key.lower(): value for key, value in post["headers"].items()}
+                self.assertEqual(headers["x-api-key"], "synthetic-provider-key", label)
+                self.assertNotIn("authorization", headers, label)
+            self.assertEqual(len(responses), len(cases), label)
+            self.assertTrue(all(response["status"] == 200 for response in responses), label)
+            captures[label] = [
+                _normalized_events(bytes.fromhex(response["body"])) for response in responses
+            ]
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        for label in ("0.165.1", "0.439.2", "Modex"):
+            for (name, _), events in zip(cases, captures[label]):
+                with self.subTest(label=label, case=name):
+                    self.assertIn("response.failed", [event for event, _ in events])
+                    self.assertNotIn("response.completed", [event for event, _ in events])
+
+    def test_thinking_delta_is_a_known_release_mismatch_in_and_out_of_order(self):
+        message_start = {
+            "type": "message_start",
+            "message": {"id": "msg_reason", "role": "assistant", "model": "claude-sonnet-4-6"},
+        }
+        thinking_delta = {
+            "type": "content_block_delta", "index": 0,
+            "delta": {"type": "thinking_delta", "thinking": "considering"},
+        }
+        cases = [
+            ("in_order", [
+                message_start,
+                {"type": "content_block_start", "index": 0,
+                 "content_block": {"type": "thinking", "thinking": ""}},
+                thinking_delta,
+                {"type": "message_stop"},
+            ]),
+            ("out_of_order", [message_start, thinking_delta, {"type": "message_stop"}]),
+        ]
+        turns = [
+            {"model": "deepseek-chat", "input": name, "stream": True,
+             "tools": [{"type": "web_search_preview"}]}
+            for name, _ in cases
+        ]
+        replies = [_stream(events) for _, events in cases]
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, turns, replies)
+            self.assertEqual(len(posts), len(cases), label)
+            self.assertTrue(all(post["path"] == "/anthropic/v1/messages" for post in posts), label)
+            for post in posts:
+                headers = {key.lower(): value for key, value in post["headers"].items()}
+                self.assertEqual(headers["x-api-key"], "synthetic-provider-key", label)
+                self.assertNotIn("authorization", headers, label)
+            self.assertEqual(len(responses), len(cases), label)
+            self.assertTrue(all(response["status"] == 200 for response in responses), label)
+            captures[label] = [
+                _normalized_events(bytes.fromhex(response["body"])) for response in responses
+            ]
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        for (name, _), events in zip(cases, captures["0.439.2"]):
+            with self.subTest(case=name):
+                self.assertIn("response.reasoning_summary_text.delta", [event for event, _ in events])
+                self.assertIn("considering", json.dumps(events))
+                self.assertEqual(events[-1][0], "response.completed")
+        expected_modex_errors = {
+            "in_order": "Anthropic content block type is not supported",
+            "out_of_order": "Anthropic content delta type is not supported",
+        }
+        for (name, _), events in zip(cases, captures["Modex"]):
+            with self.subTest(modex_case=name):
+                self.assertEqual(events[-1][0], "response.failed")
+                self.assertEqual(events[-1][1]["response"]["error"]["message"], expected_modex_errors[name])
 
 
 if __name__ == "__main__":

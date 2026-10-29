@@ -17,9 +17,14 @@ ORACLE_01651 = Path(os.environ.get(
     Path.home() / ".cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
 ))
 ORACLE_01651_SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
+ORACLE_04392 = Path(os.environ.get(
+    "PRODEX_ORACLE_04392",
+    Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
+    / "oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+))
 TARGETS = (
     ("prodex-01651", ORACLE_01651, "prodex"),
-    ("prodex-04392", test_cli.ORACLE, "prodex"),
+    ("prodex-04392", ORACLE_04392, "prodex"),
     ("modex", test_cli.MODEX, "modex"),
 )
 
@@ -200,10 +205,12 @@ def run_cli(binary, root, argv0, arguments):
 class GeneratedSessionStatelessMatrixTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        test_cli.CliTests.setUpClass()
-        if (not ORACLE_01651.is_file()
-                or hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest() != ORACLE_01651_SHA256):
-            raise AssertionError("Prodex oracle does not match frozen release 0.165.1")
+        for binary, checksum in ((ORACLE_01651, ORACLE_01651_SHA256),
+                                 (ORACLE_04392, test_cli.ORACLE_SHA256)):
+            if not binary.is_file() or hashlib.sha256(binary.read_bytes()).hexdigest() != checksum:
+                raise AssertionError(f"Invalid pinned Prodex oracle: {binary}")
+        if not test_cli.MODEX.is_file():
+            raise AssertionError("Build Modex first")
 
     def observe(self, fixture_builder, arguments):
         observed = {}

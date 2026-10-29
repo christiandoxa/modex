@@ -2,7 +2,8 @@
 
 `tests/test_session_generated_stateless_matrix.py` creates isolated synthetic
 session roots and runs the real Prodex 0.165.1, frozen Prodex 0.439.2, and
-Modex CLIs. The tests verify both oracle checksums before running. Each target
+Modex CLIs. The tests verify both oracle checksums before running and use the explicit
+`PRODEX_ORACLE_01651` and `PRODEX_ORACLE_04392` overrides. Each target
 gets its own root, home, and workspace through the existing bubblewrap helper.
 The test normalizes only the fixture-root path and compares return code, stdout,
 and stderr byte for byte.

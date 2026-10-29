@@ -1,11 +1,13 @@
 """Keep the active and historical CI oracle paths explicit and ordered."""
 
+import hashlib
 import os
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +26,9 @@ class CIOracleRoutingTests(unittest.TestCase):
         active_tests = script[script.index("run_logged focused-python-01651"):historical]
         self.assertIn("test_super_model_toml_01651.py", active_tests)
         self.assertIn("test_super_launch_01651.py", active_tests)
+        self.assertNotIn("test_provider_stream_repeated_search_04392.py", active_tests)
+        historical_tests = script[historical:]
+        self.assertIn("test_provider_stream_repeated_search_04392.py", historical_tests)
         self.assertIn("test_ci_parity_baseline.py", script)
         self.assertIn("test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py", script)
         self.assertIn("test_session_query_01651.py test_unicode_case_properties.py", script)
@@ -46,6 +51,9 @@ class CIOracleRoutingTests(unittest.TestCase):
         active_tests = script[script.index("run_logged focused-python-01651"):historical]
         self.assertIn("test_super_model_toml_01651.py", active_tests)
         self.assertIn("test_super_launch_01651.py", active_tests)
+        self.assertNotIn("test_provider_stream_repeated_search_04392.py", active_tests)
+        complete_suite = script.index("run_logged complete-suite make test")
+        self.assertLess(historical, complete_suite)
         self.assertIn("test_cli_01651.py test_gateway_cli_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py", script)
         self.assertNotIn("test_unicode_case_properties.py", script)
         self.assertIn("reference.py source 0.439.2", script)
@@ -55,6 +63,29 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn('export PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE_04392"', script)
         self.assertIn('export MODEX_REFERENCE_04392_DIR="$(cat "$EVIDENCE_DIR/reference-source-04392.txt")"', script)
         self.assertNotIn('export PRODEX_ORACLE_04392="$PRODEX_ORACLE"', script)
+
+    def test_active_provider_stream_setup_does_not_require_historical_oracle(self):
+        import test_provider_stream_01651_characterization as active_suite
+
+        with tempfile.TemporaryDirectory(prefix="modex-active-oracle-setup-") as temporary:
+            root = Path(temporary)
+            active_oracle = root / "oracle-01651"
+            modex = root / "modex"
+            missing_historical = root / "missing-oracle-04392"
+            active_bytes = b"synthetic active oracle"
+            active_oracle.write_bytes(active_bytes)
+            modex.write_bytes(b"synthetic modex binary")
+            with (
+                patch.dict(os.environ, {
+                    "PRODEX_ORACLE": str(missing_historical),
+                    "PRODEX_ORACLE_04392": str(missing_historical),
+                    "PRODEX_GATEWAY_ORACLE": str(missing_historical),
+                }),
+                patch.object(active_suite, "ORACLE_01651", active_oracle),
+                patch.object(active_suite, "ORACLE_01651_SHA256", hashlib.sha256(active_bytes).hexdigest()),
+                patch.object(active_suite, "MODEX", modex),
+            ):
+                active_suite.ProviderStream01651CharacterizationTests.setUpClass()
 
     def run_fast_with_fake_tools(self, *, missing_04392):
         with tempfile.TemporaryDirectory(prefix="modex-ci-oracle-routing-") as temporary:
@@ -110,6 +141,9 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "fi\n"
                 "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_cli.py '* ]]; then\n"
                 "  printf 'legacy-test\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE-}\" \"${PRODEX_ORACLE_04392-}\" \"${PRODEX_GATEWAY_ORACLE-}\" >>\"$FAKE_LOG\"\n"
+                "fi\n"
+                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_provider_stream_repeated_search_04392.py '* ]]; then\n"
+                "  printf 'stream-history-test\\t%s\\t%s\\n' \"${PRODEX_ORACLE_01651-}\" \"${PRODEX_ORACLE_04392-}\" >>\"$FAKE_LOG\"\n"
                 "fi\n"
                 "echo 'synthetic command passed'\n",
                 encoding="utf-8",
@@ -183,6 +217,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(build, active_test)
         self.assertLess(active_test, missing_oracle)
         self.assertFalse(any(event.startswith("legacy-test\t") for event in events))
+        self.assertFalse(any(event.startswith("stream-history-test\t") for event in events))
         active_environment = events[active_test].split("\t")
         self.assertEqual(active_environment[1], active_oracle_path)
         self.assertEqual(active_environment[2:], ["", ""])
@@ -195,6 +230,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
         active = next(event for event in events if event.startswith("active-test\t"))
         legacy = next(event for event in events if event.startswith("legacy-test\t"))
+        stream_history = next(event for event in events if event.startswith("stream-history-test\t"))
         active_environment = active.split("\t")
         legacy_environment = legacy.split("\t")
         self.assertEqual(active_environment[1], active_oracle_path)
@@ -202,6 +238,9 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertEqual(legacy_environment[1], legacy_oracle_path)
         self.assertEqual(legacy_environment[1], legacy_environment[2])
         self.assertEqual(legacy_environment[2], legacy_environment[3])
+        history_environment = stream_history.split("\t")
+        self.assertEqual(history_environment[1:], [active_oracle_path, legacy_oracle_path])
+        self.assertLess(events.index("reference\toracle 0.439.2"), events.index(stream_history))
         self.assertIn("Fast CI checks passed.", result.stdout)
 
 

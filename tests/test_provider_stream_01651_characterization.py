@@ -7,14 +7,11 @@ import os
 from pathlib import Path
 import unittest
 
-from test_cli import (
-    MODEX,
-    ORACLE as ORACLE_04392,
-    ORACLE_SHA256 as ORACLE_04392_SHA256,
-)
+from test_cli import MODEX
 from test_provider_tools_04392_characterization import _normalized_events, _run
 from test_anthropic_text_stream_04392 import START, TEXT_START, TEXT_DELTA, TEXT_STOP, MESSAGE_DELTA, STOP, REQUEST, stream
 from test_deepseek_continuation import observe_turns
+from provider_stream_search_cases import repeated_search_case
 
 
 ORACLE_01651 = Path(os.environ.get(
@@ -31,10 +28,6 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
             raise AssertionError(f"Pinned Prodex 0.165.1 oracle is missing: {ORACLE_01651}")
         if hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest() != ORACLE_01651_SHA256:
             raise AssertionError("The Prodex oracle does not match pinned release 0.165.1")
-        if not ORACLE_04392.is_file():
-            raise AssertionError(f"Historical Prodex 0.439.2 oracle is missing: {ORACLE_04392}")
-        if hashlib.sha256(ORACLE_04392.read_bytes()).hexdigest() != ORACLE_04392_SHA256:
-            raise AssertionError("The historical Prodex oracle does not match release 0.439.2")
         if not MODEX.is_file():
             raise AssertionError(f"Modex binary has not been built: {MODEX}")
 
@@ -104,79 +97,22 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
                 self.assertEqual(reference["state"]["leftovers"], [])
                 self.assertEqual(modex["state"]["leftovers"], [])
 
-    def test_anthropic_repeated_server_search_results_match_releases(self):
-        request = {
-            "model": "deepseek-chat",
-            "input": "synthetic query",
-            "stream": True,
-            "tools": [{"type": "web_search_preview"}],
-        }
-        events = [
-            START,
-            {"type": "content_block_start", "index": 0, "content_block": {
-                "type": "server_tool_use", "id": "search_1", "name": "web_search", "input": {},
-            }},
-            {"type": "content_block_delta", "index": 0, "delta": {
-                "type": "input_json_delta", "partial_json": '{"query":"first"}',
-            }},
-            {"type": "content_block_stop", "index": 0},
-            {"type": "content_block_start", "index": 1, "content_block": {
-                "type": "web_search_tool_result", "tool_use_id": "search_1", "content": [
-                    {"type": "web_search_result", "url": "https://one.example.test", "title": "One"},
-                ],
-            }},
-            {"type": "content_block_stop", "index": 1},
-            {"type": "content_block_start", "index": 2, "content_block": {
-                "type": "server_tool_use", "id": "search_2", "name": "web_search", "input": {},
-            }},
-            {"type": "content_block_delta", "index": 2, "delta": {
-                "type": "input_json_delta", "partial_json": '{"query":"second"}',
-            }},
-            {"type": "content_block_stop", "index": 2},
-            {"type": "content_block_start", "index": 3, "content_block": {
-                "type": "web_search_tool_result", "tool_use_id": "search_2", "content": [
-                    {"type": "web_search_result", "url": "https://two.example.test", "title": "Two"},
-                ],
-            }},
-            {"type": "content_block_stop", "index": 3},
-            {"type": "content_block_start", "index": 4, "content_block": {
-                "type": "text", "text": "",
-            }},
-            {"type": "content_block_delta", "index": 4, "delta": {
-                "type": "text_delta", "text": "Found both.",
-            }},
-            {"type": "content_block_stop", "index": 4},
-            MESSAGE_DELTA,
-            STOP,
-        ]
-        reply = {
-            "status": 200,
-            "content_type": "text/event-stream",
-            "body": stream(events),
-        }
-        captures = []
-        for binary in (ORACLE_01651, ORACLE_04392, MODEX):
-            posts, responses = observe_turns(binary, [request], [reply])
-            self.assertEqual(len(posts), 1)
-            self.assertEqual(len(responses), 1)
-            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
-            self.assertEqual(responses[0]["status"], 200)
-            captures.append((posts, _normalized_events(bytes.fromhex(responses[0]["body"]))))
-
-        expected_posts, expected_events = captures[0]
-        historical_posts, historical_events = captures[1]
-        actual_posts, actual_events = captures[2]
-        self.assertEqual(historical_posts[0]["body"], expected_posts[0]["body"])
-        self.assertEqual(actual_posts[0]["body"], expected_posts[0]["body"])
-        self.assertEqual(historical_events, expected_events)
+    def test_anthropic_repeated_server_search_results_match_release(self):
+        request, reply = repeated_search_case()
+        reference_posts, reference = observe_turns(ORACLE_01651, [request], [reply])
+        actual_posts, actual = observe_turns(MODEX, [request], [reply])
+        self.assertEqual(len(reference_posts), 1)
+        self.assertEqual(len(actual_posts), 1)
+        self.assertEqual(reference[0]["status"], 200)
+        self.assertEqual(actual[0]["status"], 200)
+        self.assertEqual(reference_posts[0]["path"], "/anthropic/v1/messages")
+        self.assertEqual(actual_posts[0]["body"], reference_posts[0]["body"])
+        expected_events = _normalized_events(bytes.fromhex(reference[0]["body"]))
+        actual_events = _normalized_events(bytes.fromhex(actual[0]["body"]))
         self.assertEqual(actual_events, expected_events)
-        self.assertEqual(expected_events[-1][0], "response.completed")
         output = expected_events[-1][1]["response"]["output"]
         self.assertEqual([item["id"] for item in output[:2]], ["search_1", "search_2"])
-        self.assertEqual(
-            [item["action"]["queries"] for item in output[:2]],
-            [["first"], ["second"]],
-        )
+        self.assertEqual([item["action"]["queries"] for item in output[:2]], [["first"], ["second"]])
         self.assertEqual(
             [item["action"]["sources"][0]["url"] for item in output[:2]],
             ["https://one.example.test", "https://two.example.test"],
@@ -184,70 +120,17 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
         self.assertEqual(output[2]["content"][0]["text"], "Found both.")
 
     def test_anthropic_repeated_search_id_matches_release_completion_policy(self):
-        request = {
-            "model": "deepseek-chat",
-            "input": "synthetic query",
-            "stream": True,
-            "tools": [{"type": "web_search_preview"}],
-        }
-        events = [
-            START,
-            {"type": "content_block_start", "index": 0, "content_block": {
-                "type": "server_tool_use", "id": "shared_search", "name": "web_search", "input": {},
-            }},
-            {"type": "content_block_delta", "index": 0, "delta": {
-                "type": "input_json_delta", "partial_json": '{"query":"first"}',
-            }},
-            {"type": "content_block_stop", "index": 0},
-            {"type": "content_block_start", "index": 1, "content_block": {
-                "type": "web_search_tool_result", "tool_use_id": "shared_search", "content": [
-                    {"type": "web_search_result", "url": "https://one.example.test", "title": "One"},
-                ],
-            }},
-            {"type": "content_block_stop", "index": 1},
-            {"type": "content_block_start", "index": 2, "content_block": {
-                "type": "server_tool_use", "id": "shared_search", "name": "web_search", "input": {},
-            }},
-            {"type": "content_block_delta", "index": 2, "delta": {
-                "type": "input_json_delta", "partial_json": '{"query":"second"}',
-            }},
-            {"type": "content_block_stop", "index": 2},
-            {"type": "content_block_start", "index": 3, "content_block": {
-                "type": "web_search_tool_result", "tool_use_id": "shared_search", "content": [
-                    {"type": "web_search_result", "url": "https://two.example.test", "title": "Two"},
-                ],
-            }},
-            {"type": "content_block_stop", "index": 3},
-            {"type": "content_block_start", "index": 4, "content_block": {
-                "type": "text", "text": "",
-            }},
-            {"type": "content_block_delta", "index": 4, "delta": {
-                "type": "text_delta", "text": "Found both.",
-            }},
-            {"type": "content_block_stop", "index": 4},
-            MESSAGE_DELTA,
-            STOP,
-        ]
-        reply = {
-            "status": 200,
-            "content_type": "text/event-stream",
-            "body": stream(events),
-        }
-        captures = []
-        for binary in (ORACLE_01651, ORACLE_04392, MODEX):
-            posts, responses = observe_turns(binary, [request], [reply])
-            self.assertEqual(len(posts), 1)
-            self.assertEqual(len(responses), 1)
-            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
-            self.assertEqual(responses[0]["status"], 200)
-            captures.append((posts, _normalized_events(bytes.fromhex(responses[0]["body"]))))
-
-        expected_posts, expected_events = captures[0]
-        historical_posts, historical_events = captures[1]
-        actual_posts, actual_events = captures[2]
-        self.assertEqual(historical_posts[0]["body"], expected_posts[0]["body"])
-        self.assertEqual(actual_posts[0]["body"], expected_posts[0]["body"])
-        self.assertEqual(historical_events, expected_events)
+        request, reply = repeated_search_case(shared_id=True)
+        reference_posts, reference = observe_turns(ORACLE_01651, [request], [reply])
+        actual_posts, actual = observe_turns(MODEX, [request], [reply])
+        self.assertEqual(len(reference_posts), 1)
+        self.assertEqual(len(actual_posts), 1)
+        self.assertEqual(reference[0]["status"], 200)
+        self.assertEqual(actual[0]["status"], 200)
+        self.assertEqual(reference_posts[0]["path"], "/anthropic/v1/messages")
+        self.assertEqual(actual_posts[0]["body"], reference_posts[0]["body"])
+        expected_events = _normalized_events(bytes.fromhex(reference[0]["body"]))
+        actual_events = _normalized_events(bytes.fromhex(actual[0]["body"]))
         self.assertEqual(actual_events, expected_events)
         completed = [
             event[1] for event in expected_events

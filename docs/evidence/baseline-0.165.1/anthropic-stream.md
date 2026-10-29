@@ -64,3 +64,11 @@ serial search handling avoids cumulative quadratic list scans. It still retains
 search records and completed output items in memory proportional to stream
 search count. The upstream SSE body has no aggregate byte or search-count cap;
 that linear-memory bound remains a gap for long-lived streams.
+
+Hosted Fast CI run [40792087830](https://github.com/christiandoxa/modex/actions/runs/40792087830)
+failed before active stream tests because their setup required the historical
+0.439.2 binary before CI acquired it. Active cases now validate only 0.165.1
+and Modex, including both repeated-search shapes. Separate three-way regression
+checks run after 0.439.2 acquisition. The CI routing test exercises active
+setup with the historical path absent and checks that historical tests wait
+for acquisition.

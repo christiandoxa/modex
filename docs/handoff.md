@@ -259,7 +259,13 @@ an earliest-ID index remove cumulative quadratic search scans. Search records
 and completed output items still require linear memory, and the upstream SSE
 body has no aggregate byte or search-count cap. Long-lived streams remain
 unbounded in total retained search/output memory. Interleaved search calls and
-results remain unverified.
+results remain unverified. Hosted Fast CI run
+[40792087830](https://github.com/christiandoxa/modex/actions/runs/40792087830)
+failed before active stream tests because their setup required the 0.439.2
+oracle before acquisition. Active stream checks now use only 0.165.1 and Modex;
+the repeated-search 0.439.2 comparisons run in a separate historical test after
+acquisition. A routing regression verifies active setup with the historical
+oracle missing and keeps historical tests after acquisition.
 
 The production Anthropic stream parser now maps a tested function `tool_use`
 with split JSON fragments to the same 0.165.1 Responses events. Several invalid

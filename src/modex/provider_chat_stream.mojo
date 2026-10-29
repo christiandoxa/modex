@@ -211,7 +211,13 @@ struct DeepSeekChatState:
             var block_index = index.value()
             var block_type = doc.string(doc.get(block, "type"))
             if block_type == "server_tool_use" and doc.string(doc.get(block, "name")) == "web_search":
-                if self.anthropic_phase != 1 and self.anthropic_phase != 2 and self.anthropic_phase != 3 and self.anthropic_phase != 5:
+                if (
+                    self.anthropic_phase != 1
+                    and self.anthropic_phase != 2
+                    and self.anthropic_phase != 3
+                    and self.anthropic_phase != 4
+                    and self.anthropic_phase != 5
+                ):
                     raise Error("Anthropic web-search block is out of order")
                 _only_fields(doc, block, ["type", "id", "name", "input"], "web-search tool use")
                 if (
@@ -223,7 +229,6 @@ struct DeepSeekChatState:
                 _only_fields(doc, input, ["query"], "web-search input")
                 if self.anthropic_search_index(block_index) >= 0:
                     raise Error("Anthropic web-search block index was already used")
-                self.anthropic_phase = 2
                 return self.start_anthropic_search(doc, block, block_index)
             if block_type == "tool_use":
                 if self.anthropic_phase != 1 and self.anthropic_phase != 2 and self.anthropic_phase != 3 and self.anthropic_phase != 4 and self.anthropic_phase != 5 and self.anthropic_phase != 7:
@@ -452,6 +457,7 @@ struct DeepSeekChatState:
             self.anthropic_search_first_by_id[id] = position
         self.anthropic_searches.append(search^)
         self.anthropic_open_search_count += 1
+        self.update_anthropic_search_phase()
         var output = List[String]()
         output.append(self.event("response.output_item.added", '"output_index":' + String(index) + ',"item":' + item))
         return output^

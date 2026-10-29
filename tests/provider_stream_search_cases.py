@@ -76,6 +76,9 @@ def overlapping_search_result_case():
         {"type": "content_block_start", "index": 1, "content_block": {
             "type": "server_tool_use", "id": "search_1", "name": "web_search", "input": {},
         }},
+        {"type": "content_block_delta", "index": 1, "delta": {
+            "type": "input_json_delta", "partial_json": '{"query":',
+        }},
         {"type": "content_block_delta", "index": 0, "delta": {
             "type": "input_json_delta", "partial_json": '{"query":"query-0"}',
         }},
@@ -86,11 +89,11 @@ def overlapping_search_result_case():
             ],
         }},
         {"type": "content_block_delta", "index": 1, "delta": {
-            "type": "input_json_delta", "partial_json": '{"query":',
+            "type": "input_json_delta", "partial_json": '"query-',
         }},
         {"type": "content_block_stop", "index": 2},
         {"type": "content_block_delta", "index": 1, "delta": {
-            "type": "input_json_delta", "partial_json": '"query-1"}',
+            "type": "input_json_delta", "partial_json": '1"}',
         }},
         {"type": "content_block_stop", "index": 1},
         {"type": "content_block_start", "index": 3, "content_block": {
@@ -99,6 +102,67 @@ def overlapping_search_result_case():
             ],
         }},
         {"type": "content_block_stop", "index": 3},
+        MESSAGE_DELTA,
+        STOP,
+    ]
+    return request, {
+        "status": 200,
+        "content_type": "text/event-stream",
+        "body": stream(events),
+    }
+
+
+def search_started_during_result_case():
+    request = {
+        "model": "deepseek-chat",
+        "input": "synthetic phase probe",
+        "stream": True,
+        "tools": [
+            {"type": "function", "name": "lookup", "parameters": {"type": "object"}},
+            {"type": "web_search_preview"},
+        ],
+    }
+    events = [
+        START,
+        {"type": "content_block_start", "index": 0, "content_block": {
+            "type": "server_tool_use", "id": "s0", "name": "web_search", "input": {},
+        }},
+        {"type": "content_block_start", "index": 1, "content_block": {
+            "type": "server_tool_use", "id": "s1", "name": "web_search", "input": {},
+        }},
+        {"type": "content_block_delta", "index": 0, "delta": {
+            "type": "input_json_delta", "partial_json": '{"query":"zero"}',
+        }},
+        {"type": "content_block_stop", "index": 0},
+        {"type": "content_block_start", "index": 2, "content_block": {
+            "type": "web_search_tool_result", "tool_use_id": "s0", "content": [
+                {"type": "web_search_result", "url": "https://example.test/s0", "title": "s0"},
+            ],
+        }},
+        {"type": "content_block_start", "index": 3, "content_block": {
+            "type": "server_tool_use", "id": "s2", "name": "web_search", "input": {},
+        }},
+        {"type": "content_block_delta", "index": 3, "delta": {
+            "type": "input_json_delta", "partial_json": '{"query":"two"}',
+        }},
+        {"type": "content_block_stop", "index": 2},
+        {"type": "content_block_delta", "index": 1, "delta": {
+            "type": "input_json_delta", "partial_json": '{"query":"one"}',
+        }},
+        {"type": "content_block_stop", "index": 1},
+        {"type": "content_block_stop", "index": 3},
+        {"type": "content_block_start", "index": 4, "content_block": {
+            "type": "web_search_tool_result", "tool_use_id": "s1", "content": [
+                {"type": "web_search_result", "url": "https://example.test/s1", "title": "s1"},
+            ],
+        }},
+        {"type": "content_block_stop", "index": 4},
+        {"type": "content_block_start", "index": 5, "content_block": {
+            "type": "web_search_tool_result", "tool_use_id": "s2", "content": [
+                {"type": "web_search_result", "url": "https://example.test/s2", "title": "s2"},
+            ],
+        }},
+        {"type": "content_block_stop", "index": 5},
         MESSAGE_DELTA,
         STOP,
     ]

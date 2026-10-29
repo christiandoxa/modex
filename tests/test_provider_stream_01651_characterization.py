@@ -16,6 +16,7 @@ from provider_stream_search_cases import (
     interleaved_mixed_search_case,
     overlapping_search_result_case,
     repeated_search_case,
+    search_started_during_result_case,
 )
 
 
@@ -142,6 +143,27 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
         self.assertEqual([item["id"] for item in searches], ["search_0", "search_1"])
         self.assertEqual([item["action"]["sources"][0]["url"] for item in searches], [
             "https://example.test/0", "https://example.test/1",
+        ])
+
+    def test_anthropic_search_can_start_while_result_is_open(self):
+        request, reply = search_started_during_result_case()
+        reference_posts, reference = observe_turns(ORACLE_01651, [request], [reply])
+        actual_posts, actual = observe_turns(MODEX, [request], [reply])
+        self.assertEqual([response["status"] for response in reference], [200])
+        self.assertEqual([response["status"] for response in actual], [200])
+        self.assertEqual(len(reference_posts), 1)
+        self.assertEqual(len(actual_posts), 1)
+        self.assertEqual(actual_posts[0]["path"], reference_posts[0]["path"])
+        self.assertEqual(json.loads(actual_posts[0]["body"]), json.loads(reference_posts[0]["body"]))
+        expected = _normalized_events(bytes.fromhex(reference[0]["body"]))
+        observed = _normalized_events(bytes.fromhex(actual[0]["body"]))
+        self.assertEqual(observed, expected)
+        searches = [item for item in expected[-1][1]["response"]["output"]
+                    if item["type"] == "web_search_call"]
+        self.assertEqual([item["id"] for item in searches], ["s0", "s1", "s2"])
+        self.assertEqual([item["action"]["queries"] for item in searches], [["zero"], ["one"], ["two"]])
+        self.assertEqual([item["action"]["sources"][0]["url"] for item in searches], [
+            "https://example.test/s0", "https://example.test/s1", "https://example.test/s2",
         ])
 
     def test_anthropic_empty_search_result_matches_release(self):

@@ -2524,9 +2524,10 @@ the baseline release. These obligations remain in scope as platform gaps.
 
 The active 0.165.1 streaming characterization now covers a result completing
 while another search input remains open, deltas for that search across the open
-result block, and a valid empty result array. The parser tracks open search and
-result blocks independently; result content still passes array and item
-validation. Both new real-process comparisons match the pinned oracle, and the
-full focused stream suite passes 25 tests after the production build. Evidence:
+result block, a new search starting during an open result, and a valid empty
+result array. The parser tracks open search and result blocks independently;
+result content still passes array and item validation. The real-process
+comparisons match the pinned oracle, and the full focused stream suite passes
+26 tests after the production build. Evidence:
 `docs/evidence/baseline-0.165.1/anthropic-stream.md`. These cases add no general
 Anthropic or provider parity claim; unsupported shapes and targets remain gaps.

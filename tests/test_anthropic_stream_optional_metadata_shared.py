@@ -1090,6 +1090,104 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                     )
                     self.assertNotIn("after error", json.dumps(events))
 
+    def test_error_event_optional_fields_use_release_fallbacks(self):
+        cases = [
+            ("missing error", {}, "anthropic_stream_error", "Anthropic stream failed"),
+            ("null error", {"error": None}, "anthropic_stream_error", "Anthropic stream failed"),
+            (
+                "nonobject error", {"error": "synthetic"},
+                "anthropic_stream_error", "Anthropic stream failed",
+            ),
+            (
+                "missing type", {"error": {"message": "synthetic message"}},
+                "anthropic_stream_error", "synthetic message",
+            ),
+            (
+                "null type", {"error": {"type": None, "message": "synthetic message"}},
+                "anthropic_stream_error", "synthetic message",
+            ),
+            (
+                "nonnumeric type", {"error": {"type": 42, "message": "synthetic message"}},
+                "anthropic_stream_error", "synthetic message",
+            ),
+            (
+                "missing message", {"error": {"type": "synthetic_error"}},
+                "synthetic_error", "Anthropic stream failed",
+            ),
+            (
+                "null message", {"error": {"type": "synthetic_error", "message": None}},
+                "synthetic_error", "Anthropic stream failed",
+            ),
+            (
+                "nonnumeric message", {"error": {"type": "synthetic_error", "message": 42}},
+                "synthetic_error", "Anthropic stream failed",
+            ),
+            ("empty strings", {"error": {"type": "", "message": ""}}, "", ""),
+            (
+                "fragmented valid strings and extensions",
+                {
+                    "error": {
+                        "type": "overloaded_error", "message": "synthetic overload",
+                        "future_error_field": True,
+                    },
+                    "future_event_field": {"ignored": True},
+                },
+                "overloaded_error", "synthetic overload",
+            ),
+        ]
+        request = {
+            "model": "deepseek-chat", "input": "synthetic error query", "stream": True,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        turns = [dict(request, input=name) for name, _, _, _ in cases]
+        replies = []
+        for name, error_fields, _, _ in cases:
+            error = {"type": "error", **error_fields}
+            events = _events()[:3] + [error, {
+                "type": "content_block_delta", "index": 0,
+                "delta": {"type": "text_delta", "text": "after terminal error"},
+            }, {"type": "message_stop"}]
+            reply = _stream(events)
+            if name == "fragmented valid strings and extensions":
+                reply.update(chunked=True, chunk_size=3)
+            replies.append(reply)
+
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, turns, replies)
+            self.assertEqual(len(posts), len(cases), label)
+            self.assertTrue(all(post["path"] == "/anthropic/v1/messages" for post in posts), label)
+            self.assertEqual(len(responses), len(cases), label)
+            self.assertTrue(all(response["status"] == 200 for response in responses), label)
+            captures[label] = [
+                (post["body"], _normalized_events(bytes.fromhex(response["body"])))
+                for post, response in zip(posts, responses)
+            ]
+
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        self.assertEqual(captures["Modex"], captures["0.439.2"])
+        for (name, _, expected_code, expected_message), (_, events) in zip(cases, captures["0.439.2"]):
+            with self.subTest(case=name):
+                names = [event for event, _ in events]
+                self.assertEqual(names.count("response.created"), 1)
+                self.assertIn("response.output_text.delta", names)
+                self.assertLess(names.index("response.created"), names.index("response.failed"))
+                self.assertEqual(names[-1], "response.failed")
+                self.assertEqual(names.count("response.failed"), 1)
+                self.assertNotIn("response.completed", names)
+                self.assertNotIn("after terminal error", json.dumps(events))
+                self.assertEqual(
+                    [payload["sequence_number"] for _, payload in events],
+                    list(range(len(events))),
+                )
+                self.assertEqual(events[-1][1]["response"]["error"], {
+                    "code": expected_code, "message": expected_message,
+                })
+
     def test_invalid_utf8_after_response_failed_records_release_open_body(self):
         request, fixture = repeated_search_case()
         base = [

@@ -41,6 +41,16 @@ process suite passed. Other Anthropic content and event shapes,
 continuation, transport security, and non-Linux targets remain unqualified.
 Evidence: `docs/evidence/baseline-0.165.1/anthropic-response-shapes.md`.
 
+Anthropic stream `error` events now match both pinned releases when the error
+object or either field is missing, null, or non-string. Valid strings,
+including empty strings, are preserved independently; unknown extension fields
+are ignored. An 11-case synthetic real-process comparison also sends one valid
+error event in three-byte HTTP chunks and confirms terminal `response.failed`
+ordering. The production build, two neighboring three-process error/terminal
+checks, focused native stream reader, dependency audit, and test census pass.
+Existing SSE and HTTP body limits remain unchanged. See
+`docs/evidence/anthropic-stream-optional-metadata-shared.md`.
+
 Session CLI errors for malformed attached values on boolean switches now match
 both pinned Linux releases across split/attached prior values, switches,
 conflicts, missing split values and top-level/resume help errors. The

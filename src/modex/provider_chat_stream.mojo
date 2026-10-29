@@ -178,12 +178,15 @@ struct DeepSeekChatState:
             return List[String]()
         if kind == "error":
             self.anthropic_stream_terminal = True
-            _only_fields(doc, doc.root, ["type", "error"], "stream error event")
             var error = doc.get(doc.root, "error")
-            _only_fields(doc, error, ["type", "message"], "stream error")
-            var code = doc.string(doc.get(error, "type"))
-            var message = doc.string(doc.get(error, "message"))
-            if not code or not message: raise Error("Anthropic stream error is incomplete")
+            var code_node = doc.get(error, "type")
+            var message_node = doc.get(error, "message")
+            var code = "anthropic_stream_error"
+            if code_node >= 0 and doc.nodes[code_node].kind == JSON_STRING:
+                code = doc.string(code_node)
+            var message = "Anthropic stream failed"
+            if message_node >= 0 and doc.nodes[message_node].kind == JSON_STRING:
+                message = doc.string(message_node)
             return self.fail(code, message)
         if kind == "message_start":
             # shortcut: message_start metadata is ignored, translate fields as oracle cases require.

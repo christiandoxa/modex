@@ -13,6 +13,18 @@ the path atomically to avoid that race. The complete suite has not been rerun
 on these fixes. See
 `docs/evidence/log-follow-rotation-recheck-20261030.md`.
 
+DeepSeek Responses now retries combo model candidates before credentials on
+retryable model-class errors. HTTP auth failures rotate credentials and restart
+at the first candidate; a successful candidate retains request context and
+credential binding. Native Anthropic not-found first events can use the same
+one-retry model budget before commitment, while text already emitted is not
+replayed. Three-candidate, one-key, exhausted-stream, auth-precedence and
+committed-output comparisons match both pinned Linux processes. Modex follows
+the 0.165.1 `combo:flash` alias (`deepseek-flash`); 0.439.2 sends
+`deepseek-v4-flash`, so this slice remains a recorded mismatch against the
+official baseline. See
+`docs/evidence/baseline-0.165.1/deepseek-combo-model-retry.md`.
+
 Native Anthropic Responses requests now accept missing, empty, and text-only
 `modalities` values and omit them from provider requests. Audio-only, mixed,
 and wrong-type values still return matching 502 errors without provider I/O.
@@ -122,11 +134,13 @@ from an atomic round-robin cursor and can retry on another key before
 commitment. The classifier matches the pinned code set, structured 429 rule,
 and selected non-429 status/text fallbacks. Retryable native Anthropic
 first-event errors and pre-event transport failures allow one credential
-retry. The exhausted first retry-classified error frame is consumed before the
-stream reader, matching the pinned `provider_stream_error` code and
-`unexpected end of stream` message; an error after stream progress remains
-terminal. Non-2xx SSE stays on the raw pass-through path. Known hard bindings
-keep the pinned 503 gate.
+retry. Combo model candidates run before credential rotation. The first-event
+retry budget is global across the model and credential attempts; auth-class
+first events rotate and restart at the first model. The exhausted first
+retry-classified error frame is consumed before the stream reader, matching
+the pinned `provider_stream_error` code and `unexpected end of stream`
+message; an error after stream progress remains terminal. Non-2xx SSE stays on
+the raw pass-through path. Known hard bindings keep the pinned 503 gate.
 
 Native Anthropic first-event classification also preserves the pinned
 case-sensitive event gate: a top-level retryable code rotates only when

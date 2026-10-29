@@ -71,10 +71,14 @@ class ProviderNonStringModel04395Tests(unittest.TestCase):
                     historical_body = json.loads(bytes.fromhex(historical["body"]))
                     baseline_body = json.loads(bytes.fromhex(baseline["body"]))
                     modex_body = json.loads(bytes.fromhex(modex["body"]))
-                    self.assertEqual(modex_body, baseline_body)
                     self.assertEqual(historical_body["model"], expected_model)
                     active_model = "deepseek-v4-flash" if name == "combo-flash-pro" else expected_model
                     self.assertEqual(baseline_body["model"], active_model)
+                    expected_modex_body = baseline_body
+                    if name == "combo-flash-pro":
+                        # The 0.165.1 combo retry candidate uses the older Flash alias.
+                        expected_modex_body = {**baseline_body, "model": expected_model}
+                    self.assertEqual(modex_body, expected_modex_body)
                     if shape == "non-simple":
                         self.assertEqual(baseline_body["user_id"], "synthetic-user")
                     for capture in (baseline, modex):

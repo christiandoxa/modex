@@ -6,9 +6,9 @@ from modex.json import JsonDocument, serialize_json
 from modex.provider_request import canonical_deepseek_model, translate_deepseek_request
 
 
-def check(source: String, expected: String, history: String = "[]", strict_tools: Bool = False) raises:
+def check(source: String, expected: String, history: String = "[]", strict_tools: Bool = False, model_override: String = "") raises:
     var doc = JsonDocument(expected)
-    assert_equal(translate_deepseek_request(source, history, strict_tools), serialize_json(doc, doc.root))
+    assert_equal(translate_deepseek_request(source, history, strict_tools, model_override=model_override), serialize_json(doc, doc.root))
 
 
 def reject(source: String, expected: String) raises:
@@ -51,6 +51,7 @@ def main() raises:
     ]:
         check(source, default_model_expected)
     check('{"model":"combo:flash>pro"}', '{"body":{"model":"deepseek-v4-flash","stream":false,"messages":[{"role":"user","content":""}]},"messages":[{"role":"user","content":""}],"response_metadata":null}')
+    check('{"model":"combo:flash>pro","input":"hello"}', '{"body":{"model":"deepseek-v4-pro","stream":false,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}', model_override="deepseek-v4-pro")
     check('{"model":"deepseek-flash","input":"hello"}', '{"body":{"model":"deepseek-flash","stream":false,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
     check('{"model":"deepseek-v4-flash","input":"hello"}', '{"body":{"model":"deepseek-v4-flash","stream":false,"messages":[{"role":"user","content":"hello"}]},"messages":[{"role":"user","content":"hello"}],"response_metadata":null}')
 

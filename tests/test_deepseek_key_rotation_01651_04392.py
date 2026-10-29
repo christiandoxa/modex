@@ -505,3 +505,316 @@ class DeepSeekKeyRotationTests(unittest.TestCase):
                     )
                     self.assertEqual([response["status"] for response in responses], [429, 200])
                     self.assertEqual(bytes.fromhex(responses[0]["body"]), error_body)
+
+    def test_combo_model_fallback_precedes_credential_rotation(self):
+        turns = [{"model": "combo:flash,pro", "input": "synthetic model fallback"}]
+        replies = [
+            {"status": 404, "content_type": "application/json",
+             "body": b'{"error":{"code":"model_not_supported","message":"synthetic unsupported model"}}'},
+            {"status": 401, "content_type": "application/json",
+             "body": b'{"error":{"code":"invalid_api_key","message":"synthetic rejected key"}}'},
+            buffered_reply(),
+        ]
+        expected_models = {
+            ORACLE_01651: ["deepseek-flash", "deepseek-v4-pro", "deepseek-flash"],
+            ORACLE: ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-v4-flash"],
+            MODEX: ["deepseek-flash", "deepseek-v4-pro", "deepseek-flash"],
+        }
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                posts, responses = observe_turns(
+                    binary, turns, replies, api_keys=KEYS,
+                )
+                self.assertEqual(
+                    [post["headers"]["authorization"] for post in posts],
+                    [KEY_A, KEY_A, KEY_B],
+                )
+                self.assertEqual(
+                    [json.loads(post["body"])["model"] for post in posts],
+                    expected_models[binary],
+                )
+                self.assertEqual(
+                    [json.loads(post["body"])["messages"] for post in posts],
+                    [[{"content": "synthetic model fallback", "role": "user"}]] * 3,
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
+
+    def test_combo_model_exhaustion_preserves_final_error_and_advances_cursor_once(self):
+        turns = [
+            {"model": "combo:flash,pro", "input": "synthetic exhaust model chain"},
+            {"model": "deepseek-chat", "input": "synthetic after model exhaustion"},
+        ]
+        final_error = b'{"error":{"code":"model_not_supported","message":"synthetic final model error"}}'
+        unsupported = {"status": 404, "content_type": "application/json", "body": final_error}
+        expected_first_model = {
+            ORACLE_01651: "deepseek-flash",
+            ORACLE: "deepseek-v4-flash",
+            MODEX: "deepseek-flash",
+        }
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                posts, responses = observe_turns(
+                    binary, turns, [unsupported, unsupported, buffered_reply(2)], api_keys=KEYS,
+                )
+                self.assertEqual(
+                    [post["headers"]["authorization"] for post in posts],
+                    [KEY_A, KEY_A, KEY_B],
+                )
+                self.assertEqual(
+                    [json.loads(post["body"])["model"] for post in posts],
+                    [expected_first_model[binary], "deepseek-v4-pro", "deepseek-chat"],
+                )
+                self.assertEqual([response["status"] for response in responses], [404, 200])
+                self.assertEqual(bytes.fromhex(responses[0]["body"]), final_error)
+
+    def test_combo_custom_models_retry_with_one_key_and_empty_combo_stays_literal(self):
+        unsupported = {
+            "status": 404, "content_type": "application/json",
+            "body": b'{"error":{"code":"model_not_supported"}}',
+        }
+        custom_turn = [{
+            "model": "combo:synthetic-model-one,synthetic-model-two",
+            "input": "synthetic custom model fallback",
+        }]
+        unknown_404 = {
+            "status": 404, "content_type": "application/json",
+            "body": b'{"error":{"code":"synthetic_unknown_error","message":"synthetic unavailable"}}',
+        }
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary), case="custom candidates with one credential"):
+                posts, responses = observe_turns(
+                    binary,
+                    custom_turn,
+                    [unknown_404, buffered_reply()],
+                    api_keys="synthetic-key-a",
+                )
+                self.assertEqual(
+                    [post["headers"]["authorization"] for post in posts], [KEY_A, KEY_A],
+                )
+                self.assertEqual(
+                    [json.loads(post["body"])["model"] for post in posts],
+                    ["synthetic-model-one", "synthetic-model-two"],
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
+
+            with self.subTest(binary=str(binary), case="empty candidate list"):
+                posts, responses = observe_turns(
+                    binary,
+                    [{"model": "combo:,,,", "input": "synthetic empty combo"}],
+                    [unsupported],
+                    api_keys=KEYS,
+                )
+                self.assertEqual(len(posts), 1)
+                self.assertEqual(json.loads(posts[0]["body"])["model"], "combo:,,,")
+                self.assertEqual([response["status"] for response in responses], [404])
+
+    def test_combo_model_fallback_success_binds_the_session_to_its_credential(self):
+        session = {"session_id": "synthetic-combo-bound-session"}
+        turns = [
+            {"model": "combo:flash,pro", "input": "synthetic bound fallback", **session},
+            {"model": "deepseek-chat", "input": "synthetic bound continuation", **session},
+        ]
+        unsupported = {
+            "status": 404, "content_type": "application/json",
+            "body": b'{"error":{"code":"model_not_supported"}}',
+        }
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                posts, responses = observe_turns(
+                    binary, turns, [unsupported, buffered_reply(1)], api_keys=KEYS,
+                )
+                self.assertEqual(
+                    [post["headers"]["authorization"] for post in posts], [KEY_A, KEY_A],
+                )
+                self.assertEqual([response["status"] for response in responses], [200, 503])
+                self.assertIn(b"bound_continuation_unavailable", bytes.fromhex(responses[1]["body"]))
+
+    def test_native_anthropic_not_found_first_event_falls_back_before_rotation(self):
+        request = [{
+            "model": "combo:flash,pro",
+            "input": "synthetic native model fallback",
+            "tools": [{"type": "web_search_preview"}],
+        }]
+        error = b'data: {"type":"error","error":{"type":"not_found_error"}}\n\n'
+        success = b"".join((
+            b'data: {"type":"message_start","message":{"id":"msg-ok","role":"assistant","model":"deepseek-v4-pro","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',
+            b'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}\n\n',
+            b'data: {"type":"message_stop"}\n\n',
+        ))
+        expected_models = {
+            ORACLE_01651: ["deepseek-flash", "deepseek-v4-pro"],
+            ORACLE: ["deepseek-v4-flash", "deepseek-v4-pro"],
+            MODEX: ["deepseek-flash", "deepseek-v4-pro"],
+        }
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                posts, responses = observe_turns(
+                    binary,
+                    request,
+                    [
+                        {"status": 200, "content_type": "text/event-stream", "body": error},
+                        {"status": 200, "content_type": "text/event-stream", "body": success},
+                    ],
+                    api_keys=KEYS,
+                )
+                self.assertEqual(
+                    [post["headers"].get("x-api-key") for post in posts],
+                    ["synthetic-key-a", "synthetic-key-a"],
+                )
+                self.assertEqual(
+                    [json.loads(post["body"])["model"] for post in posts],
+                    expected_models[binary],
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
+
+    def test_native_anthropic_not_found_exhaustion_matches_single_key_releases(self):
+        error = b'data: {"type":"error","error":{"type":"not_found_error","message":"synthetic unavailable"}}\n\n'
+        cases = (
+            ("single model", "deepseek-chat", ["deepseek-chat"]),
+            ("combo exhausted", "combo:flash,pro", None),
+        )
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            for name, model, expected_models in cases:
+                with self.subTest(binary=str(binary), scenario=name):
+                    replies = [{"status": 200, "content_type": "text/event-stream", "body": error}]
+                    if model.startswith("combo:"):
+                        replies.append({"status": 200, "content_type": "text/event-stream", "body": error})
+                    posts, responses = observe_turns(
+                        binary,
+                        [{
+                            "model": model,
+                            "input": "synthetic single-key native fallback exhaustion",
+                            "tools": [{"type": "web_search_preview"}],
+                        }],
+                        replies,
+                        api_keys="synthetic-key-a",
+                    )
+                    posted_models = [json.loads(post["body"])["model"] for post in posts]
+                    if expected_models is None:
+                        expected_models = {
+                            ORACLE_01651: ["deepseek-flash", "deepseek-v4-pro"],
+                            ORACLE: ["deepseek-v4-flash", "deepseek-v4-pro"],
+                            MODEX: ["deepseek-flash", "deepseek-v4-pro"],
+                        }[binary]
+                    self.assertEqual(posted_models, expected_models)
+                    self.assertTrue(all(post["headers"].get("x-api-key") == "synthetic-key-a" for post in posts))
+                    events = [
+                        json.loads(line[6:])
+                        for line in bytes.fromhex(responses[0]["body"]).splitlines()
+                        if line.startswith(b"data: ")
+                    ]
+                    self.assertEqual([response["status"] for response in responses], [200])
+                    self.assertEqual([event["type"] for event in events], ["response.failed"])
+                    self.assertEqual(events[0]["response"]["error"], {
+                        "code": "provider_stream_error", "message": "unexpected end of stream",
+                    })
+
+    def test_native_anthropic_first_event_retry_budget_spans_model_chain(self):
+        error = b'data: {"type":"error","error":{"type":"not_found_error","message":"synthetic unavailable"}}\n\n'
+        turns = [{
+            "model": "combo:flash,pro,synthetic-third",
+            "input": "synthetic global first-event retry budget",
+            "tools": [{"type": "web_search_preview"}],
+        }]
+        expected_models = {
+            ORACLE_01651: ["deepseek-flash", "deepseek-v4-pro"],
+            ORACLE: ["deepseek-v4-flash", "deepseek-v4-pro"],
+            MODEX: ["deepseek-flash", "deepseek-v4-pro"],
+        }
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                posts, responses = observe_turns(
+                    binary,
+                    turns,
+                    [{"status": 200, "content_type": "text/event-stream", "body": error}] * 3,
+                    api_keys="synthetic-key-a",
+                )
+                self.assertEqual(
+                    [json.loads(post["body"])["model"] for post in posts],
+                    expected_models[binary],
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
+                events = [
+                    json.loads(line[6:])
+                    for line in bytes.fromhex(responses[0]["body"]).splitlines()
+                    if line.startswith(b"data: ")
+                ]
+                self.assertEqual([event["type"] for event in events], ["response.failed"])
+                self.assertEqual(events[0]["response"]["error"], {
+                    "code": "provider_stream_error", "message": "unexpected end of stream",
+                })
+
+    def test_native_anthropic_auth_first_event_rotates_before_next_model(self):
+        auth = b'data: {"type":"error","error":{"type":"invalid_api_key","message":"synthetic auth"}}\n\n'
+        success = b"".join((
+            b'data: {"type":"message_start","message":{"id":"msg-auth-ok","role":"assistant","model":"deepseek-flash","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',
+            b'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}\n\n',
+            b'data: {"type":"message_stop"}\n\n',
+        ))
+        turns = [{
+            "model": "combo:flash,pro",
+            "input": "synthetic native auth retry precedence",
+            "tools": [{"type": "web_search_preview"}],
+        }]
+        expected_models = {
+            ORACLE_01651: ["deepseek-flash", "deepseek-flash"],
+            ORACLE: ["deepseek-v4-flash", "deepseek-v4-flash"],
+            MODEX: ["deepseek-flash", "deepseek-flash"],
+        }
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                posts, responses = observe_turns(
+                    binary,
+                    turns,
+                    [
+                        {"status": 200, "content_type": "text/event-stream", "body": auth},
+                        {"status": 200, "content_type": "text/event-stream", "body": success},
+                    ],
+                    api_keys=KEYS,
+                )
+                self.assertEqual(
+                    [post["headers"].get("x-api-key") for post in posts],
+                    ["synthetic-key-a", "synthetic-key-b"],
+                )
+                self.assertEqual(
+                    [json.loads(post["body"])["model"] for post in posts],
+                    expected_models[binary],
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
+
+    def test_native_anthropic_does_not_replay_after_first_event_commit(self):
+        request = [{
+            "model": "combo:flash,pro",
+            "input": "synthetic committed native stream",
+            "tools": [{"type": "web_search_preview"}],
+        }]
+        committed = b"".join((
+            b'data: {"type":"message_start","message":{"id":"msg-committed","role":"assistant","model":"deepseek-flash","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',
+            b'data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n',
+            b'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"kept before error"}}\n\n',
+            b'data: {"type":"error","error":{"type":"not_found_error"}}\n\n',
+        ))
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                posts, responses = observe_turns(
+                    binary,
+                    request,
+                    [{"status": 200, "content_type": "text/event-stream", "body": committed}],
+                    api_keys=KEYS,
+                )
+                self.assertEqual(len(posts), 1)
+                self.assertEqual(json.loads(posts[0]["body"])["model"], "deepseek-flash" if binary in (ORACLE_01651, MODEX) else "deepseek-v4-flash")
+                self.assertEqual([response["status"] for response in responses], [200])
+                events = [
+                    json.loads(line[6:])
+                    for line in bytes.fromhex(responses[0]["body"]).splitlines()
+                    if line.startswith(b"data: ")
+                ]
+                self.assertEqual(
+                    [event["type"] for event in events],
+                    ["response.created", "response.output_item.added", "response.output_text.delta", "response.failed"],
+                )
+                self.assertEqual(events[2]["delta"], "kept before error")
+                self.assertEqual(events[3]["response"]["error"], {
+                    "code": "not_found_error", "message": "Anthropic stream failed",
+                })

@@ -150,6 +150,41 @@ def deepseek_retryable_api_key_response(status: Int, body: List[UInt8], attempt_
     return error_class <= 3
 
 
+def deepseek_retryable_model_response(status: Int, body: List[UInt8], attempt_index: Int, attempt_count: Int) -> Bool:
+    if attempt_index + 1 >= attempt_count:
+        return False
+    var error_class = _deepseek_error_response_class(status, body)
+    return 1 <= error_class <= 4
+
+
+def deepseek_request_model_attempts(document: JsonDocument) raises -> List[String]:
+    var model_node = document.get(document.root, "model")
+    if model_node < 0 or document.nodes[model_node].kind != JSON_STRING:
+        return List[String](copy=[""])
+    var model = trim_text(document.string(model_node))
+    if not model.startswith("combo:"):
+        return List[String](copy=[""])
+    var candidates = List[String]()
+    var seen = List[String]()
+    var start = 6
+    for index in range(6, model.byte_length() + 1):
+        if index == model.byte_length() or model.as_bytes()[index] == 44 or model.as_bytes()[index] == 59 or model.as_bytes()[index] == 124 or model.as_bytes()[index] == 62:
+            var candidate = trim_text(String(model[byte=start:index]))
+            if candidate:
+                var duplicate = False
+                for prior in seen:
+                    duplicate = duplicate or prior.lower() == candidate.lower()
+                if not duplicate:
+                    if len(seen) >= 2048:
+                        raise Error("DeepSeek model fallback exceeds limit")
+                    seen.append(candidate.copy())
+                    candidates.append("deepseek-flash" if candidate.lower() == "flash" else candidate^)
+            start = index + 1
+    if candidates:
+        return candidates^
+    return List[String](copy=[""])
+
+
 def _deepseek_native_first_event_class(lines: List[String]) -> Int:
     try:
         var document = JsonDocument(String("\n").join(lines))
@@ -257,9 +292,9 @@ struct DeepSeekExchange(Movable):
 
     var native_messages: Bool
 
-    def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, downstream_fd: Int32 = -1, previous_response_found: Bool = False, native_messages: Bool = False, request_method: String = "POST", request_header_limit: Int = HTTP_HEADER_LIMIT, request_field_limit: Int = HTTP_HEADER_LIMIT, ignore_web_search: Bool = False, cancel_fd: Int32 = -1) raises:
+    def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, downstream_fd: Int32 = -1, previous_response_found: Bool = False, native_messages: Bool = False, request_method: String = "POST", request_header_limit: Int = HTTP_HEADER_LIMIT, request_field_limit: Int = HTTP_HEADER_LIMIT, ignore_web_search: Bool = False, cancel_fd: Int32 = -1, model_override: String = "") raises:
         if native_messages: validate_deepseek_anthropic_request(request)
-        var prepared = JsonDocument(translate_deepseek_request(request, history, strict_tools, web_search_mode, previous_response_found, ignore_web_search))
+        var prepared = JsonDocument(translate_deepseek_request(request, history, strict_tools, web_search_mode, previous_response_found, ignore_web_search, model_override))
         if max_body_bytes < 0 or max_body_bytes > 4 * 1024 * 1024:
             raise Error("invalid or unsupported HTTP stream limits")
         var translated_body = serialize_json(prepared, prepared.get(prepared.root, "body"))
@@ -364,7 +399,7 @@ struct DeepSeekExchange(Movable):
                             var event = result[1].take()
                             if self.native_messages:
                                 var event_class = _deepseek_native_first_event_class(event)
-                                if event_class >= 0 and event_class <= 3:
+                                if event_class >= 0 and event_class <= 4:
                                     retry_class = event_class
                                     retry_event_end = len(self.pending) + offset
                                     progress = True

@@ -8,6 +8,15 @@ release PASS. The observations below retain their original release provenance;
 0.165.1 and 0.439.1 comparisons do not establish 0.439.2 behavior. The
 inventory and source traces have not yet been fully revalidated against 0.439.2.
 
+The tested DeepSeek combo retry slice follows 0.165.1 for the `flash` alias:
+Modex sends `deepseek-flash` for `combo:flash,...`, while the official 0.439.2
+baseline sends `deepseek-v4-flash`. Ordinary direct request translation keeps
+its pre-existing `deepseek-v4-flash` mapping. The model-before-credential
+ordering and selected native Anthropic first-event retries are compared on
+Linux x86-64, but this alias mismatch remains an explicit 0.439.2 parity gap;
+other release targets and full provider parity remain unqualified. See
+`docs/evidence/baseline-0.165.1/deepseek-combo-model-retry.md`.
+
 Modex escapes C0/C1 controls from fields in the human-readable session table
 and from `session current --cwd`; both pinned releases display them raw. This is
 an intentional safe difference, not a parity result. JSON, ID-only and resume

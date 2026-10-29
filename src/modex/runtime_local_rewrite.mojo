@@ -18,7 +18,7 @@ from .json import JSON_ARRAY, JSON_STRING, JsonDocument
 from .loopback_http import HTTP_HEADER_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, HTTP_REQUEST_FIELD_LIMIT, LoopbackHTTPStream, _number
 from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
 from .log_operational import valid_url_authority
-from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers, deepseek_retryable_api_key_response
+from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_api_key_response, deepseek_retryable_model_response
 from .provider_conversations import ProviderConversationStore
 from .provider_anthropic_messages import anthropic_auto_chat_fallback_safe, anthropic_search_filters_conflict, deepseek_anthropic_messages_body
 from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
@@ -845,13 +845,21 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         return
     var now = _realtime_nanoseconds()
     if now < 0: raise Error("system clock returned a negative timestamp")
+    var model_attempts: List[String]
+    try:
+        model_attempts = deepseek_request_model_attempts(doc)
+    except:
+        connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"DeepSeek model fallback exceeds limit","type":"invalid_request_error"}}'), 30000)
+        return
     var exchange: DeepSeekExchange
     var prebuffered_error = List[UInt8]()
     var native_first_event_retries = 0
+    var terminal_attempt = False
+    var exit_credentials = False
     try:
         var exchange_address = messages_address if web else (beta_address if strict_tools else address)
         var exchange_path = messages_path if web else (beta_path if strict_tools else path)
-        exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd)
+        exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[0])
     except error:
         if web and (String(error) == "Anthropic Messages slice requires a user or assistant message" or String(error) == "Anthropic tool function arguments must be valid JSON"):
             connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
@@ -859,40 +867,65 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             _reply(connection, 502, "upstream request failed")
         return
     for attempt_index in range(attempt_count):
-        prebuffered_error = List[UInt8]()
         if attempt_index > 0:
             key_index = (key_start + attempt_index) % key_count
-            try:
-                var exchange_address = messages_address if web else (beta_address if strict_tools else address)
-                var exchange_path = messages_path if web else (beta_path if strict_tools else path)
-                exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd)
-            except error:
-                if web and String(error) == "Anthropic Messages slice requires a user or assistant message":
-                    connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
-                else:
+        for model_index in range(len(model_attempts)):
+            prebuffered_error = List[UInt8]()
+            if attempt_index > 0 or model_index > 0:
+                try:
+                    var exchange_address = messages_address if web else (beta_address if strict_tools else address)
+                    var exchange_path = messages_path if web else (beta_path if strict_tools else path)
+                    exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[model_index])
+                except error:
+                    if web and (String(error) == "Anthropic Messages slice requires a user or assistant message" or String(error) == "Anthropic tool function arguments must be valid JSON"):
+                        connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
+                    else:
+                        _reply(connection, 502, "upstream request failed")
+                    return
+            if exchange.status() >= 400:
+                var has_next_model = model_index + 1 < len(model_attempts)
+                var has_next_key = attempt_index + 1 < attempt_count
+                if has_next_model or has_next_key:
+                    try:
+                        prebuffered_error = exchange.read_error_body()
+                    except:
+                        _reply(connection, 502, "upstream request failed")
+                        return
+                    if deepseek_retryable_model_response(exchange.status(), prebuffered_error, model_index, len(model_attempts)):
+                        exchange.close()
+                        continue
+                    if deepseek_retryable_api_key_response(exchange.status(), prebuffered_error, attempt_index, attempt_count):
+                        exchange.close()
+                        exit_credentials = True
+                        break
+                terminal_attempt = True
+                break
+            if exchange.successful() and deepseek_event_stream(exchange.headers()):
+                var first_event_class: Int
+                try:
+                    first_event_class = exchange.prefetch(lookahead_ms)
+                except:
                     _reply(connection, 502, "upstream request failed")
-                return
-        if exchange.status() >= 400 and attempt_index + 1 < attempt_count:
-            try:
-                prebuffered_error = exchange.read_error_body()
-            except:
-                _reply(connection, 502, "upstream request failed")
-                return
-            if deepseek_retryable_api_key_response(exchange.status(), prebuffered_error, attempt_index, attempt_count):
-                exchange.close()
-                continue
-        if exchange.successful() and deepseek_event_stream(exchange.headers()):
-            var first_event_class: Int
-            try:
-                first_event_class = exchange.prefetch(lookahead_ms)
-            except:
-                _reply(connection, 502, "upstream request failed")
-                return
-            if web and first_event_class >= 0 and first_event_class <= 3 and native_first_event_retries == 0 and attempt_index + 1 < attempt_count:
-                native_first_event_retries += 1
-                exchange.close()
-                continue
-        break
+                    return
+                if web and first_event_class >= 0 and native_first_event_retries == 0:
+                    var can_retry_model = first_event_class >= 1 and first_event_class <= 4 and model_index + 1 < len(model_attempts)
+                    var can_retry_key = first_event_class <= 3 and attempt_index + 1 < attempt_count
+                    if can_retry_model:
+                        native_first_event_retries += 1
+                        exchange.close()
+                        continue
+                    if can_retry_key:
+                        native_first_event_retries += 1
+                        exchange.close()
+                        exit_credentials = True
+                        break
+            terminal_attempt = True
+            break
+        if terminal_attempt:
+            break
+        if exit_credentials:
+            exit_credentials = False
+            continue
     if 200 <= exchange.status() < 400 and (not exchange.successful() or not deepseek_event_stream(exchange.headers())):
         state_ptr[].remember_request(previous, turn, session, key_index)
     if not exchange.successful():

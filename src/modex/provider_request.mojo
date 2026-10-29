@@ -2,7 +2,7 @@
 
 from std.collections import List
 
-from .json import JSON_BOOL, JsonDocument, quote_json, serialize_json
+from .json import JSON_BOOL, JSON_STRING, JsonDocument, quote_json, serialize_json
 from .provider_request_messages import ensure_json_instruction, request_messages
 from .provider_request_params import fields_object, optional_request_fields, request_format, request_metadata, request_reasoning, reasoning_fields, thinking_enabled, validate_request_shape
 from .provider_request_prepare import prepare_request_body
@@ -10,7 +10,7 @@ from .provider_request_tools import request_tool_fields
 from .text import trim_text
 
 
-def translate_deepseek_request(source: String, history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", previous_response_found: Bool = False, ignore_web_search: Bool = False) raises -> String:
+def translate_deepseek_request(source: String, history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", previous_response_found: Bool = False, ignore_web_search: Bool = False, model_override: String = "") raises -> String:
     var initial: JsonDocument
     try:
         initial = JsonDocument(source)
@@ -21,6 +21,8 @@ def translate_deepseek_request(source: String, history: String = "[]", strict_to
     var effort = request_reasoning(doc)
     var thinking = thinking_enabled(effort)
     var model_node = doc.get(doc.root, "model")
+    if model_override and model_node >= 0 and doc.nodes[model_node].kind == JSON_STRING:
+        doc.nodes[model_node].text = model_override
     var model = canonical_deepseek_model(doc.string(model_node)) if model_node >= 0 else String("deepseek-v4-pro")
     var stream_node = doc.get(doc.root, "stream")
     var stream = stream_node >= 0 and doc.nodes[stream_node].kind == JSON_BOOL and doc.nodes[stream_node].text == "true"

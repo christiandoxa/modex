@@ -4,7 +4,7 @@ from std.testing import assert_equal, assert_true
 
 from modex.json import JsonDocument, serialize_json
 from modex.loopback_http import LoopbackHTTPStream
-from modex.provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
+from modex.provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_model_response
 from modex.provider_rate_limits import _reset_epoch, deepseek_codex_rate_limit_headers
 
 
@@ -18,6 +18,39 @@ def values(headers: List[Tuple[String, String]], name: String) -> List[String]:
 
 def check(headers: List[Tuple[String, String]], name: String, expected: List[String]) raises:
     assert_equal(values(headers, name), expected)
+
+
+def byte_values(value: String) -> List[UInt8]:
+    var output = List[UInt8]()
+    for byte in value.as_bytes():
+        output.append(byte)
+    return output^
+
+
+def model_attempts() raises:
+    var request = JsonDocument('{"model":"combo:flash, pro;FLASH| custom > pro,,"}')
+    assert_equal(
+        deepseek_request_model_attempts(request),
+        List[String](copy=["deepseek-flash", "pro", "custom"]),
+    )
+    request = JsonDocument('{"model":"deepseek-chat"}')
+    assert_equal(deepseek_request_model_attempts(request), List[String](copy=[""]))
+    request = JsonDocument('{"model":"combo:,,,"}')
+    assert_equal(deepseek_request_model_attempts(request), List[String](copy=[""]))
+    request = JsonDocument('{"model":7}')
+    assert_equal(deepseek_request_model_attempts(request), List[String](copy=[""]))
+
+
+def model_retry_classification() raises:
+    var not_found = byte_values('{"error":{"code":"model_not_supported"}}')
+    var rate_limit = byte_values('{"error":{"type":"rate_limit_error"}}')
+    var auth = byte_values('{"error":{"code":"invalid_api_key"}}')
+    var generic_rate_limit = byte_values('{"error":{"code":"synthetic_error"}}')
+    assert_true(deepseek_retryable_model_response(404, not_found, 0, 2))
+    assert_true(deepseek_retryable_model_response(429, rate_limit, 0, 2))
+    assert_true(not deepseek_retryable_model_response(401, auth, 0, 2))
+    assert_true(not deepseek_retryable_model_response(429, generic_rate_limit, 0, 2))
+    assert_true(not deepseek_retryable_model_response(404, not_found, 1, 2))
 
 
 def rate_limits() raises:
@@ -207,6 +240,9 @@ def main() raises:
     check(headers, "x-codex-turn-state", ["turn-synthetic"])
     check(headers, "x-prodex-internal", ["forward"])
     check(headers, "sec-websocket", ["forward"])
+
+    model_attempts()
+    model_retry_classification()
 
     var anthropic_headers: List[Tuple[String, String]] = [
         ("x-api-key", "caller-key"),

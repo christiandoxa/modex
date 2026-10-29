@@ -1,42 +1,62 @@
-# Session terminal fallback against Prodex 0.165.1
+# Session terminal output against Prodex 0.165.1 and 0.439.2
 
-In the frozen source at commit `10ae15b5d1806302b60f051e4e6fec788044f4c2`,
-`crates/prodex-app/src/app_commands/session.rs` renders an inline terminal
-view only when `try_inline_stdout_terminal` allows it. That helper in
-`crates/prodex-app/src/app_commands/shared.rs` disables the inline view when
+## Baseline trace
+
+In frozen 0.165.1 source commit `10ae15b5d1806302b60f051e4e6fec788044f4c2`,
+`crates/prodex-app/src/app_commands/session.rs` selects an inline terminal
+view when stdout is a TTY and `try_inline_stdout_terminal` succeeds. The helper
+in `crates/prodex-app/src/app_commands/shared.rs` disables that view when
 `CODEX_CI` is present or `PRODEX_TUI_STRICT` is truthy; `PRODEX_FORCE_TUI`
-takes precedence. When the inline terminal cannot be created,
-`render_session_reports_tui` writes the ordinary session report to stdout.
+takes precedence. If the inline terminal cannot be created, the command prints
+the ordinary session report.
 
-Modex previously failed every text-mode session command when stdout was a
-terminal. The production path now uses the same environment gates and emits
-the ordinary report for the two verified fallback cases. It keeps the error
-for an ordinary TTY while interactive terminal rendering remains
-unimplemented. The state-file guard still runs before output selection; a
-synthetic `state.json.lock` without a primary state file remains fail-closed.
+Frozen 0.439.2 source commit
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9` follows the same production path:
+`crates/prodex-app/src/app_commands/session.rs` dispatches terminal output to
+`render_session_reports_tui`, which uses the inline TUI when it can create a
+terminal and otherwise writes the plain report.
 
-`tests/test_session_text.py` uses real pseudo-terminals, isolated homes and
-synthetic session data. It compares raw stdout, stderr and exit status against
-both pinned Linux binaries for `CODEX_CI=1`, an empty-but-present `CODEX_CI`,
-and truthy `PRODEX_TUI_STRICT`. False and unset strict controls retain
-Modex's ordinary-TTY error, and a separate case verifies that the fallback
-does not bypass the state guard.
+## Modex behavior
 
-- Prodex 0.165.1: SHA-256 `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51`.
-- Prodex 0.439.2: SHA-256 `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`.
+Default `session list` text output now always uses Modex's existing plain
+report renderer, including on a TTY. This removes the previous terminal error
+without changing session scanning, state validation, or report formatting.
+The report path remains read-only and escapes control characters in profile
+names.
 
-Validation passed with Mojo 1.2.0 on Linux x86-64:
+With a fully attached PTY, both release binaries render the interactive
+`Prodex Sessions` screen and wait for a key. Modex prints its plain report and
+exits. This is a safe output fallback, not interactive TUI parity; scrolling,
+selection, keyboard navigation, and the release screen layout remain
+unimplemented. When the inline TUI is disabled or cannot start, the tested
+fallback output still matches both releases exactly. The state-file guard runs
+before output selection, so the fallback does not bypass it.
+
+## Reproduction
+
+`tests/test_session_text.py` uses isolated homes and synthetic session data.
+Its attached-PTY case answers the release cursor-position query and sends `q`
+after the screen is drawn. It checks the two release screens against each
+other and separately checks that Modex returns a successful plain report.
+Other process cases compare fallback stdout, stderr, and exit status against
+both references for `CODEX_CI=1`, an empty-but-present `CODEX_CI`, truthy
+`PRODEX_TUI_STRICT`, and TTY stdout with non-TTY stdin. Synthetic profile
+control characters remain escaped, and a synthetic held state lock still
+fails closed before the report is written.
+
+- Prodex 0.165.1: SHA-256
+  `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51`.
+- Prodex 0.439.2: SHA-256
+  `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`.
+
+Validation on Mojo 1.2.0, Linux x86-64:
 
 ```text
-make build
-python3 scripts/ci/run-unittest.py test_session_text.py
-PYTHONPATH=tests python3 -m unittest -v test_session_report_01651
-PYTHONPATH=tests python3 -m unittest -v test_session_text.SessionTextTests.test_table_columns_truncation_and_full_ids test_session_text.SessionTextTests.test_empty_panels_and_wrapping test_sessions.SessionOutputTests.test_populated_json test_sessions.SessionOutputTests.test_filters_limits_and_machine_output_modes
-make ci-dependencies
-python3 scripts/ci/check-test-census.py
+rtk make build
+PYTHONPATH=tests MODEX_BINARY=build/modex python3 -m unittest -v test_session_text
+rtk make ci-dependencies
 ```
 
-The complete 16-test text suite and all 15 inherited/0.165.1 report tests
-passed. The import audit passed for 71 Mojo files; the test census found 50
-native test sources and 129 Python modules with one suite owner each. This
-does not implement the interactive TUI or qualify non-Linux targets.
+The 17-test session-text suite passed. The production import audit passed for
+71 Mojo files, all using standard-library or internal imports. Interactive TUI
+parity remains incomplete; the other five release targets remain unqualified.

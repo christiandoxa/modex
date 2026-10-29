@@ -8,6 +8,16 @@ and diff check passed. This selected parser behavior does not qualify Gateway
 startup; its operational path and remaining argument combinations are
 unfinished. Evidence: `docs/evidence/baseline-0.165.1/cli-observations.md`.
 
+`session list` now prints its existing plain report on an ordinary TTY instead
+of failing with `session terminal rendering is not implemented`. Both pinned
+release processes still launch the interactive `Prodex Sessions` screen, so
+this is a safe output fallback and does not claim TUI parity. Fallback output
+continues to match both releases under the tested CI/strict controls, and the
+state-file guard still runs first. The 17-test session-text suite and 71-file
+production import audit passed on Linux x86-64. TUI interaction and the other
+five release targets remain open. See
+`docs/evidence/baseline-0.165.1/session-terminal-fallback.md`.
+
 The Anthropic Messages adapter now maps untyped `role: "tool"` input items
 with missing or unusable IDs to `call_prodex` and groups results before text,
 matching the checksum-pinned 0.165.1 and 0.439.2 processes. Selected function

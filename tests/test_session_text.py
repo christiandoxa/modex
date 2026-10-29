@@ -8,11 +8,13 @@ import json
 import os
 from pathlib import Path
 import random
+import select
 import shutil
 import struct
 import subprocess
 import tempfile
 import termios
+import time
 import unittest
 
 from session_oracle import fixture, sandbox_command
@@ -85,6 +87,66 @@ def compare_tty(arguments, *, environment=None, change=None):
                 bytes(output).replace(str(root).encode(), b"<ROOT>"),
                 result.stderr.replace(str(root).encode(), b"<ROOT>"),
             ))
+    return outputs
+
+
+def compare_interactive_tty(arguments):
+    outputs = []
+    with tempfile.TemporaryDirectory(prefix="modex-session-interactive-tty-") as directory:
+        for name, binary in (
+            ("prodex-01651", ORACLE_01651),
+            ("prodex-04392", ORACLE),
+            ("modex", MODEX),
+        ):
+            root = Path(directory) / name
+            root.mkdir()
+            fixture(root)
+            master, slave = os.openpty()
+            fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
+            process = subprocess.Popen(
+                sandbox_command(binary, root, arguments),
+                stdin=slave,
+                stdout=slave,
+                stderr=subprocess.PIPE,
+            )
+            os.close(slave)
+            output = bytearray()
+            cursor_reply_sent = False
+            quit_sent = False
+            deadline = time.monotonic() + 10
+            try:
+                while time.monotonic() < deadline:
+                    ready, _, _ = select.select([master], [], [], 0.1)
+                    if ready:
+                        try:
+                            block = os.read(master, 65536)
+                        except OSError as error:
+                            if error.errno == errno.EIO:
+                                break
+                            raise
+                        if not block:
+                            break
+                        output.extend(block)
+                        if not cursor_reply_sent and b"\x1b[6n" in output:
+                            os.write(master, b"\x1b[1;1R")
+                            cursor_reply_sent = True
+                    if cursor_reply_sent and not quit_sent and b"Prodex Sessions" in output:
+                        os.write(master, b"q")
+                        quit_sent = True
+                    if process.poll() is not None and not ready:
+                        break
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                stderr = process.communicate(timeout=2)[1]
+                os.close(master)
+            outputs.append(
+                (
+                    process.returncode,
+                    bytes(output).replace(str(root).encode(), b"<ROOT>"),
+                    stderr.replace(str(root).encode(), b"<ROOT>"),
+                )
+            )
     return outputs
 
 
@@ -273,19 +335,17 @@ class SessionTextTests(unittest.TestCase):
         self.assertTrue(all(width + 2 <= 20 for _, width in cases))
         self.assert_title_batch(["P" + sequence + "Q" for sequence, _ in cases])
 
-    def test_interactive_view_remains_explicitly_unimplemented(self):
-        with tempfile.TemporaryDirectory(prefix="modex-text-tty-") as directory:
-            root = Path(directory)
-            fixture(root)
-            master, slave = os.openpty()
-            try:
-                result = subprocess.run(sandbox_command(MODEX, root, ["session", "list"]),
-                                        stdout=slave, stderr=subprocess.PIPE, timeout=10, check=False)
-                self.assertEqual(result.returncode, 1)
-                self.assertEqual(result.stderr, b"Error: session terminal rendering is not implemented\n")
-            finally:
-                os.close(slave)
-                os.close(master)
+    def test_interactive_tty_uses_plain_report_while_releases_launch_tui(self):
+        old, current, modex = compare_interactive_tty(["session", "list"])
+        self.assertEqual(old[0::2], (0, b""))
+        self.assertEqual(current[0::2], (0, b""))
+        self.assertEqual(old[1], current[1])
+        self.assertIn(b"Prodex Sessions", old[1])
+        self.assertIn(b"\x1b[1;1H", old[1])
+        self.assertEqual(modex[0::2], (0, b""))
+        self.assertIn(b"Session fixture", modex[1])
+        self.assertNotIn(b"\x1b[6n", modex[1])
+        self.assertNotEqual(modex[1], old[1])
 
     def test_ci_tty_fallback_matches_both_releases(self):
         for environment in (
@@ -346,16 +406,15 @@ class SessionTextTests(unittest.TestCase):
                 for code in controls:
                     self.assertNotIn(chr(code).encode(), safe_output)
 
-    def test_unset_and_false_tui_controls_keep_the_tty_guard(self):
+    def test_nonterminal_stdin_keeps_the_release_text_fallback(self):
         for environment in ({}, {"PRODEX_TUI_STRICT": "0"}, {"PRODEX_TUI_STRICT": "false"}):
             with self.subTest(environment=environment):
                 old, current, modex = compare_tty(["session", "list"], environment=environment)
                 self.assertEqual(old[0:1] + old[2:3], (0, b""))
                 self.assertEqual(current[0:1] + current[2:3], (0, b""))
+                self.assertEqual(modex[0:1] + modex[2:3], (0, b""))
                 self.assertEqual(old[1], current[1])
-                self.assertEqual(modex, (
-                    1, b"", b"Error: session terminal rendering is not implemented\n",
-                ))
+                self.assertEqual(modex[1], old[1])
 
     def test_tty_fallback_does_not_bypass_session_state_guard(self):
         def locked_without_primary(root):

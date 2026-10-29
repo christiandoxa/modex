@@ -52,6 +52,12 @@ stream reader, matching the pinned `provider_stream_error` code and
 terminal. Non-2xx SSE stays on the raw pass-through path. Known hard bindings
 keep the pinned 503 gate.
 
+Native Anthropic first-event classification also preserves the pinned
+case-sensitive event gate: a top-level retryable code rotates only when
+`type` is exactly `error`; an explicit `error` member is classified regardless
+of event type. Four synthetic process cases match both releases, including
+uppercase and whitespace-padded event types.
+
 Real-process comparisons against both checksum-pinned Linux releases pass for
 the tested rotation, error-code, continuation and concurrent-conflict cases.
 Concurrent requests with the same unknown identity may use different keys;
@@ -61,8 +67,8 @@ does not establish the six-target denominator, public network/TLS, persistent
 or profile-backed ownership, or complete provider parity. See
 `docs/evidence/baseline-0.165.1/super-api-key-env.md`.
 
-The combined rotation and shared Anthropic stream run passed all 37 tests,
-including the 13 rotation methods, error-event compatibility, and pipeline/
+The combined rotation and shared Anthropic stream run passed all 38 tests,
+including the 14 rotation methods, error-event compatibility, and pipeline/
 half-close shutdown controls. The synthetic client now edits only the
 sequential request loop, so the generated Codex probe and stream requests run
 as intended.

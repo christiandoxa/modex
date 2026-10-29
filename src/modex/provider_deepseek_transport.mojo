@@ -157,7 +157,7 @@ def _deepseek_native_first_event_class(lines: List[String]) -> Int:
         var error = document.get(document.root, "error")
         var is_error = error >= 0
         if event_type >= 0 and document.nodes[event_type].kind == JSON_STRING:
-            is_error = is_error or document.string(event_type).lower() == "error"
+            is_error = is_error or document.string(event_type) == "error"
         if not is_error:
             return -1
         var code = document.get(error, "type")

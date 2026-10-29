@@ -169,6 +169,41 @@ class DeepSeekKeyRotationTests(unittest.TestCase):
                 )
                 self.assertEqual([response["status"] for response in responses], [200])
 
+    def test_native_anthropic_error_event_type_gate_is_case_sensitive(self):
+        request = [{
+            "model": "deepseek-chat",
+            "input": "synthetic search",
+            "tools": [{"type": "web_search_preview"}],
+        }]
+        success = b"".join((
+            b'data: {"type":"message_start","message":{"id":"msg-ok","role":"assistant","model":"deepseek-chat","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',
+            b'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}\n\n',
+            b'data: {"type":"message_stop"}\n\n',
+        ))
+        cases = (
+            ("uppercase type with top-level code", b'data: {"type":"ERROR","code":"rate_limit_error"}\n\n', ["synthetic-key-a"]),
+            ("exact type with top-level code", b'data: {"type":"error","code":"rate_limit_error"}\n\n', ["synthetic-key-a", "synthetic-key-b"]),
+            ("uppercase type with error member", b'data: {"type":"ERROR","error":{"type":"rate_limit_error"}}\n\n', ["synthetic-key-a", "synthetic-key-b"]),
+            ("whitespace type", b'data: {"type":" error ","code":"rate_limit_error"}\n\n', ["synthetic-key-a"]),
+        )
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            for name, first_event, expected_keys in cases:
+                with self.subTest(binary=str(binary), case=name):
+                    posts, responses = observe_turns(
+                        binary,
+                        request,
+                        [
+                            {"status": 200, "content_type": "text/event-stream", "body": first_event + success},
+                            {"status": 200, "content_type": "text/event-stream", "body": success},
+                        ],
+                        api_keys=KEYS,
+                    )
+                    self.assertEqual(
+                        [post["headers"].get("x-api-key") for post in posts],
+                        expected_keys,
+                    )
+                    self.assertEqual([response["status"] for response in responses], [200])
+
     def test_exhausted_native_anthropic_error_event_matches_releases(self):
         request = [{
             "model": "deepseek-chat",

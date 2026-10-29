@@ -147,6 +147,17 @@ class RuntimeSlowPartialTests(unittest.TestCase):
         self.assertEqual(signature, (False, None, 502, 200))
         self.assertEqual(self._signature("slow-partial-body", modex), signature)
 
+    def test_configured_worker_count_controls_incomplete_body_admission(self):
+        for workers in (1, 2):
+            with self.subTest(workers=workers):
+                environment = {
+                    "PRODEX_RUNTIME_PROXY_WORKER_COUNT": str(workers),
+                    "MODEX_SLOW_PARTIAL_BODY_COUNT": str(workers),
+                }
+                signature, modex = self._compare("slow-partial-body", environment)
+                self.assertEqual(signature, (False, None, 502, 200))
+                self.assertEqual(self._signature("slow-partial-body", modex), signature)
+
     def test_truncated_headers_still_close_without_a_response(self):
         signature, modex = self._compare("truncated-header-eof")
         self.assertIsNone(signature)

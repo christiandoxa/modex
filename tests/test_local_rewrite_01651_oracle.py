@@ -2218,6 +2218,7 @@ def run_probe(binary: Path, case, upstream: Upstream):
             "PROBE_FOLLOWUP_REQUEST_HEX": case.get("followup_request", b"").hex(),
             "PROBE_RESULT_PATH": str(result_path),
         }
+        environment.update(case.get("environment_overrides", {}))
         command = [
             str(binary), "super", "--provider", "deepseek", "--api-key", SYNTHETIC_API_KEY,
             "--base-url", f"http://127.0.0.1:{upstream.server_port}/v1",
@@ -2800,6 +2801,53 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                 self.assertTrue(overlapped, "the upstream barrier observed both requests together")
                 self.assertGreaterEqual(peak_active, 2)
                 self.assertEqual(sorted(record["path"] for record in records), sorted(expected_paths))
+
+    def test_worker_count_controls_parallel_provider_stalls(self):
+        body = json.dumps({
+            "model": "deepseek-chat",
+            "messages": [{"role": "user", "content": "synthetic configured concurrency"}],
+        }, separators=(",", ":")).encode()
+        requests = [
+            request_bytes(
+                headers=(("Connection", "close"),),
+                body=body,
+                target=f"/v1/chat/completions?parallel={index}".encode(),
+            )
+            for index in (1, 2)
+        ]
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for worker_count, should_overlap in ((1, False), (2, True)):
+                case = {
+                    "name": f"configured_worker_count_{worker_count}",
+                    "request": requests[0],
+                    "concurrent_requests": requests,
+                    "process_timeout": 15,
+                    "environment_overrides": {
+                        "PRODEX_RUNTIME_PROXY_WORKER_COUNT": str(worker_count),
+                    },
+                }
+                for label, binary in (("oracle", ORACLE), ("modex", MODEX)):
+                    with self.subTest(worker_count=worker_count, label=label):
+                        upstream.reset_parallel_probe()
+                        response, records = run_probe(binary, case, upstream)
+                        peak_active, overlapped = upstream.snapshot_parallel_probe()
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(len(records), 2)
+                        self.assertEqual(len(response["concurrent_responses"]), 2)
+                        self.assertEqual(overlapped, should_overlap)
+                        self.assertLessEqual(peak_active, worker_count)
+                        if should_overlap:
+                            self.assertEqual(
+                                [item["status"] for item in response["concurrent_responses"]],
+                                [200, 200],
+                            )
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
 
     def test_parent_eof_interrupts_a_stalled_provider_request(self):
         body = json.dumps({

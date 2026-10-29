@@ -1,13 +1,12 @@
 """Test-only process driver for the internal local-rewrite relay."""
 
 from std.io import RawFileDescriptor
-from std.runtime import parallelism_level
 from std.sys import argv
 
 from modex.loopback_http import _number
 from modex.loopback_server import LoopbackHTTPListener
 from modex.provider_deepseek_transport import deepseek_request_headers
-from modex.runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, serve_local_rewrite
+from modex.runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, local_rewrite_worker_count, serve_local_rewrite
 
 
 def main() raises:
@@ -24,6 +23,6 @@ def main() raises:
     var output = RawFileDescriptor(1)
     var startup = "READY http://" + listener.address + "/v1"
     if parent_fd >= 0:
-        startup += " WORKERS=" + String(max(1, min(8, parallelism_level())))
+        startup += " WORKERS=" + String(local_rewrite_worker_count())
     output.write_bytes((startup + "\n").as_bytes())
     serve_local_rewrite(listener, upstream, [key], route[0], route[1], route[2], parent_fd=parent_fd, web_search_mode=route[3])

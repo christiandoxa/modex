@@ -290,7 +290,8 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
         raise ValueError(f"unknown request-head scenario: {scenario}")
     if scenario == "slow-partial-body":
         partials = []
-        for index in range(16):
+        partial_count = int(os.environ.get("MODEX_SLOW_PARTIAL_BODY_COUNT", "16"))
+        for index in range(partial_count):
             partial = socket.create_connection((host, port), timeout=5)
             partial.sendall((f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
                              f"Content-Type: application/json\r\nContent-Length: 2048\r\n"
@@ -1314,6 +1315,32 @@ class SuperLaunchTests(unittest.TestCase):
                         secret_values.extend(part.strip() for part in re.split(r"[,;\n]", value))
                     for value in filter(None, secret_values):
                         self.assertNotIn(value.encode(), output)
+
+    def test_invalid_runtime_proxy_worker_count_fails_before_codex_or_upstream(self):
+        cases = (
+            ("empty", "", "PRODEX_RUNTIME_PROXY_WORKER_COUNT cannot be empty"),
+            ("whitespace", "   ", "PRODEX_RUNTIME_PROXY_WORKER_COUNT must not contain whitespace"),
+            ("malformed", "n/a", "PRODEX_RUNTIME_PROXY_WORKER_COUNT must be an unsigned integer"),
+            ("zero", "0", "PRODEX_RUNTIME_PROXY_WORKER_COUNT must be greater than zero"),
+        )
+        binaries = (("0.165.1", ORACLE_01651), ("0.439.2", ORACLE), ("Modex", MODEX))
+        for label, value, diagnostic in cases:
+            errors = []
+            for binary_label, binary in binaries:
+                with self.subTest(value=label, binary=binary_label):
+                    result, records, upstream, state = self.run_launch(
+                        binary=binary,
+                        environment_overrides={"PRODEX_RUNTIME_PROXY_WORKER_COUNT": value},
+                    )
+                    output = result.stdout + result.stderr
+                    self.assertEqual(result.returncode, 1, output)
+                    self.assertIn(diagnostic.encode(), output)
+                    self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+                    errors.append(output.decode(errors="replace").strip().splitlines()[-1])
+            self.assertEqual(
+                errors,
+                ["Error: runtime configuration is invalid; " + diagnostic] * len(binaries),
+            )
 
     def test_deepseek_api_key_rotation_keeps_credentials_out_of_codex(self):
         values = "synthetic-rotation-first-key;synthetic-rotation-second-key"

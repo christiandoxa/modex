@@ -1024,7 +1024,31 @@ __async def _local_rewrite_worker(state_ptr: Pointer[LocalRewriteSharedState, Mu
         state_ptr[].finish_request(connection^)
 
 
+# shortcut: configured counts above eight stay capped until larger lane counts are qualified under load.
 comptime LOCAL_REWRITE_MAX_WORKERS = 8
+
+
+def local_rewrite_worker_count() raises -> Int:
+    var name = String("PRODEX_RUNTIME_PROXY_WORKER_COUNT")
+    var error_prefix = String("runtime configuration is invalid; ") + name
+    var parallelism = max(1, parallelism_level())
+    var fallback = min(LOCAL_REWRITE_MAX_WORKERS, parallelism)
+    var configured = getenv(name, "\x00")
+    if configured == "\x00":
+        return fallback
+    if not configured:
+        raise Error(error_prefix + " cannot be empty")
+    for character in configured.codepoints():
+        if is_whitespace(Int(character)):
+            raise Error(error_prefix + " must not contain whitespace")
+    var requested: UInt64
+    try:
+        requested = unsigned_value(configured)
+    except:
+        raise Error(error_prefix + " must be an unsigned integer")
+    if requested == 0:
+        raise Error(error_prefix + " must be greater than zero")
+    return min(fallback, Int(min(requested, UInt64(LOCAL_REWRITE_MAX_WORKERS))))
 
 
 def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, api_keys: List[String], strict_tools: Bool, beta_address: String, beta_path: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False, web_search_mode: String = "auto") raises:
@@ -1046,8 +1070,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
     # Worker pointers are untracked, so keep their state at a stable address until join.
     var state = OwnedPointer(LocalRewriteSharedState(api_keys, upstream_url, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode))
     var state_ptr = state.ptr().unsafe_origin_cast[MutUntrackedOrigin]()
-    # shortcut: cap lanes at eight or available runtime workers; match baseline tuning when blocking workers can scale independently.
-    var worker_count = max(1, min(LOCAL_REWRITE_MAX_WORKERS, parallelism_level()))
+    var worker_count = local_rewrite_worker_count()
     # shortcut: cap extra request heads to worker lanes; add an aggregate memory budget before increasing.
     var overflow_capacity = max(2, worker_count)
     var workers = TaskGroup()

@@ -3463,7 +3463,16 @@ upstream requests on parent EOF. The accept loop now captures request heads
 incrementally before handler admission; incomplete headers do not occupy
 provider workers. Each pass reads/scans at most 512 bytes per parked socket,
 and the existing 2 MiB request-header limit and 128 parked-socket cap bound
-capture. The round-robin overflow list is capped at `max(2, worker_count)`;
+capture. `PRODEX_RUNTIME_PROXY_WORKER_COUNT` now controls relay lanes when set:
+the existing Modex default remains `min(8, Mojo parallelism)`, positive values
+can reduce the pool, and empty, whitespace-only, malformed, or zero values
+fail before Codex probes with the same diagnostics as both pinned releases.
+Counts cannot increase the pool above its default or the eight-worker cap.
+The policy-file `runtime_proxy.worker_count` is not wired to this pool, and
+the releases accept counts through 64. The default also differs when the
+release's documented CPU-parallelism clamp of 4–12 does not equal Modex's
+default; the default controls below were checked only on this Linux x86-64
+host. The round-robin overflow list is capped at `max(2, worker_count)`;
 completed keep-alive connections enter it when the parked set is full and
 capacity remains. Admitted workers still parse headers and read request bodies,
 so slow or incomplete bodies can occupy every lane. The 129- and 132-client
@@ -3474,9 +3483,17 @@ eventual success and records the observed finite-cap mismatch without making
 the timing gap an assertion. A 130-client control also verifies promoted
 overflow completion, same-socket keep-alive reuse, and a later healthy request
 against both releases. Parent EOF with 137 held clients exits and closes peers.
-The 14-test `test_runtime_slow_partial.py` suite and separate parent-EOF test
-pass against the pinned releases and rebuilt candidate. Larger floods and full
-admission fairness remain unqualified.
+The 15-test `test_runtime_slow_partial.py` suite passed against the pinned
+releases and rebuilt candidate; the three-test local admission harness passed
+against the candidate. Configured worker counts one and two match the releases
+for incomplete-body admission and
+synthetic provider overlap; default incomplete-body and provider-overlap
+controls also pass. The invalid-value process matrix matches the exact release
+diagnostics and confirms no Codex probe or upstream request occurs. Larger
+worker counts, policy-file tuning, other release targets, and full admission
+fairness remain unqualified. Evidence and commands are in
+`docs/evidence/runtime-slow-partial.md` and
+`docs/evidence/runtime-overflow-admission.md`.
 Fixed-length bodies of 1,024 bytes or less remain in parser capture;
 EOF there closes without a response as both releases do. Deferred-body EOF now
 returns the baseline 502 and `upstream request failed` body for tested large

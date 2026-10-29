@@ -18,7 +18,7 @@ from .loopback_server import LoopbackHTTPListener
 from .paths import app_root, ensure_app_root, shared_root
 from .process_spawn import CapturedProcessOutput, capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, terminate_child_gracefully, wait_or_kill
 from .provider_deepseek_transport import deepseek_request_headers
-from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, serve_local_rewrite
+from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, local_rewrite_worker_count, serve_local_rewrite
 from .sessions import read_private_state_file
 from .sha256 import hash_file
 from .text import cli_width, is_whitespace, section_header, trim_text, unsigned_value, wrap_text
@@ -574,6 +574,7 @@ def _codex_version_parts(value: String) -> List[UInt64]:
 
 
 def _exec(binary: String, child_path: String, argv0: String, home: String, model: String, upstream: String, api_keys: List[String], prompt: List[String], context_window: UInt64, compact_limit: UInt64, web_search_mode: String, strict_tools: Optional[String], beta_base_url: Optional[String], model_supplied: Bool) raises -> Int:
+    _ = local_rewrite_worker_count()
     var environment = _child_environment(home)
     var probe_environment = _codex_probe_environment(environment)
     var version = _capture_codex_probe(binary, [String("--version")], probe_environment, "Codex version probe")

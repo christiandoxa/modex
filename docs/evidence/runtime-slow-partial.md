@@ -207,3 +207,54 @@ test passed one test in 0.126 seconds. `git diff --check` and Python syntax
 compilation passed. This evidence covers only these Linux x86-64 process cases;
 all six release targets, wider floods, and full runtime/security parity remain
 unqualified.
+
+## Configured relay worker count
+
+On 2026-10-30, Modex began honoring `PRODEX_RUNTIME_PROXY_WORKER_COUNT` for
+local-relay workers. With the variable unset, the existing Modex default is
+unchanged: `min(8, Mojo parallelism)`. A positive configured value can reduce
+the active pool, subject to that default and the eight-worker safety cap.
+
+Real-process comparisons against Prodex 0.165.1 and 0.439.2 verified counts
+one and two in two places. The incomplete-body test held that many workers
+reading unfinished bodies; in all three products a healthy request waited
+until a blocker was cancelled, then completed with 200. A synthetic upstream
+barrier observed no overlap at count one and overlap at count two in both
+releases and Modex. Default incomplete-body and provider-overlap controls
+also passed against both pinned releases and Modex.
+
+The startup test also compared empty, whitespace-only, malformed, and zero
+values across both releases and Modex. Each exited with the same diagnostic,
+before any synthetic Codex probe or upstream request, and left no managed
+profile behind.
+
+The production candidate was built with Mojo 1.2.0 (`2016d0cd`),
+`-O3 --target-cpu=x86-64-v3 -I src`, from base
+`00fa4f13da48cfe342ba1e02f6ceaeadf3927222`; `build/modex` SHA-256 was
+`9a8fd599f3f8b8674e17d55c6860f4c9cffe8b2c69d461a356eb9dbf6b1c22f8`.
+All 15 tests in `test_runtime_slow_partial.py` passed in 59.123 seconds; all
+3 `test_local_rewrite_admission.py` tests passed in 3.254 seconds. The
+configured provider-barrier test passed against each pinned release, as did
+the default provider-overlap control. The four-value startup test passed for
+all three products. The 71-file production import audit and the 50-native /
+140-Python test census passed.
+
+Reproduce the focused checks with:
+
+```sh
+PYTHONPATH=tests python3 -m unittest -v test_runtime_slow_partial
+PYTHONPATH=tests python3 -m unittest -v test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_worker_count_controls_parallel_provider_stalls
+PYTHONPATH=tests python3 -m unittest -v test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_worker_count_controls_parallel_provider_stalls
+env -u PRODEX_RUNTIME_PROXY_WORKER_COUNT PYTHONPATH=tests python3 -m unittest -v test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_two_codex_requests_overlap_at_the_provider
+env -u PRODEX_RUNTIME_PROXY_WORKER_COUNT PYTHONPATH=tests python3 -m unittest -v test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_two_codex_requests_overlap_at_the_provider
+PYTHONPATH=tests python3 -m unittest -v test_super_launch.SuperLaunchTests.test_invalid_runtime_proxy_worker_count_fails_before_codex_or_upstream
+```
+
+The cap remains a known limit: Prodex accepts configured worker counts up to
+64, while Modex cannot scale above eight or above its existing default. The
+policy-file `runtime_proxy.worker_count` setting is not connected to this
+pool. Modex's default also remains `min(8, Mojo parallelism)`, while the
+releases document CPU parallelism clamped to 4–12; only the default process
+controls above were checked on this Linux x86-64 host. All six release
+targets, larger worker counts, policy-file tuning, and full runtime parity
+remain unqualified.

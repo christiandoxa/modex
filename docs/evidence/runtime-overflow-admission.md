@@ -30,8 +30,13 @@ use synthetic credentials, loopback peers, and temporary state.
 
 The initial admission bound was 128 parked connections plus one accepted
 overflow connection. The follow-up raises queued overflow capacity to
-`max(2, worker_count)`, with worker count capped at eight, while retaining the
-128-entry listen backlog. Further clients wait in that kernel backlog.
+`max(2, worker_count)`, where `worker_count` honors the positive
+`PRODEX_RUNTIME_PROXY_WORKER_COUNT` environment value but cannot exceed
+Modex's default or eight. The 128-entry listen backlog remains; further
+clients wait there. Configured counts one and two were compared with both
+releases for incomplete-body and provider-barrier behavior; the default
+controls also pass. Higher counts and policy-file tuning remain gaps; see
+`docs/evidence/runtime-slow-partial.md`.
 Prodex 0.439.2's TinyHTTP task pool creates more parser threads when all are
 busy and has no hard request-queue limit, so this finite Modex policy does not
 reproduce its unbounded admission behavior. Larger floods and full wait-time
@@ -60,9 +65,12 @@ make build
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/local_rewrite_driver.mojo \
   -o build/tests/local_rewrite_driver
 PYTHONPATH=tests python3 -m unittest -v test_local_rewrite_admission
-PYTHONPATH=tests MODEX_LOCAL_REWRITE_DRIVER=build/tests/local_rewrite_driver \
+PYTHONPATH=tests MODEX_LOCAL_REWRITE_DRIVER="$PWD/build/tests/local_rewrite_driver" \
   python3 -m unittest -v test_local_rewrite_01651_oracle
-PYTHONPATH=tests MODEX_LOCAL_REWRITE_DRIVER=build/tests/local_rewrite_driver \
+PYTHONPATH=tests MODEX_LOCAL_REWRITE_DRIVER="$PWD/build/tests/local_rewrite_driver" \
   python3 -m unittest -v test_local_rewrite_04392_oracle
 PYTHONPATH=tests python3 -m unittest -v test_runtime_slow_partial
 ```
+
+`MODEX_LOCAL_REWRITE_DRIVER` must be absolute because these tests run the relay
+from isolated temporary working directories.

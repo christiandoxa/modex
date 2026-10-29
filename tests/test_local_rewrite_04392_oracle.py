@@ -144,6 +144,10 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
         with patch.object(transport, "ORACLE", ORACLE):
             transport.LocalRewrite01651OracleTests.test_two_codex_requests_overlap_at_the_provider(self)
 
+    def test_worker_count_controls_parallel_provider_stalls(self):
+        with patch.object(transport, "ORACLE", ORACLE):
+            transport.LocalRewrite01651OracleTests.test_worker_count_controls_parallel_provider_stalls(self)
+
     def test_parent_eof_interrupts_a_stalled_provider_request(self):
         with patch.object(transport, "ORACLE", ORACLE):
             transport.LocalRewrite01651OracleTests.test_parent_eof_interrupts_a_stalled_provider_request(self)

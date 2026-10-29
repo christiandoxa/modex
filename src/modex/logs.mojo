@@ -371,6 +371,8 @@ def upstream_event(record: RuntimeRecord, line: String) raises -> Optional[Upstr
 
 
 def token_event(record: RuntimeRecord) -> Optional[TokenEvent]:
+    if record.event != "token_usage":
+        return None
     var input = unsigned_log_number(record.field("input_tokens"))
     var output = unsigned_log_number(record.field("output_tokens"))
     if not input or (record.has("output_tokens") and not output):

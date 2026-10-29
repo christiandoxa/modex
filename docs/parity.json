@@ -888,6 +888,7 @@
         "tests/test_json_float.mojo",
         "tests/test_json_float_oracle.py",
         "tests/test_log_stream.py",
+        "tests/test_log_token_selection_01651_04392.py",
         "tests/test_log_sources.mojo",
         "tests/test_log_recording.py",
         "tests/capture_log_live.py",
@@ -927,7 +928,8 @@
         "docs/evidence/checkpoint2-tests.txt",
         "docs/evidence/checkpoint2-dependencies.txt",
         "docs/evidence/baseline-0.439.2/reference-verification.json",
-        "docs/evidence/baseline-0.165.1/log-01651-tests.md"
+        "docs/evidence/baseline-0.165.1/log-01651-tests.md",
+        "docs/evidence/baseline-0.165.1/log-token-selection.md"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {

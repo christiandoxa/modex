@@ -28,6 +28,15 @@ line still admits the event. Real-process JSON and plain comparisons cover
 initial snapshots and appended records. Redaction remains unchanged. See
 `docs/evidence/baseline-0.165.1/log-stream-escaped-event.md`.
 
+Token usage selection now requires the parsed event name `token_usage` in the
+shared projection. Both pinned releases accept an escaped JSON event name even
+when the raw line has no `token_usage` substring, so this event family does not
+use the upstream payload raw-substring filter. Cross-release process tests
+cover `log last`, stream snapshots, and followed records in JSON and plain
+modes. Other runtime records can still appear as generic stream events; the
+check prevents them from also being emitted as token usage. See
+`docs/evidence/baseline-0.165.1/log-token-selection.md`.
+
 ## Local relay Expect/framing precedence (2026-10-30)
 
 The production relay now matches both pinned releases when `Expect: 100-wait`

@@ -26,6 +26,14 @@ ORACLE = Path(os.environ.get(
     Path.home() / ".cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
 ))
 ORACLE_SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
+ORACLE_04392 = Path(os.environ.get(
+    "PRODEX_ORACLE_04392",
+    os.environ.get(
+        "PRODEX_ORACLE",
+        Path.home() / ".cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+    ),
+))
+ORACLE_04392_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 SYNTHETIC_API_KEY = "synthetic-provider-key"
 WEBSOCKET_FALLBACK = b"provider adapter requires HTTPS Responses transport fallback"
 INVALID_REQUEST_TARGET_BODY = b'{"error":{"code":"invalid_request_target","message":"request target is invalid"}}'
@@ -374,6 +382,8 @@ sequential_requests = [base64.b64decode(part) for part in json.loads(os.environ.
 pipelined_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUESTS_BASE64", "[]"))]
 concurrent_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_CONCURRENT_REQUESTS_BASE64", "[]"))]
 parent_exit_active = os.environ.get("PROBE_PARENT_EXIT_ACTIVE") == "1"
+preconnected_idle = os.environ.get("PROBE_PRECONNECTED_IDLE") == "1"
+admission_stress = os.environ.get("PROBE_ADMISSION_STRESS") == "1"
 pipelined_request_parts = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUEST_PARTS_BASE64", "[]"))]
 pipelined_request_delay = int(os.environ.get("PROBE_PIPELINED_REQUEST_DELAY_MS", "0")) / 1000
 request_parts_sent = [0]
@@ -381,7 +391,7 @@ first_request_part_finished = threading.Event()
 half_close = os.environ.get("PROBE_HALF_CLOSE") == "1"
 request_part_delay = int(os.environ.get("PROBE_REQUEST_PART_DELAY_MS", "0")) / 1000
 writer_thread = None
-if sequential_requests or pipelined_requests or concurrent_requests or parent_exit_active:
+if sequential_requests or pipelined_requests or concurrent_requests or parent_exit_active or preconnected_idle or admission_stress:
     pass
 elif request_parts:
     def send_request_parts():
@@ -457,6 +467,38 @@ class RecordingHTTPResponse(http.client.HTTPResponse):
 
 result = {"status": None, "reason": "", "response_line": "", "raw_response_head_base64": "", "headers": [], "body_base64": "", "wire_body_base64": "", "wire_body_probe_complete": False, "read_error": "", "connection_closed": False, "request_parts_sent_at_response": 0, "response_elapsed_ms": 0, "response_headers_elapsed_ms": 0, "first_body_byte_elapsed_ms": 0, "interim_statuses": []}
 
+def product_process_resources():
+    root = os.getppid()
+    pending = [root]
+    seen = set()
+    sampled = 0
+    rss_kib = 0
+    cpu_ticks = 0
+    fd_count = 0
+    while pending:
+        pid = pending.pop()
+        if pid == os.getpid() or pid in seen:
+            continue
+        seen.add(pid)
+        try:
+            proc = f"/proc/{pid}"
+            status_text = open(proc + "/status", encoding="ascii").read()
+            rss_kib += int(next(
+                line.split()[1] for line in status_text.splitlines()
+                if line.startswith("VmRSS:")
+            ))
+            stat_fields = open(proc + "/stat", encoding="ascii").read().rsplit(")", 1)[1].split()
+            cpu_ticks += int(stat_fields[11]) + int(stat_fields[12])
+            fd_count += len(os.listdir(proc + "/fd"))
+            children = open(proc + f"/task/{pid}/children", encoding="ascii").read().split()
+            pending.extend(int(child) for child in children)
+            sampled += 1
+        except (OSError, ValueError, StopIteration):
+            continue
+    if not sampled:
+        raise RuntimeError("could not find the real product process tree")
+    return sampled, rss_kib, cpu_ticks / os.sysconf("SC_CLK_TCK"), fd_count
+
 def read_expect_response():
     response_file = RecordingReader(connection.makefile("rb"))
     interim_statuses = []
@@ -487,7 +529,131 @@ def read_expect_response():
 
 try:
     request_method = os.environ.get("PROBE_REQUEST_METHOD")
-    if parent_exit_active:
+    if admission_stress:
+        baseline_resources = product_process_resources()
+        partial_count = int(os.environ.get("PROBE_ADMISSION_PARTIAL_COUNT", "136"))
+        blocker_count = int(os.environ.get("PROBE_ADMISSION_BLOCKER_COUNT", "7"))
+        partial_request = base64.b64decode(os.environ["PROBE_ADMISSION_PARTIAL_REQUEST_BASE64"])
+        blocker_request = base64.b64decode(os.environ["PROBE_ADMISSION_BLOCKER_REQUEST_BASE64"])
+        healthy_request = base64.b64decode(os.environ["PROBE_ADMISSION_HEALTHY_REQUEST_BASE64"])
+        blockers = []
+        partials = []
+        healthy_result = {}
+        healthy_done = threading.Event()
+        for _ in range(blocker_count):
+            blocked = socket.create_connection((target.hostname, target.port), timeout=5)
+            blocked.settimeout(5)
+            blocked.sendall(blocker_request)
+            blockers.append(blocked)
+        time.sleep(0.1)
+        connection.sendall(partial_request)
+        partials.append(connection)
+        for _ in range(max(0, partial_count - 1)):
+            partial = socket.create_connection((target.hostname, target.port), timeout=5)
+            partial.settimeout(5)
+            partial.sendall(partial_request)
+            partials.append(partial)
+        time.sleep(int(os.environ.get("PROBE_ADMISSION_SETTLE_MS", "400")) / 1000)
+        healthy = socket.create_connection((target.hostname, target.port), timeout=5)
+        healthy.settimeout(5)
+        def send_healthy_reuse_requests():
+            try:
+                started = time.monotonic()
+                healthy.sendall(healthy_request)
+                first = http.client.HTTPResponse(healthy)
+                first.begin()
+                first_body = first.read()
+                healthy_result["first_status"] = first.status
+                healthy_result["first_body_base64"] = base64.b64encode(first_body).decode("ascii")
+                healthy_result["first_elapsed_ms"] = int((time.monotonic() - started) * 1000)
+                started = time.monotonic()
+                healthy.sendall(healthy_request)
+                second = http.client.HTTPResponse(healthy)
+                second.begin()
+                second_body = second.read()
+                healthy_result["second_status"] = second.status
+                healthy_result["second_body_base64"] = base64.b64encode(second_body).decode("ascii")
+                healthy_result["second_elapsed_ms"] = int((time.monotonic() - started) * 1000)
+            except Exception as error:
+                healthy_result["error"] = type(error).__name__
+            finally:
+                healthy_done.set()
+        healthy_worker = threading.Thread(target=send_healthy_reuse_requests, daemon=True)
+        healthy_worker.start()
+        responded_before_release = healthy_done.wait(2.0)
+        loaded_resources = product_process_resources()
+        sample_ms = int(os.environ.get("PROBE_ADMISSION_RESOURCE_SAMPLE_MS", "1000"))
+        time.sleep(sample_ms / 1000)
+        rested_resources = product_process_resources()
+        result["admission_partial_connections"] = len(partials)
+        result["admission_blockers"] = len(blockers)
+        result["admission_healthy_before_release"] = responded_before_release
+        result["admission_process_count"] = loaded_resources[0]
+        result["admission_rss_delta_kib"] = loaded_resources[1] - baseline_resources[1]
+        result["admission_fd_delta"] = loaded_resources[3] - baseline_resources[3]
+        result["admission_cpu_seconds"] = rested_resources[2] - loaded_resources[2]
+        result["admission_sample_seconds"] = sample_ms / 1000
+        for held in blockers + [partial for partial in partials if partial is not connection]:
+            held.close()
+        healthy_done.wait(5)
+        healthy_worker.join(1)
+        healthy.close()
+        result["admission_healthy_results"] = healthy_result
+        result["status"] = healthy_result.get("first_status")
+        result["reason"] = "OK" if result["status"] == 200 else ""
+        result["body_base64"] = healthy_result.get("first_body_base64", "")
+        result["headers"] = []
+        result["request_parts_sent_at_response"] = 1
+        result["response_elapsed_ms"] = healthy_result.get("first_elapsed_ms", 0)
+        result["response_line"] = ""
+        result["wire_body_base64"] = result["body_base64"]
+        result["raw_response_head_base64"] = ""
+    elif preconnected_idle:
+        time.sleep(int(os.environ.get("PROBE_PRECONNECTED_SETTLE_MS", "100")) / 1000)
+        baseline_resources = product_process_resources()
+        partial_request = base64.b64decode(os.environ["PROBE_PRECONNECTED_PARTIAL_REQUEST_BASE64"])
+        partial_count = int(os.environ.get("PROBE_PRECONNECTED_PARTIAL_COUNT", "136"))
+        idle_count = int(os.environ.get("PROBE_PRECONNECTED_IDLE_COUNT", "0"))
+        idle_clients = []
+        for _ in range(idle_count):
+            idle = socket.create_connection((target.hostname, target.port), timeout=5)
+            idle.settimeout(5)
+            idle_clients.append(idle)
+        partial_clients = []
+        for _ in range(partial_count):
+            partial = socket.create_connection((target.hostname, target.port), timeout=5)
+            partial.settimeout(5)
+            partial.sendall(partial_request)
+            partial_clients.append(partial)
+        time.sleep(int(os.environ.get("PROBE_PRECONNECTED_FLOOD_SETTLE_MS", "400")) / 1000)
+        loaded_resources = product_process_resources()
+        time.sleep(int(os.environ.get("PROBE_PRECONNECTED_RESOURCE_SAMPLE_MS", "1000")) / 1000)
+        rested_resources = product_process_resources()
+        healthy_request = base64.b64decode(os.environ["PROBE_PRECONNECTED_HEALTHY_REQUEST_BASE64"])
+        result.update({
+            "preconnected_partial_count": len(partial_clients),
+            "preconnected_idle_count": len(idle_clients),
+            "admission_process_count": loaded_resources[0],
+            "admission_rss_delta_kib": loaded_resources[1] - baseline_resources[1],
+            "admission_fd_delta": loaded_resources[3] - baseline_resources[3],
+            "admission_cpu_seconds": rested_resources[2] - loaded_resources[2],
+            "admission_sample_seconds": int(os.environ.get("PROBE_PRECONNECTED_RESOURCE_SAMPLE_MS", "1000")) / 1000,
+        })
+        connection.sendall(healthy_request)
+        response = RecordingHTTPResponse(connection, method="POST")
+        response.begin()
+        body = response.read()
+        result.update({
+            "status": response.status,
+            "reason": response.reason,
+            "response_line": f"HTTP/1.{response.version - 10} {response.status} {response.reason}",
+            "raw_response_head_base64": base64.b64encode(response.raw_response_head).decode("ascii"),
+            "headers": response.getheaders(),
+            "body_base64": base64.b64encode(body).decode("ascii"),
+        })
+        for partial in partial_clients + idle_clients:
+            partial.close()
+    elif parent_exit_active:
         connection.close()
         active_client = socket.create_connection((target.hostname, target.port), timeout=5)
         active_client.settimeout(5)
@@ -2175,6 +2341,32 @@ def run_probe(binary: Path, case, upstream: Upstream):
                 separators=(",", ":"),
             ),
             "PROBE_PARENT_EXIT_ACTIVE": "1" if case.get("parent_exit_active") else "0",
+            "PROBE_PRECONNECTED_IDLE": "1" if case.get("preconnected_idle") else "0",
+            "PROBE_PRECONNECTED_SETTLE_MS": str(case.get("preconnected_settle_ms", 100)),
+            "PROBE_PRECONNECTED_PARTIAL_COUNT": str(case.get("preconnected_partial_count", 136)),
+            "PROBE_PRECONNECTED_IDLE_COUNT": str(case.get("preconnected_idle_count", 0)),
+            "PROBE_PRECONNECTED_FLOOD_SETTLE_MS": str(case.get("preconnected_flood_settle_ms", 400)),
+            "PROBE_PRECONNECTED_RESOURCE_SAMPLE_MS": str(case.get("preconnected_resource_sample_ms", 1000)),
+            "PROBE_ADMISSION_STRESS": "1" if case.get("admission_stress") else "0",
+            "PROBE_ADMISSION_PARTIAL_COUNT": str(case.get("admission_partial_count", 136)),
+            "PROBE_ADMISSION_BLOCKER_COUNT": str(case.get("admission_blocker_count", 7)),
+            "PROBE_ADMISSION_PARTIAL_REQUEST_BASE64": base64.b64encode(
+                case.get("admission_partial_request", b"")
+            ).decode("ascii"),
+            "PROBE_ADMISSION_BLOCKER_REQUEST_BASE64": base64.b64encode(
+                case.get("admission_blocker_request", b"")
+            ).decode("ascii"),
+            "PROBE_ADMISSION_HEALTHY_REQUEST_BASE64": base64.b64encode(
+                case.get("admission_healthy_request", b"")
+            ).decode("ascii"),
+            "PROBE_ADMISSION_SETTLE_MS": str(case.get("admission_settle_ms", 400)),
+            "PROBE_ADMISSION_RESOURCE_SAMPLE_MS": str(case.get("admission_resource_sample_ms", 1000)),
+            "PROBE_PRECONNECTED_PARTIAL_REQUEST_BASE64": base64.b64encode(
+                case.get("preconnected_partial_request", b"")
+            ).decode("ascii"),
+            "PROBE_PRECONNECTED_HEALTHY_REQUEST_BASE64": base64.b64encode(
+                case.get("preconnected_healthy_request", b"")
+            ).decode("ascii"),
             "PROBE_PARENT_EXIT_TRIGGER": str(case.get("parent_exit_trigger", "")),
             "PROBE_PIPELINED_REQUEST_PARTS_BASE64": json.dumps(
                 [base64.b64encode(part).decode("ascii") for part in case.get("pipelined_request_parts", [])],
@@ -2464,6 +2656,162 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                             normalize_response_body(case, oracle_response["body"]),
                             normalize_response_body(case, modex_response["body"]),
                         )
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_admission_eviction_compares_preconnected_idle_and_keepalive_sockets(self):
+        if not ORACLE_04392.is_file():
+            raise AssertionError(f"Pinned Prodex 0.439.2 oracle is missing: {ORACLE_04392}")
+        if hashlib.sha256(ORACLE_04392.read_bytes()).hexdigest() != ORACLE_04392_SHA256:
+            raise AssertionError("Prodex oracle checksum does not match pinned 0.439.2")
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        scenarios = [
+            (
+                "preconnected_idle_partial_flood",
+                {
+                    "name": "preconnected_idle_before_partial_header_flood",
+                    "request": b"GET /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+                    "preconnected_idle": True,
+                    "preconnected_partial_count": 136,
+                    "preconnected_partial_request": (
+                        b"GET /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+                        b"X-Pending: unfinished"
+                    ),
+                    "preconnected_healthy_request": request_bytes(
+                        headers=(("Connection", "close"),),
+                        target=b"/v1/responses?admission=preconnected",
+                    ),
+                    "environment_overrides": {"PRODEX_RUNTIME_PROXY_WORKER_COUNT": "8"},
+                    "process_timeout": 40,
+                },
+            ),
+            (
+                "preconnected_idle_flood",
+                {
+                    "name": "preconnected_idle_before_idle_client_flood",
+                    "request": b"GET /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+                    "preconnected_idle": True,
+                    "preconnected_partial_count": 0,
+                    "preconnected_idle_count": 136,
+                    "preconnected_healthy_request": request_bytes(
+                        headers=(("Connection", "close"),),
+                        target=b"/v1/responses?admission=preconnected-idle",
+                    ),
+                    "environment_overrides": {"PRODEX_RUNTIME_PROXY_WORKER_COUNT": "8"},
+                    "process_timeout": 40,
+                },
+            ),
+            (
+                "full_partial_backlog_without_idle_slots",
+                {
+                    "name": "aggregate_admission_136_partial_heads",
+                    "request": b"GET /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+                    "admission_stress": True,
+                    "admission_partial_count": 136,
+                    "admission_blocker_count": 7,
+                    "admission_partial_request": (
+                        b"GET /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+                        b"X-Pending: unfinished"
+                    ),
+                    "admission_blocker_request": (
+                        b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+                        b"Content-Type: application/json\r\nContent-Length: 1\r\n"
+                        b"Connection: close\r\n\r\n"
+                    ),
+                    "admission_healthy_request": request_bytes(
+                        headers=(("Connection", "keep-alive"),),
+                        target=b"/v1/responses?admission=healthy",
+                    ),
+                    "environment_overrides": {"PRODEX_RUNTIME_PROXY_WORKER_COUNT": "8"},
+                    "process_timeout": 40,
+                },
+            ),
+        ]
+        try:
+            for name, case in scenarios:
+                results = {
+                    label: run_probe(binary, case, upstream)
+                    for label, binary in (
+                        ("0.165.1", ORACLE),
+                        ("0.439.2", ORACLE_04392),
+                        ("Modex", MODEX),
+                    )
+                }
+                for label, (response, records) in results.items():
+                    with self.subTest(scenario=name, label=label):
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        if name == "full_partial_backlog_without_idle_slots":
+                            healthy = response["admission_healthy_results"]
+                            self.assertEqual(response["admission_partial_connections"], 136)
+                            self.assertEqual(response["admission_blockers"], 7)
+                            self.assertEqual(
+                                response["admission_healthy_before_release"],
+                                label != "Modex",
+                                response,
+                            )
+                            self.assertEqual(healthy.get("first_status"), 200, response)
+                            self.assertEqual(healthy.get("second_status"), 200, response)
+                            self.assertEqual(
+                                base64.b64decode(healthy["first_body_base64"]),
+                                RESPONSES_RESPONSE,
+                                label,
+                            )
+                            self.assertEqual(
+                                base64.b64decode(healthy["second_body_base64"]),
+                                RESPONSES_RESPONSE,
+                                label,
+                            )
+                            self.assertEqual(len(records), 2, label)
+                            if label == "Modex":
+                                self.assertLessEqual(
+                                    response["admission_fd_delta"],
+                                    response["admission_partial_connections"]
+                                    + response["admission_blockers"]
+                                    + 40,
+                                    response,
+                                )
+                        elif label != "Modex":
+                            self.assertEqual(response.get("status"), 200, response)
+                            self.assertEqual(response.get("body"), RESPONSES_RESPONSE, label)
+                            self.assertEqual(len(records), 1, label)
+                        else:
+                            self.assertIsNone(response.get("status"), response)
+                            self.assertIn("read_error", response)
+                            self.assertEqual(records, [], label)
+                        if label == "Modex" and name != "full_partial_backlog_without_idle_slots":
+                            self.assertLessEqual(
+                                response["admission_fd_delta"],
+                                case["preconnected_partial_count"] + case.get("preconnected_idle_count", 0) + 40,
+                                response,
+                            )
+                        if name == "full_partial_backlog_without_idle_slots":
+                            healthy = response["admission_healthy_results"]
+                            print(
+                                f"admission-case[{name}/{label}] "
+                                f"before_release={response['admission_healthy_before_release']} "
+                                f"statuses={healthy.get('first_status')},{healthy.get('second_status')} "
+                                f"upstream_requests={len(records)}"
+                            )
+                        else:
+                            print(
+                                f"admission-case[{name}/{label}] status={response.get('status')} "
+                                f"read_error={response.get('read_error')} "
+                                f"upstream_requests={len(records)}"
+                            )
+                        if "admission_process_count" in response:
+                            self.assertGreaterEqual(response["admission_process_count"], 1)
+                            print(
+                                f"admission[{name}/{label}] "
+                                f"pids={response['admission_process_count']} "
+                                f"rss_delta_kib={response['admission_rss_delta_kib']} "
+                                f"fd_delta={response['admission_fd_delta']} "
+                                f"cpu_seconds_over_{response['admission_sample_seconds']:.1f}s="
+                                f"{response['admission_cpu_seconds']:.3f}"
+                            )
         finally:
             upstream.shutdown()
             upstream.server_close()
@@ -3327,6 +3675,11 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                 self.assertEqual(len(records), 1)
 
     def test_saturated_idle_pool_evicts_oldest_connection_to_admit_new_client(self):
+        if (
+            not ORACLE_04392.is_file()
+            or hashlib.sha256(ORACLE_04392.read_bytes()).hexdigest() != ORACLE_04392_SHA256
+        ):
+            raise AssertionError("Pinned Prodex 0.439.2 oracle is missing or has the wrong checksum")
         request = request_bytes(target=b"/v1/responses")
         case = {
             "name": "saturated_idle_pool_admits_new_client",
@@ -3339,21 +3692,33 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)
         worker.start()
         try:
-            response, records = run_probe(MODEX, case, upstream)
+            results = {
+                label: run_probe(binary, case, upstream)
+                for label, binary in (
+                    ("0.165.1", ORACLE), ("0.439.2", ORACLE_04392), ("Modex", MODEX),
+                )
+            }
         finally:
             upstream.shutdown()
             upstream.server_close()
             worker.join(timeout=2)
 
-        self.assertEqual(response["process_exit"], 0, response["stderr"])
-        self.assertEqual((response["status"], response["body"]), (200, RESPONSES_RESPONSE))
-        self.assertEqual(response["saturation_held_connections"], 127)
-        self.assertEqual(response["saturation_overflow_status"], 200)
-        self.assertEqual(response["saturation_overflow_body"], RESPONSES_RESPONSE)
-        self.assertTrue(response["saturation_oldest_closed"])
-        self.assertEqual(len(records), 129)
+        for label, (response, records) in results.items():
+            with self.subTest(label=label):
+                self.assertEqual(response["process_exit"], 0, response["stderr"])
+                self.assertEqual((response["status"], response["body"]), (200, RESPONSES_RESPONSE))
+                self.assertEqual(response["saturation_held_connections"], 127)
+                self.assertEqual(response["saturation_overflow_status"], 200)
+                self.assertEqual(response["saturation_overflow_body"], RESPONSES_RESPONSE)
+                self.assertEqual(response["saturation_oldest_closed"], label == "Modex")
+                self.assertEqual(len(records), 129)
 
     def test_saturated_pool_preserves_oldest_partial_request_during_admission(self):
+        if (
+            not ORACLE_04392.is_file()
+            or hashlib.sha256(ORACLE_04392.read_bytes()).hexdigest() != ORACLE_04392_SHA256
+        ):
+            raise AssertionError("Pinned Prodex 0.439.2 oracle is missing or has the wrong checksum")
         request = request_bytes(target=b"/v1/responses")
         header_end = request.index(b"\r\n\r\n") + 4
         case = {
@@ -3368,20 +3733,27 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)
         worker.start()
         try:
-            response, records = run_probe(MODEX, case, upstream)
+            results = {
+                label: run_probe(binary, case, upstream)
+                for label, binary in (
+                    ("0.165.1", ORACLE), ("0.439.2", ORACLE_04392), ("Modex", MODEX),
+                )
+            }
         finally:
             upstream.shutdown()
             upstream.server_close()
             worker.join(timeout=2)
 
-        self.assertEqual(response["process_exit"], 0, response["stderr"])
-        self.assertEqual(response["saturation_oldest_status"], 200)
-        self.assertEqual(response["saturation_oldest_body"], RESPONSES_RESPONSE)
-        self.assertEqual(response["saturation_overflow_status"], 200)
-        self.assertEqual(response["saturation_overflow_body"], RESPONSES_RESPONSE)
-        self.assertEqual(response["saturation_held_connections"], 127)
-        self.assertFalse(response["saturation_oldest_closed"])
-        self.assertEqual(len(records), 130)
+        for label, (response, records) in results.items():
+            with self.subTest(label=label):
+                self.assertEqual(response["process_exit"], 0, response["stderr"])
+                self.assertEqual(response["saturation_oldest_status"], 200)
+                self.assertEqual(response["saturation_oldest_body"], RESPONSES_RESPONSE)
+                self.assertEqual(response["saturation_overflow_status"], 200)
+                self.assertEqual(response["saturation_overflow_body"], RESPONSES_RESPONSE)
+                self.assertEqual(response["saturation_held_connections"], 127)
+                self.assertFalse(response["saturation_oldest_closed"])
+                self.assertEqual(len(records), 130)
 
     def test_ready_parked_clients_are_served_during_new_client_churn(self):
         request = request_bytes(target=b"/v1/responses")

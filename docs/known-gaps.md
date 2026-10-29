@@ -87,6 +87,18 @@ and security behavior remain unverified. See
 `docs/evidence/baseline-0.165.1/local-relay-http.md` and
 `docs/evidence/baseline-0.165.1/local-relay-status-reasons.md`.
 
+Both pinned TinyHTTP releases submit every accepted socket to a task pool that
+creates threads as needed and has no fixed connection cap. Three-way production
+comparisons show that this preserves preconnected idle sockets under request
+floods; the bounded Modex listener may evict one to admit newer clients. Modex
+also delays a healthy connection when its 128 parked and worker-sized overflow
+queues are full of partial headers, while both releases serve it. Resource
+samples now walk the product process tree, but they are single Linux samples
+and do not account for per-connection retained bytes. Large-head capture,
+parent EOF, and timeout controls have not been repeated together under this
+backlog. See
+`docs/evidence/baseline-0.165.1/local-relay-admission.md`.
+
 The local rewrite adapter's 426 WebSocket fallback matches its selected
 0.165.1 behavior. The separate runtime-proxy route requires bounded idle
 WebSocket parking, independently reclaimed handshake capacity,

@@ -248,6 +248,25 @@ active workers retaining large parsed heads. The current bounded queue and
 its documented saturation gap remain in production; these observations are
 not parity evidence.
 
+The 2026-10-30 three-process admission follow-up traced both pinned releases
+to TinyHTTP's uncapped `TaskPool`: each accepted socket becomes a task, and a
+new thread starts whenever none is waiting. Synthetic production comparisons
+confirm that 0.165.1 and 0.439.2 preserve a preconnected idle socket during
+136-client floods; Modex closes it. Under seven body-blocked workers and 136
+partial headers, both releases serve two healthy keep-alive requests before
+release while Modex waits until held clients close. The bounded Modex listener
+also deliberately evicts the oldest completed idle socket from a full pool,
+while retaining an oldest partial request. A one-socket carveout would shift
+eviction to later idle clients and does not match the uncapped release policy,
+so no production policy change was made. Evidence and one-sample process-tree
+metrics are in `docs/evidence/baseline-0.165.1/local-relay-admission.md` and
+`docs/evidence/baseline-0.165.1/local-relay-admission-tests.txt`. The
+process-tree probe excludes fake Codex and counts the supervisor plus relay
+child; the earlier prototype probe's `/proc/<ppid>` numbers target Modex's
+supervisor only and remain invalid.
+These tests do not combine the backlog with parent EOF, large request heads,
+or header timers. No admission contract or platform status is promoted.
+
 DeepSeek Super now preserves a safely checked shared `config.toml` in the
 isolated child home. The three DeepSeek runtime settings take precedence over
 environment values, and string-valued catalog context/compaction settings
@@ -3691,10 +3710,12 @@ pinned releases and Modex returned two 200 responses. When that client
 connected before the flood and sent after the settle period, the candidate
 closed it with `RemoteDisconnected` and sent no upstream request, while both
 releases served it. The 4 MiB candidate has no qualified resource comparison
-because its `/proc/<ppid>` sample targets the wrong process for Modex. Full
-measurements, both socket orderings, and reproduction commands are in
-`docs/evidence/runtime-overflow-admission.md`; the experiment is not parity
-evidence.
+because its `/proc/<ppid>` sample targets the Modex supervisor, not the relay.
+Current-main three-way results and process-tree measurements are recorded in
+`docs/evidence/baseline-0.165.1/local-relay-admission.md`; earlier candidate
+measurements and reproduction commands remain in
+`docs/evidence/runtime-overflow-admission.md`. The candidate remains
+unqualified and untouched.
 
 Buffered Anthropic response validation now admits multiple web-search blocks
 and selected interleavings of text, thinking, orphan results, and pending

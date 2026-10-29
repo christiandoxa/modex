@@ -1,0 +1,26 @@
+test_admission_eviction_compares_preconnected_idle_and_keepalive_sockets (test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_admission_eviction_compares_preconnected_idle_and_keepalive_sockets) ... ok
+test_saturated_idle_pool_evicts_oldest_connection_to_admit_new_client (test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_saturated_idle_pool_evicts_oldest_connection_to_admit_new_client) ... ok
+test_saturated_pool_preserves_oldest_partial_request_during_admission (test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_saturated_pool_preserves_oldest_partial_request_during_admission) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 29.667s
+
+OK
+admission-case[preconnected_idle_partial_flood/0.165.1] status=200 read_error= upstream_requests=1
+admission[preconnected_idle_partial_flood/0.165.1] pids=1 rss_delta_kib=2332 fd_delta=408 cpu_seconds_over_1.0s=0.000
+admission-case[preconnected_idle_partial_flood/0.439.2] status=200 read_error= upstream_requests=1
+admission[preconnected_idle_partial_flood/0.439.2] pids=1 rss_delta_kib=2248 fd_delta=272 cpu_seconds_over_1.0s=0.000
+admission-case[preconnected_idle_partial_flood/Modex] status=None read_error=RemoteDisconnected upstream_requests=0
+admission[preconnected_idle_partial_flood/Modex] pids=2 rss_delta_kib=400 fd_delta=135 cpu_seconds_over_1.0s=0.290
+admission-case[preconnected_idle_flood/0.165.1] status=200 read_error= upstream_requests=1
+admission[preconnected_idle_flood/0.165.1] pids=1 rss_delta_kib=2256 fd_delta=408 cpu_seconds_over_1.0s=0.000
+admission-case[preconnected_idle_flood/0.439.2] status=200 read_error= upstream_requests=1
+admission[preconnected_idle_flood/0.439.2] pids=1 rss_delta_kib=2260 fd_delta=272 cpu_seconds_over_1.0s=0.000
+admission-case[preconnected_idle_flood/Modex] status=None read_error=RemoteDisconnected upstream_requests=0
+admission[preconnected_idle_flood/Modex] pids=2 rss_delta_kib=52 fd_delta=127 cpu_seconds_over_1.0s=0.030
+admission-case[full_partial_backlog_without_idle_slots/0.165.1] before_release=True statuses=200,200 upstream_requests=2
+admission[full_partial_backlog_without_idle_slots/0.165.1] pids=1 rss_delta_kib=5260 fd_delta=429 cpu_seconds_over_1.0s=0.000
+admission-case[full_partial_backlog_without_idle_slots/0.439.2] before_release=True statuses=200,200 upstream_requests=2
+admission[full_partial_backlog_without_idle_slots/0.439.2] pids=1 rss_delta_kib=4440 fd_delta=286 cpu_seconds_over_1.0s=0.000
+admission-case[full_partial_backlog_without_idle_slots/Modex] before_release=False statuses=200,200 upstream_requests=2
+admission[full_partial_backlog_without_idle_slots/Modex] pids=2 rss_delta_kib=700 fd_delta=143 cpu_seconds_over_1.0s=0.280

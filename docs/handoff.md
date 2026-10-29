@@ -251,6 +251,16 @@ search/result/text ordering and indexes. The shared request validator and
 buffered mixed responses before the request contract can be widened. See
 `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
 
+Serial searches that reuse an ID now match both release binaries. The earliest
+matching search receives the first result; a later result for that ID is
+accepted without a second completion, and the later search completes at
+`message_stop` with no sources. Ordered append, binary block-index lookup and
+an earliest-ID index remove cumulative quadratic search scans. Search records
+and completed output items still require linear memory, and the upstream SSE
+body has no aggregate byte or search-count cap. Long-lived streams remain
+unbounded in total retained search/output memory. Interleaved search calls and
+results remain unverified.
+
 The production Anthropic stream parser now maps a tested function `tool_use`
 with split JSON fragments to the same 0.165.1 Responses events. Several invalid
 stop sequences remain explicitly different; image blocks remain unsupported.

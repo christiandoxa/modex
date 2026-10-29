@@ -88,6 +88,15 @@ def main() raises:
     assert_true('"id":"search_2"' in multi_search_response)
     assert_true('"text":"Found it."' in multi_search_response)
 
+    var duplicate_id_search = second_search.replace("search_2", "search_1")
+    var duplicate_id_events = collect_anthropic_completed(
+        message_start + search_result + duplicate_id_search + multi_text_start
+        + multi_text_delta + multi_text_stop + message_delta + message_stop
+    )
+    var duplicate_id_response = duplicate_id_events[len(duplicate_id_events) - 1]
+    assert_true('"queries":["query"],"sources":[{"type":"url","url":"https://example.test"}]' in duplicate_id_response)
+    assert_true('"queries":["query"],"sources":[]' in duplicate_id_response)
+
     var before_stop = message_start + search_result + text_start + text_delta + text_stop
     var sequence_delta = 'data: {"type":"message_delta","delta":{"stop_reason":"stop_sequence","stop_sequence":"synthetic"},"usage":{"output_tokens":5}}\n\n'
     var sequence_events = collect_anthropic_completed(before_stop + sequence_delta + message_stop)

@@ -54,3 +54,13 @@ calls/results and mixed server-side search with user-function calls remain
 unverified. The mixed request path also remains unsupported: Modex requires one
 `web_search_preview` request tool and does not translate function declarations
 to Anthropic `input_schema` values.
+
+Two serial searches with the same `server_tool_use.id` also match both real
+release binaries. The first result completes the earliest matching search. The
+second result is accepted against that already-completed ID, then the later
+search is completed at `message_stop` with no sources. The production reader
+uses ordered append and binary block-index lookup plus an earliest-ID index, so
+serial search handling avoids cumulative quadratic list scans. It still retains
+search records and completed output items in memory proportional to stream
+search count. The upstream SSE body has no aggregate byte or search-count cap;
+that linear-memory bound remains a gap for long-lived streams.

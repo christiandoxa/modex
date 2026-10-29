@@ -183,6 +183,93 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
         )
         self.assertEqual(output[2]["content"][0]["text"], "Found both.")
 
+    def test_anthropic_repeated_search_id_matches_release_completion_policy(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic query",
+            "stream": True,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        events = [
+            START,
+            {"type": "content_block_start", "index": 0, "content_block": {
+                "type": "server_tool_use", "id": "shared_search", "name": "web_search", "input": {},
+            }},
+            {"type": "content_block_delta", "index": 0, "delta": {
+                "type": "input_json_delta", "partial_json": '{"query":"first"}',
+            }},
+            {"type": "content_block_stop", "index": 0},
+            {"type": "content_block_start", "index": 1, "content_block": {
+                "type": "web_search_tool_result", "tool_use_id": "shared_search", "content": [
+                    {"type": "web_search_result", "url": "https://one.example.test", "title": "One"},
+                ],
+            }},
+            {"type": "content_block_stop", "index": 1},
+            {"type": "content_block_start", "index": 2, "content_block": {
+                "type": "server_tool_use", "id": "shared_search", "name": "web_search", "input": {},
+            }},
+            {"type": "content_block_delta", "index": 2, "delta": {
+                "type": "input_json_delta", "partial_json": '{"query":"second"}',
+            }},
+            {"type": "content_block_stop", "index": 2},
+            {"type": "content_block_start", "index": 3, "content_block": {
+                "type": "web_search_tool_result", "tool_use_id": "shared_search", "content": [
+                    {"type": "web_search_result", "url": "https://two.example.test", "title": "Two"},
+                ],
+            }},
+            {"type": "content_block_stop", "index": 3},
+            {"type": "content_block_start", "index": 4, "content_block": {
+                "type": "text", "text": "",
+            }},
+            {"type": "content_block_delta", "index": 4, "delta": {
+                "type": "text_delta", "text": "Found both.",
+            }},
+            {"type": "content_block_stop", "index": 4},
+            MESSAGE_DELTA,
+            STOP,
+        ]
+        reply = {
+            "status": 200,
+            "content_type": "text/event-stream",
+            "body": stream(events),
+        }
+        captures = []
+        for binary in (ORACLE_01651, ORACLE_04392, MODEX):
+            posts, responses = observe_turns(binary, [request], [reply])
+            self.assertEqual(len(posts), 1)
+            self.assertEqual(len(responses), 1)
+            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+            self.assertEqual(responses[0]["status"], 200)
+            captures.append((posts, _normalized_events(bytes.fromhex(responses[0]["body"]))))
+
+        expected_posts, expected_events = captures[0]
+        historical_posts, historical_events = captures[1]
+        actual_posts, actual_events = captures[2]
+        self.assertEqual(historical_posts[0]["body"], expected_posts[0]["body"])
+        self.assertEqual(actual_posts[0]["body"], expected_posts[0]["body"])
+        self.assertEqual(historical_events, expected_events)
+        self.assertEqual(actual_events, expected_events)
+        completed = [
+            event[1] for event in expected_events
+            if event[0] == "response.output_item.done"
+            and event[1].get("item", {}).get("type") == "web_search_call"
+        ]
+        self.assertEqual([event["output_index"] for event in completed], [0, 2])
+        self.assertEqual([event["item"]["id"] for event in completed], ["shared_search"] * 2)
+        self.assertEqual(completed[0]["item"]["action"]["queries"], ["first"])
+        self.assertEqual(
+            completed[0]["item"]["action"]["sources"][0]["url"],
+            "https://one.example.test",
+        )
+        self.assertEqual(completed[1]["item"]["action"]["queries"], ["second"])
+        self.assertEqual(completed[1]["item"]["action"]["sources"], [])
+        response = expected_events[-1][1]["response"]
+        searches = [item for item in response["output"] if item["type"] == "web_search_call"]
+        self.assertEqual([item["action"]["sources"] for item in searches], [
+            [{"type": "url", "url": "https://one.example.test", "title": "One"}],
+            [],
+        ])
+
     def test_anthropic_buffered_function_tool_use_matches_release(self):
         request = {
             "model": "deepseek-chat",

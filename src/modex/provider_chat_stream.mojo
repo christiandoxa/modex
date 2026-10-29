@@ -1,6 +1,6 @@
 """Stateful DeepSeek-compatible chat chunks translated into Responses SSE."""
 
-from std.collections import List
+from std.collections import Dict, List
 
 from .json import JSON_ARRAY, JSON_NULL, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
 from .provider_chat_chunk import chat_choice_delta, chat_choice_metadata, chat_first_choice, chat_stream_error
@@ -48,6 +48,7 @@ struct DeepSeekChatState:
     var tools: List[ChatStreamTool]
     var external_output_items: List[String]
     var anthropic_searches: List[AnthropicWebSearch]
+    var anthropic_search_first_by_id: Dict[String, Int]
     var anthropic_tool_indices: List[UInt64]
     var anthropic_stopped_tool_indices: List[UInt64]
     var anthropic_input_tokens: UInt64
@@ -82,6 +83,7 @@ struct DeepSeekChatState:
         self.tools = List[ChatStreamTool]()
         self.external_output_items = List[String]()
         self.anthropic_searches = List[AnthropicWebSearch]()
+        self.anthropic_search_first_by_id = Dict[String, Int]()
         self.anthropic_tool_indices = List[UInt64]()
         self.anthropic_stopped_tool_indices = List[UInt64]()
         self.anthropic_input_tokens = 0
@@ -210,7 +212,6 @@ struct DeepSeekChatState:
                 _only_fields(doc, block, ["type", "id", "name", "input"], "web-search tool use")
                 if (
                     self.anthropic_text_index
-                    or self.anthropic_search_index(block_index) >= 0
                     or (self.anthropic_result_index and block_index <= self.anthropic_result_index.value())
                 ):
                     raise Error("Anthropic web-search block is out of order")
@@ -402,13 +403,11 @@ struct DeepSeekChatState:
             _only_fields(doc, doc.root, ["type"], "message_stop event")
             if self.anthropic_phase != 1 and self.anthropic_phase != 7 and self.anthropic_phase != 8:
                 raise Error("Anthropic stream ended outside the supported web-search response shape")
-            for search in self.anthropic_searches:
-                if not search.done:
-                    raise Error("Anthropic stream ended outside the supported web-search response shape")
             if self.anthropic_searches and not self.anthropic_text_index:
                 raise Error("Anthropic stream ended outside the supported web-search response shape")
             var emit_created = self.anthropic_phase == 8 or len(self.anthropic_searches) > 0
             self.anthropic_phase = 9
+            # The release completes searches still pending at message_stop.
             var events = self.complete_anthropic_searches()
             if not self.created and emit_created:
                 self.created = True
@@ -426,10 +425,11 @@ struct DeepSeekChatState:
         var search = AnthropicWebSearch(index, id, input_json, "[]", False)
         self.anthropic_active_search_index = Optional[UInt64](index)
         var item = _web_search_item(search, True)
-        var position = 0
-        while position < len(self.anthropic_searches) and self.anthropic_searches[position].output_index < search.output_index:
-            position += 1
-        self.anthropic_searches.insert(position, search^)
+        # Serial phases and increasing block indexes keep searches ordered.
+        var position = len(self.anthropic_searches)
+        if not (id in self.anthropic_search_first_by_id):
+            self.anthropic_search_first_by_id[id] = position
+        self.anthropic_searches.append(search^)
         var output = List[String]()
         output.append(self.event("response.output_item.added", '"output_index":' + String(index) + ',"item":' + item))
         return output^
@@ -441,20 +441,17 @@ struct DeepSeekChatState:
         var content = doc.get(block, "content")
         if len(doc.nodes[content].children) == 0:
             raise Error("Anthropic web-search result must contain at least one source")
+        var first = self.anthropic_search_first_by_id.get(id)
+        if not first:
+            raise Error("Anthropic web-search result does not match a tool use")
+        var position = first.value()
         var output = List[String]()
-        var found = False
-        for position in range(len(self.anthropic_searches)):
-            if self.anthropic_searches[position].id != id: continue
-            if self.anthropic_searches[position].done:
-                raise Error("Anthropic web-search result is duplicated")
-            self.anthropic_searches[position].sources = sources
-            if not self.anthropic_searches[position].done:
-                var item = _web_search_item(self.anthropic_searches[position], False)
-                self.anthropic_searches[position].done = True
-                self.external_output_items.append(item)
-                output.append(self.event("response.output_item.done", '"output_index":' + String(self.anthropic_searches[position].output_index) + ',"item":' + item))
-            found = True
-        if not found: raise Error("Anthropic web-search result does not match a tool use")
+        self.anthropic_searches[position].sources = sources
+        if not self.anthropic_searches[position].done:
+            var item = _web_search_item(self.anthropic_searches[position], False)
+            self.anthropic_searches[position].done = True
+            self.external_output_items.append(item)
+            output.append(self.event("response.output_item.done", '"output_index":' + String(self.anthropic_searches[position].output_index) + ',"item":' + item))
         return output^
 
     def complete_anthropic_searches(mut self) raises -> List[String]:
@@ -468,8 +465,16 @@ struct DeepSeekChatState:
         return output^
 
     def anthropic_search_index(self, index: UInt64) -> Int:
-        for position in range(len(self.anthropic_searches)):
-            if self.anthropic_searches[position].output_index == index: return position
+        var low = 0
+        var high = len(self.anthropic_searches) - 1
+        while low <= high:
+            var middle = low + (high - low) / 2
+            var candidate = self.anthropic_searches[middle].output_index
+            if candidate == index: return middle
+            if candidate < index:
+                low = middle + 1
+            else:
+                high = middle - 1
         return -1
 
     def apply_metadata(mut self, doc: JsonDocument) raises:

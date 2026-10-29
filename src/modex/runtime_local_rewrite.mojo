@@ -649,11 +649,11 @@ struct LocalRewriteSharedState(Movable):
             self.completed = List[LoopbackHTTPConnection]()
         return ready^
 
-    def active_count(mut self) -> Int:
-        var count: Int
+    def has_pending_work(mut self) -> Bool:
+        var pending: Bool
         with BlockingScopedLock(self.lock):
-            count = self.active
-        return count
+            pending = self.active > 0 or len(self.queued) > 0 or len(self.completed) > 0
+        return pending
 
     def is_stopping(self) -> Bool:
         return self.stopping.load() != 0
@@ -1039,8 +1039,9 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
             if overflow:
                 sleep(0.001)
                 continue
-            var active = state_ptr[].active_count()
-            var accepted = listener.accept(UInt64(100 if parent_fd >= 0 or len(parked) > 0 or active > 0 else 1000))
+            # Recheck worker completions promptly without polling an idle relay as often.
+            var timeout = 5 if state_ptr[].has_pending_work() else (100 if parent_fd >= 0 or len(parked) > 0 else 1000)
+            var accepted = listener.accept(UInt64(timeout))
             if accepted:
                 var incoming = accepted.take()
                 overflow = Optional[LoopbackHTTPConnection](incoming^)

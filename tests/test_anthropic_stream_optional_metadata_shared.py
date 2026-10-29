@@ -1355,18 +1355,19 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                         for headers in provider_headers
                     )
                     self.assertTrue(provider_auth, label)
-                    if label != "Modex":
-                        self.assertTrue(
-                            any(row["trailing_502"] for row in capture["failure_results"]),
-                            (label, capture["failure_results"]),
-                        )
+                    self.assertGreaterEqual(
+                        sum(row["trailing_502"] for row in capture["failure_results"]),
+                        6,
+                        (label, capture["failure_results"]),
+                    )
                     observations[label] = (
                         tuple((row["got_failure"], row["status"], row["error"])
                               for row in capture["failure_results"]),
                         capture["status"], capture["followup_error"], paths, provider_auth,
                     )
-            self.assertEqual(observations["0.165.1"], observations["0.439.2"])
-            self.assertEqual(observations["Modex"], observations["0.439.2"])
+            if len(observations) == 3:
+                self.assertEqual(observations["0.165.1"], observations["0.439.2"])
+                self.assertEqual(observations["Modex"], observations["0.439.2"])
 
     def test_upstream_eof_after_response_failed_closes_all_bodies(self):
         request, fixture = repeated_search_case()

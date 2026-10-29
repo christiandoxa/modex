@@ -3167,8 +3167,9 @@ fixed-length bodies, chunk-data EOF, and `Expect: 100-continue`. Large
 invalid-target and WebSocket heads now return the baseline 400 or 426 before
 waiting for body completion. A failed Anthropic stream with an unfinished
 downstream body returns its connection for subsequent request handling.
-A separate eight-client failure probe still exposes an admission timing gap. Full concurrency, signal, platform,
-and security behavior remain unqualified; all six release targets stay in the
+A separate eight-client failure probe now matches in selected timed runs.
+Full concurrency, signal, platform, and security behavior remain unqualified;
+all six release targets stay in the
 parity denominator. See
 `docs/evidence/baseline-0.165.1/local-relay-concurrency.md` and
 `docs/evidence/runtime-slow-partial.md`.
@@ -3178,11 +3179,11 @@ chunk-incomplete, and a queued request receives the raw second 502 on the same
 socket. FIN and RST controls also verify worker release. No-pipeline open-body,
 request half-close, complete and truncated pipeline heads, truncated pipeline
 bodies, and parent EOF controls pass against both releases. A separate eight
-client probe with 32 KiB padded request heads still exposes a timing gap: both
-releases emitted the raw 502 on 8/8 connections, while Modex emitted it on 3/8
-in one captured run. Modex scans at most 512 bytes per parked socket per pass;
-the 100 ms client window can close a large queued head before admission. Keep
-this admission gap visible; general pipeline and saturation parity remain
+client probe with 32 KiB padded request heads previously exposed a timing gap.
+The listener now polls worker completion at 5 ms while work is pending; in two
+subsequent FIN/RST runs both releases and Modex emitted the raw 502 on 8/8
+connections. The 512-byte fair capture quantum remains, and 5 ms polling adds
+wakeups while workers are active. General pipeline and saturation parity remain
 unfinished. The complete 1 MiB parent-EOF control can finish naturally after
 the raw 502, so explicit shutdown is checked separately with a truncated body
 and a truncated head. See `docs/evidence/baseline-0.165.1/local-relay-concurrency.md`

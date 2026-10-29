@@ -78,11 +78,18 @@ the raw 502, so explicit parent-EOF cancellation is asserted separately for a
 complete head with a partial body and for a 64-byte incomplete head. Both
 controls leave no live child processes.
 
-The large-head stress gap remains. In one eight-client run, both releases
-returned the raw 502 on 8/8 32 KiB padded pipeline heads; Modex returned it on
-3/8 within the test's 100 ms read window. The listener still limits request
-head capture to 512 bytes per parked socket per pass for fairness. The captured
-count is timing-sensitive and does not qualify large-head admission parity.
+An earlier eight-client run returned the raw 502 on 8/8 32 KiB padded pipeline
+heads for both releases and 3/8 for Modex within the 100 ms read window. The
+listener could wait 100 ms in `accept` while a worker finished, delaying its
+completed connection. It now checks for queued, active, and completed work and
+uses a 5 ms wait while any exists. Capture remains bounded to 512 bytes per
+parked socket per pass. In two subsequent eight-client FIN/RST runs, each
+release and Modex returned the 502 on all eight connections. The maintained
+sequential stress control requires at least six of eight in each case within
+the window, while testing follow-up service and disconnect cleanup. These
+timing-sensitive observations do not establish large-head admission parity;
+the shorter wait also means up to 200 listener wakeups per second while work
+is pending.
 
 Validation on Linux x86-64 with Mojo 1.2.0 passed the production build and the
 three declared native test drivers:

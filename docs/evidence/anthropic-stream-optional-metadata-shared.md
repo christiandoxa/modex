@@ -25,11 +25,10 @@ the raw `HTTP/1.1 502 Bad Gateway`, and a separate follow-up request succeeds.
 The checksum-verified historical 0.439.1 binary produced the same `Connection:
 close` and trailing 502 in a one-request control; this historical observation
 does not change the active baseline or parity denominator.
-An eight-client FIN probe with 32 KiB padded heads still has a timing gap: both
-releases returned the raw 502 on 8/8 connections, while Modex did so on 3/8 in
-one run with the 100 ms client read window. Modex captures at most 512 bytes per
-parked socket per listener pass, so a large queued head can remain unadmitted
-when the client closes. The count is timing-sensitive; large-head admission,
+An earlier eight-client FIN probe with 32 KiB padded heads returned the raw 502
+on 8/8 connections in both releases and 3/8 in Modex. After shortening the
+listener wait while work is pending, two FIN/RST runs returned it on 8/8 for
+all three binaries. The count is timing-sensitive; large-head admission,
 general pipeline ordering, and saturation fairness remain unfinished.
 
 The suite compares `thinking_delta` in an in-order block, before any block start, and amid 256 overlapping thinking-block starts followed by a delta and stops. Both release binaries emit the same reasoning events and complete each stream; Modex matches their normalized responses. A separate control holds 128 web-search result indexes open together, sends thinking deltas against them, and closes them in reverse order; Modex matches both releases and suppresses those deltas. This exercises result-index lookup with overlapping blocks but does not set a runtime state limit. The suite also compares orphan stops with extra event fields and stops with missing or nonnumeric indexes against both releases. The 0.165.1 characterization suite covers duplicate, orphan, and mismatched tool-use stops. The frozen reader's `native_anthropic_stream_emits_live_reasoning_events` unit test covers the in-order form.

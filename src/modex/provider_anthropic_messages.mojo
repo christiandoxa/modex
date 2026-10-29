@@ -1,6 +1,6 @@
 """DeepSeek chat requests and Anthropic Messages function and search tools."""
 
-from std.collections import List
+from std.collections import Dict, List
 
 from .json import JSON_ARRAY, JSON_BOOL, JSON_NUMBER, JSON_OBJECT, JSON_STRING, JsonDocument, quote_json, serialize_json
 from .provider_chat_items import tool_output_item
@@ -259,6 +259,7 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
     var output = List[String]()
     var text_runs = List[String]()
     var searches = List[AnthropicWebSearch]()
+    var latest_search_by_id = Dict[String, Int]()
     var tool_calls = List[String]()
     var content = doc.get(doc.root, "content")
     if content >= 0:
@@ -273,8 +274,10 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
                 if not search_id: search_id = "web_search_" + String(len(searches))
                 var input = doc.get(block, "input")
                 var input_json = serialize_json(doc, input) if input >= 0 else "{}"
+                var search_position = len(searches)
                 searches.append(AnthropicWebSearch(UInt64(len(output)), search_id, input_json, "[]", False))
-                output.append("$search$" + String(len(searches) - 1))
+                latest_search_by_id[search_id] = search_position
+                output.append("$search$" + String(search_position))
             elif kind == "tool_use":
                 var id = doc.string(doc.get(block, "id"))
                 var name = doc.string(doc.get(block, "name"))
@@ -284,16 +287,9 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
                 output.append("$tool$" + String(len(tool_calls) - 1))
             elif kind == "web_search_tool_result":
                 var search_id = doc.string(doc.get(block, "tool_use_id"))
-                var index = 0
-                var found = False
-                while index < len(searches):
-                    if searches[index].id == search_id and not searches[index].done:
-                        searches[index].sources = _search_sources(doc, block)
-                        searches[index].done = True
-                        found = True
-                        break
-                    index += 1
-                if not found: raise Error("Anthropic web-search result does not match a tool use")
+                var search_position = latest_search_by_id.get(search_id)
+                if search_position:
+                    searches[search_position.value()].sources = _search_sources(doc, block)
                 output.append("$break$")
     var items = List[String]()
     var output_index = 0
@@ -424,8 +420,7 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
         if len(doc.nodes[content].children) == 0:
             raise Error("Anthropic Messages tool-use content is missing")
         var tool_count = 0
-        var search_ids = List[String]()
-        var result_ids = List[String]()
+        var search_count = 0
         for block in doc.nodes[content].children:
             var kind = doc.string(doc.get(block, "type"))
             if kind == "text":
@@ -454,33 +449,21 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
                 if query < 0 or doc.nodes[query].kind != JSON_STRING or not doc.nodes[query].text:
                     raise Error("Anthropic web-search input requires a non-empty query")
                 # shortcut: two mixed search pairs, expand after broader multi-search replies are qualified.
-                if len(search_ids) >= 2: raise Error("Mixed Anthropic replies support at most two web-search tool uses")
-                search_ids.append(doc.nodes[id].text)
+                if search_count >= 2: raise Error("Mixed Anthropic replies support at most two web-search tool uses")
+                search_count += 1
             elif kind == "web_search_tool_result":
                 _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
                 var id = doc.get(block, "tool_use_id")
-                var available = False
-                if id >= 0 and doc.nodes[id].kind == JSON_STRING:
-                    var search_count = 0
-                    var result_count = 0
-                    for prior in search_ids:
-                        if prior == doc.nodes[id].text: search_count += 1
-                    for prior in result_ids:
-                        if prior == doc.nodes[id].text: result_count += 1
-                    available = result_count < search_count
-                if not available:
-                    raise Error("Anthropic web-search result does not match a preceding tool use")
+                if id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text:
+                    raise Error("Anthropic web-search result requires a tool_use_id")
                 var result_content = doc.get(block, "content")
                 if result_content < 0 or doc.nodes[result_content].kind != JSON_ARRAY or len(doc.nodes[result_content].children) == 0:
                     raise Error("Anthropic web-search result must contain at least one source")
                 _ = _search_sources(doc, block)
-                result_ids.append(doc.nodes[id].text)
             else:
                 raise Error("Anthropic Messages tool-use content has an unsupported block")
         if tool_count == 0:
             raise Error("Anthropic Messages tool-use content requires a tool_use block")
-        if len(search_ids) != len(result_ids):
-            raise Error("Anthropic web-search tool uses and results must be paired")
         return
     if doc.string(doc.get(doc.root, "stop_reason")) != "end_turn":
         raise Error("Anthropic Messages stop reason is not supported")

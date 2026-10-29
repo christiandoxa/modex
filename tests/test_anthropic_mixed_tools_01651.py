@@ -383,6 +383,85 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
             "https://example.test/first", "https://example.test/second",
         ])
 
+    def test_repeated_result_overwrites_latest_matching_search_sources(self):
+        content = [
+            {"type": "server_tool_use", "id": "srv_repeat", "name": "web_search",
+             "input": {"query": "repeat"}},
+            {"type": "web_search_tool_result", "tool_use_id": "srv_repeat", "content": [
+                {"type": "web_search_result", "url": "https://example.test/first"},
+            ]},
+            {"type": "web_search_tool_result", "tool_use_id": "srv_repeat", "content": [
+                {"type": "web_search_result", "url": "https://example.test/last"},
+            ]},
+            {"type": "tool_use", "id": "call_lookup", "name": "lookup", "input": {}},
+        ]
+        _, expected, _, observed = self._compare(_request(), _buffered_reply(content))
+        result = _json_body(observed)
+        self.assertEqual(_normalize(result), _normalize(_json_body(expected)))
+        search = next(item for item in result["output"] if item["type"] == "web_search_call")
+        self.assertEqual(search["action"]["sources"][0]["url"], "https://example.test/last")
+
+    def test_one_result_targets_latest_preceding_reused_search_id(self):
+        content = [
+            {"type": "server_tool_use", "id": "srv_shared", "name": "web_search",
+             "input": {"query": "first query"}},
+            {"type": "server_tool_use", "id": "srv_shared", "name": "web_search",
+             "input": {"query": "second query"}},
+            {"type": "web_search_tool_result", "tool_use_id": "srv_shared", "content": [
+                {"type": "web_search_result", "url": "https://example.test/latest"},
+            ]},
+            {"type": "tool_use", "id": "call_lookup", "name": "lookup", "input": {}},
+        ]
+        _, expected, _, observed = self._compare(_request(), _buffered_reply(content))
+        result = _json_body(observed)
+        self.assertEqual(_normalize(result), _normalize(_json_body(expected)))
+        searches = [item for item in result["output"] if item["type"] == "web_search_call"]
+        self.assertEqual([item["action"]["queries"] for item in searches], [
+            ["first query"], ["second query"],
+        ])
+        self.assertEqual([item["action"]["sources"] for item in searches], [
+            [], [{"type": "url", "url": "https://example.test/latest"}],
+        ])
+
+    def test_distinct_search_results_match_ids_when_results_are_reversed(self):
+        content = [
+            {"type": "server_tool_use", "id": "srv_first", "name": "web_search",
+             "input": {"query": "first query"}},
+            {"type": "server_tool_use", "id": "srv_second", "name": "web_search",
+             "input": {"query": "second query"}},
+            {"type": "web_search_tool_result", "tool_use_id": "srv_second", "content": [
+                {"type": "web_search_result", "url": "https://example.test/second"},
+            ]},
+            {"type": "web_search_tool_result", "tool_use_id": "srv_first", "content": [
+                {"type": "web_search_result", "url": "https://example.test/first"},
+            ]},
+            {"type": "tool_use", "id": "call_lookup", "name": "lookup", "input": {}},
+        ]
+        _, expected, _, observed = self._compare(_request(), _buffered_reply(content))
+        result = _json_body(observed)
+        self.assertEqual(_normalize(result), _normalize(_json_body(expected)))
+        searches = [item for item in result["output"] if item["type"] == "web_search_call"]
+        self.assertEqual([item["action"]["sources"][0]["url"] for item in searches], [
+            "https://example.test/first", "https://example.test/second",
+        ])
+
+    def test_search_result_before_use_is_ignored_and_unmatched_search_stays_empty(self):
+        content = [
+            {"type": "web_search_tool_result", "tool_use_id": "srv_future", "content": [
+                {"type": "web_search_result", "url": "https://example.test/before"},
+            ]},
+            {"type": "server_tool_use", "id": "srv_future", "name": "web_search",
+             "input": {"query": "future"}},
+            {"type": "server_tool_use", "id": "srv_empty", "name": "web_search",
+             "input": {"query": "no result"}},
+            {"type": "tool_use", "id": "call_lookup", "name": "lookup", "input": {}},
+        ]
+        _, expected, _, observed = self._compare(_request(), _buffered_reply(content))
+        result = _json_body(observed)
+        self.assertEqual(_normalize(result), _normalize(_json_body(expected)))
+        searches = [item for item in result["output"] if item["type"] == "web_search_call"]
+        self.assertEqual([item["action"]["sources"] for item in searches], [[], []])
+
     def test_invalid_function_schema_fails_before_provider_request(self):
         request = _request()
         request["tools"] = [SEARCH, {"type": "function", "name": "lookup", "parameters": []}]

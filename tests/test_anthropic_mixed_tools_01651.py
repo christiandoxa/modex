@@ -1188,6 +1188,58 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                 self.assertEqual(len(actual_body["output"]), search_pairs + 1)
                 self.assertEqual(actual_body["output"][-1]["type"], "function_call")
 
+    def test_buffered_search_only_sequences_match_both_releases(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic search-only query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+
+        def search(index):
+            return {
+                "type": "server_tool_use", "id": f"search_{index}",
+                "name": "web_search", "input": {"query": f"query {index}"},
+            }
+
+        def result(index):
+            return {
+                "type": "web_search_tool_result", "tool_use_id": f"search_{index}",
+                "content": [{"type": "web_search_result",
+                             "url": f"https://example.test/{index}"}],
+            }
+
+        cases = (
+            ("multiple pairs without text", [
+                search(0), result(0), search(1), result(1),
+            ], ["web_search_call", "web_search_call"]),
+            ("interleaved text, thinking, orphan and pending search", [
+                {"type": "text", "text": "Before."},
+                search(0), result(0),
+                {"type": "thinking", "thinking": "Reasoning."},
+                {"type": "text", "text": "Between."},
+                {"type": "web_search_tool_result", "tool_use_id": "orphan", "content": []},
+                search(1), result(1), search(2),
+                {"type": "text", "text": "After."},
+            ], ["message", "web_search_call", "reasoning", "message",
+                "web_search_call", "web_search_call", "message"]),
+        )
+
+        for label, content, expected_types in cases:
+            with self.subTest(case=label):
+                reply = _buffered_reply(content, stop_reason="end_turn")
+                captures = []
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    posts, responses = observe_turns(binary, [request], [reply])
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual(len(responses), 1)
+                    self.assertEqual(responses[0]["status"], 200)
+                    self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+                    response = _normalize(_json_body(responses[0]))
+                    self.assertEqual([item["type"] for item in response["output"]], expected_types)
+                    captures.append((json.loads(posts[0]["body"]), response))
+                self.assertEqual(captures[1:], captures[:1] * 2)
+
     def test_strict_mixed_tools_use_anthropic_route_like_release(self):
         captures = [
             _run(binary, _request(), strict_tools=True, scenario="anthropic-buffered")

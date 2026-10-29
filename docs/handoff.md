@@ -3681,3 +3681,13 @@ because its `/proc/<ppid>` sample targets the wrong process for Modex. Full
 measurements, both socket orderings, and reproduction commands are in
 `docs/evidence/runtime-overflow-admission.md`; the experiment is not parity
 evidence.
+
+Buffered Anthropic response validation now admits multiple web-search blocks
+and selected interleavings of text, thinking, orphan results, and pending
+searches. A three-process production comparison matches checksum-pinned 0.165.1
+and 0.439.2 for both tested sequences. The focused mixed-tools module passed 63
+tests; the production build, native buffered-provider test, 71-file import
+audit, and 50-native/140-Python test census passed. This qualifies selected
+buffered shapes on Linux x86-64 only; streaming, other response shapes, all six
+release targets, and broader provider parity remain open. See
+`docs/evidence/baseline-0.165.1/anthropic-buffered.md`.

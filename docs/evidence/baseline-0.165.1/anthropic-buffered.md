@@ -128,3 +128,38 @@ This covers only the tested envelope fields on Linux x86-64. Existing content
 block validation, the response-size limit, unsupported response blocks,
 continuation behavior, transport security, other release targets, and general
 Anthropic parity remain open.
+
+## Multiple buffered web-search blocks
+
+The historical 0.165.1 source at commit
+`10ae15b5d1806302b60f051e4e6fec788044f4c2` and the frozen 0.439.2 source at
+commit `72b77478a5198fc5da6b4d2253137f9cdbf43be9` use
+`crates/prodex-provider-core/src/translators/anthropic/messages/response.rs:15-103`
+to classify and plan every response block. In both releases,
+`mojo/prodex_core/rich_abi.mojo:224-350` walks the blocks in input order and
+plans text, thinking, server-tool-use, and search-result entries; it does not
+require one search/result/text triple. The output kernel in
+`mojo/prodex_core/anthropic_request.mojo:1625-1774` matches results by
+`tool_use_id`, omits result entries after attachment, preserves unmatched
+search calls, and omits orphan results. This source trace explains why
+multiple searches and interleaved blocks reach translation, while the process
+comparison below establishes the observed output.
+
+Modex buffered validation now validates each text, web-search use, search
+result, and thinking block without imposing a single-search shape. The separate
+function-tool branch remains unchanged, and unsupported blocks still fail.
+`tests/test_anthropic_mixed_tools_01651.py::test_buffered_search_only_sequences_match_both_releases`
+compares normalized requests and responses through the production Super path
+against checksum-pinned 0.165.1, 0.439.2, and Modex processes. It covers two
+search/result pairs without text, plus interleaved text and thinking, an orphan
+result, and a pending search. Both releases return HTTP 200 for these cases;
+the pre-fix Modex build returned 502 for the multi-pair case.
+
+Validation on Linux x86-64: `rtk make build` passed; the focused
+`test_anthropic_mixed_tools_01651.py` run passed 63 tests; native
+`test_provider_chat_buffered`, the 71-file production import audit, the test
+census (50 native test sources and 140 Python modules), and `git diff --check`
+passed. Tests used synthetic provider responses and isolated process fixtures.
+This qualifies only the selected buffered shapes on Linux x86-64. Streaming,
+other response shapes, all six release targets, and general provider parity
+remain open.

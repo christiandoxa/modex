@@ -27,12 +27,12 @@ def _codex_with_request(request):
 
 def _run(
     binary, request, strict_tools=False, strict_config=False, scenario="buffered",
-    beta_override=None, base_path="/v1",
+    beta_override=None, base_path="/v1", strict_override=None, mode_override=None,
 ):
     harness = test_super_launch.SuperLaunchTests()
     codex = _codex_with_request(request)
     with patch.object(test_super_launch, "CODEX", codex):
-        if strict_tools or strict_config or beta_override is not None:
+        if strict_tools or strict_config or beta_override is not None or strict_override is not None or mode_override is not None:
             original_run = test_super_launch.subprocess.run
 
             def run_with_strict_settings(*args, **kwargs):
@@ -41,17 +41,21 @@ def _run(
                 base = urlsplit(base_url)
                 environment = dict(kwargs["env"])
                 if strict_config:
-                    config = (
+                    config = strict_config if isinstance(strict_config, str) else (
                         "[deepseek]\n"
                         "strict_tools = true\n"
                         f'beta_base_url = "{base.scheme}://{base.netloc}/beta/"\n'
                     )
+                    config = config.replace("{base}", f"{base.scheme}://{base.netloc}")
                     Path(environment["PRODEX_SHARED_CODEX_HOME"], "config.toml").write_text(
                         config, encoding="utf-8",
                     )
+                    Path(environment["PRODEX_SHARED_CODEX_HOME"], "config.toml").chmod(0o600)
                     codex_home = Path(environment["HOME"], ".codex")
                     codex_home.mkdir(mode=0o700)
                     (codex_home / "config.toml").write_text(config, encoding="utf-8")
+                    environment["PRODEX_RUNTIME_LOCAL_STRICT_TOOLS"] = "false"
+                    environment["PRODEX_RUNTIME_LOCAL_BETA_BASE_URL"] = "not-a-url"
                 if strict_tools:
                     environment["PRODEX_DEEPSEEK_STRICT_TOOLS"] = "true"
                     environment["PRODEX_DEEPSEEK_BETA_BASE_URL"] = (
@@ -59,6 +63,10 @@ def _run(
                     )
                 if beta_override is not None:
                     environment["PRODEX_DEEPSEEK_BETA_BASE_URL"] = beta_override
+                if strict_override is not None:
+                    environment["PRODEX_DEEPSEEK_STRICT_TOOLS"] = strict_override
+                if mode_override is not None:
+                    environment["PRODEX_DEEPSEEK_WEB_SEARCH_MODE"] = mode_override
                 kwargs["env"] = environment
                 return original_run(*args, **kwargs)
 
@@ -121,6 +129,7 @@ def _normalized_events(payload):
 
 
 class ProviderTool04392CharacterizationTests(unittest.TestCase):
+    binaries = (ORACLE_04392, MODEX)
     @classmethod
     def setUpClass(cls):
         if not ORACLE_04392.is_file():
@@ -670,7 +679,7 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                     self.assertEqual(reference["state"]["leftovers"], [])
                     self.assertEqual(modex["state"]["leftovers"], [])
 
-    def test_config_only_strict_tools_gap_remains_fail_closed(self):
+    def test_config_only_strict_tools_matches_release(self):
         request = {
             "model": "deepseek-chat",
             "input": "synthetic tool request",
@@ -690,8 +699,9 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
         self.assertEqual(reference["upstream"][0]["path"], "/beta/chat/completions")
         reference_tool = reference["upstream_body"]["tools"][0]["function"]
         self.assertTrue(reference_tool["strict"])
-        self.assertEqual((modex["exit_code"], modex["status"]), (1, None))
-        self.assertEqual(modex["upstream"], [])
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(modex["upstream"][0]["path"], "/beta/chat/completions")
+        self.assertEqual(modex["upstream_body"], reference["upstream_body"])
         self.assertEqual(modex["state"]["leftovers"], [])
         self.assertIn("strict_tools = true", modex["state"]["config"])
         self.assertIn("/beta/", modex["state"]["config"])
@@ -709,6 +719,62 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
         self.assertEqual(reference_invalid["upstream"], [])
         self.assertEqual(modex_invalid["upstream"], [])
         self.assertEqual(reference_invalid["response_body"], modex_invalid["response_body"])
+
+    def test_toml_strict_beta_and_search_settings_override_environment(self):
+        request = {"model": "deepseek-chat", "input": "synthetic query", "stream": False,
+                   "tools": [{"type": "function", "name": "lookup",
+                              "parameters": {"type": "object", "properties": {"query": {"type": "string"}}}}]}
+        for strict_value, expected_path in (("true", "/beta/chat/completions"),
+                                            ('"YES"', "/beta/chat/completions"),
+                                            ("false", "/v1/chat/completions"),
+                                            ('"off"', "/v1/chat/completions")):
+            config = (f"[deepseek]\nstrict_tools = {strict_value}\n"
+                      'beta_base_url = "{base}/beta/"\nweb_search_mode = "openai_chat"\n')
+            observed = []
+            for binary in self.binaries:
+                with self.subTest(strict=strict_value, binary=str(binary)):
+                    result = _run(binary, request, strict_config=config,
+                                  strict_override="invalid", beta_override="not-a-url",
+                                  mode_override="invalid")
+                    self.assertEqual((result["exit_code"], result["status"]), (0, 200), result["stderr"])
+                    self.assertEqual([row["path"] for row in result["upstream"]], [expected_path])
+                    self.assertEqual(result["state"]["leftovers"], [])
+                    self.assertIn(f"strict_tools = {strict_value}", result["state"]["config"])
+                    observed.append(result["upstream_body"])
+            for body in observed[1:]:
+                self.assertEqual(body, observed[0])
+
+    def test_invalid_toml_strict_and_beta_settings_stop_before_launch(self):
+        request = {"model": "deepseek-chat", "input": "synthetic query", "stream": False}
+        for setting, message in (("strict_tools = 4", "deepseek.strict_tools must be a boolean"),
+                                 ('strict_tools = "bad"', "deepseek.strict_tools must be true or false"),
+                                 ('beta_base_url = "http://127.0.0.1:1/bad path"', "deepseek.beta_base_url must not contain whitespace"),
+                                 ('beta_base_url = "http://synthetic-private-beta-token@127.0.0.1:1/beta"',
+                                  "deepseek.beta_base_url must be an http(s) URL")):
+            for binary in self.binaries:
+                with self.subTest(setting=setting, binary=str(binary)):
+                    result = _run(binary, request, strict_config="[deepseek]\n" + setting + "\n",
+                                  strict_override="false", beta_override="http://127.0.0.1:1/beta")
+                    self.assertEqual((result["exit_code"], result["status"]), (1, None))
+                    self.assertIn(message.encode(), result["stderr"])
+                    self.assertNotIn(b"synthetic-private-beta-token", result["stderr"])
+                    self.assertEqual((result["upstream"], result["records"], result["state"]["leftovers"]), ([], [], []))
+
+    def test_blank_or_nonstring_toml_beta_falls_back_to_environment(self):
+        request = {"model": "deepseek-chat", "input": "synthetic query", "stream": False}
+        for value in ('""', '"  "', "4", "false"):
+            for binary in self.binaries:
+                with self.subTest(value=value, binary=str(binary)):
+                    result = _run(binary, request, strict_config=f"[deepseek]\nbeta_base_url = {value}\n",
+                                  strict_override="false", beta_override="http://127.0.0.1:1/beta")
+                    self.assertEqual((result["exit_code"], result["status"]), (0, 200), result["stderr"])
+                    self.assertEqual([row["path"] for row in result["upstream"]], ["/v1/chat/completions"])
+                    self.assertEqual(result["state"]["leftovers"], [])
+                    invalid = _run(binary, request, strict_config=f"[deepseek]\nbeta_base_url = {value}\n",
+                                   strict_override="false", beta_override="not-a-url")
+                    self.assertEqual((invalid["exit_code"], invalid["status"]), (1, None))
+                    self.assertIn(b"PRODEX_DEEPSEEK_BETA_BASE_URL must be an http(s) URL", invalid["stderr"])
+                    self.assertEqual((invalid["upstream"], invalid["records"], invalid["state"]["leftovers"]), ([], [], []))
 
     def test_strict_tools_raw_chat_passthrough_keeps_original_route(self):
         request = {"model": "deepseek-chat", "input": "unused passthrough control"}
@@ -758,8 +824,9 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
         )
         self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
         self.assertEqual(reference["upstream"][0]["path"], "/beta/chat/completions")
-        self.assertEqual((modex["exit_code"], modex["status"]), (1, None))
-        self.assertEqual(modex["upstream"], [])
+        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+        self.assertEqual(modex["upstream"][0]["path"], "/beta/chat/completions")
+        self.assertEqual(modex["upstream_body"], reference["upstream_body"])
         self.assertEqual(modex["state"]["leftovers"], [])
         self.assertIn("beta_base_url =", modex["state"]["config"])
 

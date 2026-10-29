@@ -164,8 +164,9 @@ unverified. See `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
 
 Strict-tool environment settings select the beta route and normalize supported
 runtime-path schemas for numeric-loopback HTTP. The baseline simple-request
-pass can preserve nested tools unchanged; config-only settings still fail
-closed and public beta TLS/DNS remains unsupported. Against pinned 0.439.2, a
+pass can preserve nested tools unchanged; selected TOML strict/beta settings
+now reach the numeric-loopback route, while public beta TLS/DNS remains unsupported.
+Against pinned 0.439.2, a
 present beta environment URL is now validated even when strict mode is off;
 valid public URLs remain unused for routing, and invalid values fail before
 launch without being echoed. A separate 0.165.1 launch with `not-a-url` also
@@ -175,8 +176,9 @@ not full release qualification. `tests/test_provider_tools_04392_characterizatio
 checks the 0.439.2 result against the pinned release and synthetic launch
 controls.
 The separate web-search mode environment setting now controls selected
-production routes. A safely checked mode-only shared TOML config takes
-precedence; other config and existing-home reconciliation remain guarded. See
+production routes. A safely checked shared TOML config containing the three
+DeepSeek runtime settings takes precedence; other config and existing-home
+reconciliation remain guarded. See
 `docs/evidence/deepseek-web-search-mode-04392.md`.
 
 DeepSeek requests with a missing, null, non-string or blank model match the

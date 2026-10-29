@@ -7,7 +7,7 @@ This evidence covers the strict function-tool setting, schema normalization,
 and beta chat-completions route only. It does not change the parity denominator
 or claim whole-provider parity.
 
-The supported strict-tools slice is environment-only:
+The initial strict-tools slice was environment-only:
 `PRODEX_DEEPSEEK_STRICT_TOOLS` enables normalization and
 `PRODEX_DEEPSEEK_BETA_BASE_URL` selects a beta route. The existing bounded
 numeric-loopback URL parser validates the beta URL before Super creates an
@@ -16,19 +16,16 @@ does not echo URL contents. Strict runtime-path schemas use the beta route.
 The frozen simple-request pass can preserve a nested tool unchanged, even
 when strict mode is enabled; selected production comparisons match this.
 
-TOML settings are intentionally not propagated into the private overlay.
-Super retains its fail-closed behavior when a shared Codex `config.toml` or
-other state already exists. The real 0.439.2 characterization continues to
-show that its TOML-only strict-tools configuration succeeds while Modex
-rejects that config-only home before starting Codex or contacting the
-provider. This config gap is not counted as parity.
+At that checkpoint, TOML settings were not propagated into the private overlay,
+so the real 0.439.2 TOML-only strict-tools control exposed a Modex mismatch.
+The later connected TOML implementation is described below.
 
 Synthetic loopback tests exercise enabled and disabled environment settings,
 trailing-slash normalization, strict schema fields, invalid booleans, and
 credential/query/fragment/whitespace/empty/unsupported URL rejection. A real
 Super launch comparison against the pinned release confirms env-based beta
-routing and normalized schema parity. Separate real launch controls retain
-the config-only mismatch and verify unsafe beta URLs fail before profile or
+routing and normalized schema parity. Separate real launch controls captured
+the then-open config-only mismatch and verify unsafe beta URLs fail before profile or
 Codex launch. The disabled control keeps the regular route and schema.
 
 Focused results from an isolated build:
@@ -76,5 +73,35 @@ Validation on Linux x86-64: `make build` and
 18 tests against the checksum-verified release and production Modex CLI. The
 earlier active 0.165.1 raw HTTP and invalid-URL launch controls remain
 historical checks; they do not qualify full 0.165.1 behavior. These cover only
-selected environment-backed URL validation cases; TOML propagation, public beta
+selected environment-backed URL validation cases; general TOML propagation, public beta
 transport, and complete Unicode hostname normalization remain unsupported.
+
+## TOML strict-tools and beta settings (2026-10-29)
+
+The 0.165.1 and 0.439.2 configuration readers resolve
+`deepseek.strict_tools`, `deepseek.beta_base_url`, and
+`deepseek.web_search_mode` from the selected Codex config before their
+environment settings. Strict tools accepts booleans and recognized boolean
+strings. The beta URL reader ignores non-string and whitespace-only TOML
+values and then consults the environment. Other configured beta values are
+validated even when strict mode is off.
+
+Modex now admits these three settings individually or together in a private
+shared config, copies that config to the private child home, and carries the
+validated effective settings to the production relay. A real Super process
+comparison against both checksum-pinned Linux releases checks strict beta
+routing and schema conversion, conflicting and invalid environment values,
+boolean/string strict settings, invalid config and beta fallback. Tests use
+synthetic credentials and a numeric loopback peer. The 1 MiB config limit,
+ownership and file checks remain enforced. Other settings and existing Codex
+state remain guarded; public WSS/TLS/DNS and other targets remain unverified.
+
+The production build and local-rewrite driver build passed with Mojo 1.2.0.
+The seven focused strict/config and cross-release methods passed; the 34-method
+provider-tools and web-search suites passed against 0.439.2 and Modex, as did
+the 22 local-rewrite tests, native provider-tool program, 71-file production dependency audit and
+50-native/137-Python test census. Reproduce the process comparisons with:
+
+```sh
+python3 scripts/ci/run-unittest.py test_provider_tools_04392_characterization.py test_deepseek_web_search_mode_04392.py test_deepseek_web_search_mode_01651_04392.py
+```

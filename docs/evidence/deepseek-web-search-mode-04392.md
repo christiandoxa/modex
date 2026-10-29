@@ -37,13 +37,15 @@ Super process controls against both checksum-pinned binaries verify `off`,
 requests a different or invalid mode. Invalid TOML values fail before the
 synthetic Codex child or upstream POST.
 
-Modex now admits a private shared home containing only a configuration whose
-only setting is `deepseek.web_search_mode`. It checks the directory and file,
+At this checkpoint Modex admitted a private shared home containing only a
+configuration whose only setting was `deepseek.web_search_mode`. It checks the directory and file,
 copies the config into the isolated child home, preserves the original file,
 and passes the validated effective mode to the local relay. Tests reject
 group-writable files, symlinks, and exposed hard links before launching the
-child. Other existing home data and config keys remain guarded until their
-lifecycle and configuration semantics are implemented. Malformed TOML and
+child. The later strict-tools and beta configuration extension is documented
+in `docs/evidence/deepseek-strict-tools-04392.md`. Other existing home data
+and config keys remain guarded until their lifecycle and configuration
+semantics are implemented. Malformed TOML and
 unsafe-file diagnostics remain potentially different from the releases.
 
 The production build, 10 mode tests, 40 neighboring local-rewrite and Super

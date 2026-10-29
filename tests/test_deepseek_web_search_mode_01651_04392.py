@@ -7,6 +7,7 @@ import unittest
 
 from test_cli import MODEX, ORACLE, ORACLE_SHA256
 import test_deepseek_web_search_mode_04392 as mode_tests
+import test_provider_tools_04392_characterization as tool_tests
 
 ORACLE_01651 = Path(os.environ.get(
     "PRODEX_ORACLE_01651",
@@ -19,6 +20,9 @@ class DeepSeekWebSearchModeCrossReleaseTests(unittest.TestCase):
     binaries = (ORACLE_01651, ORACLE, MODEX)
     test_toml_mode_overrides_environment = mode_tests.DeepSeekWebSearchModeTests.test_toml_mode_overrides_environment
     test_invalid_toml_mode_fails_before_child_or_upstream = mode_tests.DeepSeekWebSearchModeTests.test_invalid_toml_mode_fails_before_child_or_upstream
+    test_toml_strict_beta_and_search_settings_override_environment = tool_tests.ProviderTool04392CharacterizationTests.test_toml_strict_beta_and_search_settings_override_environment
+    test_invalid_toml_strict_and_beta_settings_stop_before_launch = tool_tests.ProviderTool04392CharacterizationTests.test_invalid_toml_strict_and_beta_settings_stop_before_launch
+    test_blank_or_nonstring_toml_beta_falls_back_to_environment = tool_tests.ProviderTool04392CharacterizationTests.test_blank_or_nonstring_toml_beta_falls_back_to_environment
 
     @classmethod
     def setUpClass(cls):

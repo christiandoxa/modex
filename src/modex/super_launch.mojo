@@ -22,7 +22,7 @@ from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstrea
 from .sessions import read_private_state_file
 from .sha256 import hash_file
 from .text import cli_width, is_whitespace, section_header, trim_text, wrap_text
-from .toml import TOMLDocument, TOML_STRING, TOML_TABLE
+from .toml import TOMLDocument, TOML_BOOLEAN, TOML_STRING, TOML_TABLE
 from .uuid7 import new_uuid7
 
 comptime CODEX_INSTALL_GUIDANCE = String(
@@ -55,10 +55,12 @@ def _remove_overlay(path: String) raises:
     rmdir(path)
 
 
-def _clean_home(root: String, shared: String) raises -> Tuple[String, Optional[String]]:
-    # shortcut: existing profile/config reconciliation needs locked storage; admit only a web-search-only config and no saved account state.
+def _clean_home(root: String, shared: String) raises -> Tuple[String, Optional[String], Optional[String], Optional[String]]:
+    # shortcut: existing profile/config reconciliation needs locked storage; admit only DeepSeek runtime settings and no saved account state.
     var config_source = String()
     var search_mode = Optional[String]()
+    var strict_tools = Optional[String]()
+    var beta_base_url = Optional[String]()
     if lexists(shared):
         var info = lstat(shared)
         if info.st_mode & 0o170000 != 0o040000 or info.st_uid != getuid() or info.st_mode & 0o077:
@@ -75,21 +77,32 @@ def _clean_home(root: String, shared: String) raises -> Tuple[String, Optional[S
             config_source = String(from_utf8=Span(bytes))
             var config = TOMLDocument(config_source)
             var deepseek = config.get(config.root, "deepseek")
-            if len(config.nodes[config.root].names) != 1 or deepseek < 0 or config.nodes[deepseek].kind != TOML_TABLE or len(config.nodes[deepseek].names) != 1:
+            if len(config.nodes[config.root].names) != 1 or deepseek < 0 or config.nodes[deepseek].kind != TOML_TABLE:
                 raise Error("Super clean-home launch cannot reconcile existing Codex data yet")
-            var node = config.get(deepseek, "web_search_mode")
-            if node < 0:
-                raise Error("Super clean-home launch cannot reconcile existing Codex data yet")
-            if config.nodes[node].kind != TOML_STRING:
-                raise Error("deepseek.web_search_mode must be a string")
-            search_mode = Optional[String](config.string(node))
+            for name in config.nodes[deepseek].names:
+                var node = config.get(deepseek, name)
+                if name == "web_search_mode":
+                    if config.nodes[node].kind != TOML_STRING:
+                        raise Error("deepseek.web_search_mode must be a string")
+                    search_mode = Optional[String](config.string(node))
+                elif name == "strict_tools":
+                    if config.nodes[node].kind != TOML_STRING and config.nodes[node].kind != TOML_BOOLEAN:
+                        raise Error("deepseek.strict_tools must be a boolean")
+                    strict_tools = Optional[String](config.nodes[node].text)
+                elif name == "beta_base_url":
+                    if config.nodes[node].kind == TOML_STRING:
+                        var value = config.string(node)
+                        if trim_text(value):
+                            beta_base_url = Optional[String](value^)
+                else:
+                    raise Error("Super clean-home launch cannot reconcile existing Codex data yet")
     if lexists(root):
         for name in listdir(root):
             if name != "update-check.json" and name != "profiles":
                 raise Error("Super clean-home launch cannot reconcile existing application state yet")
             if name == "profiles" and (lstat(root + "/profiles").st_mode & 0o170000 != 0o040000 or listdir(root + "/profiles")):
                 raise Error("Super clean-home launch requires an empty profiles directory")
-    return config_source^, search_mode^
+    return config_source^, search_mode^, strict_tools^, beta_base_url^
 
 
 def _ascii_lower(value: String) -> String:
@@ -246,7 +259,7 @@ def deepseek_model_catalog(launch_model: String) -> String:
 
 
 def _child_environment(home: String) -> List[String]:
-    var excluded: List[String] = ["CODEX_HOME", "CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT", "NO_PROXY", "no_proxy", "LD_PRELOAD", "LD_AUDIT", "LD_LIBRARY_PATH", "LD_ORIGIN_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH", "PRODEX_RUNTIME_LOCAL_UPSTREAM", "PRODEX_RUNTIME_LOCAL_KEY", "PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE"]
+    var excluded: List[String] = ["CODEX_HOME", "CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT", "NO_PROXY", "no_proxy", "LD_PRELOAD", "LD_AUDIT", "LD_LIBRARY_PATH", "LD_ORIGIN_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH", "PRODEX_RUNTIME_LOCAL_UPSTREAM", "PRODEX_RUNTIME_LOCAL_KEY", "PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE", "PRODEX_RUNTIME_LOCAL_STRICT_TOOLS", "PRODEX_RUNTIME_LOCAL_BETA_BASE_URL"]
     var environment = inherited_environment(excluded)
     var clean = List[String]()
     for entry in environment:
@@ -300,7 +313,9 @@ def run_local_rewrite_child() raises:
     _ = local_rewrite_upstream(upstream)
     _ = deepseek_request_headers([], key)
     var configured_mode = getenv("PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE", "\x00")
-    var route = deepseek_runtime_route(Optional[String](configured_mode) if configured_mode != "\x00" else None)
+    var configured_strict = getenv("PRODEX_RUNTIME_LOCAL_STRICT_TOOLS", "\x00")
+    var configured_beta = getenv("PRODEX_RUNTIME_LOCAL_BETA_BASE_URL", "\x00")
+    var route = deepseek_runtime_route(Optional[String](configured_mode) if configured_mode != "\x00" else None, Optional[String](configured_strict) if configured_strict != "\x00" else None, Optional[String](configured_beta) if configured_beta != "\x00" else None)
     var listener = LoopbackHTTPListener("127.0.0.1:0")
     var output = RawFileDescriptor(1)
     output.write_bytes((listener.address + "\n").as_bytes())
@@ -476,7 +491,7 @@ def _codex_version_parts(value: String) -> List[UInt64]:
     return parts^
 
 
-def _exec(binary: String, child_path: String, argv0: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64, web_search_mode: String) raises -> Int:
+def _exec(binary: String, child_path: String, argv0: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64, web_search_mode: String, strict_tools: Optional[String], beta_base_url: Optional[String]) raises -> Int:
     var environment = _child_environment(home)
     var probe_environment = _codex_probe_environment(environment)
     var version = _capture_codex_probe(binary, [String("--version")], probe_environment, "Codex version probe")
@@ -509,6 +524,10 @@ def _exec(binary: String, child_path: String, argv0: String, home: String, model
     relay_environment.append("PRODEX_RUNTIME_LOCAL_UPSTREAM=" + upstream)
     relay_environment.append("PRODEX_RUNTIME_LOCAL_KEY=" + key)
     relay_environment.append("PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE=" + web_search_mode)
+    if strict_tools:
+        relay_environment.append("PRODEX_RUNTIME_LOCAL_STRICT_TOOLS=" + strict_tools.value())
+    if beta_base_url:
+        relay_environment.append("PRODEX_RUNTIME_LOCAL_BETA_BASE_URL=" + beta_base_url.value())
     var relay: Process
     with open("/dev/null", "w") as errors:
         relay = spawn_with_env_stdio(realpath("/proc/self/exe"), [String("__modex-local-rewrite")], relay_environment, input.fd_in.value().value, output.fd_out.value().value, RawFileDescriptor(errors).value)
@@ -581,7 +600,7 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
     var root = app_root()
     var shared = shared_root(root)
     var shared_config = _clean_home(root, shared)
-    var route = deepseek_runtime_route(shared_config[1])
+    var route = deepseek_runtime_route(shared_config[1], shared_config[2], shared_config[3])
     if profile_supplied:
         raise Error("profile '" + profile + "' does not exist")
     _ = ensure_app_root()
@@ -605,7 +624,7 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
             # Frozen exact-value lookup ignores numeric -c overrides when building the catalog.
             catalog.write(deepseek_model_catalog(catalog_model))
         var codex = _codex_binary()
-        var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, key, prompt, launch_context, launch_compact, route[3])
+        var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, key, prompt, launch_context, launch_compact, route[3], shared_config[2], shared_config[3])
         _remove_overlay(home)
         return result
     except:

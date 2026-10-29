@@ -126,8 +126,7 @@ def _strict_tools_value(name: String, value: String) raises -> Bool:
     raise Error(name + " must be true or false")
 
 
-def _validate_deepseek_beta_url(value: String) raises:
-    var name = String("PRODEX_DEEPSEEK_BETA_BASE_URL")
+def _validate_deepseek_beta_url(value: String, name: String = "PRODEX_DEEPSEEK_BETA_BASE_URL") raises:
     var invalid = name + " must be an http(s) URL with host and no credentials, query, or fragment"
     if not value:
         raise Error(name + " cannot be empty")
@@ -221,22 +220,27 @@ def _web_search_mode(configured: Optional[String] = None) raises -> String:
     raise Error(name + " must be auto, off, openai_chat, or anthropic")
 
 
-def deepseek_runtime_route(configured_mode: Optional[String] = None) raises -> Tuple[Bool, String, String, String]:
-    var strict_value = getenv("PRODEX_DEEPSEEK_STRICT_TOOLS", "\x00")
-    var strict_tools = strict_value != "\x00" and _strict_tools_value("PRODEX_DEEPSEEK_STRICT_TOOLS", strict_value)
+def deepseek_runtime_route(configured_mode: Optional[String] = None, configured_strict: Optional[String] = None, configured_beta: Optional[String] = None) raises -> Tuple[Bool, String, String, String]:
+    var strict_name = String("deepseek.strict_tools" if configured_strict else "PRODEX_DEEPSEEK_STRICT_TOOLS")
+    var strict_value = configured_strict.value() if configured_strict else getenv(strict_name, "\x00")
+    var strict_tools = False
+    if configured_strict or strict_value != "\x00":
+        strict_tools = _strict_tools_value(strict_name, strict_value)
+    var beta_name = String("deepseek.beta_base_url" if configured_beta else "PRODEX_DEEPSEEK_BETA_BASE_URL")
+    var beta_value = configured_beta.value() if configured_beta else getenv(beta_name, "\x00")
     if not strict_tools:
-        var beta_value = getenv("PRODEX_DEEPSEEK_BETA_BASE_URL", "\x00")
-        if beta_value != "\x00":
-            _validate_deepseek_beta_url(beta_value)
+        if configured_beta or beta_value != "\x00":
+            _validate_deepseek_beta_url(beta_value, beta_name)
         return False, String(), String(), _web_search_mode(configured_mode)
-    var beta_value = getenv("PRODEX_DEEPSEEK_BETA_BASE_URL", "\x00")
-    if beta_value == "\x00":
+    if not configured_beta and beta_value == "\x00":
         raise Error("strict tools require PRODEX_DEEPSEEK_BETA_BASE_URL to be a numeric loopback HTTP URL")
+    if configured_beta:
+        _validate_deepseek_beta_url(beta_value, beta_name)
     var route = (String(), String())
     try:
         route = local_rewrite_upstream(beta_value)
     except:
-        raise Error("PRODEX_DEEPSEEK_BETA_BASE_URL must be a credential-free numeric loopback HTTP URL")
+        raise Error(beta_name + " must be a credential-free numeric loopback HTTP URL")
     return True, route[0], route[1], _web_search_mode(configured_mode)
 
 

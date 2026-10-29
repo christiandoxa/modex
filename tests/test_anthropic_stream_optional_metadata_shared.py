@@ -397,7 +397,7 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                 if name.endswith("text_delta"):
                     self.assertNotIn("ignored", json.dumps(events))
 
-    def test_closed_result_failure_preserves_known_continuation_mismatch(self):
+    def test_closed_result_failure_continues_like_both_releases(self):
         request, reply = repeated_search_case()
         events = [
             json.loads(line[6:])
@@ -435,17 +435,13 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                 "response.output_item.added", "response.output_text.delta",
             ],
         )
-        self.assertEqual(
-            [name for name, _ in actual],
-            ["response.output_item.added", "response.output_item.done", "response.failed", "response.created"],
-        )
-        self.assertEqual(actual[:3], reference[:3])
+        self.assertEqual(actual, reference)
         self.assertEqual(
             reference[2][1]["response"]["error"],
             {"code": "invalid_anthropic_stream", "message": "content delta type is missing"},
         )
 
-    def test_closed_result_text_delta_preserves_known_block_state_mismatch(self):
+    def test_closed_result_text_delta_matches_both_releases(self):
         request, reply = repeated_search_case()
         events = [
             json.loads(line[6:])
@@ -487,15 +483,166 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                 "response.output_text.delta", "response.output_item.done", "response.completed",
             ],
         )
-        self.assertEqual(
-            [name for name, _ in actual],
-            ["response.output_item.added", "response.output_item.done", "response.failed"],
+        self.assertEqual(actual, reference)
+        self.assertIn("after closed result", json.dumps(actual))
+
+    def test_failure_continues_until_message_stop_without_duplicate_events(self):
+        request, reply = repeated_search_case()
+        base_events = [
+            json.loads(line[6:])
+            for line in reply["body"].splitlines()
+            if line.startswith(b"data: ")
+        ]
+        repeated_failure = base_events.copy()
+        repeated_failure.insert(6, {
+            "type": "content_block_delta", "index": 1, "delta": {"type": None},
+        })
+        result_stop = next(
+            index for index, event in enumerate(repeated_failure)
+            if event.get("type") == "content_block_stop" and event.get("index") == 3
         )
-        self.assertEqual(actual[:2], reference[:2])
-        self.assertEqual(
-            actual[2][1]["response"]["error"],
-            {"code": "provider_stream_error", "message": "Anthropic text delta does not match its block"},
+        repeated_failure.insert(result_stop + 1, {
+            "type": "content_block_delta", "index": 3, "delta": {"type": None},
+        })
+        after_created = base_events.copy()
+        message_delta = next(
+            index for index, event in enumerate(after_created)
+            if event.get("type") == "message_delta"
         )
+        after_created.insert(message_delta + 1, {
+            "type": "content_block_delta", "index": 1, "delta": {"type": None},
+        })
+        after_stop = base_events.copy() + [
+            {"type": "content_block_start", "index": 5, "content_block": {"type": "text", "text": ""}},
+            {"type": "content_block_delta", "index": 5, "delta": {"type": "text_delta", "text": "after message_stop"}},
+        ]
+        terminal_stop_extra = base_events.copy()
+        terminal_stop_extra.insert(6, {
+            "type": "content_block_delta", "index": 1, "delta": {"type": None},
+        })
+        terminal_stop_extra.insert(7, {"type": "message_stop", "future_event_field": "ignored"})
+        terminal_error_extra = base_events.copy()
+        terminal_error_extra.insert(6, {
+            "type": "content_block_delta", "index": 1, "delta": {"type": None},
+        })
+        terminal_error_extra.insert(7, {
+            "type": "error", "error": {"type": "api_error", "message": "synthetic terminal error"},
+            "future_event_field": "ignored",
+        })
+        terminal_stop_out_of_phase = base_events[:6].copy() + [
+            {"type": "content_block_delta", "index": 1, "delta": {"type": None}},
+            {"type": "content_block_start", "index": 5, "content_block": {"type": "text", "text": ""}},
+            {"type": "message_stop"},
+            base_events[0].copy(),
+        ] + base_events[6:]
+        after_error = [
+            base_events[0],
+            {"type": "error", "error": {"type": "api_error", "message": "synthetic terminal error"}},
+            {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}},
+            {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "after error"}},
+            base_events[-1],
+        ]
+        missing_block_before_failure = base_events.copy()
+        missing_block_before_failure.insert(6, {"type": "content_block_start", "index": 4})
+        missing_block_after_failure = base_events.copy()
+        missing_block_after_failure.insert(6, {
+            "type": "content_block_delta", "index": 1, "delta": {"type": None},
+        })
+        missing_block_after_failure.insert(7, {"type": "content_block_start", "index": 4})
+        missing_delta_after_failure = base_events.copy()
+        missing_delta_after_failure.insert(6, {
+            "type": "content_block_delta", "index": 1, "delta": {"type": None},
+        })
+        missing_delta_after_failure.insert(7, {"type": "content_block_delta", "index": 4})
+        repeated_start_after_failure = base_events.copy()
+        repeated_start_after_failure.insert(6, {
+            "type": "content_block_delta", "index": 1, "delta": {"type": None},
+        })
+        repeated_start_after_failure.insert(7, base_events[0].copy())
+        missing_block_in_final_frame = base_events[:-1].copy()
+        missing_block_in_final_frame.insert(6, {
+            "type": "content_block_delta", "index": 1, "delta": {"type": None},
+        })
+        missing_block_in_final_frame.append({"type": "content_block_start", "index": 4})
+        cases = [
+            ("repeated closed-result failures", repeated_failure, False),
+            ("failure after response.created", after_created, False),
+            ("missing block before failure", missing_block_before_failure, False),
+            ("missing block after failure", missing_block_after_failure, False),
+            ("missing delta after failure", missing_delta_after_failure, False),
+            ("repeated message_start after failure", repeated_start_after_failure, False),
+            ("missing block in final frame", missing_block_in_final_frame, True),
+            ("frames after message_stop", after_stop, False),
+            ("frames after error", after_error, False),
+            ("message_stop extra fields after failure", terminal_stop_extra, False),
+            ("error extra fields after failure", terminal_error_extra, False),
+            ("out-of-phase message_stop after failure", terminal_stop_out_of_phase, False),
+        ]
+        turns = [dict(request, input=name) for name, _, _ in cases]
+        replies = []
+        for _, events, truncated in cases:
+            reply = _stream(events)
+            if truncated:
+                reply["body"] = reply["body"][:-2]
+            replies.append(reply)
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, turns, replies)
+            self.assertEqual(len(posts), len(cases), label)
+            self.assertTrue(all(post["path"] == "/anthropic/v1/messages" for post in posts), label)
+            for post in posts:
+                headers = {key.lower(): value for key, value in post["headers"].items()}
+                self.assertEqual(headers["x-api-key"], "synthetic-provider-key", label)
+                self.assertNotIn("authorization", headers, label)
+            self.assertEqual(len(responses), len(cases), label)
+            self.assertTrue(all(response["status"] == 200 for response in responses), label)
+            captures[label] = [
+                (post["body"], _normalized_events(bytes.fromhex(response["body"])))
+                for post, response in zip(posts, responses)
+            ]
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        self.assertEqual(captures["Modex"], captures["0.439.2"])
+        for (name, _, _), (_, events) in zip(cases, captures["0.439.2"]):
+            with self.subTest(case=name):
+                names = [event for event, _ in events]
+                if name in (
+                    "repeated closed-result failures", "failure after response.created",
+                    "missing block before failure", "missing block after failure",
+                    "missing delta after failure", "repeated message_start after failure",
+                    "missing block in final frame",
+                ):
+                    self.assertEqual(names.count("response.failed"), 1)
+                    self.assertEqual(names.count("response.completed"), 0)
+                    self.assertEqual(names.count("response.created"), 1)
+                    if name == "failure after response.created":
+                        self.assertLess(names.index("response.created"), names.index("response.failed"))
+                    else:
+                        self.assertLess(names.index("response.failed"), names.index("response.created"))
+                    if name == "missing block before failure":
+                        self.assertEqual(
+                            events[names.index("response.failed")][1]["response"]["error"],
+                            {"code": "invalid_anthropic_stream", "message": "content block is missing"},
+                        )
+                elif name == "frames after message_stop":
+                    self.assertEqual(names.count("response.completed"), 1)
+                    self.assertNotIn("after message_stop", json.dumps(events))
+                elif name in (
+                    "message_stop extra fields after failure", "error extra fields after failure",
+                    "out-of-phase message_stop after failure",
+                ):
+                    self.assertEqual(names, [
+                        "response.output_item.added", "response.output_item.done", "response.failed",
+                    ])
+                else:
+                    self.assertEqual(names, ["response.failed"])
+                    self.assertEqual(
+                        events[0][1]["response"]["error"]["code"], "api_error",
+                    )
+                    self.assertNotIn("after error", json.dumps(events))
 
     def test_thinking_delta_matches_both_releases_in_and_out_of_order(self):
         message_start = {

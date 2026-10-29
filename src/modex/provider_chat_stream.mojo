@@ -51,6 +51,7 @@ struct DeepSeekChatState:
     var anthropic_search_first_by_id: Dict[String, Int]
     var anthropic_search_position_by_index: Dict[UInt64, Int]
     var anthropic_stopped_search_indices: Dict[UInt64, Bool]
+    var anthropic_stream_terminal: Bool
     var anthropic_open_result_indices: Dict[UInt64, Bool]
     var anthropic_seen_result_indices: Dict[UInt64, Bool]
     var anthropic_open_search_count: Int
@@ -90,6 +91,7 @@ struct DeepSeekChatState:
         self.anthropic_search_first_by_id = Dict[String, Int]()
         self.anthropic_search_position_by_index = Dict[UInt64, Int]()
         self.anthropic_stopped_search_indices = Dict[UInt64, Bool]()
+        self.anthropic_stream_terminal = False
         self.anthropic_open_result_indices = Dict[UInt64, Bool]()
         self.anthropic_seen_result_indices = Dict[UInt64, Bool]()
         self.anthropic_open_search_count = 0
@@ -175,6 +177,14 @@ struct DeepSeekChatState:
 
     def observe_anthropic(mut self, source: String) raises -> List[String]:
         var doc = JsonDocument(source)
+        if self.completed and not self.anthropic_stream_terminal:
+            try:
+                return self.observe_anthropic_document(doc)
+            except:
+                return List[String]()
+        return self.observe_anthropic_document(doc)
+
+    def observe_anthropic_document(mut self, doc: JsonDocument) raises -> List[String]:
         if doc.nodes[doc.root].kind != JSON_OBJECT:
             raise Error("Anthropic stream event must be an object")
         var kind = doc.string(doc.get(doc.root, "type"))
@@ -182,6 +192,7 @@ struct DeepSeekChatState:
             _only_fields(doc, doc.root, ["type"], "ping event")
             return List[String]()
         if kind == "error":
+            self.anthropic_stream_terminal = True
             _only_fields(doc, doc.root, ["type", "error"], "stream error event")
             var error = doc.get(doc.root, "error")
             _only_fields(doc, error, ["type", "message"], "stream error")
@@ -191,15 +202,28 @@ struct DeepSeekChatState:
             return self.fail(code, message)
         if kind == "message_start":
             # shortcut: message_start metadata is ignored, translate fields as oracle cases require.
+            if self.completed and not self.anthropic_stream_terminal:
+                var output = List[String]()
+                var message = doc.get(doc.root, "message")
+                var id = optional_string(doc, message, "id")
+                if id and id.value() and self.response_id.startswith("resp_deepseek_"):
+                    self.response_id = id.value()
+                if not self.created:
+                    self.created = True
+                    output.append(self.event("response.created", '"response":{"id":' + quote_json(self.response_id) + "}", True))
+                return output^
             if self.anthropic_phase != 0:
                 raise Error("Anthropic message_start is out of order")
             self.anthropic_phase = 1
             return List[String]()
         if kind == "content_block_start":
             var block = doc.get(doc.root, "content_block")
-            if block < 0 or doc.nodes[block].kind != JSON_OBJECT:
-                raise Error("Anthropic content block is missing")
-            var block_type = doc.string(doc.get(block, "type"))
+            if block < 0:
+                return self.fail("invalid_anthropic_stream", "content block is missing")
+            var block_type_node = doc.get(block, "type")
+            if block_type_node < 0 or doc.nodes[block_type_node].kind != JSON_STRING:
+                return self.fail("invalid_anthropic_stream", "content block type is missing")
+            var block_type = doc.nodes[block_type_node].text
             if block_type == "thinking":
                 return List[String]()
             _only_fields(doc, doc.root, ["type", "index", "content_block"], "content_block_start event")
@@ -311,11 +335,7 @@ struct DeepSeekChatState:
                 raise Error("Anthropic content delta is missing")
             delta_type_node = doc.get(delta, "type")
             if delta_type_node < 0 or doc.nodes[delta_type_node].kind != JSON_STRING:
-                var output = self.fail("invalid_anthropic_stream", "content delta type is missing")
-                if output and not self.created:
-                    self.created = True
-                    output.append(self.event("response.created", '"response":{"id":' + quote_json(self.response_id) + "}", True))
-                return output^
+                return self.fail("invalid_anthropic_stream", "content delta type is missing")
             var delta_type = doc.nodes[delta_type_node].text
             if delta_type != "text_delta" and delta_type != "input_json_delta" and delta_type != "thinking_delta":
                 return List[String]()
@@ -327,7 +347,12 @@ struct DeepSeekChatState:
             if not index: raise Error("Anthropic content delta index is invalid")
             block_index = index.value()
             if delta_type == "text_delta":
-                if self.anthropic_phase != 6 or not self.anthropic_text_index or self.anthropic_text_index.value() != block_index:
+                var result_block = block_index in self.anthropic_seen_result_indices
+                if not result_block and (
+                    self.anthropic_phase != 6
+                    or not self.anthropic_text_index
+                    or self.anthropic_text_index.value() != block_index
+                ):
                     raise Error("Anthropic text delta does not match its block")
                 var text_value = doc.get(delta, "text")
                 if text_value < 0 or doc.nodes[text_value].kind != JSON_STRING:
@@ -443,6 +468,7 @@ struct DeepSeekChatState:
             events.extend(self.complete_tools())
             return events^
         if kind == "message_stop":
+            self.anthropic_stream_terminal = True
             _only_fields(doc, doc.root, ["type"], "message_stop event")
             if self.anthropic_phase != 1 and self.anthropic_phase != 3 and self.anthropic_phase != 5 and self.anthropic_phase != 7 and self.anthropic_phase != 8:
                 raise Error("Anthropic stream ended outside the supported web-search response shape")

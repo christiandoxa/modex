@@ -263,7 +263,9 @@ struct DeepSeekExchange(Movable):
                     return events^
         except error:
             self._finish()
-            if self.reader.state.completed:
+            if self.reader.state.completed and (
+                not self.native_messages or self.reader.state.anthropic_stream_terminal
+            ):
                 raise
             self.reader.done = True
             return self.reader.state.fail("provider_stream_error", String(error))

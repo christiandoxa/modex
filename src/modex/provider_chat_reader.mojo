@@ -33,7 +33,9 @@ struct DeepSeekChatReader:
                 output.extend(self.frame(framed[1].value()))
             return (used, output^)
         except error:
-            if self.state.completed and not self.assembler.saw_done:
+            if self.state.completed and not self.assembler.saw_done and (
+                not self.native_messages or self.state.anthropic_stream_terminal
+            ):
                 raise
             self.done = True
             output.extend(self.state.fail("provider_stream_error", String(error)))
@@ -43,7 +45,7 @@ struct DeepSeekChatReader:
         var output = List[String]()
         for value in self.assembler.push(lines):
             output.extend(self.state.observe_anthropic(value) if self.native_messages else self.state.observe(value))
-            if self.native_messages and self.state.completed:
+            if self.native_messages and self.state.anthropic_stream_terminal:
                 self.done = True
                 return output^
         if self.assembler.done:
@@ -62,7 +64,9 @@ struct DeepSeekChatReader:
         try:
             framed = self.framer.finish()
         except error:
-            if self.state.completed:
+            if self.state.completed and (
+                not self.native_messages or self.state.anthropic_stream_terminal
+            ):
                 raise
             self.done = True
             return self.state.fail("provider_stream_error", String(error))
@@ -70,7 +74,9 @@ struct DeepSeekChatReader:
             try:
                 output.extend(self.frame(framed.value()))
             except error:
-                if self.state.completed and not self.assembler.saw_done:
+                if self.state.completed and not self.assembler.saw_done and (
+                    not self.native_messages or self.state.anthropic_stream_terminal
+                ):
                     raise
                 self.done = True
                 output.extend(self.state.fail("provider_stream_error", String(error)))

@@ -3515,3 +3515,16 @@ request bodies remain unread. No full transport parity is claimed. Evidence:
 `docs/evidence/baseline-0.165.1/local-relay-http.md`. The full 16-test
 0.439.2 relay module, 27 shared loopback tests, production import audit and
 test census passed; no dependency was added.
+
+DeepSeek Anthropic request validation now delegates `function_call_output`
+items to the shared Responses mapper, which handles the tested ID and output
+aliases and ignores unknown fields. The buffered three-process matrix covers
+matched and orphan history in auto, forced Anthropic, and forced Chat modes.
+Valid outputs retain their matched IDs; orphan and non-string-primary outputs
+are dropped. A whitespace-only primary `call_id` still rejects before
+provider I/O, matching both pinned releases. The matrix checks routed result
+IDs rather than full request-body equality; broader request serialization and
+all other Anthropic shapes remain unqualified. The focused matrix, production
+build, 71-file import audit, and `git diff --check` pass. See
+`docs/evidence/baseline-0.165.1/anthropic-function-call-output-aliases.md`.
+All six baseline release targets remain in the parity denominator.

@@ -550,6 +550,77 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                 self.assertEqual(captures[0]["upstream_body"], captures[1]["upstream_body"])
                 self.assertEqual(captures[1]["upstream_body"], captures[2]["upstream_body"])
 
+    def test_function_output_aliases_and_extra_fields_match_modes(self):
+        base = {"model": "deepseek-chat", "stream": False, "tools": [SEARCH, FUNCTION]}
+        matched = [
+            {"type": "message", "role": "user", "content": "question"},
+            {"type": "function_call", "call_id": "call_primary", "name": "lookup", "arguments": "{}"},
+            {"type": "function_call_output", "call_id": "call_primary", "tool_call_id": "conflict",
+             "content": {"nested": [1, "two"]}, "future_field": {"synthetic": True}},
+            {"type": "function_call", "tool_call_id": "call_tool_alias", "name": "lookup", "arguments": "{}"},
+            {"type": "function_call_output", "tool_call_id": "call_tool_alias",
+             "result": {"nested": [{"text": "result"}]}, "future_field": "ignored"},
+            {"type": "function_call", "id": "call_id_alias", "name": "lookup", "arguments": "{}"},
+            {"type": "function_call_output", "id": "call_id_alias", "error": "synthetic failure"},
+            {"type": "function_call", "call_id": "call_nonstring", "name": "lookup", "arguments": "{}"},
+            {"type": "function_call_output", "call_id": 7, "tool_call_id": "call_nonstring",
+             "output": "baseline drops this unmatched pair"},
+        ]
+        orphan = [
+            {"type": "message", "role": "user", "content": "question"},
+            {"type": "function_call_output", "id": "orphan", "error": "synthetic failure",
+             "future_field": "ignored"},
+        ]
+        invalid = [
+            {"type": "message", "role": "user", "content": "question"},
+            {"type": "function_call", "call_id": "call_blank", "name": "lookup", "arguments": "{}"},
+            {"type": "function_call_output", "call_id": " ", "tool_call_id": "call_blank",
+             "output": "still invalid"},
+        ]
+        binaries = (ORACLE_01651, ORACLE, MODEX)
+        for label, items in (("matched", matched), ("orphan", orphan)):
+            for mode in ("auto", "anthropic", "openai_chat"):
+                scenario = "buffered" if mode == "openai_chat" else "anthropic-buffered"
+                request = {**base, "input": items}
+                with self.subTest(history=label, mode=mode):
+                    captures = [_run_mode(binary, request, scenario, mode) for binary in binaries]
+                    requests = []
+                    for result, response, upstream, state in captures:
+                        self.assertEqual((result.returncode, response["status"]), (0, 200))
+                        self.assertEqual(len(upstream), 1)
+                        self.assertEqual(state["leftovers"], [])
+                        requests.append((upstream[0]["path"], bytes.fromhex(upstream[0]["body"])))
+                    expected_path = "/v1/chat/completions" if mode == "openai_chat" else "/anthropic/v1/messages"
+                    self.assertEqual([path for path, _ in requests], [expected_path] * len(binaries))
+                    expected_ids = ["call_primary", "call_tool_alias", "call_id_alias"] if label == "matched" else []
+                    for _, request_body in requests:
+                        body_text = request_body.decode()
+                        self.assertNotIn("future_field", body_text)
+                        messages = json.loads(request_body)["messages"]
+                        if mode == "openai_chat":
+                            results = [message for message in messages if message["role"] == "tool"]
+                            result_ids = [message["tool_call_id"] for message in results]
+                        else:
+                            results = [block for message in messages for block in message.get("content", [])
+                                       if block["type"] == "tool_result"]
+                            result_ids = [block["tool_use_id"] for block in results]
+                        self.assertEqual(result_ids, expected_ids)
+                        if label == "matched":
+                            self.assertNotIn("call_nonstring", body_text)
+                            self.assertEqual(len(results), 3)
+
+        for mode in ("auto", "anthropic", "openai_chat"):
+            scenario = "buffered" if mode == "openai_chat" else "anthropic-buffered"
+            request = {**base, "input": invalid}
+            with self.subTest(history="blank primary", mode=mode):
+                captures = [_run_mode(binary, request, scenario, mode) for binary in binaries]
+                for result, response, upstream, state in captures:
+                    self.assertEqual((result.returncode, response["status"]), (1, 502))
+                    self.assertEqual(upstream, [])
+                    self.assertEqual(state["leftovers"], [])
+                self.assertEqual(captures[1][1]["body"], captures[0][1]["body"])
+                self.assertEqual(captures[2][1]["body"], captures[0][1]["body"])
+
     def test_malformed_matched_function_call_arguments_match_modes(self):
         request = {
             "model": "deepseek-chat",

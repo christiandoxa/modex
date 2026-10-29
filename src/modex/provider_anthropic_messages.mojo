@@ -38,11 +38,7 @@ def validate_deepseek_anthropic_request(source: String) raises:
             if type == "function_call":
                 continue
             if type == "function_call_output":
-                _only_fields(doc, item, ["type", "call_id", "output"], "function call output")
-                var call_id = doc.get(item, "call_id")
-                var output = doc.get(item, "output")
-                if call_id < 0 or doc.nodes[call_id].kind != JSON_STRING or not doc.nodes[call_id].text or output < 0:
-                    raise Error("Anthropic function call output requires a call_id and output")
+                # The shared request mapper validates ID aliases and output fields.
                 continue
             var type_node = doc.get(item, "type")
             if type_node >= 0 and (doc.nodes[type_node].kind != JSON_STRING or doc.nodes[type_node].text != "message"):

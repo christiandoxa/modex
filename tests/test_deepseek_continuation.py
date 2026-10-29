@@ -9,6 +9,7 @@ import tempfile
 import unittest
 
 from test_cli import MODEX, ORACLE, ORACLE_SHA256
+from test_deepseek_web_search_mode_01651_04392 import ORACLE_01651, ORACLE_01651_SHA256
 from test_local_rewrite import SYNTHETIC_API_KEY, json_bytes, serving
 from test_super_launch import CODEX
 
@@ -22,11 +23,13 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
     def request_turn(source_turn):
         turn = dict(source_turn)
         path = turn.pop("_path", target.path)
+        raw_body = turn.pop("_raw_body", None)
         headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
                    **turn.pop("_headers", {})}
         started = int(time.time())
         connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
-        connection.request("POST", path, json.dumps(turn, separators=(",", ":")).encode(), headers)
+        body = raw_body.encode() if raw_body is not None else json.dumps(turn, separators=(",", ":")).encode()
+        connection.request("POST", path, body, headers)
         response = connection.getresponse()
         payload = response.read()
         result = {"kind": "response", "status": response.status, "headers": dict(response.getheaders()),
@@ -41,10 +44,12 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
         for source_turn in json.loads(pathlib.Path(followups_file).read_text()):
             turn = dict(source_turn)
             path = turn.pop("_path", target.path)
+            raw_body = turn.pop("_raw_body", None)
             headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
                        **turn.pop("_headers", {})}
             connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
-            connection.request("POST", path, json.dumps(turn, separators=(",", ":")).encode(), headers)
+            body = raw_body.encode() if raw_body is not None else json.dumps(turn, separators=(",", ":")).encode()
+            connection.request("POST", path, body, headers)
             response = connection.getresponse()
             payload = response.read()
             save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),
@@ -54,14 +59,15 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
     raise SystemExit(0)
 for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()):
     path = turn.pop("_path", target.path)
+    raw_body = turn.pop("_raw_body", None)
     headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
                **turn.pop("_headers", {})}
     if turn.pop("use_previous", False):
         turn["previous_response_id"] = previous
     started = int(time.time())
     connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
-    connection.request("POST", path, json.dumps(turn, separators=(",", ":")).encode(),
-                       headers)
+    body = raw_body.encode() if raw_body is not None else json.dumps(turn, separators=(",", ":")).encode()
+    connection.request("POST", path, body, headers)
     response = connection.getresponse()
     payload = response.read()
     save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),
@@ -79,11 +85,14 @@ print("synthetic-continuation-complete")
 '''
 
 
-def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None, lookahead_timeout_ms=None, api_keys=None, concurrent=False, followup_turns=None):
+def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None, lookahead_timeout_ms=None, api_keys=None, concurrent=False, followup_turns=None, shared_config=None):
     with tempfile.TemporaryDirectory(prefix="modex-continuation-") as temporary:
         root = Path(temporary)
         for name in ("home", "state", "shared", "work"):
             (root / name).mkdir(mode=0o700)
+        if shared_config is not None:
+            (root / "shared/config.toml").write_text(shared_config)
+            (root / "shared/config.toml").chmod(0o600)
         (root / "state/update-check.json").write_text(
             '{"source":"GitHub","latest_version":"0.439.2","checked_at":4102444800}'
         )
@@ -139,8 +148,82 @@ def buffered_reply(index=0, **fields):
 class DeepSeekContinuationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-            raise AssertionError("oracle does not match pinned Prodex 0.439.2")
+        for binary, digest in ((ORACLE_01651, ORACLE_01651_SHA256), (ORACLE, ORACLE_SHA256)):
+            if hashlib.sha256(binary.read_bytes()).hexdigest() != digest:
+                raise AssertionError(f"oracle does not match pinned release: {binary}")
+
+    def test_api_key_cursor_matches_release_request_order(self):
+        keys = "synthetic-key-a,synthetic-key-b"
+        key_a = "Bearer synthetic-key-a"
+        key_b = "Bearer synthetic-key-b"
+        binaries = (ORACLE_01651, ORACLE, MODEX)
+
+        invalid_route = [
+            {"model": "deepseek-chat", "input": "synthetic invalid route", "_path": "/v1/unknown"},
+            {"model": "deepseek-chat", "input": "synthetic after invalid route"},
+        ]
+        for binary in binaries:
+            with self.subTest(binary=str(binary), case="invalid route"):
+                posts, responses = observe_turns(
+                    binary, invalid_route, [buffered_reply(), buffered_reply(1)], api_keys=keys,
+                )
+                self.assertEqual([response["status"] for response in responses], [404, 200])
+                self.assertEqual([post["headers"]["authorization"] for post in posts], [key_a])
+
+        malformed_json = [
+            {"_path": "/v1/responses", "_raw_body": "{"},
+            {"model": "deepseek-chat", "input": "synthetic after malformed JSON"},
+        ]
+        for binary in binaries:
+            with self.subTest(binary=str(binary), case="malformed JSON"):
+                posts, responses = observe_turns(
+                    binary, malformed_json, [buffered_reply()], api_keys=keys,
+                )
+                self.assertEqual([response["status"] for response in responses], [502, 200])
+                self.assertEqual([post["headers"]["authorization"] for post in posts], [key_b])
+
+        bound_requests = (
+            ("response", {}, {"use_previous": True}),
+            ("session", {"session_id": "synthetic-bound-session"},
+             {"session_id": "synthetic-bound-session"}),
+            ("turn", {"_headers": {"x-codex-turn-state": "synthetic-bound-turn"}},
+             {"_headers": {"x-codex-turn-state": "synthetic-bound-turn"}}),
+        )
+        for identity, first_identity, rejected_identity in bound_requests:
+            turns = [
+                {"model": "deepseek-chat", "input": "synthetic bound request", **first_identity},
+                {"model": "deepseek-chat", "input": "synthetic rejected continuation", **rejected_identity},
+                {"model": "deepseek-chat", "input": "synthetic after rejection"},
+            ]
+            for binary in binaries:
+                with self.subTest(binary=str(binary), case=f"rejected {identity} continuation"):
+                    posts, responses = observe_turns(
+                        binary, turns, [buffered_reply(), buffered_reply(1)], api_keys=keys,
+                    )
+                    self.assertEqual([response["status"] for response in responses], [200, 503, 200])
+                    self.assertEqual([post["headers"]["authorization"] for post in posts], [key_a, key_b])
+
+        empty_search = {
+            "model": "deepseek-chat", "input": "",
+            "tools": [{"type": "web_search"}],
+        }
+        valid = {"model": "deepseek-chat", "input": "synthetic after empty search"}
+        for mode, expected_statuses, expected_keys in (
+            ("auto", [400, 200], [key_b]),
+            ("anthropic", [400, 200], [key_b]),
+            ("openai_chat", [200, 200], [key_a, key_b]),
+        ):
+            config = f'[deepseek]\nweb_search_mode = "{mode}"\n'
+            for binary in binaries:
+                with self.subTest(binary=str(binary), case=f"empty search {mode}"):
+                    posts, responses = observe_turns(
+                        binary, [empty_search, valid], [buffered_reply(), buffered_reply(1)],
+                        api_keys=keys, shared_config=config,
+                    )
+                    self.assertEqual([response["status"] for response in responses], expected_statuses)
+                    self.assertEqual([post["headers"]["authorization"] for post in posts], expected_keys)
+                    if mode == "openai_chat":
+                        self.assertTrue(all(post["path"].endswith("/chat/completions") for post in posts))
 
     def test_stream_precommit_idle_and_lookahead_deadlines_match_release(self):
         chunk = {"id": "synthetic-idle-chat", "created": 42, "model": "deepseek-chat",

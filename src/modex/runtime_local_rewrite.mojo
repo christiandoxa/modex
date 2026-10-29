@@ -710,6 +710,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         doc = JsonDocument(source)
     except:
         if target == "/v1/responses":
+            _ = state_ptr[].next_api_key_start()
             _reply(connection, 502, "upstream request failed")
             return
     var previous = trim_text(doc.string(doc.get(doc.root, "previous_response_id")))
@@ -718,14 +719,13 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     if not _continuation_identity_valid(request.headers, doc) or not state_ptr[].permits(previous, turn, session):
         _binding_error(connection)
         return
+    var key_count = state_ptr[].api_key_count()
+    var attempt_count = key_count
+    var key_start = state_ptr[].next_api_key_start()
+    var key_index = key_start
     if target == "/v1/chat/completions":
         var stream: LoopbackHTTPStream
-        var key_count = state_ptr[].api_key_count()
-        var attempt_count = key_count
-        var key_start = state_ptr[].next_api_key_start()
-        var key_index = 0
         var prebuffered_error = List[UInt8]()
-        key_index = key_start
         try:
             stream = deepseek_chat_completions_stream(
                 address,
@@ -846,10 +846,6 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     var now = _realtime_nanoseconds()
     if now < 0: raise Error("system clock returned a negative timestamp")
     var exchange: DeepSeekExchange
-    var key_count = state_ptr[].api_key_count()
-    var attempt_count = key_count
-    var key_start = state_ptr[].next_api_key_start()
-    var key_index = key_start
     var prebuffered_error = List[UInt8]()
     var native_first_event_retries = 0
     try:

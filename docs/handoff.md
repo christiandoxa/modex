@@ -81,6 +81,18 @@ does not establish the six-target denominator, public network/TLS, persistent
 or profile-backed ownership, or complete provider parity. See
 `docs/evidence/baseline-0.165.1/super-api-key-env.md`.
 
+The round-robin cursor now matches the pinned request ordering for selected
+sequential cases. An unsupported `/v1/unknown` route and known response, session,
+and turn continuation 503 rejections do not advance it. Raw malformed Responses
+JSON (`{`) consumes once before its 502; empty-input web-search 400s consume in
+`auto`/`anthropic`. `openai_chat` sends the empty-input search and rotates from
+A to B as usual. The 0.165.1, 0.439.2 and Modex process comparisons pass for
+these vectors. The unsupported-route case does not test malformed
+request-target syntax. Malformed Chat Completions JSON and other invalid-body,
+target, or translation-time rejection orderings remain unqualified; no full
+parity status is promoted. See
+`docs/evidence/baseline-0.165.1/super-api-key-env.md`.
+
 The combined rotation and shared Anthropic stream run passed all 38 tests,
 including the 14 rotation methods, error-event compatibility, and pipeline/
 half-close shutdown controls. The synthetic client now edits only the

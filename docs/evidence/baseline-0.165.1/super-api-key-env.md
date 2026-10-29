@@ -82,3 +82,31 @@ Reproduce with `PYTHONPATH=tests rtk python3 -m unittest
 test_deepseek_key_rotation_01651_04392 -v` using both checksum-pinned Linux
 oracles. Synthetic credentials and isolated homes/loopback ports are used
 throughout.
+
+## Cursor reservation order (2026-10-30)
+
+The pinned `local_rewrite_deepseek_send.rs` checks binding context before it
+reserves the round-robin start, then reserves before Responses translation.
+Three-process sequential comparisons now cover that ordering: an unsupported
+route leaves the next valid request on key A; malformed Responses JSON consumes
+key A before returning 502, so the next valid request uses key B; and known
+response, session, and turn continuations rejected with 503 do not consume a
+key. An empty-input web-search request returns 400 but consumes a key in `auto`
+and `anthropic` modes, while `openai_chat` sends it and advances normally. The
+valid request after each rejection uses the expected next key in both pinned
+releases and Modex.
+
+`tests/test_deepseek_continuation.py` exercises actual Super processes with
+synthetic two-key credentials, a private temporary shared config, and a
+loopback provider. The production build, focused cursor-order test, and 71-file
+production import audit passed on Linux x86-64. Reproduce the focused test with:
+
+```sh
+MODEX_BINARY="$PWD/build/modex" PYTHONPATH=tests rtk python3 -m unittest \
+  test_deepseek_continuation.DeepSeekContinuationTests.test_api_key_cursor_matches_release_request_order
+```
+
+This qualifies only the selected reservation-order vectors; the
+unsupported route is not malformed request-target syntax, and malformed Chat
+Completions JSON plus other rejection paths remain unqualified. The other
+release targets and complete provider behavior also remain unqualified.

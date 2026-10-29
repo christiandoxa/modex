@@ -493,6 +493,109 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
         self.assertEqual((result["tool_use_id"], result["content"]),
                          ("call_tool_use", "first\nsecond\nthird"))
 
+    def test_function_call_history_items_match_both_releases(self):
+        base = {
+            "model": "deepseek-chat",
+            "stream": False,
+            "tools": [
+                {"type": "web_search_preview"},
+                {"type": "function", "name": "lookup", "parameters": {"type": "object"}},
+                {"type": "function", "name": "count", "parameters": {"type": "object"}},
+            ],
+        }
+        cases = (
+            ("orphan call", [
+                {"type": "message", "role": "user", "content": "question"},
+                {"type": "function_call", "call_id": "call_orphan", "name": "lookup",
+                 "arguments": "{malformed"},
+            ], [{"role": "user", "content": [{"type": "text", "text": "question"}]}]),
+            ("matched call and output", [
+                {"type": "message", "role": "user", "content": "question"},
+                {"type": "function_call", "call_id": "call_lookup", "name": "lookup",
+                 "arguments": "{\"query\":\"release\"}"},
+                {"type": "function_call_output", "call_id": "call_lookup", "output": "result"},
+            ], [
+                {"role": "user", "content": [{"type": "text", "text": "question"}]},
+                {"role": "assistant", "content": [{"type": "tool_use", "id": "call_lookup",
+                 "name": "lookup", "input": {"query": "release"}}]},
+                {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "call_lookup",
+                 "content": "result"}]},
+            ]),
+            ("partial tool results", [
+                {"type": "message", "role": "user", "content": "question"},
+                {"type": "function_call", "call_id": "call_orphan", "name": "lookup",
+                 "arguments": "{malformed"},
+                {"type": "function_call", "call_id": "call_count", "name": "count",
+                 "arguments": "{\"prefix\":\"rel\"}"},
+                {"type": "function_call_output", "call_id": "call_count", "output": "1"},
+            ], [
+                {"role": "user", "content": [{"type": "text", "text": "question"}]},
+                {"role": "assistant", "content": [{"type": "tool_use", "id": "call_count",
+                 "name": "count", "input": {"prefix": "rel"}}]},
+                {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "call_count",
+                 "content": "1"}]},
+            ]),
+        )
+        for label, items, expected_messages in cases:
+            request = {**base, "input": items}
+            with self.subTest(case=label):
+                captures = [_run(binary, request, scenario="anthropic-buffered")
+                            for binary in (ORACLE_01651, ORACLE, MODEX)]
+                for capture in captures:
+                    self.assertEqual((capture["exit_code"], capture["status"]), (0, 200))
+                    self.assertEqual(len(capture["upstream"]), 1)
+                    self.assertEqual(capture["upstream"][0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual(capture["upstream_body"]["messages"], expected_messages)
+                    self.assertEqual(capture["state"]["leftovers"], [])
+                self.assertEqual(captures[0]["upstream_body"], captures[1]["upstream_body"])
+                self.assertEqual(captures[1]["upstream_body"], captures[2]["upstream_body"])
+
+    def test_malformed_matched_function_call_arguments_match_modes(self):
+        request = {
+            "model": "deepseek-chat",
+            "stream": False,
+            "tools": [SEARCH, FUNCTION],
+            "input": [
+                {"type": "message", "role": "user", "content": "question"},
+                {"type": "function_call", "call_id": "call_lookup", "name": "lookup",
+                 "arguments": "{malformed"},
+                {"type": "function_call_output", "call_id": "call_lookup", "output": "result"},
+            ],
+        }
+        binaries = (ORACLE_01651, ORACLE, MODEX)
+        for stream, scenario in ((False, "buffered"), (True, "stream")):
+            streamed_request = {**request, "stream": stream}
+            for mode in ("auto", "anthropic"):
+                with self.subTest(stream=stream, mode=mode):
+                    captures = [
+                        _run_mode(binary, streamed_request, scenario, mode)
+                        for binary in binaries
+                    ]
+                    for result, response, upstream, state in captures:
+                        self.assertEqual((result.returncode, response["status"]), (1, 400))
+                        self.assertEqual(upstream, [])
+                        self.assertEqual(state["leftovers"], [])
+                    self.assertEqual(captures[1][1]["body"], captures[0][1]["body"])
+                    self.assertEqual(captures[2][1]["body"], captures[0][1]["body"])
+
+            with self.subTest(stream=stream, mode="openai_chat"):
+                captures = [
+                    _run_mode(binary, streamed_request, scenario, "openai_chat")
+                    for binary in binaries
+                ]
+                for result, response, upstream, state in captures:
+                    self.assertEqual((result.returncode, response["status"]), (0, 200))
+                    self.assertEqual(len(upstream), 1)
+                    self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
+                    self.assertEqual(state["leftovers"], [])
+                chat_bodies = [json.loads(bytes.fromhex(upstream[0]["body"]))
+                               for _, _, upstream, _ in captures]
+                self.assertEqual(chat_bodies[1:], chat_bodies[:1] * 2)
+                self.assertEqual(
+                    chat_bodies[0]["messages"][1]["tool_calls"][0]["function"]["arguments"],
+                    "{malformed",
+                )
+
     def test_streamed_text_parts_and_metadata_match_both_releases(self):
         request = {"model": "deepseek-chat", "input": [{
             "type": "message", "role": "user", "id": "synthetic-id",

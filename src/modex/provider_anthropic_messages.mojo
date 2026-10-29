@@ -35,6 +35,8 @@ def validate_deepseek_anthropic_request(source: String) raises:
     elif doc.nodes[input].kind == JSON_ARRAY:
         for item in doc.nodes[input].children:
             var type = doc.string(doc.get(item, "type"))
+            if type == "function_call":
+                continue
             if type == "function_call_output":
                 _only_fields(doc, item, ["type", "call_id", "output"], "function call output")
                 var call_id = doc.get(item, "call_id")
@@ -240,8 +242,13 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
                 var arguments = doc.get(function, "arguments")
                 if name < 0 or doc.nodes[name].kind != JSON_STRING or not doc.nodes[name].text or arguments < 0 or doc.nodes[arguments].kind != JSON_STRING:
                     raise Error("Anthropic tool function requires a name and JSON arguments")
-                var parsed_arguments = JsonDocument(doc.nodes[arguments].text)
-                content_parts.append('{"type":"tool_use","id":' + serialize_json(doc, call_id) + ',"name":' + serialize_json(doc, name) + ',"input":' + serialize_json(parsed_arguments, parsed_arguments.root) + "}")
+                var parsed_arguments_json: String
+                try:
+                    var parsed_arguments = JsonDocument(doc.nodes[arguments].text)
+                    parsed_arguments_json = serialize_json(parsed_arguments, parsed_arguments.root)
+                except:
+                    raise Error("Anthropic tool function arguments must be valid JSON")
+                content_parts.append('{"type":"tool_use","id":' + serialize_json(doc, call_id) + ',"name":' + serialize_json(doc, name) + ',"input":' + parsed_arguments_json + "}")
     if not has_message:
         raise Error("Anthropic Messages slice requires a user or assistant message")
     messages.append(_message(current_role, tool_results, content_parts))

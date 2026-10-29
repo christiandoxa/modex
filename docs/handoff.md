@@ -7,6 +7,13 @@ compared through production session reports with fixed file times. The shared
 timestamp parser also serves logs and rate-limit projection; their focused
 checks are recorded in `docs/evidence/baseline-0.165.1/session-signed-date-components.md`.
 
+Anthropic Messages translation now accepts Responses function-call history
+for shared adjacency repair. Malformed JSON arguments on a matched call return
+the pinned releases' local 400 in native modes; explicit Chat mode forwards the
+raw arguments. Buffered and streamed synthetic process controls match both
+releases. Other function-call shapes and provider behavior remain unqualified.
+See `docs/evidence/baseline-0.165.1/anthropic-mixed-tools.md`.
+
 Log CLI suggested-option usage now matches checksum-pinned 0.439.2 when an
 unknown option resembling `--json` follows a positional value. Three real
 process regressions cover valid, invalid and dash positionals. The production

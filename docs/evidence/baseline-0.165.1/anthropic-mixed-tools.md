@@ -39,6 +39,29 @@ production relay matches 0.165.1 for 3, 64 and 1,024 distinct search/result
 pairs followed by a function call; complete normalized output and provider
 request bodies are compared. The 65,536-block and provider-body limits remain.
 
+## Function-call history repair and argument validation
+
+The frozen DeepSeek adjacency repair pairs function calls with matching
+outputs, drops unanswered calls when other content remains, and discards
+orphan outputs. Real-process request comparisons cover an orphan with
+malformed arguments, a matched call/output pair, and a partial set of results;
+the captured Anthropic Messages bodies match 0.165.1 and 0.439.2.
+
+Malformed JSON arguments on a matched call fail native Anthropic translation
+locally with the release's 400 invalid-request response in `auto` and forced
+`anthropic` modes. Explicit `openai_chat` mode preserves the raw argument
+string and sends it to `/v1/chat/completions`, matching both releases. The
+real-process controls cover buffered and streamed requests, verify there is no
+provider request on native rejection, and check that repair still drops a
+malformed orphan call.
+
+`test_function_call_history_items_match_both_releases` and
+`test_malformed_matched_function_call_arguments_match_modes` compare the
+checksum-pinned 0.165.1 and 0.439.2 processes with Modex through production
+dispatch. Validation on Linux x86-64: `rtk make build` passed; these two
+focused process tests passed. This qualifies only these history and argument
+shapes, not general tool-history or Anthropic parity.
+
 `tests/test_anthropic_mixed_tools_01651.py` uses the checksum-pinned oracle,
 the production Modex binary, synthetic keys, isolated HOME/state directories,
 and a loopback provider. No paid traffic or real credentials are used.

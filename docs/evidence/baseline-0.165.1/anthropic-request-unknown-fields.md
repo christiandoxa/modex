@@ -49,6 +49,8 @@ account login or paid provider request is used.
 - `rtk make build` — pass with Mojo 1.2.0 (`2016d0cd`).
 - `PYTHONPATH=tests MODEX_BINARY=build/modex python3 -m unittest test_anthropic_request_unknown_fields_01651_04392` — 3 tests passed.
 - `PYTHONPATH=tests MODEX_BINARY=build/modex python3 -m unittest test_anthropic_mixed_tools_01651.AnthropicMixedTool01651Tests.test_native_anthropic_unsupported_chat_fields_fallback_safely test_anthropic_mixed_tools_01651.AnthropicMixedTool01651Tests.test_auto_conflict_duplicate_keys_fall_back_and_malformed_json_stops` — 2 tests passed.
+- The complete `test_anthropic_mixed_tools_01651` module passed 63 tests in
+  528.520 seconds on combined revision `36ab8ca1cc46446f198f626831d7094822efe474`.
 - `PRODEX_ORACLE=/synthetic/wrong-generic-oracle PRODEX_ORACLE_04392="$HOME/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu" PRODEX_ORACLE_01651="$HOME/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu" PYTHONPATH=tests MODEX_BINARY=build/modex python3 -m unittest test_anthropic_request_unknown_fields_01651_04392` — 3 tests passed with conflicting generic and explicit release variables.
 - `PYTHONPATH=tests MODEX_BINARY=build/modex python3 -m unittest test_ci_oracle_routing` — 7 tests passed; both fast and full CI include the module in the active cross-release phase.
 - `python3 scripts/ci/check-test-census.py` — 50 native test sources and 141 Python modules each have one suite owner.

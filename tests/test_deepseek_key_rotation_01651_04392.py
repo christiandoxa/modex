@@ -89,7 +89,14 @@ class DeepSeekKeyRotationTests(unittest.TestCase):
         self.assertNotIn(KEYS.encode(), result.stdout + result.stderr)
 
     def test_structured_retry_classification_matches_both_releases(self):
-        request = [{"model": "deepseek-chat", "input": "synthetic retry"}]
+        requests = (
+            ("responses", [{"model": "deepseek-chat", "input": "synthetic retry"}]),
+            ("chat_completions", [{
+                "model": "deepseek-chat",
+                "messages": [{"role": "user", "content": "synthetic retry"}],
+                "_path": "/v1/chat/completions",
+            }]),
+        )
         cases = (
             ("auth", 401, b'{"error":{"code":"invalid_api_key"}}', True),
             ("rate_limit", 429, b'{"error":{"code":"rate_limit_exceeded"}}', True),
@@ -106,18 +113,19 @@ class DeepSeekKeyRotationTests(unittest.TestCase):
              b'{"error":{"code":"invalid_request","code":"invalid_api_key"}}', True),
         )
         for name, status, body, retry in cases:
-            for binary in (ORACLE_01651, ORACLE, MODEX):
-                with self.subTest(case=name, binary=str(binary)):
-                    posts, responses = observe_turns(
-                        binary, request,
-                        [{"status": status, "content_type": "application/json", "body": body}, buffered_reply(1)],
-                        api_keys=KEYS,
-                    )
-                    self.assertEqual([post["headers"]["authorization"] for post in posts],
-                                     [KEY_A, KEY_B] if retry else [KEY_A])
-                    self.assertEqual([response["status"] for response in responses], [200] if retry else [status])
-                    if not retry:
-                        self.assertEqual(bytes.fromhex(responses[0]["body"]), body)
+            for route_name, request in requests:
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    with self.subTest(case=name, route=route_name, binary=str(binary)):
+                        posts, responses = observe_turns(
+                            binary, request,
+                            [{"status": status, "content_type": "application/json", "body": body}, buffered_reply(1)],
+                            api_keys=KEYS,
+                        )
+                        self.assertEqual([post["headers"]["authorization"] for post in posts],
+                                         [KEY_A, KEY_B] if retry else [KEY_A])
+                        self.assertEqual([response["status"] for response in responses], [200] if retry else [status])
+                        if not retry:
+                            self.assertEqual(bytes.fromhex(responses[0]["body"]), body)
 
     def test_unknown_identity_candidates_still_rotate(self):
         identities = (
@@ -471,20 +479,29 @@ class DeepSeekKeyRotationTests(unittest.TestCase):
         keys = "synthetic-key-a,synthetic-key-b,synthetic-key-c"
         error_body = b'{"error":{"code":"rate_limit_error","message":"synthetic exhausted"}}'
         retryable_error = {"status": 429, "content_type": "application/json", "body": error_body}
-        turns = [
-            {"model": "deepseek-chat", "input": "synthetic exhaust all three keys"},
-            {"model": "deepseek-chat", "input": "synthetic request after exhaustion"},
-        ]
-        for binary in (ORACLE_01651, ORACLE, MODEX):
-            with self.subTest(binary=str(binary)):
-                posts, responses = observe_turns(
-                    binary, turns,
-                    [retryable_error, retryable_error, retryable_error, buffered_reply(1)],
-                    api_keys=keys,
-                )
-                self.assertEqual(
-                    [post["headers"]["authorization"] for post in posts],
-                    [KEY_A, KEY_B, KEY_C, KEY_B],
-                )
-                self.assertEqual([response["status"] for response in responses], [429, 200])
-                self.assertEqual(bytes.fromhex(responses[0]["body"]), error_body)
+        routes = (
+            ("responses", [
+                {"model": "deepseek-chat", "input": "synthetic exhaust all three keys"},
+                {"model": "deepseek-chat", "input": "synthetic request after exhaustion"},
+            ]),
+            ("chat_completions", [
+                {"model": "deepseek-chat", "messages": [{"role": "user", "content": "synthetic exhaust all three keys"}],
+                 "_path": "/v1/chat/completions"},
+                {"model": "deepseek-chat", "messages": [{"role": "user", "content": "synthetic request after exhaustion"}],
+                 "_path": "/v1/chat/completions"},
+            ]),
+        )
+        for route_name, turns in routes:
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                with self.subTest(route=route_name, binary=str(binary)):
+                    posts, responses = observe_turns(
+                        binary, turns,
+                        [retryable_error, retryable_error, retryable_error, buffered_reply(1)],
+                        api_keys=keys,
+                    )
+                    self.assertEqual(
+                        [post["headers"]["authorization"] for post in posts],
+                        [KEY_A, KEY_B, KEY_C, KEY_B],
+                    )
+                    self.assertEqual([response["status"] for response in responses], [429, 200])
+                    self.assertEqual(bytes.fromhex(responses[0]["body"]), error_body)

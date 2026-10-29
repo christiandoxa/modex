@@ -57,9 +57,12 @@ the pinned structured-code set, case-sensitive JSON field names, last-value
 duplicate-key handling, rejected aliases, final-error pass-through,
 retryable native Anthropic first-event errors, precommit transport failures,
 and a concurrent owner conflict. HTTP 429 rotates only for recognized
-structured codes. The native Anthropic path allows one precommit retry. When
-the final key also sends a retry-classified first error frame, the prefetch
-consumes that frame and the stream reader reports code `provider_stream_error`
+structured codes. The HTTP retry matrix now checks both Responses and Chat
+Completions against each pinned release and Modex, including malformed 503s,
+unknown 429s, duplicate code fields, and case-sensitive field names. The
+native Anthropic path allows one precommit retry. When the final key also sends
+a retry-classified first error frame, the prefetch consumes that frame and the
+stream reader reports code `provider_stream_error`
 with message `unexpected end of stream`, matching both releases. Errors after
 stream progress remain terminal. Concurrent requests with the same previously
 unknown identity can reach different keys; subsequent use of the conflicted
@@ -72,14 +75,16 @@ error-code and native-event classification. A native event with a top-level
 retryable code rotates only when its type is exactly `error`; `ERROR` and
 whitespace-padded names do not. An explicit `error` member is classified even
 when the event type is uppercase. The four-case real-process comparison matches
-both pinned releases. A three-key exhaustion case now verifies the first
-request tries A, B, and C, returns C's raw retryable 429, and advances the
-logical-request cursor once so the next request starts at B. This passes on
-both pinned releases and Modex. Modex matches the tested behavior but still has
-a single static endpoint and process-local binding state. Public network/TLS,
-profile-backed ownership, persistence/recovery, exhaustion beyond three keys,
-and the other release targets remain unqualified. No full parity status is
-promoted.
+both pinned releases. A three-key exhaustion case now verifies both Responses
+and Chat Completions: each tries A, B, and C, returns C's raw retryable 429,
+and advances the logical-request cursor once so the next request starts at B.
+Both pinned releases and Modex match. A separate cursor-order comparison
+verifies that malformed Chat Completions JSON is passed byte-for-byte upstream
+with key A and the following request uses key B. Modex matches the tested
+behavior but still has a single static endpoint and process-local binding
+state. Public network/TLS, profile-backed ownership, persistence/recovery,
+exhaustion beyond three keys, and the other release targets remain unqualified.
+No full parity status is promoted.
 
 Reproduce with `PYTHONPATH=tests rtk python3 -m unittest
 test_deepseek_key_rotation_01651_04392 -v` using both checksum-pinned Linux

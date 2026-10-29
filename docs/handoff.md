@@ -92,27 +92,30 @@ does not establish the six-target denominator, public network/TLS, persistent
 or profile-backed ownership, or complete provider parity. See
 `docs/evidence/baseline-0.165.1/super-api-key-env.md`.
 
-A three-key exhaustion control now covers retrying A, B, and C on retryable
-429s, returning C's raw error, and starting the next logical request at B.
-The 0.165.1, 0.439.2 and Modex processes match. This verifies one three-key
-sequence only; larger pools and other exhaustion sequences remain unqualified.
+A three-key exhaustion control now covers both Responses and Chat Completions:
+each retries A, B, and C on retryable 429s, returns C's raw error, then starts
+the next logical request at B. The 0.165.1, 0.439.2 and Modex processes match.
+This verifies one three-key sequence on each route; larger pools and other
+exhaustion sequences remain unqualified.
 
 The round-robin cursor now matches the pinned request ordering for selected
 sequential cases. An unsupported `/v1/unknown` route and known response, session,
 and turn continuation 503 rejections do not advance it. Raw malformed Responses
 JSON (`{`) consumes once before its 502; empty-input web-search 400s consume in
 `auto`/`anthropic`. `openai_chat` sends the empty-input search and rotates from
-A to B as usual. The 0.165.1, 0.439.2 and Modex process comparisons pass for
-these vectors. The unsupported-route case does not test malformed
-request-target syntax. Malformed Chat Completions JSON and other invalid-body,
-target, or translation-time rejection orderings remain unqualified; no full
-parity status is promoted. See
+A to B as usual. Malformed Chat Completions JSON is passed byte-for-byte to
+the upstream and consumes key A, so the following request uses B. The 0.165.1,
+0.439.2 and Modex process comparisons pass for these vectors. The
+unsupported-route case does not test malformed request-target syntax. Other
+invalid-body, target, or translation-time rejection orderings remain
+unqualified; no full parity status is promoted. See
 `docs/evidence/baseline-0.165.1/super-api-key-env.md`.
 
 The recorded combined rotation and shared Anthropic stream run passed all 38
 tests before the three-key exhaustion method was added; it included the prior
 14 rotation methods, error-event compatibility, and pipeline/half-close
-shutdown controls. The focused new three-key process test passes separately.
+shutdown controls. The focused three-key route comparison and two-route
+structured-error matrix pass separately.
 The synthetic client now edits only the sequential request loop, so the
 generated Codex probe and stream requests run as intended.
 

@@ -182,6 +182,21 @@ class DeepSeekContinuationTests(unittest.TestCase):
                 self.assertEqual([response["status"] for response in responses], [502, 200])
                 self.assertEqual([post["headers"]["authorization"] for post in posts], [key_b])
 
+        malformed_chat_body = b'{"model":"deepseek-chat","messages":['
+        malformed_chat = [
+            {"_path": "/v1/chat/completions", "_raw_body": malformed_chat_body.decode()},
+            {"model": "deepseek-chat", "messages": [{"role": "user", "content": "synthetic after malformed Chat JSON"}],
+             "_path": "/v1/chat/completions"},
+        ]
+        for binary in binaries:
+            with self.subTest(binary=str(binary), case="malformed Chat Completions JSON passthrough"):
+                posts, responses = observe_turns(
+                    binary, malformed_chat, [buffered_reply(), buffered_reply(1)], api_keys=keys,
+                )
+                self.assertEqual([response["status"] for response in responses], [200, 200])
+                self.assertEqual([post["headers"]["authorization"] for post in posts], [key_a, key_b])
+                self.assertEqual(posts[0]["body"], malformed_chat_body)
+
         bound_requests = (
             ("response", {}, {"use_previous": True}),
             ("session", {"session_id": "synthetic-bound-session"},

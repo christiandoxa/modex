@@ -138,13 +138,17 @@ def seed_update_cache(environment):
     path.chmod(0o600)
 
 
-def run_case(case, config_mode=0o600):
+def run_case(case, config_mode=0o600, binary=MODEX, app_state=None):
     with tempfile.TemporaryDirectory(prefix="modex-gateway-public-") as temp:
         root = Path(temp)
         workspace = root / "workspace"
         workspace.mkdir(mode=0o700)
         environment = environment_for(root)
         seed_update_cache(environment)
+        if app_state is not None:
+            state_path = Path(environment["PRODEX_HOME"]) / "state.json"
+            state_path.write_text(app_state, encoding="utf-8")
+            state_path.chmod(0o600)
         shared_config = case["synthetic_shared_config"]
         if shared_config is not None:
             config_path = Path(environment["PRODEX_SHARED_CODEX_HOME"]) / "config.toml"
@@ -164,7 +168,7 @@ def run_case(case, config_mode=0o600):
         before = filesystem_snapshot(root)
         try:
             result = subprocess.run(
-                [str(MODEX), *arguments], cwd=workspace, env=environment,
+                [str(binary), *arguments], cwd=workspace, env=environment,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 timeout=5, check=False,
             )

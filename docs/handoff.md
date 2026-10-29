@@ -10,6 +10,21 @@ passed. The previous production build covered the unchanged Mojo source.
 Broader tool-result round-trips remain incomplete. See
 `docs/evidence/baseline-0.165.1/anthropic-buffered.md`.
 
+Profileless Gateway startup now classifies root-level
+`model_provider = "prodex-deepseek"` as the missing OpenAI-proxy case even when
+the Codex config has unrelated top-level or nested settings. Real-process checks
+match checksum-pinned 0.165.1 and 0.439.2; the locally available 0.439.1 oracle
+matches too. Duplicate and malformed TOML still fail before classification,
+and no-config startup matches the releases' no-profile error. A project-only
+`model_provider` remains a documented mismatch: releases return no-profile,
+while Modex fails closed with its unsupported-config error. Group-writable
+configs retain Modex's stricter guard. A synthetic `state.json` also hits the
+existing-state fail-closed guard; release parity for populated profile state
+remains unverified. All tested cases exit before loopback provider I/O. Full
+Gateway startup, provider exchange, and lifecycle/housekeeping filesystem
+parity remain incomplete. Evidence:
+`docs/evidence/baseline-0.165.1/gateway-config-classification.md`.
+
 A pinned 0.165.1 broker process control holds 16 idle local WebSockets and an
 incomplete text-frame header on one, then receives matching pongs on two other
 connections without upstream I/O. This adds a reproducible requirement for the

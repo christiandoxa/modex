@@ -31,8 +31,7 @@ reports `invalid value '-'`, while a following option still reports a missing
 value. `tests/test_gateway_cli_01651.py` covers 17 isolated process-precedence
 cases and seven unknown-option cases after separate and attached values,
 including synthetic API keys without echoing them. The provider-dash comparison
-also matches the active 0.439.2 binary. Gateway startup, provider attempts,
-filesystem deltas and untested argument combinations remain unqualified.
+also matches the active 0.439.2 binary.
 
 Gateway help parsing now matches the active 0.439.2 and historical 0.165.1
 processes (oracle SHA-256 `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`
@@ -41,12 +40,25 @@ short clusters beginning with `-h`, unknown short options before help, and
 attached `--help=value` diagnostics. The 0.439.2 process regression also checks
 Clap's generated usage after switches and attached versus split values, with a
 synthetic API-key sentinel absent from both output streams.
+
+The profileless DeepSeek startup classification now matches all three pinned
+references when the shared Codex config has unrelated top-level or nested
+settings in addition to `model_provider = "prodex-deepseek"`. The actual
+Modex process, both checksum-pinned 0.165.1 and 0.439.2 processes, and the
+available historical 0.439.1 process exit with the same no-proxy error and send
+no request to the synthetic loopback peer. This selected failed-startup case
+does not qualify successful Gateway startup, provider attempts, lifecycle file
+deltas, or other config shapes; see
+`docs/evidence/baseline-0.165.1/gateway-config-classification.md`.
+
 On 2026-10-29, `make build`,
 `make unit-compile-internal UNIT_BUILD_PROGRAMS=test_gateway_cli`,
 `build/tests/test_gateway_cli`, and
 `python3 scripts/ci/run-unittest.py test_gateway_cli.py test_gateway_cli_01651.py`
-passed. This covers argument parsing only; Gateway startup and provider
-request/response behavior remain unqualified.
+passed. Gateway CLI/startup suites, the native Gateway argument program, the
+production import audit and test-census audit also passed for the selected
+classification case. Successful Gateway startup, provider attempts, lifecycle
+filesystem deltas and untested argument combinations remain unqualified.
 
 For `help update`, three unknown subcommands containing `=` now retain the
 whole argument in the diagnostic, matching the 0.165.1 executable and the

@@ -681,17 +681,32 @@ exposing a successful DeepSeek gateway extension. Gateway help and ten parse
 cases also have captured output checks. Remaining argument combinations and
 all operational gateway providers/configurations are unfinished.
 
+Profileless Gateway startup now identifies `model_provider =
+"prodex-deepseek"` as lacking an OpenAI-compatible proxy when unrelated
+top-level or nested Codex settings are present. Real-process checks match the
+tested 0.165.1, 0.439.1, and 0.439.2 errors without upstream I/O. This does not
+implement successful Gateway startup or qualify other Codex config shapes. A
+`model_provider` value only inside a project table yields the releases' no-
+profile error but Modex's generic unsupported-config error. Keep that mismatch
+visible until profile selection and recovery behavior are qualified. Duplicate
+and malformed TOML are rejected before proxy setup, with different parser
+diagnostics. A no-config launch matches the releases' no-profile error. A
+Modex-only existing-state control remains fail closed; it does not establish
+parity for populated profile state. See
+`docs/evidence/baseline-0.165.1/gateway-config-classification.md`.
+
 Both startup cases still omit real runtime/profile lifecycle locks and
 housekeeping side effects. `docs/evidence/gateway-mismatch.json` records exact
 baseline and Modex deltas with overall FAIL. The tests assert that this
 reproducible mismatch remains documented; passing those assertions does not
 establish gateway parity. No placeholder lock files are created.
 
-The private `0600` fixture is not the whole permission contract. A separate
-synthetic `0664` Codex config reaches the release's no-proxy failure, while
-Modex refuses the group-writable file. This stricter guard remains an
-unapproved safe difference in `docs/evidence/gateway-permissions-mismatch.json`;
-reproduce with `python3 tests/capture_gateway_permissions.py` (exit 1).
+The private `0600` fixture is not the whole permission contract. Synthetic
+`0664` root-provider configs, including ones with extra Codex settings, reach
+the releases' no-proxy failure while Modex refuses the group-writable file.
+This stricter guard remains an unapproved safe difference in
+`docs/evidence/gateway-permissions-mismatch.json`; reproduce with
+`python3 tests/capture_gateway_permissions.py` (exit 1).
 
 Conversation state is a scoped in-memory cache, not disk persistence. The
 native implementation preserves 256 entries per scope, 2048 globally, logical

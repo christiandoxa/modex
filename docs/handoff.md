@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Session ordering now rejects signs inside fixed-width date, time and timezone
+components, matching both pinned releases; standalone signed integer
+timestamps remain accepted. Eight invalid strings and a valid control were
+compared through production session reports with fixed file times. The shared
+timestamp parser also serves logs and rate-limit projection; their focused
+checks are recorded in `docs/evidence/baseline-0.165.1/session-signed-date-components.md`.
+
 Log CLI suggested-option usage now matches checksum-pinned 0.439.2 when an
 unknown option resembling `--json` follows a positional value. Three real
 process regressions cover valid, invalid and dash positionals. The production

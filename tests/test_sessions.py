@@ -155,6 +155,29 @@ class SessionOutputTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0)
             self.assertEqual(json.loads(result.stdout)[0]["id"], SESSION_ID)
 
+    def test_signed_date_components_use_file_time_for_ordering(self):
+        timestamps = (
+            "+026-01-01T00:00:00Z", "2026-+1-01T00:00:00Z",
+            "2026-01-+1T00:00:00Z", "2026-01-01T+1:00:00Z",
+            "2026-01-01T00:+1:00Z", "2026-01-01T00:00:+1Z",
+            "2026-01-01T00:00:00++1:00", "2026-01-01T00:00:00+00:+1",
+        )
+        def change(root):
+            original = next((root / "home/.codex").rglob("*.jsonl"))
+            original.unlink()
+            for index, timestamp in enumerate(timestamps):
+                path = original.parent / f"signed-{index}.jsonl"
+                path.write_text(json.dumps({"type": "session_meta", "timestamp": timestamp,
+                                            "payload": {"id": f"signed-{index}"}}) + "\n")
+                os.utime(path, (1577836800, 1577836800))
+            path = original.parent / "valid.jsonl"
+            path.write_text(json.dumps({"type": "session_meta", "timestamp": "2026-01-01T00:00:00Z",
+                                        "payload": {"id": "valid"}}) + "\n")
+            os.utime(path, (1577836800, 1577836800))
+        reports = self.assert_outputs(["session", "list", "--json"], change)
+        self.assertEqual([report["id"] for report in reports],
+                         ["valid", *(f"signed-{index}" for index in range(len(timestamps)))])
+
     def test_numeric_timestamps_and_fallback_file_times(self):
         for epoch in (0, -1, 951782400, 1792800000, 253402300800,
                       -8334601228800, 8210266876799, -9223372036854775808, 9223372036854775807):

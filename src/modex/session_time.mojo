@@ -35,6 +35,9 @@ def timestamp_key(text: String) -> Optional[Int]:
         return integer_timestamp(text)
     var parts: List[Int] = []
     for bounds in [(0, 4), (5, 7), (8, 10), (11, 13), (14, 16), (17, 19)]:
+        for index in range(bounds[0], bounds[1]):
+            if bytes[index] < 48 or bytes[index] > 57:
+                return None
         var value = integer_timestamp(text[byte=bounds[0]:bounds[1]])
         if not value:
             return None
@@ -63,6 +66,9 @@ def timestamp_key(text: String) -> Optional[Int]:
         if zone + 1 != len(bytes):
             return None
     elif zone + 6 == len(bytes) and (bytes[zone] == 43 or bytes[zone] == 45) and bytes[zone + 3] == 58:
+        for index in [zone + 1, zone + 2, zone + 4, zone + 5]:
+            if bytes[index] < 48 or bytes[index] > 57:
+                return None
         var zone_hour = integer_timestamp(text[byte=zone + 1:zone + 3])
         var zone_minute = integer_timestamp(text[byte=zone + 4:zone + 6])
         if not zone_hour or not zone_minute:

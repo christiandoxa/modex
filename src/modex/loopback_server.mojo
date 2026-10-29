@@ -294,7 +294,7 @@ struct LoopbackHTTPConnection(Movable):
             _send_all(self.fd, response, deadline)
             if not self.head_request:
                 _send_all(self.fd, body, deadline)
-            if bodyless_chunked and not self.head_request:
+            if bodyless_chunked:
                 _send_all(self.fd, _bytes("0\r\n\r\n"), deadline)
             self._finish_response()
         except:

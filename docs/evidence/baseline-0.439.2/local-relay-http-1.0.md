@@ -37,8 +37,8 @@ Modex:   HTTP/1.0 200 OK\r\nContent-Length: 254\r\nConnection: close\r\ncontent-
 
 For HTTP/1.0 HEAD 204/304 event-stream responses, both references return
 HTTP/1.1 with `Transfer-Encoding: chunked` and the terminal `0\r\n\r\n` bytes.
-Modex returns the same HTTP/1.1 status and chunked header, but suppresses the
-terminal bytes. This remains a known mismatch.
+Modex now returns the same HTTP/1.1 status and chunked header, including the
+terminal bytes, for the tested Linux path.
 
 TinyHTTP accepts the synthetic method token `G@T` and returns HTTP/1.0 404 for
 an unsupported route. Modex rejects that non-token method and returns HTTP/1.1

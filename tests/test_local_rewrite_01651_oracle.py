@@ -845,7 +845,7 @@ def head_bodyless_sse_case(status, version=b"HTTP/1.1"):
             "content-type": "text/event-stream",
             "transfer-encoding": "chunked",
         },
-        "expected_wire_body": {"oracle": b"0\r\n\r\n", "modex": b""},
+        "expected_wire_body": {"oracle": b"0\r\n\r\n", "modex": b"0\r\n\r\n"},
         "check_close": True,
         "expected_connection_closed": {"oracle": True, "modex": True},
         "expected_upstream_method": "HEAD",

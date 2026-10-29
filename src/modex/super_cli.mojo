@@ -262,6 +262,17 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
         if argument == "--json" or argument == "--skip-git-repo-check":
             index += 1
             continue
+        if argument in ["--output-last-message", "--output-schema", "-o"]:
+            if index + 1 >= len(arguments):
+                return False
+            var value = arguments[index + 1]
+            if not value or (value.startswith("-") and value != "-"):
+                return False
+            index += 2
+            continue
+        if argument.startswith("--output-last-message=") or argument.startswith("--output-schema=") or (argument.startswith("-o") and argument.byte_length() > 2):
+            index += 1
+            continue
         if argument == "--color":
             if index + 1 >= len(arguments) or arguments[index + 1] not in ["auto", "always", "never"]:
                 return False

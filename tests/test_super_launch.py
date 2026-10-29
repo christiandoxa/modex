@@ -278,6 +278,13 @@ def check_safe_exec_flags(test, oracle):
         ("exec", "--skip-git-repo-check", "--", "--json"),
         ("exec", "--json", "-"),
         ("exec", "--json", "--", "-c", "model_provider=literal"),
+        ("exec", "--output-last-message", "answer.txt", "synthetic prompt"),
+        ("exec", "-o", "answer.txt", "synthetic prompt"),
+        ("exec", "-oanswer.txt", "synthetic prompt"),
+        ("exec", "--output-last-message=answer.txt", "synthetic prompt"),
+        ("exec", "--output-schema", "schema.json", "synthetic prompt"),
+        ("exec", "--output-schema=schema.json", "synthetic prompt"),
+        ("exec", "--output-last-message", "-", "synthetic prompt"),
     )
     for arguments in cases:
         with test.subTest(arguments=arguments):

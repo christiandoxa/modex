@@ -9,7 +9,8 @@ The former appends Codex arguments after generated provider settings; the latter
 preserves the literal `--` boundary while extracting recognized Super options.
 
 The production Super path now forwards selected `exec` arguments: `--json`,
-`--color` with `auto`, `always` or `never`, and `--skip-git-repo-check`.
+`--color` with `auto`, `always` or `never`, `--skip-git-repo-check`,
+`--output-last-message` (including `-o`) and `--output-schema`.
 The last flag is forwarded only when explicitly supplied; it tells Codex to
 skip its Git-repository check.
 The real-process tests compare complete normalized Codex argv and exit status
@@ -23,6 +24,10 @@ test the actual Codex implementation or the semantics of its output flags.
 `-c`, `--config`, `--enable`, `--sandbox` and other unverified arguments remain
 fail-closed outside the literal `--` boundary. The tests verify selected
 configuration and sandbox overrides do not start a child or provider request.
+The output-path controls cover separated and attached values, the short `-o`
+form and `-` as a path. Missing values and a following option-looking token
+remain guarded, so they cannot hide an unverified Codex option. The synthetic
+child records argv; it does not write output files or interpret schemas.
 This is not complete Super argument, tool, startup or platform parity.
 
 Reproduce after `make build` and `make unit-build UNIT_BUILD_PROGRAMS=codex_argv_child`

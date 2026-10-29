@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The guarded DeepSeek Super launch now forwards selected Codex output-file and
+output-schema arguments. Synthetic child argv matches the pinned 0.165.1 and
+0.439.2 releases for separated and attached values, short `-o`, and `-`.
+Missing values or a separate option-looking value remain guarded. Production
+build and the three focused real-process tests passed; the synthetic child does
+not verify Codex file or schema behavior. See
+`docs/evidence/baseline-0.165.1/super-exec-output-flags.md`.
+
 Hosted Fast run `40829783630` on `fe86a659ea920755f5c5ebf477a93b0de172f1e9`
 failed at the unavailable 0.439.2 tag after the focused build and native
 checks passed. Oracle-dependent tests and artifact consumers did not run.

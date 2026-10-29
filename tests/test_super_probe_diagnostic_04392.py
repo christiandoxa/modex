@@ -31,6 +31,9 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
             ("exec", "--color"),
             ("exec", "--color=neon", "prompt"),
             ("exec", "--color", "--json", "prompt"),
+            ("exec", "--output-last-message"),
+            ("exec", "-o", "--config=model_provider=unsafe", "prompt"),
+            ("exec", "--output-schema", "--config=model_provider=unsafe", "prompt"),
         ):
             with self.subTest(arguments=arguments):
                 result, records, upstream, state = launch_support.run_private_launch(

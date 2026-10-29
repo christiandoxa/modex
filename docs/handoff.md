@@ -45,6 +45,20 @@ unimplemented; the local rewrite adapter's 426 fallback matches its tested
 release behavior. See `docs/evidence/baseline-0.165.1/local-relay-http.md` and
 `docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
 
+A new read-only characterization test launches the checksum-pinned 0.165.1
+`__runtime-broker` with an isolated synthetic profile and a local-only upstream.
+It confirms that the supported Responses path returns a local 101 handshake
+without upstream I/O, rejects a missing WebSocket key with 400, and rejects an
+unsupported path with 404. It is reference evidence only, not a Modex parity
+test. Modex's only production Super network route remains the DeepSeek local
+rewrite, which must keep its matching 426. No general profile-backed runtime
+broker bootstrap is integrated in Modex Super. Mojo 1.2.0 exposes no public
+`std.net` TCP/TLS stream types, so a `ws://` helper alone would not connect the actual
+profile-authenticated WSS path or qualify its session, admission, interruption,
+and recovery behavior. See
+`tests/test_runtime_proxy_websocket_01651_oracle.py` and
+`docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
+
 Validation on Linux x86-64: `rtk make build` and the native local-rewrite and
 loopback driver build passed. The focused 0.165.1 oracle module passed 14 tests
 before the final pipeline controls were added. The expanded pipeline matrix
@@ -383,9 +397,11 @@ ignored as in the 0.165.1 release. No contract status is promoted. Profile list
 still fails closed because the release acquires interprocess locks and repairs
 state; omitting those steps would race concurrent profile operations.
 
-Next: continue recapturing behavior from 0.165.1 and implement the release's
-WebSocket capacity and interruption behavior on production paths.
-Retain all six targets and do not promote historical PASS evidence.
+Next: continue recapturing behavior from 0.165.1. WebSocket transport work
+must first establish the profile-backed runtime broker and lifecycle in the
+actual Modex Super path; keep the local rewrite 426 unchanged. WSS/DNS remain
+stdlib blockers. Retain all six targets and do not promote historical PASS
+evidence.
 
 # Historical work: Prodex 0.439.2 parity and CI
 

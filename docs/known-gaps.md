@@ -61,7 +61,17 @@ The local rewrite adapter's 426 WebSocket fallback matches its selected
 WebSocket parking, independently reclaimed handshake capacity,
 message-level admission, connection-owned interruption, and acknowledgement
 ordering. Modex has no production WebSocket transport; these requirements
-remain unimplemented and unverified on all six targets. See
+remain unimplemented and unverified on all six targets. The pinned release
+worker is the profile-backed `__runtime-broker`, started or reused through
+Super's runtime-launch path when profile rotation is enabled; Gateway uses the
+shared startup factory with a direct proxy. Modex currently has no corresponding
+broker startup in its Super path or profile-authenticated runtime route. A
+checksum-pinned synthetic oracle test
+confirms its supported local handshake returns 101 before upstream I/O. That
+is reference characterization only, not Modex parity. The pinned Mojo 1.2.0
+standard library exports no public TCP or TLS stream types, so a cleartext
+loopback tunnel would not implement the production WSS path. See
+`tests/test_runtime_proxy_websocket_01651_oracle.py` and
 `docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
 
 The profile group and selected subcommand help now match the 0.439.2 release.

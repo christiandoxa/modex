@@ -37,20 +37,61 @@ Happy-Eyeballs address attempts, and can establish an HTTP proxy CONNECT
 tunnel before the upstream WebSocket handshake. The session path also carries
 interrupt, continuation, response-tracking, and unauthorized-recovery state.
 
+The release starts this runtime proxy through its private
+`prodex __runtime-broker` process contract. `crates/prodex-app/src/app_commands/broker.rs`
+reads the versioned bootstrap and starts the profile-backed proxy;
+`crates/prodex-runtime-broker/src/process.rs` defines the bounded bootstrap
+and secret handling. The broader runtime-launch path in
+`crates/prodex-app/src/app_commands/runtime_launch.rs` selects the profile and
+chooses a direct proxy or broker. Auto-rotate requests use
+`crates/prodex-app/src/runtime_broker/spawn.rs` to start or reuse the broker;
+`crates/prodex-app/src/app_commands/child_process.rs` injects its endpoint into
+the managed child. Super uses this broker path when profile rotation is enabled;
+Gateway shares runtime-launch setup but starts a direct proxy.
+
+`tests/test_runtime_proxy_websocket_01651_oracle.py` exercises the checksum-
+pinned Linux binary as a real process with an isolated temporary home, a
+synthetic OpenAI profile/token, an ephemeral loopback listener, and a local
+synthetic upstream that accepts no connection. On
+`GET /backend-api/prodex/responses`, a valid RFC 6455 handshake receives
+`101 Switching Protocols` with the expected `Sec-WebSocket-Accept`; an absent
+key gets 400, and an unsupported route gets 404 before key validation. The
+valid handshake does not connect to the upstream: provider profile auth and
+upstream transport begin only when a WebSocket message is handled. These are
+reference characterization checks only; they do not exercise or qualify
+Modex. Run them with:
+
+```sh
+python3 -m unittest tests/test_runtime_proxy_websocket_01651_oracle.py -v
+```
+
+The harness verifies the official Linux binary SHA-256
+`dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51` before
+starting it. It uses synthetic credentials and makes no external requests.
+
 ## Modex constraints and next step
 
-Modex has no production WebSocket upgrade, socket handoff, or frame relay.
-Its local rewrite listener currently handles bounded HTTP requests over raw
-numeric-loopback sockets and uses the 426 fallback for WebSocket requests. It
-does not provide a WSS client, DNS resolver, HTTP proxy CONNECT, idle WebSocket
-pool, message-level admission, or equivalent interrupt and recovery handling.
+Modex's only production Super network path is the DeepSeek local rewrite.
+`src/modex/super_launch.mojo` configures that provider with
+`supports_websockets=false`, and `src/modex/runtime_local_rewrite.mojo` returns
+the same 426 as the release. That path must remain unchanged. Modex does not
+have the release's profile-backed runtime broker bootstrap integrated in its
+Super launch path. A raw relay attached to the local rewrite listener, or an
+uncalled private worker, would not implement the separate runtime-proxy
+contract.
 
-The next implementation slice is the raw HTTP upgrade and socket handoff in
-the existing listener, followed by a bounded frame relay and explicit idle
-connection ownership. The 0.165.1 path has independent handshake capacity,
-message admission, and connection-owned interruption behavior; a basic frame
-copy alone would not establish parity. WSS, DNS, and HTTP proxy CONNECT remain
-significant constraints under the project's Mojo-stdlib-only and no-new-binding
-rules. Their availability must be proven against the pinned Mojo toolchain
-before claiming support. The full behavior remains unimplemented and
-unverified on all six release targets.
+The pinned Mojo 1.2.0 compiler rejects `probes/gaps/network.mojo` because
+`std.net` exports none of `TcpListener`, `TcpStream`, or `TlsStream`. The
+existing raw socket wrappers are POSIX-specific; there is no standard-library
+DNS resolver or WSS client available under the current no-new-bindings rule.
+The baseline's message path depends on selected-profile credentials, admission,
+bounded session parking, interruption/recovery, DNS, optional HTTP proxy
+CONNECT, and TLS. A loopback-only `ws://` tunnel would not exercise those
+production semantics and is not counted as parity.
+
+The next viable implementation path is the real runtime-launch-owned broker
+bootstrap, profile/auth selection, and lifecycle, followed by the locally
+accepted WebSocket handshake and bounded session path. WSS/DNS/proxy support
+and all security, resource, and interruption behavior remain visible gaps
+until their required implementation path exists. The full behavior remains
+unimplemented and unverified on all six release targets.

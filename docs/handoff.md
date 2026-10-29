@@ -11,6 +11,10 @@ mixed-tools test still expected rejection after mixed Anthropic tools were
 enabled. With a rebuilt relay driver, the updated test verifies the Anthropic
 route and strict schema, and a 0.165.1 production comparison matches the
 forwarded request and response. This does not claim that hosted CI passed.
+An isolated exact-commit `make test` on `028d9cd` ran 748 Python tests and the
+native checks; it failed only that same stale strict mixed-tools assertion.
+The corrected relay and loopback suites pass 45 tests with rebuilt drivers;
+the full suite has not yet been rerun at the corrected commit.
 
 The Anthropic Messages adapter now supports selected mixed function and web
 search requests and buffered or streamed replies against 0.165.1. Buffered

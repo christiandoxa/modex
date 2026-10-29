@@ -75,6 +75,21 @@ behavior unqualified. See `docs/evidence/baseline-0.165.1/anthropic-buffered.md`
 `docs/evidence/baseline-0.165.1/session-profile-text.md` and
 `docs/evidence/baseline-0.165.1/local-relay-http.md`.
 
+Local-rewrite admission now retains and scans one overflow client while worker
+or parked-slot capacity is unavailable. A direct production-relay regression
+fills all 128 parked slots with partial headers, holds each worker on an
+incomplete body, and queues two complete clients; neither responds before a
+worker is released, and both then receive 200. Parent-channel EOF also closes
+the retained overflow client. The full historical 0.165.1 relay suite passed
+19 tests, the 0.439.2 suite passed 11, and the slow-partial suite passed 11.
+In a separate 128-partial-header test with free workers, a healthy request
+returned 200 in 4.1 ms before the partial clients were released.
+The cap remains 128 parked sockets plus one accepted overflow and a 128-entry
+kernel listen backlog. Further clients wait in that backlog; Prodex 0.439.2
+can add TinyHTTP parser threads and has no hard queue cap, so full admission
+flood and wait-time parity remain open. See
+`docs/evidence/runtime-overflow-admission.md`.
+
 Hosted Fast run `40837992499` on `3ef8a2b58a5ab63c8fa6422079d09207b06a7937`
 failed after the focused build and native checks passed: the required 0.439.2
 tag was unavailable. Oracle-dependent tests did not run.

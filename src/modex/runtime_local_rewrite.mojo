@@ -986,22 +986,42 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
                     idle.close()
                 else:
                     parked.insert(0, idle^)
-            if dispatched: continue
-            if capture_progress: continue
             if overflow:
                 var incoming = overflow.take()
-                var admitted = len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED
-                if not admitted:
-                    admitted = _evict_oldest_idle_connection(parked)
-                if not admitted:
-                    overflow = Optional[LoopbackHTTPConnection](incoming^)
-                    sleep(0.001)
-                    continue
-                incoming.keep_alive_enabled = True
-                incoming.include_default_response_headers = True
-                parked.insert(0, incoming^)
-                continue
+                var has_request_bytes = incoming.request_ready()
+                var ready = False
+                if has_request_bytes:
+                    # The overflow gets the same bounded capture turn as parked clients.
+                    ready = incoming.capture_request_headers(
+                        120000,
+                        HTTP_MAX_REQUEST_HEADER_LIMIT,
+                        LOCAL_REWRITE_HEADER_CAPTURE_BYTES_PER_CONNECTION,
+                    )
+                    capture_progress = capture_progress or incoming.request_capture_progress
+                if not has_request_bytes and incoming.client_disconnected():
+                    incoming.close()
+                else:
+                    var admitted = len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED
+                    if not admitted:
+                        admitted = _evict_oldest_idle_connection(parked)
+                    var can_dispatch = ready and state_ptr[].has_capacity(worker_count)
+                    if admitted or can_dispatch:
+                        incoming.keep_alive_enabled = True
+                        incoming.include_default_response_headers = True
+                        if can_dispatch:
+                            incoming.waiting_for_request = False
+                            state_ptr[].enqueue(incoming^)
+                            dispatched = True
+                        else:
+                            parked.insert(0, incoming^)
+                    else:
+                        overflow = Optional[LoopbackHTTPConnection](incoming^)
+            if dispatched: continue
+            if capture_progress: continue
             if accepted_before_scan: continue
+            if overflow:
+                sleep(0.001)
+                continue
             var active = state_ptr[].active_count()
             var accepted = listener.accept(UInt64(100 if parent_fd >= 0 or len(parked) > 0 or active > 0 else 1000))
             if accepted:

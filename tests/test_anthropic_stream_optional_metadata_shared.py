@@ -291,6 +291,16 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                 if extra_root_field:
                     events[2]["future_event_field"] = "rejected"
                 cases.append((f"{name}_extra_{extra_root_field}", events))
+        for name, insertion in (
+            ("after_text", 3),
+            ("after_block_stop", 4),
+            ("after_message_delta", 5),
+        ):
+            events = _events()
+            events.insert(insertion, {
+                "type": "content_block_delta", "index": 0, "delta": {"type": None},
+            })
+            cases.append((name, events))
         turns = [
             {"model": "deepseek-chat", "input": name, "stream": True,
              "tools": [{"type": "web_search_preview"}]}

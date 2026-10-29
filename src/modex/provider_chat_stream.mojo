@@ -255,6 +255,7 @@ struct DeepSeekChatState:
                 )
             if block_type == "web_search_tool_result":
                 if block_index in self.anthropic_seen_result_indices:
+                    self.anthropic_open_result_indices[block_index] = True
                     return List[String]()
                 if (
                     (
@@ -292,10 +293,23 @@ struct DeepSeekChatState:
                 return List[String]()
             raise Error("Anthropic content block type is not supported")
         if kind == "content_block_delta":
+            var event_index = json_unsigned(doc, doc.get(doc.root, "index"))
+            var block_index = UInt64(0)
+            if event_index: block_index = event_index.value()
             var delta = doc.get(doc.root, "delta")
+            var delta_type_node = doc.get(delta, "type")
+            var search = self.anthropic_search_index(block_index)
+            if block_index in self.anthropic_open_result_indices:
+                return List[String]()
+            if search >= 0 and (
+                delta_type_node < 0
+                or doc.nodes[delta_type_node].kind != JSON_STRING
+                or doc.nodes[delta_type_node].text != "input_json_delta"
+            ):
+                return List[String]()
             if delta < 0 or doc.nodes[delta].kind != JSON_OBJECT:
                 raise Error("Anthropic content delta is missing")
-            var delta_type_node = doc.get(delta, "type")
+            delta_type_node = doc.get(delta, "type")
             if delta_type_node < 0 or doc.nodes[delta_type_node].kind != JSON_STRING:
                 var output = self.fail("invalid_anthropic_stream", "content delta type is missing")
                 if output and not self.created:
@@ -306,19 +320,12 @@ struct DeepSeekChatState:
             if delta_type != "text_delta" and delta_type != "input_json_delta" and delta_type != "thinking_delta":
                 return List[String]()
             if delta_type == "thinking_delta":
-                var thinking_index = json_unsigned(doc, doc.get(doc.root, "index"))
-                var block_index = UInt64(0)
-                if thinking_index: block_index = thinking_index.value()
-                if self.anthropic_search_index(block_index) >= 0:
-                    return List[String]()
-                if block_index in self.anthropic_open_result_indices:
-                    return List[String]()
                 var thinking = optional_string(doc, delta, "thinking")
                 if thinking: return self.reasoning_delta(thinking.value())
                 return List[String]()
             var index = json_unsigned(doc, doc.get(doc.root, "index"))
             if not index: raise Error("Anthropic content delta index is invalid")
-            var block_index = index.value()
+            block_index = index.value()
             if delta_type == "text_delta":
                 if self.anthropic_phase != 6 or not self.anthropic_text_index or self.anthropic_text_index.value() != block_index:
                     raise Error("Anthropic text delta does not match its block")
@@ -329,7 +336,6 @@ struct DeepSeekChatState:
             if delta_type == "input_json_delta":
                 _only_fields(doc, delta, ["type", "partial_json"], "input JSON delta")
                 var fragment = doc.string(doc.get(delta, "partial_json"))
-                var search = self.anthropic_search_index(block_index)
                 var fragment_value = doc.get(delta, "partial_json")
                 if fragment_value < 0 or doc.nodes[fragment_value].kind != JSON_STRING:
                     raise Error("Anthropic input JSON delta must be a string")

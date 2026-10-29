@@ -333,6 +333,164 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                     self.assertIn("response.failed", [event for event, _ in events])
                     self.assertNotIn("response.completed", [event for event, _ in events])
 
+    def test_search_and_result_blocks_precede_delta_type_validation(self):
+        request, reply = repeated_search_case()
+        base_events = [
+            json.loads(line[6:])
+            for line in reply["body"].splitlines()
+            if line.startswith(b"data: ")
+        ]
+        cases = []
+        for name, insertion, index, delta in (
+            ("active_search_missing_type", 2, 0, {"type": None}),
+            ("active_search_text_delta", 2, 0, {"type": "text_delta", "text": "ignored"}),
+            ("stopped_search_missing_type", 4, 0, {"type": None}),
+            ("open_result_missing_type", 5, 1, {"type": None}),
+            ("open_result_text_delta", 5, 1, {"type": "text_delta", "text": "ignored"}),
+        ):
+            events = base_events.copy()
+            events.insert(insertion, {"type": "content_block_delta", "index": index, "delta": delta})
+            cases.append((name, events))
+        for name, delta in (
+            ("reopened_result_missing_type", {"type": None}),
+            ("reopened_result_text_delta", {"type": "text_delta", "text": "ignored"}),
+        ):
+            events = base_events.copy()
+            events.insert(6, base_events[4].copy())
+            events.insert(7, {"type": "content_block_delta", "index": 1, "delta": delta})
+            events.insert(8, {"type": "content_block_stop", "index": 1})
+            cases.append((name, events))
+        turns = [dict(request, input=name) for name, _ in cases]
+        replies = [_stream(events) for _, events in cases]
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, turns, replies)
+            self.assertEqual(len(posts), len(cases), label)
+            self.assertTrue(all(post["path"] == "/anthropic/v1/messages" for post in posts), label)
+            for post in posts:
+                headers = {key.lower(): value for key, value in post["headers"].items()}
+                self.assertEqual(headers["x-api-key"], "synthetic-provider-key", label)
+                self.assertNotIn("authorization", headers, label)
+            self.assertEqual(len(responses), len(cases), label)
+            self.assertTrue(all(response["status"] == 200 for response in responses), label)
+            captures[label] = [
+                (post["body"], _normalized_events(bytes.fromhex(response["body"])))
+                for post, response in zip(posts, responses)
+            ]
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        self.assertEqual(captures["Modex"], captures["0.439.2"])
+        for (name, _), (_, events) in zip(cases, captures["0.439.2"]):
+            with self.subTest(case=name):
+                names = [event for event, _ in events]
+                self.assertIn("response.completed", names)
+                self.assertNotIn("response.failed", names)
+                if name.endswith("text_delta"):
+                    self.assertNotIn("ignored", json.dumps(events))
+
+    def test_closed_result_failure_preserves_known_continuation_mismatch(self):
+        request, reply = repeated_search_case()
+        events = [
+            json.loads(line[6:])
+            for line in reply["body"].splitlines()
+            if line.startswith(b"data: ")
+        ]
+        events.insert(6, {"type": "content_block_delta", "index": 1, "delta": {"type": None}})
+        request["input"] = "closed result failure continuation"
+        reply = _stream(events)
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, [request], [reply])
+            self.assertEqual(len(posts), 1, label)
+            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages", label)
+            headers = {key.lower(): value for key, value in posts[0]["headers"].items()}
+            self.assertEqual(headers["x-api-key"], "synthetic-provider-key", label)
+            self.assertNotIn("authorization", headers, label)
+            self.assertEqual((len(responses), responses[0]["status"]), (1, 200), label)
+            captures[label] = (
+                posts[0]["body"], _normalized_events(bytes.fromhex(responses[0]["body"]))
+            )
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        self.assertEqual(captures["Modex"][0], captures["0.439.2"][0])
+        reference = captures["0.439.2"][1]
+        actual = captures["Modex"][1]
+        self.assertEqual(
+            [name for name, _ in reference],
+            [
+                "response.output_item.added", "response.output_item.done", "response.failed",
+                "response.output_item.added", "response.output_item.done", "response.created",
+                "response.output_item.added", "response.output_text.delta",
+            ],
+        )
+        self.assertEqual(
+            [name for name, _ in actual],
+            ["response.output_item.added", "response.output_item.done", "response.failed", "response.created"],
+        )
+        self.assertEqual(actual[:3], reference[:3])
+        self.assertEqual(
+            reference[2][1]["response"]["error"],
+            {"code": "invalid_anthropic_stream", "message": "content delta type is missing"},
+        )
+
+    def test_closed_result_text_delta_preserves_known_block_state_mismatch(self):
+        request, reply = repeated_search_case()
+        events = [
+            json.loads(line[6:])
+            for line in reply["body"].splitlines()
+            if line.startswith(b"data: ")
+        ]
+        events.insert(6, {
+            "type": "content_block_delta", "index": 1,
+            "delta": {"type": "text_delta", "text": "after closed result"},
+        })
+        request["input"] = "closed result text delta"
+        reply = _stream(events)
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = observe_turns(binary, [request], [reply])
+            self.assertEqual(len(posts), 1, label)
+            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages", label)
+            headers = {key.lower(): value for key, value in posts[0]["headers"].items()}
+            self.assertEqual(headers["x-api-key"], "synthetic-provider-key", label)
+            self.assertNotIn("authorization", headers, label)
+            self.assertEqual((len(responses), responses[0]["status"]), (1, 200), label)
+            captures[label] = (
+                posts[0]["body"], _normalized_events(bytes.fromhex(responses[0]["body"]))
+            )
+        self.assertEqual(captures["0.165.1"], captures["0.439.2"])
+        self.assertEqual(captures["Modex"][0], captures["0.439.2"][0])
+        reference = captures["0.439.2"][1]
+        actual = captures["Modex"][1]
+        self.assertEqual(
+            [name for name, _ in reference],
+            [
+                "response.output_item.added", "response.output_item.done", "response.created",
+                "response.output_item.added", "response.output_text.delta",
+                "response.output_item.added", "response.output_item.done",
+                "response.output_text.delta", "response.output_item.done", "response.completed",
+            ],
+        )
+        self.assertEqual(
+            [name for name, _ in actual],
+            ["response.output_item.added", "response.output_item.done", "response.failed"],
+        )
+        self.assertEqual(actual[:2], reference[:2])
+        self.assertEqual(
+            actual[2][1]["response"]["error"],
+            {"code": "provider_stream_error", "message": "Anthropic text delta does not match its block"},
+        )
+
     def test_thinking_delta_matches_both_releases_in_and_out_of_order(self):
         message_start = {
             "type": "message_start",

@@ -9,6 +9,8 @@ from .provider_chat_metadata import merge_chat_metadata
 from .provider_chat_usage import json_unsigned
 from .text import trim_text, unsigned_value
 
+comptime ANTHROPIC_BUFFERED_MAX_CONTENT_BLOCKS = 65_536
+
 
 def validate_deepseek_anthropic_request(source: String) raises:
     var doc = JsonDocument(source)
@@ -256,7 +258,6 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
     var model = doc.string(doc.get(doc.root, "model"))
     var output = List[String]()
     var text_runs = List[String]()
-    var text_run_open = False
     var searches = List[AnthropicWebSearch]()
     var tool_calls = List[String]()
     var content = doc.get(doc.root, "content")
@@ -265,14 +266,9 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
             var kind = doc.string(doc.get(block, "type"))
             if kind == "text":
                 var value = doc.string(doc.get(block, "text"))
-                if text_run_open:
-                    text_runs[len(text_runs) - 1] += ',{"type":"output_text","text":' + quote_json(value) + "}"
-                else:
-                    text_runs.append('{"type":"output_text","text":' + quote_json(value) + "}")
-                    output.append("$text$" + String(len(text_runs) - 1))
-                    text_run_open = True
+                text_runs.append('{"type":"output_text","text":' + quote_json(value) + "}")
+                output.append("$text$" + String(len(text_runs) - 1))
             elif kind == "server_tool_use" and doc.string(doc.get(block, "name")) == "web_search":
-                text_run_open = False
                 var search_id = doc.string(doc.get(block, "id"))
                 if not search_id: search_id = "web_search_" + String(len(searches))
                 var input = doc.get(block, "input")
@@ -280,7 +276,6 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
                 searches.append(AnthropicWebSearch(UInt64(len(output)), search_id, input_json, "[]", False))
                 output.append("$search$" + String(len(searches) - 1))
             elif kind == "tool_use":
-                text_run_open = False
                 var id = doc.string(doc.get(block, "id"))
                 var name = doc.string(doc.get(block, "name"))
                 var input = doc.get(block, "input")
@@ -288,7 +283,6 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
                 tool_calls.append(tool_output_item(id, name, arguments, Optional[String]()))
                 output.append("$tool$" + String(len(tool_calls) - 1))
             elif kind == "web_search_tool_result":
-                text_run_open = False
                 var search_id = doc.string(doc.get(block, "tool_use_id"))
                 var index = 0
                 var found = False
@@ -299,15 +293,25 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
                     index += 1
                 if not found: raise Error("Anthropic web-search result does not match a tool use")
     var items = List[String]()
-    for value in output:
+    var output_index = 0
+    while output_index < len(output):
+        var value = output[output_index]
         if value.startswith("$text$"):
-            var text = text_runs[unsigned_value(String(value[byte=6:]))]
-            items.append('{"type":"message","role":"assistant","content":[' + text + "]}")
+            var parts = List[String]()
+            while output_index < len(output) and output[output_index].startswith("$text$"):
+                var text_index = unsigned_value(String(output[output_index][byte=6:]))
+                parts.append(text_runs[text_index])
+                output_index += 1
+            items.append('{"type":"message","role":"assistant","content":[' + ",".join(parts) + "]}")
         elif value.startswith("$search$"):
             var search = searches[unsigned_value(String(value[byte=8:]) )].copy()
             items.append(_web_search_item(search, False))
+            output_index += 1
         elif value.startswith("$tool$"):
             items.append(tool_calls[unsigned_value(String(value[byte=6:]))])
+            output_index += 1
+        else:
+            raise Error("Anthropic buffered response output plan is invalid")
     var result = '{"id":' + quote_json(id) + ',"object":"response","created_at":' + String(created_at) + ',"model":' + quote_json(model) + ',"output":[' + ",".join(items) + ']'
     var usage = doc.get(doc.root, "usage")
     if usage >= 0:
@@ -404,6 +408,8 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
     var content = doc.get(doc.root, "content")
     if content < 0 or doc.nodes[content].kind != JSON_ARRAY:
         raise Error("Anthropic Messages content must be an array")
+    if len(doc.nodes[content].children) > ANTHROPIC_BUFFERED_MAX_CONTENT_BLOCKS:
+        raise Error("Anthropic Messages content has too many blocks")
     var has_tool_use = False
     for block in doc.nodes[content].children:
         if doc.string(doc.get(block, "type")) == "tool_use":
@@ -442,19 +448,25 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
                 var query = doc.get(input, "query")
                 if query < 0 or doc.nodes[query].kind != JSON_STRING or not doc.nodes[query].text:
                     raise Error("Anthropic web-search input requires a non-empty query")
-                # shortcut: one mixed search pair, upgrade when multi-search mixed replies are qualified.
-                if search_ids: raise Error("Mixed Anthropic replies support one web-search tool use")
+                # shortcut: two mixed search pairs, expand after broader multi-search replies are qualified.
+                if len(search_ids) >= 2: raise Error("Mixed Anthropic replies support at most two web-search tool uses")
+                for prior in search_ids:
+                    if prior == doc.nodes[id].text:
+                        raise Error("Anthropic web-search tool-use id is repeated")
                 search_ids.append(doc.nodes[id].text)
             elif kind == "web_search_tool_result":
                 _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
                 var id = doc.get(block, "tool_use_id")
                 var found = False
+                var repeated = False
                 if id >= 0 and doc.nodes[id].kind == JSON_STRING:
                     for prior in search_ids:
                         if prior == doc.nodes[id].text: found = True
+                    for prior in result_ids:
+                        if prior == doc.nodes[id].text: repeated = True
                 if not found:
                     raise Error("Anthropic web-search result does not match a preceding tool use")
-                if result_ids: raise Error("Mixed Anthropic replies support one web-search result")
+                if repeated: raise Error("Anthropic web-search tool use has more than one result")
                 var result_content = doc.get(block, "content")
                 if result_content < 0 or doc.nodes[result_content].kind != JSON_ARRAY or len(doc.nodes[result_content].children) == 0:
                     raise Error("Anthropic web-search result must contain at least one source")

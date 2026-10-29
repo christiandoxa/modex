@@ -20,9 +20,14 @@ path. Synthetic comparisons check two function declarations plus web search,
 object and missing-schema defaults, all five choice cases, and rejection of a
 non-object function schema before the provider receives a request. The
 buffered response comparison preserves text, search, function-call, and later
-text order. The SSE comparison covers a search/result pair, a function call
-with split argument deltas, and following text; the complete normalized event
-sequence matches the oracle.
+text order, including two serial search/result pairs plus a function call. The
+SSE comparison covers a search/result pair, a function call with split argument
+deltas, and following text; the complete normalized event sequence matches the
+oracle. Buffered content arrays are capped at the oracle's 65,536 blocks before
+block classification. Exact-limit function-only (with adjacent text blocks)
+and mixed replies match the oracle; both oracle and Modex reject 65,537 blocks
+with a 502 response. Adjacent text blocks are grouped in one pass to keep the
+exact-limit case practical.
 
 `tests/test_anthropic_mixed_tools_01651.py` uses the checksum-pinned oracle,
 the production Modex binary, synthetic keys, isolated HOME/state directories,
@@ -31,18 +36,14 @@ and a loopback provider. No paid traffic or real credentials are used.
 ## Validation
 
 - `rtk make build` — pass.
-- `python3 scripts/ci/run-unittest.py test_anthropic_mixed_tools_01651.py` — 6 tests pass, including the expected two-search mismatch below.
+- `python3 scripts/ci/run-unittest.py test_anthropic_mixed_tools_01651.py` — 8 tests pass, including exact/over-limit boundary comparisons and two mixed search pairs.
 - `PYTHONPATH=tests python3 -m unittest test_provider_stream_01651_characterization.ProviderStream01651CharacterizationTests.test_anthropic_repeated_server_search_results_match_release test_provider_stream_01651_characterization.ProviderStream01651CharacterizationTests.test_anthropic_buffered_search_shape_remains_release_compatible test_provider_stream_01651_characterization.ProviderStream01651CharacterizationTests.test_anthropic_function_tool_use_stream_matches_release` — 3 existing pure-search and function-stream controls pass.
 - `python3 scripts/ci/check-product-dependencies.py` — pass.
 - `git diff --check` — pass.
 
-The explicit open mismatch is reproducible: with two serial search/result pairs
-and a function call in one buffered reply, Prodex returns 200 while Modex
-returns 502 after sending the same Anthropic request.
-
 This qualifies only the exercised Linux x86-64 shapes. Custom and namespaced
-function tools, search options beyond `allowed_domains`, multiple searches or
-function calls in one mixed response, interleaved search events, malformed
-provider responses beyond the tested schema rejection, resource bounds, other
-release targets, and general Anthropic parity remain open. No contract or
+function tools, search options beyond `allowed_domains`, more than two search
+pairs in one mixed response, multiple search pairs in streams, interleaved
+search events, malformed provider responses beyond the tested schema rejection,
+other release targets, and general Anthropic parity remain open. No contract or
 release qualification is promoted.

@@ -33,6 +33,8 @@ COUNT = {
     "parameters": {"type": "object", "properties": {"prefix": {"type": "string"}}},
 }
 SEARCH = {"type": "web_search_preview", "allowed_domains": ["example.test"]}
+FUNCTION_RESPONSE_BLOCK = b'{"type":"tool_use","id":"x","name":"f"}'
+TEXT_RESPONSE_BLOCK = b'{"type":"text","text":"x"}'
 
 
 def _request(stream=False):
@@ -70,6 +72,37 @@ def _buffered_reply(content=None, stop_reason="tool_use"):
             "stop_reason": stop_reason,
             "usage": {"input_tokens": 3, "output_tokens": 5},
         }, separators=(",", ":")).encode(),
+    }
+
+
+def _counted_buffered_reply(function_blocks, search_pairs=0, text_blocks=0):
+    prefix = []
+    for index in range(search_pairs):
+        search_id = f"srv_bulk_{index}"
+        query = f"query-{index}"
+        url = f"https://example.test/result-{index}"
+        prefix.extend((
+            json.dumps({"type": "server_tool_use", "id": search_id, "name": "web_search",
+                        "input": {"query": query}}, separators=(",", ":")).encode(),
+            json.dumps({"type": "web_search_tool_result", "tool_use_id": search_id,
+                        "content": [{"type": "web_search_result", "url": url}]},
+                       separators=(",", ":")).encode(),
+        ))
+    content = b",".join(prefix)
+    if function_blocks:
+        repeated_functions = (FUNCTION_RESPONSE_BLOCK + b",") * function_blocks
+        content += (b"," if content else b"") + repeated_functions[:-1]
+    if text_blocks:
+        repeated_text = (TEXT_RESPONSE_BLOCK + b",") * text_blocks
+        content += (b"," if content else b"") + repeated_text[:-1]
+    return {
+        "status": 200,
+        "content_type": "application/json",
+        "body": (
+            b'{"id":"msg_bulk","type":"message","role":"assistant",'
+            b'"model":"deepseek-chat","content":[' + content +
+            b'],"stop_reason":"tool_use","usage":{"input_tokens":3,"output_tokens":5}}'
+        ),
     }
 
 
@@ -134,6 +167,52 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
         self.assertEqual(headers["x-api-key"], SYNTHETIC_API_KEY)
         self.assertEqual(headers["anthropic-version"], "2023-06-01")
         return reference_posts[0], reference[0], actual_posts[0], actual[0]
+
+    def _assert_content_limit_boundary(self, exact_function_blocks, over_function_blocks,
+                                       exact_text_blocks, over_text_blocks, search_pairs,
+                                       exact_output_items):
+        request = _request()
+        replies = [
+            _counted_buffered_reply(exact_function_blocks, search_pairs, exact_text_blocks),
+            _counted_buffered_reply(over_function_blocks, search_pairs, over_text_blocks),
+        ]
+        observed = []
+        for binary in (ORACLE_01651, MODEX):
+            posts, responses = observe_turns(binary, [request, request], replies)
+            self.assertEqual(len(posts), 2)
+            self.assertEqual(len(responses), 2)
+            self.assertEqual([record["status"] for record in responses], [200, 502])
+            self.assertEqual(bytes.fromhex(responses[1]["body"]),
+                             b"provider response could not be processed")
+            for post in posts:
+                headers = {name.lower(): value for name, value in post["headers"].items()}
+                self.assertEqual(headers["x-api-key"], SYNTHETIC_API_KEY)
+                self.assertEqual(headers["anthropic-version"], "2023-06-01")
+            output = _json_body(responses[0])["output"]
+            self.assertEqual(len(output), exact_output_items)
+            observed.append((posts, responses, output))
+        reference_posts, reference_responses, reference_output = observed[0]
+        actual_posts, actual_responses, actual_output = observed[1]
+        self.assertEqual([post["path"] for post in actual_posts], [post["path"] for post in reference_posts])
+        self.assertEqual([json.loads(post["body"]) for post in actual_posts],
+                         [json.loads(post["body"]) for post in reference_posts])
+        self.assertEqual(len(reference_output), len(actual_output))
+        self.assertEqual([record["status"] for record in actual_responses],
+                         [record["status"] for record in reference_responses])
+        if search_pairs:
+            self.assertEqual([item["type"] for item in actual_output[:search_pairs]],
+                             ["web_search_call"] * search_pairs)
+        self.assertEqual(_normalize(_json_body(actual_responses[0])),
+                         _normalize(_json_body(reference_responses[0])))
+        self.assertEqual([item["type"] for item in actual_output],
+                         [item["type"] for item in reference_output])
+        self.assertIn("function_call", [item["type"] for item in actual_output])
+
+    def test_buffered_content_block_limit_for_function_only_replies(self):
+        self._assert_content_limit_boundary(1, 1, 65_535, 65_536, 0, 2)
+
+    def test_buffered_content_block_limit_for_mixed_replies(self):
+        self._assert_content_limit_boundary(1, 1, 65_531, 65_532, 2, 4)
 
     def test_function_search_tools_and_tool_choices_match_release(self):
         reply = _buffered_reply([
@@ -237,7 +316,7 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                          _events(bytes.fromhex(expected["body"])))
         self.assertEqual(_events(bytes.fromhex(observed["body"]))[-1][0], "response.completed")
 
-    def test_second_mixed_search_pair_remains_fail_closed(self):
+    def test_two_mixed_search_pairs_match_release(self):
         content = [
             {"type": "server_tool_use", "id": "srv_one", "name": "web_search",
              "input": {"query": "first"}},
@@ -252,18 +331,12 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
             {"type": "tool_use", "id": "call_lookup", "name": "lookup",
              "input": {"query": "second"}},
         ]
-        reference_posts, reference = observe_turns(
-            ORACLE_01651, [_request()], [_buffered_reply(content)],
-        )
-        actual_posts, actual = observe_turns(
-            MODEX, [_request()], [_buffered_reply(content)],
-        )
-        self.assertEqual(reference[0]["status"], 200)
-        self.assertEqual(actual[0]["status"], 502)
-        self.assertEqual(len(reference_posts), 1)
-        self.assertEqual(len(actual_posts), 1)
-        self.assertEqual(json.loads(actual_posts[0]["body"]),
-                         json.loads(reference_posts[0]["body"]))
+        _, expected, _, observed = self._compare(_request(), _buffered_reply(content))
+        result = _json_body(observed)
+        self.assertEqual(_normalize(result), _normalize(_json_body(expected)))
+        self.assertEqual([item["type"] for item in result["output"]], [
+            "web_search_call", "web_search_call", "function_call",
+        ])
 
     def test_invalid_function_schema_fails_before_provider_request(self):
         request = _request()

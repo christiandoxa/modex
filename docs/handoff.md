@@ -3054,6 +3054,11 @@ event byte counts also differ in a separate eight-client failure probe, which
 only established worker recovery. Full concurrency, signal, platform and
 security behavior remain unqualified; all six release targets stay in the
 parity denominator. See `docs/evidence/baseline-0.165.1/local-relay-concurrency.md`.
+The byte difference includes a raw second 502 response after an unterminated
+failed stream in both releases; Modex discards the queued request instead.
+The first response also differed in its Connection header in that control.
+The maintained disconnect test records the baseline behavior; general pipeline
+ordering remains unfinished. See `docs/evidence/anthropic-stream-optional-metadata-shared.md`.
 An eight-partial-client process control confirms the admission mismatch: both
 tested releases served a ninth request during a one-second hold, while Modex
 served it after the partial clients closed. See `docs/evidence/runtime-slow-partial.md`.

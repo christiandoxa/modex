@@ -396,6 +396,7 @@ for index in range(8):
             "got_failure": got_failure, "status": status,
             "elapsed_ms": int((time.monotonic() - started) * 1000),
             "error": None if got_failure else "TimeoutError",
+            "trailing_502": b"HTTP/1.1 502 Bad Gateway\\r\\n" in received,
         }})
         if got_failure and {close_mode!r} == "rst":
             client.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
@@ -1229,6 +1230,11 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                         for headers in provider_headers
                     )
                     self.assertTrue(provider_auth, label)
+                    if label != "Modex":
+                        self.assertTrue(
+                            any(row["trailing_502"] for row in capture["failure_results"]),
+                            (label, capture["failure_results"]),
+                        )
                     observations[label] = (
                         tuple((row["got_failure"], row["status"], row["error"])
                               for row in capture["failure_results"]),

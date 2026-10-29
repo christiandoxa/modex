@@ -40,7 +40,7 @@ class LocalRewriteAdmissionTests(unittest.TestCase):
         self.upstream.server_close()
         self.upstream_thread.join(timeout=2)
 
-    def _start_relay(self, temporary):
+    def _start_relay(self, temporary, worker_count=None):
         root = Path(temporary)
         for name in ("home", "prodex", "config", "data", "cache", "tmp"):
             (root / name).mkdir(mode=0o700)
@@ -57,6 +57,8 @@ class LocalRewriteAdmissionTests(unittest.TestCase):
             "LC_ALL": "C.UTF-8",
             "NO_COLOR": "1",
         }
+        if worker_count is not None:
+            environment["PRODEX_RUNTIME_PROXY_WORKER_COUNT"] = worker_count
         try:
             process = subprocess.Popen(
                 [
@@ -267,6 +269,28 @@ class LocalRewriteAdmissionTests(unittest.TestCase):
                         process.wait(timeout=3)
                     if process.stdout:
                         process.stdout.close()
+
+    def test_worker_count_stays_within_scheduler_capacity(self):
+        values = ("1", "+1", "12", "64", "65", "18446744073709551615")
+        default_count = None
+        for value in (None, *values):
+            with self.subTest(worker_count=value):
+                with tempfile.TemporaryDirectory(prefix="modex-worker-count-") as temporary:
+                    process, parent_write, _address, actual = self._start_relay(
+                        temporary, worker_count=value,
+                    )
+                    try:
+                        if value is None:
+                            default_count = actual
+                            self.assertGreaterEqual(default_count, 4)
+                            self.assertLessEqual(default_count, 12)
+                        else:
+                            self.assertEqual(actual, min(default_count, int(value)))
+                    finally:
+                        os.close(parent_write)
+                        process.wait(timeout=3)
+                        if process.stdout:
+                            process.stdout.close()
 
 
 if __name__ == "__main__":

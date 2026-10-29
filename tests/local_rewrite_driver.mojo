@@ -1,6 +1,7 @@
 """Test-only process driver for the internal local-rewrite relay."""
 
 from std.io import RawFileDescriptor
+from std.runtime import parallelism_level
 from std.sys import argv
 
 from modex.loopback_http import _number
@@ -11,6 +12,10 @@ from modex.runtime_local_rewrite import deepseek_runtime_route, local_rewrite_up
 
 def main() raises:
     var arguments = argv()
+    if len(arguments) == 2 and String(arguments[1]) == "--worker-info":
+        var output = RawFileDescriptor(1)
+        output.write_bytes(("WORKERS=" + String(local_rewrite_worker_count()) + " PARALLELISM=" + String(max(1, parallelism_level())) + "\n").as_bytes())
+        return
     if len(arguments) != 4 and len(arguments) != 5:
         raise Error("expected LISTEN_ADDRESS UPSTREAM_URL API_KEY [PARENT_FD]")
     var upstream = String(arguments[2])

@@ -25,6 +25,7 @@ ORACLE = Path(os.environ.get(
     "PRODEX_ORACLE_01651",
     Path.home() / ".cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
 ))
+ORACLE_01651 = ORACLE
 ORACLE_SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
 ORACLE_04392 = Path(os.environ.get(
     "PRODEX_ORACLE_04392",
@@ -81,9 +82,9 @@ class Upstream(ThreadingHTTPServer):
         with self.records_lock:
             return list(self.records)
 
-    def reset_parallel_probe(self):
+    def reset_parallel_probe(self, participants=2):
         with self.records_lock:
-            self.parallel_probe_barrier = threading.Barrier(2)
+            self.parallel_probe_barrier = threading.Barrier(participants)
             self.parallel_probe_active = 0
             self.parallel_probe_peak_active = 0
             self.parallel_probe_overlapped.clear()
@@ -131,8 +132,10 @@ class UpstreamHandler(BaseHTTPRequestHandler):
                     self.server.parallel_probe_active,
                 )
             try:
-                self.server.parallel_probe_barrier.wait(timeout=2)
-                self.server.parallel_probe_overlapped.set()
+                timeout = 2 if self.server.parallel_probe_barrier.parties == 2 else 5
+                self.server.parallel_probe_barrier.wait(timeout=timeout)
+                if self.server.parallel_probe_barrier.parties > 1:
+                    self.server.parallel_probe_overlapped.set()
             except threading.BrokenBarrierError:
                 self.send_response(503)
                 self.send_header("Content-Type", "text/plain")
@@ -1041,6 +1044,52 @@ with open(os.environ["PROBE_RESULT_PATH"], "w", encoding="utf-8") as output:
 '''
     path.write_text("#!" + sys.executable + "\n" + source, encoding="utf-8")
     path.chmod(0o700)
+
+
+def configured_modex_worker_capacity(worker_count):
+    driver = Path(os.environ.get(
+        "MODEX_LOCAL_REWRITE_DRIVER", ROOT / "build/tests/local_rewrite_driver",
+    ))
+    if not driver.is_file():
+        raise AssertionError(f"Build the local relay test driver first: {driver}")
+    with tempfile.TemporaryDirectory(prefix="modex-worker-count-probe-") as temporary:
+        root = Path(temporary)
+        for name in ("home", "prodex", "config", "data", "cache", "tmp"):
+            (root / name).mkdir(mode=0o700)
+        environment = {
+            "HOME": str(root / "home"),
+            "PRODEX_HOME": str(root / "prodex"),
+            "XDG_CONFIG_HOME": str(root / "config"),
+            "XDG_DATA_HOME": str(root / "data"),
+            "XDG_CACHE_HOME": str(root / "cache"),
+            "TMPDIR": str(root / "tmp"),
+            "PATH": "/usr/bin:/bin",
+            "LANG": "C.UTF-8",
+            "LC_ALL": "C.UTF-8",
+            "NO_COLOR": "1",
+            "PRODEX_RUNTIME_PROXY_WORKER_COUNT": str(worker_count),
+        }
+        result = subprocess.run(
+            [str(driver), "--worker-info"],
+            cwd=root,
+            env=environment,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=5,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise AssertionError(
+                f"worker count probe failed: {result.stderr.decode('utf-8', errors='replace')}"
+            )
+        match = re.fullmatch(
+            r"WORKERS=(\d+) PARALLELISM=(\d+)",
+            result.stdout.decode("ascii").strip(),
+        )
+        if not match:
+            raise AssertionError(f"worker info probe returned invalid output: {result.stdout!r}")
+        return int(match.group(1)), int(match.group(2))
 
 
 def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses", method=b"POST", version=b"HTTP/1.1"):
@@ -3178,42 +3227,77 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             "model": "deepseek-chat",
             "messages": [{"role": "user", "content": "synthetic configured concurrency"}],
         }, separators=(",", ":")).encode()
-        requests = [
-            request_bytes(
-                headers=(("Connection", "close"),),
-                body=body,
-                target=f"/v1/chat/completions?parallel={index}".encode(),
-            )
-            for index in (1, 2)
-        ]
         upstream = Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)
         worker.start()
         try:
-            for worker_count, should_overlap in ((1, False), (2, True)):
-                case = {
-                    "name": f"configured_worker_count_{worker_count}",
-                    "request": requests[0],
-                    "concurrent_requests": requests,
-                    "process_timeout": 15,
-                    "environment_overrides": {
-                        "PRODEX_RUNTIME_PROXY_WORKER_COUNT": str(worker_count),
-                    },
-                }
-                for label, binary in (("oracle", ORACLE), ("modex", MODEX)):
+            pinned_binaries = []
+            for label, binary, expected_hash in (
+                ("0.165.1", ORACLE_01651, ORACLE_SHA256),
+                ("0.439.2", ORACLE_04392, ORACLE_04392_SHA256),
+            ):
+                if not binary.is_file() or any(path == binary for _, path in pinned_binaries):
+                    continue
+                actual_hash = hashlib.sha256(binary.read_bytes()).hexdigest()
+                self.assertEqual(actual_hash, expected_hash, label)
+                pinned_binaries.append((label, binary))
+            binaries = (*pinned_binaries, ("Modex", MODEX))
+            oracle_parallelism = max(
+                1,
+                len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity")
+                else (os.cpu_count() or 1),
+            )
+            for worker_count in (1, 2, 12):
+                for label, binary in binaries:
+                    if label == "Modex":
+                        configured_count, scheduler_parallelism = configured_modex_worker_capacity(worker_count)
+                        self.assertEqual(
+                            configured_count,
+                            min(worker_count, min(12, max(4, scheduler_parallelism))),
+                        )
+                        request_count = (
+                            2 if worker_count == 1
+                            else min(configured_count, scheduler_parallelism)
+                        )
+                    else:
+                        request_count = (
+                            2 if worker_count == 1
+                            else min(worker_count, oracle_parallelism)
+                        )
+                    requests = [
+                        request_bytes(
+                            headers=(("Connection", "close"),),
+                            body=body,
+                            target=f"/v1/chat/completions?parallel={index}".encode(),
+                        )
+                        for index in range(request_count)
+                    ]
+                    case = {
+                        "name": f"configured_worker_count_{worker_count}",
+                        "request": requests[0],
+                        "concurrent_requests": requests,
+                        "process_timeout": 30,
+                        "environment_overrides": {
+                            "PRODEX_RUNTIME_PROXY_WORKER_COUNT": str(worker_count),
+                        },
+                    }
                     with self.subTest(worker_count=worker_count, label=label):
-                        upstream.reset_parallel_probe()
+                        upstream.reset_parallel_probe(request_count)
                         response, records = run_probe(binary, case, upstream)
                         peak_active, overlapped = upstream.snapshot_parallel_probe()
+                        expected_overlap = worker_count > 1 and request_count > 1
+                        expected_peak = 1 if worker_count == 1 else request_count
                         self.assertEqual(response["process_exit"], 0, response["stderr"])
-                        self.assertEqual(len(records), 2)
-                        self.assertEqual(len(response["concurrent_responses"]), 2)
-                        self.assertEqual(overlapped, should_overlap)
-                        self.assertLessEqual(peak_active, worker_count)
-                        if should_overlap:
+                        self.assertEqual(len(records), request_count)
+                        self.assertEqual(
+                            len(response["concurrent_responses"]), request_count,
+                        )
+                        self.assertEqual(overlapped, expected_overlap)
+                        self.assertEqual(peak_active, expected_peak)
+                        if expected_overlap:
                             self.assertEqual(
                                 [item["status"] for item in response["concurrent_responses"]],
-                                [200, 200],
+                                [200] * request_count,
                             )
         finally:
             upstream.shutdown()

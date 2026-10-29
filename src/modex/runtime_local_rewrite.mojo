@@ -1059,15 +1059,15 @@ __async def _local_rewrite_worker(state_ptr: Pointer[LocalRewriteSharedState, Mu
         state_ptr[].finish_request(connection^)
 
 
-# shortcut: configured counts above eight stay capped until larger lane counts are qualified under load.
-comptime LOCAL_REWRITE_MAX_WORKERS = 8
+# shortcut: default count has a four-lane floor; cap at twelve pending resource qualification.
+comptime LOCAL_REWRITE_MAX_WORKERS = 12
 
 
 def local_rewrite_worker_count() raises -> Int:
     var name = String("PRODEX_RUNTIME_PROXY_WORKER_COUNT")
     var error_prefix = String("runtime configuration is invalid; ") + name
     var parallelism = max(1, parallelism_level())
-    var fallback = min(LOCAL_REWRITE_MAX_WORKERS, parallelism)
+    var fallback = min(LOCAL_REWRITE_MAX_WORKERS, max(4, parallelism))
     var configured = getenv(name, "\x00")
     if configured == "\x00":
         return fallback

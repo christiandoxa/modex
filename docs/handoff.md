@@ -1,5 +1,34 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+## Relay worker concurrency (2026-10-30)
+
+The exact `36ab8ca` Linux build admitted at most eight synthetic provider
+requests at once, even when `PRODEX_RUNTIME_PROXY_WORKER_COUNT=12`. A candidate
+cap of twelve reached twelve synchronized upstream requests through the real
+Super CLI and returned all twelve responses successfully. Both pinned Prodex
+0.439.2 and the historical 0.165.1 control also reached twelve. This qualifies
+only the loopback request path under a 250 ms synthetic upstream hold; it does
+not establish full parity. See
+`docs/evidence/worker-concurrency-04392.json` and its raw samples.
+
+An exploratory configured-64 probe observed both pinned releases reaching 64
+concurrent upstream requests while the candidate stayed at twelve. Its
+temporary harness is not committed, so treat the result as a non-reproducible
+measurement, not an automated parity gate; raw samples are retained. In one
+0.439.2 sample, the 64-request process tree peaked at 86 threads, 139 file
+descriptors, and 35,188 KiB RSS; the Modex candidate stayed at 26 threads, 86
+file descriptors, and 25,636 KiB RSS while serving all 64 requests in bounded
+waves. Keep this gap visible; do not raise the cap to 64 without a separate
+resource qualification.
+
+The default count is `min(12, max(4, parallelism_level()))`, and execution
+still depends on scheduler capacity. On hosts with fewer than four scheduler
+lanes, the configured floor can exceed effective concurrent execution. The
+automated barrier test queries Mojo parallelism and qualifies active capacity
+as `min(configured workers, parallelism)`; it claims twelve lanes only where
+the scheduler supports them. This evidence covers Linux x86_64 only and does
+not remove any target or security gap from the parity denominator.
+
 Two sequential DeepSeek Super launches expose a core shared-home gap: the
 first Modex launch creates session and history paths, then the second rejects
 them before starting Codex. Both pinned releases launch twice and preserve the

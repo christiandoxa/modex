@@ -1333,6 +1333,9 @@ class SuperLaunchTests(unittest.TestCase):
             ("whitespace", "   ", "PRODEX_RUNTIME_PROXY_WORKER_COUNT must not contain whitespace"),
             ("malformed", "n/a", "PRODEX_RUNTIME_PROXY_WORKER_COUNT must be an unsigned integer"),
             ("zero", "0", "PRODEX_RUNTIME_PROXY_WORKER_COUNT must be greater than zero"),
+            ("negative", "-1", "PRODEX_RUNTIME_PROXY_WORKER_COUNT must be an unsigned integer"),
+            ("overflow", "18446744073709551616", "PRODEX_RUNTIME_PROXY_WORKER_COUNT must be an unsigned integer"),
+            ("unicode-whitespace", "\u2003", "PRODEX_RUNTIME_PROXY_WORKER_COUNT must not contain whitespace"),
         )
         binaries = (("0.165.1", ORACLE_01651), ("0.439.2", ORACLE), ("Modex", MODEX))
         for label, value, diagnostic in cases:

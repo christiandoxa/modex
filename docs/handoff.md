@@ -6,6 +6,12 @@ select this release; comparisons with 0.439.x are historical regression
 evidence. All six release targets and unverified security behavior remain in
 the denominator. The full inventory and production parity remain unfinished.
 
+Hosted Fast CI run `40796304229` passed both helper shards, the active 0.165.1
+and focused relay checks, then failed on the unavailable required historical
+0.439.2 tag; the artifact consumer was skipped. An isolated local `make test`
+run completed 728 Python tests and the native checks successfully. The checkout
+changed during that run, so it is not evidence for an exact final commit.
+
 Hosted Fast CI run `40794762417` passed both helper shards, the build, active
 0.165.1 checks and relay checks, then failed because the mandatory historical
 0.439.2 tag was unavailable. Its artifact consumer was skipped. No hosted CI

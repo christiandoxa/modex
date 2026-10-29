@@ -231,15 +231,16 @@ struct DeepSeekChatState:
             if block_type == "tool_use":
                 var id = optional_string(doc, block, "id")
                 var name = optional_string(doc, block, "name")
-                if not name or not name.value():
-                    raise Error("Anthropic tool-use block requires a name")
                 var id_field = String()
                 if id: id_field = ',"id":' + quote_json(id.value())
+                # Preserve missing names so shared stream validation fails after argument deltas.
+                var name_field = String()
+                if name: name_field = '"name":' + quote_json(name.value()) + ","
                 return self.observe(
                     '{"choices":[{"delta":{"tool_calls":[{"index":' + String(block_index)
                     + id_field
-                    + ',"type":"function","function":{"name":' + quote_json(name.value())
-                    + ',"arguments":""}}]},"finish_reason":null}]}'
+                    + ',"type":"function","function":{' + name_field
+                    + '"arguments":""}}]},"finish_reason":null}]}'
                 )
             if block_type == "web_search_tool_result":
                 var search_id = doc.string(doc.get(block, "tool_use_id"))

@@ -719,7 +719,7 @@ class SuperLaunchTests(unittest.TestCase):
         super_arguments=(), environment_overrides=None, base_path="/v1", sub_agent=False,
         temporary_directory=None, stderr_tty=False, codex_mode="explicit", codex_binary=None,
         codex_arguments=("exec", "--", "synthetic prompt"), shared_config=None, shared_setup=None,
-        api_key="synthetic-provider-key",
+        api_key="synthetic-provider-key", anthropic_events=None,
     ):
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-", dir=temporary_directory) as directory:
             root = Path(directory)
@@ -929,6 +929,11 @@ class SuperLaunchTests(unittest.TestCase):
                             b'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":5}}\n\n',
                             b'data: {"type":"message_stop"}\n\n',
                         ))
+                        content_type = "text/event-stream"
+                    elif scenario == "anthropic-custom-events":
+                        if anthropic_events is None:
+                            raise ValueError("custom Anthropic events are required")
+                        payload = b"".join(_sse_data_event(item) for item in anthropic_events)
                         content_type = "text/event-stream"
                     elif scenario == "anthropic-tool-use":
                         payload = b"".join((

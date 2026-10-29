@@ -41,8 +41,26 @@ The production parser also maps a tested Anthropic `tool_use` block and split
 loopback comparison matches the complete 0.165.1 event sequence, upstream
 request and cleanup. Additional controls cover duplicate index, missing stop,
 orphan and mismatched indices, duplicate/reopened stops, and deltas after stop.
-Some malformed stop sequences complete in the release but remain rejected in
-Modex. This is not general function-tool or event-order parity.
+The nine index/stop controls now match the complete normalized event stream
+against both pinned releases. The orphan and mismatched-index delta controls
+generate fallback UUIDv7 call IDs; the test validates those IDs and normalizes
+only those values.
+No mismatch was reproduced in those stop cases. This is not general
+function-tool or event-order parity.
+
+Both pinned source readers pass `tool_use` names, including absent or non-string
+values, into common tool-call accumulation. That path emits an added item with
+the fallback name `tool_call`, forwards argument deltas, and reports a missing
+or blank name as `invalid_tool_call_arguments` at message completion. Modex
+previously rejected these blocks immediately as `provider_stream_error`; it now
+preserves that deferred validation behavior. Real-process comparisons cover a
+missing name, null, numeric, empty, and whitespace-only names, plus a valid
+`lookup` control. The complete normalized event sequence, upstream request and
+cleanup match Prodex 0.165.1 and 0.439.2. Source traces are the pinned
+`anthropic_messages_sse_reader.rs` and `deepseek_sse/tool_calls.rs` at 0.165.1
+commit `10ae15b5d1806302b60f051e4e6fec788044f4c2` and 0.439.2 commit
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9`. These synthetic cases do not
+establish general Anthropic tool or provider parity.
 
 Selected mixed text/function streams now match the release with text before or
 after multiple function calls, argument deltas and stops while text is open,

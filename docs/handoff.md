@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Anthropic streamed `tool_use` blocks with missing, null, non-string, empty, or
+whitespace-only names now follow both pinned releases' deferred validation
+path. Three-way real-process comparisons match the complete normalized event
+sequence and request for five malformed cases plus a valid-name control. The
+nine selected function index/stop cases also match after UUIDv7 fallback IDs
+are validated and narrowly normalized. See
+`docs/evidence/baseline-0.165.1/anthropic-stream.md`; broader provider parity
+remains unqualified.
+
 Session ordering now rejects signs inside fixed-width date, time and timezone
 components, matching both pinned releases; standalone signed integer
 timestamps remain accepted. Eight invalid strings and a valid control were

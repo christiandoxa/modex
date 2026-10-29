@@ -186,19 +186,9 @@ struct DeepSeekChatState:
             if not code or not message: raise Error("Anthropic stream error is incomplete")
             return self.fail(code, message)
         if kind == "message_start":
+            # shortcut: only traced message/text/input-json cases are lenient, extend from release evidence.
             if self.anthropic_phase != 0:
                 raise Error("Anthropic message_start is out of order")
-            _only_fields(doc, doc.root, ["type", "message"], "message_start event")
-            var message = doc.get(doc.root, "message")
-            _only_fields(doc, message, ["id", "type", "role", "model", "usage"], "message_start message")
-            var message_type = doc.get(message, "type")
-            if message_type >= 0 and doc.string(message_type) != "message" or not doc.string(doc.get(message, "id")) or doc.string(doc.get(message, "role")) != "assistant" or not doc.string(doc.get(message, "model")):
-                raise Error("Anthropic message_start role must be assistant")
-            var usage = doc.get(message, "usage")
-            _only_fields(doc, usage, ["input_tokens", "output_tokens"], "message_start usage")
-            var input = json_unsigned(doc, doc.get(usage, "input_tokens"))
-            var output = json_unsigned(doc, doc.get(usage, "output_tokens"))
-            if not input or not output: raise Error("Anthropic message_start usage is invalid")
             self.anthropic_phase = 1
             return List[String]()
         if kind == "content_block_start":
@@ -293,7 +283,6 @@ struct DeepSeekChatState:
                 return List[String]()
             raise Error("Anthropic content block type is not supported")
         if kind == "content_block_delta":
-            _only_fields(doc, doc.root, ["type", "index", "delta"], "content_block_delta event")
             var index = json_unsigned(doc, doc.get(doc.root, "index"))
             if not index: raise Error("Anthropic content delta index is invalid")
             var block_index = index.value()
@@ -301,15 +290,15 @@ struct DeepSeekChatState:
             if delta < 0 or doc.nodes[delta].kind != JSON_OBJECT:
                 raise Error("Anthropic content delta is missing")
             var delta_type = doc.string(doc.get(delta, "type"))
+            if delta_type != "text_delta" and delta_type != "input_json_delta":
+                _only_fields(doc, doc.root, ["type", "index", "delta"], "content_block_delta event")
             if delta_type == "text_delta":
-                _only_fields(doc, delta, ["type", "text"], "text delta")
                 if self.anthropic_phase != 6 or not self.anthropic_text_index or self.anthropic_text_index.value() != block_index:
                     raise Error("Anthropic text delta does not match its block")
-                var text = doc.string(doc.get(delta, "text"))
                 var text_value = doc.get(delta, "text")
                 if text_value < 0 or doc.nodes[text_value].kind != JSON_STRING:
-                    raise Error("Anthropic text delta must be a string")
-                return self.observe('{"choices":[{"delta":{"content":' + quote_json(text) + '},"finish_reason":null}]}')
+                    return List[String]()
+                return self.observe('{"choices":[{"delta":{"content":' + quote_json(doc.nodes[text_value].text) + '},"finish_reason":null}]}')
             if delta_type == "input_json_delta":
                 _only_fields(doc, delta, ["type", "partial_json"], "input JSON delta")
                 var fragment = doc.string(doc.get(delta, "partial_json"))
@@ -406,16 +395,12 @@ struct DeepSeekChatState:
         if kind == "message_delta":
             if self.anthropic_phase != 1 and self.anthropic_phase != 3 and self.anthropic_phase != 5 and self.anthropic_phase != 7:
                 raise Error("Anthropic message_delta is out of order")
-            _only_fields(doc, doc.root, ["type", "delta", "usage"], "message_delta event")
             var delta = doc.get(doc.root, "delta")
-            _only_fields(doc, delta, ["stop_reason", "stop_sequence"], "message_delta")
             var stop_reason = doc.get(delta, "stop_reason")
             # The release reads string stop_reason only and ignores stop_sequence.
             var usage = doc.get(doc.root, "usage")
-            _only_fields(doc, usage, ["output_tokens"], "message_delta usage")
             var output = json_unsigned(doc, doc.get(usage, "output_tokens"))
-            if not output: raise Error("Anthropic message_delta usage is invalid")
-            self.anthropic_output_tokens = output.value()
+            if output: self.anthropic_output_tokens = output.value()
             self.anthropic_phase = 8
             if stop_reason >= 0 and doc.nodes[stop_reason].kind == JSON_STRING:
                 var reason = doc.nodes[stop_reason].text

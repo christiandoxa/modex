@@ -29,6 +29,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(script.index("run_logged focused-build make build unit"), historical)
         active_tests = script[script.index("run_logged focused-python-active"):historical]
         self.assertIn("test_app_server_rpc_04392.py", active_tests)
+        self.assertIn("test_anthropic_stream_optional_metadata_shared.py", script)
         self.assertIn("test_provider_stream_repeated_search_04392.py", script)
         self.assertIn("run_logged focused-python-active-cross-release", script)
         self.assertIn("test_ci_parity_baseline.py", script)
@@ -53,6 +54,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(script.index("run_logged focused-build make build"), historical)
         active_tests = script[script.index("run_logged focused-python-active"):historical]
         self.assertIn("test_app_server_rpc_04392.py", active_tests)
+        self.assertIn("test_anthropic_stream_optional_metadata_shared.py", script)
         self.assertIn("test_provider_stream_repeated_search_04392.py", script)
         self.assertIn("run_logged focused-python-active-cross-release", script)
         complete_suite = script.index("run_logged complete-suite make test")

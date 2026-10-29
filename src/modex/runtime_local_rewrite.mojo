@@ -949,7 +949,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
     var lookahead_ms = _timeout("PRODEX_RUNTIME_PROXY_SSE_LOOKAHEAD_TIMEOUT_MS", 1000)
     var parent_bytes = List[UInt8](length=1, fill=0)
     var parked = List[LoopbackHTTPConnection]()
-    var overflow = Optional[LoopbackHTTPConnection]()
+    var overflow = List[LoopbackHTTPConnection]()
     if parent_fd >= 0:
         var flags = fcntl(parent_fd, F_GETFL, 0)
         if flags < 0 or fcntl(parent_fd, F_SETFL, flags | O_NONBLOCK) < 0:
@@ -959,6 +959,8 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
     var state_ptr = state.ptr().unsafe_origin_cast[MutUntrackedOrigin]()
     # shortcut: cap lanes at eight or available runtime workers; match baseline tuning when blocking workers can scale independently.
     var worker_count = max(1, min(LOCAL_REWRITE_MAX_WORKERS, parallelism_level()))
+    # shortcut: cap extra request heads to worker lanes; add an aggregate memory budget before increasing.
+    var overflow_capacity = max(2, worker_count)
     var workers = TaskGroup()
     try:
         for _ in range(worker_count):
@@ -968,12 +970,22 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
             var completed = state_ptr[].take_completed()
             while completed:
                 var connection = completed.pop()
-                if connection.waiting_for_request and len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED:
-                    parked.insert(0, connection^)
+                if connection.waiting_for_request:
+                    if len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED:
+                        parked.insert(0, connection^)
+                    elif len(overflow) < overflow_capacity:
+                        overflow.append(connection^)
+                    else:
+                        connection.close()
                 else:
                     connection.close()
+            while len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED and overflow:
+                var waiting = overflow.pop(0)
+                waiting.keep_alive_enabled = True
+                waiting.include_default_response_headers = True
+                parked.insert(0, waiting^)
             var accepted_before_scan = False
-            if not overflow:
+            if len(overflow) < overflow_capacity:
                 var pending = listener.accept(0)
                 if pending:
                     var incoming = pending.take()
@@ -983,7 +995,9 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
                         incoming.include_default_response_headers = True
                         parked.insert(0, incoming^)
                     else:
-                        overflow = Optional[LoopbackHTTPConnection](incoming^)
+                        incoming.keep_alive_enabled = True
+                        incoming.include_default_response_headers = True
+                        overflow.append(incoming^)
             var dispatched = False
             var capture_progress = False
             var parked_count = len(parked)
@@ -1007,8 +1021,9 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
                     idle.close()
                 else:
                     parked.insert(0, idle^)
-            if overflow:
-                var incoming = overflow.take()
+            var overflow_count = len(overflow)
+            for _ in range(overflow_count):
+                var incoming = overflow.pop(0)
                 var has_request_bytes = incoming.request_ready()
                 var ready = False
                 if has_request_bytes:
@@ -1036,27 +1051,35 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
                         else:
                             parked.insert(0, incoming^)
                     else:
-                        overflow = Optional[LoopbackHTTPConnection](incoming^)
+                        overflow.append(incoming^)
             if dispatched: continue
             if capture_progress: continue
             if accepted_before_scan: continue
-            if overflow:
+            if len(overflow) >= overflow_capacity:
                 sleep(0.001)
                 continue
             # Recheck worker completions promptly without polling an idle relay as often.
             var timeout = 5 if state_ptr[].has_pending_work() else (100 if parent_fd >= 0 or len(parked) > 0 else 1000)
-            var accepted = listener.accept(UInt64(timeout))
-            if accepted:
-                var incoming = accepted.take()
-                overflow = Optional[LoopbackHTTPConnection](incoming^)
+            if len(overflow) < overflow_capacity:
+                var accepted = listener.accept(UInt64(timeout))
+                if accepted:
+                    var incoming = accepted.take()
+                    if len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED:
+                        incoming.keep_alive_enabled = True
+                        incoming.include_default_response_headers = True
+                        parked.insert(0, incoming^)
+                    else:
+                        incoming.keep_alive_enabled = True
+                        incoming.include_default_response_headers = True
+                        overflow.append(incoming^)
     except:
         state_ptr[].stop()
         for _ in range(len(parked)):
             var idle = parked.pop()
             idle.close()
-        if overflow:
-            var incoming = overflow.take()
-            incoming.close()
+        while overflow:
+            var waiting = overflow.pop()
+            waiting.close()
         workers.wait()
         _ = (state^).into_inner()
         raise
@@ -1064,8 +1087,8 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
     for _ in range(len(parked)):
         var idle = parked.pop()
         idle.close()
-    if overflow:
-        var incoming = overflow.take()
-        incoming.close()
+    while overflow:
+        var waiting = overflow.pop()
+        waiting.close()
     workers.wait()
     _ = (state^).into_inner()

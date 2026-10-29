@@ -51,6 +51,11 @@ cases as readable or absent. A live symlink is rejected by the tested
 releases. Descriptor checks are not interprocess exclusion. Details and exact
 artifacts are in `docs/evidence/session-profile-state-04392.md`.
 
+Both releases and Modex also accept a stable private state file with a
+hard-link alias. The process regression verifies that Modex leaves the file,
+alias, link count and directory contents unchanged; the earlier single-link
+claim in the evidence was incorrect.
+
 Bound empty profile names now remain distinct from absent bindings: JSON emits
 `""` for the former and `null` for the latter, matching both releases and
 `--profile ""` filtering. Identifier, duplicate-key and retention probes are
@@ -59,6 +64,13 @@ recorded in `docs/evidence/session-profile-identifiers-04392.md`.
 Empty and whitespace-only sub-agent model arguments now produce the selected
 pre- and post-positional diagnostics of both releases. Post-positional state
 creation remains different; see `docs/evidence/super-subagent-model-validation.md`.
+
+The combined production build and four focused native checks passed. The
+sub-agent model and session profile process suites passed 14 tests against
+both releases, and CI routing, workflow, cleanliness and reference helpers
+passed 50 tests. The dependency audit covers 71 Mojo files; the test census
+covers 50 native sources and 127 Python modules. These Linux checks do not
+establish full parity.
 
 After integration, the production build and four native session, Super and
 provider checks passed. The focused profile, invalid-path, historical session
@@ -98,6 +110,12 @@ production comparisons against the verified 0.439.2 release. The historical
 19 tests before the beta-host follow-up. The CI routing and reference helpers
 passed 39 tests; the 71-file dependency audit and 122-module census passed.
 The full suite and non-Linux targets were not rerun for this integration.
+
+Hosted Fast CI run `40817443892` on `7a15fbe` passed both helper shards and
+stopped before build because the required 0.439.2 tag was absent; artifact
+consumption was skipped. Fast CI now runs the independent build and native
+checks before that required oracle gate, while retaining the gate before
+reference-dependent tests and artifact publication. See `docs/ci-lessons.md`.
 
 Hosted Fast CI run `40816136528` on `87e57c3` passed both helper shards but
 failed before build at the missing required 0.439.2 tag; artifact consumption

@@ -1,5 +1,14 @@
 # CI lessons
 
+Fast run [40817443892](https://github.com/christiandoxa/modex/actions/runs/40817443892)
+on `7a15fbe` passed both helper shards and the producer's bootstrap, policy,
+dependency and reference-helper checks, then stopped before build because the
+required 0.439.2 tag was absent. Artifact consumption was skipped. Fast CI now
+runs clean-input verification and the independent production/native build before
+acquiring the reference, while retaining the mandatory oracle gate before
+comparison tests and packaging. The isolated worker's pinned Mojo build and
+native unit suite passed; this does not establish release parity.
+
 Fast run [40816136528](https://github.com/christiandoxa/modex/actions/runs/40816136528)
 on `87e57c3` passed both helper shards and stopped before build at the missing
 required 0.439.2 tag. The artifact consumer was skipped.

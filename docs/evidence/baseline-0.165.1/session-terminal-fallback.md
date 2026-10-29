@@ -40,8 +40,15 @@ before output selection, so the fallback does not bypass it.
 
 `tests/test_session_text.py` uses isolated homes and synthetic session data.
 Its attached-PTY case answers the release cursor-position query and sends `q`
-after the screen is drawn. It checks the two release screens against each
-other and separately checks that Modex returns a successful plain report.
+after the title and initial cursor-hide marker confirm the frame is drawn. The
+harness checks each release independently for its screen, cursor movement,
+and cursor restoration; it does not compare full TUI bytes across releases.
+An earlier unsynchronized run sent `q` as soon as the title appeared. The
+terminal echoed that key before or after cursor restoration, including both
+orders within 0.439.2 itself. Six synchronized captures per release emitted
+cursor-hide before cursor-show consistently, so the earlier variance was a
+test-input interleaving, not a release-specific output order. The harness
+separately checks that Modex returns a successful plain report.
 Other process cases compare fallback stdout, stderr, and exit status against
 both references for `CODEX_CI=1`, an empty-but-present `CODEX_CI`, truthy
 `PRODEX_TUI_STRICT`, and TTY stdout with non-TTY stdin. Synthetic profile

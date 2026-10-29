@@ -130,7 +130,13 @@ def compare_interactive_tty(arguments):
                         if not cursor_reply_sent and b"\x1b[6n" in output:
                             os.write(master, b"\x1b[1;1R")
                             cursor_reply_sent = True
-                    if cursor_reply_sent and not quit_sent and b"Prodex Sessions" in output:
+                    # The cursor-hide marker ends the frame; title-only q races writes.
+                    if (
+                        cursor_reply_sent
+                        and not quit_sent
+                        and b"Prodex Sessions" in output
+                        and b"\x1b[?25l" in output
+                    ):
                         os.write(master, b"q")
                         quit_sent = True
                     if process.poll() is not None and not ready:
@@ -339,9 +345,11 @@ class SessionTextTests(unittest.TestCase):
         old, current, modex = compare_interactive_tty(["session", "list"])
         self.assertEqual(old[0::2], (0, b""))
         self.assertEqual(current[0::2], (0, b""))
-        self.assertEqual(old[1], current[1])
-        self.assertIn(b"Prodex Sessions", old[1])
-        self.assertIn(b"\x1b[1;1H", old[1])
+        for release in (old, current):
+            self.assertIn(b"Prodex Sessions", release[1])
+            self.assertIn(b"\x1b[1;1H", release[1])
+            self.assertIn(b"\x1b[?25l", release[1])
+            self.assertLess(release[1].rfind(b"\x1b[?25l"), release[1].rfind(b"\x1b[?25h"))
         self.assertEqual(modex[0::2], (0, b""))
         self.assertIn(b"Session fixture", modex[1])
         self.assertNotIn(b"\x1b[6n", modex[1])

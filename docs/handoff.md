@@ -4030,3 +4030,14 @@ upstream, token, and stream cases in both pinned releases. Empty and duplicate
 fields and malformed quotes are covered by synthetic three-process comparisons.
 See `docs/evidence/baseline-0.165.1/log-plain-parser.md`. Live-source, security,
 and non-host target parity remain open.
+
+## Session PTY test synchronization (2026-10-30)
+
+The session TUI process test now answers the cursor-position query and waits
+for the initial cursor-hide marker before sending `q`. Its earlier title-only
+trigger raced the frame writes: the echoed key appeared before or after cursor
+restoration, with both orders reproduced in 0.439.2. Six synchronized captures
+per pinned release consistently showed cursor-hide before cursor-show. The
+test now checks each release's TUI lifecycle independently and keeps Modex's
+plain TTY fallback gap visible. This corrects the harness; it adds no TUI
+parity. See `docs/evidence/baseline-0.165.1/session-terminal-fallback.md`.

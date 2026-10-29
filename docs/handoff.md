@@ -6,6 +6,11 @@ select this release; comparisons with 0.439.x are historical regression
 evidence. All six release targets and unverified security behavior remain in
 the denominator. The full inventory and production parity remain unfinished.
 
+Hosted Fast CI run `40794762417` passed both helper shards, the build, active
+0.165.1 checks and relay checks, then failed because the mandatory historical
+0.439.2 tag was unavailable. Its artifact consumer was skipped. No hosted CI
+success is claimed for that run.
+
 The local relay now supports tested sequential HTTP/1.1 keep-alive requests,
 honors `Connection: close`, and parks up to 128 idle sockets so a second client
 can run. The parked queue is FIFO; when full, admission closes the oldest idle

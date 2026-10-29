@@ -73,6 +73,8 @@ class SessionReport01651Tests(test_sessions.SessionOutputTests):
                     for path in root.rglob("*") if path.is_file()
                 }
                 states[label] = (before["home/.prodex/state.json"], after["home/.prodex/state.json"])
+                session_file = next(path for path in before if path.endswith(".jsonl"))
+                self.assertEqual(after[session_file], before[session_file])
                 file_effects[label] = (
                     set(after) - set(before),
                     set(before) - set(after),
@@ -91,6 +93,12 @@ class SessionReport01651Tests(test_sessions.SessionOutputTests):
         self.assertNotEqual(outputs["modex"], outputs["baseline"])
         self.assertEqual(states["baseline"][0], states["baseline"][1])
         self.assertEqual(states["modex"][0], states["modex"][1])
-        self.assertIn("home/.prodex/state.json.lock", file_effects["baseline"][0])
+        self.assertEqual(file_effects["baseline"][0], {
+            "home/.prodex/profile-lifecycle.json.lock",
+            "home/.prodex/runtime-housekeeping.last-run",
+            "home/.prodex/runtime-housekeeping.lock",
+            "home/.prodex/state.json.lock",
+            "home/.prodex/update-check.lock",
+        })
         self.assertEqual(file_effects["baseline"][1], set())
         self.assertEqual(file_effects["modex"], (set(), set()))

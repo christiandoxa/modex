@@ -142,7 +142,7 @@ def _validate_deepseek_beta_url(value: String) raises:
         raise Error(invalid)
 
 
-# shortcut: full UTS #46 mapping is absent; add it to match Unicode hostname normalization.
+# shortcut: reject fullwidth mappings to forbidden host characters; add UTS #46 for full IDN parity.
 def _valid_deepseek_beta_host(authority: String) -> Bool:
     if authority.startswith("["):
         return True
@@ -178,6 +178,12 @@ def _valid_deepseek_beta_host(authority: String) -> Bool:
         return False
     if decoded_text.byte_length() != len(decoded_host):
         return False
+    for character in decoded_text.codepoints():
+        var codepoint = Int(character)
+        if 0xFF01 <= codepoint <= 0xFF5E:
+            var mapped = codepoint - 0xFEE0
+            if mapped in [35, 37, 47, 58, 60, 62, 63, 64, 91, 92, 93, 94, 124]:
+                return False
     return valid_url_authority(decoded_text)
 
 

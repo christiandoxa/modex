@@ -33,7 +33,8 @@ focused real-process checks for both releases, including empty and relative
 PATH entries. The native spawn check retains absolute-only defaults.
 
 Non-strict DeepSeek beta URL preflight now rejects selected malformed hosts
-before launch. Fullwidth IDNA normalization, TOML precedence and public beta
+before launch, including fullwidth characters that map to forbidden host
+characters. Complete UTS #46 normalization, TOML precedence and public beta
 transport remain gaps; see `docs/evidence/deepseek-strict-tools-04392.md`.
 
 Session listing skips tested invalid UTF-8 leaf names, traverses invalid-byte
@@ -802,9 +803,10 @@ This closes that environment-only case against 0.439.2 and does not establish
 full 0.165.1 behavior. Beta host validation now rejects forbidden raw and
 percent-decoded delimiters, malformed percent escapes, invalid decoded UTF-8,
 and percent-encoded invalid numeric hosts. Valid encoded Unicode IDNs remain
-accepted. Fullwidth characters that UTS #46 maps to forbidden delimiters
-remain a known 0.439.2 mismatch; complete Unicode hostname normalization is
-not implemented. A separate 0.165.1 launch with `not-a-url` also fails
+accepted. Modex now rejects all 13 tested fullwidth mappings to forbidden URL
+host characters, including percent-encoded fullwidth `@`, matching 0.439.2.
+Other UTS #46 hostname normalization remains unimplemented. A separate
+0.165.1 launch with `not-a-url` also fails
 before provider I/O with no launch or overlay side effects; the release adds
 `relative URL without a base` to stderr while Modex keeps the generic message.
 The selected active-release HTTP and URL controls do not qualify the broader

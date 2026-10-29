@@ -443,7 +443,7 @@
       "docs/evidence/deepseek-strict-tools-04392.md",
       "tests/test_provider_tools_04392_characterization.py"
     ],
-    "limitations": "Config-only settings, public TLS/DNS beta routes, and validation of unused invalid beta values when strict mode is off remain incomplete. As in the release, the simple-request pass can preserve nested tool schemas unchanged."
+    "limitations": "Config-only settings and public TLS/DNS beta routes remain incomplete. Full UTS #46 hostname normalization is absent; only its mappings to forbidden URL host characters are rejected. As in the release, the simple-request pass can preserve nested tool schemas unchanged."
   },
   "web_search_mode_and_messages_audit": {
     "new_application_dependencies": [],

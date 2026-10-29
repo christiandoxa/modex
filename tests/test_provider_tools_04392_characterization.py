@@ -654,12 +654,22 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                     modex["stderr"],
                 )
 
-    def test_fullwidth_idna_beta_hosts_remain_a_known_gap(self):
+    def test_fullwidth_beta_hosts_reject_mapped_forbidden_host_chars(self):
         request = {"model": "deepseek-chat", "input": "synthetic IDNA host control"}
         beta_urls = (
-            "https://a＠b/beta",
-            "https://a｜b/beta",
+            "https://a＃b/beta",
+            "https://a％b/beta",
+            "https://a／b/beta",
+            "https://a：b/beta",
             "https://a＜b/beta",
+            "https://a＞b/beta",
+            "https://a？b/beta",
+            "https://a＠b/beta",
+            "https://a［b/beta",
+            "https://a＼b/beta",
+            "https://a］b/beta",
+            "https://a＾b/beta",
+            "https://a｜b/beta",
             "https://a%EF%BC%A0b/beta",
         )
         for beta_url in beta_urls:
@@ -668,10 +678,11 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                 modex = _run(MODEX, request, beta_override=beta_url)
                 self.assertEqual((reference["exit_code"], reference["status"]), (1, None))
                 self.assertEqual(reference["upstream"], [])
-                self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
-                self.assertEqual(modex["upstream"][0]["path"], "/v1/chat/completions")
-                self.assertEqual(reference["state"]["leftovers"], [])
-                self.assertEqual(modex["state"]["leftovers"], [])
+                self.assertEqual((modex["exit_code"], modex["status"]), (1, None))
+                for result in (reference, modex):
+                    self.assertNotIn("launch", [record.get("kind") for record in result["records"]])
+                    self.assertEqual(result["upstream"], [])
+                    self.assertEqual(result["state"]["leftovers"], [])
 
 
 if __name__ == "__main__":

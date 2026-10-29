@@ -64,9 +64,11 @@ numeric hosts. Modex and the pinned release both fail before Codex launch or
 provider I/O, with no profile overlay left behind. Synthetic credentials in
 invalid values are not echoed. Valid percent escapes, numeric hosts, raw and
 encoded Unicode IDNs, punycode, and the strict loopback-route controls still
-pass. Full UTS #46 hostname normalization remains incomplete: fullwidth
-characters that map to forbidden ASCII delimiters are still accepted by
-Modex, while 0.439.2 rejects them. This remains an explicit parity gap.
+pass. Modex and 0.439.2 reject all 13 tested fullwidth ASCII mappings to
+forbidden URL host characters, including percent-encoded fullwidth `@`, before
+Codex/provider launch and without leaving profile overlays. This targeted
+check does not implement complete UTS #46 hostname normalization; broader IDNA
+equivalence remains an explicit parity gap.
 
 Validation on Linux x86-64: `make build` and
 `make unit-build UNIT_BUILD_PROGRAMS='local_rewrite_driver'` passed with Mojo

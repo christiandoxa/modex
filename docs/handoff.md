@@ -9,6 +9,15 @@ covered 50 native sources and 133 Python modules. Other request fields remain
 guarded. Evidence:
 `docs/evidence/baseline-0.165.1/anthropic-request-sampling.md`.
 
+DeepSeek requests that combine web search with JSON-object or JSON-schema
+output now follow both pinned releases: `auto` mode falls back to Chat
+Completions, preserving the JSON request and dropping the unsupported search
+tool; explicit `anthropic` mode returns 400 before provider I/O. The production
+build and two real-process methods passed against both checksum-pinned Linux
+oracles. The combined nine-method neighboring run passed; the import audit
+covered 71 Mojo files and the census covered 50 native sources and 134 Python
+modules. Evidence: `docs/evidence/baseline-0.165.1/anthropic-websearch-json-mode.md`.
+
 The Mojo 1.2.0 (`2016d0cd`) source audit found no production standard-library
 WSS/TLS or DNS path. `std.net` exposes only internal POSIX socket building
 blocks; `std.hash` provides AHash/FNV-1a, and `std.random` is explicitly not

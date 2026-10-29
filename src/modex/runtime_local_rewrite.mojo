@@ -24,6 +24,7 @@ from .provider_anthropic_messages import anthropic_search_filters_conflict
 from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
 from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
+from .provider_request_params import request_format
 from .runtime_binding import RuntimeBindings
 from .runtime_sse_binding_observer import RuntimeSSEBindingObserver
 
@@ -738,7 +739,9 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         if tools >= 0 and doc.nodes[tools].kind == JSON_ARRAY:
             for tool in doc.nodes[tools].children:
                 web = web or doc.string(doc.get(tool, "type")).startswith("web_search")
-        if web and anthropic_search_filters_conflict(source):
+        var has_json_format = False
+        if web and request_format(doc): has_json_format = True
+        if web and (anthropic_search_filters_conflict(source) or has_json_format):
             _ = translate_deepseek_request(source, history, strict_tools, web_search_mode)
             var input = doc.get(doc.root, "input")
             if input >= 0 and doc.nodes[input].kind == JSON_STRING and not doc.nodes[input].text:

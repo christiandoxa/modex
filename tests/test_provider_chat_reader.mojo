@@ -135,9 +135,13 @@ def main() raises:
     assert_true('"text":"Found it."' in plain_events[len(plain_events) - 1])
     var empty_events = collect_anthropic_completed(message_start + message_delta + message_stop)
     assert_true('"output":[]' in empty_events[len(empty_events) - 1])
-    assert_anthropic_failed(message_start + plain_start + plain_delta + message_stop)
+    var open_text_events = collect_anthropic_completed(message_start + plain_start + plain_delta + message_stop)
+    assert_true('"text":"Found it."' in open_text_events[len(open_text_events) - 1])
 
-    assert_anthropic_failed(search_result + text_start + text_delta + text_stop + message_delta + 'data: {"type":"message_stop"}\n\n')
+    var missing_start_events = collect_anthropic_completed(
+        search_result + text_start + text_delta + text_stop + message_delta + message_stop
+    )
+    assert_true(missing_start_events[len(missing_start_events) - 1].startswith("event: response.completed\r\n"))
     assert_anthropic_failed(message_start + search_result + text_start + text_delta + text_stop + message_delta + 'data: [DONE]\n\n')
     assert_anthropic_failed(before_stop)
     var unstreamed_start = 'data: {"type":"content_block_start","index":2,"content_block":{"type":"text","text":"unstreamed"}}\n\n'

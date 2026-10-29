@@ -49,6 +49,19 @@ dependency audit, production build, strict-runner test, and test census passed.
 The census found 50 native test sources and 129 Python modules. See
 `docs/evidence/session-resume-selection-01651-04392.md`.
 
+Anthropic stream stop handling now matches both pinned releases for tested
+text, tool, search, and result index reuse. Stops only clear ignored result
+indexes; they no longer close text, tool, or search state. Three-way synthetic
+process controls cover image collisions, duplicate search/result starts,
+post-stop deltas, malformed events, and missing starts. `make build`, the two
+native stream checks, and 66 tests across four stream suites passed on Linux
+x86-64. An initial broad run exposed four assertion failures and one stale
+test-helper reference; the corrected rerun passed. Remaining stream gaps and
+limits are recorded in `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
+After integrating the Gateway and session changes and narrowing fallback call-ID
+normalization to one fixture, the combined production build, two native stream
+checks, 67 provider process tests, dependency audit and test census passed.
+
 After integrating the Super argument, bounded large-header and image-start
 changes, the production build and four native checks passed. Sixteen focused
 image, header and Super process tests passed, including comparisons against

@@ -123,6 +123,28 @@ def main() raises:
     var truncated_error = truncated_event.get(truncated_response, "error")
     assert_equal(truncated_event.string(truncated_event.get(truncated_error, "code")), "invalid_tool_call_arguments")
     assert_equal(truncated_event.string(truncated_event.get(truncated_error, "message")), "DeepSeek streamed malformed JSON arguments for tool call `lookup` at index 0: invalid JSON")
+    var anthropic = DeepSeekChatReader(4, "resp_deepseek_initial", 1, native_messages=True)
+    var anthropic_events = collect(anthropic,
+        'data: {"type":"message_start","message":{"id":"msg_native"}}\n\n'
+        + 'data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n'
+        + 'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"before"}}\n\n'
+        + 'data: {"type":"content_block_start","index":0,"content_block":{"type":"image","source":{"data":"SYNTHETIC_IMAGE_BLOCK_SECRET"}}}\n\n'
+        + 'data: {"type":"content_block_delta","index":0,"delta":{"type":"image_delta","data":"SYNTHETIC_IMAGE_DELTA_SECRET"}}\n\n'
+        + 'data: {"type":"content_block_stop","index":0}\n\n'
+        + 'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":" after"}}\n\n'
+        + 'data: {"type":"content_block_stop","index":0}\n\n'
+        + 'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"}}\n\n'
+        + 'data: {"type":"message_stop"}\n\n'
+    )
+    var saw_before = False
+    var saw_after = False
+    for event in anthropic_events:
+        assert_true(event.find("SYNTHETIC_IMAGE_BLOCK_SECRET") < 0)
+        assert_true(event.find("SYNTHETIC_IMAGE_DELTA_SECRET") < 0)
+        if event.find('"delta":"before"') >= 0: saw_before = True
+        if event.find('"delta":" after"') >= 0: saw_after = True
+    assert_true(saw_before and saw_after)
+    assert_true(anthropic.state.completed)
     numeric.sequence = UInt64.MAX
     assert_equal(numeric.next_sequence(), UInt64.MAX)
     assert_equal(numeric.next_sequence(), UInt64.MAX)

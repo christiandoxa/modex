@@ -457,7 +457,7 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                 self.assertEqual(reference["state"]["leftovers"], [])
                 self.assertEqual(modex["state"]["leftovers"], [])
 
-    def test_anthropic_image_stop_collisions_match_pinned_release_with_known_gaps(self):
+    def test_anthropic_image_stop_collisions_match_pinned_release(self):
         request = {
             "model": "deepseek-chat",
             "input": "synthetic web query",
@@ -477,14 +477,6 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
             "anthropic-image-stop-string-index": ["before image", " after image"],
             "anthropic-image-stop-fractional-index": ["before image", " after image"],
         }
-        mismatch_scenarios = {
-            "anthropic-image-stop-text-collision",
-            "anthropic-image-stop-text-repeated",
-            "anthropic-image-stop-text-delta-before-stop",
-            "anthropic-image-stop-tool-collision",
-            "anthropic-image-stop-tool-delta-before-stop",
-            "anthropic-image-stop-search-delta-before-stop",
-        }
         for scenario, expected_deltas in cases.items():
             with self.subTest(scenario=scenario):
                 reference = _run(ORACLE_04392, request, scenario=scenario)
@@ -498,11 +490,7 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                 self.assertEqual(deltas, expected_deltas)
                 self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
                 self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
-                if scenario in mismatch_scenarios:
-                    self.assertNotEqual(observed, expected)
-                    self.assertEqual(observed[-1][0], "response.failed")
-                else:
-                    self.assertEqual(observed, expected)
+                self.assertEqual(observed, expected)
                 for payload in (reference["response_body"], modex["response_body"]):
                     self.assertNotIn(b"SYNTHETIC_IMAGE_BLOCK_DATA", payload)
                     self.assertNotIn(b"SYNTHETIC_IMAGE_DELTA_SECRET", payload)

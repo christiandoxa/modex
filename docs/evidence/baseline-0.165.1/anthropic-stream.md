@@ -135,22 +135,38 @@ missing-index image sequence methods also passed against both real oracles. The
 71-file production import audit passed. Other release targets remain
 unverified.
 
-## Reused image indices remain a stream gap
+## Reused content-block indices follow the frozen stop policy
 
-The real-process controls now reuse an image index while a text, function-tool,
-or server-search block is active. Both pinned releases keep the later text or
-argument/query deltas and complete; Modex instead treats the image stop as the
-active block's stop and fails on later content. Repeated image starts/stops and
-a text delta before the image stop reproduce the same text mismatch. A result-
-only collision control still matches because the release clears its ignored
-result index on any stop at that index. String and fractional image indices
-remain ignored, and image source/delta markers do not appear in Responses.
+The production reader now treats `content_block_stop` like both pinned
+releases: it only clears an index currently ignored because a
+`web_search_tool_result` block started there. Stops for text, tool, server
+search, image, and unknown blocks do not change their state. Search input
+deltas remain routed by active search index after a stop; tool argument and
+text deltas also continue after stops. A result stop still clears the ignored
+index, including when an image or later text reuses it.
 
-The 0.439.2 reader source classifies image starts as `Ignore`; `BlockStop` only
-removes ignored result indices. The stop event carries only an index, so a local
-image counter cannot reliably distinguish an image stop from a text, tool, or
-search stop when starts overlap or an image stop is absent. The follow-up keeps
-these real-process mismatches as characterization assertions and changes no
-production state. A fix needs a coordinated stop-state redesign aligned with
-the release behavior. The tested ordering controls cover these cases only;
-broader stop sequences remain unverified and no parity status is promoted.
+Real Super process comparisons against 0.165.1 and 0.439.2 cover text, tool,
+search, and result index reuse by image blocks; repeated image and result
+starts; duplicate search starts at one index; search results before a search
+stop; deltas after non-result stops; deltas without matching starts; unknown
+block starts; missing delta types; and post-failure continuation. The three-way
+shared suite asserts identical request bodies and normalized output events
+from both releases and Modex. Synthetic image source and delta markers remain
+absent from every downstream response. A native reader regression covers the
+same text/image index collision.
+
+Validation on Linux x86-64: `make build`, native `test_provider_chat_stream`
+and `test_provider_chat_reader`, and 66 tests across
+`test_provider_stream_01651_characterization.py`,
+`test_provider_tools_04392_characterization.py`,
+`test_anthropic_stream_optional_metadata_shared.py`, and
+`test_anthropic_text_stream_04392.py` passed. These focused checks do not
+qualify other release targets or general Anthropic parity. The separately
+recorded invalid-UTF-8-after-failure body-close mismatch remains open; broader
+malformed shapes and aggregate stream-state limits remain unverified.
+
+The first four-module run reported four failures and one test-helper error.
+Three failures came from terminating a stream after `response.failed` instead
+of continuing through `message_stop`; the fourth exposed content blocks being
+translated before `message_start`. The helper error was a stale normalization
+reference. Those causes were corrected, and the final 66-test rerun passed.

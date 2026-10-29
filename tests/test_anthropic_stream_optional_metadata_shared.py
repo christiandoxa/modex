@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import unittest
 
 from test_cli import MODEX, ORACLE as ORACLE_04392, ORACLE_SHA256 as ORACLE_04392_SHA256
@@ -19,6 +20,9 @@ ORACLE_01651 = Path(os.environ.get(
     Path.home() / ".cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
 ))
 ORACLE_01651_SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
+_GENERATED_CALL_ID = re.compile(
+    r"call_deepseek_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+)
 
 
 def _stream(events):
@@ -44,6 +48,31 @@ def _events():
          "usage": {"output_tokens": 5}},
         {"type": "message_stop"},
     ]
+
+
+def _normalize_orphan_fallback_call_id(events):
+    # This fixture has no tool start or provider ID; only its fallback UUID varies.
+    normalized = copy.deepcopy(events)
+    generated_id = None
+    normalized_deltas = 0
+    for name, payload in normalized:
+        if name == "response.output_item.added":
+            item = payload.get("item", {})
+            if item.get("type") == "function_call" and item.get("name") == "tool_call":
+                call_id = item.get("call_id")
+                if not isinstance(call_id, str) or not _GENERATED_CALL_ID.fullmatch(call_id):
+                    raise AssertionError("orphan tool fixture did not emit a generated UUIDv7 call_id")
+                if generated_id is not None:
+                    raise AssertionError("orphan tool fixture emitted multiple fallback calls")
+                generated_id = call_id
+                item["call_id"] = "<generated-call-id>"
+        elif name == "response.function_call_arguments.delta":
+            if payload.get("call_id") == generated_id and generated_id is not None:
+                payload["call_id"] = "<generated-call-id>"
+                normalized_deltas += 1
+    if generated_id is None or normalized_deltas != 1:
+        raise AssertionError("orphan tool fixture did not reuse its generated call_id in one delta")
+    return normalized
 
 
 def _observe_turns_with_read_errors(binary, turns, replies):
@@ -154,6 +183,29 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                 raise AssertionError(f"pinned Prodex oracle checksum mismatch: {oracle}: {digest}")
         if not MODEX.is_file():
             raise AssertionError(f"build the actual Modex CLI first: {MODEX}")
+
+    def test_orphan_fallback_call_id_normalization_is_field_scoped(self):
+        generated_id = "call_deepseek_01a18668-fba1-718c-87a7-918623547f3a"
+        events = [
+            ("response.output_item.added", {"item": {
+                "type": "function_call", "name": "tool_call", "call_id": generated_id,
+                "arguments": "call_deepseek_argument_text",
+            }}),
+            ("response.function_call_arguments.delta", {
+                "call_id": generated_id, "delta": "call_deepseek_user_text",
+            }),
+            ("response.output_text.delta", {"delta": "call_deepseek_visible_text"}),
+            ("response.output_item.added", {"item": {
+                "type": "function_call", "name": "lookup", "call_id": generated_id,
+            }}),
+        ]
+        normalized = _normalize_orphan_fallback_call_id(events)
+        self.assertEqual(normalized[0][1]["item"]["call_id"], "<generated-call-id>")
+        self.assertEqual(normalized[1][1]["call_id"], "<generated-call-id>")
+        self.assertEqual(normalized[0][1]["item"]["arguments"], "call_deepseek_argument_text")
+        self.assertEqual(normalized[1][1]["delta"], "call_deepseek_user_text")
+        self.assertEqual(normalized[2][1]["delta"], "call_deepseek_visible_text")
+        self.assertEqual(normalized[3][1]["item"]["call_id"], generated_id)
 
     def test_optional_metadata_and_nonstrings_match_both_release_oracles(self):
         cases = _cases()
@@ -875,8 +927,21 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                 "input": {"query": search_id},
             }}
 
+        def search_empty(index, search_id):
+            return {"type": "content_block_start", "index": index, "content_block": {
+                "type": "server_tool_use", "id": search_id, "name": "web_search", "input": {},
+            }}
+
         def stop(index):
             return {"type": "content_block_stop", "index": index}
+
+        def block(index, kind, **fields):
+            return {"type": "content_block_start", "index": index,
+                    "content_block": {"type": kind, **fields}}
+
+        def delta(index, kind, **fields):
+            return {"type": "content_block_delta", "index": index,
+                    "delta": {"type": kind, **fields}}
 
         message_delta = {
             "type": "message_delta", "delta": {"stop_reason": "end_turn"},
@@ -898,6 +963,85 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                 {"type": "content_block_delta", "index": 2,
                  "delta": {"type": "thinking_delta", "thinking": "ignored"}},
                 stop(2), stop(4), message_delta, {"type": "message_stop"},
+            ]),
+            ("text_image_index_reuse", [
+                message_start, block(0, "text", text=""), delta(0, "text_delta", text="before"),
+                block(0, "image", source={"data": "SYNTHETIC_IMAGE_BLOCK_SECRET"}),
+                delta(0, "image_delta", data="SYNTHETIC_IMAGE_DELTA_SECRET"), stop(0),
+                delta(0, "text_delta", text=" after"), stop(0), message_delta,
+                {"type": "message_stop"},
+            ]),
+            ("tool_image_index_reuse", [
+                message_start,
+                block(0, "tool_use", id="toolu_reused", name="lookup", input={}),
+                block(0, "image", source={"data": "SYNTHETIC_IMAGE_BLOCK_SECRET"}),
+                delta(0, "image_delta", data="SYNTHETIC_IMAGE_DELTA_SECRET"), stop(0),
+                delta(0, "input_json_delta", partial_json='{"query":"release"}'), stop(0),
+                {"type": "message_delta", "delta": {"stop_reason": "tool_use"}},
+                {"type": "message_stop"},
+            ]),
+            ("search_image_index_reuse", [
+                message_start, search_empty(0, "s-image"),
+                block(0, "image", source={"data": "SYNTHETIC_IMAGE_BLOCK_SECRET"}),
+                delta(0, "image_delta", data="SYNTHETIC_IMAGE_DELTA_SECRET"), stop(0),
+                delta(0, "input_json_delta", partial_json='{"query":"release"}'), stop(0),
+                {"type": "content_block_start", "index": 1, "content_block": {
+                    "type": "web_search_tool_result", "tool_use_id": "s-image", "content": [],
+                }}, stop(1), block(2, "text", text=""), delta(2, "text_delta", text="Found it."),
+                stop(2), message_delta, {"type": "message_stop"},
+            ]),
+            ("result_image_index_reuse", [
+                message_start, search(0, "s-result"), stop(0),
+                {"type": "content_block_start", "index": 1, "content_block": {
+                    "type": "web_search_tool_result", "tool_use_id": "s-result", "content": [],
+                }},
+                block(1, "image", source={"data": "SYNTHETIC_IMAGE_BLOCK_SECRET"}),
+                delta(1, "image_delta", data="SYNTHETIC_IMAGE_DELTA_SECRET"), stop(1),
+                delta(1, "text_delta", text="visible after result stop"), stop(1),
+                message_delta, {"type": "message_stop"},
+            ]),
+            ("duplicate_search_start_index", [
+                message_start, search(0, "s-old"), search(0, "s-new"),
+                {"type": "content_block_start", "index": 1, "content_block": {
+                    "type": "web_search_tool_result", "tool_use_id": "s-new", "content": [],
+                }}, stop(1), message_delta, {"type": "message_stop"},
+            ]),
+            ("duplicate_result_start_index", [
+                message_start, search(0, "s-repeat"), stop(0),
+                {"type": "content_block_start", "index": 1, "content_block": {
+                    "type": "web_search_tool_result", "tool_use_id": "s-repeat", "content": [],
+                }},
+                {"type": "content_block_start", "index": 1, "content_block": {
+                    "type": "web_search_tool_result", "tool_use_id": "s-repeat", "content": [],
+                }}, stop(1), delta(1, "text_delta", text="visible after duplicate result stop"),
+                message_delta, {"type": "message_stop"},
+            ]),
+            ("missing_message_start", [
+                search_empty(0, "s-no-start"),
+                {"type": "content_block_start", "index": 1, "content_block": {
+                    "type": "web_search_tool_result", "tool_use_id": "s-no-start", "content": [],
+                }}, stop(1), message_delta, {"type": "message_stop"},
+            ]),
+            ("text_delta_without_start", [
+                message_start, delta(7, "text_delta", text="delta without text start"),
+                message_delta, {"type": "message_stop"},
+            ]),
+            ("text_delta_missing_index", [
+                message_start, {"type": "content_block_delta",
+                                "delta": {"type": "text_delta", "text": "default index"}},
+                message_delta, {"type": "message_stop"},
+            ]),
+            ("input_delta_without_tool_start", [
+                message_start, delta(7, "input_json_delta", partial_json="{}"),
+                {"type": "message_delta", "delta": {"stop_reason": "tool_use"}},
+                {"type": "message_stop"},
+            ]),
+            ("unknown_block_start", [
+                message_start,
+                {"type": "content_block_start", "index": "bad", "future_event_field": "ignored",
+                 "content_block": {"type": "future_block"}},
+                delta(7, "text_delta", text="after unknown block"), message_delta,
+                {"type": "message_stop"},
             ]),
         ]
         turns = [
@@ -921,15 +1065,22 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                 self.assertEqual(headers["x-api-key"], "synthetic-provider-key", label)
                 self.assertNotIn("authorization", headers, label)
             self.assertTrue(all(response["status"] == 200 for response in responses), label)
-            captures[label] = [
-                (post["body"], _normalized_events(bytes.fromhex(response["body"])))
-                for post, response in zip(posts, responses)
-            ]
+            captures[label] = []
+            for (name, _), post, response in zip(cases, posts, responses):
+                events = _normalized_events(bytes.fromhex(response["body"]))
+                if name == "input_delta_without_tool_start":
+                    events = _normalize_orphan_fallback_call_id(events)
+                captures[label].append((post["body"], events))
         self.assertEqual(captures["0.165.1"], captures["0.439.2"])
         self.assertEqual(captures["Modex"], captures["0.439.2"])
         for (name, _), (_, events) in zip(cases, captures["0.439.2"]):
             with self.subTest(case=name):
-                self.assertEqual(events[-1][0], "response.completed")
+                expected_terminal = "response.failed" if name in {
+                    "input_delta_without_tool_start",
+                } else "response.completed"
+                self.assertEqual(events[-1][0], expected_terminal)
+                self.assertNotIn("SYNTHETIC_IMAGE_BLOCK_SECRET", json.dumps(events))
+                self.assertNotIn("SYNTHETIC_IMAGE_DELTA_SECRET", json.dumps(events))
                 if name == "pending_search_sequence":
                     self.assertEqual(
                         [(event, payload["sequence_number"]) for event, payload in events],

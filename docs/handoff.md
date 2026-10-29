@@ -612,8 +612,17 @@ oracle missing and keeps historical tests after acquisition.
 
 The production Anthropic stream parser now maps a tested function `tool_use`
 with split JSON fragments to the same 0.165.1 Responses events. Several invalid
-stop sequences remain explicitly different; image blocks remain unsupported.
-See `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
+stop sequences remain explicitly different. Streamed Anthropic `image` blocks
+are now ignored without returning their source data, matching full normalized
+0.165.1 and historical 0.439.2 events. Incoming Responses `input_image` and
+buffered image responses remain unsupported and match the tested release
+behavior: the former is rejected before provider dispatch, and the latter
+returns 502 after the synthetic upstream response. Indexed and missing-index
+image start/delta/stop controls also match both releases while preserving text
+before and after the block. The 48-test focused provider run passed, followed by
+the two additional image-sequence tests and the 71-file import audit. See
+`docs/evidence/baseline-0.165.1/anthropic-stream.md` and
+`docs/evidence/baseline-0.165.1/anthropic-buffered.md`.
 
 The production Anthropic stream parser now accepts missing or non-string stop
 reasons and ignores stop sequences, matching selected 0.165.1 process events.

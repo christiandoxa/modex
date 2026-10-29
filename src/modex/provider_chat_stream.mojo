@@ -226,6 +226,8 @@ struct DeepSeekChatState:
             var block_type = doc.nodes[block_type_node].text
             if block_type == "thinking":
                 return List[String]()
+            if block_type == "image":
+                return List[String]()
             _only_fields(doc, doc.root, ["type", "index", "content_block"], "content_block_start event")
             var index = json_unsigned(doc, doc.get(doc.root, "index"))
             if not index: raise Error("Anthropic content block index is invalid")

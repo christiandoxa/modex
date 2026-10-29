@@ -409,7 +409,7 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
                 self.assertEqual(len(modex["upstream"]), 1)
                 self.assertEqual(modex["state"]["leftovers"], [])
 
-    def test_unsupported_anthropic_sse_content_fails_instead_of_completing(self):
+    def test_anthropic_image_sse_content_is_dropped_like_pinned_release(self):
         request = {
             "model": "deepseek-chat",
             "input": "synthetic web query",
@@ -420,12 +420,89 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
         modex = _run(MODEX, request, scenario="anthropic-stream-unknown-content")
         self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
         self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
-        reference_names = [name for name, _ in _normalized_events(reference["response_body"])]
-        modex_names = [name for name, _ in _normalized_events(modex["response_body"])]
-        self.assertIn("response.completed", reference_names)
-        self.assertNotIn("synthetic", reference["response_body"].decode())
-        self.assertIn("response.failed", modex_names)
-        self.assertNotIn("response.completed", modex_names)
+        self.assertEqual(len(reference["upstream"]), 1)
+        self.assertEqual(len(modex["upstream"]), 1)
+        self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+        self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+        expected = _normalized_events(reference["response_body"])
+        observed = _normalized_events(modex["response_body"])
+        self.assertEqual(observed, expected)
+        self.assertIn("response.completed", [name for name, _ in expected])
+        self.assertNotIn(b"SYNTHETIC_IMAGE_BLOCK_DATA", reference["response_body"])
+        self.assertNotIn(b"SYNTHETIC_IMAGE_BLOCK_DATA", modex["response_body"])
+        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_image_index_and_text_order_match_pinned_release(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": True,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        for scenario in ("anthropic-stream-image-interleaved", "anthropic-stream-image-missing-index"):
+            with self.subTest(scenario=scenario):
+                reference = _run(ORACLE_04392, request, scenario=scenario)
+                modex = _run(MODEX, request, scenario=scenario)
+                expected = _normalized_events(reference["response_body"])
+                observed = _normalized_events(modex["response_body"])
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+                self.assertEqual(observed, expected)
+                deltas = [body["delta"] for name, body in observed if name == "response.output_text.delta"]
+                self.assertEqual(deltas, ["before image", " after image"])
+                for payload in (reference["response_body"], modex["response_body"]):
+                    self.assertNotIn(b"U1lOVEhFVElDX0lNQUdFX0JZVEVT", payload)
+                    self.assertNotIn(b"SYNTHETIC_IMAGE_DELTA_SECRET", payload)
+                self.assertEqual(reference["state"]["leftovers"], [])
+                self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_buffered_image_response_is_rejected_like_pinned_release(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_04392, request, scenario="anthropic-buffered-image")
+        modex = _run(MODEX, request, scenario="anthropic-buffered-image")
+        self.assertEqual((reference["exit_code"], reference["status"]), (1, 502))
+        self.assertEqual((modex["exit_code"], modex["status"]), (1, 502))
+        self.assertEqual(len(reference["upstream"]), 1)
+        self.assertEqual(len(modex["upstream"]), 1)
+        self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+        self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+        self.assertNotIn(b"SYNTHETIC_IMAGE_BLOCK_DATA", reference["response_body"])
+        self.assertNotIn(b"SYNTHETIC_IMAGE_BLOCK_DATA", modex["response_body"])
+        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_input_image_is_rejected_before_provider_post(self):
+        marker = "U1lOVEhFVElDX0lNQUdFX0JZVEVT"
+        request = {
+            "model": "deepseek-chat",
+            "input": [{
+                "type": "message",
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": "synthetic prompt"},
+                    {"type": "input_image", "image_url": "data:image/png;base64," + marker},
+                ],
+            }],
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_04392, request)
+        modex = _run(MODEX, request)
+        self.assertEqual((reference["exit_code"], reference["status"]), (1, 502))
+        self.assertEqual((modex["exit_code"], modex["status"]), (1, 502))
+        self.assertEqual(reference["upstream"], [])
+        self.assertEqual(modex["upstream"], [])
+        self.assertNotIn(marker.encode(), reference["response_body"])
+        self.assertNotIn(marker.encode(), modex["response_body"])
+        self.assertNotIn(marker.encode(), reference["stderr"])
+        self.assertNotIn(marker.encode(), modex["stderr"])
+        self.assertEqual(reference["state"]["leftovers"], [])
         self.assertEqual(modex["state"]["leftovers"], [])
 
     def test_strict_tools_environment_routes_and_normalizes_like_pinned_release(self):

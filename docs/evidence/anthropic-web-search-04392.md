@@ -37,12 +37,15 @@ An exactly empty string input returns the release's HTTP 400 JSON error before
 any upstream POST. Whitespace-only inputs, including NBSP and U+200B, remain
 accepted by the tested release and Modex controls.
 
-Buffered and streamed response handling also fails closed for unknown content,
-citations and unsupported fields. Oracle controls show the release omits
-citations from text output, maps a `thinking` block into reasoning output, and
-completes after an image block without preserving its data. Modex returns 502
-for the buffered cases and a terminal `response.failed` event for the stream
-case. Native SSE success requires an ordered message start, one search block,
+Buffered response handling still fails closed for the tested citation and
+unknown-content shapes. Oracle controls show the release omits citations from
+text output, maps a `thinking` block into reasoning output, and ignores a
+streamed image block without preserving its data. Modex now matches the
+complete normalized stream for that image case. A buffered image block in the
+tested search response shape still returns 502 after one synthetic upstream
+response in both the release and Modex; Responses `input_image` requests are
+rejected before provider dispatch by both. Native SSE success requires an
+ordered message start, one search block,
 one result block, one empty-start text block, their stop events and a message
 stop for the tested search-result shape. A separate text-only or empty message
 may now complete without a web-search block. Eight such event sequences match
@@ -50,6 +53,13 @@ the release after normalizing generated IDs and timestamps, with or without
 `message_delta`. A bare `[DONE]`, missing start/stop, nonempty initial text and
 unsupported block order fail closed. The release drops a nonempty initial text
 block; Modex rejects that tested shape instead.
+
+Two additional real-process image controls match the full normalized release
+event sequence: a nonempty indexed image source with a same-index `image_delta`
+and stop between text deltas, and an image start/delta/stop sequence with the
+index omitted. Both preserve the surrounding text order and discard the image
+source and delta marker. Other image delta types and malformed block sequences
+remain unverified.
 
 Full normalized release comparisons now match `stop_sequence`, null and
 unknown string reasons, `tool_use`, `max_tokens`, a non-null stop sequence with
@@ -75,6 +85,12 @@ The later text-only stream change passed
 `python3 scripts/ci/run-unittest.py test_anthropic_text_stream_04392.py`,
 three existing SSE characterization methods and the rebuilt native reader and
 stream programs.
+
+The streamed image update passed `make build` and a combined 48-test run of the
+0.165.1 and 0.439.2 provider characterization modules. The added indexed and
+missing-index image-sequence methods then passed against both release
+processes, including nonempty source data, a matching `image_delta` and stop,
+and text before and after. The 71-file production import audit passed.
 
 Fixtures use synthetic keys and local loopback providers. No paid provider traffic,
 real credentials or account login were used. This does not qualify general

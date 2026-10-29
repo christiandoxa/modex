@@ -669,7 +669,7 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
                 self.assertEqual(reference["state"]["leftovers"], [])
                 self.assertEqual(modex["state"]["leftovers"], [])
 
-    def test_unsupported_anthropic_image_block_difference_stays_visible(self):
+    def test_anthropic_image_content_block_is_dropped_like_release(self):
         request = {
             "model": "deepseek-chat",
             "input": "synthetic web query",
@@ -678,16 +678,90 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
         }
         reference = _run(ORACLE_01651, request, scenario="anthropic-stream-unknown-content")
         modex = _run(MODEX, request, scenario="anthropic-stream-unknown-content")
-        reference_events = [name for name, _ in _normalized_events(reference["response_body"])]
-        modex_events = [name for name, _ in _normalized_events(modex["response_body"])]
 
         self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
         self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
-        self.assertIn("response.completed", reference_events)
-        self.assertIn("response.failed", modex_events)
-        self.assertNotIn("response.completed", modex_events)
+        self.assertEqual(len(reference["upstream"]), 1)
+        self.assertEqual(len(modex["upstream"]), 1)
+        self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+        self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+        expected = _normalized_events(reference["response_body"])
+        observed = _normalized_events(modex["response_body"])
+        self.assertEqual(observed, expected)
+        self.assertIn("response.completed", [name for name, _ in expected])
+        self.assertNotIn(b"SYNTHETIC_IMAGE_BLOCK_DATA", reference["response_body"])
+        self.assertNotIn(b"SYNTHETIC_IMAGE_BLOCK_DATA", modex["response_body"])
         self.assertEqual(reference["state"]["leftovers"], [])
         self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_image_block_index_and_text_order_match_release(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": True,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        for scenario in ("anthropic-stream-image-interleaved", "anthropic-stream-image-missing-index"):
+            with self.subTest(scenario=scenario):
+                reference = _run(ORACLE_01651, request, scenario=scenario)
+                modex = _run(MODEX, request, scenario=scenario)
+                expected = _normalized_events(reference["response_body"])
+                observed = _normalized_events(modex["response_body"])
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
+                self.assertEqual(observed, expected)
+                deltas = [body["delta"] for name, body in observed if name == "response.output_text.delta"]
+                self.assertEqual(deltas, ["before image", " after image"])
+                for payload in (reference["response_body"], modex["response_body"]):
+                    self.assertNotIn(b"U1lOVEhFVElDX0lNQUdFX0JZVEVT", payload)
+                    self.assertNotIn(b"SYNTHETIC_IMAGE_DELTA_SECRET", payload)
+                self.assertEqual(reference["state"]["leftovers"], [])
+                self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_buffered_image_response_stays_rejected_like_release(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        reference = _run(ORACLE_01651, request, scenario="anthropic-buffered-image")
+        modex = _run(MODEX, request, scenario="anthropic-buffered-image")
+
+        self.assertEqual((reference["exit_code"], reference["status"]), (1, 502))
+        self.assertEqual((modex["exit_code"], modex["status"]), (1, 502))
+        self.assertEqual(len(reference["upstream"]), 1)
+        self.assertEqual(len(modex["upstream"]), 1)
+        self.assertEqual(modex["upstream"][0]["path"], reference["upstream"][0]["path"])
+        self.assertEqual(modex["upstream"][0]["body"], reference["upstream"][0]["body"])
+        self.assertNotIn(b"SYNTHETIC_IMAGE_BLOCK_DATA", reference["response_body"])
+        self.assertNotIn(b"SYNTHETIC_IMAGE_BLOCK_DATA", modex["response_body"])
+        self.assertEqual(reference["state"]["leftovers"], [])
+        self.assertEqual(modex["state"]["leftovers"], [])
+
+    def test_anthropic_input_image_is_rejected_before_provider_post(self):
+        marker = "U1lOVEhFVElDX0lNQUdFX0JZVEVT"
+        request = {
+            "model": "deepseek-chat",
+            "input": [{
+                "type": "message",
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": "synthetic prompt"},
+                    {"type": "input_image", "image_url": "data:image/png;base64," + marker},
+                ],
+            }],
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        for binary in (ORACLE_01651, MODEX):
+            with self.subTest(binary=binary):
+                result = _run(binary, request)
+                self.assertEqual((result["exit_code"], result["status"]), (1, 502))
+                self.assertEqual(result["upstream"], [])
+                self.assertNotIn(marker.encode(), result["response_body"])
+                self.assertNotIn(marker.encode(), result["stderr"])
+                self.assertEqual(result["state"]["leftovers"], [])
 
     def test_anthropic_tool_use_index_and_stop_boundaries(self):
         request = {

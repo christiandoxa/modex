@@ -14,3 +14,11 @@ text/tool history and representative array outputs. Historical 0.439.2
 Anthropic checks are retained separately. These
 cases do not qualify mixed web-search/function blocks, arbitrary malformed
 input, real providers, concurrency or any non-Linux release target.
+
+A synthetic buffered response with an Anthropic `image` block in the tested
+web-search shape returns 502 in both Prodex 0.165.1 and Modex after one local
+upstream response; neither client response exposes the image data. Responses
+`input_image` requests are also rejected before the provider POST by both
+processes. The streaming image block has a different release behavior and is
+covered in `anthropic-stream.md`; this buffered rejection does not imply that
+image request or response support is implemented.

@@ -21,14 +21,28 @@ The release also ignores unknown Anthropic event types. A synthetic future event
 previously failed Modex; both production processes now complete the same tested
 stream. Known malformed events remain subject to validation.
 
+The release also ignores an Anthropic `image` content block and does not expose
+its source data in Responses output. Modex now matches the complete normalized
+0.165.1 stream for the synthetic image case; the historical 0.439.2 comparison
+matches too. A request containing Responses `input_image` remains rejected
+before provider dispatch by both processes, matching the pinned text-only
+request adapter. Image blocks in buffered responses remain separately
+unsupported and are covered by the buffered evidence.
+
+Additional real-process cases put a nonempty image source, same-index
+`image_delta`, and matching stop between text deltas. Both indexed and
+missing-index image starts match 0.165.1 and 0.439.2: the text deltas retain
+their order, and neither the source nor delta marker reaches Responses output.
+These cases qualify the tested image event shapes only; other image delta
+types and malformed block sequences remain unverified.
+
 The production parser also maps a tested Anthropic `tool_use` block and split
 `input_json_delta` fragments into Responses function-call events. A synthetic
 loopback comparison matches the complete 0.165.1 event sequence, upstream
 request and cleanup. Additional controls cover duplicate index, missing stop,
 orphan and mismatched indices, duplicate/reopened stops, and deltas after stop.
 Some malformed stop sequences complete in the release but remain rejected in
-Modex; image blocks also remain a documented mismatch. This is not general
-function-tool or event-order parity.
+Modex. This is not general function-tool or event-order parity.
 
 Selected mixed text/function streams now match the release with text before or
 after multiple function calls, argument deltas and stops while text is open,
@@ -114,3 +128,9 @@ and Modex, including both repeated-search shapes. Separate three-way regression
 checks run after 0.439.2 acquisition. The CI routing test exercises active
 setup with the historical path absent and checks that historical tests wait
 for acquisition.
+
+This image update was validated on Linux x86-64 with `make build` and the two
+focused provider characterization modules (48 tests). The two added indexed and
+missing-index image sequence methods also passed against both real oracles. The
+71-file production import audit passed. Other release targets remain
+unverified.

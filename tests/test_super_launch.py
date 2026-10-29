@@ -373,6 +373,19 @@ class SuperLaunchTests(unittest.TestCase):
                             "stop_reason": "end_turn", "usage": {"input_tokens": 3, "output_tokens": 5},
                         }, separators=(",", ":")).encode()
                         content_type = "application/json"
+                    elif scenario == "anthropic-buffered-image":
+                        payload = json.dumps({
+                            "id": "msg_image", "type": "message", "role": "assistant",
+                            "model": "deepseek-chat",
+                            "content": [
+                                {"type": "server_tool_use", "id": "search_1", "name": "web_search", "input": {"query": "current release"}},
+                                {"type": "web_search_tool_result", "tool_use_id": "search_1", "content": [{"type": "web_search_result", "url": "https://example.test/release", "title": "Release"}]},
+                                {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "SYNTHETIC_IMAGE_BLOCK_DATA"}},
+                                {"type": "text", "text": "Found it."},
+                            ],
+                            "stop_reason": "end_turn", "usage": {"input_tokens": 3, "output_tokens": 5},
+                        }, separators=(",", ":")).encode()
+                        content_type = "application/json"
                     elif scenario == "anthropic-stream":
                         payload = b"".join((
                             b'data: {"type":"message_start","message":{"id":"msg_search","role":"assistant","model":"deepseek-chat","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',
@@ -510,7 +523,26 @@ class SuperLaunchTests(unittest.TestCase):
                             b'data: {"type":"content_block_stop","index":0}\n\n',
                             b'data: {"type":"content_block_start","index":1,"content_block":{"type":"web_search_tool_result","tool_use_id":"search_1","content":[{"type":"web_search_result","url":"https://example.test/release","title":"Release"}]}}\n\n',
                             b'data: {"type":"content_block_stop","index":1}\n\n',
-                            b'data: {"type":"content_block_start","index":2,"content_block":{"type":"image","source":{"type":"base64","data":"synthetic"}}}\n\n',
+                            b'data: {"type":"content_block_start","index":2,"content_block":{"type":"image","source":{"type":"base64","media_type":"image/png","data":"SYNTHETIC_IMAGE_BLOCK_DATA"}}}\n\n',
+                            b'data: {"type":"message_stop"}\n\n',
+                        ))
+                        content_type = "text/event-stream"
+                    elif scenario in ("anthropic-stream-image-interleaved", "anthropic-stream-image-missing-index"):
+                        image_start = b'data: {"type":"content_block_start","index":1,"content_block":{"type":"image","source":{"type":"base64","media_type":"image/png","data":"U1lOVEhFVElDX0lNQUdFX0JZVEVT"}}}\n\n'
+                        image_delta = b'data: {"type":"content_block_delta","index":1,"delta":{"type":"image_delta","data":"SYNTHETIC_IMAGE_DELTA_SECRET"}}\n\n'
+                        image_stop = b'data: {"type":"content_block_stop","index":1}\n\n'
+                        if scenario == "anthropic-stream-image-missing-index":
+                            image_start = b'data: {"type":"content_block_start","content_block":{"type":"image","source":{"type":"base64","media_type":"image/png","data":"U1lOVEhFVElDX0lNQUdFX0JZVEVT"}}}\n\n'
+                            image_delta = b'data: {"type":"content_block_delta","delta":{"type":"image_delta","data":"SYNTHETIC_IMAGE_DELTA_SECRET"}}\n\n'
+                            image_stop = b'data: {"type":"content_block_stop"}\n\n'
+                        payload = b"".join((
+                            b'data: {"type":"message_start","message":{"id":"msg_image","role":"assistant","model":"deepseek-chat","usage":{"input_tokens":3,"output_tokens":0}}}\n\n',
+                            b'data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n',
+                            b'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"before image"}}\n\n',
+                            image_start, image_delta, image_stop,
+                            b'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":" after image"}}\n\n',
+                            b'data: {"type":"content_block_stop","index":0}\n\n',
+                            b'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}\n\n',
                             b'data: {"type":"message_stop"}\n\n',
                         ))
                         content_type = "text/event-stream"

@@ -96,6 +96,14 @@ and security behavior remain unverified. See
 `docs/evidence/baseline-0.165.1/local-relay-http.md` and
 `docs/evidence/baseline-0.165.1/local-relay-status-reasons.md`.
 
+The local relay now allows up to 12 configured workers, subject to Mojo's
+scheduler capacity; the releases accept overrides up to 64. A single exploratory
+64-request probe observed both releases running 64 requests concurrently and
+Modex running 12. That capture used a temporary harness and is not a reproducible
+automated parity gate. The checked-in synchronized process test covers selected
+counts through 12 on Linux x86-64. See
+`docs/evidence/worker-concurrency-04392.json`.
+
 Both pinned TinyHTTP releases submit every accepted socket to a task pool that
 creates threads as needed and has no fixed connection cap. Three-way production
 comparisons show that this preserves preconnected idle sockets under request

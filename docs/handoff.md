@@ -3630,7 +3630,8 @@ tests, the production build, native provider checks, import audit and census
 passed. Broader provider behavior remains unqualified. Evidence:
 `docs/evidence/baseline-0.165.1/anthropic-text-metadata.md`.
 
-The local relay uses a bounded worker pool and cancels tested in-flight
+At the earlier eight-worker checkpoint, the local relay used a bounded worker
+pool and canceled tested in-flight
 upstream requests on parent EOF. The accept loop now captures request heads
 incrementally before handler admission; incomplete headers do not occupy
 provider workers. Each pass reads/scans at most 512 bytes per parked socket,

@@ -32,14 +32,16 @@ def fixture(root):
     return work
 
 
-def sandbox_command(binary, root, arguments, *, timezone="UTC", argv0=None, environment=None):
-    linked = subprocess.run(["ldd", str(binary)], capture_output=True, text=True,
-                            timeout=10, check=True)
+def sandbox_command(binary, root, arguments, *, timezone="UTC", argv0=None, environment=None,
+                    extra_binaries=()):
     libraries = set()
-    for line in linked.stdout.splitlines():
-        for word in line.split():
-            if word.startswith("/"):
-                libraries.add(word)
+    for executable in (binary, *extra_binaries):
+        linked = subprocess.run(["ldd", str(executable)], capture_output=True, text=True,
+                                timeout=10, check=True)
+        for line in linked.stdout.splitlines():
+            for word in line.split():
+                if word.startswith("/"):
+                    libraries.add(word)
     command = ["bwrap", "--unshare-all", "--die-with-parent", "--new-session",
                "--clearenv", "--tmpfs", "/", "--proc", "/proc", "--dev", "/dev",
                "--tmpfs", "/tmp", "--bind", str(root), str(root),

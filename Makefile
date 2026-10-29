@@ -112,6 +112,7 @@ UNIT_BUILD_PROGRAMS ?= \
 	process_capture_child \
 	test_process_capture \
 	codex_argv_child \
+	node_version_fixture \
 	process_child \
 	test_process_spawn
 UNIT_RUNS ?= \

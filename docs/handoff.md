@@ -46,6 +46,29 @@ audit, and diff check pass on Linux x86-64. See
 only these tested cases; complete provider parity and all six release targets
 remain open.
 
+## DeepSeek Super dry-run (2026-10-30)
+
+The guarded DeepSeek `super --dry-run ... exec` path now shares its Codex
+argument builder with live launch, honors `PRODEX_CODEX_BIN` and PATH selection,
+and performs no Codex launch, relay startup, or provider traffic. Synthetic
+three-process controls cover read-only config/history, model selection,
+secret and path redaction, absent Codex, and Node without npx. A native Mojo
+Node fixture makes `node --version` runnable in bwrap.
+
+The post-security-fix dry-run and live-launch suites passed 52 tests against
+the pinned 0.165.1 and 0.439.2 Linux binaries. Production import audit passed
+for 71 Mojo files; test census passed for 50 native sources and 144 Python
+modules. Full repository tests and Fast/Full CI were not run. Evidence:
+`docs/evidence/baseline-0.165.1/super-dry-run-01651.md`.
+
+The releases leak a synthetic value in the chained `--api-key --password`
+control; Modex redacts it. Record this stricter behavior as security
+non-parity. When Node and npx are both present, Modex remains fail-closed
+because the release probes Playwright by executing locally resolved package
+code. Installed-tool readiness, populated profile state, recovery locks,
+shared-history launch, all six baseline targets, and complete Super parity
+remain open.
+
 ## Relay worker concurrency (2026-10-30)
 
 The exact `36ab8ca` Linux build admitted at most eight synthetic provider

@@ -49,6 +49,8 @@ values, including long leading-zero and overflow-plus-nondigit cases. The
 diagnostics match; the references create `.prodex` state while Modex does not.
 Native checks also cover normalized post-tail values. The two whitespace dry
 run inputs now reach Modex's existing startup guard, rather than failing
-concurrency parsing, but the full dry-run report remains unimplemented.
+concurrency parsing. The guarded DeepSeek dry-run slice added in
+`super-dry-run-01651.md` requires `--no-sub-agent`; the sub-agent-enabled dry-run
+report and the rest of the Super dry-run surface remain unsupported.
 Tests use no real credentials, provider traffic or account login. This covers
 selected Linux x86-64 parser behavior, not all concurrency or runtime behavior.

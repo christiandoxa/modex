@@ -14,6 +14,7 @@ from std.time import perf_counter, sleep
 
 from .app_server_rpc import run_super_hook_trust_preflight
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument, quote_json
+from .log_redaction import redact_log_text
 from .loopback_server import LoopbackHTTPListener
 from .paths import app_root, ensure_app_root, shared_root
 from .process_spawn import CapturedProcessOutput, capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, terminate_child_gracefully, wait_or_kill
@@ -55,8 +56,8 @@ def _remove_overlay(path: String) raises:
     rmdir(path)
 
 
-def _clean_home(root: String, shared: String, skip_config: Bool = False) raises -> Tuple[String, Optional[String], Optional[String], Optional[String]]:
-    # shortcut: existing profile and session reconciliation needs locked storage; admit config files only.
+def _clean_home(root: String, shared: String, skip_config: Bool = False, read_only: Bool = False) raises -> Tuple[String, Optional[String], Optional[String], Optional[String]]:
+    # shortcut: live shared-session and profile updates need compatible locked storage.
     var config_source = String()
     var search_mode = Optional[String]()
     var strict_tools = Optional[String]()
@@ -67,6 +68,8 @@ def _clean_home(root: String, shared: String, skip_config: Bool = False) raises 
             raise Error("Super clean-home launch cannot reconcile existing Codex data yet")
         for name in listdir(shared):
             if name != "config.toml":
+                if read_only:
+                    continue
                 raise Error("Super clean-home launch cannot reconcile existing Codex data yet")
             var path = shared + "/config.toml"
             if lstat(path).st_size > 1048576:
@@ -217,6 +220,20 @@ def _codex_binary() raises -> Tuple[String, String, String]:
             + "It was left untouched, but Prodex 0.427.0 will not run it. " + CODEX_INSTALL_GUIDANCE
         )
     return (resolved, child_path, requested)
+
+
+def _dry_run_codex_binary() -> String:
+    var configured = getenv("PRODEX_CODEX_BIN", "\0")
+    if configured != "\0":
+        return configured^
+    var path = getenv("PATH", "\0")
+    if path and path != "\0":
+        for candidate in _path_candidates("codex", path):
+            var resolved = _executable_path(candidate)
+            if not resolved or _is_prodex_wrapper(resolved) or _is_legacy_codex(resolved):
+                continue
+            return resolved^
+    return "codex"
 
 
 def _catalog_config_number(config: TOMLDocument, key: String, fallback: UInt64) raises -> UInt64:
@@ -392,6 +409,163 @@ def _ready(input_pipe: Pipe, mut child: Process) raises -> String:
 def _config(mut args: List[String], key: String, value: String):
     args.append("-c")
     args.append(key + "=" + value)
+
+
+def _deepseek_codex_args(home: String, workspace: String, model: String, address: String, context_window: UInt64, compact_limit: UInt64, model_supplied: Bool) -> List[String]:
+    var args = List[String]()
+    _config(args, "model_catalog_json", quote_json(home + "/prodex-deepseek-model-catalog.json"))
+    _config(args, "projects", "{" + quote_json(workspace) + "={trust_level=\"trusted\"}}")
+    _config(args, "model_provider", "\"prodex-deepseek\"")
+    if model_supplied:
+        _config(args, "model", _toml_model_literal(model))
+    _config(args, "model_providers.prodex-deepseek.name", "\"DeepSeek\"")
+    _config(args, "model_providers.prodex-deepseek.base_url", quote_json("http://" + address + "/v1"))
+    _config(args, "model_providers.prodex-deepseek.wire_api", "\"responses\"")
+    _config(args, "model_providers.prodex-deepseek.requires_openai_auth", "true")
+    _config(args, "model_providers.prodex-deepseek.supports_websockets", "false")
+    _config(args, "model_context_window", String(context_window))
+    _config(args, "model_auto_compact_token_limit", String(compact_limit))
+    _config(args, "model_reasoning_summary", "\"none\"")
+    _config(args, "web_search", "\"live\"")
+    for feature in [String("apps"), String("js_repl"), String("image_generation")]:
+        _config(args, "features." + feature, "false")
+    return args^
+
+
+def _sensitive_cli_flag(argument: String) -> Bool:
+    var start = 0
+    while start < argument.byte_length() and argument.as_bytes()[start] == 45:
+        start += 1
+    var end = start
+    while end < argument.byte_length() and argument.as_bytes()[end] != 61:
+        end += 1
+    if start == end:
+        return False
+    var normalized = String()
+    for byte in argument[byte=start:end].as_bytes():
+        var value = Int(byte)
+        if 48 <= value <= 57 or 65 <= value <= 90 or 97 <= value <= 122:
+            if 65 <= value <= 90:
+                value += 32
+            normalized += chr(value)
+    return normalized in [
+        "authorization", "apikey", "xapikey", "authkey", "cookie", "setcookie", "token",
+        "accesstoken", "refreshtoken", "idtoken", "secret", "password", "credential",
+        "credentials", "email", "githublogin", "profilearn", "profilenameupstream", "starturl",
+        "accountid", "chatgptaccountid", "proxyauthorization",
+    ] or normalized.endswith("token") or normalized.find("apikey") >= 0 or normalized.find("privatekey") >= 0 or normalized.find("secret") >= 0 or normalized.find("password") >= 0 or normalized.find("cookie") >= 0 or normalized.find("credential") >= 0
+
+
+def _dry_run_arg(argument: String, home: String, workspace: String) -> String:
+    var compact_key = String("model_auto_compact_token_limit=")
+    var numeric_compact_limit = argument.startswith(compact_key)
+    if numeric_compact_limit:
+        var digits = String(argument[byte=compact_key.byte_length():])
+        numeric_compact_limit = digits.byte_length() > 0
+        for byte in digits.as_bytes():
+            numeric_compact_limit = numeric_compact_limit and 48 <= Int(byte) <= 57
+    var equals = argument.find("=")
+    var redacted = argument
+    if equals > 0 and _sensitive_cli_flag(argument):
+        redacted = String(argument[byte=:equals]) + "=<redacted>"
+    elif not numeric_compact_limit:
+        redacted = redact_log_text(argument)
+    var was_redacted = redacted != argument
+    var value = redacted.replace(home, "<redacted-path>").replace(workspace, "<redacted-path>")
+    if (value.find(" ") >= 0 or value.find("\"") >= 0 or value.find("\t") >= 0) and not (was_redacted and value.find("<redacted>") >= 0):
+        return quote_json(value)
+    return value
+
+
+def _dry_run_env_value(value: String, home: String, workspace: String) -> String:
+    var redacted = redact_log_text(value)
+    var was_redacted = redacted != value
+    var rendered = redacted if was_redacted else quote_json(value)
+    return rendered.replace(home, "<redacted-path>").replace(workspace, "<redacted-path>")
+
+
+def _environment_value(environment: List[String], name: String) -> String:
+    for entry in environment:
+        var separator = entry.find("=")
+        if separator == name.byte_length() and String(entry[byte=:separator]) == name:
+            return String(entry[byte=separator + 1:])
+    return String()
+
+
+def _managed_optimizer_roots() -> List[String]:
+    var roots = List[String]()
+    var configured = getenv("PRODEX_OPTIMIZERS_HOME", "\0")
+    if configured != "\0": roots.append(configured)
+    var xdg = getenv("XDG_DATA_HOME", "\0")
+    if xdg != "\0": roots.append(xdg + "/prodex-optimizers")
+    var home = getenv("HOME", "")
+    if home: roots.append(home + "/.local/share/prodex-optimizers")
+    return roots^
+
+
+def _path_has_executable(command: String) -> Bool:
+    for candidate in _path_candidates(command, getenv("PATH", "\0")):
+        if _executable_path(candidate):
+            return True
+    return False
+
+
+def _managed_tool_present(tool: String, command: String = "") -> Bool:
+    for root in _managed_optimizer_roots():
+        if lexists(root + "/" + tool):
+            return True
+        if command and _executable_path(root + "/" + command):
+            return True
+    return False
+
+
+def _dry_run_optional_tool_statuses() raises -> Tuple[String, String]:
+    var present = _managed_tool_present("caveman")
+    present = present or _managed_tool_present("rtk", "rtk") or _path_has_executable("rtk")
+    present = present or _managed_tool_present("codebase-memory-mcp", "codebase-memory-mcp") or _path_has_executable("codebase-memory-mcp")
+    var node_found = _path_has_executable("node")
+    var npx_found = _path_has_executable("npx")
+    present = present or (node_found and npx_found)
+    present = present or _managed_tool_present("ponytail")
+    if present:
+        raise Error("Super dry-run cannot report installed optional tools yet")
+    var playwright_status = String("Node.js 18+ was not found on PATH")
+    var ponytail_status = String("Node.js was not found on PATH")
+    if node_found:
+        var node = String()
+        for candidate in _path_candidates("node", getenv("PATH", "\0")):
+            node = _executable_path(candidate)
+            if node: break
+        var probe_environment = List[String](capacity=1)
+        probe_environment.append("PATH=" + getenv("PATH", ""))
+        var version = capture_with_env(node, [String("--version")], probe_environment, "Node.js version probe", argv0=node)
+        if not version.status.exit_code or version.status.exit_code.value() != 0:
+            raise Error("Super dry-run cannot report optional tools with an invalid Node.js probe")
+        var output = trim_text(String(from_utf8_lossy=Span(version.stdout)))
+        var version_text = String(output)
+        if version_text.startswith("v"):
+            var stripped_version = String(version_text[byte=1:])
+            version_text = stripped_version
+        var major_text = String(version_text.split(".")[0])
+        var major = UInt64(0)
+        try:
+            major = unsigned_value(major_text)
+        except:
+            raise Error("Super dry-run cannot report optional tools with an invalid Node.js version")
+        playwright_status = "npx was not found on PATH" if major >= 18 else "Node.js 18+ is required; found " + output
+        ponytail_status = "Ponytail 4.9.0+ was not found under a managed optional-tool root; latest stable reference is 5.3.2"
+    return playwright_status^, ponytail_status^
+
+
+def _print_dry_run_optional_tools(playwright_status: String, ponytail_status: String):
+    var caveman_missing = "Caveman 2.3.1+ was not found under a managed optional-tool root; latest stable reference is 4.0.1"
+    var command_missing = "was not found in managed roots or PATH"
+    print("Optional tools:")
+    print("  caveman: skipped (" + caveman_missing + ")")
+    print("  rtk: skipped (rtk " + command_missing + ")")
+    print("  codebase-memory-mcp: skipped (codebase-memory-mcp " + command_missing + ")")
+    print("  playwright-mcp: skipped (" + playwright_status + ")")
+    print("  ponytail: skipped (" + ponytail_status + ")")
 
 
 # TOML permits literal TAB here, matching the pinned model override spelling.
@@ -626,23 +800,7 @@ def _exec(binary: String, child_path: String, argv0: String, home: String, model
     output.set_input_only()
     try:
         var address = _ready(output, relay)
-        var args = List[String]()
-        _config(args, "model_catalog_json", quote_json(home + "/prodex-deepseek-model-catalog.json"))
-        _config(args, "projects", "{" + quote_json(String(cwd())) + "={trust_level=\"trusted\"}}")
-        _config(args, "model_provider", "\"prodex-deepseek\"")
-        if model_supplied:
-            _config(args, "model", _toml_model_literal(model))
-        _config(args, "model_providers.prodex-deepseek.name", "\"DeepSeek\"")
-        _config(args, "model_providers.prodex-deepseek.base_url", quote_json("http://" + address + "/v1"))
-        _config(args, "model_providers.prodex-deepseek.wire_api", "\"responses\"")
-        _config(args, "model_providers.prodex-deepseek.requires_openai_auth", "true")
-        _config(args, "model_providers.prodex-deepseek.supports_websockets", "false")
-        _config(args, "model_context_window", String(context_window))
-        _config(args, "model_auto_compact_token_limit", String(compact_limit))
-        _config(args, "model_reasoning_summary", "\"none\"")
-        _config(args, "web_search", "\"live\"")
-        for feature in [String("apps"), String("js_repl"), String("image_generation")]:
-            _config(args, "features." + feature, "false")
+        var args = _deepseek_codex_args(home, String(cwd()), model, address, context_window, compact_limit, model_supplied)
         # shortcut: selected paths can be replaced after probing; use file-descriptor spawn when available.
         var allow_relative = not child_path.startswith("/")
         var legacy = run_super_hook_trust_preflight(child_path, String(cwd()), args, environment, argv0, allow_relative)
@@ -675,8 +833,9 @@ def _exec(binary: String, child_path: String, argv0: String, home: String, model
         raise
 
 
-def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64 = 0, compact_limit: UInt64 = 0, profile: String = "", profile_supplied: Bool = False, model_supplied: Bool = True, key_supplied: Bool = True) raises -> Int:
-    _deepseek_launch_progress()
+def run_clean_deepseek_super(model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64 = 0, compact_limit: UInt64 = 0, profile: String = "", profile_supplied: Bool = False, model_supplied: Bool = True, key_supplied: Bool = True, dry_run: Bool = False) raises -> Int:
+    if not dry_run:
+        _deepseek_launch_progress()
     _ = local_rewrite_upstream(upstream)
     var launch_context = context_window if context_window > 1 else UInt64(1048576)
     var launch_compact = min(compact_limit if compact_limit > 0 else UInt64(900000), launch_context - 1)
@@ -685,7 +844,7 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
         launch_model = "deepseek-v4-pro"
     var root = app_root()
     var shared = shared_root(root)
-    var shared_config = _clean_home(root, shared, profile_supplied)
+    var shared_config = _clean_home(root, shared, profile_supplied, dry_run)
     if profile_supplied:
         raise Error("profile '" + profile + "' does not exist")
     var route = deepseek_runtime_route(shared_config[1], shared_config[2], shared_config[3])
@@ -703,6 +862,65 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
         raise Error("DeepSeek model identifier exceeds 4096 bytes")
     var catalog_context = _catalog_config_number(catalog_config, "model_context_window", UInt64(1048576))
     var catalog_compact = min(_catalog_config_number(catalog_config, "model_auto_compact_token_limit", UInt64(900000)), catalog_context - 1)
+    if dry_run:
+        var optional_tool_statuses = _dry_run_optional_tool_statuses()
+        var codex = _dry_run_codex_binary()
+        var home = root + "/profiles/.prodex-overlay-" + new_uuid7()
+        var args = List[String](capacity=32)
+        args.append("--dangerously-bypass-approvals-and-sandbox")
+        args.append("exec")
+        args.extend(_deepseek_codex_args(home, String(cwd()), launch_model, "127.0.0.1:0", launch_context, launch_compact, model_supplied))
+        args.extend(prompt.copy())
+        var report_model = String("(codex default)")
+        if model_supplied:
+            report_model = launch_model
+        else:
+            var model_node = catalog_config.get(catalog_config.root, "model")
+            if model_node >= 0 and catalog_config.nodes[model_node].kind == TOML_STRING:
+                var configured_model = trim_text(catalog_config.string(model_node))
+                if configured_model:
+                    report_model = configured_model
+        print("Prodex dry run: launch diagnostics")
+        print("Flow: optional-tools")
+        var binary_parts = codex.split("/")
+        var binary_name = String(codex)
+        if binary_parts[len(binary_parts) - 1]:
+            binary_name = String(binary_parts[len(binary_parts) - 1])
+        print("Binary: " + binary_name)
+        print("Provider: prodex-deepseek")
+        print("Model: " + redact_log_text(report_model))
+        print("CODEX_HOME: <CODEX_HOME>")
+        print("Runtime proxy: would be enabled with mount /v1")
+        print("Args:")
+        var redact_next = False
+        for argument in args:
+            if redact_next:
+                print("  <redacted>")
+                redact_next = argument.startswith("-") and _sensitive_cli_flag(argument) and argument.find("=") < 0
+            else:
+                print("  " + _dry_run_arg(argument, home, String(cwd())))
+                redact_next = argument.startswith("-") and _sensitive_cli_flag(argument) and argument.find("=") < 0
+        var environment = _child_environment(home)
+        print("Env:")
+        print("  CODEX_HOME=<CODEX_HOME>")
+        print("  NO_PROXY=" + _dry_run_env_value(_environment_value(environment, "NO_PROXY"), home, String(cwd())))
+        print("  no_proxy=" + _dry_run_env_value(_environment_value(environment, "no_proxy"), home, String(cwd())))
+        print("  CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT=" + _environment_value(environment, "CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT"))
+        print("Removed env:")
+        for name in [String("CODEX_SANDBOX"), String("CODEX_SANDBOX_NETWORK_DISABLED"), String("DYLD_FRAMEWORK_PATH"), String("DYLD_INSERT_LIBRARIES"), String("DYLD_LIBRARY_PATH"), String("LD_AUDIT"), String("LD_LIBRARY_PATH"), String("LD_ORIGIN_PATH"), String("LD_PRELOAD")]:
+            print("  " + name)
+        print("Codex/TUI not started because --dry-run was set.")
+        print("Profile: (active/default)")
+        _print_dry_run_optional_tools(optional_tool_statuses[0], optional_tool_statuses[1])
+        print("Dry run: optional overlays and services are not started.")
+        print("Sub-agent: disabled")
+        print("Sub-agent inherited Presidio: disabled")
+        print("Sub-agent local URL: absent")
+        print("Sub-agent recursion disabled: yes")
+        print("Sub-agent overlay: absent")
+        print()
+        print("Presidio redaction: disabled (not started)")
+        return 0
     _ = ensure_app_root()
     _private_directory(shared)
     _private_directory(root + "/profiles")

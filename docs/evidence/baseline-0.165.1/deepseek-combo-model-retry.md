@@ -23,10 +23,11 @@ before commitment.
 
 The `flash` alias differs between the compared releases. In the 0.165.1 source,
 `mojo/prodex_core/deepseek.mojo` emits `deepseek-flash` for combo `flash`; the
-0.439.2 source emits `deepseek-v4-flash`. The existing direct request mapper
-continues to preserve its established `deepseek-v4-flash` mapping. This retry
-slice follows the 0.165.1 combo alias and therefore retains a known mismatch
-with the official 0.439.2 baseline for this candidate.
+0.439.2 source emits `deepseek-v4-flash`. At this retry checkpoint the direct
+request mapper still used `deepseek-v4-flash`; a later three-process correction
+aligns direct `flash` with 0.165.1 as well. Both direct and combo mappings
+therefore retain a known mismatch with 0.439.2. See
+`docs/evidence/baseline-0.165.1/deepseek-flash-alias.md`.
 
 ## Real-process comparison
 
@@ -84,7 +85,7 @@ Checks performed on Linux x86-64:
   both pinned releases and the fixed Modex build;
 - `test_combo_model_candidates_accept_large_chains_without_quadratic_scan`
   passed against both pinned releases and the fixed Modex build;
-- `test_provider_nonstring_model_04395` compares the unchanged direct model
+- `test_provider_nonstring_model_04395` compared the then-unchanged direct model
   mapping with 0.439.5, 0.439.2, and Modex, and asserts the version-specific
   combo Flash alias difference;
 - `make ci-dependencies` passed with 71 Mojo production files restricted to

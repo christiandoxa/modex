@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The completed `23bb0b1` local full run had 1 failure in 1,036 tests: an old
+combo-model assertion expected 0.439.2's Flash alias despite the 0.165.1 combo
+mapping. Three-process follow-up also found direct `flash` still used 0.439.2's
+alias. Both request preparation paths now use 0.165.1's `deepseek-flash`;
+0.439.2's `deepseek-v4-flash` remains a documented difference. The focused
+simple/non-simple matrix and native request checks pass; the full suite has not
+been rerun on this change. See
+`docs/evidence/baseline-0.165.1/deepseek-flash-alias.md`.
+
 Detached log streaming now checks for the literal raw `stream_payload` text
 before projecting an event, like both pinned releases. Escaped event names
 without that raw substring are ignored; a literal occurrence elsewhere on the

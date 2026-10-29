@@ -463,7 +463,7 @@ def _native_model(value: String) -> String:
                     break
                 start = index + 1
     if model.lower() == "auto" or model.lower() == "pro": return "deepseek-v4-pro"
-    if model.lower() == "flash": return "deepseek-v4-flash"
+    if model.lower() == "flash": return "deepseek-flash"
     return model
 
 

@@ -6,6 +6,13 @@ select this release; comparisons with 0.439.x are historical regression
 evidence. All six release targets and unverified security behavior remain in
 the denominator. The full inventory and production parity remain unfinished.
 
+The Anthropic Messages adapter now supports selected mixed function and web
+search requests and buffered or streamed replies against 0.165.1. Buffered
+content is capped at the reference's 65,536 blocks; tests cover the boundary,
+text ordering and reused search IDs. More than two mixed search uses and
+multiple mixed search pairs in streams remain gaps. See
+`docs/evidence/baseline-0.165.1/anthropic-mixed-tools.md`.
+
 Hosted Fast CI run `40796304229` passed both helper shards, the active 0.165.1
 and focused relay checks, then failed on the unavailable required historical
 0.439.2 tag; the artifact consumer was skipped. An isolated local `make test`

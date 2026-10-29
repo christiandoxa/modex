@@ -252,6 +252,16 @@ passed. The synthetic Codex child records arguments but does not verify actual
 working-directory changes. See
 `docs/evidence/baseline-0.165.1/super-exec-working-directory.md`.
 
+The guarded DeepSeek exec path now forwards repeatable Codex `--add-dir`,
+`--enable`, and `--disable` options, including attached values, after prompts,
+and across `--` literal boundaries. Tests against both pinned release
+processes confirm identical child argv and unchanged Modex-generated config.
+Missing, option-looking, and empty `--add-dir` values remain an intentional
+diagnostic difference: releases launch Codex to reject them; Modex rejects
+before overlay or child launch. A real Codex CLI 0.165.0 process test confirms
+the release child diagnostic without provider traffic or leftover state. See
+`docs/evidence/baseline-0.165.1/super-exec-value-options.md`.
+
 Buffered Anthropic thinking blocks now produce reasoning items in tested
 search and mixed-tool responses. Session text reports include bound profile
 details; C0/C1 control characters are escaped, unlike the releases' raw output.

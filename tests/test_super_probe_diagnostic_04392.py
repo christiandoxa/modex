@@ -1,6 +1,9 @@
 """Codex probe diagnostics against the pinned 0.439.2 release."""
 
 import hashlib
+import os
+import shutil
+import subprocess
 import unittest
 
 import test_cli
@@ -32,7 +35,6 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
         for arguments in (
             ("exec", "--json", "-c", "model_provider=unsafe", "prompt"),
             ("exec", "--config=model_provider=unsafe", "prompt"),
-            ("exec", "--enable", "synthetic-feature", "prompt"),
             ("exec", "--sandbox", "danger-full-access", "prompt"),
             ("exec", "--color"),
             ("exec", "--color=neon", "prompt"),
@@ -47,6 +49,13 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
             ("exec", "--cd", "--json", "prompt"),
             ("exec", "-C", "--json", "prompt"),
             ("exec", "--ephemeral", "-c", "model_provider=unsafe", "prompt"),
+            ("exec", "--add-dir"),
+            ("exec", "--add-dir", "--json", "prompt"),
+            ("exec", "--add-dir=", "prompt"),
+            ("exec", "--add-dir", "-directory", "prompt"),
+            ("exec", "--enable"),
+            ("exec", "--enable", "--json", "prompt"),
+            ("exec", "--disable=", "prompt"),
         ):
             with self.subTest(arguments=arguments):
                 result, records, upstream, state = launch_support.run_private_launch(
@@ -55,6 +64,51 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
                 self.assertEqual((result.returncode, result.stdout), (1, b""))
                 self.assertIn(b"Super startup is not implemented", result.stderr)
                 self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+
+    def test_invalid_add_dir_values_are_checked_by_the_release_codex_child(self):
+        codex = shutil.which("codex")
+        node = shutil.which("node")
+        python = shutil.which("python3")
+        if not codex or not node or not python:
+            self.skipTest("Codex CLI 0.165.0 and Node.js are required for child validation")
+        path = os.path.dirname(node) + os.pathsep + os.path.dirname(python) + os.pathsep + os.defpath
+        version = subprocess.run(
+            [codex, "--version"],
+            env={"HOME": "/tmp", "PATH": path},
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=10,
+        )
+        if version.returncode != 0 or version.stdout.strip() != b"codex-cli 0.165.0":
+            self.skipTest("Codex CLI 0.165.0 is not installed")
+        self.assertEqual(
+            hashlib.sha256(launch_support.ORACLE_01651.read_bytes()).hexdigest(),
+            launch_support.ORACLE_01651_SHA256,
+        )
+        for arguments in (
+            ("exec", "--add-dir"),
+            ("exec", "--add-dir", "--json", "synthetic prompt"),
+            ("exec", "--add-dir=", "synthetic prompt"),
+        ):
+            for binary in (launch_support.ORACLE_01651, test_cli.ORACLE, launch_support.MODEX):
+                with self.subTest(binary=binary.name, arguments=arguments):
+                    result, records, upstream, state = launch_support.run_private_launch(
+                        binary,
+                        scenario="exit-seven",
+                        environment_overrides={"MODEX_LAUNCH_REAL_CODEX": codex, "PATH": path},
+                        codex_arguments=arguments,
+                    )
+                    self.assertEqual((upstream, state["leftovers"]), ([], []))
+                    if binary == launch_support.MODEX:
+                        self.assertEqual(result.returncode, 1)
+                        self.assertFalse(any(record["kind"] == "launch" for record in records))
+                        self.assertIn(b"Super startup is not implemented", result.stderr)
+                        self.assertNotIn(b"starting child process", result.stderr)
+                    else:
+                        self.assertEqual(result.returncode, 2, result.stderr)
+                        self.assertEqual(records[-1]["kind"], "launch")
+                        self.assertIn(b"starting child process", result.stderr)
+                        self.assertIn(b"a value is required for '--add-dir <DIR>'", result.stderr)
 
     def test_oversized_version_probe_matches_reference_context(self):
         observations = []

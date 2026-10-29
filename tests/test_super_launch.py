@@ -86,6 +86,10 @@ if "app-server" in args and "--stdio" in args:
         print(json.dumps({"id":request["id"],"result":{"data":[]}}), flush=True)
         if request["id"] == 4: time.sleep(30)
     raise SystemExit(0)
+if os.environ.get("MODEX_LAUNCH_REAL_CODEX"):
+    real_codex = os.environ["MODEX_LAUNCH_REAL_CODEX"]
+    save({"kind":"launch", "args":args})
+    os.execv(real_codex, [real_codex, *args])
 home = pathlib.Path(os.environ["CODEX_HOME"])
 config = {}
 for index, arg in enumerate(args[:-1]):
@@ -610,6 +614,13 @@ def check_safe_exec_flags(test, oracle):
         ("exec", "--cd=/tmp/synthetic worktree", "synthetic prompt"),
         ("exec", "-C", "/tmp/synthetic worktree", "synthetic prompt"),
         ("exec", "-C/tmp/synthetic worktree", "synthetic prompt"),
+        (
+            "exec", "--add-dir", "/tmp/synthetic additional workspace",
+            "--add-dir=/tmp/second workspace", "--add-dir", "-", "synthetic prompt",
+        ),
+        ("exec", "--enable", "js_repl", "--disable=apps", "--enable=image_generation", "synthetic prompt"),
+        ("exec", "synthetic prompt", "--add-dir", "/tmp/after-prompt workspace", "--enable=apps"),
+        ("exec", "--add-dir=/tmp/synthetic workspace", "--enable", "apps", "--", "--disable=js_repl"),
         ("exec", "--output-last-message", "answer.txt", "synthetic prompt"),
         ("exec", "-o", "answer.txt", "synthetic prompt"),
         ("exec", "-oanswer.txt", "synthetic prompt"),
@@ -627,6 +638,7 @@ def check_safe_exec_flags(test, oracle):
     for arguments in cases:
         with test.subTest(arguments=arguments):
             captures = []
+            configs = []
             for binary in (oracle, MODEX):
                 result, records, upstream, state = run_private_launch(
                     binary, scenario="exit-seven", codex_arguments=arguments,
@@ -636,7 +648,12 @@ def check_safe_exec_flags(test, oracle):
                 test.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
                 launch = next(record for record in records if record["kind"] == "launch")
                 captures.append(normalized_app_server_args(launch["args"]))
+                configs.append({
+                    key: normalized_app_server_args([value])[0] if isinstance(value, str) else value
+                    for key, value in launch["config"].items()
+                })
             test.assertEqual(captures[0], captures[1])
+            test.assertEqual(configs[0], configs[1])
 
 
 def check_explicit_full_access(test, oracle):

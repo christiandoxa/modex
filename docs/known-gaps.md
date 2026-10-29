@@ -44,8 +44,13 @@ diagnostics remain incomplete. See
 The production Super path also forwards tested `codex exec --cd` and `-C`
 forms, including attached path values, as both frozen releases do. The
 synthetic child verifies launch arguments but not Codex path validation or
-working-directory changes. Other Codex arguments remain guarded; see
-`docs/evidence/baseline-0.165.1/super-exec-working-directory.md`.
+working-directory changes. It also forwards repeated `--add-dir`, `--enable`,
+and `--disable` arguments in separated or attached-value form without adding
+them to Modex configuration. Missing and option-looking values are rejected
+before launch; the releases defer these errors to Codex. Other Codex arguments
+remain guarded. See
+`docs/evidence/baseline-0.165.1/super-exec-working-directory.md` and
+`docs/evidence/baseline-0.165.1/super-exec-value-options.md`.
 
 Selected local-relay malformed syntax, method forwarding, GET response framing,
 HEAD controls, final response status phrases, WebSocket fallback and

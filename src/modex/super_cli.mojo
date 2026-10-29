@@ -273,6 +273,19 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
         if argument.startswith("--cd=") or (argument.startswith("-C") and argument.byte_length() > 2):
             index += 1
             continue
+        if argument in ["--add-dir", "--enable", "--disable"]:
+            if index + 1 >= len(arguments):
+                return False
+            var value = arguments[index + 1]
+            if not value or (value.startswith("-") and value != "-"):
+                return False
+            index += 2
+            continue
+        if argument.startswith("--add-dir=") or argument.startswith("--enable=") or argument.startswith("--disable="):
+            if argument.endswith("="):
+                return False
+            index += 1
+            continue
         if argument in ["--output-last-message", "--output-schema", "-o", "--image", "-i"]:
             if index + 1 >= len(arguments):
                 return False

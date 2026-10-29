@@ -23,7 +23,7 @@ traffic.
 | --- | --- | --- |
 | Prodex 0.165.1 | `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51` | Invalid leaf names are ignored; valid sessions under invalid directory names are listed. |
 | Prodex 0.439.2 | `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e` | Same JSON, path display, ordering, replacement-character queries, and symlink exclusion as 0.165.1. |
-| Modex (`build/modex`) | `db0693d99d8da2bf519b2bdecbb7c03af6d2157684796a1cde30e47a3f474679` | Matches both releases for these session-entry cases. |
+| Modex (isolated worker build) | `db0693d99d8da2bf519b2bdecbb7c03af6d2157684796a1cde30e47a3f474679` | Matches both releases for these session-entry cases. |
 
 After normalizing only each temporary fixture root, JSON output matches both
 releases. Invalid path bytes display as U+FFFD, matching Rust `Path::display()`.

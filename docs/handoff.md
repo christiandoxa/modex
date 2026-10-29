@@ -32,6 +32,23 @@ Non-strict DeepSeek beta URL preflight now rejects selected malformed hosts
 before launch. Fullwidth IDNA normalization, TOML precedence and public beta
 transport remain gaps; see `docs/evidence/deepseek-strict-tools-04392.md`.
 
+Session listing now skips tested invalid UTF-8 leaf names and traverses tested
+invalid-byte directories, matching both releases' displayed paths, ordering,
+queries and symlink exclusions. Modex still fails closed for a malformed
+`state.json.\x80.tmp` entry that both releases ignore. The process comparisons
+and remaining difference are in `docs/evidence/session-invalid-utf8-04392.md`.
+
+Selected Anthropic message metadata and text/input deltas now match both
+releases in real-process stream comparisons. A `citation_delta` with an extra
+event-root field still fails in Modex while both references complete the
+response. See `docs/evidence/anthropic-stream-optional-metadata-shared.md`.
+
+The combined production and native builds passed. Seven cross-release tests,
+34 session regression tests, and 11 CI routing and helper tests passed after
+integration; the worker also passed 62 session tests and 31 stream tests.
+The dependency audit covers 71 Mojo files and the census covers 124 Python
+modules. These checks do not establish full parity or non-Linux support.
+
 After integrating these changes, the production and focused driver builds
 passed, followed by 84 provider, relay, launch and hook-identity tests, including
 production comparisons against the verified 0.439.2 release. The historical

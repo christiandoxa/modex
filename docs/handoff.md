@@ -652,8 +652,15 @@ requests to the beta route; raw Chat Completions passthrough retains its
 original route. Synthetic
 release comparisons cover strict=true, unsafe URLs, non-strict public URLs,
 web tools and config-only inputs. Existing Codex config remains fail-closed;
-TOML settings, public beta TLS/DNS and validation of unused invalid beta URLs
-remain open. See `docs/evidence/deepseek-strict-tools-04392.md`.
+TOML settings and public beta TLS/DNS remain open. A source-traced follow-up
+now rejects a present invalid beta URL before Codex/provider work even when
+strict tools are off, while a valid public URL remains unused for routing.
+This closes that environment-only case against 0.439.2 and does not establish
+full 0.165.1 behavior. A separate 0.165.1 launch with `not-a-url` also fails
+before provider I/O with no launch or overlay side effects; the release adds
+`relative URL without a base` to stderr while Modex keeps the generic message.
+The selected active-release HTTP and URL controls do not qualify the broader
+target. See `docs/evidence/deepseek-strict-tools-04392.md`.
 
 Fast CI run `40619037675` passed on exact checkpoint
 `863585a1bafb125e7b42f1e51137dc5e7cb5e703`. Its Full run `40619064905`

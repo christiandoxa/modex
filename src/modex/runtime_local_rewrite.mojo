@@ -12,6 +12,7 @@ from std.time.time import _realtime_nanoseconds
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument
 from .loopback_http import HTTP_HEADER_LIMIT, LoopbackHTTPStream, _number
 from .loopback_server import LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
+from .log_operational import valid_url_authority
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_request_headers
 from .provider_conversations import ProviderConversationStore
 from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
@@ -116,6 +117,31 @@ def _strict_tools_value(name: String, value: String) raises -> Bool:
     raise Error(name + " must be true or false")
 
 
+def _validate_deepseek_beta_url(value: String) raises:
+    var name = String("PRODEX_DEEPSEEK_BETA_BASE_URL")
+    var invalid = name + " must be an http(s) URL with host and no credentials, query, or fragment"
+    if not value:
+        raise Error(name + " cannot be empty")
+    for character in value.codepoints():
+        if is_whitespace(Int(character)):
+            raise Error(name + " must not contain whitespace")
+    var scheme_end = value.find("://")
+    if scheme_end < 0 or value.find("?") >= 0 or value.find("#") >= 0:
+        raise Error(invalid)
+    var scheme = String(value[byte=:scheme_end]).lower()
+    if scheme != "http" and scheme != "https":
+        raise Error(invalid)
+    var authority_start = scheme_end + 3
+    var authority_end = value.byte_length()
+    for delimiter in ["/", "\\"]:
+        var found = value.find(delimiter, authority_start)
+        if found >= 0 and found < authority_end:
+            authority_end = found
+    var authority = String(value[byte=authority_start:authority_end])
+    if authority.find("@") >= 0 or not valid_url_authority(authority):
+        raise Error(invalid)
+
+
 def _web_search_mode() raises -> String:
     var name = String("PRODEX_DEEPSEEK_WEB_SEARCH_MODE")
     var value = getenv(name, "\x00")
@@ -135,6 +161,9 @@ def deepseek_runtime_route() raises -> Tuple[Bool, String, String, String]:
     var strict_value = getenv("PRODEX_DEEPSEEK_STRICT_TOOLS", "\x00")
     var strict_tools = strict_value != "\x00" and _strict_tools_value("PRODEX_DEEPSEEK_STRICT_TOOLS", strict_value)
     if not strict_tools:
+        var beta_value = getenv("PRODEX_DEEPSEEK_BETA_BASE_URL", "\x00")
+        if beta_value != "\x00":
+            _validate_deepseek_beta_url(beta_value)
         return False, String(), String(), _web_search_mode()
     var beta_value = getenv("PRODEX_DEEPSEEK_BETA_BASE_URL", "\x00")
     if beta_value == "\x00":

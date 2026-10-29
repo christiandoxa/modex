@@ -44,9 +44,33 @@ Focused results from an isolated build:
 The beta route must be explicitly set to numeric loopback HTTP when strict
 mode is enabled. Public HTTPS/DNS URLs, including the reference default, are
 unsupported by the current transport; DNS, TLS, and external-provider
-transport remain gaps. Non-strict requests do not resolve the unused beta
-endpoint, preserving ordinary launches with the valid public default. That
-also means an invalid beta environment value is ignored while strict mode is
-off, unlike Prodex 0.439.2, which validates it during launch; the pinned
-real-process test records this mismatch. Tests use only synthetic loopback
-URLs and credentials.
+transport remain gaps. With strict mode off, a valid public beta URL is
+validated but remains unused for routing, so requests keep the default route.
+Tests use only synthetic loopback URLs and credentials.
+
+## 0.439.2 beta URL validation follow-up
+
+The frozen source resolves `runtime_deepseek_beta_base_url` during DeepSeek
+provider construction. It validates a configured value as HTTP(S), with a
+host, and without credentials, query or fragment, even when strict tools are
+disabled. The production Super preflight now applies that validation to a
+present environment value before launching Codex, while keeping valid public
+URLs unused when strict mode is off.
+
+The real-process comparison covers an empty value, malformed URL, unsupported
+scheme, credentials, query, fragment and whitespace. Modex and the pinned
+release both fail before Codex launch or provider I/O, with no profile overlay
+left behind. Synthetic credentials in invalid values are not echoed. The
+existing valid public URL and strict loopback-route controls still pass.
+
+Validation on Linux x86-64: `make build` and the targeted
+`local_rewrite_driver` build passed with Mojo 1.2.0. The three focused
+`test_provider_tools_04392_characterization` methods passed, as did all 22
+`test_local_rewrite.py` methods and the active 0.165.1 raw HTTP production
+control. A separate active 0.165.1 launch with `not-a-url` also failed before
+provider I/O; Modex and 0.165.1 had no launch/upstream side effects, while the
+release added `relative URL without a base` to its stderr diagnostic and Modex
+kept the generic message. The 71-file production import audit passed. This
+closes only the environment-backed URL validation case; TOML propagation and
+public beta transport remain unsupported, and the selected 0.165.1 checks do
+not qualify its full behavior.

@@ -130,9 +130,15 @@ unverified. See `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
 Strict-tool environment settings select the beta route and normalize supported
 runtime-path schemas for numeric-loopback HTTP. The baseline simple-request
 pass can preserve nested tools unchanged; config-only settings still fail
-closed, public beta TLS/DNS remains unsupported, and an invalid unused beta
-environment URL is ignored when strict mode is off while Prodex rejects it.
-`tests/test_provider_tools_04392_characterization.py` reproduces these gaps.
+closed and public beta TLS/DNS remains unsupported. Against pinned 0.439.2, a
+present beta environment URL is now validated even when strict mode is off;
+valid public URLs remain unused for routing, and invalid values fail before
+launch without being echoed. A separate 0.165.1 launch with `not-a-url` also
+fails before provider I/O, though its stderr appends `relative URL without a
+base` while Modex keeps the generic diagnostic. These are selected controls,
+not full release qualification. `tests/test_provider_tools_04392_characterization.py`
+checks the 0.439.2 result against the pinned release and synthetic launch
+controls.
 The separate web-search mode environment setting now controls selected
 production routes; TOML mode precedence remains unimplemented. See
 `docs/evidence/deepseek-web-search-mode-04392.md`.

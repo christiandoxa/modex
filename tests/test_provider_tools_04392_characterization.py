@@ -84,9 +84,11 @@ def _run(
             pass
     return {
         "exit_code": result.returncode,
+        "stderr": result.stderr,
         "status": response["status"] if response else None,
         "response_body": bytes.fromhex(response["body"]) if response else b"",
         "responses": [bytes.fromhex(record["body"]) for record in responses],
+        "records": records,
         "upstream": upstream,
         "upstream_body": upstream_body,
         "state": state,
@@ -586,15 +588,32 @@ class ProviderTool04392CharacterizationTests(unittest.TestCase):
         self.assertEqual(reference["state"]["leftovers"], [])
         self.assertEqual(modex["state"]["leftovers"], [])
 
-    def test_non_strict_invalid_beta_url_is_a_known_validation_gap(self):
+    def test_non_strict_invalid_beta_urls_fail_before_codex_or_provider(self):
         request = {"model": "deepseek-chat", "input": "synthetic invalid beta control"}
-        invalid_beta_url = "not a URL"
-        reference = _run(ORACLE_04392, request, beta_override=invalid_beta_url)
-        modex = _run(MODEX, request, beta_override=invalid_beta_url)
-        self.assertEqual((reference["exit_code"], reference["status"]), (1, None))
-        self.assertEqual(reference["upstream"], [])
-        self.assertEqual((modex["exit_code"], modex["status"]), (0, 200))
-        self.assertEqual(modex["upstream"][0]["path"], "/v1/chat/completions")
+        invalid_beta_urls = (
+            ("", b"PRODEX_DEEPSEEK_BETA_BASE_URL cannot be empty"),
+            ("not-a-url", b"PRODEX_DEEPSEEK_BETA_BASE_URL must be an http(s) URL"),
+            ("ftp://example.test/beta", b"must be an http(s) URL"),
+            ("https://synthetic-user:synthetic-secret@example.test/beta", b"must be an http(s) URL"),
+            ("https://example.test/beta?token=synthetic-secret", b"must be an http(s) URL"),
+            ("https://example.test/beta#token=synthetic-secret", b"must be an http(s) URL"),
+            ("https://example.test/beta path", b"PRODEX_DEEPSEEK_BETA_BASE_URL must not contain whitespace"),
+        )
+        for invalid_beta_url, expected_diagnostic in invalid_beta_urls:
+            with self.subTest(beta_url=invalid_beta_url):
+                reference = _run(ORACLE_04392, request, beta_override=invalid_beta_url)
+                modex = _run(MODEX, request, beta_override=invalid_beta_url)
+                self.assertEqual((reference["exit_code"], reference["status"]), (1, None))
+                self.assertEqual((modex["exit_code"], modex["status"]), (1, None))
+                for result in (reference, modex):
+                    self.assertNotIn("launch", [record.get("kind") for record in result["records"]])
+                    self.assertEqual(result["upstream"], [])
+                    self.assertEqual(result["state"]["leftovers"], [])
+                    self.assertNotIn(b"synthetic-secret", result["stderr"])
+                self.assertIn(
+                    expected_diagnostic,
+                    modex["stderr"],
+                )
 
 
 if __name__ == "__main__":

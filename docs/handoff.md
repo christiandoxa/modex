@@ -2977,6 +2977,9 @@ the missing 0.439.2 tag before oracle-backed tests. It is not a Fast pass.
 Fast run 40847657930 on `dc4ea1ff04f9dc64e9070a2a446ed1f5581838a0` also
 passed the dependency audit and focused build/native checks, then failed at the
 missing 0.439.2 tag. Oracle-backed tests did not run; this is not a Fast pass.
+Fast run 40849847056 on `31ce00a932350b606e11e8c72e90bf03541e1ecc` likewise
+passed the dependency audit and focused build/native checks, then failed at
+the missing 0.439.2 tag before the oracle-backed tests. It is not a Fast pass.
 
 Full 0.165.1 parity remains incomplete: profile-backed WebSocket capacity and
 interruption, managed session launch and recovery, interactive TUI, DNS, TLS,
@@ -3041,3 +3044,15 @@ after integration, five focused request/response comparisons, 10 resume
 tests, the production build, native provider checks, import audit and census
 passed. Broader provider behavior remains unqualified. Evidence:
 `docs/evidence/baseline-0.165.1/anthropic-text-metadata.md`.
+
+An isolated relay-concurrency prototype at
+`/tmp/modex-runtime-concurrency-01651-20261029-a` is unfinished and is not
+part of the production branch. Its first build succeeded, but both its new
+two-request overlap probe and the existing sequential keep-alive control timed
+out without an upstream request. Instrumentation reached the main loop and
+then stalled acquiring shared state before listener acceptance. Releasing
+scoped locks before return did not resolve it. The prototype also needs
+verified active upstream cancellation, slow request admission and baseline
+worker-count behavior. Temporary phase markers were removed after the
+investigation; the uncommitted prototype remains isolated and does not
+establish parity. The production path remains serial.

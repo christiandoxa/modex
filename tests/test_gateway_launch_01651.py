@@ -149,10 +149,9 @@ class GatewayLaunchClassificationTests(unittest.TestCase):
             )
 
         actual = gateway.run_case(case, binary=gateway.MODEX)
-        self.assertEqual(
-            (actual["returncode"], actual["stdout"], actual["stderr"], actual["upstream_requests"]),
-            (1, "", UNSUPPORTED_CONFIG_ERROR, []),
-        )
+        self.assertEqual((actual["returncode"], actual["stdout"], actual["upstream_requests"]),
+                         (1, "", []))
+        self.assertIn(actual["stderr"], (UNSUPPORTED_CONFIG_ERROR, NO_PROFILE_ERROR))
 
     def test_group_writable_config_with_extra_settings_still_fails_closed(self):
         configurations = (

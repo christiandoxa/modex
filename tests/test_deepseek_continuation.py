@@ -44,7 +44,7 @@ print("synthetic-continuation-complete")
 '''
 
 
-def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None, lookahead_timeout_ms=None):
+def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None, lookahead_timeout_ms=None, api_keys=None):
     with tempfile.TemporaryDirectory(prefix="modex-continuation-") as temporary:
         root = Path(temporary)
         for name in ("home", "state", "shared", "work"):
@@ -70,9 +70,12 @@ def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=
             environment["PRODEX_RUNTIME_PROXY_STREAM_IDLE_TIMEOUT_MS"] = str(idle_timeout_ms)
         if lookahead_timeout_ms is not None:
             environment["PRODEX_RUNTIME_PROXY_SSE_LOOKAHEAD_TIMEOUT_MS"] = str(lookahead_timeout_ms)
+        if api_keys is not None:
+            environment["DEEPSEEK_API_KEYS"] = api_keys
         with serving(responses) as server:
+            auth_args = ["--api-key", SYNTHETIC_API_KEY] if api_keys is None else []
             result = subprocess.run(
-                [str(binary), "super", "--provider", "deepseek", "--api-key", SYNTHETIC_API_KEY,
+                [str(binary), "super", "--provider", "deepseek", *auth_args,
                  "--base-url", f"http://127.0.0.1:{server.server_port}{base_path}", "--model", "deepseek-chat",
                  "--no-presidio", "--no-sub-agent", "--skip-quota-check", "exec", "--", "synthetic"],
                 cwd=root / "work", env=environment, capture_output=True, timeout=45,

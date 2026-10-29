@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Multi-key DeepSeek rotation remains unimplemented. New real-process controls
+show both pinned releases rotate unbound requests, retry selected precommit
+HTTP errors, and reject a tested bound continuation without a second POST.
+Modex continues to reject multi-key lists before launching a child; the
+reference observations are not a parity pass. Retry classification, binding
+ownership, stream commitment and concurrent rotation must be implemented
+together. See `docs/evidence/baseline-0.165.1/super-api-key-env.md`.
+
 Further admission profiling compared both pinned processes, the current relay,
 and the unmerged aggregate-budget prototype under 246 incomplete heads. With
 six 200 KiB heads held in active workers, the prototype served two healthy

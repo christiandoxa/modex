@@ -2925,6 +2925,7 @@
         "tests/test_continuation_binding_04392.py",
         "tests/test_deepseek_web_search_mode_04392.py",
         "tests/test_deepseek_web_search_mode_01651_04392.py",
+        "tests/test_deepseek_key_rotation_01651_04392.py",
         "tests/test_super_shared_config_01651_04392.py",
         "tests/test_gateway_cli.mojo",
         "tests/capture_stream_timeout_mismatch.py",

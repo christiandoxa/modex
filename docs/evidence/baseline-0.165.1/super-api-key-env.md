@@ -44,3 +44,28 @@ The combined omitted-model and environment-key launch is also checked against
 both releases in `tests/test_super_shared_config_01651_04392.py`: a configured
 model reaches the catalog, no model override is passed to Codex, and one
 synthetic provider request carries the resolved key.
+
+## Rotation and replay boundaries
+
+`tests/test_deepseek_key_rotation_01651_04392.py` exercises the actual pinned
+processes using two synthetic keys and a loopback provider. Two unbound
+buffered Responses requests use the keys in order. If the first response is
+accepted and the second request references its response ID, both releases
+return 503 `bound_continuation_unavailable` without a second provider POST in
+the tested fixture. This is an observed ownership boundary, not evidence of
+general profile or binding parity.
+
+For a single unbound request with a synthetic JSON error body, both releases
+retry with the second key after HTTP 401, 403, 500, 502, or 503; they return
+HTTP 400, 404, 408, 409, 422, or 429 without trying the second key. These are
+selected response/error-class controls; body-dependent classification,
+streaming commitment, retries, concurrency, exhaustion and recovery remain
+unqualified. Source trace: `local_rewrite_transport.rs` rotates an atomic
+cursor, while `local_rewrite_deepseek_send.rs` filters candidate credentials by
+binding identity and permits only precommit retries. Modex still rejects the
+multi-key list before any child or provider request. The release-only
+observations are not Modex parity and no rotation status is promoted.
+
+Reproduce with `python3 scripts/ci/run-unittest.py test_deepseek_key_rotation_01651_04392.py`
+using both checksum-pinned Linux oracles. Synthetic credentials and isolated
+homes/loopback ports are used throughout.

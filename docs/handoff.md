@@ -70,6 +70,12 @@ The overlapping-result control covers 128 open indexes; no aggregate cap
 limits retained per-stream search and tool state. See
 `docs/evidence/anthropic-stream-optional-metadata-shared.md`.
 
+After integrating the empty-profile and stream-order follow-ups, the production
+build and four native checks passed. The combined stream suite passed 51 tests;
+session, state and concurrency checks passed 32; CI helper/routing checks
+passed 11. The dependency audit covers 71 Mojo files and the census covers 126
+Python modules. These are focused Linux checks, not full parity.
+
 The combined production build, three native provider/parser checks, nine
 cross-release stream and concurrency tests, and eleven CI helper/routing
 tests passed locally. The dependency audit covered 71 Mojo files and the
@@ -88,6 +94,10 @@ production comparisons against the verified 0.439.2 release. The historical
 19 tests before the beta-host follow-up. The CI routing and reference helpers
 passed 39 tests; the 71-file dependency audit and 122-module census passed.
 The full suite and non-Linux targets were not rerun for this integration.
+
+Hosted Fast CI run `40816136528` on `87e57c3` passed both helper shards but
+failed before build at the missing required 0.439.2 tag; artifact consumption
+was skipped. No hosted product checks or parity gate ran.
 
 Hosted Fast CI run `40814263090` on `a33ce8b` failed before build because the
 required 0.439.2 tag was absent; both helper shards passed and the artifact

@@ -414,7 +414,7 @@ class LocalRewriteTests(unittest.TestCase):
         self.assertNotIn("strict", tool)
         self.assertNotIn("required", tool["parameters"])
 
-    def test_strict_tools_mixed_web_function_tools_fail_closed(self):
+    def test_strict_tools_mixed_web_function_tools_use_anthropic_route(self):
         request = {
             "model": "deepseek-chat",
             "input": "synthetic strict web request",
@@ -434,7 +434,17 @@ class LocalRewriteTests(unittest.TestCase):
                 },
             ],
         }
-        with serving([]) as server:
+        reply = {
+            "id": "msg_strict", "type": "message", "role": "assistant",
+            "model": "deepseek-chat", "content": [
+                {"type": "server_tool_use", "id": "search_1", "name": "web_search", "input": {"query": "release"}},
+                {"type": "web_search_tool_result", "tool_use_id": "search_1", "content": [
+                    {"type": "web_search_result", "url": "https://example.test/release"},
+                ]},
+                {"type": "text", "text": "Found it."},
+            ], "stop_reason": "end_turn", "usage": {"input_tokens": 3, "output_tokens": 5},
+        }
+        with serving([{"status": 200, "content_type": "application/json", "body": json_bytes(reply)}]) as server:
             with RunningLocalRewrite(
                 server.server_port,
                 environment_overrides={
@@ -445,9 +455,16 @@ class LocalRewriteTests(unittest.TestCase):
                 },
             ) as relay:
                 status, _, body = post_relay(relay.address, json_bytes(request))
-        self.assertEqual(status, 502)
-        self.assertEqual(body, b"upstream request failed")
-        self.assertEqual(server.records, [])
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)["output"][0]["type"], "web_search_call")
+        self.assertEqual(len(server.records), 1)
+        self.assertEqual(server.records[0]["path"], "/anthropic/v1/messages")
+        tools = json.loads(server.records[0]["body"])["tools"]
+        self.assertEqual([tool["name"] for tool in tools], ["lookup", "web_search"])
+        self.assertEqual(tools[0]["input_schema"], {
+            "type": "object", "properties": {"query": {"type": "string"}},
+            "required": ["query"], "additionalProperties": False,
+        })
 
     def test_disabled_strict_tools_keeps_default_route_and_schema(self):
         response = self.buffered_cases["text_tool_usage_metadata"]["upstream_response"]

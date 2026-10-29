@@ -9,6 +9,7 @@ import unittest
 from test_cli import MODEX
 from test_deepseek_continuation import observe_turns
 from test_local_rewrite import SYNTHETIC_API_KEY
+from test_provider_tools_04392_characterization import _run
 
 
 ORACLE_01651 = Path(os.environ.get(
@@ -225,6 +226,20 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                 self.assertEqual(actual_body, expected_body)
                 self.assertEqual(len(actual_body["output"]), search_pairs + 1)
                 self.assertEqual(actual_body["output"][-1]["type"], "function_call")
+
+    def test_strict_mixed_tools_use_anthropic_route_like_release(self):
+        captures = [
+            _run(binary, _request(), strict_tools=True, scenario="anthropic-buffered")
+            for binary in (ORACLE_01651, MODEX)
+        ]
+        for capture in captures:
+            self.assertEqual((capture["exit_code"], capture["status"]), (0, 200))
+            self.assertEqual(len(capture["upstream"]), 1)
+            self.assertEqual(capture["upstream"][0]["path"], "/anthropic/v1/messages")
+            self.assertEqual(capture["state"]["leftovers"], [])
+        self.assertEqual(captures[0]["upstream_body"], captures[1]["upstream_body"])
+        self.assertEqual(_normalize(json.loads(captures[0]["response_body"])),
+                         _normalize(json.loads(captures[1]["response_body"])))
 
     def test_function_search_tools_and_tool_choices_match_release(self):
         reply = _buffered_reply([

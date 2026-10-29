@@ -6,6 +6,12 @@ select this release; comparisons with 0.439.x are historical regression
 evidence. All six release targets and unverified security behavior remain in
 the denominator. The full inventory and production parity remain unfinished.
 
+Hosted Fast CI run `40801262569` failed in the relay suite because its strict
+mixed-tools test still expected rejection after mixed Anthropic tools were
+enabled. With a rebuilt relay driver, the updated test verifies the Anthropic
+route and strict schema, and a 0.165.1 production comparison matches the
+forwarded request and response. This does not claim that hosted CI passed.
+
 The Anthropic Messages adapter now supports selected mixed function and web
 search requests and buffered or streamed replies against 0.165.1. Buffered
 content is capped at the reference's 65,536 blocks; tests cover the boundary,

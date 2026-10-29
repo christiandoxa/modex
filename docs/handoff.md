@@ -19,10 +19,16 @@ the full suite has not yet been rerun at the corrected commit.
 The Anthropic Messages adapter now supports selected mixed function and web
 search requests and buffered or streamed replies against 0.165.1. Buffered
 content is capped at the reference's 65,536 blocks; tests cover the boundary,
-text ordering and reused search IDs. Buffered comparisons now cover 3, 64 and
-1,024 search pairs with a function call; multiple mixed search pairs in streams
-remain unverified. See
-`docs/evidence/baseline-0.165.1/anthropic-mixed-tools.md`.
+text ordering and reused search IDs; buffered comparisons cover 3, 64 and
+1,024 search pairs with a function call. The stream parser now matches selected mixed function and
+multiple web-search uses with overlapping result blocks, reversed result stops,
+duplicate IDs, pending results at `message_stop`, and fragmented queries. A
+64-search synthetic stream also matches the pinned process. Query text that is
+missing, malformed, or non-string maps to an empty query list without being
+reflected; function argument validation remains strict. Broader text/search
+interleavings and an aggregate stream search-count limit remain open. See
+`docs/evidence/baseline-0.165.1/anthropic-mixed-tools.md` and
+`docs/evidence/baseline-0.165.1/anthropic-stream.md`.
 
 Hosted Fast CI run `40796304229` passed both helper shards, the active 0.165.1
 and focused relay checks, then failed on the unavailable required historical

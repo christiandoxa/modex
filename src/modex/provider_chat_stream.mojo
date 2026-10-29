@@ -8,7 +8,7 @@ from .provider_chat_items import tool_added_item, tool_output_item, wrap_tool_ar
 from .provider_chat_metadata import merge_chat_metadata
 from .provider_chat_tools import chat_tool_delta, incremental_arguments
 from .provider_chat_usage import chat_usage, json_unsigned
-from .provider_anthropic_messages import AnthropicWebSearch, _only_fields, _search_sources, _web_search_item
+from .provider_anthropic_messages import AnthropicWebSearch, _only_fields, _search_sources
 from .provider_sse_events import sse_event, sse_failed_event, sse_text_item_added, sse_text_item_done
 from .text import trim_text
 from .uuid7 import new_uuid7
@@ -49,13 +49,15 @@ struct DeepSeekChatState:
     var external_output_items: List[String]
     var anthropic_searches: List[AnthropicWebSearch]
     var anthropic_search_first_by_id: Dict[String, Int]
+    var anthropic_stopped_search_indices: Dict[UInt64, Bool]
+    var anthropic_open_result_indices: List[UInt64]
+    var anthropic_open_search_count: Int
     var anthropic_tool_indices: List[UInt64]
     var anthropic_stopped_tool_indices: List[UInt64]
     var anthropic_input_tokens: UInt64
     var anthropic_output_tokens: UInt64
     var anthropic_phase: Int
     var anthropic_text_index: Optional[UInt64]
-    var anthropic_active_search_index: Optional[UInt64]
     var anthropic_result_index: Optional[UInt64]
     var request_metadata: String
     var conversation_snapshot: Optional[String]
@@ -84,13 +86,15 @@ struct DeepSeekChatState:
         self.external_output_items = List[String]()
         self.anthropic_searches = List[AnthropicWebSearch]()
         self.anthropic_search_first_by_id = Dict[String, Int]()
+        self.anthropic_stopped_search_indices = Dict[UInt64, Bool]()
+        self.anthropic_open_result_indices = List[UInt64]()
+        self.anthropic_open_search_count = 0
         self.anthropic_tool_indices = List[UInt64]()
         self.anthropic_stopped_tool_indices = List[UInt64]()
         self.anthropic_input_tokens = 0
         self.anthropic_output_tokens = 0
         self.anthropic_phase = 0
         self.anthropic_text_index = Optional[UInt64]()
-        self.anthropic_active_search_index = Optional[UInt64]()
         self.anthropic_result_index = Optional[UInt64]()
         self.request_metadata = request_metadata
         self.conversation_snapshot = Optional[String]()
@@ -207,7 +211,7 @@ struct DeepSeekChatState:
             var block_index = index.value()
             var block_type = doc.string(doc.get(block, "type"))
             if block_type == "server_tool_use" and doc.string(doc.get(block, "name")) == "web_search":
-                if self.anthropic_phase != 1 and self.anthropic_phase != 5:
+                if self.anthropic_phase != 1 and self.anthropic_phase != 2 and self.anthropic_phase != 3 and self.anthropic_phase != 5:
                     raise Error("Anthropic web-search block is out of order")
                 _only_fields(doc, block, ["type", "id", "name", "input"], "web-search tool use")
                 if (
@@ -217,13 +221,12 @@ struct DeepSeekChatState:
                     raise Error("Anthropic web-search block is out of order")
                 var input = doc.get(block, "input")
                 _only_fields(doc, input, ["query"], "web-search input")
-                var query = doc.get(input, "query")
-                if query >= 0 and (doc.nodes[query].kind != JSON_STRING or not doc.nodes[query].text):
-                    raise Error("Anthropic web-search query is invalid")
+                if self.anthropic_search_index(block_index) >= 0:
+                    raise Error("Anthropic web-search block index was already used")
                 self.anthropic_phase = 2
                 return self.start_anthropic_search(doc, block, block_index)
             if block_type == "tool_use":
-                if self.anthropic_phase != 1 and self.anthropic_phase != 5 and self.anthropic_phase != 7:
+                if self.anthropic_phase != 1 and self.anthropic_phase != 2 and self.anthropic_phase != 3 and self.anthropic_phase != 4 and self.anthropic_phase != 5 and self.anthropic_phase != 7:
                     raise Error("Anthropic tool-use block is out of order")
                 _only_fields(doc, block, ["type", "id", "name", "input"], "tool-use block")
                 var id = doc.get(block, "id")
@@ -251,16 +254,17 @@ struct DeepSeekChatState:
                 )
             if block_type == "web_search_tool_result":
                 if (
-                    self.anthropic_phase != 3
-                    or not self.anthropic_active_search_index
-                    or block_index <= self.anthropic_active_search_index.value()
+                    (self.anthropic_phase != 3 and self.anthropic_phase != 4 and self.anthropic_phase != 5)
+                    or (self.anthropic_result_index and block_index <= self.anthropic_result_index.value())
                 ):
                     raise Error("Anthropic web-search result block is out of order")
                 _only_fields(doc, block, ["type", "tool_use_id", "content"], "web-search result block")
-                var active_search = self.anthropic_search_index(self.anthropic_active_search_index.value())
-                if active_search < 0 or doc.string(doc.get(block, "tool_use_id")) != self.anthropic_searches[active_search].id:
-                    raise Error("Anthropic web-search result does not match active tool use")
+                var search_id = doc.string(doc.get(block, "tool_use_id"))
+                var first_search = self.anthropic_search_first_by_id.get(search_id)
+                if not first_search or self.anthropic_searches[first_search.value()].output_index not in self.anthropic_stopped_search_indices:
+                    raise Error("Anthropic web-search result does not match a stopped tool use")
                 self.anthropic_result_index = Optional[UInt64](block_index)
+                self.anthropic_open_result_indices.append(block_index)
                 self.anthropic_phase = 4
                 return self.finish_anthropic_search(doc, block)
             if block_type == "text":
@@ -304,7 +308,8 @@ struct DeepSeekChatState:
                 if fragment_value < 0 or doc.nodes[fragment_value].kind != JSON_STRING:
                     raise Error("Anthropic input JSON delta must be a string")
                 if search >= 0:
-                    if self.anthropic_phase != 2: raise Error("Anthropic input JSON delta has no supported tool use")
+                    if self.anthropic_phase != 2 or block_index in self.anthropic_stopped_search_indices:
+                        raise Error("Anthropic input JSON delta has no supported tool use")
                     self.anthropic_searches[search].input_json += fragment
                     return List[String]()
                 var tracked = False
@@ -319,6 +324,9 @@ struct DeepSeekChatState:
                         break
                 if not tracked or stopped or (
                     self.anthropic_phase != 1
+                    and self.anthropic_phase != 2
+                    and self.anthropic_phase != 3
+                    and self.anthropic_phase != 4
                     and self.anthropic_phase != 5
                     and self.anthropic_phase != 6
                     and self.anthropic_phase != 7
@@ -340,16 +348,21 @@ struct DeepSeekChatState:
             if search >= 0:
                 if (
                     self.anthropic_phase != 2
-                    or not self.anthropic_active_search_index
-                    or self.anthropic_active_search_index.value() != block_index
+                    or block_index in self.anthropic_stopped_search_indices
                 ):
                     raise Error("Anthropic web-search block stop is out of order")
-                _ = _web_search_item(self.anthropic_searches[search], False)
-                self.anthropic_phase = 3
+                self.anthropic_stopped_search_indices[block_index] = True
+                self.anthropic_open_search_count -= 1
+                self.anthropic_phase = 2 if self.anthropic_open_search_count > 0 else 3
                 return List[String]()
-            if self.anthropic_result_index and self.anthropic_result_index.value() == block_index and self.anthropic_phase == 4:
-                self.anthropic_phase = 5
-                self.anthropic_active_search_index = Optional[UInt64]()
+            var result_position = -1
+            for position in range(len(self.anthropic_open_result_indices)):
+                if self.anthropic_open_result_indices[position] == block_index:
+                    result_position = position
+                    break
+            if result_position >= 0 and self.anthropic_phase == 4:
+                _ = self.anthropic_open_result_indices.pop(result_position)
+                self.anthropic_phase = 4 if len(self.anthropic_open_result_indices) > 0 else 5
                 return List[String]()
             if self.anthropic_text_index and self.anthropic_text_index.value() == block_index and self.anthropic_phase == 6:
                 self.anthropic_phase = 7
@@ -362,6 +375,9 @@ struct DeepSeekChatState:
             if tracked:
                 if (
                     self.anthropic_phase != 1
+                    and self.anthropic_phase != 2
+                    and self.anthropic_phase != 3
+                    and self.anthropic_phase != 4
                     and self.anthropic_phase != 5
                     and self.anthropic_phase != 6
                     and self.anthropic_phase != 7
@@ -375,7 +391,7 @@ struct DeepSeekChatState:
                 return List[String]()
             raise Error("Anthropic content block stop has no supported block")
         if kind == "message_delta":
-            if self.anthropic_phase != 1 and self.anthropic_phase != 7:
+            if self.anthropic_phase != 1 and self.anthropic_phase != 3 and self.anthropic_phase != 5 and self.anthropic_phase != 7:
                 raise Error("Anthropic message_delta is out of order")
             _only_fields(doc, doc.root, ["type", "delta", "usage"], "message_delta event")
             var delta = doc.get(doc.root, "delta")
@@ -401,9 +417,7 @@ struct DeepSeekChatState:
             return self.complete_tools()
         if kind == "message_stop":
             _only_fields(doc, doc.root, ["type"], "message_stop event")
-            if self.anthropic_phase != 1 and self.anthropic_phase != 7 and self.anthropic_phase != 8:
-                raise Error("Anthropic stream ended outside the supported web-search response shape")
-            if self.anthropic_searches and not self.anthropic_text_index:
+            if self.anthropic_phase != 1 and self.anthropic_phase != 3 and self.anthropic_phase != 5 and self.anthropic_phase != 7 and self.anthropic_phase != 8:
                 raise Error("Anthropic stream ended outside the supported web-search response shape")
             var emit_created = self.anthropic_phase == 8 or len(self.anthropic_searches) > 0
             self.anthropic_phase = 9
@@ -423,13 +437,13 @@ struct DeepSeekChatState:
         var input = doc.get(block, "input")
         var input_json = serialize_json(doc, input) if input >= 0 and len(doc.nodes[input].children) != 0 else String()
         var search = AnthropicWebSearch(index, id, input_json, "[]", False)
-        self.anthropic_active_search_index = Optional[UInt64](index)
-        var item = _web_search_item(search, True)
-        # Serial phases and increasing block indexes keep searches ordered.
+        var item = _stream_anthropic_search_item(search, True)
+        # Keep first-ID result matching stable while preserving provider block order.
         var position = len(self.anthropic_searches)
         if not (id in self.anthropic_search_first_by_id):
             self.anthropic_search_first_by_id[id] = position
         self.anthropic_searches.append(search^)
+        self.anthropic_open_search_count += 1
         var output = List[String]()
         output.append(self.event("response.output_item.added", '"output_index":' + String(index) + ',"item":' + item))
         return output^
@@ -448,7 +462,7 @@ struct DeepSeekChatState:
         var output = List[String]()
         self.anthropic_searches[position].sources = sources
         if not self.anthropic_searches[position].done:
-            var item = _web_search_item(self.anthropic_searches[position], False)
+            var item = _stream_anthropic_search_item(self.anthropic_searches[position], False)
             self.anthropic_searches[position].done = True
             self.external_output_items.append(item)
             output.append(self.event("response.output_item.done", '"output_index":' + String(self.anthropic_searches[position].output_index) + ',"item":' + item))
@@ -458,7 +472,7 @@ struct DeepSeekChatState:
         var output = List[String]()
         for position in range(len(self.anthropic_searches)):
             if self.anthropic_searches[position].done: continue
-            var item = _web_search_item(self.anthropic_searches[position], False)
+            var item = _stream_anthropic_search_item(self.anthropic_searches[position], False)
             self.anthropic_searches[position].done = True
             self.external_output_items.append(item)
             output.append(self.event("response.output_item.done", '"output_index":' + String(self.anthropic_searches[position].output_index) + ',"item":' + item))
@@ -676,3 +690,23 @@ def json_array(values: List[String]) -> String:
             body += ","
         body += values[index]
     return body + "]"
+
+
+def _stream_anthropic_search_item(search: AnthropicWebSearch, in_progress: Bool) -> String:
+    var queries = String("[]")
+    if search.input_json and search.input_json != "{}":
+        # The pinned stream adapter drops unparseable or non-string query fragments.
+        try:
+            var input = JsonDocument(search.input_json)
+            if input.nodes[input.root].kind == JSON_OBJECT:
+                var query = input.get(input.root, "query")
+                if query >= 0 and input.nodes[query].kind == JSON_STRING and input.nodes[query].text:
+                    queries = "[" + serialize_json(input, query) + "]"
+        except:
+            pass
+    return (
+        '{"type":"web_search_call","id":' + quote_json(search.id)
+        + ',"status":' + quote_json("in_progress" if in_progress else "completed")
+        + ',"action":{"type":"search","queries":' + queries
+        + ',"sources":' + search.sources + "}}"
+    )

@@ -11,7 +11,7 @@ from test_cli import MODEX
 from test_provider_tools_04392_characterization import _normalized_events, _run
 from test_anthropic_text_stream_04392 import START, TEXT_START, TEXT_DELTA, TEXT_STOP, MESSAGE_DELTA, STOP, REQUEST, stream
 from test_deepseek_continuation import observe_turns
-from provider_stream_search_cases import repeated_search_case
+from provider_stream_search_cases import interleaved_mixed_search_case, repeated_search_case
 
 
 ORACLE_01651 = Path(os.environ.get(
@@ -152,6 +152,131 @@ class ProviderStream01651CharacterizationTests(unittest.TestCase):
             [{"type": "url", "url": "https://one.example.test", "title": "One"}],
             [],
         ])
+
+    def test_anthropic_interleaved_mixed_searches_and_function_match_release(self):
+        request, reply = interleaved_mixed_search_case()
+        reference_posts, reference = observe_turns(ORACLE_01651, [request], [reply])
+        actual_posts, actual = observe_turns(MODEX, [request], [reply])
+        self.assertEqual([response["status"] for response in reference], [200])
+        self.assertEqual([response["status"] for response in actual], [200])
+        self.assertEqual(len(reference_posts), 1)
+        self.assertEqual(len(actual_posts), 1)
+        self.assertEqual(reference_posts[0]["path"], "/anthropic/v1/messages")
+        self.assertEqual(actual_posts[0]["path"], reference_posts[0]["path"])
+        self.assertEqual(json.loads(actual_posts[0]["body"]), json.loads(reference_posts[0]["body"]))
+        expected = _normalized_events(bytes.fromhex(reference[0]["body"]))
+        observed = _normalized_events(bytes.fromhex(actual[0]["body"]))
+        self.assertEqual(observed, expected)
+        self.assertEqual(
+            [payload["sequence_number"] for _, payload in observed],
+            list(range(len(observed))),
+        )
+        output = expected[-1][1]["response"]["output"]
+        searches = [item for item in output if item["type"] == "web_search_call"]
+        self.assertEqual([item["id"] for item in searches], ["search_1", "search_0"])
+        self.assertEqual([item["action"]["queries"] for item in searches], [["query-1"], ["query-0"]])
+        self.assertEqual([item["action"]["sources"][0]["url"] for item in searches], [
+            "https://example.test/1", "https://example.test/0",
+        ])
+        function = next(item for item in output if item["type"] == "function_call")
+        self.assertEqual((function["name"], function["arguments"]), ("lookup", '{"q":"mixed"}'))
+
+    def test_anthropic_interleaved_duplicate_search_ids_match_release(self):
+        request, reply = interleaved_mixed_search_case(shared_id=True)
+        reference_posts, reference = observe_turns(ORACLE_01651, [request], [reply])
+        actual_posts, actual = observe_turns(MODEX, [request], [reply])
+        self.assertEqual([response["status"] for response in reference], [200])
+        self.assertEqual([response["status"] for response in actual], [200])
+        self.assertEqual(json.loads(actual_posts[0]["body"]), json.loads(reference_posts[0]["body"]))
+        expected = _normalized_events(bytes.fromhex(reference[0]["body"]))
+        observed = _normalized_events(bytes.fromhex(actual[0]["body"]))
+        self.assertEqual(observed, expected)
+        searches = [item for item in expected[-1][1]["response"]["output"]
+                    if item["type"] == "web_search_call"]
+        self.assertEqual([item["action"]["queries"] for item in searches], [["query-0"], ["query-1"]])
+        self.assertEqual([item["action"]["sources"] for item in searches], [
+            [{"type": "url", "url": "https://example.test/1", "title": "Result 1"}],
+            [],
+        ])
+
+    def test_anthropic_pending_mixed_searches_complete_at_message_stop(self):
+        request, reply = interleaved_mixed_search_case(include_results=False)
+        reference_posts, reference = observe_turns(ORACLE_01651, [request], [reply])
+        actual_posts, actual = observe_turns(MODEX, [request], [reply])
+        self.assertEqual([response["status"] for response in reference], [200])
+        self.assertEqual([response["status"] for response in actual], [200])
+        self.assertEqual(json.loads(actual_posts[0]["body"]), json.loads(reference_posts[0]["body"]))
+        expected = _normalized_events(bytes.fromhex(reference[0]["body"]))
+        observed = _normalized_events(bytes.fromhex(actual[0]["body"]))
+        self.assertEqual(observed, expected)
+        searches = [item for item in expected[-1][1]["response"]["output"]
+                    if item["type"] == "web_search_call"]
+        self.assertEqual([item["action"]["sources"] for item in searches], [[], []])
+
+    def test_anthropic_missing_malformed_and_nonstrings_search_queries_match_release(self):
+        for query_case in ("missing", "malformed", "nonstring", "initial-nonstr"):
+            with self.subTest(query_case=query_case):
+                request, reply = interleaved_mixed_search_case(query_case=query_case)
+                reference_posts, reference = observe_turns(ORACLE_01651, [request], [reply])
+                actual_posts, actual = observe_turns(MODEX, [request], [reply])
+                self.assertEqual([response["status"] for response in reference], [200])
+                self.assertEqual([response["status"] for response in actual], [200])
+                self.assertEqual(json.loads(actual_posts[0]["body"]), json.loads(reference_posts[0]["body"]))
+                expected = _normalized_events(bytes.fromhex(reference[0]["body"]))
+                observed = _normalized_events(bytes.fromhex(actual[0]["body"]))
+                self.assertEqual(observed, expected)
+                searches = [item for item in expected[-1][1]["response"]["output"]
+                            if item["type"] == "web_search_call"]
+                first_search = next(item for item in searches if item["id"] == "search_0")
+                self.assertEqual(first_search["action"]["queries"], [])
+                self.assertNotIn("query-0", json.dumps(expected, ensure_ascii=False))
+                self.assertIn("query-1", json.dumps(expected, ensure_ascii=False))
+
+    def test_anthropic_provider_error_aborts_mixed_stream_without_completion(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic mixed query",
+            "stream": True,
+            "tools": [
+                {"type": "function", "name": "lookup", "parameters": {"type": "object"}},
+                {"type": "web_search_preview"},
+            ],
+        }
+        events = [
+            START,
+            {"type": "content_block_start", "index": 0, "content_block": {
+                "type": "server_tool_use", "id": "search_cancel", "name": "web_search", "input": {},
+            }},
+            {"type": "content_block_start", "index": 1, "content_block": {
+                "type": "tool_use", "id": "call_cancel", "name": "lookup", "input": {},
+            }},
+            {"type": "error", "error": {"type": "overloaded_error", "message": "synthetic cancellation"}},
+        ]
+        reply = {"status": 200, "content_type": "text/event-stream", "body": stream(events)}
+        reference_posts, reference = observe_turns(ORACLE_01651, [request], [reply])
+        actual_posts, actual = observe_turns(MODEX, [request], [reply])
+        self.assertEqual([response["status"] for response in reference], [200])
+        self.assertEqual([response["status"] for response in actual], [200])
+        self.assertEqual(json.loads(actual_posts[0]["body"]), json.loads(reference_posts[0]["body"]))
+        expected = _normalized_events(bytes.fromhex(reference[0]["body"]))
+        observed = _normalized_events(bytes.fromhex(actual[0]["body"]))
+        self.assertEqual(observed, expected)
+        self.assertEqual(observed[-1][0], "response.failed")
+        self.assertNotIn("response.completed", [name for name, _ in observed])
+
+    def test_many_interleaved_mixed_searches_match_release(self):
+        request, reply = interleaved_mixed_search_case(search_count=64)
+        self.assertLess(len(reply["body"]), 4 * 1024 * 1024)
+        reference_posts, reference = observe_turns(ORACLE_01651, [request], [reply])
+        actual_posts, actual = observe_turns(MODEX, [request], [reply])
+        self.assertEqual([response["status"] for response in reference], [200])
+        self.assertEqual([response["status"] for response in actual], [200])
+        self.assertEqual(actual_posts[0]["path"], reference_posts[0]["path"])
+        self.assertEqual(json.loads(actual_posts[0]["body"]), json.loads(reference_posts[0]["body"]))
+        self.assertEqual(
+            _normalized_events(bytes.fromhex(actual[0]["body"])),
+            _normalized_events(bytes.fromhex(reference[0]["body"])),
+        )
 
     def test_anthropic_buffered_function_tool_use_matches_release(self):
         request = {

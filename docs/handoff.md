@@ -1,5 +1,9 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Hosted Fast run `40840411893` on `479cd57136ddc9c52b8952d48d095eecf02eef9c`
+failed after focused build and native checks passed because the required
+0.439.2 tag was unavailable. Oracle-dependent checks did not run.
+
 The guarded DeepSeek Super path now accepts explicit `--no-proxy` before or
 after `exec`. Both pinned releases and Modex complete a synthetic loopback
 provider request with unreachable proxy settings and matching normalized child

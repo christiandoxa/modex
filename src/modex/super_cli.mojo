@@ -105,25 +105,46 @@ def _debug_quoted(value: String) -> String:
 
 
 def _clap_value(value: String) -> String:
-    # shortcut: OSC sequences are not stripped; add OSC termination handling if ANSI diagnostics need full parity.
     var output = String()
-    var escape = False
-    var csi = False
+    # States: ground, escape, CSI, OSC, control string, escape intermediate.
+    var state = 0
     for character in value.codepoints():
         var code = Int(character)
-        if csi:
-            if 0x40 <= code <= 0x7E: csi = False
-            continue
-        if escape:
-            escape = False
-            if code == 91: csi = True
-            continue
         if code == 27:
-            escape = True
-        elif code == 127 or (code < 32 and code not in [9, 10, 12, 13]):
+            state = 1
             continue
-        else:
-            output += chr(code)
+        if code == 24 or code == 26:
+            state = 0
+            continue
+        if state == 3 or state == 4:
+            if state == 3 and code == 7: state = 0
+            continue
+        if state != 0 and code < 32:
+            if code in [9, 10, 12, 13]:
+                output += chr(code)
+                state = 0
+            continue
+        if state == 1:
+            if code == 91:
+                state = 2
+            elif code == 93:
+                state = 3
+            elif code == 80 or code == 88 or code == 94 or code == 95:
+                state = 4
+            elif 0x20 <= code <= 0x2F:
+                state = 5
+            elif 0x30 <= code <= 0x7E:
+                state = 0
+            continue
+        if state == 2:
+            if 0x40 <= code <= 0x7E: state = 0
+            continue
+        if state == 5:
+            if 0x30 <= code <= 0x7E: state = 0
+            continue
+        if code == 127 or (code < 32 and code not in [9, 10, 12, 13]):
+            continue
+        output += chr(code)
     return output^
 
 

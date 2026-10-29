@@ -13,9 +13,10 @@ current revision, non-host targets, or security behavior.
 Reasoning-effort errors now format C0/C1 codepoints, quotes, backslashes, and
 tested ANSI CSI values like both pinned releases. Printable Unicode also
 matches. Full Rust Debug printability remains open for non-ASCII nonprintables
-such as U+0301, U+200B, and unassigned U+0378; OSC values also remain different
-in the outer diagnostic. Evidence records these exact mismatches and the
-verified boundary cases in
+such as U+0301, U+200B, and unassigned U+0378. Selected OSC and other terminal
+control strings now match both releases in the outer diagnostic; broader
+terminal protocol behavior remains unverified. Evidence records the remaining
+mismatches and verified boundary cases in
 `docs/evidence/baseline-0.165.1/super-sub-agent-reasoning-escaping.md`.
 
 ## Super reasoning-effort CLI values (2026-10-30)

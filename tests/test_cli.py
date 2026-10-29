@@ -36,6 +36,15 @@ SUPER_VALUE_OPTIONS = (
 SUPER_REASONING_EFFORT_INVALID_VALUES = (
     " INSTANT ", "instant", "İNSTANT", 'bad"quote', "bad\\quote", "bad💡quote",
     "bad\x1b[31mquote\x1b[0m",
+    "bad\x1b]2;title\x07quote", "bad\x1b]2;title\x1b\\quote",
+    "bad\x1b]incomplete", "bad\x1bPdata\x1b\\quote",
+    "bad\x1b_data\x1b\\quote", "bad\x1b^data\x1b\\quote",
+    "bad\x1bXdata\x1b\\quote", "bad\x1b]data\x18quote",
+    "bad\x1b]data\x1aquote", "bad\x1b]data\x1b[31mquote",
+    "bad\x1b]one\x1b]two\x07quote", "bad\x1bPdata\x07quote",
+    "bad\x1b\x07quote", "bad\x1b\tquote", "bad\x1b\rquote",
+    "bad\x1b[\tquote", "bad\x1b \nquote", "bad\x1b[\x07quote",
+    "bad\x1b ééquote", "bad\x1bébquote",
 ) + tuple("bad" + chr(code) + "quote" for code in range(1, 32)) + tuple(
     "bad" + chr(code) + "quote" for code in range(127, 160)
 )

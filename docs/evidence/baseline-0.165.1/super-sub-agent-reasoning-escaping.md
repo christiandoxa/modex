@@ -15,15 +15,18 @@ emoji). The process tests compare return code and complete stdout/stderr with
 each release. All cases run in isolated homes and leave no filesystem
 mutations.
 
+The outer diagnostic also matches both releases for selected OSC, DCS, APC,
+PM, and SOS strings, including BEL and ST termination, cancellation, incomplete
+strings, nested escapes, and escape intermediates. Before this change those
+fixtures leaked parts of the control string into the displayed argument. The
+filter is qualified only for the tested sequences, not all terminal protocols.
+
 The probes also identify limits that remain open:
 
 - Rust escapes non-ASCII nonprintables and grapheme extenders, including
   U+0301, U+200B, U+2028, U+E000, and unassigned U+0378. Modex leaves these
   codepoints literal inside the quoted reason because the project has no
   versioned Rust-compatible printability table.
-- OSC sequences are not fully stripped from the outer diagnostic. For
-  `a\u001b]2;title\u0007b`, both releases display outer value `ab`; Modex
-  displays `a2;titleb`.
 - NUL cannot be passed in an OS argument, so that input was not process-tested.
 
 The release binaries were verified against their pinned SHA-256 values:

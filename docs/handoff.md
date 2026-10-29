@@ -17,16 +17,22 @@ tests. No full-suite PASS or parity promotion is claimed. The standalone
 active CI path; the streaming test also requires the pinned historical 0.165.1
 oracle.
 
+The 0.439.2 local relay now emits the terminal chunk for HTTP/1.0 HEAD
+204/304 event-stream responses, as observed from the Linux release. The
+launch controls compare output and separately record missing Modex runtime
+lock and housekeeping files; configured relative and symlink Codex paths also
+retain a shebang-path mismatch. These observations do not qualify Super or
+the other release targets.
+
+Hosted Fast CI run `40805095414` failed on three 0.165.1 reference-only
+WebSocket handshake timeouts. The same three tests passed locally, including
+with single-CPU affinity; the hosted cause remains unresolved. No hosted CI
+success is claimed.
+
 The notes below retain their original release-specific evidence and CI results.
 They do not become current-target proof when the active baseline changes.
 
 ## Historical implementation and validation record
-
-The user-directed 0.439.2 local-relay slice now matches the released wire
-terminator for HTTP/1.0 HEAD 204/304 event-stream responses. The production
-loopback writer emits the final chunk; the 0.439.2 synthetic process test
-covers both statuses. This closes only that Linux x86-64 observation;
-platform and contract qualification remain incomplete.
 
 Hosted Fast CI run `40801262569` failed in the relay suite because its strict
 mixed-tools test still expected rejection after mixed Anthropic tools were

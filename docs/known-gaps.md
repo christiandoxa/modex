@@ -210,11 +210,12 @@ metadata/citation behavior, TLS/DNS/proxies, resource behavior and full
 stream/error equivalence remain open. The tested ordered search/result/text
 shape and text-only or empty streams with a final `message_stop` are supported;
 other Anthropic event orders remain unverified. Selected text and function
-argument deltas before `message_start`, plus a standalone pre-start
-`message_delta`, now match both pinned processes. Late and repeated
-`message_start` metadata remains a measured difference: the releases update
-response ID/model/input usage for tested out-of-order cases while Modex retains
-its fallback ID and usage. See
+argument deltas before `message_start`, a standalone pre-start `message_delta`,
+and tested late/repeated `message_start` metadata now match both pinned
+processes. Native first-event prefetch also matches for tested ping, error,
+fragmentation, timeout, EOF, and 8 KiB boundary cases. Modex does not model
+Prodex's prefetch-slot semaphore, so saturation behavior remains unqualified.
+See
 `docs/evidence/baseline-0.165.1/anthropic-stream-message-delta-order.md`.
 Selected initial text-block values are ignored as in the 0.165.1 release;
 subsequent text deltas remain covered by the production comparison. The exact

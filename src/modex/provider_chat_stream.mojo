@@ -53,7 +53,6 @@ struct DeepSeekChatState:
     var anthropic_open_result_indices: Dict[UInt64, Bool]
     var anthropic_input_tokens: UInt64
     var anthropic_output_tokens: UInt64
-    var anthropic_message_started: Bool
     var anthropic_message_delta_seen: Bool
     var request_metadata: String
     var conversation_snapshot: Optional[String]
@@ -86,7 +85,6 @@ struct DeepSeekChatState:
         self.anthropic_open_result_indices = Dict[UInt64, Bool]()
         self.anthropic_input_tokens = 0
         self.anthropic_output_tokens = 0
-        self.anthropic_message_started = False
         self.anthropic_message_delta_seen = False
         self.request_metadata = request_metadata
         self.conversation_snapshot = Optional[String]()
@@ -189,22 +187,28 @@ struct DeepSeekChatState:
                 message = doc.string(message_node)
             return self.fail(code, message)
         if kind == "message_start":
-            # shortcut: late/repeated start metadata is missing; upgrade after source/process order is traced.
-            if self.completed and not self.anthropic_stream_terminal:
-                var output = List[String]()
-                var message = doc.get(doc.root, "message")
-                var id = optional_string(doc, message, "id")
-                if id and id.value() and self.response_id.startswith("resp_deepseek_"):
-                    self.response_id = id.value()
-                if not self.created:
-                    self.created = True
-                    output.append(self.event("response.created", '"response":{"id":' + quote_json(self.response_id) + "}", True))
-                self.anthropic_message_started = True
-                return output^
-            self.anthropic_message_started = True
-            return List[String]()
+            var output = List[String]()
+            var message = doc.get(doc.root, "message")
+            var id = optional_string(doc, message, "id")
+            if id and self.response_id.startswith("resp_deepseek_"):
+                self.response_id = id.value()
+            var model = optional_string(doc, message, "model")
+            if model:
+                self.model = model.value()
+            var usage = doc.get(message, "usage")
+            var input = json_unsigned(doc, doc.get(usage, "input_tokens"))
+            if input:
+                self.anthropic_input_tokens = input.value()
+            var output_tokens = json_unsigned(doc, doc.get(usage, "output_tokens"))
+            if output_tokens:
+                self.anthropic_output_tokens = output_tokens.value()
+            var total = UInt64.MAX if self.anthropic_output_tokens > UInt64.MAX - self.anthropic_input_tokens else self.anthropic_input_tokens + self.anthropic_output_tokens
+            self.usage = Optional[String]('{"input_tokens":' + String(self.anthropic_input_tokens) + ',"output_tokens":' + String(self.anthropic_output_tokens) + ',"total_tokens":' + String(total) + '}')
+            if not self.created:
+                self.created = True
+                output.append(self.event("response.created", '"response":{"id":' + quote_json(self.response_id) + "}", True))
+            return output^
         if kind == "content_block_start":
-            if not self.anthropic_message_started: return List[String]()
             var block = doc.get(doc.root, "content_block")
             if block < 0:
                 return self.fail("invalid_anthropic_stream", "content block is missing")
@@ -293,7 +297,6 @@ struct DeepSeekChatState:
                 )
             raise Error("Anthropic content delta type is not supported")
         if kind == "content_block_stop":
-            if not self.anthropic_message_started: return List[String]()
             var index = json_unsigned(doc, doc.get(doc.root, "index"))
             var block_index = UInt64(0)
             if index: block_index = index.value()
@@ -302,7 +305,6 @@ struct DeepSeekChatState:
                 _ = self.anthropic_open_result_indices.pop(block_index)
             return List[String]()
         if kind == "message_delta":
-            if not self.anthropic_message_started and not self.created: return List[String]()
             var delta = doc.get(doc.root, "delta")
             var stop_reason = doc.get(delta, "stop_reason")
             # The release reads string stop_reason only and ignores stop_sequence.

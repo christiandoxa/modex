@@ -15,10 +15,9 @@ routes `DeltaText` and `DeltaArguments` through
 `crates/prodex-mojo-core/src/anthropic_stream_policy.rs` dispatches
 `content_block_delta` by event and delta type; its facts do not include a
 `message_start` state. The compiled policy is in
-`mojo/prodex_core/anthropic_stream_policy.mojo`. Modex had added a
-`message_started` gate around all content-block deltas, which suppressed
-validly parsed delta events in the synthetic order probes. That gate is
-removed. The separate content-block-start guard remains.
+`mojo/prodex_core/anthropic_stream_policy.mojo`. Modex now dispatches supported
+content-block starts, deltas, stops, and `message_delta` without a
+`message_start` sequencing guard, matching the reader's event policy.
 
 The complete pinned-source path was traced in both releases. In
 `crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_response_dispatch.rs`
@@ -33,6 +32,16 @@ does not control dispatch. In
 the `MessageStart` arm converts its message ID, model, and accumulated
 input/output usage into a chat chunk and sends it to
 `RuntimeDeepSeekSseState::observe_chat_chunk`.
+
+The native first-event lookahead is in
+`crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_upstream.rs`.
+It buffers bytes through the first complete event whose JSON `type` is not
+`ping`; on timeout, EOF, or the 8 KiB lookahead limit, it keeps the bytes read
+so far. `runtime_local_rewrite_finish_native_prefetch` stores that prefix on
+the live response. Native Anthropic dispatch destructures the response without
+passing `prefix` to `RuntimeAnthropicMessagesSseReader`, so the reader starts
+after the consumed prefix. The `event:` SSE field is ignored by the shared
+line parser; ping detection uses the JSON payload's `type`.
 
 In `crates/prodex-app/src/runtime_launch/proxy_startup/deepseek_sse.rs`, that
 state applies chunk metadata before deciding whether to emit
@@ -50,17 +59,13 @@ assembles the response from the current ID, model, and usage. The inspected
 reader and state implementations, ID policy, and relevant Mojo policy/projection
 functions are identical between the two pinned snapshots.
 
-This source predicts ID/model/usage `msg_a`/`model-msg_b`/`9 input + 5 output
-tokens for the case with two starts before content: the first start
-replaces the generated ID, so the second start cannot replace it, while model
-and usage still take the second values.
-The verified release processes instead return `msg_b` with the second
-start's model and usage. For two starts after content, the release returns
-`msg_a` with the second start's model and usage, which does agree with the
-source's one-time ID replacement. Thus the pinned source gives no complete
-rule for the binary's order-dependent ID behavior. The mismatch between source
-and process evidence remains unresolved. Keep the six metadata gaps open; the
-source does not justify changing message-start metadata behavior.
+The prefetch prefix explains the earlier source/process mismatch. With two
+starts before content, the first start (`msg_a`) is consumed before dispatch;
+the reader projects the second start (`msg_b`) as the first visible start.
+With both starts after text, the first content-block start is consumed, the
+text delta creates a response under its generated ID, and the later starts
+replace that ID only while it still has the generated prefix. Model and usage
+continue to update on every visible start.
 
 ## Process observations
 
@@ -70,30 +75,20 @@ complete normalized event sequences against both releases, including response
 IDs, model, usage, and error events. Both pinned releases agree on every listed
 case.
 
-Matching cases now include the canonical start/text/delta sequence, a text
-delta before any message start followed by `message_delta`, a function-argument
-delta before start that fails for a missing function name, and a lone
-`message_delta` plus `message_stop` before start. The last case returns only an
-empty `response.completed`; Modex previously emitted an extra
-`response.created` with finish metadata and usage. Modex now ignores that
-standalone delta while still accepting `message_delta` after earlier content
-has created a response.
+The complete normalized event matrix now matches both release processes for
+the canonical sequence, pre-start deltas, the standalone pre-start
+`message_delta`, late and repeated starts, and generated-prefix ID replacement.
+The native prefetch matrix also matches both releases for first start/text/error
+events, retryable and non-retryable first errors without an available fallback,
+JSON pings with conflicting `event:` labels, a fragmented first frame, timeout
+after a partial frame, EOF inside a frame, and events at and across the 8 KiB
+lookahead boundary. The label-mismatch cases confirm that `event:` does not
+control dispatch.
 
-Known differences remain for streams where a start follows earlier content or
-is repeated. The exact ID contradiction is reproducible with the matrix case
-`duplicate starts before content` in
-`tests/test_provider_stream_cross_release_characterization.py`:
-`[start("msg_a", 3), start("msg_b", 9), text_block, text_delta,
-message_delta(output_tokens=5), message_stop]`: both release processes return
-`msg_b`, `model-msg_b`, and usage `{input_tokens: 9, output_tokens: 5,
-total_tokens: 14}`. Moving both starts after the text delta instead returns
-`msg_a` while retaining the second start's model and usage. Other recorded
-cases include a late start after text, a late start after `message_delta`, an
-empty text-block start before a message start, and a custom ID beginning
-`resp_deepseek_` followed by another start. Modex currently keeps its generated
-response ID and omits late/repeated-start model and input-usage metadata; the
-matrix compares complete normalized event sequences so these differences stay
-visible as gaps.
+The production Modex transport has no matching prefetch semaphore, so behavior
+when Prodex skips lookahead because its prefetch slots are saturated is not
+qualified. The tests cover Linux x86-64 only; the other five release targets
+remain unqualified.
 
 The regression test uses synthetic credentials only and makes no account login
 or paid provider request.
@@ -101,9 +96,9 @@ or paid provider request.
 ## Validation
 
 - `rtk make build` — pass with Mojo 1.2.0; existing unused-variable warnings remain.
-- `python3 -m unittest test_provider_stream_cross_release_characterization.ProviderStreamCrossReleaseCharacterizationTests.test_anthropic_message_delta_before_message_start_is_ignored test_provider_stream_cross_release_characterization.ProviderStreamCrossReleaseCharacterizationTests.test_anthropic_out_of_order_stream_matrix_and_start_metadata_gap test_provider_stream_01651_characterization.ProviderStream01651CharacterizationTests.test_anthropic_message_delta_stop_fields_match_release -v` — all three pass, including explicit assertions for the retained metadata gaps.
+- `python3 -m unittest test_provider_stream_cross_release_characterization.ProviderStreamCrossReleaseCharacterizationTests.test_anthropic_message_delta_before_message_start_is_ignored test_provider_stream_cross_release_characterization.ProviderStreamCrossReleaseCharacterizationTests.test_anthropic_out_of_order_stream_matrix_and_start_metadata test_provider_stream_cross_release_characterization.ProviderStreamCrossReleaseCharacterizationTests.test_anthropic_native_prefetch_consumes_exact_prefix test_provider_stream_01651_characterization.ProviderStream01651CharacterizationTests.test_anthropic_message_delta_stop_fields_match_release -v` — pass against both pinned releases.
 - `python3 scripts/ci/check-product-dependencies.py` — pass; all 71 Mojo production files use standard-library or internal imports.
-- `python3 scripts/ci/check-test-census.py` — pass; all 50 native test sources and 148 Python test modules have one suite owner.
+- `python3 scripts/ci/check-test-census.py` — pass; all 50 native test sources and 149 Python test modules have one suite owner.
 - `git diff --check` — pass.
 
 This qualifies only the tested out-of-order event sequence on Linux x86-64.

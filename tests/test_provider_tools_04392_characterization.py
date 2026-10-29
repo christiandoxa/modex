@@ -28,7 +28,8 @@ def _codex_with_request(request):
 def _run(
     binary, request, strict_tools=False, strict_config=False, scenario="buffered",
     beta_override=None, base_path="/v1", strict_override=None, mode_override=None,
-    anthropic_events=None,
+    anthropic_events=None, environment_overrides=None, anthropic_fragment_at=None,
+    anthropic_fragment_delay_ms=0, anthropic_truncate_at=None,
 ):
     harness = test_super_launch.SuperLaunchTests()
     codex = _codex_with_request(request)
@@ -76,12 +77,18 @@ def _run(
             ):
                 result, records, upstream, state = harness.run_launch(
                     binary=binary, scenario=scenario, model="deepseek-chat", base_path=base_path,
-                    anthropic_events=anthropic_events,
+                    anthropic_events=anthropic_events, environment_overrides=environment_overrides,
+                    anthropic_fragment_at=anthropic_fragment_at,
+                    anthropic_fragment_delay_ms=anthropic_fragment_delay_ms,
+                    anthropic_truncate_at=anthropic_truncate_at,
                 )
         else:
             result, records, upstream, state = harness.run_launch(
                 binary=binary, scenario=scenario, model="deepseek-chat", base_path=base_path,
-                anthropic_events=anthropic_events,
+                anthropic_events=anthropic_events, environment_overrides=environment_overrides,
+                anthropic_fragment_at=anthropic_fragment_at,
+                anthropic_fragment_delay_ms=anthropic_fragment_delay_ms,
+                anthropic_truncate_at=anthropic_truncate_at,
             )
 
     response = next((record for record in records if record["kind"] == "response"), None)

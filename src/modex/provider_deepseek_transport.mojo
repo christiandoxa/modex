@@ -208,6 +208,15 @@ def _deepseek_native_first_event_class(lines: List[String]) -> Int:
         return DEEPSEEK_ERROR_OTHER
 
 
+def _deepseek_native_is_ping_event(lines: List[String]) -> Bool:
+    try:
+        var document = JsonDocument(String("\n").join(lines))
+        var event_type = document.get(document.root, "type")
+        return event_type >= 0 and document.nodes[event_type].kind == JSON_STRING and document.string(event_type) == "ping"
+    except:
+        return False
+
+
 def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: String, passthrough: Bool = False, anthropic_messages: Bool = False) raises -> List[Tuple[String, String]]:
     if not api_key:
         raise Error("--api-key cannot be empty")
@@ -368,7 +377,7 @@ struct DeepSeekExchange(Movable):
     def prefetch(mut self, timeout_ms: UInt64) raises -> Int:
         self.http.lookahead_deadline = perf_counter() + Float64(timeout_ms) / 1000.0
         var retry_class = -1
-        var retry_event_end = -1
+        var native_prefix_end = -1
         try:
             var inspector = ProviderSSEFramer(inspection=True)
             var progress = False
@@ -399,22 +408,31 @@ struct DeepSeekExchange(Movable):
                         if result[1]:
                             var event = result[1].take()
                             if self.native_messages:
+                                if _deepseek_native_is_ping_event(event):
+                                    native_prefix_end = len(self.pending) + offset
+                                    continue
                                 var event_class = _deepseek_native_first_event_class(event)
+                                native_prefix_end = len(self.pending) + offset
                                 if event_class >= 0 and event_class <= 4:
                                     retry_class = event_class
-                                    retry_event_end = len(self.pending) + offset
                                     progress = True
                                     break
-                            if not _precommit_hold(event, self.native_messages):
+                                progress = True
+                                break
+                            if not _precommit_hold(event):
                                 progress = True
                                 break
                 except:
                     # The strict event reader owns failures outside precommit inspection.
                     progress = True
+                    if self.native_messages:
+                        native_prefix_end = len(self.pending) + inspect_length
+                if self.native_messages and not progress:
+                    native_prefix_end = len(self.pending) + inspect_length
                 self.pending.extend(chunk^)
-                if retry_event_end >= 0:
-                    # Frozen precommit inspection consumes retryable first-error frames.
-                    self.pending_offset = retry_event_end
+                if self.native_messages and native_prefix_end >= 0:
+                    # Native dispatch omits the prefetch prefix, including incomplete events.
+                    self.pending_offset = native_prefix_end
         except:
             self.http.lookahead_deadline = 0.0
             raise

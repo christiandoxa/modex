@@ -47,21 +47,17 @@ Modex now ignores a standalone `message_delta` before `message_start`, while
 translating selected text and function-argument deltas that arrive before
 `message_start`. The cross-release process matrix matches both releases for
 those cases, the standalone delta case, and its function-name error path.
-Late and repeated `message_start` events still expose ID/model/usage differences
-in Modex; the exact event matrix records these as gaps rather than parity. The
-source trace, build, focused process tests, production import audit, test
-census, and diff check are in
+Late and repeated `message_start` metadata now matches both release binaries.
+The source trace resolved the earlier contradiction: native prefetch drops its
+consumed prefix before the Anthropic reader sees it. The regression matrix also
+covers first text/error/ping events, mismatched `event:` labels, fragmented and
+incomplete first frames, timeout, EOF, and the 8 KiB prefix boundary. All tested
+Linux x86-64 cases match both releases. The production Modex path has no
+equivalent to Prodex's prefetch-slot semaphore, so saturated-slot behavior
+remains unqualified; the other five baseline release targets remain gaps.
+Build, focused process tests, production import audit, test census, and the
+full source trace are recorded in
 `docs/evidence/baseline-0.165.1/anthropic-stream-message-delta-order.md`.
-The trace now follows the production dispatch, SSE frame parser, Anthropic
-reader, shared response state, and compiled Mojo metadata projection. In the
-synthetic sequence `[start("msg_a", 3), start("msg_b", 9), text_block,
-text_delta, message_delta(output_tokens=5), message_stop]`, both release
-processes return ID `msg_b`, model `model-msg_b`, and usage 9 input/5 output
-tokens. The pinned source's generated-ID replacement rule predicts ID `msg_a`
-with the second start's model and usage. When both starts follow the text
-delta, both releases instead return `msg_a` with the second start's model and
-usage. Keep this unimplemented until the discrepancy has a direct explanation;
-do not infer a latest-start or first-start heuristic.
 
 ## Buffered first-choice history shaping (2026-10-30)
 

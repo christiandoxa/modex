@@ -581,6 +581,12 @@ def _anthropic_image_stop_events(scenario):
 
 
 def _sse_data_event(value):
+    if set(value) == {"event", "data"}:
+        event = value["event"]
+        value = value["data"]
+        if not isinstance(event, str):
+            raise ValueError("Anthropic SSE event labels must be strings")
+        return b"event: " + event.encode() + b"\ndata: " + json.dumps(value, separators=(",", ":")).encode() + b"\n\n"
     return b"data: " + json.dumps(value, separators=(",", ":")).encode() + b"\n\n"
 
 
@@ -724,8 +730,32 @@ class SuperLaunchTests(unittest.TestCase):
         super_arguments=(), environment_overrides=None, base_path="/v1", sub_agent=False,
         temporary_directory=None, stderr_tty=False, codex_mode="explicit", codex_binary=None,
         codex_arguments=("exec", "--", "synthetic prompt"), shared_config=None, shared_setup=None,
-        api_key="synthetic-provider-key", anthropic_events=None, repeat_launch=False,
+        api_key="synthetic-provider-key", anthropic_events=None, anthropic_fragment_at=None,
+        anthropic_fragment_delay_ms=0, anthropic_truncate_at=None, repeat_launch=False,
     ):
+        if not isinstance(anthropic_fragment_delay_ms, int) or anthropic_fragment_delay_ms < 0:
+            raise ValueError("Anthropic fragment delay must be a non-negative integer")
+        if anthropic_fragment_at is not None and anthropic_truncate_at is not None:
+            raise ValueError("Anthropic fragmentation and truncation are mutually exclusive")
+        anthropic_payload = None
+        if scenario == "anthropic-custom-events":
+            if anthropic_events is None:
+                raise ValueError("custom Anthropic events are required")
+            anthropic_payload = b"".join(_sse_data_event(item) for item in anthropic_events)
+            if anthropic_fragment_at is not None and (
+                not isinstance(anthropic_fragment_at, int)
+                or not 0 < anthropic_fragment_at < len(anthropic_payload)
+            ):
+                raise ValueError("Anthropic fragment offset must be inside the SSE payload")
+            if anthropic_truncate_at is not None and (
+                not isinstance(anthropic_truncate_at, int)
+                or not 0 < anthropic_truncate_at < len(anthropic_payload)
+            ):
+                raise ValueError("Anthropic truncation offset must be inside the SSE payload")
+        elif anthropic_fragment_at is not None or anthropic_truncate_at is not None:
+            raise ValueError("Anthropic fragmentation and truncation require custom events")
+        if anthropic_fragment_delay_ms and anthropic_fragment_at is None:
+            raise ValueError("Anthropic fragment delay requires fragmentation")
         with tempfile.TemporaryDirectory(prefix="modex-super-launch-", dir=temporary_directory) as directory:
             root = Path(directory)
             for name in ("home", "state", "shared", "work"):
@@ -936,9 +966,7 @@ class SuperLaunchTests(unittest.TestCase):
                         ))
                         content_type = "text/event-stream"
                     elif scenario == "anthropic-custom-events":
-                        if anthropic_events is None:
-                            raise ValueError("custom Anthropic events are required")
-                        payload = b"".join(_sse_data_event(item) for item in anthropic_events)
+                        payload = anthropic_payload
                         content_type = "text/event-stream"
                     elif scenario == "anthropic-tool-use":
                         payload = b"".join((
@@ -1131,9 +1159,14 @@ class SuperLaunchTests(unittest.TestCase):
                     else:
                         payload = json.dumps({"id": "synthetic-chat", "model": "deepseek-chat", "choices": [{"index": 0, "message": {"role": "assistant", "content": "synthetic greeting"}, "finish_reason": "stop"}]}).encode()
                         content_type = "application/json"
+                    if anthropic_fragment_at is not None:
+                        peer.protocol_version = "HTTP/1.1"
                     peer.send_response(status)
                     peer.send_header("Content-Type", content_type)
-                    peer.send_header("Content-Length", str(len(payload)))
+                    if anthropic_fragment_at is None:
+                        peer.send_header("Content-Length", str(len(payload)))
+                    else:
+                        peer.send_header("Transfer-Encoding", "chunked")
                     for name, value in (("limit-requests", "100"), ("remaining-requests", "40"),
                                         ("limit-tokens", "80"), ("remaining-tokens", "60"),
                                         ("reset-requests", "1700000000000"), ("reset-tokens", "1700000000000")):
@@ -1141,7 +1174,20 @@ class SuperLaunchTests(unittest.TestCase):
                     peer.send_header("Connection", "X-Synthetic-Hop, close")
                     peer.send_header("X-Synthetic-Hop", "synthetic-private-hop")
                     peer.end_headers()
-                    peer.wfile.write(payload)
+                    if anthropic_fragment_at is None:
+                        peer.wfile.write(
+                            payload if anthropic_truncate_at is None else payload[:anthropic_truncate_at]
+                        )
+                        if anthropic_truncate_at is not None:
+                            peer.wfile.flush()
+                    else:
+                        fragments = (payload[:anthropic_fragment_at], payload[anthropic_fragment_at:])
+                        for index, fragment in enumerate(fragments):
+                            peer.wfile.write(f"{len(fragment):X}\r\n".encode() + fragment + b"\r\n")
+                            if index == 0 and anthropic_fragment_delay_ms:
+                                peer.wfile.flush()
+                                time.sleep(anthropic_fragment_delay_ms / 1000)
+                        peer.wfile.write(b"0\r\n\r\n")
 
                 def log_message(self, *_args): pass
 

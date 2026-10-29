@@ -8,6 +8,16 @@ reference observations are not a parity pass. Retry classification, binding
 ownership, stream commitment and concurrent rotation must be implemented
 together. See `docs/evidence/baseline-0.165.1/super-api-key-env.md`.
 
+The Anthropic Messages request path now accepts Responses `metadata` objects
+and `include` arrays, then drops them from the provider request like both
+pinned releases. It checks the same top-level types; both releases accept
+arbitrary nested values and array entries. Synthetic process comparisons cover
+buffered auto, forced-Anthropic and Chat routes, plus streamed auto and
+forced-Anthropic requests. Invalid top-level types return the same pre-POST
+502 response. The focused process test and production dependency audit pass;
+no provider parity status is promoted. Evidence:
+`docs/evidence/baseline-0.165.1/anthropic-request-metadata-include.md`.
+
 Further admission profiling compared both pinned processes, the current relay,
 and the unmerged aggregate-budget prototype under 246 incomplete heads. With
 six 200 KiB heads held in active workers, the prototype served two healthy

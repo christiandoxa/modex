@@ -126,6 +126,11 @@ content and other unverified request fields remain fail-closed. Top-level string
 `instructions` now joins the Anthropic `system` text with input system/developer
 messages like both pinned releases; whitespace and invalid types are covered by
 the real-process evidence in `docs/evidence/baseline-0.165.1/anthropic-instructions.md`.
+Responses `metadata` objects and `include` arrays are also accepted and omitted
+from the Anthropic request like both releases; invalid top-level types still
+fail before provider dispatch. Automatic, forced Anthropic, and explicit Chat
+routes are covered in
+`docs/evidence/baseline-0.165.1/anthropic-request-metadata-include.md`.
 JSON-object and JSON-schema output with web search follows the release's Chat
 fallback in `auto` mode; explicit `anthropic` mode rejects that combination with 400.
 Oracle controls record additional coercion and metadata behavior; complete

@@ -14,7 +14,13 @@ comptime ANTHROPIC_BUFFERED_MAX_CONTENT_BLOCKS = 65_536
 
 def validate_deepseek_anthropic_request(source: String) raises:
     var doc = JsonDocument(source)
-    _only_fields(doc, doc.root, ["model", "input", "instructions", "stream", "tools", "web_search_options", "parallel_tool_calls", "tool_choice", "max_output_tokens", "max_tokens", "max_completion_tokens", "temperature", "top_p", "stop", "stop_sequences", "stopSequences"], "request")
+    _only_fields(doc, doc.root, ["model", "input", "instructions", "stream", "tools", "web_search_options", "parallel_tool_calls", "tool_choice", "max_output_tokens", "max_tokens", "max_completion_tokens", "temperature", "top_p", "stop", "stop_sequences", "stopSequences", "metadata", "include"], "request")
+    var metadata = doc.get(doc.root, "metadata")
+    if metadata >= 0 and doc.nodes[metadata].kind != JSON_OBJECT:
+        raise Error("Anthropic Responses metadata must be an object")
+    var include = doc.get(doc.root, "include")
+    if include >= 0 and doc.nodes[include].kind != JSON_ARRAY:
+        raise Error("Anthropic Responses include must be an array")
     var model = doc.get(doc.root, "model")
     if model >= 0 and doc.nodes[model].kind != JSON_STRING:
         raise Error("Anthropic Messages slice requires a string model")

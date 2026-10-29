@@ -3,7 +3,9 @@
 The response parser now ignores unknown fields on selected Anthropic content
 blocks and stream events, as both pinned processes do. It still validates known
 block types, required search and result IDs, tool names, JSON fragments, and
-the 65,536 buffered content-block limit. Request validation remains strict.
+the 65,536 buffered content-block limit. Request validation remains strict
+except for checked-and-omitted Responses `metadata` and `include` fields, as
+documented in `anthropic-request-metadata-include.md`.
 
 For `server_tool_use.input`, the releases prefer a string `query`. If it is not
 a string, they project `queries` when it is an array. Buffered responses keep

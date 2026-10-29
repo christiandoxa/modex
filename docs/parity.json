@@ -2731,12 +2731,14 @@
       ],
       "implementation": null,
       "tests": [
-        "tests/test_provider_stream_01651_characterization.py"
+        "tests/test_provider_stream_01651_characterization.py",
+        "tests/test_anthropic_mixed_tools_01651.py"
       ],
       "evidence": [
         "docs/evidence/baseline-0.439.2/reference-verification.json",
         "docs/evidence/baseline-0.165.1/anthropic-stream.md",
-        "docs/evidence/baseline-0.165.1/anthropic-buffered.md"
+        "docs/evidence/baseline-0.165.1/anthropic-buffered.md",
+        "docs/evidence/baseline-0.165.1/anthropic-request-metadata-include.md"
       ],
       "status": "NOT_STARTED",
       "platform_status": {

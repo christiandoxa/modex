@@ -247,6 +247,79 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                 self.assertEqual(results[0]["response_body"], results[1]["response_body"])
                 self.assertEqual(results[1]["response_body"], results[2]["response_body"])
 
+    def test_responses_metadata_and_include_match_routes(self):
+        base = {
+            "model": "deepseek-chat",
+            "input": "synthetic query",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        cases = (
+            ("standard metadata and include", {
+                "metadata": {"user_id": "synthetic-user"},
+                "include": ["reasoning.encrypted_content"],
+            }, ("auto", "anthropic", "openai_chat")),
+            ("container types only", {"metadata": {"user_id": 7}, "include": [7]}, ("auto", "anthropic")),
+        )
+
+        def run(binary, request, scenario, mode):
+            if mode == "auto":
+                return _run(binary, request, scenario=scenario)
+            process, response, upstream, state = _run_mode(
+                binary, request, scenario, mode=mode,
+            )
+            return {
+                "exit_code": process.returncode,
+                "status": response["status"] if response else None,
+                "response_body": bytes.fromhex(response["body"]) if response else b"",
+                "upstream": upstream,
+                "upstream_body": json.loads(bytes.fromhex(upstream[0]["body"])) if upstream else None,
+                "state": state,
+            }
+
+        for label, fields, modes in cases:
+            with self.subTest(case=label):
+                request = {**base, **fields}
+                for mode in modes:
+                    captures = [run(binary, request, "anthropic-buffered", mode) for binary in (ORACLE_01651, ORACLE, MODEX)]
+                    expected_path = "/v1/chat/completions" if mode == "openai_chat" else "/anthropic/v1/messages"
+                    for capture in captures:
+                        self.assertEqual((capture["exit_code"], capture["status"]), (0, 200))
+                        self.assertEqual(len(capture["upstream"]), 1)
+                        self.assertEqual(capture["upstream"][0]["path"], expected_path)
+                        self.assertNotIn("metadata", capture["upstream_body"])
+                        self.assertNotIn("include", capture["upstream_body"])
+                        self.assertEqual(capture["state"]["leftovers"], [])
+                    self.assertEqual(captures[1]["upstream_body"], captures[0]["upstream_body"])
+                    self.assertEqual(captures[2]["upstream_body"], captures[0]["upstream_body"])
+                    expected = _normalize(json.loads(captures[0]["response_body"]))
+                    self.assertEqual(_normalize(json.loads(captures[1]["response_body"])), expected)
+                    self.assertEqual(_normalize(json.loads(captures[2]["response_body"])), expected)
+
+        request = {**base, "stream": True, **cases[0][1]}
+        captures = [run(binary, request, "anthropic-stream", mode) for mode in ("auto", "anthropic") for binary in (ORACLE_01651, ORACLE, MODEX)]
+        for capture in captures:
+            self.assertEqual((capture["exit_code"], capture["status"]), (0, 200))
+            self.assertEqual(len(capture["upstream"]), 1)
+            self.assertEqual(capture["upstream"][0]["path"], "/anthropic/v1/messages")
+            self.assertNotIn("metadata", json.loads(bytes.fromhex(capture["upstream"][0]["body"])))
+            self.assertNotIn("include", json.loads(bytes.fromhex(capture["upstream"][0]["body"])))
+            self.assertEqual(capture["state"]["leftovers"], [])
+            self.assertEqual(capture["upstream_body"], captures[0]["upstream_body"])
+            self.assertEqual(_events(capture["response_body"]), _events(captures[0]["response_body"]))
+
+        invalid = ({"metadata": None}, {"metadata": "synthetic"}, {"include": None}, {"include": "reasoning.encrypted_content"})
+        for mode in ("auto", "anthropic", "openai_chat"):
+            for fields in invalid:
+                with self.subTest(mode=mode, fields=fields):
+                    responses = [run(binary, {**base, **fields}, "anthropic-buffered", mode) for binary in (ORACLE_01651, ORACLE, MODEX)]
+                    for response in responses:
+                        self.assertEqual((response["exit_code"], response["status"]), (1, 502))
+                        self.assertEqual(response["upstream"], [])
+                        self.assertEqual(response["state"]["leftovers"], [])
+                    self.assertEqual(responses[1]["response_body"], responses[0]["response_body"])
+                    self.assertEqual(responses[2]["response_body"], responses[0]["response_body"])
+
     def test_empty_and_whitespace_arrays_match_01651(self):
         with patch.object(message_arrays, "ORACLE", ORACLE_01651):
             message_arrays.AnthropicMessageArrayTests.test_empty_and_whitespace_arrays_match_release(self)

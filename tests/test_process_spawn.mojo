@@ -81,5 +81,11 @@ def main() raises:
     except:
         relative_rejected = True
     assert_true(relative_rejected)
+    var relative_path_rejected = False
+    try:
+        var ignored = spawn_with_env("./relative-child", List[String](), List[String]())
+    except:
+        relative_path_rejected = True
+    assert_true(relative_path_rejected)
     assert_true(unsetenv("MODEX_PARENT_SENTINEL"))
     print("explicit environment spawn checks: PASS")

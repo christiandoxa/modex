@@ -1,4 +1,4 @@
-"""Spawn an absolute executable path with a complete explicit environment.
+"""Spawn an explicit executable path with a complete explicit environment.
 
 The pinned stdlib spawn wrapper exposes no file actions. Startup-only stdio
 redirection below temporarily changes parent descriptors and restores them.
@@ -40,9 +40,9 @@ def inherited_environment(excluded: List[String] = List[String]()) -> List[Strin
     return result^
 
 
-def spawn_with_env(path: String, args: List[String], env: List[String], argv0: String = "") raises -> Process:
+def spawn_with_env(path: String, args: List[String], env: List[String], argv0: String = "", allow_relative: Bool = False) raises -> Process:
     comptime assert CompilationTarget.is_linux() or CompilationTarget.is_macos(), "POSIX spawn is supported only on Linux and macOS"
-    if not path.startswith("/") or "\0" in path:
+    if not path or "\0" in path or (not path.startswith("/") and not allow_relative):
         raise Error("executable path must be absolute and NUL-free")
     var invocation_name = argv0 if argv0 else path
     if "\0" in invocation_name:
@@ -158,7 +158,7 @@ struct _SavedStdio:
             _ = close(self.error)
 
 
-def spawn_with_env_stdio(path: String, args: List[String], env: List[String], stdin_fd: Int32, stdout_fd: Int32, stderr_fd: Int32 = -1, argv0: String = "") raises -> Process:
+def spawn_with_env_stdio(path: String, args: List[String], env: List[String], stdin_fd: Int32, stdout_fd: Int32, stderr_fd: Int32 = -1, argv0: String = "", allow_relative: Bool = False) raises -> Process:
     """Spawn through two pipes before any parent background work or concurrent I/O.
 
     Both supplied descriptors must be above stderr. Their owners must close the
@@ -181,7 +181,7 @@ def spawn_with_env_stdio(path: String, args: List[String], env: List[String], st
         raise Error("failed to redirect child stdio" if restored else "failed to restore parent stdio")
     var child: Process
     try:
-        child = spawn_with_env(path, args, env, argv0)
+        child = spawn_with_env(path, args, env, argv0, allow_relative)
     except:
         if not saved.restore():
             raise Error("failed to restore parent stdio after process spawn failed")

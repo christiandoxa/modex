@@ -9,27 +9,25 @@ executable to a canonical path for probes. Modex uses the same selected-path
 and probe behavior in `src/modex/super_launch.mojo`.
 
 The real-process test runs six selection modes with an isolated synthetic
-shebang Codex script: relative path, symlink, command name, default `PATH`,
-relative `PATH`, and `PATH` with a Prodex wrapper before Codex. Both binaries
+shebang Codex script: relative path, symlink, command name, an empty `PATH`
+entry, default `PATH`, relative `PATH`, and `PATH` with a Prodex wrapper before Codex. Both binaries
 return exit 7 after the synthetic child starts; stdout, normalized diagnostics,
 probe arguments, process-role sequence, and zero upstream requests match.
 Probes see the canonical path in all six modes.
 
-Linux shebang scripts expose an interpreter-visible `sys.argv[0]` difference
-for the explicit relative path, symlink, and command-name modes. Prodex's child
-script sees the selected spelling or PATH candidate. Modex spawns the
-canonical executable and passes the selected spelling as `argv[0]`; Linux
-uses the executable pathname for the shebang script, so its interpreter sees
-the canonical path. Default `PATH`, relative `PATH`, and wrapper-skipping
-child paths match. This test records the known shebang gap; it does not run a
-real Codex binary or qualify native-binary behavior against 0.439.2.
+Both binaries now execute the selected spelling or PATH candidate for child
+launches while probing the canonical executable. Linux shebang interpreters
+therefore receive the same script path in the tested modes. A separate native
+fixture verifies raw `argv[0]` against 0.165.1. Neither test runs real Codex.
+The selected path can be replaced or a symlink retargeted after the probe;
+the executable is not pinned by file descriptor.
 
 Reproduce after `make build` with:
 
 ```sh
 PRODEX_ORACLE="$HOME/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu" \
 PYTHONPATH=tests python3 -m unittest \
-  test_super_launch.SuperLaunchTests.test_codex_binary_selection_against_04392_records_shebang_path_gap
+  test_super_launch.SuperLaunchTests.test_codex_binary_selection_against_04392_matches_shebang_paths
 ```
 
 This covers selected Linux x86-64 path modes only. Legacy-binary rejection,

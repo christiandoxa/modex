@@ -211,7 +211,7 @@ class SuperLaunchTests(unittest.TestCase):
             else:
                 codex.symlink_to(Path(codex_binary).resolve())
             path_dir = root / "work/bin"
-            if codex_mode in ("path", "command", "relative-path", "path-skips-wrapper"):
+            if codex_mode in ("path", "command", "relative-path", "command-relative-path", "path-skips-wrapper"):
                 path_dir.mkdir()
                 os.symlink(codex, path_dir / "codex")
             path = "/usr/bin:/bin"
@@ -224,9 +224,13 @@ class SuperLaunchTests(unittest.TestCase):
             elif codex_mode in ("path", "command"):
                 path = str(path_dir)
                 codex_setting = "" if codex_mode == "path" else "codex"
-            elif codex_mode == "relative-path":
+            elif codex_mode in ("relative-path", "command-relative-path"):
                 path = "bin"
-                codex_setting = ""
+                codex_setting = "codex" if codex_mode == "command-relative-path" else ""
+            elif codex_mode == "command-cwd":
+                os.symlink(codex, root / "work/codex")
+                path = ""
+                codex_setting = "codex"
             elif codex_mode == "path-skips-wrapper":
                 wrapper_dir = root / "shim"
                 wrapper_dir.mkdir()
@@ -811,13 +815,15 @@ class SuperLaunchTests(unittest.TestCase):
                     })
                 self.assertEqual(oracle_only - broker_locks, expected_oracle_only)
 
-    def test_codex_binary_selection_against_04392_records_shebang_path_gap(self):
+    def test_codex_binary_selection_against_04392_matches_shebang_paths(self):
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
         canonical = "<canonical>/codex"
         oracle_child_argv0 = {
             "relative": "../codex",
             "symlink": "../codex-alias",
             "command": "<path>/codex",
+            "command-cwd": "codex",
+            "command-relative-path": "bin/codex",
             "path": canonical,
             "relative-path": canonical,
             "path-skips-wrapper": canonical,
@@ -876,7 +882,7 @@ class SuperLaunchTests(unittest.TestCase):
                 self.assertEqual(
                     traces[1],
                     [("probe", canonical), ("probe", canonical),
-                     ("preflight", canonical), ("launch", canonical)],
+                     ("preflight", oracle_child), ("launch", oracle_child)],
                 )
 
     def test_normal_tty_does_not_receive_the_text_fallback(self):

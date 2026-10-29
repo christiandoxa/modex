@@ -20,9 +20,13 @@ oracle.
 The 0.439.2 local relay now emits the terminal chunk for HTTP/1.0 HEAD
 204/304 event-stream responses, as observed from the Linux release. The
 launch controls compare output and separately record missing Modex runtime
-lock and housekeeping files; configured relative and symlink Codex paths also
-retain a shebang-path mismatch. These observations do not qualify Super or
-the other release targets.
+lock and housekeeping files. The tested relative, symlink and PATH Codex
+launches now match both releases' shebang and native argument behavior. The
+selected path is not pinned against replacement between probe and launch.
+These observations do not qualify Super or the other release targets.
+The rebuilt production path passed 36 launch and RPC tests, followed by
+focused real-process checks for both releases, including empty and relative
+PATH entries. The native spawn check retains absolute-only defaults.
 
 Non-strict DeepSeek beta URL preflight now rejects selected malformed hosts
 before launch. Fullwidth IDNA normalization, TOML precedence and public beta

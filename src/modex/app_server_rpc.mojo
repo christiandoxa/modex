@@ -144,10 +144,10 @@ def _stop_child(mut child: Process) raises:
     _ = child.wait()
 
 
-def _spawn_app_server(binary: String, args: List[String], environment: List[String], stdin_fd: Int32, stdout_fd: Int32, argv0: String = "") raises -> Process:
+def _spawn_app_server(binary: String, args: List[String], environment: List[String], stdin_fd: Int32, stdout_fd: Int32, argv0: String = "", allow_relative: Bool = False) raises -> Process:
     try:
         with open("/dev/null", "w") as stderr:
-            return spawn_with_env_stdio(binary, args, environment, stdin_fd, stdout_fd, RawFileDescriptor(stderr).value, argv0)
+            return spawn_with_env_stdio(binary, args, environment, stdin_fd, stdout_fd, RawFileDescriptor(stderr).value, argv0, allow_relative)
     except error:
         raise Error("failed to start Codex hook-trust preflight with " + binary + ": " + String(error))
 
@@ -165,7 +165,7 @@ def _run_session(mut session: HookTrustSession, input: _RpcInput, output: Pipe) 
                 break
 
 
-def run_super_hook_trust_preflight(binary: String, workspace: String, runtime_args: List[String], environment: List[String], argv0: String = "") raises -> Bool:
+def run_super_hook_trust_preflight(binary: String, workspace: String, runtime_args: List[String], environment: List[String], argv0: String = "", allow_relative: Bool = False) raises -> Bool:
     """Return true only when Codex lacks a hook-trust RPC and needs legacy bypass.
 
     `environment` is the complete child environment, including `CODEX_HOME`.
@@ -185,6 +185,7 @@ def run_super_hook_trust_preflight(binary: String, workspace: String, runtime_ar
         input.child_fd,
         output.fd_out.value().value,
         argv0,
+        allow_relative,
     )
     input.close_child()
     output.set_input_only()

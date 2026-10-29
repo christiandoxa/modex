@@ -148,7 +148,7 @@ def _is_legacy_codex(path: String) -> Bool:
     ]
 
 
-def _codex_binary() raises -> Tuple[String, String]:
+def _codex_binary() raises -> Tuple[String, String, String]:
     var requested = getenv("PRODEX_CODEX_BIN", "\0")
     var path = getenv("PATH", "\0")
     var configured = requested != "\0"
@@ -157,16 +157,18 @@ def _codex_binary() raises -> Tuple[String, String]:
             var resolved = _executable_path(candidate)
             if not resolved or _is_prodex_wrapper(resolved) or _is_legacy_codex(resolved):
                 continue
-            return (resolved, resolved)
+            return (resolved, resolved, resolved)
         requested = "codex"
 
     var resolved = String()
+    var child_path = requested
     if requested.find("/") >= 0:
         resolved = _executable_path(requested)
     else:
         for candidate in _path_candidates(requested, path):
             resolved = _executable_path(candidate)
             if resolved:
+                child_path = candidate
                 break
     if not resolved:
         raise Error("Codex CLI is unavailable. " + CODEX_INSTALL_GUIDANCE)
@@ -177,7 +179,7 @@ def _codex_binary() raises -> Tuple[String, String]:
             "Codex executable " + resolved + " is the legacy Prodex-bundled runtime from 0.426.1. "
             + "It was left untouched, but Prodex 0.427.0 will not run it. " + CODEX_INSTALL_GUIDANCE
         )
-    return (resolved, requested)
+    return (resolved, child_path, requested)
 
 
 def deepseek_model_catalog(launch_model: String) -> String:
@@ -448,7 +450,7 @@ def _codex_version_parts(value: String) -> List[UInt64]:
     return parts^
 
 
-def _exec(binary: String, argv0: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64) raises -> Int:
+def _exec(binary: String, child_path: String, argv0: String, home: String, model: String, upstream: String, key: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64) raises -> Int:
     var environment = _child_environment(home)
     var probe_environment = _codex_probe_environment(environment)
     var version = _capture_codex_probe(binary, [String("--version")], probe_environment, "Codex version probe")
@@ -503,7 +505,9 @@ def _exec(binary: String, argv0: String, home: String, model: String, upstream: 
         _config(args, "web_search", "\"live\"")
         for feature in [String("apps"), String("js_repl"), String("image_generation")]:
             _config(args, "features." + feature, "false")
-        var legacy = run_super_hook_trust_preflight(binary, String(cwd()), args, environment, argv0)
+        # shortcut: selected paths can be replaced after probing; use file-descriptor spawn when available.
+        var allow_relative = not child_path.startswith("/")
+        var legacy = run_super_hook_trust_preflight(child_path, String(cwd()), args, environment, argv0, allow_relative)
         var launch = List[String]()
         if legacy:
             launch.append("--dangerously-bypass-hook-trust")
@@ -513,7 +517,7 @@ def _exec(binary: String, argv0: String, home: String, model: String, upstream: 
         launch.extend(prompt.copy())
         if _launch_progress_fallback():
             print("Prodex launch: starting child process...", file=stderr)
-        var child = spawn_with_env(binary, launch, environment, argv0)
+        var child = spawn_with_env(child_path, launch, environment, argv0, allow_relative)
         var result: ProcessStatus
         try:
             while not child.poll().has_exited():
@@ -572,7 +576,7 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
             # Frozen exact-value lookup ignores numeric -c overrides when building the catalog.
             catalog.write(deepseek_model_catalog(catalog_model))
         var codex = _codex_binary()
-        var result = _exec(codex[0], codex[1], home, launch_model, upstream, key, prompt, launch_context, launch_compact)
+        var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, key, prompt, launch_context, launch_compact)
         _remove_overlay(home)
         return result
     except:

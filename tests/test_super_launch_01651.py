@@ -123,6 +123,8 @@ class ActiveSuperLaunchTests(unittest.TestCase):
             ("relative", "../codex"),
             ("symlink", "../codex-alias"),
             ("command", "codex"),
+            ("command-cwd", "codex"),
+            ("command-relative-path", "codex"),
             ("path", canonical),
             ("relative-path", canonical),
             ("path-skips-wrapper", canonical),
@@ -155,10 +157,13 @@ class ActiveSuperLaunchTests(unittest.TestCase):
                     outputs.append(trace)
                 self.assertEqual(outputs[0], outputs[1])
 
-    def test_shebang_codex_interpreter_path_gap_matches_01651_observation(self):
+    def test_shebang_codex_interpreter_path_matches_01651(self):
         cases = (
             ("relative", "../codex"),
             ("symlink", "../codex-alias"),
+            ("command", None),
+            ("command-cwd", "codex"),
+            ("command-relative-path", "bin/codex"),
         )
         for mode, selected_script_path in cases:
             with self.subTest(mode=mode):
@@ -179,9 +184,7 @@ class ActiveSuperLaunchTests(unittest.TestCase):
                     canonical = records[0]["script_argv0"]
                     self.assertTrue(canonical.startswith("/"), canonical)
                     self.assertTrue(canonical.endswith("/codex"), canonical)
-                    expected_child_path = (
-                        selected_script_path if binary == active_cli.ORACLE else canonical
-                    )
+                    expected_child_path = selected_script_path or canonical.rsplit("/", 1)[0] + "/work/bin/codex"
                     self.assertEqual(trace, [
                         ("probe", canonical),
                         ("probe", canonical),

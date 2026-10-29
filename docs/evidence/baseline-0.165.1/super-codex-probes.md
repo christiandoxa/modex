@@ -82,23 +82,19 @@ The selected launch cases reach the final child, which exits 7 before making
 any provider request. The missing case matches the release diagnostic and
 starts no Codex or provider peer.
 
-A real shebang-script capture shows an interpreter-visible path difference:
-both binaries pass the canonical path to version and capability probes, but
-Prodex exposes the selected `../codex` or `../codex-alias` spelling to the
-preflight and final script interpreter while Modex exposes the canonical path.
-The native ELF fixture checks raw `argv[0]`, which the Linux shebang loader
-does not use as the interpreter's script path. This remains a parity gap.
-The pinned oracle test records `sys.argv[0]` for both relative-path cases.
-The native fixture records PIDs that the harness checks are reaped.
+A real shebang-script capture now matches the reference: both binaries pass
+the canonical path to version and capability probes, then expose the selected
+relative path, symlink or PATH candidate to the preflight and final script
+interpreter. The native ELF fixture also checks raw `argv[0]`, including an
+empty PATH entry, and records PIDs that the harness checks are reaped.
 
 These controls expose an existing storage difference: 0.165.1 creates profile,
 housekeeping and session lock files during launch and even on the missing
 binary path; Modex does not implement those lock lifecycles. Both remove the
 temporary launch overlay and preserve the synthetic session. This slice does
-not claim matching storage mutations. Modex executes the canonical path chosen
-before probing, which avoids retargeting through a changed symlink alias.
-Path resolution does not pin the file: replacement of the canonical executable
-between probe and spawn remains possible because Mojo 1.2 exposes no
+not claim matching storage mutations. The selected executable path is not
+pinned: replacement or symlink retargeting between probe and spawn remains
+possible because Mojo 1.2 exposes no
 file-descriptor-based spawn. The six legacy hashes
 and wrapper markers are ported from the pinned source, but the test suite does
 not run an actual legacy Codex binary. This qualifies only the selected Linux
@@ -112,7 +108,6 @@ make unit-build
 python3 scripts/ci/run-unittest.py test_super_launch_01651.py
 ```
 
-Fast and Full CI run this module in the active 0.165.1 reference lane before
-historical oracle routing. This verifies selected Linux x86-64 startup probes
+Fast and Full CI run this module as a 0.165.1 historical comparison. This verifies selected Linux x86-64 startup probes
 and version cases only. Other release targets and broader Super parity remain
 unverified.

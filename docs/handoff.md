@@ -1,5 +1,9 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Hosted Fast run `40829783630` on `fe86a659ea920755f5c5ebf477a93b0de172f1e9`
+failed at the unavailable 0.439.2 tag after the focused build and native
+checks passed. Oracle-dependent tests and artifact consumers did not run.
+
 Hosted Fast run `40829002499` on `8f4752da279879eff7de1574e905539dbe3cfd94`
 also failed at the unavailable 0.439.2 tag after the focused build and native
 checks passed. Oracle-dependent tests and artifact consumers did not run.

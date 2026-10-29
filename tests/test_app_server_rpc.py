@@ -148,7 +148,7 @@ class AppServerRpcTests(unittest.TestCase):
             "initialize", "hooks/list", "config/batchWrite", "hooks/list",
         ])
         self.assertEqual(requests[0]["params"]["clientInfo"], {
-            "name": "prodex-hook-trust", "version": "0.165.1",
+            "name": "prodex-hook-trust", "version": "0.439.2",
         })
         self.assertEqual(requests[2]["params"]["edits"][0]["value"], {
             "synthetic-hook": {"trusted_hash": "sha256:synthetic"},

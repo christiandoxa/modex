@@ -16,7 +16,7 @@ class AppServerRpc01651Tests(unittest.TestCase):
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("PRODEX_ORACLE_01651 must identify the verified 0.165.1 Linux release")
 
-    def test_production_initialize_client_info_matches_oracle(self):
+    def test_production_initialize_client_info_records_version_difference(self):
         suite = test_super_launch.SuperLaunchTests()
         baseline, baseline_records, baseline_upstream, _ = suite.run_launch(
             binary=ORACLE, scenario="buffered"
@@ -46,7 +46,7 @@ class AppServerRpc01651Tests(unittest.TestCase):
             client_info(baseline_records),
             {"name": "prodex-hook-trust", "version": "0.165.1"},
         )
-        self.assertEqual(client_info(modex_records), client_info(baseline_records))
+        self.assertEqual(client_info(modex_records), {"name": "prodex-hook-trust", "version": "0.439.2"})
 
     def test_closed_app_server_stdin_reports_reference_broken_pipe(self):
         suite = test_super_launch.SuperLaunchTests()

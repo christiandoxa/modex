@@ -351,6 +351,38 @@ def make_codex(path: Path):
     source = r'''import base64, http.client, json, os, re, socket, subprocess, sys, threading, time
 from urllib.parse import urlsplit
 
+def product_process_resources():
+    root = os.getppid()
+    pending = [root]
+    seen = set()
+    sampled = 0
+    rss_kib = 0
+    cpu_ticks = 0
+    fd_count = 0
+    while pending:
+        pid = pending.pop()
+        if pid == os.getpid() or pid in seen:
+            continue
+        seen.add(pid)
+        try:
+            proc = f"/proc/{pid}"
+            status_text = open(proc + "/status", encoding="ascii").read()
+            rss_kib += int(next(
+                line.split()[1] for line in status_text.splitlines()
+                if line.startswith("VmRSS:")
+            ))
+            stat_fields = open(proc + "/stat", encoding="ascii").read().rsplit(")", 1)[1].split()
+            cpu_ticks += int(stat_fields[11]) + int(stat_fields[12])
+            fd_count += len(os.listdir(proc + "/fd"))
+            children = open(proc + f"/task/{pid}/children", encoding="ascii").read().split()
+            pending.extend(int(child) for child in children)
+            sampled += 1
+        except (OSError, ValueError, StopIteration):
+            continue
+    if not sampled:
+        raise RuntimeError("could not find the real product process tree")
+    return sampled, rss_kib, cpu_ticks / os.sysconf("SC_CLK_TCK"), fd_count
+
 args = sys.argv[1:]
 if args == ["--version"]:
     print("codex-cli 0.153.2")
@@ -375,6 +407,8 @@ for arg in args:
 if not base:
     raise SystemExit("synthetic Codex did not receive the local provider URL")
 target = urlsplit(base)
+admission_stress = os.environ.get("PROBE_ADMISSION_STRESS") == "1"
+admission_baseline_resources = product_process_resources() if admission_stress else None
 connection = socket.create_connection((target.hostname, target.port), timeout=5)
 connection.settimeout(5)
 request_parts = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_REQUEST_PARTS_BASE64", "[]"))]
@@ -383,7 +417,6 @@ pipelined_requests = [base64.b64decode(part) for part in json.loads(os.environ.g
 concurrent_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_CONCURRENT_REQUESTS_BASE64", "[]"))]
 parent_exit_active = os.environ.get("PROBE_PARENT_EXIT_ACTIVE") == "1"
 preconnected_idle = os.environ.get("PROBE_PRECONNECTED_IDLE") == "1"
-admission_stress = os.environ.get("PROBE_ADMISSION_STRESS") == "1"
 pipelined_request_parts = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUEST_PARTS_BASE64", "[]"))]
 pipelined_request_delay = int(os.environ.get("PROBE_PIPELINED_REQUEST_DELAY_MS", "0")) / 1000
 request_parts_sent = [0]
@@ -467,38 +500,6 @@ class RecordingHTTPResponse(http.client.HTTPResponse):
 
 result = {"status": None, "reason": "", "response_line": "", "raw_response_head_base64": "", "headers": [], "body_base64": "", "wire_body_base64": "", "wire_body_probe_complete": False, "read_error": "", "connection_closed": False, "request_parts_sent_at_response": 0, "response_elapsed_ms": 0, "response_headers_elapsed_ms": 0, "first_body_byte_elapsed_ms": 0, "interim_statuses": []}
 
-def product_process_resources():
-    root = os.getppid()
-    pending = [root]
-    seen = set()
-    sampled = 0
-    rss_kib = 0
-    cpu_ticks = 0
-    fd_count = 0
-    while pending:
-        pid = pending.pop()
-        if pid == os.getpid() or pid in seen:
-            continue
-        seen.add(pid)
-        try:
-            proc = f"/proc/{pid}"
-            status_text = open(proc + "/status", encoding="ascii").read()
-            rss_kib += int(next(
-                line.split()[1] for line in status_text.splitlines()
-                if line.startswith("VmRSS:")
-            ))
-            stat_fields = open(proc + "/stat", encoding="ascii").read().rsplit(")", 1)[1].split()
-            cpu_ticks += int(stat_fields[11]) + int(stat_fields[12])
-            fd_count += len(os.listdir(proc + "/fd"))
-            children = open(proc + f"/task/{pid}/children", encoding="ascii").read().split()
-            pending.extend(int(child) for child in children)
-            sampled += 1
-        except (OSError, ValueError, StopIteration):
-            continue
-    if not sampled:
-        raise RuntimeError("could not find the real product process tree")
-    return sampled, rss_kib, cpu_ticks / os.sysconf("SC_CLK_TCK"), fd_count
-
 def read_expect_response():
     response_file = RecordingReader(connection.makefile("rb"))
     interim_statuses = []
@@ -530,7 +531,7 @@ def read_expect_response():
 try:
     request_method = os.environ.get("PROBE_REQUEST_METHOD")
     if admission_stress:
-        baseline_resources = product_process_resources()
+        baseline_resources = admission_baseline_resources
         partial_count = int(os.environ.get("PROBE_ADMISSION_PARTIAL_COUNT", "136"))
         blocker_count = int(os.environ.get("PROBE_ADMISSION_BLOCKER_COUNT", "7"))
         partial_request = base64.b64decode(os.environ["PROBE_ADMISSION_PARTIAL_REQUEST_BASE64"])
@@ -553,7 +554,13 @@ try:
             partial.settimeout(5)
             partial.sendall(partial_request)
             partials.append(partial)
-        time.sleep(int(os.environ.get("PROBE_ADMISSION_SETTLE_MS", "400")) / 1000)
+        expected_client_fds = baseline_resources[3] + partial_count + blocker_count
+        admission_ready_deadline = time.monotonic() + 5
+        while time.monotonic() < admission_ready_deadline:
+            if product_process_resources()[3] >= expected_client_fds:
+                break
+            time.sleep(0.01)
+        result["admission_client_fds_ready"] = product_process_resources()[3] >= expected_client_fds
         healthy = socket.create_connection((target.hostname, target.port), timeout=5)
         healthy.settimeout(5)
         def send_healthy_reuse_requests():
@@ -587,12 +594,12 @@ try:
         rested_resources = product_process_resources()
         result["admission_partial_connections"] = len(partials)
         result["admission_blockers"] = len(blockers)
-        result["admission_healthy_before_release"] = responded_before_release
         result["admission_process_count"] = loaded_resources[0]
         result["admission_rss_delta_kib"] = loaded_resources[1] - baseline_resources[1]
         result["admission_fd_delta"] = loaded_resources[3] - baseline_resources[3]
         result["admission_cpu_seconds"] = rested_resources[2] - loaded_resources[2]
         result["admission_sample_seconds"] = sample_ms / 1000
+        result["admission_healthy_before_release"] = responded_before_release or healthy_done.is_set()
         for held in blockers + [partial for partial in partials if partial is not connection]:
             held.close()
         healthy_done.wait(5)
@@ -2359,7 +2366,6 @@ def run_probe(binary: Path, case, upstream: Upstream):
             "PROBE_ADMISSION_HEALTHY_REQUEST_BASE64": base64.b64encode(
                 case.get("admission_healthy_request", b"")
             ).decode("ascii"),
-            "PROBE_ADMISSION_SETTLE_MS": str(case.get("admission_settle_ms", 400)),
             "PROBE_ADMISSION_RESOURCE_SAMPLE_MS": str(case.get("admission_resource_sample_ms", 1000)),
             "PROBE_PRECONNECTED_PARTIAL_REQUEST_BASE64": base64.b64encode(
                 case.get("preconnected_partial_request", b"")
@@ -2748,6 +2754,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                             healthy = response["admission_healthy_results"]
                             self.assertEqual(response["admission_partial_connections"], 136)
                             self.assertEqual(response["admission_blockers"], 7)
+                            self.assertTrue(response["admission_client_fds_ready"], response)
                             self.assertEqual(
                                 response["admission_healthy_before_release"],
                                 label != "Modex",
@@ -2793,6 +2800,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                             print(
                                 f"admission-case[{name}/{label}] "
                                 f"before_release={response['admission_healthy_before_release']} "
+                                f"client_fds_ready={response['admission_client_fds_ready']} "
                                 f"statuses={healthy.get('first_status')},{healthy.get('second_status')} "
                                 f"upstream_requests={len(records)}"
                             )

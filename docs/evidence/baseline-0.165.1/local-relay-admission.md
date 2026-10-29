@@ -30,21 +30,26 @@ used. Release binary checksums were 0.165.1
 `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`.
 
 The probe walks the launched product's `/proc` process tree from its supervisor
-and excludes the synthetic Codex process. This counts Modex's relay child as
-well as its supervisor; the releases keep their TinyHTTP task pool in the main
-process. RSS is the sum of per-process `VmRSS` and can double-count shared
-pages. CPU uses process `utime` and `stime`; the host exposes 10 ms ticks, so
-reported `0.000` values mean below one observed tick, not proven zero work.
-Resource values below are single 1-second samples, not resource qualifications.
+and excludes the synthetic Codex process. Before sending the healthy request,
+the seven-blocker case waits for the product tree's aggregate FD count to rise
+by 143 from its pre-client baseline. The incomplete requests do not open
+upstream sockets at that point, but the FD count does not identify each client
+socket. The probe checks whether both healthy requests finished immediately
+before it closes held clients. This counts Modex's relay child as well as its
+supervisor; the releases keep their TinyHTTP task pool in the main process. RSS
+is the sum of per-process `VmRSS` and can double-count shared pages. CPU uses
+process `utime` and `stime`; the host exposes 10 ms ticks, so reported `0.000`
+values mean below one observed tick, not proven zero work. Resource values below
+are single 1-second samples, not resource qualifications.
 
-The focused run on Linux x86-64 passed three tests in 29.667 seconds. It
+The focused run on Linux x86-64 passed three tests in 34.400 seconds. It
 compared these admission cases against both releases and Modex:
 
 | Case | Prodex 0.165.1 | Prodex 0.439.2 | Modex |
 |---|---|---|---|
 | One preconnected idle socket plus 136 partial headers | HTTP 200; one upstream POST | HTTP 200; one upstream POST | Socket closed; `RemoteDisconnected`; zero upstream POSTs |
 | One preconnected idle socket plus 136 new idle sockets | HTTP 200; one upstream POST | HTTP 200; one upstream POST | Socket closed; `RemoteDisconnected`; zero upstream POSTs |
-| Seven body-blocked workers, 136 partial headers, then a healthy keep-alive client | Two HTTP 200 responses before held clients close | Two HTTP 200 responses before held clients close | No response before held clients close; then two HTTP 200 responses |
+| Seven incomplete-body blocker requests, 136 partial headers, then a healthy keep-alive client | Two HTTP 200 responses before held clients close | Two HTTP 200 responses before held clients close | No response before held clients close; then two HTTP 200 responses |
 | Full completed keep-alive pool followed by a new request | New request succeeds; oldest stays open | New request succeeds; oldest stays open | New request succeeds; oldest is evicted |
 | Oldest socket has a partial request when admission runs | Partial and overflow requests succeed | Partial and overflow requests succeed | Partial and overflow requests succeed; partial socket stays open |
 
@@ -55,7 +60,7 @@ CPU seconds over one second):
 |---|---:|---:|---:|
 | Preconnected plus partial headers | `+2,332`, `+408`, `0.000` | `+2,248`, `+272`, `0.000` | `+400`, `+135`, `0.290` |
 | Preconnected plus idle clients | `+2,256`, `+408`, `0.000` | `+2,260`, `+272`, `0.000` | `+52`, `+127`, `0.030` |
-| Seven blockers plus partial-header backlog | `+5,288`, `+429`, `0.000` | `+4,476`, `+286`, `0.000` | `+636`, `+143`, `0.330` |
+| Seven blockers plus partial-header backlog | `+5,300`, `+432`, `0.000` | `+4,484`, `+288`, `0.010` | `+588`, `+143`, `0.290` |
 
 The Modex FD check allows 40 non-client descriptors beyond the synthetic
 clients and blockers; observed deltas were 127–143. Release descriptors are

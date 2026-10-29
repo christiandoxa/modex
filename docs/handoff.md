@@ -252,9 +252,9 @@ The 2026-10-30 three-process admission follow-up traced both pinned releases
 to TinyHTTP's uncapped `TaskPool`: each accepted socket becomes a task, and a
 new thread starts whenever none is waiting. Synthetic production comparisons
 confirm that 0.165.1 and 0.439.2 preserve a preconnected idle socket during
-136-client floods; Modex closes it. Under seven body-blocked workers and 136
-partial headers, both releases serve two healthy keep-alive requests before
-release while Modex waits until held clients close. The bounded Modex listener
+136-client floods; Modex closes it. With seven incomplete-body blocker
+requests and 136 partial headers, both releases serve two healthy keep-alive
+requests before release while Modex waits until held clients close. The bounded Modex listener
 also deliberately evicts the oldest completed idle socket from a full pool,
 while retaining an oldest partial request. A one-socket carveout would shift
 eviction to later idle clients and does not match the uncapped release policy,

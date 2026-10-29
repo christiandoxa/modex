@@ -351,6 +351,12 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
             events = base_events.copy()
             events.insert(insertion, {"type": "content_block_delta", "index": index, "delta": delta})
             cases.append((name, events))
+        events = base_events.copy()
+        events.insert(2, {
+            "type": "content_block_delta",
+            "delta": {"type": "text_delta", "text": "ignored"},
+        })
+        cases.append(("active_search_missing_index_text_delta", events))
         for name, delta in (
             ("reopened_result_missing_type", {"type": None}),
             ("reopened_result_text_delta", {"type": "text_delta", "text": "ignored"}),

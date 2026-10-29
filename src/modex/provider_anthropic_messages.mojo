@@ -14,10 +14,13 @@ comptime ANTHROPIC_BUFFERED_MAX_CONTENT_BLOCKS = 65_536
 
 def validate_deepseek_anthropic_request(source: String) raises:
     var doc = JsonDocument(source)
-    _only_fields(doc, doc.root, ["model", "input", "stream", "tools", "web_search_options", "parallel_tool_calls", "tool_choice", "max_output_tokens", "max_tokens", "max_completion_tokens", "temperature", "top_p", "stop", "stop_sequences", "stopSequences"], "request")
+    _only_fields(doc, doc.root, ["model", "input", "instructions", "stream", "tools", "web_search_options", "parallel_tool_calls", "tool_choice", "max_output_tokens", "max_tokens", "max_completion_tokens", "temperature", "top_p", "stop", "stop_sequences", "stopSequences"], "request")
     var model = doc.get(doc.root, "model")
     if model >= 0 and doc.nodes[model].kind != JSON_STRING:
         raise Error("Anthropic Messages slice requires a string model")
+    var instructions = doc.get(doc.root, "instructions")
+    if instructions >= 0 and doc.nodes[instructions].kind != JSON_STRING:
+        raise Error("Anthropic Messages instructions must be a string")
     var input = doc.get(doc.root, "input")
     if input < 0:
         raise Error("Anthropic Messages slice requires input")

@@ -18,6 +18,14 @@ production import audit passed on Linux x86-64. TUI interaction and the other
 five release targets remain open. See
 `docs/evidence/baseline-0.165.1/session-terminal-fallback.md`.
 
+The Anthropic web-search route now maps Responses `instructions` strings into
+the leading Anthropic `system` field, then joins input system/developer messages
+with `\n\n`, matching 0.165.1 and 0.439.2. Unicode whitespace-only values are
+omitted, surrounding Unicode whitespace is preserved for nonblank values, and
+non-string values fail before provider I/O. The production build and two
+focused three-process comparisons passed. See
+`docs/evidence/baseline-0.165.1/anthropic-instructions.md`.
+
 The Anthropic Messages adapter now maps untyped `role: "tool"` input items
 with missing or unusable IDs to `call_prodex` and groups results before text,
 matching the checksum-pinned 0.165.1 and 0.439.2 processes. Selected function

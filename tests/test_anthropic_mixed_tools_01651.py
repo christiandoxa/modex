@@ -189,6 +189,64 @@ def _json_body(record):
 
 
 class AnthropicMixedTool01651Tests(unittest.TestCase):
+    def test_responses_instructions_map_to_anthropic_system_for_both_releases(self):
+        cases = [
+            ({"input": "synthetic query", "instructions": "outer instruction"},
+             "outer instruction"),
+            ({"input": [
+                {"role": "system", "content": "input system"},
+                {"role": "developer", "content": "input developer"},
+                {"role": "user", "content": "query"},
+            ], "instructions": "outer instruction"},
+             "outer instruction\n\ninput system\n\ninput developer"),
+            ({"input": "synthetic query", "instructions": " \t\n "}, None),
+            ({"input": "synthetic query", "instructions": "\u00a0\u3000"}, None),
+            ({"input": "synthetic query", "instructions": "\u00a0\u200b\u3000"},
+             "\u00a0\u200b\u3000"),
+        ]
+        for request_fields, expected_system in cases:
+            with self.subTest(instructions=request_fields["instructions"]):
+                request = {
+                    "model": "deepseek-chat",
+                    "stream": False,
+                    "tools": [{"type": "web_search_preview"}],
+                    **request_fields,
+                }
+                results = [_run(binary, request, scenario="anthropic-buffered")
+                           for binary in (ORACLE_01651, ORACLE, MODEX)]
+                for result in results:
+                    self.assertEqual((result["exit_code"], result["status"]), (0, 200))
+                    self.assertEqual(len(result["upstream"]), 1)
+                    self.assertEqual(result["upstream"][0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual(result["state"]["leftovers"], [])
+                    if expected_system is None:
+                        self.assertNotIn("system", result["upstream_body"])
+                    else:
+                        self.assertEqual(result["upstream_body"]["system"], expected_system)
+                self.assertEqual(results[0]["upstream"][0]["body"], results[1]["upstream"][0]["body"])
+                self.assertEqual(results[1]["upstream"][0]["body"], results[2]["upstream"][0]["body"])
+                self.assertEqual(results[0]["upstream_body"], results[1]["upstream_body"])
+                self.assertEqual(results[1]["upstream_body"], results[2]["upstream_body"])
+
+    def test_nonstring_responses_instructions_fail_before_provider_post(self):
+        for instructions in (None, 7, []):
+            with self.subTest(instructions=instructions):
+                request = {
+                    "model": "deepseek-chat",
+                    "input": "synthetic query",
+                    "instructions": instructions,
+                    "stream": False,
+                    "tools": [{"type": "web_search_preview"}],
+                }
+                results = [_run(binary, request, scenario="anthropic-buffered")
+                           for binary in (ORACLE_01651, ORACLE, MODEX)]
+                for result in results:
+                    self.assertEqual((result["exit_code"], result["status"]), (1, 502))
+                    self.assertEqual(result["upstream"], [])
+                    self.assertEqual(result["state"]["leftovers"], [])
+                self.assertEqual(results[0]["response_body"], results[1]["response_body"])
+                self.assertEqual(results[1]["response_body"], results[2]["response_body"])
+
     def test_empty_and_whitespace_arrays_match_01651(self):
         with patch.object(message_arrays, "ORACLE", ORACLE_01651):
             message_arrays.AnthropicMessageArrayTests.test_empty_and_whitespace_arrays_match_release(self)

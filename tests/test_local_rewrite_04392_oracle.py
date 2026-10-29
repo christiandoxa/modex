@@ -4,6 +4,7 @@ import hashlib
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 from test_cli import ORACLE, ORACLE_SHA256
 import test_local_rewrite_01651_oracle as transport
@@ -47,6 +48,18 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
         missing = set(CASE_NAMES) - CASES.keys()
         if missing:
             raise AssertionError(f"Local relay oracle cases are missing: {sorted(missing)}")
+
+    def test_two_codex_requests_overlap_at_the_provider(self):
+        with patch.object(transport, "ORACLE", ORACLE):
+            transport.LocalRewrite01651OracleTests.test_two_codex_requests_overlap_at_the_provider(self)
+
+    def test_parent_eof_interrupts_a_stalled_provider_request(self):
+        with patch.object(transport, "ORACLE", ORACLE):
+            transport.LocalRewrite01651OracleTests.test_parent_eof_interrupts_a_stalled_provider_request(self)
+
+    def test_partial_reused_request_does_not_block_second_client(self):
+        with patch.object(transport, "ORACLE", ORACLE):
+            transport.LocalRewrite01651OracleTests.test_partial_reused_request_does_not_block_second_client(self)
 
     def test_non_websocket_connection_upgrade_reads_through_eof(self):
         upstream = transport.Upstream()

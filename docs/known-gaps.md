@@ -45,9 +45,9 @@ The relay parks up to 128 idle sockets in FIFO order and
 polls one new connection before each readiness scan. When full, one accepted
 overflow socket waits while ready parked requests are serviced; admission
 evicts the oldest socket with no request bytes. The pool has no idle expiry. A
-partial request on a reused socket blocks other clients until completion or
-close; parent EOF does not interrupt that in-progress read. Active requests
-remain serial. Selected HEAD `text/event-stream` terminal-chunk controls now
+partial request consumes a worker lane; enough partial requests can still
+block other clients. The bounded worker pool does not match baseline worker
+configuration or separate request capture. Selected HEAD `text/event-stream` terminal-chunk controls now
 match both pinned Linux releases; broader response framing remains unverified.
 The local-rewrite route's 426 fallback does not implement the separate
 runtime-proxy WebSocket path.
@@ -390,9 +390,9 @@ Hook-trust request writes now survive closed peer stdin without SIGPIPE and
 reap the direct child. Normal exit/error, relay death and idle parent-channel
 closure are covered. Parent stdio swaps still require no concurrent parent I/O.
 Process-tree cleanup, signal forwarding, crash cleanup of overlays and
-cancellation during in-flight relay work remain incomplete. The parent EOF
-check runs between requests; the serial relay has bounded network deadlines,
-not a complete cross-process cancellation protocol.
+cancellation during in-flight relay work remain incomplete. Parent EOF now
+interrupts the tested active upstream and client sockets, but broader
+cross-process cancellation behavior is unqualified.
 
 Passthrough preserves POST query/body/content type and authoritative credentials,
 filters hop-by-hop headers and removes the aggregate cap only for successful
@@ -665,8 +665,8 @@ Conversation state is a scoped in-memory cache, not disk persistence. The
 native implementation preserves 256 entries per scope, 2048 globally, logical
 64 MiB retention, sequence saturation, replacement and latest tool-history
 selection. Logical Serde type weights are source-inferred; actual artifact
-memory-eviction boundaries and non-host layouts are unverified. The serial
-relay owns one cache; shared Mutex/concurrent behavior remains unfinished.
+memory-eviction boundaries and non-host layouts are unverified. The relay
+shares one cache under a lock; broader concurrent behavior remains unfinished.
 Known empty histories are retained separately from unknown response IDs, so
 the frozen body-only conformance pass receives the correct existence fact.
 
@@ -674,8 +674,8 @@ The relay supports bounded request capture, incremental response writes,
 buffered/streamed scoped continuation and upstream cleanup on downstream
 reset. Valid request half-close remains supported. Graceful full FIN cannot
 be distinguished from request half-close by the current peek-only watcher;
-immediate cancellation in that case remains unverified. Requests are serial;
-worker/admission concurrency, complete first-event retry/backpressure,
+immediate cancellation in that case remains unverified. Worker/admission
+concurrency, complete first-event retry/backpressure,
 graceful signals and limits above the incoming 64 MiB cap remain gaps.
 Fallback ID/time generation timing is also unverified.
 

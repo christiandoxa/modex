@@ -1,6 +1,7 @@
 """Synthetic loopback checks for the native passthrough driver."""
 import os
 from pathlib import Path
+import select
 import socket
 import subprocess
 import tempfile
@@ -101,6 +102,80 @@ def main():
 class ProviderPassthroughTests(unittest.TestCase):
     def test_loopback_framing_auth_and_bounded_streaming(self):
         main()
+
+    def test_cancellation_after_response_headers_closes_stalled_upstream(self):
+        listener = socket.socket()
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        listener.settimeout(3)
+        address = "%s:%d" % listener.getsockname()
+        response_head_sent = threading.Event()
+        upstream_closed = threading.Event()
+        errors = []
+
+        def serve():
+            try:
+                with listener.accept()[0] as peer:
+                    peer.settimeout(3)
+                    request = bytearray()
+                    while b"\r\n\r\n" not in request:
+                        data = peer.recv(4096)
+                        if not data:
+                            return
+                        request.extend(data)
+                    head, body = bytes(request).split(b"\r\n\r\n", 1)
+                    content_length = next(
+                        int(line.split(b":", 1)[1])
+                        for line in head.split(b"\r\n")
+                        if line.lower().startswith(b"content-length:")
+                    )
+                    while len(body) < content_length:
+                        body += peer.recv(4096)
+                    peer.sendall(
+                        b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n"
+                        b"Transfer-Encoding: chunked\r\n\r\n"
+                    )
+                    response_head_sent.set()
+                    if peer.recv(1) == b"":
+                        upstream_closed.set()
+            except (OSError, TimeoutError) as error:
+                errors.append(repr(error))
+            finally:
+                listener.close()
+
+        server = threading.Thread(target=serve, daemon=True)
+        server.start()
+        child_cancel, parent_cancel = socket.socketpair()
+        with tempfile.TemporaryDirectory(prefix="modex-passthrough-cancel-") as home:
+            env = {
+                "PATH": os.environ["PATH"], "HOME": home,
+                "XDG_CONFIG_HOME": home, "XDG_DATA_HOME": home, "XDG_CACHE_HOME": home,
+            }
+            process = subprocess.Popen(
+                [str(DRIVER), address, "fake-upstream", str(child_cancel.fileno())],
+                env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                pass_fds=(child_cancel.fileno(),),
+            )
+            child_cancel.close()
+            try:
+                self.assertTrue(response_head_sent.wait(2), "upstream response headers were not sent")
+                ready, _, _ = select.select([process.stdout], [], [], 2)
+                self.assertTrue(ready, "passthrough did not finish reading response headers")
+                status_line = process.stdout.readline()
+                self.assertEqual(status_line, b"status 200\n")
+                parent_cancel.shutdown(socket.SHUT_WR)
+                stdout, stderr = process.communicate(timeout=3)
+                self.assertEqual(process.returncode, 0, stderr)
+                self.assertIn(b"CANCELLED loopback HTTP request cancelled", stdout)
+                self.assertTrue(upstream_closed.wait(1), "cancellation must close the upstream socket")
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                    process.wait()
+                parent_cancel.close()
+                server.join(3)
+        self.assertEqual(errors, [])
+        self.assertFalse(server.is_alive(), "synthetic peer did not finish")
 
     def test_chat_completions_304_ignores_large_representation_length(self):
         from test_local_rewrite import RunningLocalRewrite, post_relay, serving

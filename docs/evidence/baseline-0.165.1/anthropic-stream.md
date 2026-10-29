@@ -175,11 +175,11 @@ open after `response.failed`, sends 1 MiB of a pipelined request while keeping
 the client write side open, then terminates `super`. Pending pipeline bytes
 keep `client_disconnected()` false, so parent EOF must stop the open relay
 through its shared stopping signal. Each release child exits within two seconds and the
-caller observes `IncompleteRead`; the current serial Modex parent exits but
-leaves its relay and synthetic Codex children alive. The pooled cancellation
-path must close the open stream despite the pending pipeline.
+caller observes `IncompleteRead`. The earlier serial Modex parent exited but
+left its relay and synthetic Codex children alive. The pooled cancellation
+path now closes the open stream despite the pending pipeline.
 `test_parent_eof_cancels_failed_open_stream_with_pending_pipeline` records the
-release behavior and the serial Modex gap. The normal client-close probe also
+release and Modex behavior. The normal client-close probe also
 exercises the launcher cleanup path. Valid continuation through `message_stop`
 still closes normally. Clients that retain their socket after a read timeout
 and other invalid UTF-8 framing positions were not tested. Broader malformed

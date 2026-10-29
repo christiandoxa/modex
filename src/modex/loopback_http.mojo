@@ -127,10 +127,23 @@ def _check_downstream_peer(fd: Int32) raises:
         raise Error("downstream client disconnected")
 
 
-def _send_all(fd: Int32, bytes: List[UInt8], deadline: Float64, downstream_fd: Int32 = -1) raises:
+def _check_cancellation(fd: Int32) raises:
+    if fd < 0:
+        return
+    var byte: UInt8 = 0
+    var result = recv(fd, Pointer(to=byte), 1, MSG_PEEK | MSG_DONTWAIT)
+    if result >= 0:
+        raise Error("loopback HTTP request cancelled")
+    var e = get_errno()
+    if e != ErrNo.EAGAIN and e != ErrNo.EINTR:
+        raise Error("loopback HTTP cancellation check failed")
+
+
+def _send_all(fd: Int32, bytes: List[UInt8], deadline: Float64, downstream_fd: Int32 = -1, cancel_fd: Int32 = -1) raises:
     var sent = 0
     while sent < len(bytes):
         _check_downstream_peer(downstream_fd)
+        _check_cancellation(cancel_fd)
         if perf_counter() >= deadline:
             raise Error("loopback HTTP request timed out")
         var n = send(fd, bytes.unsafe_ptr().unsafe_offset(sent), UInt(len(bytes) - sent), MSG_DONTWAIT | MSG_NOSIGNAL)
@@ -382,16 +395,18 @@ def _open_loopback_socket(ipv6: Bool) raises -> Int32:
     return fd
 
 
-def _finish_loopback_connect(fd: Int32, result: Int32, deadline: Float64, downstream_fd: Int32 = -1) raises:
-    # Preserve connect's errno before the downstream socket probe changes it.
+def _finish_loopback_connect(fd: Int32, result: Int32, deadline: Float64, downstream_fd: Int32 = -1, cancel_fd: Int32 = -1) raises:
+    # Preserve connect's errno before either descriptor probe changes it.
     var e = get_errno()
     _check_downstream_peer(downstream_fd)
+    _check_cancellation(cancel_fd)
     if result >= 0:
         return
     if e != ErrNo.EINPROGRESS and e != ErrNo.EINTR and e != ErrNo.EAGAIN:
         raise Error("loopback HTTP connect failed")
     while True:
         _check_downstream_peer(downstream_fd)
+        _check_cancellation(cancel_fd)
         var sock_error: Int32 = 0
         var opt_len = UInt32(size_of[Int32]())
         if getsockopt(fd, SOL_SOCKET, SO_ERROR, Pointer(to=sock_error).unsafe_bitcast[NoneType](), Pointer(to=opt_len)) < 0:
@@ -631,6 +646,7 @@ def _stream_request(path: String, headers: List[Tuple[String, String]], host: St
 struct LoopbackHTTPStream(Movable):
     var fd: Int32
     var downstream_fd: Int32
+    var cancel_fd: Int32
     var status: Int
     var headers: List[Tuple[String, String]]
     var done: Bool
@@ -667,9 +683,11 @@ struct LoopbackHTTPStream(Movable):
         request_method: String = "POST",
         request_header_limit: Int = HTTP_HEADER_LIMIT,
         request_field_limit: Int = HTTP_HEADER_LIMIT,
+        cancel_fd: Int32 = -1,
     ) raises:
         self.fd = -1
         self.downstream_fd = downstream_fd
+        self.cancel_fd = cancel_fd
         self.status = 0
         self.headers = List[Tuple[String, String]]()
         self.done = False
@@ -720,6 +738,7 @@ struct LoopbackHTTPStream(Movable):
             raise Error("invalid loopback HTTP port")
         var request = _stream_request(path, headers, address, len(body), request_method, request_header_limit, request_field_limit)
         _check_downstream_peer(self.downstream_fd)
+        _check_cancellation(self.cancel_fd)
         var started = perf_counter()
         self.request_deadline = started + Float64(request_timeout_ms) / 1000.0
         var connect_deadline = started + Float64(connect_timeout_ms) / 1000.0
@@ -737,9 +756,9 @@ struct LoopbackHTTPStream(Movable):
             else:
                 var peer = sockaddr_in(port=_port_bytes(port), addr=in_addr(s_addr=_network32(ip)))
                 result = connect(self.fd, Pointer(to=peer).unsafe_bitcast[sockaddr](), UInt32(size_of[sockaddr_in]()))
-            _finish_loopback_connect(self.fd, result, connect_deadline, self.downstream_fd)
-            _send_all(self.fd, request, self.request_deadline, self.downstream_fd)
-            _send_all(self.fd, body, self.request_deadline, self.downstream_fd)
+            _finish_loopback_connect(self.fd, result, connect_deadline, self.downstream_fd, self.cancel_fd)
+            _send_all(self.fd, request, self.request_deadline, self.downstream_fd, self.cancel_fd)
+            _send_all(self.fd, body, self.request_deadline, self.downstream_fd, self.cancel_fd)
             while self.phase == 0:
                 self._read_head()
         except:
@@ -765,6 +784,7 @@ struct LoopbackHTTPStream(Movable):
         var chunk = List[UInt8](length=8192, fill=0)
         while True:
             _check_downstream_peer(self.downstream_fd)
+            _check_cancellation(self.cancel_fd)
             if perf_counter() >= deadline:
                 if lookahead_first:
                     raise Error("loopback HTTP lookahead elapsed")
@@ -872,6 +892,7 @@ struct LoopbackHTTPStream(Movable):
         try:
             while True:
                 if self.phase != 6:
+                    _check_cancellation(self.cancel_fd)
                     _check_downstream_peer(self.downstream_fd)
                 if self.phase == 0:
                     self._read_head()

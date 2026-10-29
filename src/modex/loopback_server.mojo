@@ -149,6 +149,7 @@ struct LoopbackHTTPConnection(Movable):
     var include_default_response_headers: Bool
     var keep_alive: Bool
     var waiting_for_request: Bool
+    var worker_tracked: Bool
     var response_version: String
     var done: Bool
 
@@ -164,11 +165,12 @@ struct LoopbackHTTPConnection(Movable):
         self.include_default_response_headers = False
         self.keep_alive = False
         self.waiting_for_request = False
+        self.worker_tracked = False
         self.response_version = "HTTP/1.1"
         self.done = False
 
     def close(mut self):
-        if self.fd >= 0:
+        if self.fd >= 0 and not self.worker_tracked:
             _ = close(self.fd)
             self.fd = -1
         self.done = True
@@ -181,6 +183,23 @@ struct LoopbackHTTPConnection(Movable):
             return True
         var byte: UInt8 = 0
         var result = recv(self.fd, Pointer(to=byte), 1, MSG_PEEK | MSG_DONTWAIT)
+        if result == 0:
+            return True
+        if result > 0:
+            return False
+        var error = get_errno()
+        if error == ErrNo.EAGAIN or error == ErrNo.EINTR:
+            return False
+        if error == ErrNo.ECONNRESET:
+            return True
+        raise Error("loopback HTTP peer check failed")
+
+    def discard_incoming_or_disconnected(mut self, mut buffer: List[UInt8]) raises -> Bool:
+        if self.fd < 0:
+            return True
+        if not buffer:
+            raise Error("loopback HTTP discard buffer is empty")
+        var result = recv(self.fd, buffer.unsafe_ptr(), UInt(len(buffer)), MSG_DONTWAIT)
         if result == 0:
             return True
         if result > 0:

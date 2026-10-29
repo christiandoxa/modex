@@ -93,6 +93,20 @@ class LoopbackHTTPStreamTests(unittest.TestCase):
             pass_fds=(watched.fileno(),),
         )
 
+    def start_cancellable(self, address, mode):
+        child_cancel, parent_cancel = socket.socketpair()
+        process = subprocess.Popen(
+            [str(DRIVER), address, "/v1/chat", "payload", mode, str(child_cancel.fileno())],
+            cwd=ROOT, env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            pass_fds=(child_cancel.fileno(),),
+        )
+        child_cancel.close()
+        return process, parent_cancel
+
+    def cancel(self, signal_socket):
+        signal_socket.shutdown(socket.SHUT_WR)
+        signal_socket.close()
+
     def call(self, address, path="/v1/chat", body="payload", mode=None):
         args = [str(DRIVER), address, path, body]
         if mode:
@@ -451,6 +465,105 @@ class LoopbackHTTPStreamTests(unittest.TestCase):
                 process.wait()
             client.close()
             thread.join(2)
+
+    def test_cancellation_interrupts_stalled_connect(self):
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(0)
+        address = f"127.0.0.1:{listener.getsockname()[1]}"
+        queued = socket.create_connection(listener.getsockname(), timeout=2)
+        process, signal_socket = self.start_cancellable(address, "cancel-connect")
+        try:
+            ready, _, _ = select.select([process.stdout], [], [], 2)
+            self.assertTrue(ready, "connect helper did not reach its pending-connect marker")
+            self.assertEqual(process.stdout.readline(), b"CONNECT_PENDING\n")
+            self.assertIsNone(process.poll(), "nonblocking connect must remain pending")
+            self.cancel(signal_socket)
+            stdout, stderr = process.communicate(timeout=2)
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertIn(b"CANCELLED loopback HTTP request cancelled", stdout)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+            signal_socket.close()
+            queued.close()
+            listener.close()
+
+    def test_cancellation_interrupts_stalled_request_write(self):
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        address = f"127.0.0.1:{listener.getsockname()[1]}"
+        header_seen = threading.Event()
+        release = threading.Event()
+        errors = []
+
+        def read_head_only():
+            try:
+                conn, _ = listener.accept()
+                with conn:
+                    conn.settimeout(2)
+                    conn.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4096)
+                    request = bytearray()
+                    while b"\r\n\r\n" not in request:
+                        data = conn.recv(4096)
+                        if not data:
+                            return
+                        request.extend(data)
+                    header_seen.set()
+                    release.wait(2)
+            except (OSError, TimeoutError) as exc:
+                errors.append(exc)
+            finally:
+                listener.close()
+
+        thread = threading.Thread(target=read_head_only, daemon=True)
+        thread.start()
+        process, signal_socket = self.start_cancellable(address, "cancel-write")
+        try:
+            self.assertTrue(header_seen.wait(2), "server did not receive request headers")
+            time.sleep(0.05)
+            self.assertIsNone(process.poll(), "unread request body should stall the write loop")
+            self.cancel(signal_socket)
+            stdout, stderr = process.communicate(timeout=2)
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertIn(b"CANCELLED loopback HTTP request cancelled", stdout)
+        finally:
+            release.set()
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+            signal_socket.close()
+            thread.join(2)
+        self.assertEqual(errors, [])
+
+    def test_cancellation_interrupts_stalled_response_read(self):
+        response_started = threading.Event()
+        release = threading.Event()
+
+        def hold_response(conn, request):
+            response_started.set()
+            release.wait(2)
+
+        address, _, errors, thread = self.serve(hold_response)
+        process, signal_socket = self.start_cancellable(address, "cancel-read")
+        try:
+            self.assertTrue(response_started.wait(2), "server did not receive request")
+            self.assertIsNone(process.poll(), "response read should remain stalled")
+            self.cancel(signal_socket)
+            stdout, stderr = process.communicate(timeout=2)
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertIn(b"CANCELLED loopback HTTP request cancelled", stdout)
+        finally:
+            release.set()
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+            signal_socket.close()
+            thread.join(2)
+        self.assertEqual(errors, [])
 
     def test_rejects_injected_and_caller_framing_headers_before_connect(self):
         address, accepted, _, thread = self.serve(

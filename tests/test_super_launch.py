@@ -109,6 +109,54 @@ if scenario == "exit-seven": raise SystemExit(7)
 if scenario == "extra-state":
     (home/"synthetic-user-state").write_text("preserve this data")
     raise SystemExit(0)
+if scenario == "slow-partial":
+    import select
+    import socket
+    target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
+    host, port = target.hostname, target.port
+    path = target.path.rstrip("/") + "/responses"
+    partials = []
+    for index in range(8):
+        partial = socket.create_connection((host, port), timeout=5)
+        partial.sendall((f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+                         f"Content-Length: 2\r\nX-Slow-Partial: {index}\r\n").encode())
+        partials.append(partial)
+    time.sleep(0.1)
+    healthy = socket.create_connection((host, port), timeout=10)
+    body = json.dumps({"model":"deepseek-chat","input":"synthetic slow-partial probe"},separators=(",",":")).encode()
+    request = (f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+               f"Content-Type: application/json\r\nAuthorization: Bearer synthetic-codex-key\r\n"
+               f"Content-Length: {len(body)}\r\nConnection: close\r\n\r\n").encode() + body
+    started = time.monotonic()
+    healthy.sendall(request)
+    received = bytearray()
+    def read_status(deadline):
+        while b"\r\n\r\n" not in received:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not select.select([healthy], [], [], remaining)[0]:
+                return None
+            chunk = healthy.recv(65536)
+            if not chunk:
+                return None
+            received.extend(chunk)
+        return int(bytes(received).split(b"\r\n", 1)[0].split()[1])
+    hold_until = time.monotonic() + 1.0
+    before_release = read_status(hold_until)
+    status_elapsed_ms = round((time.monotonic()-started)*1000) if before_release is not None else None
+    remaining = hold_until - time.monotonic()
+    if remaining > 0:
+        time.sleep(remaining)
+    for partial in partials:
+        partial.close()
+    status = before_release if before_release is not None else read_status(time.monotonic() + 5.0)
+    if status_elapsed_ms is None:
+        status_elapsed_ms = round((time.monotonic()-started)*1000)
+    save({"kind":"slow-partial", "clients":len(partials), "hold_ms":1000,
+          "responded_before_release":before_release is not None, "before_release_status":before_release,
+          "status":status, "elapsed_ms":status_elapsed_ms})
+    healthy.close()
+    print("synthetic-client-complete")
+    raise SystemExit(0 if status == 200 else 1)
 if scenario in ("kill-relay", "kill-relay-ignores-term"):
     for pid in children.read_text().split():
         if int(pid) != os.getpid(): os.kill(int(pid), 9)

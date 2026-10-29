@@ -3045,14 +3045,15 @@ tests, the production build, native provider checks, import audit and census
 passed. Broader provider behavior remains unqualified. Evidence:
 `docs/evidence/baseline-0.165.1/anthropic-text-metadata.md`.
 
-An isolated relay-concurrency prototype at
-`/tmp/modex-runtime-concurrency-01651-20261029-a` is unfinished and is not
-part of the production branch. Its first build succeeded, but both its new
-two-request overlap probe and the existing sequential keep-alive control timed
-out without an upstream request. Instrumentation reached the main loop and
-then stalled acquiring shared state before listener acceptance. Releasing
-scoped locks before return did not resolve it. The prototype also needs
-verified active upstream cancellation, slow request admission and baseline
-worker-count behavior. Temporary phase markers were removed after the
-investigation; the uncommitted prototype remains isolated and does not
-establish parity. The production path remains serial.
+The local relay now uses a bounded worker pool and cancels tested in-flight
+upstream requests on parent EOF. A failed Anthropic stream with an unfinished
+downstream body drains unusable pipelined input to detect client closure. The
+separate request-capture model and configured worker counts of the releases
+remain unimplemented: enough partial requests can occupy every lane. Stream
+event byte counts also differ in a separate eight-client failure probe, which
+only established worker recovery. Full concurrency, signal, platform and
+security behavior remain unqualified; all six release targets stay in the
+parity denominator. See `docs/evidence/baseline-0.165.1/local-relay-concurrency.md`.
+An eight-partial-client process control confirms the admission mismatch: both
+tested releases served a ninth request during a one-second hold, while Modex
+served it after the partial clients closed. See `docs/evidence/runtime-slow-partial.md`.

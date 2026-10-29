@@ -57,6 +57,12 @@ class Upstream(ThreadingHTTPServer):
     def __init__(self):
         self.records = []
         self.records_lock = threading.Lock()
+        self.parallel_probe_barrier = threading.Barrier(2)
+        self.parallel_probe_active = 0
+        self.parallel_probe_peak_active = 0
+        self.parallel_probe_overlapped = threading.Event()
+        self.parent_exit_slow_started = threading.Event()
+        self.parent_exit_upstream_closed = threading.Event()
         super().__init__(("127.0.0.1", 0), UpstreamHandler)
 
     def reset_records(self):
@@ -66,6 +72,17 @@ class Upstream(ThreadingHTTPServer):
     def snapshot_records(self):
         with self.records_lock:
             return list(self.records)
+
+    def reset_parallel_probe(self):
+        with self.records_lock:
+            self.parallel_probe_barrier = threading.Barrier(2)
+            self.parallel_probe_active = 0
+            self.parallel_probe_peak_active = 0
+            self.parallel_probe_overlapped.clear()
+
+    def snapshot_parallel_probe(self):
+        with self.records_lock:
+            return self.parallel_probe_peak_active, self.parallel_probe_overlapped.is_set()
 
 
 class UpstreamHandler(BaseHTTPRequestHandler):
@@ -81,6 +98,54 @@ class UpstreamHandler(BaseHTTPRequestHandler):
                 "headers": {name.lower(): value for name, value in self.headers.items()},
                 "body": body,
             })
+        if self.path.startswith("/v1/chat/completions?parent-exit=slow") or self.headers.get("X-Parent-Exit-Slow") == "1":
+            self.server.parent_exit_slow_started.set()
+            self.connection.settimeout(0.05)
+            deadline = time.monotonic() + 6
+            while time.monotonic() < deadline:
+                try:
+                    if self.connection.recv(1, socket.MSG_PEEK) == b"":
+                        self.server.parent_exit_upstream_closed.set()
+                        self.close_connection = True
+                        return
+                except TimeoutError:
+                    pass
+                except OSError:
+                    self.server.parent_exit_upstream_closed.set()
+                    self.close_connection = True
+                    return
+                time.sleep(0.01)
+        if self.path.startswith("/v1/chat/completions?parallel="):
+            with self.server.records_lock:
+                self.server.parallel_probe_active += 1
+                self.server.parallel_probe_peak_active = max(
+                    self.server.parallel_probe_peak_active,
+                    self.server.parallel_probe_active,
+                )
+            try:
+                self.server.parallel_probe_barrier.wait(timeout=2)
+                self.server.parallel_probe_overlapped.set()
+            except threading.BrokenBarrierError:
+                self.send_response(503)
+                self.send_header("Content-Type", "text/plain")
+                self.send_header("Content-Length", str(len(b"concurrent upstream peer did not arrive")))
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.wfile.write(b"concurrent upstream peer did not arrive")
+                self.close_connection = True
+                with self.server.records_lock:
+                    self.server.parallel_probe_active -= 1
+                return
+            with self.server.records_lock:
+                self.server.parallel_probe_active -= 1
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(PROVIDER_RESPONSE)))
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.wfile.write(PROVIDER_RESPONSE)
+            self.close_connection = True
+            return
         if self.path.endswith("?header-controls=custom"):
             self.send_response_only(200)
             self.send_header("sErVeR", "synthetic-server-one")
@@ -307,6 +372,8 @@ connection.settimeout(5)
 request_parts = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_REQUEST_PARTS_BASE64", "[]"))]
 sequential_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_SEQUENTIAL_REQUESTS_BASE64", "[]"))]
 pipelined_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUESTS_BASE64", "[]"))]
+concurrent_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_CONCURRENT_REQUESTS_BASE64", "[]"))]
+parent_exit_active = os.environ.get("PROBE_PARENT_EXIT_ACTIVE") == "1"
 pipelined_request_parts = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUEST_PARTS_BASE64", "[]"))]
 pipelined_request_delay = int(os.environ.get("PROBE_PIPELINED_REQUEST_DELAY_MS", "0")) / 1000
 request_parts_sent = [0]
@@ -314,7 +381,7 @@ first_request_part_finished = threading.Event()
 half_close = os.environ.get("PROBE_HALF_CLOSE") == "1"
 request_part_delay = int(os.environ.get("PROBE_REQUEST_PART_DELAY_MS", "0")) / 1000
 writer_thread = None
-if sequential_requests or pipelined_requests:
+if sequential_requests or pipelined_requests or concurrent_requests or parent_exit_active:
     pass
 elif request_parts:
     def send_request_parts():
@@ -420,7 +487,71 @@ def read_expect_response():
 
 try:
     request_method = os.environ.get("PROBE_REQUEST_METHOD")
-    if pipelined_requests:
+    if parent_exit_active:
+        connection.close()
+        active_client = socket.create_connection((target.hostname, target.port), timeout=5)
+        active_client.settimeout(5)
+        request_file = os.environ.get("PROBE_REQUEST_FILE")
+        if request_file:
+            with open(request_file, "rb") as source:
+                active_request = source.read()
+        else:
+            active_request = base64.b64decode(os.environ["PROBE_REQUEST_BASE64"])
+        active_client.sendall(active_request)
+        trigger = os.environ["PROBE_PARENT_EXIT_TRIGGER"]
+        deadline = time.monotonic() + 5
+        while not os.path.exists(trigger) and time.monotonic() < deadline:
+            time.sleep(0.005)
+        if not os.path.exists(trigger):
+            raise TimeoutError("parent-exit trigger was not released")
+        holder = subprocess.Popen(
+            ["/bin/sleep", "10"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+            pass_fds=(active_client.fileno(),),
+        )
+        result["holder_pid"] = holder.pid
+        request_parts_sent[0] = 1
+        active_client.close()
+    elif concurrent_requests:
+        connection.close()
+        concurrent_results = [None] * len(concurrent_requests)
+        def send_concurrent_request(index, request_bytes):
+            client = socket.create_connection((target.hostname, target.port), timeout=5)
+            client.settimeout(5)
+            try:
+                client.sendall(request_bytes)
+                response = http.client.HTTPResponse(client)
+                response.begin()
+                body = response.read()
+                concurrent_results[index] = {
+                    "status": response.status,
+                    "body_base64": base64.b64encode(body).decode("ascii"),
+                }
+            except Exception as error:
+                concurrent_results[index] = {"error": type(error).__name__}
+            finally:
+                client.close()
+        concurrent_workers = [
+            threading.Thread(target=send_concurrent_request, args=(index, request_bytes), daemon=True)
+            for index, request_bytes in enumerate(concurrent_requests)
+        ]
+        for worker in concurrent_workers:
+            worker.start()
+        for worker in concurrent_workers:
+            worker.join(10)
+        for index, worker in enumerate(concurrent_workers):
+            if worker.is_alive():
+                concurrent_results[index] = {"error": "TimeoutError"}
+        result["concurrent_responses"] = concurrent_results
+        request_parts_sent[0] = len(concurrent_requests)
+        if concurrent_results and concurrent_results[0] is not None:
+            first = concurrent_results[0]
+            result["status"] = first.get("status")
+            result["body_base64"] = first.get("body_base64", "")
+    elif pipelined_requests:
         if pipelined_request_parts:
             for index, part in enumerate(pipelined_request_parts):
                 connection.sendall(part)
@@ -1945,6 +2076,12 @@ def run_probe(binary: Path, case, upstream: Upstream):
                 [base64.b64encode(part).decode("ascii") for part in case.get("pipelined_requests", [])],
                 separators=(",", ":"),
             ),
+            "PROBE_CONCURRENT_REQUESTS_BASE64": json.dumps(
+                [base64.b64encode(part).decode("ascii") for part in case.get("concurrent_requests", [])],
+                separators=(",", ":"),
+            ),
+            "PROBE_PARENT_EXIT_ACTIVE": "1" if case.get("parent_exit_active") else "0",
+            "PROBE_PARENT_EXIT_TRIGGER": str(case.get("parent_exit_trigger", "")),
             "PROBE_PIPELINED_REQUEST_PARTS_BASE64": json.dumps(
                 [base64.b64encode(part).decode("ascii") for part in case.get("pipelined_request_parts", [])],
                 separators=(",", ":"),
@@ -2031,6 +2168,9 @@ def run_probe(binary: Path, case, upstream: Upstream):
         for item in response.get("pipelined_responses", []):
             item["body"] = base64.b64decode(item.pop("body_base64"))
             item["head_wire_body"] = base64.b64decode(item.pop("head_wire_body_base64"))
+        for item in response.get("concurrent_responses", []):
+            if "body_base64" in item:
+                item["body"] = base64.b64decode(item.pop("body_base64"))
         if "second_client" in response:
             response["second_client"]["body"] = base64.b64decode(response["second_client"].pop("body_base64"))
         if "saturation_overflow_body_base64" in response:
@@ -2486,6 +2626,126 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                     [("POST", "/v1/chat/completions")] * 2,
                 )
 
+    def test_two_codex_requests_overlap_at_the_provider(self):
+        body = json.dumps({
+            "model": "deepseek-chat",
+            "messages": [{"role": "user", "content": "synthetic concurrent request"}],
+        }, separators=(",", ":")).encode()
+        requests = [
+            request_bytes(
+                headers=(("Connection", "close"),),
+                body=body,
+                target=f"/v1/chat/completions?parallel={index}".encode(),
+            )
+            for index in (1, 2)
+        ]
+        case = {
+            "name": "two_concurrent_chat_completions",
+            "request": requests[0],
+            "concurrent_requests": requests,
+        }
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            results = {}
+            for label, binary in (("oracle", ORACLE), ("modex", MODEX)):
+                upstream.reset_parallel_probe()
+                response, records = run_probe(binary, case, upstream)
+                results[label] = (response, records, upstream.snapshot_parallel_probe())
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+        expected_paths = ["/v1/chat/completions?parallel=1", "/v1/chat/completions?parallel=2"]
+        for label, (response, records, (peak_active, overlapped)) in results.items():
+            with self.subTest(label=label):
+                self.assertEqual(response["process_exit"], 0, response["stderr"])
+                self.assertEqual(
+                    response["concurrent_responses"],
+                    [{"status": 200, "body": PROVIDER_RESPONSE}] * 2,
+                )
+                self.assertTrue(overlapped, "the upstream barrier observed both requests together")
+                self.assertGreaterEqual(peak_active, 2)
+                self.assertEqual(sorted(record["path"] for record in records), sorted(expected_paths))
+
+    def test_parent_eof_interrupts_a_stalled_provider_request(self):
+        body = json.dumps({
+            "model": "deepseek-chat",
+            "messages": [{"role": "user", "content": "synthetic stalled request"}],
+        }, separators=(",", ":")).encode()
+        chat_request = request_bytes(
+            headers=(("Connection", "close"),),
+            body=body,
+            target=b"/v1/chat/completions?parent-exit=slow",
+        )
+        messages_request = request_bytes(
+            headers=(("Connection", "close"), ("X-Parent-Exit-Slow", "1")),
+            body=json.dumps({"model": "deepseek-chat", "input": "synthetic stalled request",
+                             "tools": [{"type": "web_search_preview"}]}).encode(),
+            target=b"/v1/responses",
+        )
+        results = {}
+        for label, binary, request, expected_path in (
+            ("oracle-chat", ORACLE, chat_request, "/v1/chat/completions?parent-exit=slow"),
+            ("modex-chat", MODEX, chat_request, "/v1/chat/completions?parent-exit=slow"),
+            ("oracle-messages", ORACLE, messages_request, "/anthropic/v1/messages"),
+            ("modex-messages", MODEX, messages_request, "/anthropic/v1/messages"),
+        ):
+            upstream = Upstream()
+            upstream_worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+            upstream_worker.start()
+            try:
+                with tempfile.TemporaryDirectory(prefix="modex-parent-exit-trigger-") as temporary:
+                    trigger = Path(temporary) / "release-codex"
+                    case = {
+                        "name": "parent_exit_during_stalled_upstream",
+                        "request": request,
+                        "parent_exit_active": True,
+                        "parent_exit_trigger": str(trigger),
+                        "process_timeout": 12,
+                    }
+                    outcome = {}
+
+                    def run():
+                        try:
+                            outcome["value"] = run_probe(binary, case, upstream)
+                        except BaseException as error:
+                            outcome["error"] = error
+
+                    probe_worker = threading.Thread(target=run, daemon=True)
+                    probe_worker.start()
+                    self.assertTrue(
+                        upstream.parent_exit_slow_started.wait(8),
+                        f"{label} did not reach the stalled upstream",
+                    )
+                    trigger.touch()
+                    probe_worker.join(12)
+                    self.assertFalse(probe_worker.is_alive(), f"{label} did not exit after parent EOF")
+                    if "error" in outcome:
+                        raise outcome["error"]
+                    response, records = outcome["value"]
+                    results[label] = (
+                        response,
+                        records,
+                        upstream.parent_exit_upstream_closed.is_set(),
+                        expected_path,
+                    )
+            finally:
+                upstream.shutdown()
+                upstream.server_close()
+                upstream_worker.join(timeout=2)
+
+        for label, (response, records, upstream_closed, expected_path) in results.items():
+            with self.subTest(label=label):
+                self.assertEqual(response["process_exit"], 0, response["stderr"])
+                self.assertEqual(len(records), 1)
+                self.assertEqual(records[0]["path"], expected_path)
+                if label.startswith("modex"):
+                    self.assertLess(response["process_elapsed_ms"], 3000, label)
+                    self.assertTrue(upstream_closed, "parent EOF closed the stalled provider socket")
+
     def test_partial_request_headers_still_complete_before_relay_dispatch(self):
         request = request_bytes(target=b"/v1/responses")
         header_end = request.index(b"\r\n\r\n") + 4
@@ -2804,7 +3064,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                 self.assertFalse(response["connection_closed"])
                 self.assertEqual(len(records), 2)
 
-    def test_partial_reused_request_blocks_second_client_until_first_closes(self):
+    def test_partial_reused_request_does_not_block_second_client(self):
         first = request_bytes(target=b"/v1/responses")
         second = request_bytes(( ("Connection", "close"),), target=b"/v1/chat/completions")
         case = {
@@ -2813,7 +3073,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             "sequential_requests": [first],
             "reused_partial_request": b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n",
             "second_client_request": second,
-            "partial_hold_ms": 300,
+            "partial_hold_ms": 1000,
         }
         upstream = Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)
@@ -2838,8 +3098,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                 )
                 self.assertTrue(response["second_client_finished_after_partial_close"])
                 self.assertEqual(len(records), 2)
-                if label == "modex":
-                    self.assertFalse(response["second_client_responded_before_partial_close"])
+                self.assertTrue(response["second_client_responded_before_partial_close"])
 
     def test_parent_shutdown_exits_while_idle_keep_alive_socket_is_held(self):
         first = request_bytes(target=b"/v1/responses")

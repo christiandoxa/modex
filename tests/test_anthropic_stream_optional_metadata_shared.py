@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import select
 import signal
 import subprocess
 import sys
@@ -251,6 +252,8 @@ def _observe_parent_shutdown(binary, request, reply):
             )
             children = []
             held = False
+            shutdown_sent = False
+            parent_timed_out = False
             try:
                 deadline = time.monotonic() + 15
                 while time.monotonic() < deadline and process.poll() is None:
@@ -266,31 +269,41 @@ def _observe_parent_shutdown(binary, request, reply):
                         break
                     time.sleep(0.02)
                 try:
-                    children = [
-                        int(value)
-                        for value in Path(
-                            f"/proc/{process.pid}/task/{process.pid}/children"
-                        ).read_text().split()
-                    ]
+                    for value in Path(
+                        f"/proc/{process.pid}/task/{process.pid}/children"
+                    ).read_text().split():
+                        pid = int(value)
+                        try:
+                            children.append((pid, os.pidfd_open(pid)))
+                        except ProcessLookupError:
+                            pass
                 except FileNotFoundError:
                     pass
                 if held:
-                    process.send_signal(signal.SIGTERM)
+                    try:
+                        process.send_signal(signal.SIGTERM)
+                        shutdown_sent = True
+                    except ProcessLookupError:
+                        pass
                 try:
                     process.wait(timeout=5)
                 except subprocess.TimeoutExpired:
+                    parent_timed_out = True
                     process.kill()
                     process.wait(timeout=2)
                 deadline = time.monotonic() + 2
+                alive_children = children.copy()
                 while time.monotonic() < deadline:
-                    children = [pid for pid in children if Path(f"/proc/{pid}").exists()]
-                    if not children:
+                    alive_children = [
+                        (pid, fd) for pid, fd in children
+                        if not select.select([fd], [], [], 0)[0]
+                    ]
+                    if not alive_children:
                         break
                     time.sleep(0.02)
-                alive_children = children.copy()
-                for pid in alive_children:
+                for _, fd in alive_children:
                     try:
-                        os.kill(pid, signal.SIGKILL)
+                        signal.pidfd_send_signal(fd, signal.SIGKILL)
                     except ProcessLookupError:
                         pass
                 if alive_children:
@@ -304,7 +317,9 @@ def _observe_parent_shutdown(binary, request, reply):
                     rows = []
                 return {
                     "parent_returncode": process.returncode,
-                    "children_alive_after_2s": alive_children,
+                    "shutdown_sent": shutdown_sent,
+                    "parent_timed_out": parent_timed_out,
+                    "children_alive_after_2s": [pid for pid, _ in alive_children],
                     "held": held or any(row.get("kind") == "held" for row in rows),
                     "held_records": [row for row in rows if row.get("kind") == "held"],
                     "pipelined_records": [row for row in rows if row.get("kind") == "pipelined"],
@@ -315,11 +330,125 @@ def _observe_parent_shutdown(binary, request, reply):
                 if process.poll() is None:
                     process.kill()
                     process.wait(timeout=2)
-                for pid in children:
+                for _, fd in children:
                     try:
-                        os.kill(pid, signal.SIGKILL)
+                        signal.pidfd_send_signal(fd, signal.SIGKILL)
                     except ProcessLookupError:
                         pass
+                    finally:
+                        os.close(fd)
+
+
+def _observe_pipelined_disconnect(binary, request, failed_reply, followup_reply, close_mode):
+    marker = "previous = None\n"
+    if marker not in continuation.CLIENT:
+        raise AssertionError("synthetic client no longer exposes its target URL")
+    client = continuation.CLIENT.split(marker, 1)[0] + f'''\
+import socket, struct
+turn = json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text())[0]
+body = json.dumps(turn, separators=(",", ":")).encode()
+host = target.hostname.encode()
+request_bytes = (
+    b"POST " + target.path.encode() + b" HTTP/1.1\\r\\nHost: " + host
+    + b"\\r\\nContent-Type: application/json\\r\\n"
+    + b"Authorization: Bearer synthetic-client-key\\r\\nContent-Length: "
+    + str(len(body)).encode() + b"\\r\\nConnection: keep-alive\\r\\n\\r\\n" + body
+)
+pending_tail = (
+    b"GET " + target.path.encode() + b" HTTP/1.1\\r\\nHost: " + host
+    + b"\\r\\nConnection: keep-alive\\r\\nContent-Length: 0\\r\\nX-Pad: "
+    + b"x" * 32768 + b"\\r\\n\\r\\n"
+)
+failure_marker = b"event: response.failed\\r\\n"
+client_results = []
+for index in range(8):
+    started = time.monotonic()
+    client = None
+    try:
+        client = socket.create_connection((target.hostname, target.port), timeout=5)
+        client.settimeout(5)
+        client.sendall(request_bytes + pending_tail)
+        received = bytearray()
+        while failure_marker not in received:
+            piece = client.recv(4096)
+            if not piece:
+                break
+            received.extend(piece)
+        got_failure = failure_marker in received
+        if got_failure:
+            client.settimeout(0.1)
+            try:
+                while True:
+                    piece = client.recv(4096)
+                    if not piece:
+                        break
+                    received.extend(piece)
+            except (socket.timeout, OSError):
+                pass
+        status = None
+        if b"\\r\\n\\r\\n" in received:
+            head = bytes(received).split(b"\\r\\n\\r\\n", 1)[0]
+            try:
+                status = int(head.split(b"\\r\\n", 1)[0].split()[1])
+            except (IndexError, ValueError):
+                pass
+        client_results.append({{
+            "got_failure": got_failure, "status": status,
+            "elapsed_ms": int((time.monotonic() - started) * 1000),
+            "error": None if got_failure else "TimeoutError",
+        }})
+        if got_failure and {close_mode!r} == "rst":
+            client.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+            client.close()
+        elif got_failure and {close_mode!r} == "fin":
+            client.shutdown(socket.SHUT_WR)
+            client.close()
+    except Exception as error:
+        client_results.append({{
+            "got_failure": False, "status": None,
+            "elapsed_ms": int((time.monotonic() - started) * 1000),
+            "error": type(error).__name__,
+        }})
+    finally:
+        if client is not None:
+            try:
+                client.close()
+            except OSError:
+                pass
+
+followup_status = None
+followup_error = None
+followup_body = b""
+connection = http.client.HTTPConnection(target.hostname, target.port, timeout=3)
+try:
+    connection.request(
+        "POST", target.path, json.dumps(turn, separators=(",", ":")).encode(),
+        {{"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key"}},
+    )
+    response = connection.getresponse()
+    followup_status = response.status
+    followup_body = response.read()
+except Exception as error:
+    followup_error = type(error).__name__
+finally:
+    connection.close()
+save({{
+    "kind": "response", "status": followup_status, "headers": {{}},
+    "body": followup_body.hex(), "close_mode": {close_mode!r},
+    "failure_results": client_results,
+    "failure_count": sum(1 for row in client_results if row and row["got_failure"]),
+    "pipelined_bytes": len(pending_tail), "followup_error": followup_error,
+}})
+print("synthetic-continuation-complete")
+'''
+    original = continuation.CLIENT
+    continuation.CLIENT = client
+    try:
+        return continuation.observe_turns(
+            binary, [request], [failed_reply] * 8 + [followup_reply],
+        )
+    finally:
+        continuation.CLIENT = original
 
 
 def _cases():
@@ -1022,7 +1151,8 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
         for label in ("0.165.1", "0.439.2"):
             result = observations[label]
             self.assertTrue(result["held"], (label, result))
-            self.assertEqual(result["parent_returncode"], -signal.SIGTERM, (label, result))
+            self.assertTrue(result["shutdown_sent"], (label, result))
+            self.assertFalse(result["parent_timed_out"], (label, result))
             self.assertEqual(result["children_alive_after_2s"], [], (label, result))
             self.assertEqual(
                 [(row["bytes"], row["write_open"]) for row in result["pipelined_records"]],
@@ -1037,7 +1167,8 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
 
         modex = observations["Modex"]
         self.assertTrue(modex["held"], modex)
-        self.assertEqual(modex["parent_returncode"], -signal.SIGTERM, modex)
+        self.assertTrue(modex["shutdown_sent"], modex)
+        self.assertFalse(modex["parent_timed_out"], modex)
         self.assertEqual(modex["children_alive_after_2s"], [], summary)
         self.assertEqual(
             [(row["bytes"], row["write_open"]) for row in modex["pipelined_records"]],
@@ -1045,6 +1176,66 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
             modex,
         )
         self.assertTrue(modex["body_errors"], modex)
+
+    def test_pipelined_disconnect_releases_workers_after_failure_for_fin_and_rst(self):
+        request, fixture = repeated_search_case()
+        events = [
+            json.loads(line[6:])
+            for line in fixture["body"].splitlines()
+            if line.startswith(b"data: ")
+        ]
+        failed = {"type": "content_block_delta", "index": 1, "delta": {"type": None}}
+        failed_body = (
+            _stream(events[:6] + [failed])["body"]
+            + b": \xff\n\n"
+            + _stream(events[6:])["body"]
+        )
+        failed_reply = {**fixture, "body": failed_body, "chunked": True}
+
+        for close_mode in ("fin", "rst"):
+            observations = {}
+            for label, binary in (
+                ("0.165.1", ORACLE_01651),
+                ("0.439.2", ORACLE_04392),
+                ("Modex", MODEX),
+            ):
+                with self.subTest(close_mode=close_mode, binary=label):
+                    posts, responses = _observe_pipelined_disconnect(
+                        binary, request, failed_reply, fixture, close_mode,
+                    )
+                    self.assertEqual(len(responses), 1, label)
+                    capture = responses[0]
+                    self.assertEqual(capture["close_mode"], close_mode, label)
+                    self.assertEqual(capture["failure_count"], 8, (label, capture))
+                    self.assertEqual(len(capture["failure_results"]), 8, label)
+                    self.assertTrue(
+                        all(row["got_failure"] and row["status"] == 200
+                            for row in capture["failure_results"]),
+                        (label, capture["failure_results"]),
+                    )
+                    self.assertGreaterEqual(capture["pipelined_bytes"], 32768, label)
+                    self.assertEqual(capture["status"], 200, (label, capture))
+                    self.assertIsNone(capture["followup_error"], (label, capture))
+                    self.assertEqual(len(posts), 9, (label, posts))
+                    paths = tuple(post["path"] for post in posts)
+                    self.assertEqual(paths, ("/anthropic/v1/messages",) * 9, label)
+                    provider_headers = [
+                        {name.lower(): value for name, value in post["headers"].items()}
+                        for post in posts
+                    ]
+                    provider_auth = all(
+                        headers.get("x-api-key") == "synthetic-provider-key"
+                        and "authorization" not in headers
+                        for headers in provider_headers
+                    )
+                    self.assertTrue(provider_auth, label)
+                    observations[label] = (
+                        tuple((row["got_failure"], row["status"], row["error"])
+                              for row in capture["failure_results"]),
+                        capture["status"], capture["followup_error"], paths, provider_auth,
+                    )
+            self.assertEqual(observations["0.165.1"], observations["0.439.2"])
+            self.assertEqual(observations["Modex"], observations["0.439.2"])
 
     def test_upstream_eof_after_response_failed_closes_all_bodies(self):
         request, fixture = repeated_search_case()

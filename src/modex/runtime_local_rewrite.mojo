@@ -1,13 +1,18 @@
 """Internal loopback local-rewrite relay using native provider exchanges."""
 
-from std.collections import List, Span
+from std.collections import Array, List, Span
 from std.io import RawFileDescriptor
-from std.net._sys.unix import F_GETFL, F_SETFL, O_NONBLOCK
-from std.sys._libc import fcntl
+from std.memory import OwnedPointer
+from std.net._sys.unix import AF_UNIX, F_GETFL, F_SETFL, O_NONBLOCK, SHUT_RDWR, SOCK_STREAM, shutdown, socketpair
+from std.atomic import Atomic
+from std.runtime import parallelism_level
+from std.runtime._asyncrt import TaskGroup
+from std.sys._libc import FcntlCommands, FcntlFDFlags, close, fcntl
 from std.sys._libc_errno import ErrNo, get_errno
 from std.os import getenv
 from std.time import perf_counter, sleep
 from std.time.time import _realtime_nanoseconds
+from std.utils.lock import BlockingScopedLock, BlockingSpinLock
 
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument
 from .loopback_http import HTTP_HEADER_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, HTTP_REQUEST_FIELD_LIMIT, LoopbackHTTPStream, _number
@@ -323,7 +328,7 @@ def _binding_response_id(body: String) -> String:
         return ""
 
 
-def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: LoopbackHTTPStream, mut bindings: RuntimeBindings) raises:
+def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: LoopbackHTTPStream, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin]) raises:
     var streaming = 200 <= stream.status < 400 and stream.status != 204 and stream.status != 304 and deepseek_event_stream(stream.headers)
     if not streaming and (stream.status < 200 or stream.status >= 300):
         stream.max_body_bytes = DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES
@@ -349,7 +354,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
             return
         if 200 <= stream.status < 400:
             try:
-                bindings.remember(0, _binding_response_id(String(from_utf8=Span(body))))
+                state_ptr[].remember_binding(0, _binding_response_id(String(from_utf8=Span(body))))
             except:
                 pass
         # TinyHTTP's buffered path retains Content-Length: 0 for bodyless replies.
@@ -367,7 +372,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
                     try:
                         var observed = observer.consume(Span(chunk))
                         for response_id in observed:
-                            bindings.remember(0, response_id)
+                            state_ptr[].remember_binding(0, response_id)
                         if observer.is_failed():
                             observing = False
                     except:
@@ -377,7 +382,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
             try:
                 var final_ids = observer.finish()
                 for response_id in final_ids:
-                    bindings.remember(0, response_id)
+                    state_ptr[].remember_binding(0, response_id)
             except:
                 pass
         connection.finish_stream(30000, include_head_terminal_chunk=True)
@@ -492,7 +497,185 @@ def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Opt
     return "[]"
 
 
-def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, messages_address: String, messages_path: String, key: String, request_id: UInt64, mut conversations: ProviderConversationStore, mut bindings: RuntimeBindings, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
+struct LocalRewriteSharedState(Movable):
+    var lock: BlockingSpinLock
+    var conversations: ProviderConversationStore
+    var bindings: RuntimeBindings
+    var sequence: UInt64
+    var stopping: Atomic[Int]
+    var active: Int
+    var active_fds: List[Int32]
+    var queued: List[LoopbackHTTPConnection]
+    var completed: List[LoopbackHTTPConnection]
+    var cancel_read_fd: Int32
+    var cancel_write_fd: Int32
+    var address: String
+    var path: String
+    var messages_address: String
+    var messages_path: String
+    var key: String
+    var connect_ms: UInt64
+    var idle_ms: UInt64
+    var lookahead_ms: UInt64
+    var allow_local_file_access: Bool
+    var strict_tools: Bool
+    var beta_address: String
+    var beta_path: String
+    var web_search_mode: String
+
+    def __init__(out self, key: String, endpoint: String, address: String, path: String, messages_address: String, messages_path: String, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
+        self.lock = BlockingSpinLock()
+        self.conversations = ProviderConversationStore()
+        self.bindings = RuntimeBindings(key, endpoint)
+        self.sequence = 0
+        self.stopping = Atomic[Int](0)
+        self.active = 0
+        self.active_fds = List[Int32]()
+        self.queued = List[LoopbackHTTPConnection]()
+        self.completed = List[LoopbackHTTPConnection]()
+        self.cancel_read_fd = -1
+        self.cancel_write_fd = -1
+        self.address = address
+        self.path = path
+        self.messages_address = messages_address
+        self.messages_path = messages_path
+        self.key = key
+        self.connect_ms = connect_ms
+        self.idle_ms = idle_ms
+        self.lookahead_ms = lookahead_ms
+        self.allow_local_file_access = allow_local_file_access
+        self.strict_tools = strict_tools
+        self.beta_address = beta_address
+        self.beta_path = beta_path
+        self.web_search_mode = web_search_mode
+        var descriptors = Array[Int32, 2](fill=-1)
+        if socketpair(AF_UNIX, SOCK_STREAM, 0, Pointer(to=descriptors)) != 0:
+            raise Error("could not create local provider cancellation channel")
+        self.cancel_read_fd = descriptors[0]
+        self.cancel_write_fd = descriptors[1]
+        for descriptor in descriptors:
+            if fcntl(descriptor, FcntlCommands.F_SETFD, FcntlFDFlags.FD_CLOEXEC) < 0:
+                _ = close(self.cancel_read_fd)
+                _ = close(self.cancel_write_fd)
+                self.cancel_read_fd = -1
+                self.cancel_write_fd = -1
+                raise Error("could not protect local provider cancellation channel")
+
+    def __deinit__(deinit self):
+        if self.cancel_read_fd >= 0: _ = close(self.cancel_read_fd)
+        if self.cancel_write_fd >= 0: _ = close(self.cancel_write_fd)
+
+    def next_request_id(mut self) -> UInt64:
+        var request_id: UInt64
+        with BlockingScopedLock(self.lock):
+            if self.sequence < UInt64.MAX:
+                self.sequence += 1
+            request_id = self.sequence
+        return request_id
+
+    def permits(mut self, previous: String, turn: String, session: String) -> Bool:
+        var allowed: Bool
+        with BlockingScopedLock(self.lock):
+            allowed = self.bindings.permits(previous, turn, session)
+        return allowed
+
+    def remember_request(mut self, previous: String, turn: String, session: String):
+        with BlockingScopedLock(self.lock):
+            self.bindings.remember_request(previous, turn, session)
+
+    def remember_binding(mut self, kind: Int, key: String):
+        with BlockingScopedLock(self.lock):
+            self.bindings.remember(kind, key)
+
+    def history(mut self, doc: JsonDocument, namespace: Optional[String]) raises -> Tuple[Bool, String]:
+        var found: Bool
+        var messages: String
+        with BlockingScopedLock(self.lock):
+            var previous = doc.string(doc.get(doc.root, "previous_response_id"))
+            found = self.conversations.contains(previous, namespace)
+            messages = _history(doc, self.conversations, namespace)
+        return (found, messages)
+
+    def insert_conversation(mut self, response_id: String, messages: String, namespace: Optional[String]) raises:
+        with BlockingScopedLock(self.lock):
+            self.conversations.insert(response_id, messages, namespace)
+
+    def has_capacity(mut self, worker_count: Int) -> Bool:
+        var available: Bool
+        with BlockingScopedLock(self.lock):
+            available = self.stopping.load() == 0 and self.active + len(self.queued) < worker_count
+        return available
+
+    def enqueue(mut self, var connection: LoopbackHTTPConnection):
+        with BlockingScopedLock(self.lock):
+            self.queued.append(connection^)
+
+    def take_work(mut self) -> Optional[LoopbackHTTPConnection]:
+        var selected = Optional[LoopbackHTTPConnection]()
+        with BlockingScopedLock(self.lock):
+            if self.stopping.load() == 0 and self.queued:
+                self.active += 1
+                var connection = self.queued.pop(0)
+                connection.worker_tracked = True
+                self.active_fds.append(connection.fd)
+                selected = Optional[LoopbackHTTPConnection](connection^)
+        return selected^
+
+    def finish_request(mut self, var connection: LoopbackHTTPConnection):
+        var close_connection = Optional[LoopbackHTTPConnection]()
+        with BlockingScopedLock(self.lock):
+            self.active -= 1
+            connection.worker_tracked = False
+            var remaining_fds = List[Int32]()
+            for fd in self.active_fds:
+                if fd != connection.fd:
+                    remaining_fds.append(fd)
+            self.active_fds = remaining_fds^
+            if self.stopping.load() != 0 or not connection.waiting_for_request:
+                close_connection = Optional[LoopbackHTTPConnection](connection^)
+            else:
+                self.completed.append(connection^)
+        if close_connection:
+            var to_close = close_connection.take()
+            to_close.close()
+
+    def take_completed(mut self) -> List[LoopbackHTTPConnection]:
+        var ready: List[LoopbackHTTPConnection]
+        with BlockingScopedLock(self.lock):
+            ready = self.completed^
+            self.completed = List[LoopbackHTTPConnection]()
+        return ready^
+
+    def active_count(mut self) -> Int:
+        var count: Int
+        with BlockingScopedLock(self.lock):
+            count = self.active
+        return count
+
+    def is_stopping(self) -> Bool:
+        return self.stopping.load() != 0
+
+    def stop(mut self):
+        var queued: List[LoopbackHTTPConnection]
+        var completed: List[LoopbackHTTPConnection]
+        with BlockingScopedLock(self.lock):
+            self.stopping.store(1)
+            _ = shutdown(self.cancel_write_fd, SHUT_RDWR)
+            for fd in self.active_fds:
+                _ = shutdown(fd, SHUT_RDWR)
+            queued = self.queued^
+            self.queued = List[LoopbackHTTPConnection]()
+            completed = self.completed^
+            self.completed = List[LoopbackHTTPConnection]()
+        while queued:
+            var connection = queued.pop()
+            connection.close()
+        while completed:
+            var connection = completed.pop()
+            connection.close()
+
+
+def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, messages_address: String, messages_path: String, key: String, request_id: UInt64, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
     if target != "/v1/chat/completions" and target != "/v1/responses":
         _route_error(connection)
@@ -509,7 +692,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     var previous = trim_text(doc.string(doc.get(doc.root, "previous_response_id")))
     var turn = _request_turn_state(request.headers)
     var session = _request_session(request.headers, doc)
-    if not _continuation_identity_valid(request.headers, doc) or not bindings.permits(previous, turn, session):
+    if not _continuation_identity_valid(request.headers, doc) or not state_ptr[].permits(previous, turn, session):
         _binding_error(connection)
         return
     if target == "/v1/chat/completions":
@@ -528,13 +711,14 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                 request.method,
                 request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT,
                 request_field_limit=HTTP_REQUEST_FIELD_LIMIT,
+                cancel_fd=state_ptr[].cancel_read_fd,
             )
         except:
             _reply(connection, 502, "upstream request failed")
             return
         if 200 <= stream.status < 400:
-            bindings.remember_request(previous, turn, session)
-        _passthrough_response(connection, stream, bindings)
+            state_ptr[].remember_request(previous, turn, session)
+        _passthrough_response(connection, stream, state_ptr)
         return
     var history: String
     var namespace = Optional[String]()
@@ -544,8 +728,9 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     try:
         if not allow_local_file_access:
             namespace = Optional[String](_namespace(request.headers, doc))
-        previous_found = conversations.contains(doc.string(doc.get(doc.root, "previous_response_id")), namespace)
-        history = _history(doc, conversations, namespace)
+        var context = state_ptr[].history(doc, namespace)
+        previous_found = context[0]
+        history = context[1]
         var tools = doc.get(doc.root, "tools")
         web = doc.get(doc.root, "web_search_options") >= 0
         if tools >= 0 and doc.nodes[tools].kind == JSON_ARRAY:
@@ -582,7 +767,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     try:
         var exchange_address = messages_address if web else (beta_address if strict_tools else address)
         var exchange_path = messages_path if web else (beta_path if strict_tools else path)
-        exchange = DeepSeekExchange(exchange_address, exchange_path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search)
+        exchange = DeepSeekExchange(exchange_address, exchange_path, key, source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd)
     except error:
         if web and String(error) == "Anthropic Messages slice requires a user or assistant message":
             connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
@@ -590,10 +775,10 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             _reply(connection, 502, "upstream request failed")
         return
     if 200 <= exchange.status() < 400 and (not exchange.successful() or not deepseek_event_stream(exchange.headers())):
-        bindings.remember_request(previous, turn, session)
+        state_ptr[].remember_request(previous, turn, session)
     if not exchange.successful():
         # Frozen dispatch keeps non-2xx quota headers raw, without Codex projection.
-        _passthrough_response(connection, exchange.http, bindings)
+        _passthrough_response(connection, exchange.http, state_ptr)
         return
     if not deepseek_event_stream(exchange.headers()):
         var body: String
@@ -603,9 +788,9 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             _reply(connection, 502, "provider response could not be processed")
             return
         var response = JsonDocument(body)
-        bindings.remember(0, _binding_response_id(body))
+        state_ptr[].remember_binding(0, _binding_response_id(body))
         if response.string(response.get(response.root, "status")) != "failed" and trim_text(response.string(response.get(response.root, "id"))):
-            conversations.insert(response.string(response.get(response.root, "id")), exchange.conversation_messages, namespace)
+            state_ptr[].insert_conversation(response.string(response.get(response.root, "id")), exchange.conversation_messages, namespace)
         var response_headers = List[Tuple[String, String]]()
         response_headers.append(("content-type", "application/json; charset=utf-8"))
         response_headers.extend(deepseek_codex_rate_limit_headers(exchange.headers()))
@@ -616,7 +801,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     except:
         _reply(connection, 502, "upstream request failed")
         return
-    bindings.remember_request(previous, turn, session)
+    state_ptr[].remember_request(previous, turn, session)
     try:
         var response_headers = List[Tuple[String, String]]()
         response_headers.append(("content-type", "text/event-stream; charset=utf-8"))
@@ -624,14 +809,16 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         connection.start_stream(exchange.status(), response_headers, 30000)
         while not exchange.done:
             var events = exchange.read_events()
-            bindings.remember(0, exchange.reader.state.response_id)
+            state_ptr[].remember_binding(0, exchange.reader.state.response_id)
             for event in events:
                 if event.startswith("event: response.completed\r\n") and trim_text(exchange.reader.state.response_id):
-                    conversations.insert(exchange.reader.state.response_id, _stream_history(exchange), namespace)
+                    state_ptr[].insert_conversation(exchange.reader.state.response_id, _stream_history(exchange), namespace)
                 _write_event(connection, event)
         if exchange.downstream_body_incomplete:
             # The frozen writer leaves this body open after a post-failure read error.
-            while not connection.client_disconnected():
+            # No later request can be served on an unfinished response; drain it to detect peer EOF.
+            var discard = List[UInt8](length=8192, fill=0)
+            while not state_ptr[].is_stopping() and not connection.discard_incoming_or_disconnected(discard):
                 sleep(0.001)
             connection.close()
         else:
@@ -641,6 +828,95 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         connection.close()
 
 
+def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, path: String, messages_address: String, messages_path: String, key: String, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
+    var request_id = state_ptr[].next_request_id()
+    var request = LoopbackHTTPRequest("", "", List[Tuple[String, String]](), List[UInt8]())
+    var captured = False
+    try:
+        request = connection.read_request(120000, allow_upgrade_headers=True, validate_request_target=True, reject_chunked_trailers=True, defer_expectation_errors=True, preflight_body_limit_before_continue=True, use_request_version_for_continue=True, use_request_version_for_response=True, request_header_limit=HTTP_MAX_REQUEST_HEADER_LIMIT)
+        captured = True
+    except error:
+        var message = String(error)
+        var malformed_syntax = message == "malformed HTTP request line" or message == "malformed HTTP request target spacing" or message == "malformed HTTP method" or message == "malformed HTTP request header" or message == "malformed HTTP header name" or message == "malformed HTTP header value" or message == "non-ASCII byte in HTTP header"
+        if message == "invalid HTTP request target" or message == "malformed HTTP request target":
+            try:
+                _invalid_request_target(connection)
+            except:
+                pass
+        elif message == "unsupported HTTP expectation":
+            try:
+                connection.respond(417, [], List[UInt8](), 30000)
+            except:
+                pass
+        elif message == "websocket upgrade fallback":
+            try:
+                _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback")
+            except:
+                pass
+        elif message == "truncated HTTP request":
+            if connection.expect_continue_was_sent():
+                try:
+                    _reply(connection, 502, "upstream request failed")
+                except:
+                    pass
+        else:
+            if malformed_syntax:
+                try:
+                    connection.respond(400, [], List[UInt8](), 30000)
+                except:
+                    pass
+            elif message == "malformed HTTP request line suffix":
+                try:
+                    _reply(connection, 502, "upstream request failed")
+                except:
+                    pass
+            else:
+                var too_large = "oversized" in message or "exceeds wire limit" in message
+                try:
+                    _reply(connection, 413 if too_large else 502, "proxied request body is too large" if too_large else "gateway request capture failed")
+                except:
+                    pass
+    if captured:
+        try:
+            if not request_target_valid(request.target):
+                _invalid_request_target(connection)
+            else:
+                var websocket_upgrade = False
+                for header in request.headers:
+                    if String(header[0]).lower() == "upgrade" and String(header[1]).lower() == "websocket":
+                        websocket_upgrade = True
+                        break
+                if websocket_upgrade:
+                    connection.keep_alive = False
+                    _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback")
+                else:
+                    _serve(connection, request, address, path, messages_address, messages_path, key, request_id, state_ptr, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
+        except error:
+            var message = String(error)
+            var too_large = "oversized" in message or "exceeds wire limit" in message
+            try:
+                _reply(connection, 413 if too_large else 502, "proxied request body is too large" if too_large else "gateway request capture failed")
+            except:
+                pass
+
+
+__async def _local_rewrite_worker(state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin]):
+    while not state_ptr[].is_stopping():
+        var selected = state_ptr[].take_work()
+        if not selected:
+            sleep(0.005)
+            continue
+        var connection = selected.take()
+        try:
+            _serve_connection(connection, state_ptr[].address, state_ptr[].path, state_ptr[].messages_address, state_ptr[].messages_path, state_ptr[].key, state_ptr, state_ptr[].connect_ms, state_ptr[].idle_ms, state_ptr[].lookahead_ms, state_ptr[].allow_local_file_access, state_ptr[].strict_tools, state_ptr[].beta_address, state_ptr[].beta_path, state_ptr[].web_search_mode)
+        except:
+            pass
+        state_ptr[].finish_request(connection^)
+
+
+comptime LOCAL_REWRITE_MAX_WORKERS = 8
+
+
 def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, key: String, strict_tools: Bool, beta_address: String, beta_path: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False, web_search_mode: String = "auto") raises:
     var upstream = local_rewrite_upstream(upstream_url)
     var anthropic_upstream = local_rewrite_anthropic_messages_upstream(upstream_url)
@@ -648,9 +924,6 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
     var connect_ms = _timeout("PRODEX_RUNTIME_PROXY_HTTP_CONNECT_TIMEOUT_MS", 5000)
     var idle_ms = _timeout("PRODEX_RUNTIME_PROXY_STREAM_IDLE_TIMEOUT_MS", 300000)
     var lookahead_ms = _timeout("PRODEX_RUNTIME_PROXY_SSE_LOOKAHEAD_TIMEOUT_MS", 1000)
-    var request_id = UInt64(0)
-    var conversations = ProviderConversationStore()
-    var bindings = RuntimeBindings(key, upstream_url)
     var parent_bytes = List[UInt8](length=1, fill=0)
     var parked = List[LoopbackHTTPConnection]()
     var overflow = Optional[LoopbackHTTPConnection]()
@@ -658,34 +931,50 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         var flags = fcntl(parent_fd, F_GETFL, 0)
         if flags < 0 or fcntl(parent_fd, F_SETFL, flags | O_NONBLOCK) < 0:
             raise Error("could not configure local provider parent channel")
-    # shortcut: one request lane and no idle expiry; add bounded workers and socket lifetimes.
-    while True:
-        if _parent_channel_closed(parent_fd, parent_bytes): return
-        var accepted_before_scan = False
-        if not overflow:
-            var pending = listener.accept(0)
-            if pending:
-                var incoming = pending.take()
-                accepted_before_scan = True
-                if len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED:
-                    incoming.keep_alive_enabled = True
-                    incoming.include_default_response_headers = True
-                    parked.insert(0, incoming^)
+    # Worker pointers are untracked, so keep their state at a stable address until join.
+    var state = OwnedPointer(LocalRewriteSharedState(key, upstream_url, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode))
+    var state_ptr = state.ptr().unsafe_origin_cast[MutUntrackedOrigin]()
+    # shortcut: cap lanes at eight or available runtime workers; match baseline tuning when blocking workers can scale independently.
+    var worker_count = max(1, min(LOCAL_REWRITE_MAX_WORKERS, parallelism_level()))
+    var workers = TaskGroup()
+    try:
+        for _ in range(worker_count):
+            workers.create_task(_local_rewrite_worker(state_ptr))
+        while True:
+            if _parent_channel_closed(parent_fd, parent_bytes): break
+            var completed = state_ptr[].take_completed()
+            while completed:
+                var connection = completed.pop()
+                if connection.waiting_for_request and len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED:
+                    parked.insert(0, connection^)
                 else:
-                    overflow = Optional[LoopbackHTTPConnection](incoming^)
-        var selected = Optional[LoopbackHTTPConnection]()
-        var parked_count = len(parked)
-        for _ in range(parked_count):
-            var idle = parked.pop()
-            var ready = idle.request_ready()
-            if not selected and ready:
-                idle.waiting_for_request = False
-                selected = Optional[LoopbackHTTPConnection](idle^)
-            elif not ready and idle.client_disconnected():
-                idle.close()
-            else:
-                parked.insert(0, idle^)
-        if not selected:
+                    connection.close()
+            var accepted_before_scan = False
+            if not overflow:
+                var pending = listener.accept(0)
+                if pending:
+                    var incoming = pending.take()
+                    accepted_before_scan = True
+                    if len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED:
+                        incoming.keep_alive_enabled = True
+                        incoming.include_default_response_headers = True
+                        parked.insert(0, incoming^)
+                    else:
+                        overflow = Optional[LoopbackHTTPConnection](incoming^)
+            var dispatched = False
+            var parked_count = len(parked)
+            for _ in range(parked_count):
+                var idle = parked.pop()
+                var ready = idle.request_ready()
+                if ready and state_ptr[].has_capacity(worker_count):
+                    idle.waiting_for_request = False
+                    state_ptr[].enqueue(idle^)
+                    dispatched = True
+                elif not ready and idle.client_disconnected():
+                    idle.close()
+                else:
+                    parked.insert(0, idle^)
+            if dispatched: continue
             if overflow:
                 var incoming = overflow.take()
                 var admitted = len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED
@@ -700,85 +989,28 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
                 parked.insert(0, incoming^)
                 continue
             if accepted_before_scan: continue
-            var accepted = listener.accept(UInt64(100 if parent_fd >= 0 or len(parked) > 0 else 1000))
-            if not accepted: continue
-            var incoming = accepted.take()
-            overflow = Optional[LoopbackHTTPConnection](incoming^)
-            continue
-        var connection = selected.take()
-        request_id = request_id + 1 if request_id < UInt64.MAX else request_id
-        var request = LoopbackHTTPRequest("", "", List[Tuple[String, String]](), List[UInt8]())
-        var captured = False
-        try:
-            request = connection.read_request(120000, allow_upgrade_headers=True, validate_request_target=True, reject_chunked_trailers=True, defer_expectation_errors=True, preflight_body_limit_before_continue=True, use_request_version_for_continue=True, use_request_version_for_response=True, request_header_limit=HTTP_MAX_REQUEST_HEADER_LIMIT)
-            captured = True
-        except error:
-            var message = String(error)
-            var malformed_syntax = message == "malformed HTTP request line" or message == "malformed HTTP request target spacing" or message == "malformed HTTP method" or message == "malformed HTTP request header" or message == "malformed HTTP header name" or message == "malformed HTTP header value" or message == "non-ASCII byte in HTTP header"
-            if message == "invalid HTTP request target" or message == "malformed HTTP request target":
-                try:
-                    _invalid_request_target(connection)
-                except:
-                    pass
-            elif message == "unsupported HTTP expectation":
-                try:
-                    connection.respond(417, [], List[UInt8](), 30000)
-                except:
-                    pass
-            elif message == "websocket upgrade fallback":
-                try:
-                    _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback")
-                except:
-                    pass
-            elif message == "truncated HTTP request":
-                if connection.expect_continue_was_sent():
-                    try:
-                        _reply(connection, 502, "upstream request failed")
-                    except:
-                        pass
-            else:
-                if malformed_syntax:
-                    try:
-                        connection.respond(400, [], List[UInt8](), 30000)
-                    except:
-                        pass
-                elif message == "malformed HTTP request line suffix":
-                    try:
-                        _reply(connection, 502, "upstream request failed")
-                    except:
-                        pass
-                else:
-                    var too_large = "oversized" in message or "exceeds wire limit" in message
-                    try:
-                        _reply(connection, 413 if too_large else 502, "proxied request body is too large" if too_large else "gateway request capture failed")
-                    except:
-                        pass
-        if captured:
-            try:
-                if not request_target_valid(request.target):
-                    _invalid_request_target(connection)
-                else:
-                    var websocket_upgrade = False
-                    for header in request.headers:
-                        if String(header[0]).lower() == "upgrade" and String(header[1]).lower() == "websocket":
-                            websocket_upgrade = True
-                            break
-                    if websocket_upgrade:
-                        connection.keep_alive = False
-                        _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback")
-                    else:
-                        _serve(connection, request, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], key, request_id, conversations, bindings, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
-            except error:
-                var message = String(error)
-                var too_large = "oversized" in message or "exceeds wire limit" in message
-                try:
-                    _reply(connection, 413 if too_large else 502, "proxied request body is too large" if too_large else "gateway request capture failed")
-                except:
-                    pass
-        if connection.waiting_for_request:
-            if len(parked) < HTTP_KEEP_ALIVE_MAX_PARKED:
-                parked.insert(0, connection^)
-            else:
-                connection.close()
-        else:
-            connection.close()
+            var active = state_ptr[].active_count()
+            var accepted = listener.accept(UInt64(100 if parent_fd >= 0 or len(parked) > 0 or active > 0 else 1000))
+            if accepted:
+                var incoming = accepted.take()
+                overflow = Optional[LoopbackHTTPConnection](incoming^)
+    except:
+        state_ptr[].stop()
+        for _ in range(len(parked)):
+            var idle = parked.pop()
+            idle.close()
+        if overflow:
+            var incoming = overflow.take()
+            incoming.close()
+        workers.wait()
+        _ = (state^).into_inner()
+        raise
+    state_ptr[].stop()
+    for _ in range(len(parked)):
+        var idle = parked.pop()
+        idle.close()
+    if overflow:
+        var incoming = overflow.take()
+        incoming.close()
+    workers.wait()
+    _ = (state^).into_inner()

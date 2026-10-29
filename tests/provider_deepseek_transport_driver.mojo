@@ -88,6 +88,14 @@ def run(path: String, mut output: RawFileDescriptor) raises:
     var strict = doc.get(doc.root, "strict_tools")
     if strict >= 0 and doc.nodes[strict].kind != JSON_BOOL:
         raise Error("driver config strict_tools must be a boolean")
+    var native = doc.get(doc.root, "native_messages")
+    if native >= 0 and doc.nodes[native].kind != JSON_BOOL:
+        raise Error("driver config native_messages must be a boolean")
+    var native_messages = native >= 0 and doc.nodes[native].text == "true"
+    var cancel_value = _unsigned(doc, "cancel_fd", UInt64.MAX)
+    if cancel_value != UInt64.MAX and cancel_value > UInt64(Int32.MAX):
+        raise Error("driver config has invalid cancel_fd")
+    var cancel_fd = Int32(cancel_value) if cancel_value != UInt64.MAX else Int32(-1)
     var cancel_after = _unsigned(doc, "cancel_after_events", UInt64.MAX)
     var exchange = DeepSeekExchange(
         _string(doc, "address", required=True), _string(doc, "path", required=True), _string(doc, "api_key", required=True), serialize_json(doc, request),
@@ -95,6 +103,7 @@ def run(path: String, mut output: RawFileDescriptor) raises:
         _headers(doc), serialize_json(doc, history) if history >= 0 else String("[]"), strict >= 0 and doc.nodes[strict].text == "true", _string(doc, "web_search_mode", "auto"),
         _unsigned(doc, "connect_timeout_ms", 1000), _unsigned(doc, "request_timeout_ms", 1000), _unsigned(doc, "idle_timeout_ms", 1000),
         _limit(doc, "max_body_bytes", 4194304), _limit(doc, "line_max_bytes", 4194304), _limit(doc, "event_max_bytes", 4194304), _limit(doc, "accumulated_max_bytes", 4194304),
+        native_messages=native_messages, cancel_fd=cancel_fd,
     )
     _emit(output, '{"type":"headers","status":' + String(exchange.status()) + ',"headers":' + _headers_json(exchange.headers()) + ',"body":' + exchange.body + ',"messages":' + exchange.messages + ',"response_metadata":' + exchange.response_metadata + "}")
     if not exchange.successful():

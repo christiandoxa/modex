@@ -37,7 +37,8 @@ class Upstream(ThreadingHTTPServer):
 
     def __init__(self, body=b"", *, status=200, content_type="text/event-stream",
                  chunked=False, hold_open=False, drop_connection=False,
-                 response_headers=None, chunk_size=11, delay=0):
+                 response_headers=None, chunk_size=11, delay=0,
+                 hold_before_response=False):
         self.body = body
         self.status = status
         self.content_type = content_type
@@ -47,7 +48,9 @@ class Upstream(ThreadingHTTPServer):
         self.response_headers = response_headers
         self.chunk_size = chunk_size
         self.delay = delay
+        self.hold_before_response = hold_before_response
         self.records = []
+        self.request_received = threading.Event()
         self.client_closed = threading.Event()
         self.hold_timed_out = threading.Event()
         super().__init__(("127.0.0.1", 0), UpstreamHandler)
@@ -64,6 +67,16 @@ class UpstreamHandler(BaseHTTPRequestHandler):
             "headers": {key.lower(): value for key, value in self.headers.items()},
             "body": self.rfile.read(length),
         })
+        self.server.request_received.set()
+        if self.server.hold_before_response:
+            self.connection.settimeout(3)
+            try:
+                if self.connection.recv(1) == b"":
+                    self.server.client_closed.set()
+            except OSError:
+                self.server.client_closed.set()
+            self.close_connection = True
+            return
         if self.server.drop_connection:
             self.connection.shutdown(socket.SHUT_RDWR)
             self.close_connection = True
@@ -129,7 +142,7 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
         cls.buffered_cases = {case["name"]: case for case in cls.buffered["cases"]}
 
     def run_native(self, server, request_case, stream_case=None, *, options=None,
-                   timeout=5, sandbox=False):
+                   timeout=5, sandbox=False, pass_fds=()):
         with tempfile.TemporaryDirectory(prefix="modex-deepseek-transport-") as directory:
             root = Path(directory)
             home = root / "home"
@@ -173,7 +186,7 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
             result = subprocess.run(
                 command, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE, timeout=timeout, check=False,
-                cwd=root, env=environment,
+                cwd=root, env=environment, pass_fds=pass_fds,
             )
         self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
         lines = result.stdout.decode("utf-8", "replace").splitlines()
@@ -647,6 +660,67 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
         self.assertEqual(len(server.records), 1, "a failed exchange must not retry its POST")
         self.assertEqual(len(self.records(output, "error")), 1, output)
         self.assertEqual(self.records(output, "headers"), [])
+
+    def test_cancel_fd_reaches_chat_and_native_anthropic_exchanges(self):
+        native_case = {
+            "request": {
+                "model": "deepseek-chat",
+                "input": "synthetic cancellation request",
+                "stream": True,
+                "tools": [{"type": "web_search_preview"}],
+            },
+            "web_search_mode": "anthropic",
+        }
+        cases = ((False, self.request_cases["defaults"]), (True, native_case))
+        for native_messages, request_case in cases:
+            with self.subTest(native_messages=native_messages):
+                server = Upstream(hold_before_response=True)
+                server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+                server_thread.start()
+                child_cancel, parent_cancel = socket.socketpair()
+                outcome = {}
+                cancelled = False
+
+                def run_exchange():
+                    try:
+                        outcome["value"] = self.run_native(
+                            server,
+                            request_case,
+                            options={
+                                "native_messages": native_messages,
+                                "cancel_fd": child_cancel.fileno(),
+                            },
+                            timeout=4,
+                            pass_fds=(child_cancel.fileno(),),
+                        )
+                    except BaseException as error:
+                        outcome["error"] = error
+
+                probe = threading.Thread(target=run_exchange, daemon=True)
+                probe.start()
+                try:
+                    self.assertTrue(server.request_received.wait(2), "exchange did not reach the synthetic peer")
+                    parent_cancel.shutdown(socket.SHUT_WR)
+                    cancelled = True
+                    probe.join(3)
+                    self.assertFalse(probe.is_alive(), "exchange did not observe cancellation")
+                    if "error" in outcome:
+                        raise outcome["error"]
+                    output, _, _ = outcome["value"]
+                    self.assertEqual(
+                        self.records(output, "error"),
+                        [{"type": "error", "message": "loopback HTTP request cancelled"}],
+                    )
+                    self.assertTrue(server.client_closed.wait(1), "cancellation must close the upstream socket")
+                finally:
+                    if not cancelled:
+                        parent_cancel.shutdown(socket.SHUT_WR)
+                    child_cancel.close()
+                    parent_cancel.close()
+                    server.shutdown()
+                    server.server_close()
+                    server_thread.join(timeout=2)
+                    probe.join(timeout=2)
 
     def test_done_closes_stream_before_eof_and_ignores_trailing_payload(self):
         stream_case = self.stream_cases["text_done"]

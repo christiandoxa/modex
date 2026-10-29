@@ -9,6 +9,15 @@ maintenance with shared and exclusive locks, and the current Modex setup would
 truncate existing history if its guard were simply removed. See
 `docs/evidence/baseline-0.165.1/super-repeat-launch.md`.
 
+The profile-state follow-up confirms the lock boundary against the verified
+0.165.1 and 0.439.2 Linux releases. Populated `profile list` reads and may
+repair state under persistent `flock` files; both releases create lifecycle,
+state, housekeeping, and update locks. Modex remains fail-closed and leaves
+synthetic state and auth unchanged. The stateless profile help/parser controls
+pass against 0.165.1. Mojo 1.2.0 lacks compatible flock, atomic replace,
+fsync, and permission APIs, so no safe profile-state implementation was
+available. See `docs/evidence/baseline-0.165.1/profile-state-locks.md`.
+
 The local full suite on `b9b52d5` finished 1,006 tests with 53 failures and
 one error. Most failures exposed a single-key provider-panel punctuation
 regression and a stale probe-environment assertion; the combined Super and

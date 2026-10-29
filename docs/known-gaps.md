@@ -126,11 +126,14 @@ loopback tunnel would not implement the production WSS path. See
 `tests/test_runtime_proxy_websocket_01651_oracle.py` and
 `docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
 
-The profile group and selected subcommand help now match the 0.439.2 release.
-Profile listing and all state-changing operations remain unimplemented: the
-release creates persistent locks that Modex cannot yet coordinate with safely.
-Selected help prefixes and parser errors now match; other argument combinations
-remain unverified. See `docs/evidence/profile-help-04392.md`.
+The stateless profile help and parser paths match selected 0.165.1 and 0.439.2
+controls. Profile listing and all state-changing operations remain
+unimplemented: both releases lock, recover, and may rewrite profile state.
+Mojo 1.2.0 exposes no compatible file lock or atomic recovery primitives.
+Real-process tests confirm Modex leaves populated state and synthetic auth
+unchanged while both releases create persistent lock files. See
+`docs/evidence/profile-help-04392.md` and
+`docs/evidence/baseline-0.165.1/profile-state-locks.md`.
 
 For an empty profile store, explicit Super `--profile` selection now returns the
 same missing-profile error as both pinned releases, without starting Codex or a

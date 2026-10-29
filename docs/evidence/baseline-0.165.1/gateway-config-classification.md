@@ -36,14 +36,16 @@ configs with extra settings, and a present `state.json`. All three releases and
 Modex return the same no-profile error with no config. Duplicate and malformed
 TOML fail before provider setup in every binary; parser diagnostics differ, so
 the test checks rejection and absence of loopback traffic rather than exact
-error text. With a project-only `model_provider`, the releases return the
-no-profile error while Modex returns its generic unsupported-config error.
-This mismatch remains open because the Modex state/profile/recovery path is not
-qualified. With mode `0664`, releases return the no-proxy error while Modex
-retains its stricter group-write guard, including when unrelated settings are
-present. A Modex-only `state.json` control returns the existing-state
-unsupported diagnostic before config classification; it does not establish
-release parity for populated profile state.
+error text. With a project-only `model_provider`, all three releases and Modex
+return the no-profile error. Modex now classifies only the root
+`model_provider` for the profileless DeepSeek proxy case, matching the pinned
+launch selection: it reads the shared Codex home, selects a profileless local
+home only for a supported root provider, then resolves an active profile.
+With mode `0664`, releases return the no-proxy error while Modex retains its
+stricter group-write guard, including when unrelated settings are present. A
+Modex-only `state.json` control returns the existing-state unsupported
+diagnostic before config classification; it does not establish release parity
+for populated profile state.
 
 The comparison covers only this failed-startup classification. It does not
 qualify successful Gateway startup, other Codex config shapes, provider
@@ -58,6 +60,9 @@ python3 scripts/ci/run-unittest.py test_gateway_launch_01651.py
 ```
 
 On 2026-10-29, `make build`, all six methods in that real-process comparison,
-the existing Gateway CLI/startup suites (9 tests), the native Gateway
-argument program, production import audit, and test-census audit passed. The
-comparison included all three local release oracles.
+the native Gateway argument program, and 17 focused Gateway process/CLI tests
+passed. The comparison included all three local release oracles. The production
+import audit passed for 71 Mojo files; the test-census audit passed for 50
+native test sources and 136 Python modules. The project-only `model_provider`
+case compares the exact no-profile diagnostic and asserts that Modex performs
+no filesystem mutation or loopback request.

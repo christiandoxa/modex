@@ -154,8 +154,11 @@ def run_gateway(options: GatewayOptions) raises:
             if len(bytes) > 1048576:
                 raise Error("gateway Codex config exceeds the supported size")
             var config = TOMLDocument(String(from_utf8=Span(bytes)))
-            if config.string(config.get(config.root, "model_provider")) == "prodex-deepseek":
+            var model_provider = config.get(config.root, "model_provider")
+            if config.string(model_provider) == "prodex-deepseek":
                 # The frozen gateway forces its OpenAI proxy and excludes local rewrite.
                 raise Error("gateway provider does not expose an OpenAI-compatible proxy")
+            if model_provider < 0:
+                raise Error("no active profile selected and no Codex-compatible profiles are available; use `prodex use --profile <name>` or pass --profile")
             raise Error("gateway startup for this Codex configuration is not implemented by this Modex build")
     raise Error("no active profile selected and no Codex-compatible profiles are available; use `prodex use --profile <name>` or pass --profile")

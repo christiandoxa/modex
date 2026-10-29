@@ -30,9 +30,6 @@ NO_PROFILE_ERROR = (
     "Error: no active profile selected and no Codex-compatible profiles are available; "
     "use `prodex use --profile <name>` or pass --profile\n"
 )
-UNSUPPORTED_CONFIG_ERROR = (
-    "Error: gateway startup for this Codex configuration is not implemented by this Modex build\n"
-)
 STATE_PRESENT_ERROR = (
     "Error: gateway startup for existing application state is not implemented by this Modex build\n"
 )
@@ -132,7 +129,7 @@ class GatewayLaunchClassificationTests(unittest.TestCase):
                 self.assertNotIn(EXPECTED_ERROR.strip(), actual["stderr"])
                 self.assertEqual(actual["upstream_requests"], [])
 
-    def test_nested_only_provider_remains_unclassified_and_fail_closed(self):
+    def test_project_only_provider_matches_no_profile_error(self):
         case = {
             **self.case,
             "synthetic_shared_config": (
@@ -149,9 +146,11 @@ class GatewayLaunchClassificationTests(unittest.TestCase):
             )
 
         actual = gateway.run_case(case, binary=gateway.MODEX)
-        self.assertEqual((actual["returncode"], actual["stdout"], actual["upstream_requests"]),
-                         (1, "", []))
-        self.assertIn(actual["stderr"], (UNSUPPORTED_CONFIG_ERROR, NO_PROFILE_ERROR))
+        self.assertEqual(
+            (actual["returncode"], actual["stdout"], actual["stderr"], actual["upstream_requests"]),
+            (1, "", NO_PROFILE_ERROR, []),
+        )
+        self.assertEqual(actual["filesystem_delta"], [])
 
     def test_group_writable_config_with_extra_settings_still_fails_closed(self):
         configurations = (

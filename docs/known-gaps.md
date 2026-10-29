@@ -690,10 +690,10 @@ Profileless Gateway startup now identifies `model_provider =
 top-level or nested Codex settings are present. Real-process checks match the
 tested 0.165.1, 0.439.1, and 0.439.2 errors without upstream I/O. This does not
 implement successful Gateway startup or qualify other Codex config shapes. A
-`model_provider` value only inside a project table yields the releases' no-
-profile error but Modex's generic unsupported-config error. Keep that mismatch
-visible until profile selection and recovery behavior are qualified. Duplicate
-and malformed TOML are rejected before proxy setup, with different parser
+`model_provider` value only inside a project table now produces the same
+no-profile error as the releases; this selected failed-startup classification
+does not qualify profile selection or recovery behavior. Duplicate and
+malformed TOML are rejected before proxy setup, with different parser
 diagnostics. A no-config launch matches the releases' no-profile error. A
 Modex-only existing-state control remains fail closed; it does not establish
 parity for populated profile state. See

@@ -51,12 +51,13 @@ the Codex config has unrelated top-level or nested settings. Real-process checks
 match checksum-pinned 0.165.1 and 0.439.2; the locally available 0.439.1 oracle
 matches too. Duplicate and malformed TOML still fail before classification,
 and no-config startup matches the releases' no-profile error. A project-only
-`model_provider` remains a documented mismatch: releases return no-profile,
-while Modex fails closed with its unsupported-config error. Group-writable
-configs retain Modex's stricter guard. A synthetic `state.json` also hits the
-existing-state fail-closed guard; release parity for populated profile state
-remains unverified. All tested cases exit before loopback provider I/O. Full
-Gateway startup, provider exchange, and lifecycle/housekeeping filesystem
+`model_provider` now matches the releases' no-profile diagnostic because it is
+not a root profileless-provider setting. The real-process test checks exact
+exit/output, no loopback request, and no Modex filesystem mutation. Group-
+writable configs retain Modex's stricter guard. A synthetic `state.json` also
+hits the existing-state fail-closed guard; release parity for populated profile
+state remains unverified. All tested cases exit before loopback provider I/O.
+Full Gateway startup, provider exchange, and lifecycle/housekeeping filesystem
 parity remain incomplete. Evidence:
 `docs/evidence/baseline-0.165.1/gateway-config-classification.md`.
 

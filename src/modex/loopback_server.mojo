@@ -635,7 +635,11 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
     var lines = head.split("\r\n")
     if not lines or lines[0].byte_length() > max_request_line_bytes:
         raise Error("malformed HTTP request line")
-    var request_line = lines[0].split(" ")
+    var request_line_text = String(lines[0])
+    if tiny_http_request_line_compat:
+        var trimmed_request_line = String(request_line_text.strip())
+        request_line_text = trimmed_request_line
+    var request_line = request_line_text.split(" ")
     var request_line_fields = len(request_line)
     var malformed_suffix = False
     if tiny_http_request_line_compat and request_line_fields > 3:
@@ -852,6 +856,9 @@ def _request_line_version(bytes: List[UInt8], max_request_line_bytes: Int, tiny_
         line = _ascii(bytes, 0, line_end)
     except:
         return "HTTP/1.1"
+    if tiny_http_request_line_compat:
+        var trimmed_line = String(line.strip())
+        line = trimmed_line
     var parts = line.split(" ")
     if len(parts) < 3 or parts[0].byte_length() == 0 or parts[1].byte_length() == 0:
         return "HTTP/1.1"

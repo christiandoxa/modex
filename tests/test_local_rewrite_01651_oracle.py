@@ -1361,6 +1361,20 @@ def ordinary_http_upgrade_case(name, value):
 
 CASES = (
     {
+        "name": "leading_request_line_whitespace_is_trimmed",
+        "request": b" \t" + request_bytes((('Connection', 'close'),), version=b'HTTP/1.0'),
+        "expected_status": 200,
+        "expected_reason": "OK",
+        "expected_response_line": "HTTP/1.0 200 OK",
+        "expected_body": RESPONSES_RESPONSE,
+        "check_close": True,
+        "expected_connection_closed": {"oracle": True, "modex": True},
+        "expected_upstream_method": "POST",
+        "expected_upstream_path": "/v1/chat/completions",
+        "compare_upstream_request": True,
+        "upstream": True,
+    },
+    {
         "name": "http_1_2_request_line_is_malformed",
         "request": b"POST /v1/responses HTTP/1.2\r\nHost: 127.0.0.1\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
         "expected_status": 400,

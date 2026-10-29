@@ -11,6 +11,7 @@ import test_local_rewrite_01651_oracle as transport
 
 
 CASE_NAMES = (
+    "leading_request_line_whitespace_is_trimmed",
     "http_1_2_request_line_is_malformed",
     "http_0_9_request_uses_request_version",
     "http_0_9_malformed_header_uses_request_version",

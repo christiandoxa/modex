@@ -358,20 +358,26 @@ headers, and `Expect: 100-continue`: each response and interim response uses
 the request's HTTP/0.9 line. An HTTP/0.9 connection with no `Connection`
 header also carries two pipelined requests; all three processes return both
 responses in order and honor `Connection: close` on the second. A request line
-with two version-looking fields uses the first field, as TinyHTTP does. HTTP/1.2
-returns the same empty 400 in both releases and Modex without provider I/O.
+with two version-looking fields uses the first field, as TinyHTTP does. Leading
+spaces and tabs are trimmed on the production relay, matching TinyHTTP and
+preserving the HTTP/1.0 response line. HTTP/1.2 returns the same empty 400 in
+both releases and Modex without provider I/O.
 For an HTTP/0.9 request whose declared body ends early, all three close without
 a response or upstream request.
 
 HTTP/2.0 and HTTP/3.0 remain unqualified. TinyHTTP recognizes those tokens and
 has a later HTTP-version branch, while Modex classifies them as unsupported and
 returns 400; the isolated raw-process probe did not produce a stable release
-response within its five-second client timeout. Do not count this as parity.
-All results are Linux x86-64 process controls with synthetic credentials,
-isolated homes, and loopback-only provider traffic.
+response within its five-second client timeout. A repeat probe against the
+checksum-verified 0.165.1 and 0.439.2 Linux binaries also timed out without a
+response for either token. Do not count this as parity. All results are Linux
+x86-64 process controls with synthetic credentials, isolated homes, and
+loopback-only provider traffic.
 
 Validation: the production build passed. The 0.165.1 raw HTTP matrix and the
 0.9 keep-alive/pipeline control passed; the 0.439.2 matrix and the same
 keep-alive/pipeline control passed. The truncated HTTP/0.9 body control also
-passed against both releases and Modex. Shared loopback and local rewrite suites
-passed after adding an explicit check that HTTP/0.9 remains rejected by default.
+passed against both releases and Modex. The leading-whitespace request-line
+control passed against both releases and Modex. The shared loopback suite passed
+all 27 tests, including its explicit check that HTTP/0.9 remains rejected by
+default.

@@ -74,3 +74,57 @@ PYTHONPATH=tests python3 -m unittest -v test_runtime_slow_partial
 
 `MODEX_LOCAL_REWRITE_DRIVER` must be absolute because these tests run the relay
 from isolated temporary working directories.
+
+## Uncommitted aggregate-budget experiment (2026-10-30)
+
+An isolated candidate based on Modex 23c5a22 adds a 4 MiB pending-connection
+budget, capture reserve, and parsed-head charges. It is in
+`/tmp/modex-relay-gap-23c5a22-20261030` on branch
+`codex/relay-admission-gap-23c5a22-20261030`; its code base is `23c5a22`, five
+commits behind `origin/main` at `63bb015`. The provider-only commits on
+`origin/main` were not integrated into this experiment, and the candidate
+product changes remain uncommitted.
+
+The new production-process comparison uses 136 partial request heads, seven
+body-blocked requests, an 8-worker environment setting, then a healthy
+keep-alive client. With the healthy socket opened **after** the partial heads
+settle, the 0.165.1 and 0.439.2 oracles and Modex each completed two requests
+on that socket. Observed first/second response times were 1/1 ms, 1/1 ms, and
+6/92 ms, respectively. The fixture uses a 400 ms settle period and samples
+resources for 2 seconds. The comparison command is:
+
+```sh
+make build
+PYTHONPATH=tests python3 -m unittest -v \
+  test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_admission_stress_compares_both_pinned_releases_and_modex
+```
+
+This passing ordering does not establish admission parity. In the other
+ordering, the same healthy socket is opened before the partial-header flood
+and sends its request after the 400 ms settle period. Both pinned releases
+answer it and reuse the socket. The candidate closes it with
+`RemoteDisconnected`; no upstream request is recorded. This occurred in
+repeated 136-head, seven-blocker runs. A smaller sweep passed at 127 partial
+heads but failed at 128 or 129 in several runs; a later 128-head replay passed
+once, so the boundary observation is timing-sensitive. The candidate's
+`_evict_oldest_idle_connection` can close an accepted socket with no request
+bytes when the parked set is full, which explains the preconnected-client
+failure. The current test fixture creates the healthy socket after the flood;
+to reproduce the failed ordering, move the two `healthy = socket.create_connection`
+and `healthy.settimeout` lines in the fake Codex `admission_stress` branch to
+before its blocker and partial-client loops, then run the same unittest command.
+
+The fake Codex script samples `/proc/<ppid>` for resource deltas. That PID is
+not the Modex process for this launch path: the candidate reported zero RSS and
+FD deltas and 0.010 CPU seconds over 2 seconds in the final run while its relay
+served requests. Therefore the test's candidate CPU, RSS, and FD figures are
+invalid and cannot be compared with the oracle figures (which showed
+4.4–5.3 MiB RSS, 286–429 FDs, and 0.000 sampled CPU seconds). The CPU sample
+also has 10 ms clock-tick resolution. No resource-bound claim follows from this
+run.
+
+This candidate remains unqualified. In addition to resolving or explicitly
+accepting the preconnected idle-socket gap, a process-correct resource probe,
+parent-EOF controls, large request-head limits, and repeated production
+comparisons are still required. Do not treat the successful late-arrival case
+as improved parity.

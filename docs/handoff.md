@@ -3665,3 +3665,16 @@ loopback suite, production build, 71-file dependency audit, and diff check
 passed. Only selected Linux x86-64 behavior is qualified; the six-target
 denominator and broader transport/security gaps remain unchanged. See
 `docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.
+
+An uncommitted relay admission-budget experiment remains isolated in
+`/tmp/modex-relay-gap-23c5a22-20261030` with code based on `23c5a22`, five
+commits behind `origin/main` `63bb015`. Its 136-partial-head production probe
+passed only when the healthy keep-alive client connected after the flood: both
+pinned releases and Modex returned two 200 responses. When that client
+connected before the flood and sent after the settle period, the candidate
+closed it with `RemoteDisconnected` and sent no upstream request, while both
+releases served it. The 4 MiB candidate has no qualified resource comparison
+because its `/proc/<ppid>` sample targets the wrong process for Modex. Full
+measurements, both socket orderings, and reproduction commands are in
+`docs/evidence/runtime-overflow-admission.md`; the experiment is not parity
+evidence.

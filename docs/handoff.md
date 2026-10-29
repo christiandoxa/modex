@@ -22,6 +22,12 @@ They do not become current-target proof when the active baseline changes.
 
 ## Historical implementation and validation record
 
+The user-directed 0.439.2 local-relay slice now matches the released wire
+terminator for HTTP/1.0 HEAD 204/304 event-stream responses. The production
+loopback writer emits the final chunk; the 0.439.2 synthetic process test
+covers both statuses. This closes only that Linux x86-64 observation;
+platform and contract qualification remain incomplete.
+
 Hosted Fast CI run `40801262569` failed in the relay suite because its strict
 mixed-tools test still expected rejection after mixed Anthropic tools were
 enabled. With a rebuilt relay driver, the updated test verifies the Anthropic
@@ -171,11 +177,12 @@ output/status, zero provider requests, and temporary-overlay cleanup. The
 process-spawn unit checks an explicit custom `argv[0]`.
 The pinned shebang-script test separately captures interpreter-visible
 `sys.argv[0]`: probes use the canonical path in both binaries, while Prodex
-preflight/final execution exposes a relative selected spelling and Modex
-exposes the canonical script path. This remains a parity gap because Linux
-shebang execution takes the script path from the executable pathname, not the
-custom `argv[0]` passed to spawn. Native fixture records also carry PIDs so the
-active launch test checks their cleanup.
+preflight/final execution exposes relative, symlink, or PATH-selected spellings
+and Modex exposes the canonical script path. Linux uses the executable
+pathname for shebang scripts. The 0.439.2 six-mode comparison records this
+gap; default and relative `PATH` launch modes match. Native fixture records
+also carry PIDs so the active launch test checks their cleanup. See
+`docs/evidence/baseline-0.439.2/super-codex-path-selection.md`.
 Missing-path diagnostics match exactly and start no Codex process. The release
 still creates session, profile and housekeeping locks that Modex does not, so
 full storage side-effect parity remains open. Modex retains the canonical
@@ -190,13 +197,14 @@ The pinned 0.439.2 Codex probe also enforces the `0.153.2` minimum. Its real
 oracle comparison now covers below-minimum rejection, exact-minimum acceptance
 from stderr, leading-plus components, version-probe exit 7, and oversized
 `--version`/`app-server --help` diagnostics under a private nested temp
-directory. Selected fallback progress output now matches through the full
-stdout/stderr and side-effect controls in `tests/test_super_launch.py` and
-`tests/test_super_probe_diagnostic_04392.py`; interactive TTY rendering remains
-unverified. These Linux x86-64 synthetic cases do not establish broader Super
-parity. See
+directory. Selected fallback progress output matches in `tests/test_super_launch.py`
+and `tests/test_super_probe_diagnostic_04392.py`. The same test records the
+baseline-only profile, broker, housekeeping, session-maintenance, and proxy-lease
+artifacts explicitly; interactive TTY rendering remains unverified. These Linux
+x86-64 synthetic cases do not establish broader Super parity. See
 `docs/evidence/baseline-0.439.2/super-codex-minimum-version.md` and
-`docs/evidence/baseline-0.439.2/super-codex-probe-output-limit.md`.
+`docs/evidence/baseline-0.439.2/super-codex-probe-output-limit.md` and
+`docs/evidence/baseline-0.439.2/super-launch-progress-controls.md`.
 
 The local relay now matches selected 0.165.1 `Expect: 100-continue` ordering,
 including unsupported values, declared body limits, HTTP/1.0 interim responses,

@@ -753,6 +753,7 @@ class SuperLaunchTests(unittest.TestCase):
         for label, scenario, environment, exit_code in cases:
             with self.subTest(label=label):
                 observations = []
+                states = []
                 for binary in (ORACLE, MODEX):
                     result, records, upstream, state = self.run_launch(
                         binary=binary,
@@ -777,9 +778,106 @@ class SuperLaunchTests(unittest.TestCase):
                         result.returncode,
                         result.stdout,
                         normalized_codex_path(result.stderr),
-                        state,
+                        tuple(record["args"] for record in records if record["kind"] == "probe"),
+                        tuple(record["kind"] for record in records),
                     ))
+                    states.append(state)
                 self.assertEqual(observations[0], observations[1])
+                self.assertEqual(
+                    tuple(states[0][name] for name in ("leftovers", "session", "extra", "config")),
+                    tuple(states[1][name] for name in ("leftovers", "session", "extra", "config")),
+                )
+
+                # 0.439.2 creates these runtime locks/housekeeping files; Modex does not yet.
+                oracle_managed = set(states[0]["managed"])
+                modex_managed = set(states[1]["managed"])
+                self.assertEqual(modex_managed - oracle_managed, set())
+                oracle_only = oracle_managed - modex_managed
+                broker_locks = {
+                    path for path in oracle_only
+                    if path.startswith("state/runtime-broker-live-runtime-")
+                    and path.endswith(".json.lock")
+                }
+                self.assertEqual(len(broker_locks), 1)
+                expected_oracle_only = {
+                    "state/profile-lifecycle.json.lock",
+                    "state/runtime-housekeeping.last-run",
+                    "state/runtime-housekeeping.lock",
+                }
+                if label == "child-start":
+                    expected_oracle_only.update({
+                        "shared/sessions/.prodex-maintenance.lock",
+                        "state/runtime-local-proxy-leases",
+                    })
+                self.assertEqual(oracle_only - broker_locks, expected_oracle_only)
+
+    def test_codex_binary_selection_against_04392_records_shebang_path_gap(self):
+        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        canonical = "<canonical>/codex"
+        oracle_child_argv0 = {
+            "relative": "../codex",
+            "symlink": "../codex-alias",
+            "command": "<path>/codex",
+            "path": canonical,
+            "relative-path": canonical,
+            "path-skips-wrapper": canonical,
+        }
+
+        def script_path(path):
+            if not path.startswith("/"):
+                return path
+            if path.endswith("/work/bin/codex"):
+                return "<path>/codex"
+            if path.endswith("/codex"):
+                return canonical
+            return path
+
+        for mode, oracle_child in oracle_child_argv0.items():
+            with self.subTest(mode=mode):
+                traces = []
+                outputs = []
+                for binary in (ORACLE, MODEX):
+                    result, records, upstream, state = self.run_launch(
+                        binary=binary,
+                        scenario="exit-seven",
+                        codex_mode=mode,
+                        environment_overrides={"MODEX_TEST_CODEX_VERSION": "codex-cli 0.153.2"},
+                    )
+                    self.assertEqual((result.returncode, result.stdout), (7, b""), result.stderr)
+                    self.assertEqual(upstream, [])
+                    self.assertEqual(state["leftovers"], [])
+                    self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                    self.assertNotIn(b"synthetic-codex-key", result.stdout + result.stderr)
+                    outputs.append((
+                        result.returncode,
+                        result.stdout,
+                        normalized_codex_path(result.stderr),
+                    ))
+                    self.assertEqual(
+                        [record["args"] for record in records if record["kind"] == "probe"],
+                        [["--version"], ["app-server", "--help"]],
+                    )
+                    self.assertEqual(
+                        [record["kind"] for record in records],
+                        ["probe", "probe", "preflight", "request", "request", "request", "launch"],
+                    )
+                    traces.append([
+                        (record["kind"], script_path(record["script_argv0"]))
+                        for record in records
+                        if record["kind"] in ("probe", "preflight", "launch")
+                    ])
+
+                self.assertEqual(outputs[0], outputs[1])
+                self.assertEqual(
+                    traces[0],
+                    [("probe", canonical), ("probe", canonical),
+                     ("preflight", oracle_child), ("launch", oracle_child)],
+                )
+                self.assertEqual(
+                    traces[1],
+                    [("probe", canonical), ("probe", canonical),
+                     ("preflight", canonical), ("launch", canonical)],
+                )
 
     def test_normal_tty_does_not_receive_the_text_fallback(self):
         result, records, upstream, state = self.run_launch(

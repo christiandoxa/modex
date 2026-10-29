@@ -284,6 +284,8 @@ try:
         else:
             connection.sendall(b"".join(pipelined_requests))
             request_parts_sent[0] = 1
+        if half_close:
+            connection.shutdown(socket.SHUT_WR)
         response_file = PersistentReader(connection.makefile("rb"))
         pipelined_results = []
         response_count = int(os.environ.get("PROBE_PIPELINED_RESPONSE_COUNT", str(len(pipelined_requests))))
@@ -294,11 +296,16 @@ try:
             response.fp = response_file
             response.begin()
             body = response.read()
+            head_wire_body = b""
+            if method == "HEAD" and response.getheader("Transfer-Encoding", "").lower() == "chunked":
+                if response_file.peek(1).startswith(b"0"):
+                    head_wire_body = response_file.read(5)
             pipelined_results.append({
                 "status": response.status,
                 "reason": response.reason,
                 "headers": response.getheaders(),
                 "body_base64": base64.b64encode(body).decode("ascii"),
+                "head_wire_body_base64": base64.b64encode(head_wire_body).decode("ascii"),
             })
             result["pipelined_responses"] = pipelined_results
         response_file.reader.close()
@@ -1644,6 +1651,7 @@ def run_probe(binary: Path, case, upstream: Upstream):
             item["body"] = base64.b64decode(item.pop("body_base64"))
         for item in response.get("pipelined_responses", []):
             item["body"] = base64.b64decode(item.pop("body_base64"))
+            item["head_wire_body"] = base64.b64decode(item.pop("head_wire_body_base64"))
         if "second_client" in response:
             response["second_client"]["body"] = base64.b64decode(response["second_client"].pop("body_base64"))
         if "saturation_overflow_body_base64" in response:
@@ -1988,6 +1996,10 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             + first_body + b"\r\n0\r\n\r\n"
         )
         second = request_bytes(target=b"/v1/responses", body=second_body)
+        head_sse = request_bytes(
+            (("X-Oracle-Response", "sse"),), body=first_body,
+            target=b"/v1/chat/completions", method=b"HEAD",
+        )
         chunked_zero = chunked.rfind(b"0\r\n")
         chunked_terminator = chunked_zero + 3
         oversized_second = (
@@ -2043,6 +2055,24 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                 "upstream_count": 2,
             },
             {
+                "name": "pipelined_head_sse_half_close_then_get",
+                "request": head_sse,
+                "pipelined_requests": [head_sse, second],
+                "half_close": True,
+                "check_close": True,
+                "expected": [(200, b""), (200, RESPONSES_RESPONSE)],
+                "expected_head_wire_body": {"oracle": b"0\r\n\r\n", "modex": b""},
+                "upstream_count": 2,
+            },
+            {
+                "name": "pipelined_head_sse_then_get",
+                "request": head_sse,
+                "pipelined_requests": [head_sse, second],
+                "expected": [(200, b""), (200, RESPONSES_RESPONSE)],
+                "expected_head_wire_body": {"oracle": b"0\r\n\r\n", "modex": b""},
+                "upstream_count": 2,
+            },
+            {
                 "name": "pipelined_sse_then_buffered_response",
                 "request": request_bytes(
                     (("X-Oracle-Response", "sse"),),
@@ -2094,6 +2124,11 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                         self.assertEqual(len(records), case["upstream_count"], label)
                         if case.get("check_close"):
                             self.assertTrue(response["connection_closed"], label)
+                        if "expected_head_wire_body" in case:
+                            self.assertEqual(
+                                response["pipelined_responses"][0]["head_wire_body"],
+                                case["expected_head_wire_body"][label], label,
+                            )
                     if case["name"] == "pipelined_fragmented_chunked_then_fixed":
                         oracle_bodies = sorted(record["body"] for record in results["oracle"][1])
                         modex_bodies = sorted(record["body"] for record in results["modex"][1])

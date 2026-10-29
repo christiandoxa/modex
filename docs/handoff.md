@@ -26,12 +26,19 @@ release behavior. See `docs/evidence/baseline-0.165.1/local-relay-http.md` and
 `docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
 
 Validation on Linux x86-64: `rtk make build` and the native local-rewrite and
-loopback driver build passed. The focused 0.165.1 oracle module passed 14
-tests; after adding the oversized follow-up control, the full pipeline matrix
-passed separately. The direct local-rewrite and shared loopback suites passed
-45 tests. The production import audit passed for 71 Mojo files. All six release
-targets and broader security behavior remain unqualified.
+loopback driver build passed. The focused 0.165.1 oracle module passed 14 tests
+before the final pipeline controls were added. The expanded pipeline matrix
+passed with oversized-body and HEAD SSE half-close cases. The direct
+local-rewrite and shared loopback suites passed 45 tests. The production import
+audit passed for 71 Mojo files. All six release targets and broader security
+behavior remain unqualified.
 
+The pinned HEAD SSE pipeline control also passes with and without
+`shutdown(SHUT_WR)`: both binaries dispatch both requests. Prodex emits a
+terminal zero chunk after its HEAD SSE response; Modex suppresses it, so that
+wire mismatch remains. Modex's upstream reader treats HEAD as bodyless, so this
+real-path control does not reach `write_chunk` with nonempty data. Existing
+native reset tests still pass; no disconnect behavior change was justified.
 
 Buffered local-relay responses now retain a valid HTTP/1.0 request version,
 including selected malformed-header and fragment-target errors. A version
@@ -39,7 +46,7 @@ token before an invalid suffix also selects the matching final status-line
 version; absent/invalid versions keep HTTP/1.1. The real-path regression
 matches 16 selected response and streaming controls against historical 0.439.2,
 with 0.439.1 controls. Default Server/Date headers, non-token method
-admission, and the HEAD 204/304 SSE terminal chunk remain explicit gaps. SSE
+admission, and HEAD event-stream terminal chunks remain an explicit gap. SSE
 streaming stays incremental and uses HTTP/1.1 response framing.
 
 The official Linux binary and

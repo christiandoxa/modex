@@ -64,9 +64,10 @@ check buffered HEAD length preservation, streamed HEAD without chunk data or a
 terminator, and HEAD 204/304 with chunked headers but no terminator. Independent
 raw oracle probes, now reproducible in the oracle matrix, found that HEAD 204
 and 304 with `text/event-stream` include `Transfer-Encoding: chunked` and the
-terminal `0\r\n\r\n` chunk in 0.165.1. Modex suppresses those terminators for
-HEAD, so raw-wire parity for these bodyless SSE cases is not claimed. Normal
-POST SSE chunking and disconnect cancellation continue to pass.
+terminal `0\r\n\r\n` chunk in 0.165.1. A HEAD 200 SSE response emits the same
+terminal chunk. Modex suppresses those terminators for HEAD, so raw-wire parity
+for HEAD event-stream cases is not claimed. Normal POST SSE chunking and
+disconnect cancellation continue to pass.
 
 Large request heads remain a parity gap. A 32,768-byte `X-Pad` header reaches
 the upstream in both binaries. At request-head lengths before the terminating
@@ -209,11 +210,28 @@ terminal CRLF, distinct bodies, ordered HEAD/error/SSE/buffered responses,
 `Connection: close`, and an oversized second body. Two pipelined requests reach
 the synthetic upstream in the correct forms; the oversized follow-up retains
 the 64 MiB body cap and does not dispatch upstream. The full 14-test 0.165.1
-oracle module passed on Linux x86-64 before the oversized-follow-up case was
-added; the final pipelined matrix including that case passed separately. The
-45 native local-rewrite and shared loopback tests passed, along with production
+oracle module passed on Linux x86-64 before the final pipelined cases were
+added; the expanded matrix, including oversized-body and HEAD SSE half-close
+controls, passed separately. The 45 native local-rewrite and shared loopback
+tests passed, along with production
 build and driver builds. Parent shutdown, idle fairness, the existing body
 limit suite, duplicate framing, and strict trailer controls also passed in the
 full oracle run. Requests remain serial; only request buffering and ordering
 are qualified. Other release targets and broader framing/security behavior
 remain unqualified.
+
+A real-process HEAD SSE control sends a complete pipelined POST with and
+without `shutdown(SHUT_WR)`. The pinned 0.165.1 oracle and Modex both dispatch
+both requests and return the HEAD response followed by the buffered request's
+response. TinyHTTP emits `0\r\n\r\n` after its HEAD event-stream response;
+Modex suppresses that terminal chunk, so the test drains and records the raw
+oracle framing before parsing the next response. This is the existing HEAD SSE
+wire mismatch, not lost buffered input. In `LoopbackHTTPStream._read_head`,
+`src/modex/loopback_http.mojo` sets HEAD length to zero and finishes response
+reading before nonempty bytes can reach downstream
+`LoopbackHTTPConnection.write_chunk`; this fixture therefore does not confirm
+the review's proposed disconnect path. Native
+`test_head_stream_cancellation_is_still_detected` and
+`test_peer_reset_is_detected_and_connection_move_keeps_ownership` continue to
+verify RST cancellation. The 23-test shared loopback suite passed after the
+probe change.

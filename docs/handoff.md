@@ -207,6 +207,14 @@ routes active oracle checks to 0.439.2 and keeps all six release targets in the
 parity denominator. The 76-contract inventory and complete production parity
 remain unfinished, with all six release qualifications BLOCKED.
 
+The read-only session listing now treats a dangling `state.json` symlink as
+absent, matching the checksum-pinned 0.165.1 and 0.439.2 Linux binaries.
+Synthetic external targets remain unchanged; live symlinks are rejected by the
+private state reader, and adjacent lock or last-good markers remain fail-closed.
+The focused process comparisons, production build, production import audit and
+test census passed. This does not establish race freedom or state-lock and
+recovery parity. Evidence: `docs/evidence/session-profile-state-04392.md`.
+
 Gateway help parsing now matches tested active 0.439.2 and historical 0.165.1
 short-cluster and attached-value cases, including Clap's usage variation after
 switches and attached versus split values. Synthetic API-key text stays out of

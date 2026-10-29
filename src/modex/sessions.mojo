@@ -603,7 +603,8 @@ def inspect_sessions(var options: SessionOptions) raises -> String:
             continue
         var candidate = name.value()
         if candidate == "state.json":
-            has_state_file = True
+            # Path.exists() in Prodex treats a dangling primary symlink as absent.
+            has_state_file = exists(session_child_path(root, candidate))
         elif candidate == "state.json.lock":
             has_state_lock = True
         elif candidate == "state.json.last-good":

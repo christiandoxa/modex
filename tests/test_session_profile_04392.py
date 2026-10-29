@@ -531,13 +531,18 @@ class SessionProfile04392Tests(unittest.TestCase):
                 if link_target == "live":
                     self.assertNotEqual(observations["reference"].returncode, 0)
                     self.assertEqual(observations["reference"].stdout, b"")
+                    self.assertNotEqual(observations["modex"].returncode, 0)
+                    self.assertEqual(observations["modex"].stdout, b"")
                 else:
-                    # Frozen Prodex treats a dangling state symlink as absent; Modex rejects it without mutation.
                     self.assertEqual(observations["reference"].returncode, 0)
-                    report = json.loads(observations["reference"].stdout)
-                    self.assertIsNone(report[0]["profile"])
-                self.assertNotEqual(observations["modex"].returncode, 0)
-                self.assertEqual(observations["modex"].stdout, b"")
+                    self.assertEqual(observations["modex"].returncode, 0)
+                    for output in observations.values():
+                        self.assertEqual(output.stderr, b"")
+                        report = json.loads(output.stdout)
+                        self.assertIsNone(report[0]["profile"])
+                    self.assertFalse(target.exists())
+                if link_target == "live":
+                    self.assertNotEqual(observations["modex"].stderr, b"")
 
     def test_world_readable_state_is_rejected_without_exposing_profile_data(self):
         for reference in (ORACLE_01651, test_cli.ORACLE):

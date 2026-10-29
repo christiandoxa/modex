@@ -184,12 +184,14 @@ bindings, profile filters, duplicate-key last-wins behavior, and the retained
 16,384-entry response map without retaining it and indexes the retained
 session bindings for report lookup. Malformed primary recovery remains open:
 Prodex restores and normalizes a valid `.last-good`, while Modex fails closed
-and leaves both files unchanged. Security behavior also differs: Modex rejects
-world-readable state and dangling symlink primaries that the releases accept
-as readable or absent. A valid primary is read without acquiring Prodex's
-persistent state locks; descriptor and metadata checks observe selected
-replacement cases but do not provide interprocess exclusion or prove race
-freedom. See `docs/evidence/session-profile-state-04392.md` and
+and leaves both files unchanged. Modex now treats a dangling `state.json`
+symlink as absent during read-only listing, matching both releases; it still
+rejects a live symlink before opening it. A pre-existing lock or last-good
+marker alongside a dangling link remains fail-closed. Security behavior also
+differs: Modex rejects world-readable state. A valid primary is read without
+acquiring Prodex's persistent state locks; descriptor and metadata checks
+observe selected replacement cases but do not provide interprocess exclusion
+or prove race freedom. See `docs/evidence/session-profile-state-04392.md` and
 `docs/evidence/baseline-0.165.1/session-profile-filter.md`.
 Selected dotted-I expansion and contextual Greek sigma queries now match both
 the historical 0.439.2 and separately pinned 0.439.5 oracles. The 0.165.1 session selector now uses the full Unicode 17 Cased and

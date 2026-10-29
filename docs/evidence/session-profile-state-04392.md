@@ -25,7 +25,8 @@ session reports.
 `tests/test_session_profile_04392.py` compares both releases for profile
 filters, retention, conflict and identity behavior, duplicate keys, the
 2,048-entry tie cutoff, 16,384 profiles and response bindings, 2,048
-session reports, and stable hard-linked state primaries. All 12 tests pass.
+session reports, and stable hard-linked state primaries. The initial
+checkpoint's 12-test run passed.
 The 16,384-entry and 2,048-report cases complete against both references. The
 broader session Python suite passes all 68 tests, and native `test_sessions`
 passes. The dependency audit reports 71 standard-library-only production Mojo
@@ -34,9 +35,16 @@ owner each.
 
 The release recovers an invalid primary from a valid `.last-good` file and
 rewrites the primary; Modex fails closed and leaves both files untouched.
-Both releases accept a dangling `state.json` symlink as absent, while Modex
-rejects it without changing the link or its target. The releases accept a
-world-readable state primary; Modex rejects it. A private primary with a
+Both releases and the current Modex production path treat a dangling
+`state.json` symlink as absent during read-only session listing. Modex uses
+Mojo 1.2.0's `std.os.path.exists`, which follows the link only to check target
+existence; the absent case never enters the state reader. A live symlink still
+reaches the unchanged reader and is rejected by its `lstat` regular-file
+check, without reading or changing the synthetic external target. A concurrent
+replacement is not a general race-freedom claim: the standard-library reader
+still has no `O_NOFOLLOW` or interprocess exclusion. A pre-existing lock or
+last-good marker alongside a dangling link remains fail-closed. The releases
+accept a world-readable state primary; Modex rejects it. A private primary with a
 pre-existing hard-link alias is accepted by both releases and Modex; the
 process test verifies that Modex preserves both paths and the link count. The
 reader compares link counts during its descriptor/path checks but does not
@@ -52,3 +60,18 @@ unverified. Invalid or unsafe state stays fail-closed in Modex. See
 `tests/test_session_profile_04392.py` and
 `docs/evidence/baseline-0.165.1/session-profile-filter.md` for the production
 vectors and earlier recovery comparison.
+
+## Dangling primary follow-up
+
+The 0.439.2 source trace is `crates/prodex-app/src/app_state.rs`,
+`AppStateIoExt::load_with_recovery`: it checks `state_file.exists()` and treats
+a broken symlink as absent when no last-good file exists. The updated Modex
+path uses Mojo 1.2.0's `std.os.path.exists` for the same marker check. Both
+pinned binaries and Modex now treat dangling state symlinks as absent and
+continue rejecting live symlinks; synthetic external targets remain unchanged.
+Lock and last-good markers still fail closed beside a dangling link.
+
+All 17 tests across `test_session_profile_04392.py` and
+`test_session_state_backup_04395.py` passed on the follow-up worktree. This
+does not establish general TOCTOU safety, cross-process state locking or
+recovery parity.

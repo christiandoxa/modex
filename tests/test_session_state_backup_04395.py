@@ -78,6 +78,32 @@ class SessionStateBackupTests(unittest.TestCase):
                 self.assertEqual(result.stderr, b"Error: locked state loading and recovery are not implemented\n")
                 self.assertEqual(state.read_bytes(), b"synthetic state marker\n")
 
+    def test_dangling_primary_keeps_backup_and_lock_guards(self):
+        for marker in ("state.json.lock", "state.json.last-good"):
+            with self.subTest(marker=marker), tempfile.TemporaryDirectory(prefix="modex-session-state-dangling-") as directory:
+                root = Path(directory)
+                fixture(root)
+                app_root = root / "home/.prodex"
+                app_root.mkdir(mode=0o700)
+                target = root / "missing-state.json"
+                state_link = app_root / "state.json"
+                state_link.symlink_to(target)
+                state_marker = app_root / marker
+                state_marker.write_bytes(b"synthetic state marker\n")
+                with state_marker.open("rb") as handle:
+                    if marker == "state.json.lock":
+                        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    result = subprocess.run(
+                        sandbox_command(MODEX, root, ["session", "list", "--json"]),
+                        capture_output=True, timeout=10, check=False,
+                    )
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout, b"")
+                self.assertEqual(result.stderr, b"Error: locked state loading and recovery are not implemented\n")
+                self.assertTrue(state_link.is_symlink())
+                self.assertFalse(target.exists())
+                self.assertEqual(state_marker.read_bytes(), b"synthetic state marker\n")
+
 
 if __name__ == "__main__":
     unittest.main()

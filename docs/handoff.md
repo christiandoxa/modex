@@ -29,8 +29,9 @@ before launch. Fullwidth IDNA normalization, TOML precedence and public beta
 transport remain gaps; see `docs/evidence/deepseek-strict-tools-04392.md`.
 
 After integrating these changes, the production and focused driver builds
-passed, followed by 84 provider, relay, launch and hook-identity tests against
-the verified 0.439.2 release. The historical 0.165.1 relay/RPC controls passed
+passed, followed by 84 provider, relay, launch and hook-identity tests, including
+production comparisons against the verified 0.439.2 release. The historical
+0.165.1 relay/RPC controls passed
 19 tests before the beta-host follow-up. The CI routing and reference helpers
 passed 39 tests; the 71-file dependency audit and 122-module census passed.
 The full suite and non-Linux targets were not rerun for this integration.

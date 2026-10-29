@@ -109,12 +109,85 @@ if scenario == "exit-seven": raise SystemExit(7)
 if scenario == "extra-state":
     (home/"synthetic-user-state").write_text("preserve this data")
     raise SystemExit(0)
-if scenario == "slow-partial":
+if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-header", "slow-partial-body-limit"):
     import select
     import socket
     target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
     host, port = target.hostname, target.port
     path = target.path.rstrip("/") + "/responses"
+    def read_status(connection, timeout):
+        received = bytearray()
+        deadline = time.monotonic() + timeout
+        while b"\r\n\r\n" not in received:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not select.select([connection], [], [], remaining)[0]:
+                return None
+            chunk = connection.recv(65536)
+            if not chunk:
+                return None
+            received.extend(chunk)
+        return int(bytes(received).split(b"\r\n", 1)[0].split()[1])
+    body = json.dumps({"model":"deepseek-chat","input":"synthetic slow-partial probe"},separators=(",",":")).encode()
+    request = (f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+               f"Content-Type: application/json\r\nAuthorization: Bearer synthetic-codex-key\r\n"
+               f"Content-Length: {len(body)}\r\nConnection: close\r\n\r\n").encode() + body
+    if scenario == "slow-partial-fragmented-header":
+        healthy = socket.create_connection((host, port), timeout=5)
+        parts = [
+            f"POST {path} HTTP/1.1\r\n".encode(),
+            f"Host: {host}:{port}\r\nContent-Type: application/json\r\n".encode(),
+            b"Authorization: Bearer synthetic-codex-key\r\n",
+            f"Content-Length: {len(body)}\r\nConnection: close\r\n\r".encode(),
+            b"\n" + body,
+        ]
+        started = time.monotonic()
+        for part in parts:
+            healthy.sendall(part)
+            time.sleep(0.025)
+        status = read_status(healthy, 5)
+        save({"kind":scenario, "fragments":len(parts), "status":status,
+              "elapsed_ms":round((time.monotonic()-started)*1000)})
+        healthy.close()
+        print("synthetic-client-complete")
+        raise SystemExit(0 if status == 200 else 1)
+    if scenario == "slow-partial-body-limit":
+        oversized = socket.create_connection((host, port), timeout=5)
+        oversized.sendall((f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+                           f"Content-Length: {64 * 1024 * 1024 + 1}\r\nConnection: close\r\n\r\n").encode())
+        started = time.monotonic()
+        status = read_status(oversized, 3)
+        save({"kind":scenario, "declared_bytes":64 * 1024 * 1024 + 1, "status":status,
+              "elapsed_ms":round((time.monotonic()-started)*1000)})
+        oversized.close()
+        print("synthetic-client-complete")
+        raise SystemExit(0 if status == 413 else 1)
+    if scenario == "slow-partial-body":
+        partials = []
+        for index in range(16):
+            partial = socket.create_connection((host, port), timeout=5)
+            partial.sendall((f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+                             f"Content-Type: application/json\r\nContent-Length: 2048\r\n"
+                             f"Connection: close\r\nX-Slow-Body: {index}\r\n\r\n{{").encode())
+            partials.append(partial)
+            time.sleep(0.01)
+        time.sleep(0.1)
+        healthy = socket.create_connection((host, port), timeout=5)
+        started = time.monotonic()
+        healthy.sendall(request)
+        before_release = read_status(healthy, 0.25)
+        for partial in partials:
+            partial.shutdown(socket.SHUT_WR)
+        partial_status = read_status(partials[0], 3)
+        status = before_release if before_release is not None else read_status(healthy, 5)
+        save({"kind":scenario, "clients":len(partials), "hold_ms":250,
+              "responded_before_release":before_release is not None,
+              "before_release_status":before_release, "cancelled_status":partial_status,
+              "status":status, "elapsed_ms":round((time.monotonic()-started)*1000)})
+        for partial in partials:
+            partial.close()
+        healthy.close()
+        print("synthetic-client-complete")
+        raise SystemExit(0 if status == 200 else 1)
     partials = []
     for index in range(8):
         partial = socket.create_connection((host, port), timeout=5)
@@ -123,32 +196,17 @@ if scenario == "slow-partial":
         partials.append(partial)
     time.sleep(0.1)
     healthy = socket.create_connection((host, port), timeout=10)
-    body = json.dumps({"model":"deepseek-chat","input":"synthetic slow-partial probe"},separators=(",",":")).encode()
-    request = (f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
-               f"Content-Type: application/json\r\nAuthorization: Bearer synthetic-codex-key\r\n"
-               f"Content-Length: {len(body)}\r\nConnection: close\r\n\r\n").encode() + body
     started = time.monotonic()
     healthy.sendall(request)
-    received = bytearray()
-    def read_status(deadline):
-        while b"\r\n\r\n" not in received:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0 or not select.select([healthy], [], [], remaining)[0]:
-                return None
-            chunk = healthy.recv(65536)
-            if not chunk:
-                return None
-            received.extend(chunk)
-        return int(bytes(received).split(b"\r\n", 1)[0].split()[1])
     hold_until = time.monotonic() + 1.0
-    before_release = read_status(hold_until)
+    before_release = read_status(healthy, hold_until - time.monotonic())
     status_elapsed_ms = round((time.monotonic()-started)*1000) if before_release is not None else None
     remaining = hold_until - time.monotonic()
     if remaining > 0:
         time.sleep(remaining)
     for partial in partials:
         partial.close()
-    status = before_release if before_release is not None else read_status(time.monotonic() + 5.0)
+    status = before_release if before_release is not None else read_status(healthy, 5.0)
     if status_elapsed_ms is None:
         status_elapsed_ms = round((time.monotonic()-started)*1000)
     save({"kind":"slow-partial", "clients":len(partials), "hold_ms":1000,

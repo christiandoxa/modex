@@ -1,4 +1,4 @@
-"""Compare eight-client slow-partial admission through real isolated processes."""
+"""Compare slow-request admission through isolated real Super processes."""
 
 import hashlib
 import os
@@ -37,42 +37,83 @@ class RuntimeSlowPartialTests(unittest.TestCase):
             if actual != expected:
                 raise AssertionError(f"{label} oracle SHA-256 mismatch: {actual}")
 
-    def test_eight_incomplete_headers_reproduce_runtime_mismatch(self):
-        harness = test_super_launch.SuperLaunchTests()
-        for version, oracle in (("0.165.1", ORACLE_01651), ("0.439.2", ORACLE_04392)):
-            for workers in (None, 1):
-                with self.subTest(version=version, workers=workers):
-                    environment = {} if workers is None else {
-                        "PRODEX_RUNTIME_PROXY_WORKER_COUNT": str(workers),
-                    }
-                    baseline, baseline_records, baseline_upstream, _ = harness.run_launch(
-                        binary=oracle, scenario="slow-partial", environment_overrides=environment,
-                    )
-                    modex, modex_records, modex_upstream, _ = harness.run_launch(
-                        binary=MODEX, scenario="slow-partial", environment_overrides=environment,
-                    )
+    def _run(self, harness, scenario, binary, environment=None):
+        result, records, upstream, _ = harness.run_launch(
+            binary=binary, scenario=scenario, environment_overrides=environment,
+        )
+        self.assertEqual((result.returncode, result.stdout),
+                         (0, b"synthetic-client-complete\n"), result.stderr)
+        probe = next(row for row in records if row["kind"] == scenario)
+        if scenario == "slow-partial-body-limit":
+            self.assertEqual(upstream, [])
+        else:
+            self.assertEqual(len(upstream), 1)
+            self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
+            self.assertEqual(
+                {key.lower(): value for key, value in upstream[0]["headers"].items()}[
+                    "authorization"
+                ],
+                "Bearer synthetic-provider-key",
+            )
+        return probe
 
-                    baseline_probe = next(row for row in baseline_records if row["kind"] == "slow-partial")
-                    modex_probe = next(row for row in modex_records if row["kind"] == "slow-partial")
-                    for result, upstream in (
-                        (baseline, baseline_upstream), (modex, modex_upstream),
-                    ):
-                        self.assertEqual((result.returncode, result.stdout),
-                                         (0, b"synthetic-client-complete\n"), result.stderr)
-                        self.assertEqual(len(upstream), 1)
-                        self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
-                        self.assertEqual(
-                            {key.lower(): value for key, value in upstream[0]["headers"].items()}[
-                                "authorization"
-                            ],
-                            "Bearer synthetic-provider-key",
-                        )
-                    self.assertEqual((baseline_probe["clients"], baseline_probe["hold_ms"]), (8, 1000))
-                    self.assertTrue(baseline_probe["responded_before_release"], baseline_probe)
-                    self.assertEqual(baseline_probe["before_release_status"], 200)
-                    self.assertEqual(modex_probe["clients"], 8)
-                    self.assertEqual(modex_probe["hold_ms"], 1000)
-                    self.assertEqual(modex_probe["status"], 200)
+    @staticmethod
+    def _signature(scenario, probe):
+        if scenario == "slow-partial":
+            return (
+                probe["responded_before_release"],
+                probe["before_release_status"],
+                probe["status"],
+            )
+        if scenario == "slow-partial-body":
+            return (
+                probe["responded_before_release"],
+                probe["before_release_status"],
+                probe["cancelled_status"],
+                probe["status"],
+            )
+        if scenario == "slow-partial-fragmented-header":
+            return probe["fragments"], probe["status"]
+        return probe["declared_bytes"], probe["status"]
+
+    def _compare(self, scenario, environment=None):
+        harness = test_super_launch.SuperLaunchTests()
+        references = {
+            "0.165.1": self._run(harness, scenario, ORACLE_01651, environment),
+            "0.439.2": self._run(harness, scenario, ORACLE_04392, environment),
+        }
+        expected = self._signature(scenario, references["0.165.1"])
+        self.assertEqual(self._signature(scenario, references["0.439.2"]), expected)
+        modex = self._run(harness, scenario, MODEX, environment)
+        return expected, modex
+
+    def test_incomplete_headers_do_not_block_ready_requests(self):
+        for workers in (None, 1):
+            with self.subTest(workers=workers):
+                environment = {} if workers is None else {
+                    "PRODEX_RUNTIME_PROXY_WORKER_COUNT": str(workers),
+                }
+                signature, modex = self._compare("slow-partial", environment)
+                self.assertEqual(signature, (True, 200, 200))
+                self.assertIn(modex["before_release_status"], (None, 200))
+                self.assertEqual(modex["status"], 200)
+
+    def test_incomplete_bodies_hold_workers_until_client_cancellation(self):
+        signature, modex = self._compare("slow-partial-body")
+        self.assertEqual(signature, (False, None, 502, 200))
+        self.assertIn(modex["before_release_status"], (None, 200))
+        self.assertIn(modex["cancelled_status"], (None, 502))
+        self.assertEqual(modex["status"], 200)
+
+    def test_fragmented_header_completes_and_dispatches(self):
+        signature, modex = self._compare("slow-partial-fragmented-header")
+        self.assertEqual(signature, (5, 200))
+        self.assertEqual(modex["status"], 200)
+
+    def test_oversized_declared_body_is_rejected_before_body_read(self):
+        signature, modex = self._compare("slow-partial-body-limit")
+        self.assertEqual(signature, (64 * 1024 * 1024 + 1, 413))
+        self.assertEqual(modex["status"], 413)
 
 
 if __name__ == "__main__":

@@ -2,12 +2,21 @@
 
 import hashlib
 import json
+import os
 import unittest
+from pathlib import Path
 
-from test_cli import MODEX, ORACLE as ORACLE_04392, ORACLE_SHA256 as ORACLE_04392_SHA256
+from test_cli import MODEX
 from test_cli_01651 import ORACLE as ORACLE_01651, ORACLE_SHA256 as ORACLE_01651_SHA256
 from test_anthropic_mixed_tools_01651 import _run_mode
 from test_provider_tools_04392_characterization import _run
+
+
+ORACLE_04392 = Path(os.environ.get(
+    "PRODEX_ORACLE_04392",
+    Path.home() / ".cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+))
+ORACLE_04392_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 
 
 class AnthropicUnknownRequestFieldsTests(unittest.TestCase):

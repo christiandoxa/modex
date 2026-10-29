@@ -28,6 +28,20 @@ class CIOracleRoutingTests(unittest.TestCase):
         )
         self.assertEqual(result.stdout.splitlines(), ["/synthetic/oracle-04392", "/synthetic/oracle-01651"])
 
+    def test_anthropic_unknown_fields_suite_uses_explicit_04392_override(self):
+        environment = {
+            **os.environ,
+            "PYTHONPATH": str(ROOT / "tests"),
+            "PRODEX_ORACLE": "/synthetic/wrong-generic-oracle",
+            "PRODEX_ORACLE_04392": "/synthetic/oracle-04392",
+            "PRODEX_ORACLE_01651": "/synthetic/oracle-01651",
+        }
+        result = subprocess.run(
+            [sys.executable, "-c", "import test_anthropic_request_unknown_fields_01651_04392 as suite; print(suite.ORACLE_04392); print(suite.ORACLE_01651)"],
+            cwd=ROOT, env=environment, capture_output=True, text=True, check=True,
+        )
+        self.assertEqual(result.stdout.splitlines(), ["/synthetic/oracle-04392", "/synthetic/oracle-01651"])
+
     def test_fast_ci_checks_04392_before_historical_oracles(self):
         script = (ROOT / "scripts/ci/run-fast.sh").read_text(encoding="utf-8")
         active = script.index("reference.py oracle active")
@@ -49,6 +63,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("run_logged focused-python-active-cross-release", script)
         self.assertIn("test_anthropic_mixed_tools_01651.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_anthropic_request_max_output_tokens_01651.py", script[cross_release:script.index("\n", cross_release)])
+        self.assertIn("test_anthropic_request_unknown_fields_01651_04392.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_cli.py", script[cross_release:script.index("\n", cross_release)])
         historical_suite = script.index("run_logged historical-python-01651")
         self.assertNotIn("test_anthropic_mixed_tools_01651.py", script[historical_suite:script.index("\n", historical_suite)])
@@ -86,6 +101,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("run_logged focused-python-active-cross-release", script)
         self.assertIn("test_anthropic_mixed_tools_01651.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_anthropic_request_max_output_tokens_01651.py", script[cross_release:script.index("\n", cross_release)])
+        self.assertIn("test_anthropic_request_unknown_fields_01651_04392.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_cli.py", script[cross_release:script.index("\n", cross_release)])
         historical_suite = script.index("run_logged historical-python-01651")
         self.assertNotIn("test_anthropic_mixed_tools_01651.py", script[historical_suite:script.index("\n", historical_suite)])

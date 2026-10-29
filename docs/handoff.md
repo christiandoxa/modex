@@ -46,9 +46,11 @@ and normalized responses match; unknown extension values are not forwarded.
 Malformed `temperature`, unsupported `service_tier`, duplicate known fields,
 duplicate unknown keys, and requests over 4 MiB retain release behavior. The
 three-process tests, fallback and duplicate-key regressions, dependency audit,
-test census, and diff check pass. This qualifies selected Linux x86-64 request
-behavior only; full provider translation and all six release targets remain
-open. See `docs/evidence/baseline-0.165.1/anthropic-request-unknown-fields.md`.
+test census, active-oracle routing checks, and diff check pass. Fast and full CI
+run the module in their active cross-release phases. This qualifies selected
+Linux x86-64 request behavior only; full provider translation and all six
+release targets remain open. See
+`docs/evidence/baseline-0.165.1/anthropic-request-unknown-fields.md`.
 
 DeepSeek Responses now retries combo model candidates before credentials on
 retryable model-class errors. HTTP auth failures rotate credentials and restart

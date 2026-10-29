@@ -7,7 +7,10 @@ app-server recheck passes all 53 tests after their fixes. Two Expect/framing
 expectations were also stale; both release-specific matrices pass after
 checking the actual 417 wire responses. The JSON log-follow rotation marker
 timed out once in the full run but passed five focused reruns; its cause is
-still unresolved. The complete suite has not been rerun on these fixes. See
+not proven. Both releases and Modex skip the initial replacement record when
+a followed path is absent during a poll; the rotation fixture now replaces
+the path atomically to avoid that race. The complete suite has not been rerun
+on these fixes. See
 `docs/evidence/log-follow-rotation-recheck-20261030.md`.
 
 Native Anthropic Responses requests now accept missing, empty, and text-only

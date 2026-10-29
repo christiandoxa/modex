@@ -18,8 +18,13 @@ checking the actual 417 wire responses. The JSON log-follow rotation marker
 timed out once in the full run but passed five focused reruns; its cause is
 not proven. Both releases and Modex skip the initial replacement record when
 a followed path is absent during a poll; the rotation fixture now replaces
-the path atomically to avoid that race. The complete suite has not been rerun
-on these fixes. See
+the path atomically to avoid that race. A subsequent local `make test` run on
+`13d4db21df6b325fac5fbfd1b9698564d5ed3e38` passed 1,019 Python tests after
+the production and native test builds; it predates the removal of a separate
+sleep-dependent gap assertion and all newer commits. It does not qualify the
+current revision or other release targets. The full log is retained locally at
+`/tmp/modex-full-13d4db2-20261030.log` (SHA-256
+`dbd3ed9d59ea42b7664fb6868f9e897a938fc6d5251f904c3a17d6abc663c971`). See
 `docs/evidence/log-follow-rotation-recheck-20261030.md`.
 
 DeepSeek Responses now retries combo model candidates before credentials on

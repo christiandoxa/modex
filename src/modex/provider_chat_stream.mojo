@@ -303,6 +303,7 @@ struct DeepSeekChatState:
                 _ = self.anthropic_open_result_indices.pop(block_index)
             return List[String]()
         if kind == "message_delta":
+            if not self.anthropic_message_started: return List[String]()
             var delta = doc.get(doc.root, "delta")
             var stop_reason = doc.get(delta, "stop_reason")
             # The release reads string stop_reason only and ignores stop_sequence.

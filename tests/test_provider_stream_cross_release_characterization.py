@@ -120,6 +120,39 @@ class ProviderStreamCrossReleaseCharacterizationTests(unittest.TestCase):
                     events = _normalize_fallback_tool_call_ids(_normalized_events(observed["response_body"]))
                     self.assertEqual(events, reference_events)
 
+    def test_anthropic_message_delta_before_message_start_is_ignored(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic web query",
+            "stream": True,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        events = [
+            {
+                "type": "message_delta",
+                "delta": {"stop_reason": "end_turn"},
+                "usage": {"output_tokens": 5},
+            },
+            {"type": "message_stop"},
+        ]
+        observations = [
+            _run(binary, request, scenario="anthropic-custom-events", anthropic_events=events)
+            for binary in (self.oracle_01651, self.oracle_04392, MODEX)
+        ]
+        for observed in observations:
+            self.assertEqual((observed["exit_code"], observed["status"]), (0, 200))
+            self.assertEqual(len(observed["upstream"]), 1)
+            self.assertEqual(observed["upstream"][0]["path"], "/anthropic/v1/messages")
+            self.assertEqual(observed["state"]["leftovers"], [])
+
+        reference_events = _normalized_events(observations[0]["response_body"])
+        self.assertEqual([name for name, _ in reference_events], ["response.completed"])
+        self.assertNotIn("metadata", reference_events[0][1]["response"])
+        self.assertNotIn("usage", reference_events[0][1]["response"])
+        for observed in observations[1:]:
+            self.assertEqual(_normalized_events(observed["response_body"]), reference_events)
+            self.assertEqual(observed["upstream"][0]["body"], observations[0]["upstream"][0]["body"])
+
     def test_anthropic_tool_use_name_validation_matches_both_releases(self):
         request = {
             "model": "deepseek-chat",

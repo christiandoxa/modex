@@ -18,6 +18,18 @@ controls. No filesystem state is created. This is parser parity on Linux
 x86-64; sub-agent execution and the other five release targets remain outside
 this result. Evidence: `docs/evidence/baseline-0.165.1/super-sub-agent-reasoning-effort.md`.
 
+## Anthropic stream message-delta ordering (2026-10-30)
+
+Modex now ignores `message_delta` until an Anthropic `message_start` has been
+observed. A synthetic out-of-order stream with only `message_delta` and
+`message_stop` previously produced `response.created`, finish metadata, and
+usage in Modex; checksum-verified Prodex 0.165.1 and 0.439.2 returned only an
+empty `response.completed`. A three-process comparison covers both releases
+and Modex, and the existing valid stop-reason matrix remains green. The build,
+production import audit, test census, and diff check pass. This qualifies only
+this Linux x86-64 event order. See
+`docs/evidence/baseline-0.165.1/anthropic-stream-message-delta-order.md`.
+
 ## Buffered first-choice history shaping (2026-10-30)
 
 The buffered DeepSeek history shaper now rejects a present non-object first

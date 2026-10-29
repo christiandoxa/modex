@@ -8,6 +8,7 @@ from pathlib import Path
 import unittest
 
 from test_cli import MODEX, ORACLE as ORACLE_04392, ORACLE_SHA256 as ORACLE_04392_SHA256
+import test_deepseek_continuation as continuation
 from test_deepseek_continuation import observe_turns
 from test_provider_tools_04392_characterization import _normalized_events
 from provider_stream_search_cases import repeated_search_case
@@ -43,6 +44,22 @@ def _events():
          "usage": {"output_tokens": 5}},
         {"type": "message_stop"},
     ]
+
+
+def _observe_turns_with_read_errors(binary, turns, replies):
+    client = continuation.CLIENT.replace("timeout=15)", "timeout=2)")
+    client = client.replace(
+        'payload = response.read()\n    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),\n          "body": payload.hex(), "started": started, "finished": int(time.time())})',
+        'payload = bytearray()\n    body_error = None\n    try:\n        while True:\n            piece = response.read1(4096)\n            if not piece: break\n            payload.extend(piece)\n    except Exception as error:\n        body_error = type(error).__name__ + ": " + str(error)\n    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),\n          "body": bytes(payload).hex(), "body_error": body_error, "started": started, "finished": int(time.time())})',
+    )
+    if client == continuation.CLIENT or "timeout=2)" not in client or "body_error" not in client:
+        raise AssertionError("synthetic client could not capture incomplete stream reads")
+    original = continuation.CLIENT
+    continuation.CLIENT = client
+    try:
+        return continuation.observe_turns(binary, turns, replies)
+    finally:
+        continuation.CLIENT = original
 
 
 def _cases():
@@ -643,6 +660,59 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
                         events[0][1]["response"]["error"]["code"], "api_error",
                     )
                     self.assertNotIn("after error", json.dumps(events))
+
+    def test_invalid_utf8_after_response_failed_records_release_open_body(self):
+        request, fixture = repeated_search_case()
+        base = [
+            json.loads(line[6:])
+            for line in fixture["body"].splitlines()
+            if line.startswith(b"data: ")
+        ]
+        failed = {"type": "content_block_delta", "index": 1, "delta": {"type": None}}
+        body = _stream(base[:6] + [failed])["body"] + b": \xff\n\n" + _stream(base[6:])["body"]
+        reply = {**fixture, "body": body, "chunked": True}
+        captures = {}
+        for label, binary in (
+            ("0.165.1", ORACLE_01651),
+            ("0.439.2", ORACLE_04392),
+            ("Modex", MODEX),
+        ):
+            posts, responses = _observe_turns_with_read_errors(binary, [request], [reply])
+            self.assertEqual(len(posts), 1, label)
+            self.assertEqual(posts[0]["path"], "/anthropic/v1/messages", label)
+            headers = {key.lower(): value for key, value in posts[0]["headers"].items()}
+            self.assertEqual(headers["x-api-key"], "synthetic-provider-key", label)
+            self.assertNotIn("authorization", headers, label)
+            self.assertEqual(len(responses), 1, label)
+            row = responses[0]
+            transfer_encoding = next(
+                (value for name, value in row["headers"].items()
+                 if name.lower() == "transfer-encoding"),
+                None,
+            )
+            captures[label] = (
+                row["status"], row["body_error"], transfer_encoding,
+                _normalized_events(bytes.fromhex(row["body"])),
+            )
+
+        baseline = captures["0.439.2"]
+        self.assertEqual(captures["0.165.1"], baseline)
+        self.assertEqual(baseline[0], 200)
+        self.assertTrue(baseline[1].startswith("TimeoutError:"))
+        self.assertEqual(baseline[2], "chunked")
+        self.assertIsNone(captures["Modex"][1])
+        self.assertEqual(captures["Modex"][0], 200)
+        self.assertEqual(captures["Modex"][2], "chunked")
+        self.assertEqual(captures["Modex"][3], baseline[3])
+        self.assertEqual(
+            [event for event, _ in baseline[3]],
+            ["response.output_item.added", "response.output_item.done", "response.failed"],
+        )
+        failure = baseline[3][-1][1]["response"]["error"]
+        self.assertEqual(failure, {
+            "code": "invalid_anthropic_stream",
+            "message": "content delta type is missing",
+        })
 
     def test_thinking_delta_matches_both_releases_in_and_out_of_order(self):
         message_start = {

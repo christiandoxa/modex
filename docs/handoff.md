@@ -90,8 +90,13 @@ real-process stream comparisons. Selected missing, null, and numeric delta
 types now match the release failure diagnostic and event sequence; active
 search and open result blocks follow the observed ignore precedence. Selected
 closed-result text and post-failure continuation sequences now match both
-releases, including malformed follow-up frames and terminal markers. Other
-malformed stream shapes and invalid UTF-8 after failure remain unverified.
+releases, including malformed follow-up frames and terminal markers. A real
+process probe with an invalid UTF-8 comment after `response.failed` records a
+separate mismatch: both releases leave the downstream chunked body open, while
+Modex closes it with the same events. Most other malformed stream shapes and
+after-failure UTF-8 positions remain unverified. The focused shared-stream
+suite passed 12 tests; the production dependency audit and test census passed.
+See `docs/evidence/anthropic-stream-optional-metadata-shared.md`.
 The integrated stream, model, session and historical mixed-tool suites passed
 40 tests; the worker's separate text and historical stream suite passed 28.
 After the continuation follow-up, the production build and five native checks

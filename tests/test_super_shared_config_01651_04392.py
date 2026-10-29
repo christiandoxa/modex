@@ -91,6 +91,26 @@ class SuperSharedConfigTests(unittest.TestCase):
             self.assertEqual(captures[0][1], captures[1][1])
             self.assertEqual(captures[1][1], captures[2][1])
 
+    def test_omitted_model_and_environment_key_work_together(self):
+        config = 'model = "synthetic-configured-model"\n'
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                result, records, upstream, state = test_super_launch.SuperLaunchTests().run_launch(
+                    binary=binary, scenario="buffered", model=None, api_key=None,
+                    shared_config=config, environment_overrides={"DEEPSEEK_API_KEY": "synthetic-combined-key"},
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(state["config"], config)
+                self.assertEqual(state["leftovers"], [])
+                self.assertEqual(len(upstream), 1)
+                self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
+                headers = {key.lower(): value for key, value in upstream[0]["headers"].items()}
+                self.assertEqual(headers["authorization"], "Bearer synthetic-combined-key")
+                launch = next(row for row in records if row["kind"] == "launch")
+                self.assertNotIn("model", launch["config"])
+                self.assertEqual(launch["catalog"]["models"][0]["slug"], "synthetic-configured-model")
+                self.assertNotIn(b"synthetic-combined-key", result.stdout + result.stderr)
+
     def test_invalid_string_catalog_limits_fail_before_child_or_provider(self):
         cases = (('""', "cannot be empty"), ('"1"', "must be greater than 1"),
                  ('"2 3"', "must not contain whitespace"),

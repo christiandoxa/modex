@@ -1,5 +1,16 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Further admission profiling compared both pinned processes, the current relay,
+and the unmerged aggregate-budget prototype under 246 incomplete heads. With
+six 200 KiB heads held in active workers, the prototype served two healthy
+keep-alive requests but used 0.97 CPU seconds over about two seconds versus
+0.01–0.02 seconds for the releases; the current relay returned neither during
+the sample. The prototype's padded-head RSS increase was about 4.7 MiB above
+its no-padding control, while its accounting charged those six active heads
+only 96 KiB. It remains unmerged: active retained bytes, fairness and CPU need
+correct accounting and measurement before the timing/shutdown matrix can
+qualify it. These are local observations, not full parity evidence.
+
 DeepSeek Super now starts without an explicit `--model` on its supported
 synthetic loopback path. It leaves the child model override absent and uses the
 shared config's string model, or `deepseek-v4-pro`, for the generated catalog.

@@ -39,3 +39,8 @@ rejects all five cases before creating a Codex child or making a provider
 request. The focused header-validation method passed across both releases and
 Modex. Public network, TLS, other release targets, and multi-key rotation remain
 unqualified.
+
+The combined omitted-model and environment-key launch is also checked against
+both releases in `tests/test_super_shared_config_01651_04392.py`: a configured
+model reaches the catalog, no model override is passed to Codex, and one
+synthetic provider request carries the resolved key.

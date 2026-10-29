@@ -11,8 +11,8 @@ preserves the literal `--` boundary while extracting recognized Super options.
 The production Super path now forwards selected `exec` arguments: `--json`,
 `--color` with `auto`, `always` or `never`, `--skip-git-repo-check`,
 `--output-last-message` (including `-o`) and `--output-schema`.
-The last flag is forwarded only when explicitly supplied; it tells Codex to
-skip its Git-repository check.
+`--skip-git-repo-check` is forwarded only when explicitly supplied; it tells
+Codex to skip its Git-repository check.
 The real-process tests compare complete normalized Codex argv and exit status
 against each checksum-verified Linux release, including stdin prompt `-` and
 literal arguments after `--`. Before the change Modex rejected all six tested
@@ -28,6 +28,11 @@ The output-path controls cover separated and attached values, the short `-o`
 form and `-` as a path. Missing values and a following option-looking token
 remain guarded, so they cannot hide an unverified Codex option. The synthetic
 child records argv; it does not write output files or interpret schemas.
+The same production launch now forwards `--ephemeral` and `--image`/`-i`,
+including attached and repeated image arguments. Synthetic-child comparisons
+verify argv against both releases; they do not verify image decoding, provider
+support for images, or actual Codex session persistence. A missing image value
+or separate option-looking value remains guarded.
 This is not complete Super argument, tool, startup or platform parity.
 
 Reproduce after `make build` and `make unit-build UNIT_BUILD_PROGRAMS=codex_argv_child`

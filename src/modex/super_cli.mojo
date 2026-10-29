@@ -259,10 +259,10 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
         var argument = arguments[index]
         if argument == "--":
             return True
-        if argument == "--json" or argument == "--skip-git-repo-check":
+        if argument in ["--json", "--skip-git-repo-check", "--ephemeral"]:
             index += 1
             continue
-        if argument in ["--output-last-message", "--output-schema", "-o"]:
+        if argument in ["--output-last-message", "--output-schema", "-o", "--image", "-i"]:
             if index + 1 >= len(arguments):
                 return False
             var value = arguments[index + 1]
@@ -270,7 +270,7 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
                 return False
             index += 2
             continue
-        if argument.startswith("--output-last-message=") or argument.startswith("--output-schema=") or (argument.startswith("-o") and argument.byte_length() > 2):
+        if argument.startswith("--output-last-message=") or argument.startswith("--output-schema=") or argument.startswith("--image=") or ((argument.startswith("-o") or argument.startswith("-i")) and argument.byte_length() > 2):
             index += 1
             continue
         if argument == "--color":

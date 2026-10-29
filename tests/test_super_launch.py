@@ -285,6 +285,12 @@ def check_safe_exec_flags(test, oracle):
         ("exec", "--output-schema", "schema.json", "synthetic prompt"),
         ("exec", "--output-schema=schema.json", "synthetic prompt"),
         ("exec", "--output-last-message", "-", "synthetic prompt"),
+        ("exec", "--ephemeral", "synthetic prompt"),
+        ("exec", "--image", "synthetic.png", "synthetic prompt"),
+        ("exec", "--image=synthetic.png", "synthetic prompt"),
+        ("exec", "-i", "one.png,two.png", "synthetic prompt"),
+        ("exec", "-ione.png", "synthetic prompt"),
+        ("exec", "-i", "one.png", "--image", "two.png", "synthetic prompt"),
     )
     for arguments in cases:
         with test.subTest(arguments=arguments):

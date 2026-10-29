@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The guarded DeepSeek Super path now forwards explicit Codex `--ephemeral`
+and `--image`/`-i` arguments. Synthetic child argv matches the pinned 0.165.1
+and 0.439.2 releases for separate, attached and repeated image arguments;
+missing values and separate option-looking values remain guarded. The
+production build, native parser, three launch tests, dependency audit and test
+census passed. The child fixture does not establish actual Codex image decoding,
+provider image support or session-persistence behavior. See
+`docs/evidence/baseline-0.165.1/super-exec-output-flags.md`.
+
 Anthropic web-search source projection now matches selected 0.165.1 and
 0.439.2 buffered and streamed responses: entries with string URLs are kept,
 string titles are included, and other entries and fields are ignored. Invalid

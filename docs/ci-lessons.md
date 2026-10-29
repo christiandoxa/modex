@@ -1,5 +1,18 @@
 # CI lessons
 
+Fast run [40809617468](https://github.com/christiandoxa/modex/actions/runs/40809617468)
+on `46b8ba81` failed in two independent jobs. The Linux producer passed the
+policy, dependency and reference helper checks, then refused the missing
+official 0.439.2 tag before build; artifact consumption was skipped. Helper
+shard 0 exposed a stale `focused-python` lookup in
+`test_ci_workflow_shards.py`. The active runner now uses
+`focused-python-active`; `test_ci_build_input_cleanliness.py` had the same stale
+lookup and would fail later in that producer suite. Both assertions were
+updated. The focused workflow/build-input/oracle-routing/reference checks pass
+44 tests, and both helper shards pass 19 and 27 tests in isolated homes. Local
+checks used Python 3.16.0a1 rather than CI's pinned 3.14.10. The required
+oracle gate remains fail-closed; no build or active-oracle comparison passed.
+
 Fast run [40758743188](https://github.com/christiandoxa/modex/actions/runs/40758743188)
 on `10cb584` passed both helper shards, the current-reference checks and 36
 focused relay/parser tests. It then failed acquiring the unavailable required

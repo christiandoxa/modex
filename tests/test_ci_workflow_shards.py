@@ -54,7 +54,7 @@ class FastWorkflowHelperTests(unittest.TestCase):
         local_modules = re.findall(r"test_[A-Za-z0-9_]+\.py", local_helper_line)
         focused_line = next(
             line for line in RUN_FAST.splitlines()
-            if line.startswith("run_logged focused-python ")
+            if line.startswith("run_logged focused-python-active ")
         )
         producer_step_start = WORKFLOW.index("      - name: Run fast CI")
         producer_step_end = WORKFLOW.index("      - name: Package the verified Modex executable")

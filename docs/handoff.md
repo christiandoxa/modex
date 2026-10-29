@@ -40,6 +40,14 @@ production comparisons against the verified 0.439.2 release. The historical
 passed 39 tests; the 71-file dependency audit and 122-module census passed.
 The full suite and non-Linux targets were not rerun for this integration.
 
+Hosted Fast CI run `40809617468` on `46b8ba8` failed in two independent checks.
+Helper shard 0 used a stale `focused-python` label, and the same stale label in
+`test_ci_build_input_cleanliness.py` would fail later in the producer suite.
+Both assertions now match `focused-python-active`; focused checks and both
+helper shards pass locally. The producer still fails closed at the required
+0.439.2 tag check and skips artifact consumption. No hosted success or
+current-oracle revalidation is claimed. See `docs/ci-lessons.md`.
+
 Hosted Fast CI run `40805095414` failed on three 0.165.1 reference-only
 WebSocket handshake timeouts. The same three tests passed locally, including
 with single-CPU affinity; the hosted cause remains unresolved. No hosted CI

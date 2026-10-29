@@ -120,7 +120,9 @@ class BuildInputCleanlinessTests(unittest.TestCase):
         producer_step = "\n".join(workflow_lines[producer_start:producer_end])
         self.assertIn("MODEX_CI_ARTIFACT_PRODUCER: '1'", producer_step)
         self.assertEqual(WORKFLOW.count("MODEX_CI_ARTIFACT_PRODUCER"), 1)
-        python_tests_start = RUN_FAST.index('run_logged focused-python "$PYTHON"')
+        python_tests_start = RUN_FAST.index(
+            'run_logged focused-python-active "$PYTHON"'
+        )
         python_tests_end = RUN_FAST.index("\n", python_tests_start)
         python_tests = RUN_FAST[python_tests_start:python_tests_end]
         self.assertIn("test_ci_build_input_cleanliness.py", python_tests)

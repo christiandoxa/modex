@@ -4247,6 +4247,9 @@ denominator. See
 
 ## Relay large-field dispatch and readiness follow-up (2026-10-30)
 
+The earlier 1 MiB translated-field and 2 MiB + 2 KiB outbound limits in this
+historical section were superseded by the current bounds recorded above.
+
 At that checkpoint, the chat-completions passthrough admitted the tested
 1,048,577-byte `User-Agent` with a 2 MiB field limit and 2 MiB + 2 KiB outbound
 aggregate cap. Both releases and Modex dispatched it, but their captured
@@ -4267,6 +4270,9 @@ test commands and captured request-header details are in
 complete HTTP, fairness, security or six-target parity.
 
 ## Relay chat passthrough header parity follow-up (2026-10-30)
+
+The later translated-route large-field change supersedes the limits and
+remaining 1 MiB + 1-byte mismatch described in this historical section.
 
 Modex `/v1/chat/completions` now matches the tested 0.165.1 and 0.439.2
 upstream request-header behavior: it emits the default `Accept` and

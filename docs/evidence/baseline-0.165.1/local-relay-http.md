@@ -1,5 +1,8 @@
 # Local relay HTTP behavior against 0.165.1
 
+Earlier limit observations are historical; the current translated and
+passthrough header limits are recorded in the final large-field section.
+
 Synthetic Codex and loopback peers exercised the real DeepSeek Super local
 proxy. Selected malformed request lines and headers produce an empty 400; a
 request line with an extra token produces a 502 upstream failure. An exact

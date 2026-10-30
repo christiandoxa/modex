@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The combined production build at `46600f4` passed. Focused Node and `npx`
+precedence, session diagnostics, WebSocket pipeline, endpoint projection,
+Super URL validation, and DeepSeek beta URL controls passed on the preceding
+combined builds. Both native operational-log and Super parser checks passed
+on `46600f4`; the dependency audit, 50-native/155-Python test census, oracle
+routing and workflow validation passed. Full runs on `2e7dcc8` and `dd82b3b`
+predate these changes and do not qualify this revision.
+
 The isolated full `make test` on `2e7dcc8` finished with two failures in
 1,117 Python tests after native checks. Both failures were stale expectations
 for duplicate passthrough `Content-Type` headers; their corrected fixtures and

@@ -207,6 +207,87 @@ class ActiveBaseline01660Tests(unittest.TestCase):
                 self.assertIn(diagnostic, modex.stderr)
                 self.assertEqual(created, [])
 
+    def test_doctor_help_matches_active_release_without_state_changes(self):
+        cases = (
+            (("doctor", "--help"), 0),
+            (("doctor", "-h"), 0),
+            (("doctor", "--quota", "--help"), 0),
+            (("doctor", "--tail-bytes", "12", "--help"), 0),
+            (("doctor", "--tail-bytes=12", "--help"), 0),
+            (("doctor", "--bundle", "--help"), 0),
+            (("doctor", "--bundle=path", "--help"), 0),
+            (("doctor", "--bundle", "path", "--help"), 0),
+            (("doctor", "--bundle=--help", "--help"), 0),
+            (("doctor", "--help", "--bogus"), 0),
+            (("doctor", "--bogus", "--help"), 2),
+            (("doctor", "--tail-bytes=bogus", "--help"), 2),
+            (("doctor", "--tail-bytes", "bogus", "--help"), 2),
+            (("doctor", "--tail-bytes", "--help"), 2),
+            (("doctor", "--tail-bytes=--help"), 2),
+            (("doctor", "--tail-bytes", "--", "--help"), 2),
+            (("doctor", "--bundle", "-", "--help"), 0),
+            (("doctor", "--bundle=", "--help"), 2),
+            (("doctor", "--bundle", "", "--help"), 2),
+            (("doctor", "--quota", "--quota", "--help"), 2),
+            (("doctor", "--tail-bytes", "12", "--tail-bytes", "13", "--help"), 2),
+            (("doctor", "--bundle", "one", "--bundle", "two", "--help"), 2),
+            (("doctor", "--quota=yes", "--help"), 2),
+            (("doctor", "--", "--help"), 2),
+            (("doctor", "--", "--quota", "--help"), 2),
+            (("doctor", "--quota", "--", "--help"), 2),
+        )
+        for arguments, expected_status in cases:
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_super_cli(ORACLE, arguments, "prodex")
+                modex, modex_created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual((baseline.returncode, modex.returncode), (expected_status, expected_status))
+                self.assertEqual(
+                    (modex.stdout, modex.stderr),
+                    (normalize_super_cli_executable(baseline.stdout),
+                     normalize_super_cli_executable(baseline.stderr)),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_doctor_invalid_arguments_match_release_without_help(self):
+        cases = (
+            ("--json",),
+            ("--suggest-policy",),
+            ("--bundle",),
+            ("--redacted",),
+            ("--json", "--redacted"),
+            ("--runtime", "--json", "--bundle"),
+            ("--tail-bytes",),
+            ("--tail-bytes=bogus",),
+            ("--bundle=",),
+            ("--bundle", ""),
+        )
+        for options in cases:
+            arguments = ("doctor", *options)
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_super_cli(ORACLE, arguments, "prodex")
+                modex, modex_created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual((baseline.returncode, modex.returncode), (2, 2))
+                self.assertEqual(
+                    (modex.stdout, modex.stderr),
+                    (normalize_super_cli_executable(baseline.stdout),
+                     normalize_super_cli_executable(baseline.stderr)),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_doctor_execution_stays_guarded_without_help(self):
+        for arguments in (
+            ("doctor",),
+            ("doctor", "--quota"),
+            ("doctor", "--runtime", "--json"),
+        ):
+            with self.subTest(arguments=arguments):
+                modex, created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (1, b"", b"Error: this Modex development build has not implemented the requested command\n"),
+                )
+                self.assertEqual(created, [])
+
     def test_exec_model_help_records_the_guarded_runtime_boundary(self):
         # An empty HOME, cleared sandbox environment, and isolated network keep this probe offline.
         arguments = ("super", "exec", "--model", "--help")

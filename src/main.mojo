@@ -162,7 +162,7 @@ def main():
         var executable_parts = args[0].split("/")
         print(root_help(String(executable_parts[len(executable_parts) - 1])), end="")
         return
-    if len(args) >= 2 and (args[1] == "current" or args[1] == "info" or args[1] == "status"):
+    if len(args) >= 2 and (args[1] == "current" or args[1] == "info" or args[1] == "status" or args[1] == "doctor"):
         var parts = args[0].split("/")
         var executable = String(parts[len(parts) - 1])
         try:

@@ -376,9 +376,13 @@ class LocalRewriteTests(unittest.TestCase):
     def assert_stream_matches_fixture(self, actual, expected, fixture_request_id):
         actual_ids = set(re.findall(rb"msg_deepseek_[0-9]+", actual))
         expected_id = f"msg_deepseek_{fixture_request_id}".encode()
-        self.assertEqual(actual_ids, {b"msg_deepseek_1"})
+        self.assertEqual(len(actual_ids), 1)
+        actual_id = next(iter(actual_ids))
+        actual_value = int(actual_id.removeprefix(b"msg_deepseek_"))
+        self.assertLessEqual(actual_value, 0xFFFFFFFFFFFFFFFF)
+        self.assertEqual(actual_value & 0xFFFFFFFF, fixture_request_id & 0xFFFFFFFF)
         self.assertIn(expected_id, expected)
-        actual = actual.replace(b"msg_deepseek_1", b"msg_deepseek_REQUEST_ID")
+        actual = re.sub(rb"msg_deepseek_[0-9]+", b"msg_deepseek_REQUEST_ID", actual)
         expected = expected.replace(expected_id, b"msg_deepseek_REQUEST_ID")
         self.assertEqual(actual, expected)
 

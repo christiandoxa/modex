@@ -67,6 +67,13 @@ comparisons cover flat and nested effort, tool choice, continuation, and other
 effort controls. The historical comparison records the 0.439.2 divergence.
 These cases do not establish broader DeepSeek parity.
 
+DeepSeek streamed text-item IDs now combine a UUIDv7-derived prefix with the
+local sequence, matching the tested 0.166.0 decimal ID shape and low 32-bit
+sequence. Modex's prefix differs from the release's hash and can collide; the
+comparison covers selected request and event consistency, not exact random
+values or global uniqueness. See
+`docs/evidence/baseline-0.166.0/deepseek-stream-item-ids.md`.
+
 The official historical 0.439.2 tag currently resolves to no ref and its
 SHA256SUMS URL returned 404 on 2026-10-30. Previously verified local bytes
 remain available, but fresh hosted runners cannot acquire that historical
@@ -125,8 +132,11 @@ A third full run starts from exact commit
 `/tmp/modex-01660-full-b04873c`, with a cleared environment, private HOME and
 temporary directory, and explicit active and historical oracle paths. Its log
 is `/tmp/modex-01660-full-b04873c.log` (launcher PID 1751677). It is still
-running and is not a pass. The suite runs against that fixed snapshot, not any
-later changes.
+running and is not a pass. It has reported a failure in
+`test_parent_eof_cancels_failed_open_stream_with_truncated_pipeline_body`;
+the same test passed when rerun alone under the same isolated HOME and oracle
+paths. The full run has not printed its failure traceback yet, so the cause
+is unresolved. The suite runs against that fixed snapshot, not later changes.
 
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing

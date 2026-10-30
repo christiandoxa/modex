@@ -108,6 +108,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_active_baseline_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_gateway_default_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_deepseek_reasoning_01660.py", script[active_suite:script.index("\n", active_suite)])
+        self.assertIn("test_deepseek_stream_ids_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_policy_capacity_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_runtime_broker_startup_01660_oracle.py", script[active_suite:script.index("\n", active_suite)])
         historical_04392_tests = script[historical_04392_suite:script.index("\n", historical_04392_suite)]
@@ -177,6 +178,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_active_baseline_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_gateway_default_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_deepseek_reasoning_01660.py", script[active_suite:script.index("\n", active_suite)])
+        self.assertIn("test_deepseek_stream_ids_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_policy_capacity_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_runtime_broker_startup_01660_oracle.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_app_server_rpc_04392.py", script[historical_04392_suite:script.index("\n", historical_04392_suite)])

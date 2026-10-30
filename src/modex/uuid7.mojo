@@ -38,6 +38,25 @@ def new_uuid7() raises -> String:
     return uuid7_from_parts(UInt64(nanoseconds // 1_000_000), Span(random))
 
 
+def uuid7_suffix_u32(identifier: String) raises -> UInt64:
+    if identifier.byte_length() != 36:
+        raise Error("UUIDv7 string has invalid length")
+    var value: UInt64 = 0
+    for byte in String(identifier[byte=28:]).as_bytes():
+        var code = Int(byte)
+        var digit = -1
+        if 48 <= code <= 57:
+            digit = code - 48
+        elif 65 <= code <= 70:
+            digit = code - 55
+        elif 97 <= code <= 102:
+            digit = code - 87
+        if digit < 0:
+            raise Error("UUIDv7 string has invalid suffix")
+        value = (value << UInt64(4)) | UInt64(digit)
+    return value
+
+
 def _hex_byte(value: UInt8) -> String:
     return _hex_digit(Int(value >> 4)) + _hex_digit(Int(value & 15))
 

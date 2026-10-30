@@ -1,7 +1,7 @@
 from std.collections import List
 from std.testing import assert_equal, assert_false, assert_true
 
-from modex.uuid7 import new_uuid7, uuid7_from_parts
+from modex.uuid7 import new_uuid7, uuid7_from_parts, uuid7_suffix_u32
 
 
 def main() raises:
@@ -20,6 +20,20 @@ def main() raises:
     random[15] = 0x8F
     # RFC 9562 Appendix A.6 supplies the independent timestamp and output vector.
     assert_equal(uuid7_from_parts(1645557742000, random), "017f22e2-79b0-7cc3-98c4-dc0c0c07398f")
+    assert_equal(uuid7_suffix_u32("017f22e2-79b0-7cc3-98c4-dc0c0c07398f"), UInt64(0x0C07398F))
+    assert_equal(uuid7_suffix_u32("ffffffff-ffff-7fff-bfff-ffffffffffff"), UInt64(0xFFFFFFFF))
+    var invalid_suffix = False
+    try:
+        _ = uuid7_suffix_u32("not-a-uuid")
+    except error:
+        invalid_suffix = String(error) == "UUIDv7 string has invalid length"
+    assert_true(invalid_suffix)
+    invalid_suffix = False
+    try:
+        _ = uuid7_suffix_u32("00000000-0000-7000-8000-00000000000z")
+    except error:
+        invalid_suffix = String(error) == "UUIDv7 string has invalid suffix"
+    assert_true(invalid_suffix)
 
     var extremes = List[UInt8](length=16, fill=0)
     assert_equal(uuid7_from_parts(0, extremes), "00000000-0000-7000-8000-000000000000")

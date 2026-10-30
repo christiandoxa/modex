@@ -6,7 +6,12 @@ import subprocess
 import tempfile
 import unittest
 
-from test_active_baseline_01660 import MODEX, ORACLE, ORACLE_SHA256
+from test_active_baseline_01660 import (
+    MODEX,
+    ORACLE,
+    ORACLE_SHA256,
+    normalize_super_cli_executable,
+)
 from session_oracle import sandbox_command
 
 
@@ -53,8 +58,8 @@ class SuperCli01660Tests(unittest.TestCase):
             with self.subTest(arguments=arguments):
                 baseline, baseline_mutated = isolated_run(ORACLE, arguments)
                 modex, modex_mutated = isolated_run(MODEX, arguments)
-                expected_error = baseline.stderr.replace(
-                    b"use prodex s gemini", b"use modex s gemini", 1
+                expected_error = normalize_super_cli_executable(baseline.stderr).replace(
+                    b"use prodex s", b"use modex s", 1
                 )
                 self.assertEqual((baseline.returncode, baseline.stdout), (1, b""))
                 self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
@@ -65,30 +70,35 @@ class SuperCli01660Tests(unittest.TestCase):
                 self.assertFalse(baseline_mutated)
                 self.assertFalse(modex_mutated)
 
-    def test_other_invalid_combinations_precede_the_agy_guard(self):
+    def test_conflicts_and_missing_requirements_match_active_baseline(self):
         cases = (
-            (("super", "--cli", "agy", "--sub-agent", "--no-sub-agent"),
-             b"cannot be used with", b"--sub-agent conflicts with --no-sub-agent", 2),
-            (("super", "--cli", "agy", "--provider", "deepseek", "--url", "http://127.0.0.1:8131"),
-             b"cannot be used with '--url", b"--provider conflicts with --url", 2),
-            (("super", "--cli", "agy", "--provider", "deepseek", "--no-presidio", "--require-tool", "presidio"),
-             b"--no-presidio conflicts with --require-tool presidio",
-             b"--no-presidio conflicts with --require-tool presidio", 1),
-            (("super", "--cli", "agy", "--api-key", "synthetic-key"),
-             b"required arguments were not provided", b"--api-key requires --provider", 2),
-            (("super", "--cli", "agy", "--context-window", "1024"),
-             b"required arguments were not provided", b"context-window options require --provider or --url", 2),
+            (("super", "--cli", "agy", "--sub-agent", "--no-sub-agent"), 2),
+            (("super", "--cli", "agy", "--no-sub-agent", "--sub-agent"), 2),
+            (("super", "--sub-agent", "--no-sub-agent"), 2),
+            (("super", "--cli", "agy", "--provider", "deepseek", "--url", "http://127.0.0.1:8131"), 2),
+            (("super", "--cli", "agy", "--url", "http://127.0.0.1:8131", "--provider", "deepseek"), 2),
+            (("super", "--provider", "deepseek", "--url", "http://127.0.0.1:8131"), 2),
+            (("super", "--url", "http://127.0.0.1:8131", "--provider", "deepseek"), 2),
+            (("super", "--cli", "agy", "--provider", "deepseek", "--url", "http://127.0.0.1:8131", "--api-key", "synthetic-key"), 2),
+            (("super", "--cli", "agy", "--provider", "deepseek", "--no-presidio", "--require-tool", "presidio"), 1),
+            (("super", "--cli", "agy", "--api-key", "synthetic-key"), 2),
+            (("super", "--api-key", "synthetic-key"), 2),
+            (("super", "--cli", "agy", "--context-window", "1024"), 2),
+            (("super", "--context-window", "1024"), 2),
+            (("super", "--cli", "agy", "--auto-compact-token-limit", "512"), 2),
+            (("super", "--auto-compact-token-limit", "512"), 2),
+            (("super", "--cli", "agy", "--api-key", "synthetic-key", "--context-window", "1024"), 2),
+            (("super", "--cli", "agy", "--context-window", "1024", "--api-key", "synthetic-key"), 2),
+            (("super", "--api-key", "synthetic-key", "--context-window", "1024"), 2),
         )
-        guard_error = b"--cli agy requires --provider gemini"
-        for arguments, baseline_marker, modex_marker, baseline_exit in cases:
+        for arguments, expected_exit in cases:
             with self.subTest(arguments=arguments):
                 baseline, _ = isolated_run(ORACLE, arguments)
                 modex, _ = isolated_run(MODEX, arguments)
-                self.assertEqual(baseline.returncode, baseline_exit)
-                self.assertIn(baseline_marker, baseline.stderr)
-                self.assertEqual(modex.returncode, 1)
-                self.assertIn(modex_marker, modex.stderr)
-                self.assertNotIn(guard_error, modex.stderr)
+                expected_error = normalize_super_cli_executable(baseline.stderr)
+                self.assertEqual(baseline.returncode, expected_exit)
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (baseline.returncode, baseline.stdout, expected_error))
 
     def test_invalid_provider_and_url_still_precede_the_agy_guard(self):
         cases = (
@@ -115,6 +125,50 @@ class SuperCli01660Tests(unittest.TestCase):
         self.assertIn(b"Super startup is not implemented", modex.stderr)
         self.assertNotIn(b"--cli agy requires --provider gemini", modex.stderr)
         self.assertFalse(modex_mutated)
+
+    def test_positional_exec_constraints_match_active_baseline(self):
+        cases = (
+            (("super", "exec", "--sub-agent", "--no-sub-agent"), 1),
+            (("super", "exec", "--no-sub-agent", "--sub-agent"), 1),
+            (("super", "exec", "--provider", "deepseek", "--url", "http://127.0.0.1:8131"), 1),
+            (("super", "exec", "--url", "http://127.0.0.1:8131", "--provider", "deepseek"), 1),
+            (("super", "exec", "--api-key", "synthetic-key"), 1),
+            (("super", "exec", "--context-window", "1024"), 1),
+            (("super", "exec", "--auto-compact-token-limit", "512"), 1),
+            (("super", "--cli", "agy", "exec", "--api-key", "synthetic-key"), 1),
+            (("super", "--api-key", "synthetic-key", "exec", "--cli", "agy"), 2),
+            (("super", "--api-key", "synthetic-key", "exec", "--context-window", "1024"), 2),
+            (("super", "--context-window", "1024", "exec", "--api-key", "synthetic-key"), 2),
+        )
+        for arguments, expected_exit in cases:
+            with self.subTest(arguments=arguments):
+                baseline, _ = isolated_run(ORACLE, arguments)
+                modex, _ = isolated_run(MODEX, arguments)
+                expected_error = normalize_super_cli_executable(baseline.stderr).replace(
+                    b"use prodex s", b"use modex s", 1
+                )
+                self.assertEqual(baseline.returncode, expected_exit)
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (baseline.returncode, baseline.stdout, expected_error))
+
+    def test_help_precedence_with_positional_exec(self):
+        cases = (
+            ("super", "--help", "--api-key", "synthetic-key"),
+            ("super", "--api-key", "synthetic-key", "--help"),
+            ("super", "--help", "exec", "--cli", "agy"),
+            ("super", "exec", "--help", "--cli", "agy"),
+            ("super", "exec", "--cli", "agy", "--help"),
+        )
+        for arguments in cases:
+            with self.subTest(arguments=arguments):
+                baseline, _ = isolated_run(ORACLE, arguments)
+                modex, _ = isolated_run(MODEX, arguments)
+                expected_stdout = normalize_super_cli_executable(baseline.stdout)
+                expected_stderr = normalize_super_cli_executable(baseline.stderr).replace(
+                    b"use prodex s", b"use modex s", 1
+                )
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (baseline.returncode, expected_stdout, expected_stderr))
 
 
 if __name__ == "__main__":

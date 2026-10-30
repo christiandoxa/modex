@@ -329,6 +329,7 @@ def parse_super_arguments(args: List[String], executable: String) raises -> Supe
     # shortcut: full clap diagnostics and value normalization remain incomplete; finish them before widening the guarded Super launch.
     var options = SuperOptions([], [], [], False)
     var positional = False
+    var pre_positional_option_count = -1
     var index = 2
     while index < len(args):
         var argument = args[index]
@@ -349,6 +350,8 @@ def parse_super_arguments(args: List[String], executable: String) raises -> Supe
         var takes_value = _value_option(name)
         var switch = _switch_option(name)
         if not takes_value and not switch:
+            if not positional:
+                pre_positional_option_count = len(options.names)
             positional = True
             options.codex_args.append(argument)
             index += 1
@@ -389,7 +392,74 @@ def parse_super_arguments(args: List[String], executable: String) raises -> Supe
             options.names.append(name)
             options.values.append(value)
         index += 1
+    if pre_positional_option_count < 0:
+        pre_positional_option_count = len(options.names)
+    var parsed_options = SuperOptions([], [], [], False)
+    for option_index in range(pre_positional_option_count):
+        parsed_options.names.append(options.names[option_index])
+        parsed_options.values.append(options.values[option_index])
+    var has_codex_args = False
+    if options.codex_args:
+        has_codex_args = True
+    _validate_super_argument_constraints(parsed_options, executable, has_codex_args)
     return options^
+
+
+def _clap_super_conflict(options: SuperOptions, left: String, right: String, executable: String, has_codex_args: Bool) -> Error:
+    var first = String()
+    var second = String()
+    for name in options.names:
+        if name == left or name == right:
+            first = name
+            second = String(right if name == left else left)
+            break
+    var usage = executable + " super"
+    for name in options.names:
+        if name != second:
+            usage += " " + _value_label(name)
+    if has_codex_args:
+        usage += " <CODEX_ARG>..."
+    else:
+        usage += " [CODEX_ARG]..."
+    return session_cli_error(
+        "the argument '" + _value_label(first) + "' cannot be used with '" + _value_label(second) + "'",
+        usage,
+    )
+
+
+def _validate_super_argument_constraints(options: SuperOptions, executable: String, has_codex_args: Bool) raises:
+    if options.has("--sub-agent") and options.has("--no-sub-agent"):
+        raise _clap_super_conflict(options, "--sub-agent", "--no-sub-agent", executable, has_codex_args)
+    if options.has("--provider") and options.has("--url"):
+        raise _clap_super_conflict(options, "--provider", "--url", executable, has_codex_args)
+
+    var missing = List[String]()
+    var requires_provider = options.has("--api-key") and not options.has("--provider")
+    var requires_provider_or_url = (
+        (options.has("--context-window") or options.has("--auto-compact-token-limit"))
+        and not options.has("--provider") and not options.has("--url")
+    )
+    requires_provider = requires_provider and not requires_provider_or_url
+    if requires_provider:
+        missing.append("--provider <PROVIDER>")
+    if requires_provider_or_url:
+        missing.append("<--provider <PROVIDER>|--url <URL>>")
+    if missing:
+        var usage = executable + " super"
+        if requires_provider:
+            usage += " --provider <PROVIDER>"
+        for name in options.names:
+            usage += " " + _value_label(name)
+        if requires_provider_or_url:
+            usage += " <--provider <PROVIDER>|--url <URL>>"
+        if has_codex_args:
+            usage += " <CODEX_ARG>..."
+        else:
+            usage += " [CODEX_ARG]..."
+        raise session_cli_error(
+            "the following required arguments were not provided:\n  " + "\n  ".join(missing),
+            usage,
+        )
 
 
 def validate_super_options(options: SuperOptions) raises:

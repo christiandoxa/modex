@@ -60,8 +60,10 @@ invalid separated/attached values and help precedence. A native test covers
 execution remains unimplemented.
 For `--cli agy`, selected missing or non-Gemini providers now receive the
 0.166.0 provider guard after existing option validation. Isolated comparisons
-cover four launch forms and selected error-precedence controls. Other conflict
-diagnostics differ, and the valid Gemini launcher remains unimplemented; see
+cover four launch forms and selected error-precedence controls. Shared Super
+parsing now also matches selected 0.166.0 conflict and required-option
+diagnostics before and after `exec`. Other combinations remain unqualified,
+and the valid Gemini launcher remains unimplemented; see
 `tests/test_super_cli_01660.py`.
 Plain provider URL validation runs after help parsing but still before startup;
 see `docs/evidence/baseline-0.166.0/super-cli-validation.md` for the parser
@@ -2470,13 +2472,13 @@ passed in run [40748971666](https://github.com/christiandoxa/modex/actions/runs/
 on `cfa0dad` before the later push canceled its producer job.
 
 Fast run [40753656126](https://github.com/christiandoxa/modex/actions/runs/40753656126)
-on `483bcf1` passed helper shards, build, native units and current-target tests,
+on `483bcf1` passed helper shards, build, native units and then-target tests,
 then failed on the unavailable required 0.439.2 oracle. Artifact consumption was
 skipped; see `docs/ci-lessons.md`.
 
 Fast run [40751613083](https://github.com/christiandoxa/modex/actions/runs/40751613083)
 on `12b7392` passed both helper shards, production build, native units and
-current-target tests, then failed at the unavailable mandatory 0.439.2 oracle.
+then-target tests, then failed at the unavailable mandatory 0.439.2 oracle.
 The artifact consumer was skipped. See `docs/ci-lessons.md`.
 
 Fast run [40749854285](https://github.com/christiandoxa/modex/actions/runs/40749854285)
@@ -4913,8 +4915,8 @@ native Anthropic search mapping like pinned releases 0.165.1 and 0.439.2.
 Unknown options fall back to Chat Completions only in auto mode, while forced
 Anthropic mode rejects before dispatch. `parallel_tool_calls=true` is accepted
 and omitted from the provider request. Stale 0.439.2 assertions for untyped
-roles and typed text content now compare the active release process and Modex;
-the active CI lane no longer depends on the 0.165.1 oracle before acquisition.
+roles and typed text content then compared the historical 0.439.2 process and Modex;
+the CI lane at that checkpoint did not depend on 0.165.1 before acquisition.
 The focused 75-process-test and 35-request/transport-test runs passed after the
 production build; the 71-file dependency audit and 50-native/135-Python test
 census passed. Broader Anthropic parity and the other release targets remain

@@ -30,6 +30,17 @@ address that path. `make ci-parity` is expected to fail until parity is complete
 The original `make build`, `make unit`, and `make test` entrypoints remain
 available. Set `PYTHON` when the required interpreter is not `python3`.
 
+Fast and Full CI schedule the active 0.166.0 local-relay WebSocket fallback
+comparison through `scripts/ci/run_websocket_fallback_01660.py`. The sandbox
+test module runs in both lanes, and CI does not exclude this regression. The
+runner uses bubblewrap with private tmpfs `/tmp` and explicit read-only binds
+for required inputs below host `/tmp`, so those layouts are supported alongside
+ordinary worktree paths. `tests/test_ci_websocket_fallback_sandbox.py` checks
+both layouts and runs the real pinned-oracle comparison. Current local
+validation and its Linux x86-64 scope are documented in
+`docs/evidence/baseline-0.166.0/websocket-fallback-ci-sandbox.md`; no hosted run
+has validated the change yet.
+
 The reference helper obtains the frozen 0.166.0 active release and the
 explicitly historical source snapshots outside the repository, verifies release and
 source identities, and accepts `MODEX_REFERENCE_CACHE` for its cache location.

@@ -55,6 +55,7 @@ echo 'active reference oracle: PASS' | tee -a "$EVIDENCE_DIR/summary.txt"
 export PRODEX_ORACLE="$(cat "$EVIDENCE_DIR/oracle-path-active.txt")"
 export PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE"
 rm -- "$EVIDENCE_DIR/oracle-path-active.txt"
+run_logged websocket-fallback-sandbox "$PYTHON" scripts/ci/run-unittest.py test_ci_websocket_fallback_sandbox.py
 if ! "$PYTHON" scripts/ci/reference.py source active >"$EVIDENCE_DIR/reference-source-active.txt" 2>"$EVIDENCE_DIR/reference-source-active.log"; then
     cat "$EVIDENCE_DIR/reference-source-active.log" >&2
     exit 1

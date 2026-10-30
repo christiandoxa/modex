@@ -9,6 +9,18 @@ oracles were unavailable; their dependent lanes were blocked and the 0.439.2
 source lane was skipped. Neither historical lane is counted as passed. This is
 evidence for the recorded commit, not full CI or parity qualification.
 
+The active 0.166.0 local-rewrite WebSocket fallback comparison is now
+scheduled by Fast and Full CI in a required bubblewrap network namespace. The
+wrapper keeps a private tmpfs `/tmp`, clears the child environment, assigns private
+HOME/XDG paths, and mounts workspace, binary, oracle, Python runtime and Mojo
+toolchain inputs read-only. Inputs below host `/tmp` are rebound explicitly;
+the manual preflight rejects writable `/tmp` search paths and scratch-path
+overlap. Its dedicated CI tests cover the real checksum-verified oracle
+comparison plus synthetic `/tmp` and normal host-path layouts. Local build,
+three focused tests, shell/workflow validation and the test census passed; no
+hosted run has validated this change yet. Details are in
+`docs/evidence/baseline-0.166.0/websocket-fallback-ci-sandbox.md`.
+
 DeepSeek Super now percent-encodes ASCII spaces in numeric-loopback upstream
 path segments, matching the verified 0.166.0 process for synthetic paths.
 Authority whitespace, C0/DEL controls, credentials and non-loopback destinations
@@ -71,18 +83,23 @@ not a full parity or full CI verdict.
 
 The local relay keeps an HTTP/1.x connection reusable after a 426 WebSocket
 fallback only when the request was fully captured with unambiguous fixed-length
-framing and no duplicate Connection or Upgrade fields. Manual active 0.166.0
-process comparisons cover contiguous and fragmented bodies, explicit
+framing and no duplicate Connection or Upgrade fields. An active 0.166.0
+process comparison covers contiguous and fragmented bodies, explicit
 zero-length bodies, a first request with `Connection: keep-alive`, an
 unauthorized follow-up, conflicting framing, and a truncated body. Modex
 separately rejects an unauthorized second request with 401 and closes on
 ambiguous framing; the oracle accepts those follow-ups, so those controls
-remain security-preserving differences. The probe is outside automatic test
-discovery and fast/full CI. Its preflight fails unless the private tmpfs and
-loopback-only network namespace are verified. Host `/tmp` path preservation for
-Python and the oracle is still unverified, so automation remains out. This does
-not implement WebSocket transport or qualify other targets. See
-`docs/evidence/baseline-0.166.0/local-relay-websocket-fallback.md`.
+remain security-preserving differences. The 2026-10-30 manual run was outside
+automatic discovery and Fast/Full CI. Its preflight required private tmpfs and
+loopback-only networking, and it could not preserve Python or oracle inputs
+below host `/tmp`; direct host invocation failed before comparison. That setup
+is historical. Fast and Full CI now schedule the real-oracle comparison through
+the bubblewrap runner, which supports host `/tmp` inputs with explicit
+read-only binds. CI does not exclude the regression. Local checks passed, but
+hosted CI has not validated the change yet. This does not implement WebSocket
+transport or qualify other targets. See
+`docs/evidence/baseline-0.166.0/local-relay-websocket-fallback.md` and
+`docs/evidence/baseline-0.166.0/websocket-fallback-ci-sandbox.md`.
 
 Selected DeepSeek and Anthropic stream ordering cases now have active 0.166.0
 process comparisons, including partial errors and search-mode configuration.

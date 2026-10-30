@@ -39,17 +39,35 @@ Linux x86-64 cases only.
 The historical 0.439.2 oracle was unavailable during validation, and other
 release targets remain unqualified.
 
-This is a manual namespace regression and is excluded from automatic test
-discovery and the fast/full CI lists. Its preflight verifies a rootless
-user/mount/network namespace, a private tmpfs `/tmp`, loopback as the only
-interface, and no default route. Direct host invocation fails before the
-comparison. The test checks that the mounted workspace, Modex binary, oracle,
-and Python remain visible outside private `/tmp`. Bind the workspace before
-replacing `/tmp`. The Python executable and oracle must be available outside
-host `/tmp`; preserving those paths from host `/tmp` has not been implemented,
-so the test fails closed if either is hidden.
+## CI sandbox execution (2026-10-31)
 
-Reproduce after `make build` with:
+Fast and Full CI now schedule this active 0.166.0 comparison through
+`scripts/ci/run_websocket_fallback_01660.py`. Both CI scripts run
+`tests/test_ci_websocket_fallback_sandbox.py`; its real-oracle case launches
+the comparison in bubblewrap with a private tmpfs `/tmp`, isolated networking,
+and a cleared environment. CI does not exclude this regression from either
+lane.
+
+The runner restores required host inputs below `/tmp` at their original paths
+with explicit read-only binds after mounting the private tmpfs. It supports
+both `/tmp` and non-`/tmp` input layouts. The dedicated sandbox tests exercise
+these layouts and reject inputs overlapping writable scratch. Local evidence
+and scope limits are recorded in
+`docs/evidence/baseline-0.166.0/websocket-fallback-ci-sandbox.md`. No hosted CI
+run has validated this change yet; evidence remains limited to Linux x86-64.
+
+## Historical manual validation (2026-10-30)
+
+At the time of this run, the probe was manual-only and excluded from automatic
+test discovery and the Fast/Full CI lists. Its namespace preflight required a
+rootless user/mount/network namespace, private tmpfs `/tmp`, loopback as the
+only interface, and no default route. The old setup did not preserve required
+inputs below host `/tmp`; it required them outside `/tmp` and failed closed if
+they were hidden. Direct host invocation failed at the namespace preflight
+before either product started. This old reproduction no longer describes the
+current CI runner.
+
+The historical reproduction after `make build` was:
 
 ```sh
 unshare -Urnm /bin/sh -c '
@@ -70,11 +88,11 @@ unshare -Urnm /bin/sh -c '
 '
 ```
 
-Export `PRODEX_ORACLE` as the checksum-verified 0.166.0 oracle path and `PYTHON`
-as a host interpreter path before running. The active automated lane does not
-run this namespace comparison.
+This historical command required `PRODEX_ORACLE` to name the checksum-verified
+0.166.0 oracle and `PYTHON` to name the host interpreter before execution.
 
-Manual validation passed on Linux x86-64: one active-oracle comparison test in
-5.107 seconds. Direct host invocation failed at the namespace preflight before
-starting either product. The 21 CI-oracle-routing tests passed after removing
-the manual probe from the active lists. This does not qualify other targets.
+The historical manual validation passed on Linux x86-64: one active-oracle
+comparison test in 5.107 seconds. Direct host invocation failed before
+comparison. The 21 CI-oracle-routing tests passed after the probe was removed
+from the active lists. These results describe the 2026-10-30 setup; they do not
+describe current CI routing or qualify other targets.

@@ -1,7 +1,9 @@
 """Manually compare WebSocket fallback connection reuse with active Prodex 0.166.0."""
 
 import hashlib
+import os
 from pathlib import Path
+import re
 import sys
 import threading
 import unittest
@@ -16,21 +18,69 @@ ORACLE = active.ORACLE
 ORACLE_SHA256 = active.ORACLE_SHA256
 
 
+def _mount_entries():
+    entries = []
+    for line in Path("/proc/self/mountinfo").read_text().splitlines():
+        fields, details = line.split(" - ", 1)
+        fields = fields.split()
+        mountpoint = re.sub(
+            r"\\([0-7]{3})",
+            lambda match: chr(int(match.group(1), 8)),
+            fields[4],
+        )
+        entries.append((Path(mountpoint), set(fields[5].split(",")), details.split()[0]))
+    return entries
+
+
+def _require_readonly_input(label, path, entries):
+    lexical = Path(os.path.abspath(os.fspath(path)))
+    private_tmp = Path("/tmp")
+    if lexical == private_tmp:
+        raise AssertionError(f"{label} cannot use writable private /tmp directly")
+    matches = [
+        entry for entry in entries
+        if lexical == entry[0] or lexical.is_relative_to(entry[0])
+    ]
+    if not matches:
+        raise AssertionError(f"{label} is not mounted read-only: {lexical}")
+    mountpoint, options, _ = max(matches, key=lambda entry: len(entry[0].parts))
+    if (
+        lexical.is_relative_to(private_tmp)
+        and mountpoint == private_tmp
+    ) or "ro" not in options:
+        raise AssertionError(
+            f"{label} must be covered by a read-only mount: {lexical}"
+        )
+
+
 class LocalRewriteWebSocketFallback01660Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         require_isolated_environment()
-        private_tmp = Path("/tmp").resolve()
-        for label, path in (
+        inputs = [
             ("workspace", active.ROOT),
             ("Modex", MODEX),
             ("Prodex oracle", ORACLE),
             ("Python", Path(sys.executable)),
-        ):
-            if path.resolve().is_relative_to(private_tmp):
-                raise AssertionError(
-                    f"{label} must be mounted outside private /tmp: {path}"
-                )
+            ("Python prefix", Path(sys.prefix)),
+            ("Python base prefix", Path(sys.base_prefix)),
+            ("Python exec prefix", Path(sys.exec_prefix)),
+            ("Python base exec prefix", Path(sys.base_exec_prefix)),
+        ]
+        inputs.extend(
+            ("Python import path", Path(path))
+            for path in sys.path
+            if path and Path(path).exists()
+        )
+        toolchain_value = os.environ.get("MODEX_TOOLCHAIN_DIR")
+        if toolchain_value:
+            toolchain = Path(toolchain_value)
+            if not toolchain.is_dir():
+                raise AssertionError(f"MODEX_TOOLCHAIN_DIR is missing: {toolchain}")
+            inputs.append(("Mojo toolchain", toolchain))
+        entries = _mount_entries()
+        for label, path in inputs:
+            _require_readonly_input(label, path, entries)
         if not ORACLE.is_file():
             raise AssertionError(f"Pinned Prodex 0.166.0 oracle is missing: {ORACLE}")
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:

@@ -224,6 +224,14 @@ def _valid_http_url(value: String) -> Bool:
     return authority.find("@") < 0 and valid_url_authority(authority)
 
 
+def _known_optional_tool(value: String) -> Bool:
+    var tool = ascii_lower(trim_text(value))
+    return tool in [
+        "caveman", "rtk", "codebase-memory-mcp", "codebase-memory", "cbm",
+        "playwright", "playwright-mcp", "ponytail", "presidio",
+    ]
+
+
 def _provider(value: String, clap_diagnostic: Bool) raises -> String:
     var provider = trim_text(value).lower()
     if provider == "claude": provider = "anthropic"
@@ -238,8 +246,14 @@ def _provider(value: String, clap_diagnostic: Bool) raises -> String:
 
 def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -> String:
     if name == "--provider": return _provider(value, clap_diagnostic)
-    if name in ["--base-url", "--sub-agent-url", "--url"] and not _valid_http_url(value):
-        raise Error("invalid " + name + ": expected an absolute http(s) URL with host and no credentials, query, or fragment")
+    if name == "--sub-agent-url" and not _valid_http_url(value):
+        raise _typed_value_error(
+            name, value,
+            "invalid " + name + ": expected an absolute http(s) URL with host and no credentials, query, or fragment",
+            clap_diagnostic,
+        )
+    if (name == "--tool" or name == "--require-tool") and not _known_optional_tool(value):
+        raise _typed_value_error(name, value, "unknown optional tool " + value, clap_diagnostic)
     if name == "--sub-agent-max-concurrency":
         var parsed_value = trim_text(value)
         if parsed_value == "default": return parsed_value^
@@ -368,6 +382,9 @@ def parse_super_arguments(args: List[String], executable: String) raises -> Supe
 
 
 def validate_super_options(options: SuperOptions) raises:
+    for name in ["--base-url", "--url"]:
+        if options.has(name) and not _valid_http_url(options.value(name)):
+            raise Error("invalid " + name + ": expected an absolute http(s) URL with host and no credentials, query, or fragment")
     if options.has("--sub-agent") and options.has("--no-sub-agent"):
         raise Error("--sub-agent conflicts with --no-sub-agent")
     var details = False

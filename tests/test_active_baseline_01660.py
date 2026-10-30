@@ -106,6 +106,47 @@ class ActiveBaseline01660Tests(unittest.TestCase):
                 )
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_super_validated_option_values_match_active_release(self):
+        cases = (
+            ("base URL before help", ("super", "--base-url", "ftp://synthetic.invalid", "--help"), 0),
+            ("provider URL before help", ("super", "--url", "ftp://synthetic.invalid", "--help"), 0),
+            ("sub-agent URL", ("super", "--sub-agent-url", "ftp://synthetic.invalid", "--help"), 2),
+            ("optional tool", ("super", "--tool", "synthetic-unknown", "--help"), 2),
+            ("required tool", ("super", "--require-tool", "synthetic-unknown", "--help"), 2),
+            ("tool alias", ("super", "--tool", " RTK ", "--help"), 0),
+            ("required tool alias", ("super", "--require-tool", " CBM ", "--help"), 0),
+        )
+        for label, arguments, expected_status in cases:
+            with self.subTest(case=label):
+                baseline, baseline_created = isolated_super_cli(ORACLE, arguments, "prodex")
+                modex, modex_created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual((baseline.returncode, modex.returncode), (expected_status, expected_status))
+                self.assertEqual(
+                    (modex.stdout, modex.stderr),
+                    (normalize_super_cli_executable(baseline.stdout),
+                     normalize_super_cli_executable(baseline.stderr)),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_super_runtime_url_validation_stays_before_startup(self):
+        invalid = "ftp://synthetic.invalid"
+        valid = "http://127.0.0.1:8131"
+        cases = (
+            (("super", "--url", invalid), 1, b"Error: invalid --url:"),
+            (("super", "exec", "--url", invalid), 1, b"Error: invalid --url:"),
+            (("super", "--base-url", invalid), 1, b"Error: invalid --base-url:"),
+            (("super", "exec", "--base-url", invalid), 1, b"Error: invalid --base-url:"),
+            (("super", "--url", valid, "--url", invalid), 2, b"cannot be used multiple times"),
+            (("super", "exec", "--url", valid, "--url", invalid), 1, b"Error: invalid --url:"),
+        )
+        for arguments, expected_status, diagnostic in cases:
+            with self.subTest(arguments=arguments):
+                modex, created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual(modex.returncode, expected_status)
+                self.assertEqual(modex.stdout, b"")
+                self.assertIn(diagnostic, modex.stderr)
+                self.assertEqual(created, [])
+
     def test_exec_model_help_records_the_guarded_runtime_boundary(self):
         # An empty HOME, cleared sandbox environment, and isolated network keep this probe offline.
         arguments = ("super", "exec", "--model", "--help")

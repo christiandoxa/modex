@@ -30,6 +30,10 @@ diagnostics without creating state. For `super exec --model --help`, the
 release instead proceeds to a no-profile error and creates housekeeping
 files, while Modex stops at its unimplemented startup guard; this is a
 recorded difference, not a parity pass.
+Super now rejects unknown optional-tool IDs and reports invalid sub-agent URLs
+as typed argument errors before help, matching selected 0.166.0 process cases.
+Plain provider URL validation runs after help parsing but still before startup;
+see `docs/evidence/baseline-0.166.0/super-cli-validation.md` for its scope.
 For DeepSeek `custom_tool_call`, both production request paths now encode the
 input as a string inside the function arguments, using compact JSON text for
 non-string values and an empty string for a missing input. The active 0.166.0

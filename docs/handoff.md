@@ -82,6 +82,12 @@ been corrected, and their five focused cases pass; the running older snapshot
 cannot validate those corrections. The installed Prodex and Codex executables
 are not replaced.
 
+A second full run starts from exact commit
+`418afa07d24d6c89abdc508f55ef287258302dab`, including the fixture corrections
+and custom-tool change, in `/tmp/modex-01660-full-418afa0` (make PID 936634;
+log `/tmp/modex-01660-full-418afa0.log`). It has not finished and is not a
+pass. The earlier run continues separately to expose additional failures.
+
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing
 cookie; six additional offline Guardian broker tests passed. Its local-only

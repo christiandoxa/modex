@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+## Super missing Codex values (2026-10-30)
+
+Missing `--add-dir`, `--enable`, and `--disable` values now reach the Codex
+child, including when a recognized option follows. Three-process checks match
+both pinned releases' child arguments and exit status; a network-isolated local
+Codex 0.165.0 check returned its missing-value diagnostic. Empty values and
+unknown options remain guarded, and other Codex versions and release targets
+remain unqualified. See `docs/evidence/baseline-0.165.1/super-exec-value-options.md`.
+
 The combined production build at `b405bc2` passed, as did the focused
 three-process Codebase Memory, endpoint projection, and Anthropic empty-field
 tests, plus the large-header relay comparisons against each pinned release.

@@ -47,6 +47,24 @@ class ActiveSuperLaunchTests(unittest.TestCase):
     def test_supported_exec_flags_match_01651(self):
         launch_support.check_safe_exec_flags(self, active_cli.ORACLE)
 
+    def test_missing_exec_values_reach_child_for_both_releases(self):
+        for arguments in (("exec", "--add-dir"), ("exec", "--enable"),
+                          ("exec", "--disable"),
+                          ("exec", "--add-dir", "--json", "synthetic prompt"),
+                          ("exec", "--enable", "--json", "synthetic prompt")):
+            captures = []
+            for binary in (active_cli.ORACLE, ORACLE_04392, launch_support.MODEX):
+                with self.subTest(arguments=arguments, binary=str(binary)):
+                    result, records, upstream, state = launch_support.run_private_launch(
+                        binary, scenario="exit-seven", codex_arguments=arguments,
+                    )
+                    self.assertEqual((result.returncode, result.stdout), (7, b""), result.stderr)
+                    self.assertEqual((upstream, state["leftovers"]), ([], []))
+                    launch = next(record for record in records if record["kind"] == "launch")
+                    captures.append(launch_support.normalized_app_server_args(launch["args"]))
+            self.assertEqual(captures[0], captures[1])
+            self.assertEqual(captures[0], captures[2])
+
     def test_repeat_launch_with_shared_history_documents_current_gap(self):
         for label, binary in (("0.165.1", active_cli.ORACLE), ("0.439.2", ORACLE_04392), ("Modex", launch_support.MODEX)):
             with self.subTest(binary=label):

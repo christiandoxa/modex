@@ -11,15 +11,17 @@ values, and options after the prompt.
 Modex now passes those three one-value, repeatable options unchanged through
 its guarded DeepSeek `exec` path, in separated or `--option=value` form. The
 values stay in child argv and do not alter Modex-generated `-c` configuration.
-The guard rejects missing, empty, or option-looking separate values. A lone
-dash value remains valid. A `--` separator ends option inspection and keeps
-the following prompt literal.
+Missing values and a following recognized option now reach the child as they
+do in both releases. Empty values and unknown option-looking arguments remain
+guarded. A lone dash value remains valid. A `--` separator ends option
+inspection and keeps the following prompt literal.
 
 The process tests compare normalized child argv and generated configuration
 against both checksum-pinned release binaries. Their isolated homes, synthetic
 loopback upstream, synthetic key, and Codex fixture produce no provider
-request. Modex's synthetic process test verifies missing, option-looking, and
-empty values fail before creating an overlay or launching Codex.
+request. Three-process checks cover missing values for all three options and
+selected following flags; the child fixture records identical arguments and
+exits 7. Unknown options and empty values remain guarded.
 
 One local characterization on 2026-10-29 used the installed Codex CLI 0.165.0
 at `/home/doxa/.local/share/upkit/node/24.22.1/node-v24.22.1-linux-x64/lib/node_modules/@openai/codex/bin/codex.js`.
@@ -45,7 +47,12 @@ git diff --check
 ```
 
 The removed Codex child characterization is not part of the automated
-validation command above.
+validation command above. On 2026-10-30, the locally installed Codex CLI
+0.165.0 was also invoked directly in a network-isolated `bwrap` sandbox with
+a synthetic home. Each tested missing-value case, including a following
+`--json` or `--`, exited 2 with a missing-value diagnostic before provider
+access. This local observation does not qualify other platforms or Codex
+versions.
 
 Other Codex `exec` arguments remain guarded. The synthetic fixture verifies
 wrapper argument preservation; the local Codex characterization does not

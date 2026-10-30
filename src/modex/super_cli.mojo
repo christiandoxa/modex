@@ -366,7 +366,16 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
         if argument.startswith("--cd=") or (argument.startswith("-C") and argument.byte_length() > 2):
             index += 1
             continue
-        if argument in ["--add-dir", "--enable", "--disable", "--thread-source"]:
+        if argument in ["--add-dir", "--enable", "--disable"]:
+            if index + 1 >= len(arguments) or (arguments[index + 1].startswith("-") and arguments[index + 1] != "-"):
+                index += 1
+                continue
+            var value = arguments[index + 1]
+            if not value:
+                return False
+            index += 2
+            continue
+        if argument == "--thread-source":
             if index + 1 >= len(arguments):
                 return False
             var value = arguments[index + 1]

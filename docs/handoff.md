@@ -1354,7 +1354,7 @@ parity remain open. Evidence:
 
 The full 87-case log CLI argument matrix now also runs against the checksum-
 verified Prodex 0.165.1 process. It compares the shared Modex parser with both
-the active 0.439.2 and historical 0.165.1 releases using isolated synthetic
+the historical 0.439.2 and 0.165.1 releases using isolated synthetic
 homes. The selected parser cases match both; this does not cover successful
 live log sources, output parity, or other release targets. Evidence:
 `docs/evidence/baseline-0.165.1/log-01651-tests.md`.
@@ -1873,12 +1873,12 @@ return 400 without an upstream request in the selected malformed-trailer and
 missing-terminator controls. The broader connection-lifecycle mismatch remains
 open; see `docs/evidence/baseline-0.165.1/local-relay-http.md`.
 
-The frozen active reference is officially released Prodex 0.439.2 at commit
+At that historical checkpoint, the reference was Prodex 0.439.2 at commit
 `72b77478a5198fc5da6b4d2253137f9cdbf43be9`. Prodex 0.165.1 and 0.439.1
-observations retain historical provenance; 0.439.1 is regression-only. CI
-routes active oracle checks to 0.439.2 and keeps all six release targets in the
-parity denominator. The 76-contract inventory and complete production parity
-remain unfinished, with all six release qualifications BLOCKED.
+observations retain historical provenance; 0.439.1 was regression-only. CI
+then routed oracle checks to 0.439.2 and kept all six release targets in the
+parity denominator. At that checkpoint the inventory had 76 contracts and
+complete production parity was unfinished, with all six qualifications blocked.
 
 The read-only session listing now treats a dangling `state.json` symlink as
 absent, matching the checksum-pinned 0.165.1 and 0.439.2 Linux binaries.
@@ -1888,7 +1888,7 @@ The focused process comparisons, production build, production import audit and
 test census passed. This does not establish race freedom or state-lock and
 recovery parity. Evidence: `docs/evidence/session-profile-state-04392.md`.
 
-Gateway help parsing now matches tested active 0.439.2 and historical 0.165.1
+Gateway help parsing matched tested historical 0.439.2 and 0.165.1
 short-cluster and attached-value cases, including Clap's usage variation after
 switches and attached versus split values. Synthetic API-key text stays out of
 output. The production build, native parser program and focused process checks
@@ -2149,7 +2149,7 @@ interleavings and an aggregate stream search-count limit remain open. See
 `docs/evidence/baseline-0.165.1/anthropic-mixed-tools.md` and
 `docs/evidence/baseline-0.165.1/anthropic-stream.md`.
 
-Hosted Fast CI run `40796304229` passed both helper shards, the active 0.165.1
+Hosted Fast CI run `40796304229` passed both helper shards, the then-active 0.165.1
 and focused relay checks, then failed on the unavailable required historical
 0.439.2 tag; the artifact consumer was skipped. An isolated local `make test`
 run completed 728 Python tests and the native checks successfully. The checkout
@@ -2243,7 +2243,7 @@ state parsing fails; Modex keeps failing closed because its stdlib cannot yet
 match that recovery contract. The test confirms the state JSON stays unchanged.
 See `docs/evidence/baseline-0.165.1/session-profile-filter.md`.
 
-The existing bounded logging suite now also runs in an isolated active-0.165.1
+The existing bounded logging suite now also runs in an isolated historical 0.165.1
 lane. All 36 selected log snapshot, payload, redaction, runtime parsing,
 transcript, text and timestamp checks passed against the verified Linux
 binary; historical 0.439.2 comparisons remain separate. This does not verify
@@ -2252,7 +2252,7 @@ See `docs/evidence/baseline-0.165.1/log-01651-tests.md`.
 
 The production Super Codex version and app-server help probes now run with
 `CODEX_HOME` and the five `TEST_CODEX_*` logging variables removed. A synthetic
-peer comparison against the active 0.165.1 Linux oracle verifies both probe
+peer comparison against the historical 0.165.1 Linux oracle verifies both probe
 arguments, the selected capability-failure diagnostic, no RPC/provider start,
 and overlay cleanup. The version check now enforces the frozen `0.153.2`
 minimum: a synthetic `0.153.1` stops before app-server help, while exact-minimum
@@ -2262,7 +2262,7 @@ tests use a private nested temp directory; oversized version/help capture
 errors still match. Modex now matches the selected fallback progress lines,
 provider panel, and child-start line on complete redirected stdout/stderr
 comparisons against 0.165.1 and historical 0.439.2, with synthetic child and
-no provider requests. Active 0.165.1 also matches redirected provider-panel
+no provider requests. Historical 0.165.1 also matched redirected provider-panel
 wrapping at columns 50 and 120, plus text fallback output on a PTY with
 `TERM=dumb` or `PRODEX_TUI_STRICT=true`. Interactive TTY panel rendering
 remains unfinished. A controlling 24x42 PTY now reproduces the natural-width
@@ -2549,7 +2549,7 @@ unbounded in total retained search/output memory. Interleaved search calls and
 results remain unverified. Hosted Fast CI run
 [40792087830](https://github.com/christiandoxa/modex/actions/runs/40792087830)
 failed before active stream tests because their setup required the 0.439.2
-oracle before acquisition. Active stream checks now use only 0.165.1 and Modex;
+oracle before acquisition. The stream checks at that checkpoint used only 0.165.1 and Modex;
 the repeated-search 0.439.2 comparisons run in a separate historical test after
 acquisition. A routing regression verifies active setup with the historical
 oracle missing and keeps historical tests after acquisition.
@@ -2817,7 +2817,7 @@ Fast CI run `40619037675` passed on exact checkpoint
 was still in progress when this note was written. The prior checkpoint's
 local 445-test full suite does not itself validate this later strict change.
 
-The user-specified frozen reference is officially released Prodex 0.439.2 at
+The reference at that historical checkpoint was Prodex 0.439.2 at
 `72b77478a5198fc5da6b4d2253137f9cdbf43be9`. The tag, Linux oracle SHA-256,
 and an isolated full source checkout were verified. Earlier 0.439.5 material
 below is historical and retains its original reference; it does not establish
@@ -2826,7 +2826,7 @@ release qualifications and incomplete inventory remain unchanged.
 
 A combined isolated build restores the 0.439.2 hook version, DeepSeek model
 catalog, flash aliases and low-reasoning mapping. Real synthetic launch and
-request comparisons cover the active release and selected separately pinned
+request comparisons covered the then-targeted release and selected separately pinned
 0.439.5 controls. An incremental passthrough observer now validates and binds
 selected SSE response IDs beyond 4 MiB; live 0.439.2 and supplementary 0.439.5
 checks return 200/503 with one upstream POST. Native and 571 deterministic
@@ -2917,10 +2917,10 @@ allocation coverage from it. See `docs/ci-lessons.md` and the uploaded run
 artifacts for the measurements. The RSS test needs a separately validated
 transient-peak measurement or an explicitly narrower scope.
 
-The active mission designates official Prodex 0.439.5 at
+The historical mission designated Prodex 0.439.5 at
 `ac9aad08f25d6dc8cda96463ce2045b40f35f510` as the frozen reference,
-superseding the earlier 0.439.2 session instruction. The checked-in baseline,
-active CI oracle, and hook client version match that target. The remote tag
+superseding the earlier 0.439.2 session instruction. At that checkpoint, the baseline,
+CI oracle, and hook client version matched that target. The remote tag
 and the cached source and Linux oracle were reverified for this continuation.
 Keep the 0.439.2 role regression and earlier captures as historical evidence;
 they do not establish 0.439.5 parity. All six release targets remain in the
@@ -3168,7 +3168,7 @@ not provide compatible cross-process `flock` exclusion. Observing Linux
 `/proc/locks` cannot prevent a race. Credential-writing profile prototypes also
 remain unconnected because private atomic writes and journaling are unresolved.
 
-The active reference is official Prodex 0.439.5 at
+The historical reference at that checkpoint was Prodex 0.439.5 at
 `ac9aad08f25d6dc8cda96463ce2045b40f35f510`. Its separate Linux binary,
 manifests, checksums, clean source checkout, and signed GitHub/Sigstore
 provenance are recorded in `docs/evidence/baseline-0.439.5/`. Prior
@@ -3282,7 +3282,7 @@ Evidence: `docs/evidence/checkpoint15-reference.json`, `checkpoint15-before.txt`
 
 Checkpoint 13 was normally pushed as `67bef94c305bf6e4147fb0297e0a6eee0ccc7697`. Local HEAD,
 remote main and clean main worktree were verified before immediate continuation.
-The target remains released Prodex 0.439.2 at `72b77478a5198fc5da6b4d2253137f9cdbf43be9`.
+The historical checkpoint target was Prodex 0.439.2 at `72b77478a5198fc5da6b4d2253137f9cdbf43be9`.
 
 The native relay now carries its existing buffered/SSE dispatch choice into the
 owned response writer. Buffered bodyless JSON retains Content-Length: 0; SSE
@@ -3328,7 +3328,7 @@ Evidence: `docs/evidence/checkpoint14-reference.json`, `checkpoint14-tests.txt`,
 
 # Checkpoint 13: released Prodex 0.439.2 and native inspection usage
 
-The active target is officially released Prodex 0.439.2 at `72b77478a5198fc5da6b4d2253137f9cdbf43be9`,
+The historical checkpoint target was Prodex 0.439.2 at `72b77478a5198fc5da6b4d2253137f9cdbf43be9`,
 superseding 0.439.1. The read-only remote tag, official manifests, Linux binary
 checksum and all 3,280 cached Git-tree blobs are reverified. All prior checkpoint
 evidence keeps its original version/commit. All 71 contracts, 426 six-platform
@@ -3989,7 +3989,7 @@ above. Isolated worker boundaries and verified commit/push cadence continue.
 
 # Previous checkpoint: native Super
 
-Target: Prodex 0.439.1 at `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`.
+Historical target: Prodex 0.439.1 at `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`.
 The reference repository remains unchanged. Sixteen relevant snapshot files were
 compared byte-for-byte with pinned Git objects; the 0.439.0-to-0.439.1 delta
 is 463 files, 8,026 additions and 26,066 deletions. Worker-lane isolation,
@@ -4073,7 +4073,7 @@ clean-home launch is a development slice, not complete Super parity.
 
 # Previous checkpoint (historical)
 
-The active target is Prodex 0.439.1 at
+The historical checkpoint target was Prodex 0.439.1 at
 `81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`. Its tag, Cargo version, release
 manifest, GitHub asset digests and Linux oracle checksum are verified. The
 immutable source snapshot and executable live outside the product graph in
@@ -4710,7 +4710,7 @@ Native Windows and Intel macOS are not supported by the pinned compiler's
 documented platform contract. Linux glibc and CPU minimums are stricter than
 the baseline release. These obligations remain in scope as platform gaps.
 
-The active 0.165.1 streaming characterization now covers a result completing
+The historical 0.165.1 streaming characterization now covers a result completing
 while another search input remains open, deltas for that search across the open
 result block, a new search starting during an open result, and a valid empty
 result array. The parser tracks open search and result blocks independently;
@@ -4744,7 +4744,7 @@ test class and reported a loader error; the corrected no-proxy test passed.
 
 Hosted Fast run 40841282229 on `a2e341af21236444d64bd56d3efac712f783e387`
 passed both helper shards and its focused native build and unit checks, then
-failed active-oracle acquisition because the required 0.439.2 tag is absent.
+failed then-active oracle acquisition because the required 0.439.2 tag was absent.
 Oracle-dependent suites and executable handoff/consumer did not run. This is
 not a Fast pass. An interrupted build in the primary checkout may have touched
 its ignored `build/modex`; its previous hash was not captured and the artifact

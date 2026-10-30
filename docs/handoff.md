@@ -8,6 +8,9 @@ selected malformed and non-loopback authorities. Hostname and non-loopback
 guards remain in place. Other numeric spellings, default ports, expanded IPv6,
 and other targets remain unverified; see
 `docs/evidence/baseline-0.166.0/provider-base-url-authority.md`.
+Full `make unit` passed on `29d7bae37098574974fcdeac753cff64efd9ab99`, after
+the numeric-loopback change. This is native unit evidence, not full CI or
+other-platform qualification.
 
 The DeepSeek Super conversation cache now scopes tool-history lookup by an
 explicit session ID. A synthetic active-oracle comparison shows that requests
@@ -38,7 +41,14 @@ open. The production build and dependency audit passed, and the focused
 root-help module covers the comparison and no-execution controls. See
 `docs/evidence/baseline-0.166.0/logout-help.md`.
 
-Hosted Fast CI run `41120572378` on `37c78129280c4c5666a5a1562b2f28201e9e127c`
+Hosted Fast CI run `41124656633` on `627d555552af519794fd6099fd269861d575e68a`
+passed the native build and units, three WebSocket sandbox tests, 121 active
+0.166.0 tests, 52 independent relay tests, 121 historical 0.165.1 tests, eight
+width-memory tests, and both helper shards. The overall run failed closed
+because required historical 0.439.2 and 0.439.5 oracles were unavailable. It
+does not validate the later numeric-loopback change or establish full CI.
+
+Earlier hosted Fast CI run `41120572378` on `37c78129280c4c5666a5a1562b2f28201e9e127c`
 passed the three WebSocket sandbox tests, 115 active 0.166.0 tests, 52
 independent relay tests, 121 historical 0.165.1 tests, eight width-memory
 tests, and both helper shards. It failed closed because required historical

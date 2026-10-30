@@ -11,6 +11,18 @@ outdated exact method list; it now requires the five relevant methods and checks
 that discovered IDs are unique, and the census/routing tests pass. These
 focused reruns do not qualify the current revision as a full-suite pass.
 
+## Log follower terminal fallback (2026-10-30)
+
+`log stream` and `log upstream` now follow the release's plain-output path when
+their stdin/stdout TUI condition is false. Real-process tests compare both
+release binaries and Modex for stderr-only, stdout-only, and stdin-only TTYs
+without `NO_COLOR`, plus stdin/stdout TTYs with `NO_COLOR`. With both TTYs and
+`NO_COLOR` absent, the release TUI accepts `q` and restores its terminal;
+Modex keeps its explicit unsupported-TUI error. Live runtime registries also
+remain fail-closed. This is Linux x86-64 behavior evidence only; parity statuses
+and the six-target denominator are unchanged. See
+`docs/evidence/baseline-0.165.1/log-terminal-fallback.md`.
+
 The isolated full `make test` run on `0023b4669e547e27bc4d660786f791c33546d79c`
 completed successfully: production and native checks passed and 1,050 Python
 tests passed in 3,356.477 seconds. The local log is

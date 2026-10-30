@@ -625,12 +625,16 @@ paths in a tied-mtime fixture under the same cap; path discovery and adjacent
 transcript duplicate behavior are covered by actual process comparisons.
 URL display and JSON number normalization have additional corpus coverage;
 complete URL/parser equivalence is still unverified. Live broker/direct sources
-and terminal views remain unfinished. When explicit runtime disk recording is
-enabled, file following skips live registry discovery as in the release.
-Otherwise a live-source registry still fails explicitly; unsupported terminal
-paths also fail. Further follow
+and interactive terminal views remain unfinished. The stream and upstream
+followers use the release's plain path when stdin and stdout do not select a
+TUI, including stderr-only TTY and `NO_COLOR` cases. When stdin and stdout are
+terminals and `NO_COLOR` is absent, Modex retains an explicit unsupported-TUI
+error. When explicit runtime disk recording is enabled, file following skips
+live registry discovery as in the release. Otherwise a live-source registry
+still fails explicitly. Further follow
 failure/race cases and non-host platforms remain unverified. Evidence:
-`docs/evidence/upstream-follow-tests.txt`.
+`docs/evidence/upstream-follow-tests.txt` and
+`docs/evidence/baseline-0.165.1/log-terminal-fallback.md`.
 
 Live-source admission also requires the frozen registry store's exclusive
 `.json.lock`, backup recovery and legacy-artifact handling before reading a

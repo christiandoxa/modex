@@ -36,7 +36,7 @@ def print_upstream(event: UpstreamEvent, json: Bool) raises:
 
 
 def follow_upstream(json: Bool) raises:
-    if not json and (isatty(2) or (isatty(0) and isatty(1) and getenv("NO_COLOR", "\0") == "\0")):
+    if not json and isatty(0) and isatty(1) and getenv("NO_COLOR", "\0") == "\0":
         raise Error("upstream terminal rendering is not implemented")
     var root = ensure_app_root()
     require_file_log_sources(root)

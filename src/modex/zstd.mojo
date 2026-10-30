@@ -163,6 +163,22 @@ struct ZstdReader(Movable):
                 if not self.seen_frame:
                     raise Error("incomplete frame")
                 return False
+            var zstd_prefix = True
+            var skippable_prefix = True
+            for index in range(len(magic_bytes)):
+                var byte = Int(magic_bytes[index])
+                var zstd_byte = 0x28 if index == 0 else 0xB5 if index == 1 else 0x2F if index == 2 else 0xFD
+                if byte != zstd_byte:
+                    zstd_prefix = False
+                if index == 0:
+                    if byte < 0x50 or byte > 0x5F:
+                        skippable_prefix = False
+                else:
+                    var skippable_byte = 0x2A if index == 1 else 0x4D if index == 2 else 0x18
+                    if byte != skippable_byte:
+                        skippable_prefix = False
+            if not zstd_prefix and not skippable_prefix:
+                raise Error("Unknown frame descriptor")
             if len(magic_bytes) < 4:
                 magic_bytes.extend(self.take(4 - len(magic_bytes)))
             var magic_reader = ZstdBytes(magic_bytes^, 0)

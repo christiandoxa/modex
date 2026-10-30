@@ -27,6 +27,46 @@ class SessionOutputs01660Tests(test_sessions.SessionOutputTests):
         self.assertEqual(modex, baseline)
         return baseline
 
+    def test_invalid_zstd_magic_prefix_diagnostics_match_release(self):
+        cases = (
+            (b"x", "Unknown frame descriptor"),
+            (b"\x28\x00", "Unknown frame descriptor"),
+            (b"\x28", "incomplete frame"),
+            (b"\x28\xb5\x2f", "incomplete frame"),
+            (b"\x28\xb5\x2f\xfd\x20", "incomplete frame"),
+            (b"\x50", "incomplete frame"),
+        )
+        for encoded, detail in cases:
+            with self.subTest(encoded=encoded):
+                observations = []
+                for binary, argv0 in ((ORACLE, "prodex"), (MODEX, "modex")):
+                    with tempfile.TemporaryDirectory(prefix="modex-session-zstd-prefix-") as directory:
+                        root = Path(directory)
+                        test_sessions.fixture(root)
+                        session = next((root / "home/.codex").rglob("*.jsonl"))
+                        session.unlink()
+                        corrupt = session.with_name("rollout-invalid.jsonl.zst")
+                        corrupt.write_bytes(encoded)
+                        result = subprocess.run(
+                            test_sessions.sandbox_command(
+                                binary, root, ["session", "list", "--json"],
+                                timezone="UTC", argv0=argv0,
+                            ),
+                            stdin=subprocess.DEVNULL, capture_output=True, timeout=10, check=False,
+                        )
+                        self.assertEqual(corrupt.read_bytes(), encoded)
+                        observations.append((
+                            result.returncode,
+                            result.stdout.replace(str(root).encode(), b"<FIXTURE_ROOT>"),
+                            result.stderr.replace(str(root).encode(), b"<FIXTURE_ROOT>"),
+                        ))
+                expected = (
+                    1, b"",
+                    ("Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/"
+                     f"rollout-invalid.jsonl.zst: {detail}\n").encode(),
+                )
+                self.assertEqual(observations, [expected, expected])
+
     def test_pre_epoch_file_time_falls_back_to_unix_epoch(self):
         for format_name in ("json", "jsonl", "jsonl.zst"):
             for mtime_ns in (-1_000_000_000, -1, 0):

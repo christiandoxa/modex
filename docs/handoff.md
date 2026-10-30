@@ -1,5 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Compressed session reads now match selected 0.166.0 diagnostics for impossible
+short Zstandard frame prefixes while retaining the incomplete-frame result for
+valid partial prefixes. See
+`docs/evidence/baseline-0.166.0/session-zstd-magic-diagnostics.md`.
+
 Doctor missing-requirement and conflict diagnostics match 54 tested two- and
 three-option 0.166.0 cases. Six orderings of `--runtime --json --redacted` now
 pass parsing and reach Modex's unimplemented runtime guard. See

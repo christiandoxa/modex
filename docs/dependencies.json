@@ -397,8 +397,11 @@
       "docs/evidence/checkpoint12-dependencies.txt"
     ]
   },
-  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
-  "baseline_version": "0.439.2",
+  "baseline_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
+  "baseline_version": "0.166.0",
+  "previous_baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "previous_baseline_version": "0.439.2",
+  "active_reference_evidence": "docs/evidence/baseline-0.166.0/reference-verification.json",
   "checkpoint13_dependency_audit": {
     "new_application_dependencies": [],
     "new_native_bindings": [],
@@ -422,7 +425,7 @@
       "docs/evidence/checkpoint14-dependencies.txt"
     ]
   },
-  "baseline_evidence_policy": "Each description and artifact retains its original version; 0.165.1, 0.439.5 and 0.439.1 observations are not automatically 0.439.2 behavioral verification.",
+  "baseline_evidence_policy": "Each description and artifact retains its original version; 0.165.1 and 0.439.x observations are not automatically 0.166.0 behavioral verification.",
   "continuation_binding_foundation": {
     "implementation": "In-process DeepSeek relay hashes credential and endpoint identity, remembers accepted response/session/turn bindings with bounded in-memory maps, and validates them before subsequent dispatch. The passthrough SSE observer validates JSON incrementally with existing Mojo standard-library and local helpers.",
     "new_application_dependencies": [],

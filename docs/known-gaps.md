@@ -1,32 +1,41 @@
 # Verified gaps
 
+The active target is official Prodex 0.166.0 at
+`9f69e1835808f478f59f12a3ae3fa88027d896a4`. Complete parity remains
+unfinished, the inventory is incomplete, and all six release qualifications
+remain BLOCKED. Current-target observations are tracked in
+`docs/handoff.md` and `docs/evidence/baseline-0.166.0/`.
+
+For an absent profile store, Prodex 0.166.0 `profile list` renders the empty
+panel and creates lifecycle and update locks; Modex remains fail-closed without
+creating state. Housekeeping files may appear asynchronously. This is a
+characterized gap, not a completed profile-list slice. See
+`docs/evidence/baseline-0.166.0/profile-list-empty-store.md`.
+
+The remaining entries preserve their original release provenance. Most are
+observations against 0.165.1 or 0.439.x and do not establish 0.166.0 behavior
+unless the entry names that release explicitly.
+
 For a streamed DeepSeek response whose ID appears only in the prefetched
-prefix, both pinned releases can replay stored conversation history using a
-different configured API key or a different unauthenticated local client.
-Modex retains its existing 503 rejection for an authenticated follow-up with
-that response ID. A different unauthenticated local client now receives 401
-before dispatch; the releases accept the tested client. These conservative
-security differences are not parity. The ownership gap and reproduction are described in
+prefix, Prodex 0.165.1 and 0.439.2 can replay stored conversation history
+using a different configured API key or a different unauthenticated local
+client. Modex retains its existing 503 rejection for an authenticated
+follow-up with that response ID. A different unauthenticated local client now
+receives 401 before dispatch; those historical releases accept the tested
+client. These conservative security differences are not parity. The ownership
+gap and reproduction are described in
 `docs/evidence/baseline-0.165.1/streamed-continuation-prefetch.md`.
 
 The supported clean-home DeepSeek Super launch cannot be repeated in the same
 home: its first invocation creates shared Codex paths that its next invocation
-rejects. Both pinned releases reuse those paths. Existing history must not be
-truncated and session maintenance must be coordinated with child execution;
+rejects. Prodex 0.165.1 and 0.439.2 reuse those paths. Existing history must
+not be truncated and session maintenance must be coordinated with child execution;
 the mismatch and synthetic process control are recorded in
 `docs/evidence/baseline-0.165.1/super-repeat-launch.md`.
 
-Complete parity remains unfinished against officially released Prodex 0.439.2 at
-`72b77478a5198fc5da6b4d2253137f9cdbf43be9`. The incomplete inventory retains
-76 contracts and 456 platform obligations. All six complete release
-qualifications are explicitly BLOCKED; focused host tests do not establish a
-release PASS. The observations below retain their original release provenance;
-0.165.1 and 0.439.1 comparisons do not establish 0.439.2 behavior. The
-inventory and source traces have not yet been fully revalidated against 0.439.2.
-
 The tested DeepSeek request and combo retry slices follow 0.165.1 for the
 `flash` alias: Modex sends `deepseek-flash` for direct `flash` and
-`combo:flash,...`, while the official 0.439.2 baseline sends
+`combo:flash,...`, while the historical 0.439.2 release sends
 `deepseek-v4-flash`. The model-before-credential
 ordering and selected native Anthropic first-event retries are compared on
 Linux x86-64, but this alias mismatch remains an explicit 0.439.2 parity gap;
@@ -293,9 +302,9 @@ general config behavior remain unfinished. See
 `docs/evidence/deepseek-web-search-mode-04392.md`.
 
 DeepSeek requests with a missing, null, non-string or blank model match the
-tested 0.439.2 default. Selected combo aliases match the active release; its
-flash alias differs from the historical 0.439.5 behavior. Broader provider
-model selection and fallback remain unverified. The
+tested 0.439.2 default. Selected combo aliases match the tested 0.439.2
+release; its flash alias differs from the historical 0.439.5 behavior. Broader
+provider model selection and fallback remain unverified. The
 read-only profile-list prototype cannot safely interoperate with the release's
 persistent `flock` files using the available Mojo standard-library APIs, so
 it is not connected to production.
@@ -423,8 +432,8 @@ Broader URL behavior remains unqualified. See `docs/evidence/checkpoint9-referen
 
 Exactly two completed worker proposals were reviewed and excluded. `9d05840`
 changed only a timeout message and did not implement precommit behavior; its
-historical 0.439.1 mismatch capture remains unchanged. The current 0.439.2
-production path now distinguishes lookahead and idle deadlines for selected
+historical 0.439.1 mismatch capture remains unchanged. The 0.439.2 production
+path at that checkpoint distinguishes lookahead and idle deadlines for selected
 DeepSeek chat streams: an idle error with an empty precommit prefix returns
 502, while a nonempty prefix or elapsed lookahead commits the stream. Tests
 cover timeout, EOF, truncation, invalid UTF-8, incremental output and no
@@ -749,7 +758,7 @@ the native component's defined failure behavior is only source-derived.
 DeepSeek request preparation is implemented as a native
 component. It translates messages/history, tools and parameters and retains
 the pending response metadata separately from the prepared upstream body.
-The active release first validates/translates the runtime request, then may
+The previously tested release first validates/translates the runtime request, then may
 replace only its body with the native provider-core conformance result for a
 simple request. This preserves observable differences such as omitted
 `text.format` and `stream_options` in that body while pending messages retain

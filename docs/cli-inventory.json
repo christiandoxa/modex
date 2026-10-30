@@ -1,8 +1,10 @@
 {
   "schema_version": 1,
   "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
+  "baseline_version": "0.439.1",
+  "evidence_policy": "Historical help inventory captured against Prodex 0.439.1; it is not current 0.166.0 source-trace or parity evidence.",
   "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
-  "reproduce": "python3 tests/capture_cli.py",
+  "reproduce": "The current capture script selects 0.439.2 and cannot reproduce this 0.439.1 inventory; do not run it over these historical fixtures.",
   "coverage": "Visible command tree plus four hidden production helpers, super expose and s alias. Help mentions are discovery evidence; hidden flags, defaults, precedence, passthrough and runtime contracts still require source tracing.",
   "commands": [
     {

@@ -1,5 +1,13 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+`tests/capture_cli.py` currently selects the historical 0.439.2 oracle but
+labels output as 0.439.1 and overwrites the older help inventory. Do not run
+it until its oracle identity and versioned output paths are corrected.
+
+Set `TASK_SCRATCH` to a private temporary directory when reproducing commands.
+Paths under `$TASK_SCRATCH` are generalized per-run locations; no host-specific
+scratch path is part of the handoff.
+
 The active target is official Prodex 0.166.0 at
 `9f69e1835808f478f59f12a3ae3fa88027d896a4`. Its Linux x86-64 release and
 SHA256SUMS have been verified; see
@@ -50,6 +58,10 @@ non-string values and an empty string for a missing input. The active 0.166.0
 process comparison covers both paths, nested object key ordering, Unicode,
 escaping and argument precedence; ordinary function calls retain their tested
 precedence. Broader tool conversion remains unverified.
+Anthropic namespace tools also reach the shared Responses mapper: selected
+automatic and forced-mode requests match the active release, and four malformed
+child controls return matching errors before provider dispatch. See
+`docs/evidence/baseline-0.166.0/anthropic-namespace-tools.md`.
 
 One synthetic `log last --json` transcript, upstream payload and token-usage
 snapshot matches the active release, including bearer-token redaction and
@@ -110,6 +122,9 @@ control. They do not establish profile-runtime policy parity.
 The five active identity and API-key tests also passed with both historical
 oracle overrides set to nonexistent paths, confirming those tests do not
 require a 0.165.1 or 0.439.2 binary.
+A separate isolated three-case DeepSeek 503 differential also passes; generic
+profile-runtime policy remains unimplemented. See
+`docs/evidence/policy-capacity-01660-process.md`.
 
 The official Codex 0.166.0 Linux binary passed the real local-auth test against
 Modex through a synthetic loopback provider inside a network namespace with
@@ -123,7 +138,7 @@ its overlay while Modex preserves Codex-created state and `auth.json`. The
 raw request body was not recovered, so the route difference's cause is open.
 The characterization does not delete retained state; see the same evidence
 file for its scope and reproduction.
-An unpublished catalog draft in `/tmp/modex-codex-route-fix` matches selected
+An unpublished catalog draft in an isolated temporary worktree matches selected
 0.166.0 catalog rows, including filtering retired IDs. Its three focused
 process tests passed, but the real Codex `deepseek-chat` success case then
 returned 502 before any synthetic provider POST; the internal adapter error
@@ -156,7 +171,7 @@ A full isolated `make test` finished against exact Modex commit
 `94b514c2fe3992a9f2219b035746820f8fe17161`, with the verified 0.166.0 oracle
 as `PRODEX_ORACLE` and separate versioned historical oracles. It ran 1,182
 Python tests in 3,416.417 seconds and failed with one error and one failure.
-Its log is `/tmp/modex-01660-full-94b514c.log`, SHA-256
+Its temporary log has SHA-256
 `e62110a7ce5174463bf0c24a6321fc1bbb8c9a14a7ce9160d805d27e9e527c26`.
 The failures were a CI-cleanliness test error and a historical
 private-temp fixture failure. The first expected an old CI command spelling;
@@ -168,18 +183,18 @@ are not replaced.
 
 A second full run used exact commit
 `418afa07d24d6c89abdc508f55ef287258302dab`, including the fixture corrections
-and custom-tool change, in `/tmp/modex-01660-full-418afa0`. Its log reports
+and custom-tool change, in an isolated temporary worktree. Its log reports
 1,186 Python tests passed in 3,443.472 seconds and the native checks completed;
-the original shell exit status was not retained. The log is
-`/tmp/modex-01660-full-418afa0.log`, SHA-256
+the original shell exit status was not retained. The temporary log has
+SHA-256
 `0ac6167a1ef120853367905442819d02cd91b58905fb08ece16455ee9430fff7`.
 This is evidence for that snapshot, not a full-suite result for later commits.
 
 A third full run used exact commit
 `b04873c96f55db20151e2c284144824ec470c3aa` in
-`/tmp/modex-01660-full-b04873c`, with a cleared environment, private HOME and
-temporary directory, and explicit active and historical oracle paths. Its log
-is `/tmp/modex-01660-full-b04873c.log`, SHA-256
+an isolated temporary worktree, with a cleared environment, private HOME and
+temporary directory, and explicit active and historical oracle paths. Its
+temporary log has SHA-256
 `b9b4342a09a5ca931cb5d4380fc6c3f9b9a4a2d32a53d70bf1c0a7374e625a18`.
 It exited 2 after 1,195 tests in 3,343.608 seconds: four failures and one
 required-reference skip. For the Anthropic parent-EOF test, Modex's parent had
@@ -206,12 +221,11 @@ The completed snapshot cannot validate this later correction.
 
 A fourth full run used exact commit
 `8993f0d2e74ffb1d82e57f847ad68937faed4324` in
-`/tmp/modex-01660-full-8993f0d`. It uses a cleared environment, a private
+an isolated temporary worktree. It uses a cleared environment, a private
 user-owned `/tmp` and HOME, loopback-only networking with no default routes,
 and explicit active and historical binary and source paths, including the
 previously omitted 0.439.1 source. It exited 2 after 1,205 tests in 3,204.329
-seconds, with two failures and no reported skips. Its log is
-`/tmp/modex-01660-full-8993f0d.log`, SHA-256
+seconds, with two failures and no reported skips. Its temporary log has SHA-256
 `5b0fa9d26b533e6cb73eba84f59dc1ba207dedf157203408a6b7446a6b221ca8`.
 It reported a CLI regression fixture failure: the omitted-provider
 Gateway now reaches its no-profile preflight, so that fixture's expected
@@ -223,12 +237,12 @@ existing-state guards would be encountered first. The test now accepts either
 fail-closed diagnostic while still requiring unchanged state; the valid and
 invalid state controls pass. This snapshot predates that correction too.
 
-A fifth isolated `make test` run uses exact commit
-`e2be12831aa97e16770f91429293a64ede15c2aa` in
-`/tmp/modex-01660-full-e2be128`. It uses a private user/mount/network namespace,
-private HOME and `/tmp`, loopback only, no default routes, and explicit active
-and historical oracle and source paths. Its launcher PID is 3523995 and log is
-`/tmp/modex-01660-full-e2be128.log`. It is running and is not a pass.
+A fifth isolated `make test` was launched against exact commit
+`e2be12831aa97e16770f91429293a64ede15c2aa`. It uses a private
+user/mount/network namespace, private HOME and `/tmp`, loopback only, no default
+routes, and explicit active and historical oracle and source paths. Its process
+and temporary log are no longer available, so the outcome is unknown. It is
+not counted as a pass or failure.
 
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing
@@ -288,22 +302,22 @@ call can be followed by a tool output without `previous_response_id`; the
 next provider request uses key B and includes key A's prior synthetic
 conversation. Both pinned release processes do the same. The per-launch
 client token does not separate provider-key ownership. A candidate in
-`/tmp/modex-ownership-final-1030` rejects this with 503 and one provider POST.
+`$TASK_SCRATCH/ownership-final-1030` rejects this with 503 and one provider POST.
 It remains unpublished pending a full suite: 76 continuation, key-rotation and
 session-history tests passed, and an independent source review found no new
 ownership race. Its first full `make test` stopped during native compilation:
 `test_gateway_cli.mojo` still expected the old history return type. The test
 callers have been updated in the candidate and the suite must be rerun; the
-failed log is `/tmp/modex-ownership-full-1030.log` (SHA-256
+failed log is `$TASK_SCRATCH/ownership-full-1030.log` (SHA-256
 `5dfbc49f127a4321f9b09a77d1b5eff2577b6833bb5e285c40d9299da1ecf42f`).
 The corrected gateway test compiles and passes. A subsequent full run was
 interrupted to include the corrected child-environment fixture; its partial
-log is `/tmp/modex-ownership-rerun-1030.log` (SHA-256
+log is `$TASK_SCRATCH/ownership-rerun-1030.log` (SHA-256
 `18ac529e7b774e21379a48bc22127e46b3fe262a3f6f8e8400bfcde65a27dedc`)
 and it is not a pass. Its tracked diff SHA-256 was
 `2283d6eb5bc8b57df0a54a272fd3560dba62cf1ef9ead53ed0d49538d4450e54`.
 After integrating the corrected fixture and rollout-budget launch slice, the
-full run at `/tmp/modex-ownership-combined-1030.log` was interrupted when the
+full run at `$TASK_SCRATCH/ownership-combined-1030.log` was interrupted when the
 target changed to 0.166.0. Its partial log SHA-256 is
 `d0fae4b398fb4bdd99bfe170f38d1957a26aac99d3407c1bb478e342efb98fb9`;
 it is not a full pass or 0.166.0 evidence.
@@ -346,14 +360,14 @@ WebSocket path is still unimplemented.
 
 After repairing direct-relay authentication fixtures, slow-body probes,
 probe-environment expectations and exact on-wire header sizing, an isolated
-full `make test` in `/tmp/modex-auth-full-repaired-1030` finished with six
+full `make test` in `$TASK_SCRATCH/auth-full-repaired-1030` finished with six
 failures in 1,172 tests. All six binary-selection subtests compare the child
 environment and encounter the intentional provider-secret scrub: the release
 supplies a synthetic `OPENAI_API_KEY` and Modex removes it. The fixture is
 now corrected with explicit assertions for both behaviors; the six 0.165.1
 path modes, eight 0.439.2 path modes, and secret-scrub test passed separately.
 The full suite has not yet passed with that correction. Its log
-`/tmp/modex-auth-full-repaired-1030.log` has SHA-256
+`$TASK_SCRATCH/auth-full-repaired-1030.log` has SHA-256
 `c13d48e8f63c605280d59b44f5020830cd2de87bbf8037b63cf913864d17e745`.
 The snapshot base is `af5344e`,
 with tracked patch SHA-256
@@ -368,7 +382,7 @@ in 1,167 tests. Failures include large relay headers, WebSocket body handling,
 direct relay startup, slow partial requests and Super probe environments. The
 snapshot predates later fixture repairs; their causes and any production
 regressions are under investigation. No full pass is claimed. The log
-`/tmp/modex-auth-full-1030.log` has SHA-256
+`$TASK_SCRATCH/auth-full-1030.log` has SHA-256
 `ad35399915ac6e5d2bbb91abcae676db75e977b8ad8c28808ac16dd4d55fa60f`.
 An earlier status update overlooked indented failure lines.
 
@@ -384,8 +398,8 @@ runtime WebSocket path remains unimplemented. See
 `docs/evidence/runtime-websocket-interrupt-oracle-01651-04392.md`.
 
 The broader, unpublished continuation-and-ownership draft remains in
-`/tmp/modex-auth-integrate-1030`, based on `c386b71`; the earlier draft remains
-preserved in `/tmp/modex-integration-20261030`. A write-side shutdown before
+`$TASK_SCRATCH/auth-integrate-1030`, based on `c386b71`; the earlier draft remains
+preserved in `$TASK_SCRATCH/integration-20261030`. A write-side shutdown before
 closing on non-ASCII headers passed the six-test header suite, including
 coalesced and fragmented pipeline controls against both releases. The worker
 also tested delayed input, queued bodies, a write flood and peer reset on Linux;
@@ -397,7 +411,7 @@ parent `OPENAI_API_KEY`. The relay still cannot authenticate partial headers:
 132 unauthenticated partial connections delayed a valid request until the
 connections were closed. Same-user access and broader security remain open.
 
-The isolated full `make test` in `/tmp/modex-auth-full-1030` used `c386b71`,
+The isolated full `make test` in `$TASK_SCRATCH/auth-full-1030` used `c386b71`,
 plus tracked draft patch SHA-256
 `69211338b7c3e6f4e4879059bfbf7ffc200def806b865671407152d99630dae2`
 and `src/modex/auth_token.mojo` SHA-256
@@ -430,7 +444,7 @@ See `docs/evidence/baseline-0.165.1/anthropic-untyped-scalar-input.md`.
 Broader provider semantics, security and all six release targets remain open.
 
 An unpublished per-launch client-token prototype is in the dirty worktree
-`/tmp/modex-integration-20261030`; it is not part of the pushed product. It
+`$TASK_SCRATCH/integration-20261030`; it is not part of the pushed product. It
 generates a random token in the private overlay, passes it to the relay and
 checks the header before reading a body or sending 100 Continue. Synthetic
 launch tests passed for valid, missing, wrong and duplicate credentials,
@@ -459,7 +473,7 @@ invalid-target connection-close assertion observed a close where it expected
 an open socket. The later `b6dd839` test records the release's bounded second
 400 using raw bytes instead of relying on HTTPResponse buffering; its focused
 rerun passed. The historical full run does not qualify the later revision.
-The log is `/tmp/modex-full-777cd3a-20261030.log` (SHA-256
+The log is `$TASK_SCRATCH/full-777cd3a-20261030.log` (SHA-256
 `b85a538bb1db382c72b640daabe9ce8fc48deeec74b7a06c22024489c2ef6a00`).
 
 Single-key streamed DeepSeek continuations expose an unfinished prefetch
@@ -477,14 +491,14 @@ errors in 1,146 Python tests after native checks. Six gated precommit failures
 and seven fragmented-fixture errors predate the response-list fixture repairs;
 the remaining failure is the truncated WebSocket body fixed in `79ff1b6`.
 Focused reruns of the repaired fixtures and the three-process WebSocket case
-passed. The log is `/tmp/modex-full-fa01212-20261030.log` (SHA-256
+passed. The log is `$TASK_SCRATCH/full-fa01212-20261030.log` (SHA-256
 `34c0d50e8c7ebf147e15104c1e76340bef29b059d833bb59a598e235ca867bf7`).
 This historical failed run does not qualify the current revision.
 
 The isolated `2cf20df` full suite finished with one failure in 1,136 Python
 tests after the native checks. Its only failure was the truncated WebSocket
 body mismatch fixed and rerun in `79ff1b6` and the combined checks below.
-The log is `/tmp/modex-full-2cf20df-20261030.log` (SHA-256
+The log is `$TASK_SCRATCH/full-2cf20df-20261030.log` (SHA-256
 `0addeb36b9049ff040a10944d389cf90b2e21a55d3cb7b5a14074148c549c62e`).
 This historical failed run does not establish a full pass for current code.
 
@@ -501,7 +515,7 @@ tests: six gated precommit subtests, two 0.165.1 raw HTTP cases, and the
 0.439.2 chunked connection-close assertion described above. It predates the
 gated-fixture, WebSocket and raw-wire follow-ups; the malformed-trailer raw
 case remains a separately observed mismatch. Its log is
-`/tmp/modex-full-7bad09f-20261030.log` (SHA-256
+`$TASK_SCRATCH/full-7bad09f-20261030.log` (SHA-256
 `007b11cb07fa91c70340dfdc4cd2e8076ec561b719d9374e24227da2f654bb47`).
 The earlier `2cf20df` and `fa01212` runs finished with the failures recorded
 above. Runtime-proxy WebSocket/WSS, ambiguous-header and connection-reuse
@@ -530,8 +544,8 @@ test census, oracle routing and workflow validation also passed. Independent
 review checked the RTK scanner against Unicode separators and SemVer
 boundaries, and led to the prefetched partial-frame investigation below.
 An isolated full `make test` on `7bad09f` is running in
-`/tmp/modex-full-7bad09f-20261030`, logging to
-`/tmp/modex-full-7bad09f-20261030.log`; no full-suite pass is claimed yet.
+`$TASK_SCRATCH/full-7bad09f-20261030`, logging to
+`$TASK_SCRATCH/full-7bad09f-20261030.log`; no full-suite pass is claimed yet.
 All six release targets, broader behavior and security qualification remain
 open.
 
@@ -594,7 +608,7 @@ recovery and legacy-artifact contract plus source executable identity checks.
 The pinned Mojo standard library does not provide compatible locking and
 durable replacement primitives, and invoking Prodex for identity discovery is
 prohibited. The implementation remains fail-closed. Linux x86-64 checks:
-isolated `make build BUILD_DIR=/tmp/modex-session-profile-build`; the focused
+isolated `make build BUILD_DIR=$TASK_SCRATCH/session-profile-build`; the focused
 `test_log_runtime.LogRuntimeTests.test_live_broker_log_gap_is_reproduced_against_frozen_release`;
 the eight-case `tests/capture_log_live.py` capture; and `git diff --check`.
 The fixtures use a temporary HOME/cwd and synthetic capability, with only an
@@ -604,8 +618,8 @@ The combined production build at `fa01212` passed, as did eight focused
 three-process redirect tests, five native deadline/cancellation and passthrough
 tests, and the native transport units. The dependency audit, 50-native/155-
 Python census, oracle routing and workflow validation passed. A full `make
-test` is running in `/tmp/modex-full-fa01212-20261030`, with log
-`/tmp/modex-full-fa01212-20261030.log`; no full-suite result is claimed yet.
+test` is running in `$TASK_SCRATCH/full-fa01212-20261030`, with log
+`$TASK_SCRATCH/full-fa01212-20261030.log`; no full-suite result is claimed yet.
 Cross-origin redirects, HTTPS and general URL behavior remain unqualified.
 
 ## Local relay request versions and large heads (2026-10-30)
@@ -630,7 +644,7 @@ the 2 MiB cap remains. Focused tests pass; details and reproduction are in
 
 The isolated `dd82b3b` full suite finished with two failures in 1,127 Python
 tests after native checks. Both are the stale passthrough header assertions
-corrected and rerun below. Its log is `/tmp/modex-full-dd82b3b-20261030.log`
+corrected and rerun below. Its log is `$TASK_SCRATCH/full-dd82b3b-20261030.log`
 (SHA-256 `c6c4c395492e00588cbbd626680079b3683b95cddf9e96cc8a6f841b55aaae31`).
 This failed historical run does not qualify the current revision.
 
@@ -646,7 +660,7 @@ The isolated full `make test` on `2e7dcc8` finished with two failures in
 1,117 Python tests after native checks. Both failures were stale expectations
 for duplicate passthrough `Content-Type` headers; their corrected fixtures and
 focused reruns are recorded below. The log is
-`/tmp/modex-full-2e7dcc8-20261030.log` (SHA-256
+`$TASK_SCRATCH/full-2e7dcc8-20261030.log` (SHA-256
 `c14d7a4a26abb9c6dbe95922a54ccbf8004a62b3d812f71b93584ca51b42d1ad`).
 This failed historical run does not qualify the current revision.
 
@@ -683,7 +697,7 @@ changes; no current full-suite pass is claimed.
 
 The isolated `b405bc2` full run finished with 40 failures and one error in
 1,100 Python tests after native checks, reproducing the update-cache fixture
-failures documented below. Its log is `/tmp/modex-full-b405bc2-20261030.log`
+failures documented below. Its log is `$TASK_SCRATCH/full-b405bc2-20261030.log`
 (SHA-256 `df3972864371c99bfd1031d1ebedd7530da1bfe2ecb052c11d0db4cd1f1e3177`).
 The focused corrected-fixture reruns pass; this older run does not establish
 full-suite success on the current revision.
@@ -728,12 +742,12 @@ The combined production build at `dd82b3b` passed. Focused real-process
 redaction, numerically equal relay-length and duplicate web-search checks
 passed on that build; the dependency audit, 50-native/155-Python test census,
 oracle routing and workflow validation passed. A full `make test` is running
-in `/tmp/modex-full-dd82b3b-20261030` with log
-`/tmp/modex-full-dd82b3b-20261030.log`; it is not yet a completed result.
+in `$TASK_SCRATCH/full-dd82b3b-20261030` with log
+`$TASK_SCRATCH/full-dd82b3b-20261030.log`; it is not yet a completed result.
 
 The isolated `c5609d0` full suite finished with 40 failures and one error in
 1,096 Python tests after the native checks. The log is
-`/tmp/modex-full-c5609d0-20261030.log` (SHA-256
+`$TASK_SCRATCH/full-c5609d0-20261030.log` (SHA-256
 `8da2310bbef4635e5ecbb2307ae1a47df73e6d57f6246b3b8138af0df37f7350`). Its
 failing Super, app-server, Gateway, and terminal-width tests use fixtures that
 did not seed the 0.165.1 update-cache filename. After correcting those
@@ -754,7 +768,7 @@ both large-header release comparisons passed on the preceding combined relay
 revision. The 25-test dry-run module and Gateway fixture checks passed after
 their changes. The dependency audit, test census, oracle routing and workflow
 validation also passed. A fresh full `make test` is running from an isolated
-`2e7dcc8` worktree; its log is `/tmp/modex-full-2e7dcc8-20261030.log` and no
+`2e7dcc8` worktree; its log is `$TASK_SCRATCH/full-2e7dcc8-20261030.log` and no
 full-suite result is claimed yet. The older runs retain the fixture failures
 documented below.
 
@@ -823,8 +837,8 @@ three-process Codebase Memory, endpoint projection, and Anthropic empty-field
 tests, plus the large-header relay comparisons against each pinned release.
 The production import audit, 154-module test census, oracle-routing tests, and
 workflow validation passed. A full `make test` is running in the isolated
-`/tmp/modex-full-b405bc2-20261030` worktree; its log is
-`/tmp/modex-full-b405bc2-20261030.log`. An earlier full run on `c5609d0` is
+`$TASK_SCRATCH/full-b405bc2-20261030` worktree; its log is
+`$TASK_SCRATCH/full-b405bc2-20261030.log`. An earlier full run on `c5609d0` is
 also still running. Neither run is a completed full-suite result yet.
 
 ## Codebase Memory dry-run discovery (2026-10-30)
@@ -858,14 +872,14 @@ stopped in the native `test_provider_chat_reader` unit before Python tests:
 its direct-reader assertion expected no usage after `message_start`. The
 release reader records the start's usage, and the corrected whole native unit
 passes on the later combined revision. The failed log is
-`/tmp/modex-full-7516396-20261030.log` (SHA-256
+`$TASK_SCRATCH/full-7516396-20261030.log` (SHA-256
 `fcdb8f4c39e4aedb03d51563d3c3d712a07a3a0fa88599e908ff29f21805af18`).
 This focused rerun is not a full-suite pass; rerun the full suite on the
 current combined revision.
 
 The isolated full `make test` run on `89e8c04e7fcd3fb93d52bcafc400d19e5704dfc7`
 finished with three failures in 1,076 Python tests after the production and
-native checks. The local log is `/tmp/modex-full-89e8c04-20261030.log`
+native checks. The local log is `$TASK_SCRATCH/full-89e8c04-20261030.log`
 (SHA-256 `f292b8829be8ee968e03df844df76a4088b35d3feb0ec28e37d42977a229e14a`).
 The session PTY comparison had a timing race and was subsequently synchronized;
 its focused rerun passes. The Anthropic search-edge comparison passes on the
@@ -904,7 +918,7 @@ registries, TUI rendering, and the other release targets remain open. See
 The isolated full `make test` run on `0023b4669e547e27bc4d660786f791c33546d79c`
 completed successfully: production and native checks passed and 1,050 Python
 tests passed in 3,356.477 seconds. The local log is
-`/tmp/modex-full-0023b46-20261030.log` (SHA-256
+`$TASK_SCRATCH/full-0023b46-20261030.log` (SHA-256
 `441ad6b5926568c88ab3331b0adc996696818bbcde4747b84a986ce701bc623a`). This
 run predates later dry-run, provider, and log changes; it does not qualify the
 current revision, non-host targets, or security behavior.
@@ -1160,7 +1174,7 @@ the path atomically to avoid that race. A subsequent local `make test` run on
 the production and native test builds; it predates the removal of a separate
 sleep-dependent gap assertion and all newer commits. It does not qualify the
 current revision or other release targets. The full log is retained locally at
-`/tmp/modex-full-13d4db2-20261030.log` (SHA-256
+`$TASK_SCRATCH/full-13d4db2-20261030.log` (SHA-256
 `dbd3ed9d59ea42b7664fb6868f9e897a938fc6d5251f904c3a17d6abc663c971`). See
 `docs/evidence/log-follow-rotation-recheck-20261030.md`.
 
@@ -2689,7 +2703,7 @@ Prodex 0.439.2 tag is absent; consumer job `122628130127` did not run. The
 reference checker now distinguishes an absent tag from a moved tag and a
 remote lookup failure, while keeping each case fail-closed. Ten focused
 reference tests pass locally. Logs and uploaded evidence are preserved under
-`/tmp/modex-ci-40631003222/`.
+`$TASK_SCRATCH/ci-40631003222/`.
 Fast run `40629714742` on exact SHA `f1b8181` failed the same lookup before
 building; its consumer jobs did not run.
 The official 0.439.2 and historical 0.439.1 binaries were recovered read-only
@@ -3843,7 +3857,7 @@ refs/heads/main` matched that local SHA; main was clean after the push. It
 contains all four reviewed Luna source commits, native token-limit overrides,
 44 native units and the complete 328-method Python passing run.
 
-Sol continued immediately in `/tmp/modex-sol-error-sse-20261026`, then
+Sol continued immediately in `$TASK_SCRATCH/sol-error-sse-20261026`, then
 integrated only the owned relay and new `tests/test_relay_streams.py`. The
 provisional early >=400 SSE change was rejected: live 429 buffering and the
 pinned upstream caller establish that such errors are buffered before
@@ -3935,7 +3949,7 @@ paths and credential-shaped diff review passed before the checkpoint commit. Evi
 No complete contract/platform status changed. All six release qualifications
 remain BLOCKED; the JavaScript SDK, broad security/storage/lifecycle behavior,
 worker lanes and unconnected production recovery remain in the denominator.
-The immediate continuation used `/tmp/modex-sol-error-sse-20261026` for
+The immediate continuation used `$TASK_SCRATCH/sol-error-sse-20261026` for
 redirect SSE passthrough and stream-header validation. Its final scope,
 caller-trace correction and integrated validation are recorded in checkpoint 3
 above. Isolated worker boundaries and verified commit/push cadence continue.
@@ -3951,7 +3965,7 @@ release, progress-aware recovery/backoff, tunnel-client 0.0.18 and Kiro CLI
 2.34.0 were source-traced. Evidence: `docs/evidence/native-super-reference.json`.
 
 The existing tracked and untracked work was preserved and backed up outside
-the repository in `/tmp/modex-parity-20261026-initial`. This checkpoint integrates
+the repository in `$TASK_SCRATCH/parity-20261026-initial`. This checkpoint integrates
 its process capture, Super argv validation and Chat Completions relay work.
 
 The production CLI now admits a narrow native Super launch: DeepSeek with an
@@ -3992,7 +4006,7 @@ effort `none`, rather than the requested Luna/MAX. Worker A implemented native
 passthrough/auth/header/streaming checks. Worker B implemented native recovery
 policy and tests. The primary owns integration, combined testing, docs,
 review, commit and push. Worker stdout/stderr were captured separately under
-`/tmp/modex-worker-{a,b}-20261026.{stdout,stderr}`; raw logs stay outside the
+`$TASK_SCRATCH/worker-{a,b}-20261026.{stdout,stderr}`; raw logs stay outside the
 repository because they contain launcher/account metadata.
 
 `runtime_recovery.mojo` ports the immediate/5/10/20/40/60-second schedule,
@@ -4937,7 +4951,7 @@ denominator and broader transport/security gaps remain unchanged. See
 `docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.
 
 An uncommitted relay admission-budget experiment remains isolated in
-`/tmp/modex-relay-gap-23c5a22-20261030` with code based on `23c5a22`, five
+`$TASK_SCRATCH/relay-gap-23c5a22-20261030` with code based on `23c5a22`, five
 commits behind `origin/main` `63bb015`. Its 136-partial-head production probe
 passed only when the healthy keep-alive client connected after the flood: both
 pinned releases and Modex returned two 200 responses. When that client

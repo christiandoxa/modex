@@ -6,8 +6,8 @@
   `a0bf572d2f93f056c6712a6da348e96078dc84f3885fd7be67807ef389cb3978`.
 - Extracted Codex executable SHA-256:
   `b8a11fedf24b2dfb59a70c9e52b030f9a508dcd49cd2dd0d41956f4c785156b8`.
-- Verified Codex binary used in the comparison: host source
-  `/tmp/modex-codex-rust-v0.166.0-artifact-1030/payload/codex-x86_64-unknown-linux-musl`.
+- Verified Codex binary used in the comparison: the extracted release payload's
+  `codex-x86_64-unknown-linux-musl` executable.
 - Prodex 0.166.0 oracle executable SHA-256:
   `349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d09735`.
 - Modex candidate source commit: `c425701cfdb27d1b3e815011c893d5244e423d56`.
@@ -48,26 +48,34 @@ the route.
 
 ## Reproduce
 
-The namespace replaces `/tmp` with a private tmpfs. Set `CODEX_BINARY` to a
-path visible outside that mount. If the artifact source is under host `/tmp`,
-bind it before mounting tmpfs, as below. Keep the oracle at its verified path.
+The namespace replaces `/tmp` with a private tmpfs. Set `CODEX_ARTIFACT_DIR` to
+the extracted payload directory, `PRODEX_ORACLE` to the verified release
+binary, `NODE_BIN` to the Node binary directory, and `HOST_TOOLS_BIN` to a
+directory containing Python 3.14. If the artifact directory is under host
+`/tmp`, bind it before mounting tmpfs, as below.
 
 ```sh
+CODEX_ARTIFACT_DIR=/path/to/extracted/codex-payload
+HOST_TOOLS_BIN=/path/to/host-tools/bin
+NODE_BIN=/path/to/node/bin
+PRODEX_ORACLE=/path/to/prodex-0.166.0/prodex-x86_64-unknown-linux-gnu
+export CODEX_ARTIFACT_DIR HOST_TOOLS_BIN NODE_BIN PRODEX_ORACLE
+
 timeout 180s unshare -Urnm sh -c '
   mount --make-rprivate / &&
   mount --bind "$PWD" /mnt &&
-  mount --bind /tmp/modex-codex-rust-v0.166.0-artifact-1030/payload /opt &&
+  mount --bind "$CODEX_ARTIFACT_DIR" /opt &&
   mount -t tmpfs -o mode=1777 tmpfs /tmp &&
   ip link set lo up &&
   mkdir -m 700 /tmp/home /tmp/work &&
   cd /mnt &&
   exec env -i HOME=/tmp/home TMPDIR=/tmp/work \
-    PATH=/home/doxa/.local/bin:/usr/local/bin:/usr/bin:/bin \
+    PATH="$HOST_TOOLS_BIN:/usr/local/bin:/usr/bin:/bin" \
     LANG=C.UTF-8 TERM=dumb NO_COLOR=1 \
     MODEX_BINARY=/mnt/build/modex \
     CODEX_BINARY=/opt/codex-x86_64-unknown-linux-musl \
-    NODE_BIN=/home/doxa/.local/share/upkit/node/active/bin \
-    PRODEX_ORACLE=/home/doxa/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu \
+    NODE_BIN="$NODE_BIN" \
+    PRODEX_ORACLE="$PRODEX_ORACLE" \
     MODEX_REAL_CODEX_NETNS=1 PYTHONPATH=tests \
     python3 tests/manual_real_codex_01660_route_comparison.py -v
 '

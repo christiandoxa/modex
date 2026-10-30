@@ -48,7 +48,7 @@ sent one matching body to `/anthropic/v1/messages` with canonical `Host` and
 the synthetic `x-api-key`.
 
 Modex rejects `localhost`, `127.1.example`, malformed octal `127.0.0.08`, an
-empty numeric component, too many components, empty or overflowing hex,
+empty numeric component, too many components, standalone `0x` or overflowing hex,
 tested addresses in 126/8 and 128/8, and numeric non-loopback aliases before a
 loopback request. Direct native GET and streaming transport tests also verify
 `127.1` plus zero-padded port normalization and the canonical `Host` field.

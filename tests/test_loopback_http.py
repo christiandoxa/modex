@@ -139,7 +139,8 @@ class LoopbackHTTPTests(unittest.TestCase):
 
     def test_rejects_malformed_numeric_and_hostname_authorities(self):
         for address in (
-            "127.0.0.08:1", "127..1:1", "127.1.2.3.4:1", "127.1.example:1",
+            "127.0.0.08:1", "127..1:1", "127.1..:1", "127..:1",
+            "127.1.2.3.4:1", "127.1.example:1",
             "localhost:1", "0x:1", "0x100000000:1", "126.0.0.1:1",
             "128.0.0.1:1", "8.8.8.8:1", "0x08080808:1", "167772161:1",
         ):

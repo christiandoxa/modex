@@ -4661,3 +4661,8 @@ controls pass across 0.165.1, 0.439.2 and Modex. The direct native transport
 idle regression checks the new Modex message. The focused production build,
 provider unit and process comparisons passed on Linux x86-64. See
 `docs/evidence/provider-stream-idle-04392.md`.
+
+The prefetch boolean latch does discard read-error text, but repeated chat and
+Anthropic-native partial-frame fixtures returned the same generic decoding
+diagnostic from both frozen releases and Modex. The focused three-process
+regression now locks this observed behavior; no production change was justified.

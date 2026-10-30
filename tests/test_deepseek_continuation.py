@@ -461,6 +461,38 @@ class DeepSeekContinuationTests(unittest.TestCase):
                     if name == "text_idle_first" and binary == MODEX:
                         self.assertEqual(error["message"], "runtime upstream stream idle timed out")
 
+    def test_prefetch_partial_idle_diagnostic_matches_releases(self):
+        cases = (
+            ("chat", {
+                "model": "deepseek-chat", "input": "synthetic partial idle", "stream": True,
+            }, None),
+            ("native", {
+                "model": "deepseek-chat", "input": "synthetic partial native idle", "stream": True,
+                "tools": [{"type": "web_search_preview"}],
+            }, '[deepseek]\nweb_search_mode = "anthropic"\n'),
+        )
+        for name, turn, shared_config in cases:
+            messages = []
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                with self.subTest(path=name, binary=str(binary)):
+                    posts, responses = observe_turns(
+                        binary, [turn],
+                        [{"status": 200, "content_type": "text/event-stream", "body": b"data: {",
+                          "chunked": True, "hold_open": True}],
+                        idle_timeout_ms=100, lookahead_timeout_ms=500,
+                        shared_config=shared_config,
+                    )
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual(responses[0]["status"], 200)
+                    events = [json.loads(line[6:])
+                              for line in bytes.fromhex(responses[0]["body"]).splitlines()
+                              if line.startswith(b"data: ")]
+                    self.assertEqual([event["type"] for event in events], ["response.failed"])
+                    error = events[0]["response"]["error"]
+                    self.assertEqual(error["code"], "provider_stream_error")
+                    messages.append(error["message"])
+            self.assertEqual(messages, ["error decoding response body"] * 3)
+
     def test_precommit_failure_does_not_bind_later_requests(self):
         identities = (
             {"session_id": "synthetic-session"},

@@ -39,3 +39,22 @@ Linux x86-64 checks passed:
 All requests used loopback peers and synthetic keys. No account login or paid
 provider traffic was used. This qualifies selected timeout paths only and does
 not establish general stream or cross-target parity.
+
+## Prefetched partial-frame follow-up
+
+`DeepSeekExchange.prefetch` stores a non-lookahead read failure in a boolean;
+`read_events` maps that deferred failure to `error decoding response body`.
+Changing the latch to preserve the timeout string would change the emitted
+diagnostic on the tested partial-frame path. Repeated three-process captures
+confirmed the frozen 0.165.1 and 0.439.2 binaries also report the generic
+diagnostic: 3 runs of `data: {`, a prefix of valid event JSON, a data line
+without its blank delimiter, and a comment event produced 36 generic observations. A
+further 3-run Anthropic-native `data: {` comparison produced 9 more. These
+prefetched partial-frame paths therefore remain generic for release parity;
+complete text event followed by idle remains covered by the timeout-specific
+path above.
+
+The regression `test_prefetch_partial_idle_diagnostic_matches_releases`
+asserts the generic message for chat and Anthropic-native partial frames across
+all three processes. It passed on Linux x86-64. No production change was
+justified by these observations.

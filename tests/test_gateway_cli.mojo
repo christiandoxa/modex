@@ -4,6 +4,7 @@ from std.testing import assert_equal, assert_true
 from modex.runtime_local_rewrite import _binding_response_id, _continuation_identity_valid, _history, _namespace, _response_headers, local_rewrite_anthropic_messages_upstream, local_rewrite_upstream
 from modex.gateway_cli import gateway_help, parse_gateway_arguments
 from modex.json import JsonDocument, quote_json
+from modex.loopback_http import _request_authority
 from modex.provider_conversations import ProviderConversationStore
 from modex.runtime_binding import RuntimeBindings
 
@@ -125,6 +126,13 @@ def main() raises:
     assert_equal(response_headers[0], (String("x-codex-turn-state"), String("synthetic\tmetadata")))
     assert_equal(response_headers[1], (String("x-empty"), String("")))
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/")[1], "/v1/chat/completions")
+    for url in ["http://127.0.0.1/v1", "http://127.1:/v1", "http://127.1:80/v1"]:
+        assert_equal(local_rewrite_upstream(url), (String("127.0.0.1:80"), String("/v1/chat/completions")))
+    for url in ["http://[::1]/v1", "http://[::1]:/v1", "http://[::1]:80/v1"]:
+        assert_equal(local_rewrite_upstream(url), (String("[::1]:80"), String("/v1/chat/completions")))
+    assert_equal(_request_authority("127.0.0.1", 80), "127.0.0.1")
+    assert_equal(_request_authority("[::1]", 80), "[::1]")
+    assert_equal(_request_authority("127.0.0.1", 8080), "127.0.0.1:8080")
     assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/v1"), (String("127.0.0.1:1234"), String("/anthropic/v1/messages")))
     assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/proxy/v1" )[1], "/proxy/anthropic/v1/messages")
     assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/beta")[1], "/anthropic/v1/messages")
@@ -164,7 +172,7 @@ def main() raises:
     ]:
         assert_equal(local_rewrite_upstream("http://127.0.0.1:1234" + path)[1], target)
     assert_equal(local_rewrite_upstream("http://[::1]:1234/../../other"), (String("[::1]:1234"), String("/other/chat/completions")))
-    for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://localhost:1", "http://127.0.0.1:0", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://user:secret@127.0.0.1:1/v1/../other", "http://user%3Asecret%40127.0.0.1:1/v1/../other", "http://127.0.0.1:1/v1/../other?secret", "http://127.0.0.1:1/v1/../other#fragment", "http://127.0.0.1:1\\v1/../other", "http://127.0.0.1 :1/v1", "http://127.0.0.1: 1/v1", "http://127.0.0.1:1/v1/line\nbreak", "http://127.0.0.1:1/v1/\x7f"]:
+    for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://192.0.2.1/v1", "http://localhost:1", "http://localhost/v1", "http://127.0.0.1:0", "http://user@127.0.0.1/v1", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://user:secret@127.0.0.1:1/v1/../other", "http://user%3Asecret%40127.0.0.1:1/v1/../other", "http://127.0.0.1:1/v1/../other?secret", "http://127.0.0.1:1/v1/../other#fragment", "http://127.0.0.1:1\\v1/../other", "http://127.0.0.1 :1/v1", "http://127.0.0.1: 1/v1", "http://127.0.0.1:1/v1/line\nbreak", "http://127.0.0.1:1/v1/\x7f"]:
         var rejected = False
         try:
             _ = local_rewrite_upstream(url)

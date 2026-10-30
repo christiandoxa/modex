@@ -80,6 +80,7 @@ Prodex state.
 This comparison covers Linux x86-64 and the listed numeric IPv4 spellings.
 It does not test other IPv4 numeric spellings, Unicode or percent-escaped
 hosts, expanded IPv6 loopback spellings, or connecting to a different address
-within `127/8`. All compared URLs had an explicit port. Omitted/default-port
-behavior remains unverified; Modex still requires an explicit port. This is a
+within `127/8`. The comparisons in this file used explicit non-default ports.
+The separate default-port comparison is recorded in
+`docs/evidence/baseline-0.166.0/provider-default-port.md`. This remains a
 focused URL compatibility slice, not full provider or release-target parity.

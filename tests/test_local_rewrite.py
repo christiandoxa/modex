@@ -41,14 +41,16 @@ class Upstream(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, responses):
+    def __init__(self, responses, port=0, ipv6=False):
         self.responses = list(responses)
         self.records = []
         self.response_lock = threading.Lock()
         self.request_condition = threading.Condition()
         self.client_closed = threading.Event()
         self.hold_timed_out = threading.Event()
-        super().__init__(("127.0.0.1", 0), UpstreamHandler)
+        if ipv6:
+            self.address_family = socket.AF_INET6
+        super().__init__(("::1" if ipv6 else "127.0.0.1", port), UpstreamHandler)
 
 
 class UpstreamHandler(BaseHTTPRequestHandler):
@@ -128,8 +130,8 @@ class UpstreamHandler(BaseHTTPRequestHandler):
 
 
 @contextmanager
-def serving(responses):
-    server = Upstream(responses)
+def serving(responses, port=0, ipv6=False):
+    server = Upstream(responses, port, ipv6)
     thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True)
     thread.start()
     try:

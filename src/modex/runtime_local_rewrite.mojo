@@ -47,15 +47,15 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
     var slash = remaining.find("/")
     var address = String(remaining[byte=:slash]) if slash >= 0 else remaining
     var path = String(remaining[byte=slash:]) if slash >= 0 else String()
-    if address.startswith("[::1]:"):
-        var port = _number(address[byte=6:])
+    if address == "[::1]" or address.startswith("[::1]:"):
+        var port = 80 if address.byte_length() <= 6 else _number(address[byte=6:])
         if port < 1 or port > 65535: raise Error("invalid loopback HTTP port")
         address = "[::1]:" + String(port)
     else:
         var parts = address.split(":")
-        if len(parts) != 2: raise Error("this Modex gateway requires a numeric loopback upstream with an explicit port")
+        if len(parts) < 1 or len(parts) > 2: raise Error("this Modex gateway requires a numeric loopback upstream")
         var host = normalize_loopback_ipv4_host(String(parts[0]))
-        var port = _number(parts[1])
+        var port = 80 if len(parts) == 1 or not parts[1] else _number(parts[1])
         if port < 1 or port > 65535: raise Error("invalid loopback HTTP port")
         address = host + ":" + String(port)
     while path.endswith("/"):

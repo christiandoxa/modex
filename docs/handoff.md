@@ -1,5 +1,13 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The DeepSeek numeric-loopback HTTP relay now uses port 80 for omitted and empty
+ports and omits the default port from the Host header. A manual, isolated
+0.166.0 process comparison covers IPv4 and IPv6 loopback forms; native Gateway
+checks cover authority selection and formatting. The port-80 comparison is not
+automated in CI because the existing bubblewrap launcher cannot bind that port.
+Other providers, URL forms, and release targets remain unqualified; see
+`docs/evidence/baseline-0.166.0/provider-default-port.md`.
+
 The DeepSeek loopback transport now canonicalizes tested numeric IPv4 aliases
 such as `127.1` and integer, octal, hexadecimal, and trailing-dot forms, while
 requiring a numeric `127/8` destination. Active 0.166.0 comparisons cover Chat

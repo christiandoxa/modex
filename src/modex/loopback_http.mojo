@@ -92,6 +92,10 @@ def normalize_loopback_ipv4_host(host: String) raises -> String:
 
 
 
+def _request_authority(host: String, port: Int) -> String:
+    return host if port == 80 else host + ":" + String(port)
+
+
 def _hex(text: StringSlice) raises -> Int:
     if text.byte_length() == 0:
         raise Error("invalid chunk size")
@@ -507,7 +511,7 @@ def loopback_get(
         var port = _number(address[byte=close_bracket + 2:])
         if port == 0 or port > 65535:
             raise Error("invalid loopback HTTP port")
-        request_address = "[::1]:" + String(port)
+        request_address = _request_authority("[::1]", port)
         req = _request(path, header_name, header_value, request_address)
         fd = _open_loopback_socket(True)
         var addr_bytes = Array[UInt8, 16](fill=0)
@@ -533,7 +537,7 @@ def loopback_get(
         var port = _number(parts[1])
         if port == 0 or port > 65535:
             raise Error("invalid loopback HTTP port")
-        request_address = host + ":" + String(port)
+        request_address = _request_authority(host, port)
         req = _request(path, header_name, header_value, request_address)
         fd = _open_loopback_socket(False)
         var peer = sockaddr_in(port=_port_bytes(port), addr=in_addr(s_addr=_network32(ip)))
@@ -800,9 +804,9 @@ struct LoopbackHTTPStream(Movable):
         if port == 0 or port > 65535:
             raise Error("invalid loopback HTTP port")
         if ipv6:
-            request_address = "[::1]:" + String(port)
+            request_address = _request_authority("[::1]", port)
         else:
-            request_address = host + ":" + String(port)
+            request_address = _request_authority(host, port)
         var request = _stream_request(path, headers, request_address, len(body), request_method, request_header_limit, request_field_limit, request_connection_close, include_content_length)
         _check_downstream_peer(self.downstream_fd)
         _check_cancellation(self.cancel_fd)

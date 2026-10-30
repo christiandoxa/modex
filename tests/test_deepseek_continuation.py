@@ -88,7 +88,8 @@ def observe_turns(
     binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None,
     lookahead_timeout_ms=None, api_keys=None, concurrent=False,
     followup_turns=None, followup_concurrent=False, shared_config=None, latest_version="0.439.2",
-    base_scheme="http", base_host="127.0.0.1", base_port_prefix="",
+    base_scheme="http", base_host="127.0.0.1", base_port_prefix="", base_port=0,
+    omit_base_port=False, upstream_ipv6=False,
 ):
     with tempfile.TemporaryDirectory(prefix="modex-continuation-") as temporary:
         root = Path(temporary)
@@ -128,7 +129,9 @@ def observe_turns(
             followups_file.write_text(json.dumps(followup_turns))
             environment["MODEX_CONTINUATION_FOLLOWUPS_FILE"] = str(followups_file)
         response_fixtures = [dict(response) for response in responses]
-        with serving(response_fixtures) as server:
+        server_context = (serving(response_fixtures, base_port, upstream_ipv6)
+                          if base_port or upstream_ipv6 else serving(response_fixtures))
+        with server_context as server:
             for response in server.responses:
                 headers = response.get("response_headers")
                 if headers:
@@ -137,10 +140,10 @@ def observe_turns(
                         for name, value in headers
                     ]
             auth_args = ["--api-key", SYNTHETIC_API_KEY] if api_keys is None else []
-            port = base_port_prefix + str(server.server_port)
+            port = "" if omit_base_port else ":" + base_port_prefix + str(server.server_port)
             result = subprocess.run(
                 [str(binary), "super", "--provider", "deepseek", *auth_args,
-                 "--base-url", f"{base_scheme}://{base_host}:{port}{base_path}", "--model", "deepseek-chat",
+                 "--base-url", f"{base_scheme}://{base_host}{port}{base_path}", "--model", "deepseek-chat",
                  "--no-presidio", "--no-sub-agent", "--skip-quota-check", "exec", "--", "synthetic"],
                 cwd=root / "work", env=environment, capture_output=True, timeout=45,
             )

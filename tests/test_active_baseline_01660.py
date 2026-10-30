@@ -1,5 +1,6 @@
 """Process checks against the official 0.166.0 active release."""
 
+import base64
 import hashlib
 import json
 import os
@@ -7,6 +8,8 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+
+from session_oracle import sandbox_command
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -85,6 +88,63 @@ class ActiveBaseline01660Tests(unittest.TestCase):
                 identity = [record["params"]["clientInfo"] for record in records
                             if record.get("kind") == "request" and record.get("method") == "initialize"]
                 self.assertEqual(identity, [{"name": "prodex-hook-trust", "version": "0.166.0"}])
+
+    def test_log_last_matches_synthetic_transcript_and_runtime_events(self):
+        from test_logs import session_fixture
+
+        sentinel = "synthetic-secret-token"
+        records = [
+            {"timestamp": "2026-10-24T01:02:04Z", "event": "upstream_payload", "fields": {
+                "request": "7", "transport": "http", "route": "responses", "profile": "main",
+                "bytes": "10", "logged_bytes": "10", "truncated": "false",
+                "payload_b64": base64.b64encode(b'{"input":"hello"}').decode()}},
+            {"timestamp": "2026-10-24T01:02:05Z", "event": "token_usage", "fields": {
+                "request": "7", "transport": "http", "profile": "main", "source": "responses",
+                "input_tokens": "12", "cached_input_tokens": "3", "output_tokens": "4",
+                "reasoning_tokens": "1"}},
+        ]
+        outputs = []
+        app_state_paths = []
+        for binary in (ORACLE, MODEX):
+            with tempfile.TemporaryDirectory(prefix="modex-active-log-last-") as directory:
+                root = Path(directory)
+                (root / "home").mkdir(mode=0o700)
+                (root / "workspace").mkdir()
+                runtime = root / "runtime"
+                runtime.mkdir()
+                (runtime / "prodex-runtime-fixture.log").write_text(
+                    "\n".join(map(json.dumps, records)) + "\n")
+                session_fixture(root, "Authorization: Bearer " + sentinel)
+                session_path = next((root / "home/.codex").rglob("*.jsonl"))
+                before = session_path.read_bytes()
+                result = subprocess.run(
+                    sandbox_command(
+                        binary, root, ["log", "last", "--json"],
+                        argv0="prodex" if binary == ORACLE else "modex",
+                        environment={"TZ": "UTC", "PRODEX_RUNTIME_LOG_DIR": str(runtime)},
+                    ),
+                    stdin=subprocess.DEVNULL, capture_output=True, timeout=10, check=False,
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""))
+                self.assertNotIn(sentinel.encode(), result.stdout)
+                self.assertEqual(session_path.read_bytes(), before)
+                app_root = root / "home/.prodex"
+                app_state_paths.append(sorted(
+                    [str(app_root.relative_to(root)), *(
+                        str(path.relative_to(root)) for path in app_root.rglob("*")
+                    )]
+                ))
+                outputs.append(result.stdout)
+
+        self.assertEqual(outputs[1], outputs[0])
+        self.assertEqual(app_state_paths, [["home/.prodex"], ["home/.prodex"]])
+        events = [json.loads(line) for line in outputs[0].splitlines()]
+        self.assertEqual(len(events), 3)
+        self.assertEqual(events[0]["source"], "user")
+        self.assertEqual(events[1]["route"], "responses")
+        self.assertEqual(events[1]["payload"], '{"input":"hello"}')
+        self.assertEqual(events[2]["event"], "token_usage")
+        self.assertEqual(events[2]["input_tokens"], 12)
 
     def test_super_help_and_selected_parser_cases_match_active_release(self):
         cases = (

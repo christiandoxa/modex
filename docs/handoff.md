@@ -41,6 +41,11 @@ process comparison covers both paths, nested object key ordering, Unicode,
 escaping and argument precedence; ordinary function calls retain their tested
 precedence. Broader tool conversion remains unverified.
 
+One synthetic `log last --json` transcript, upstream payload and token-usage
+snapshot matches the active release, including bearer-token redaction and
+unchanged session bytes. This does not establish live logging or broader
+redaction parity; see `docs/evidence/baseline-0.166.0/log-last-synthetic.md`.
+
 DeepSeek `low` reasoning effort now remains `low` in both request paths,
 matching 0.166.0 rather than the 0.439.2 mapping to `high`. Isolated process
 comparisons cover flat and nested effort, tool choice, continuation, and other

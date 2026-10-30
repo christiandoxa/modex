@@ -285,6 +285,10 @@ Both focused real-Codex tests also passed on the `c7cb160` production sources
 in a private user, mount, and loopback-only network namespace. Normalized
 request bodies matched in the synthetic 401 comparison, while Modex retained
 overlay state that the release removed; that lifecycle gap remains open.
+The existing Modex Super launcher passed Codex's
+`--dangerously-bypass-approvals-and-sandbox` flag in that isolated test. This
+does not qualify Codex's own safeguards; do not extend or exercise that bypass
+in future migration checks under the current user instruction.
 An earlier isolated real-Codex 401 comparison observed Prodex routing to
 Anthropic Messages and Modex to Chat Completions with the same normalized
 client arguments. After the catalog and namespace fixes, a fresh isolated

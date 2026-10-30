@@ -12,6 +12,10 @@ case both launchers made six requests to `/anthropic/v1/messages`; their
 normalized request bodies matched, while raw bodies differed. Prodex removed
 the overlay and Modex retained it, including synthetic `auth.json`. This rerun
 does not qualify profile-backed routing, overlay lifecycle, or full parity.
+The existing Modex Super launcher passed Codex
+`--dangerously-bypass-approvals-and-sandbox` during this test. The process was
+confined to the private user, mount, and loopback-only network namespace, with
+synthetic state; this does not qualify Codex's own approval or sandbox controls.
 
 After the active catalog and Anthropic namespace fixes, the Linux x86-64 build
 from production sources at `2163ce9245513a73f5d30b6ff60bc757f714acb5` has

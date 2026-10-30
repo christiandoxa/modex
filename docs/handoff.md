@@ -281,6 +281,10 @@ Modex through a synthetic loopback provider inside a network namespace with
 no default routes. Its release archive and executable hashes, isolation and
 reproduction command are in `docs/evidence/baseline-0.166.0/codex-offline.md`.
 This is one local-auth case, not general Codex or Guardian parity.
+Both focused real-Codex tests also passed on the `c7cb160` production sources
+in a private user, mount, and loopback-only network namespace. Normalized
+request bodies matched in the synthetic 401 comparison, while Modex retained
+overlay state that the release removed; that lifecycle gap remains open.
 An earlier isolated real-Codex 401 comparison observed Prodex routing to
 Anthropic Messages and Modex to Chat Completions with the same normalized
 client arguments. After the catalog and namespace fixes, a fresh isolated

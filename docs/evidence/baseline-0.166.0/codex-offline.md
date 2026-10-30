@@ -2,6 +2,17 @@
 
 ## Current comparison
 
+The same two focused cases passed in 21.029 seconds using the Modex production
+sources at `c7cb160eacbd95e1d47f4b2cee74d7bc86d4f127` (unchanged from the
+preceding production build) and executable SHA-256
+`544d60124512ecd60efe01c1b683ead31b28a0cc6cf40402ce150cb5a7e7a9f0`.
+The pinned real Codex and Prodex binaries ran with synthetic credentials in a
+private user, mount, and loopback-only network namespace. In the synthetic 401
+case both launchers made six requests to `/anthropic/v1/messages`; their
+normalized request bodies matched, while raw bodies differed. Prodex removed
+the overlay and Modex retained it, including synthetic `auth.json`. This rerun
+does not qualify profile-backed routing, overlay lifecycle, or full parity.
+
 After the active catalog and Anthropic namespace fixes, the Linux x86-64 build
 from production sources at `2163ce9245513a73f5d30b6ff60bc757f714acb5` has
 SHA-256 `eb64b60bbad9116ccf55ef9d0a8a3d1bc3bae59e0c2f6fe42850bcad506bcb5a`.

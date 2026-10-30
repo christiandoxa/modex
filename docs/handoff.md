@@ -1,5 +1,20 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The `fa01212` full run has reported failures in fragmented and gated
+precommit fixtures. The integrated fragmented fixture already gained the
+response list required by redirect handling; the gated fixture lacked it as
+well, causing its synthetic peer never to reach the gate. A focused gated
+invalid-comment test reproduced that failure on `b20dbba`; after supplying
+the response list, all seven tests in the precommit-boundaries and invalid
+UTF-8 modules passed. The running `7bad09f` full suite predates this fixture
+correction and cannot establish a pass for it.
+
+The older `2cf20df` full run also reports a truncated WebSocket-upgrade
+failure. A focused three-process probe on `b20dbba` confirmed both releases
+close without a response on a half-closed, incomplete declared body without
+`Connection: Upgrade`, while Modex sends 426. This production mismatch is
+under investigation; no parity is claimed for it.
+
 The combined production build at `636d01c` passed; later commits through
 `7bad09f` add tests and evidence only. Focused RTK/Playwright, live-log,
 provider idle/partial/truncation/cancellation and relay version/head controls

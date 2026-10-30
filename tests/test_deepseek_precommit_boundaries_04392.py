@@ -231,6 +231,7 @@ def observe_gated(binary, parts, gate_before, *, idle_timeout_ms, lookahead_time
     @contextmanager
     def gated_serving(responses):
         server = GatedUpstream(responses[0]["raw_parts"], gate_before)
+        server.responses = responses
         servers.append(server)
         server_ready.set()
         try:

@@ -38,8 +38,13 @@ generated with Rust 1.99.1 `DefaultHasher::new()` for UUID
 | `0x123456789abcdef0` | `9a52489a9abcdef0` |
 | `u64::MAX` | `14e68c0dffffffff` |
 
-This verifies the deterministic hash mapping for the supplied UUID and
-sequence. Modex still lacks Prodex's full per-instance seed, which hashes a
+The native test also checks six distinct UUIDv7 values against the same pinned
+Rust toolchain, including zero, `2^32 - 1`, `2^32`, and `u64::MAX` sequence
+boundaries and uppercase hexadecimal input. These additional vectors exercise
+both UUID words; they do not determine the runtime instance seed.
+
+These checks verify the deterministic hash mapping for the supplied UUID and
+sequence inputs. Modex still lacks Prodex's full per-instance seed, which hashes a
 fresh UUID, process ID, current thread ID, and log path. The audited public
 Mojo 1.2 `std.os.process` and `std.runtime` interfaces expose no PID or
 current-thread-ID getter; a compile probe confirmed the shipped

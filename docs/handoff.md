@@ -154,6 +154,11 @@ Anthropic namespace tools also reach the shared Responses mapper: selected
 automatic and forced-mode requests match the active release, and four malformed
 child controls return matching errors before provider dispatch. See
 `docs/evidence/baseline-0.166.0/anthropic-namespace-tools.md`.
+Custom tool calls and outputs now also reach that validated mapper in the
+Anthropic Messages path. Synthetic 0.166.0 process comparisons cover automatic
+and forced mode, an ordinary function-call control, and malformed inputs that
+remain rejected before provider I/O; see
+`docs/evidence/baseline-0.166.0/anthropic-custom-tool-calls.md`.
 The DeepSeek Super launch catalog matches the active 0.166.0 process for
 selected known models, retired aliases, priority gaps, reasoning choices and
 escaped custom IDs. This qualifies only the tested Linux x86-64 launch cases,

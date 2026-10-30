@@ -34,9 +34,9 @@ def validate_deepseek_anthropic_request(source: String) raises:
     elif doc.nodes[input].kind == JSON_ARRAY:
         for item in doc.nodes[input].children:
             var type = doc.string(doc.get(item, "type"))
-            if type == "function_call":
+            if type == "function_call" or type == "custom_tool_call":
                 continue
-            if type == "function_call_output":
+            if type == "function_call_output" or type == "custom_tool_call_output":
                 # The shared request mapper validates ID aliases and output fields.
                 continue
             var type_node = doc.get(item, "type")

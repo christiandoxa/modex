@@ -1,5 +1,16 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The 19 active-release process modules listed in `scripts/ci/run-fast.sh`
+passed 78 tests in 106.422 seconds against the verified 0.166.0 oracle on
+`a9d4ff15ea0eb714a3159185e3c327f22727cb2b`. The Modex executable SHA-256 was
+`9d67f75019604993452e5198fc4ce89a73efdb9a67fa94eb19bfc78d3dd62b17`;
+its production sources match that commit. The run used a private user, mount,
+and loopback-only network namespace, read-only worktree and oracle, synthetic
+fixtures, and isolated temporary storage. It retained no log file. The three
+CI helper modules on the same script line were not part of this process run.
+Some tests characterize known gaps or exercise Modex alone, so this result is
+not a full parity or full CI verdict.
+
 Selected DeepSeek and Anthropic stream ordering cases now have active 0.166.0
 process comparisons, including partial errors and search-mode configuration.
 Two provider request bodies differ in object member order but match as

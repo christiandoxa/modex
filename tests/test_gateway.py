@@ -128,11 +128,13 @@ def environment_for(root):
     }
 
 
-def seed_update_cache(environment):
-    path = Path(environment["PRODEX_HOME"]) / "update-check.json"
+def seed_update_cache(environment, binary):
+    from test_cli_01651 import ORACLE as ORACLE_01651
+    name = "update-check-codex-aligned-v1.json" if Path(binary).resolve() == ORACLE_01651.resolve() else "update-check.json"
+    path = Path(environment["PRODEX_HOME"]) / name
     path.write_text(json.dumps({
         "source": "GitHub",
-        "latest_version": "0.439.0",
+        "latest_version": "0.165.1",
         "checked_at": int(time.time()),
     }, separators=(",", ":")) + "\n", encoding="utf-8")
     path.chmod(0o600)
@@ -144,7 +146,7 @@ def run_case(case, config_mode=0o600, binary=MODEX, app_state=None):
         workspace = root / "workspace"
         workspace.mkdir(mode=0o700)
         environment = environment_for(root)
-        seed_update_cache(environment)
+        seed_update_cache(environment, binary)
         if app_state is not None:
             state_path = Path(environment["PRODEX_HOME"]) / "state.json"
             state_path.write_text(app_state, encoding="utf-8")

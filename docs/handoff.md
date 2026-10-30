@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The older full-suite runs also reported Gateway classification failures from
+the same release-specific update-cache mismatch. The Gateway fixture now seeds
+the aligned 0.165.1 cache filename for that oracle and a non-newer synthetic
+version for each release. All six historical Gateway classification tests and
+five active Gateway tests pass in focused reruns. The two in-flight full runs
+predate this fix and remain failed; a later full run is still required.
+
 ## Playwright dry-run readiness (2026-10-30)
 
 Super dry-run now probes a locally resolved `npx --no-install @playwright/mcp

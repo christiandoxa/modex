@@ -51,7 +51,9 @@ class DeepSeekStreamItemIDs01660Tests(unittest.TestCase):
             raise AssertionError("PRODEX_ORACLE must identify the verified 0.166.0 release")
 
     def observe(self, binary, turns, replies):
-        upstream, responses = observe_turns(binary, turns, replies)
+        upstream, responses = observe_turns(
+            binary, turns, replies, latest_version="0.166.0",
+        )
         self.assertEqual([row["status"] for row in responses], [200] * len(turns))
         self.assertEqual(len(upstream), len(turns))
         self.assertEqual([row["path"] for row in upstream], ["/v1/chat/completions"] * len(turns))

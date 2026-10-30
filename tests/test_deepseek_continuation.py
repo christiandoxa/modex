@@ -87,7 +87,11 @@ print("synthetic-continuation-complete")
 '''
 
 
-def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None, lookahead_timeout_ms=None, api_keys=None, concurrent=False, followup_turns=None, shared_config=None):
+def observe_turns(
+    binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None,
+    lookahead_timeout_ms=None, api_keys=None, concurrent=False,
+    followup_turns=None, shared_config=None, latest_version="0.439.2",
+):
     with tempfile.TemporaryDirectory(prefix="modex-continuation-") as temporary:
         root = Path(temporary)
         for name in ("home", "state", "shared", "work"):
@@ -96,7 +100,8 @@ def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=
             (root / "shared/config.toml").write_text(shared_config)
             (root / "shared/config.toml").chmod(0o600)
         (root / "state/update-check.json").write_text(
-            '{"source":"GitHub","latest_version":"0.439.2","checked_at":4102444800}'
+            json.dumps({"source": "GitHub", "latest_version": latest_version,
+                        "checked_at": 4102444800}, separators=(",", ":"))
         )
         codex = root / "codex"
         codex.write_text("#!" + sys.executable + "\n" + CLIENT)

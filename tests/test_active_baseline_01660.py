@@ -451,6 +451,7 @@ class ActiveBaseline01660Tests(unittest.TestCase):
             with self.subTest(binary=str(binary)):
                 upstream, responses = observe_turns(
                     binary, turns, [buffered_reply(index) for index in range(len(turns))],
+                    latest_version="0.166.0",
                 )
                 self.assertEqual([row["status"] for row in responses], [200] * len(turns))
                 self.assertEqual(len(upstream), len(turns))

@@ -39,7 +39,9 @@ class DeepSeekReasoning01660Tests(unittest.TestCase):
         observations = []
         for binary in (ORACLE, MODEX):
             with self.subTest(binary=str(binary)):
-                upstream, responses = observe_turns(binary, turns, replies)
+                upstream, responses = observe_turns(
+                    binary, turns, replies, latest_version="0.166.0",
+                )
                 self.assertEqual([row["status"] for row in responses], [200] * len(turns))
                 self.assertEqual(len(upstream), len(turns))
                 bodies = [json.loads(row["body"]) for row in upstream]
@@ -72,6 +74,7 @@ class DeepSeekReasoning01660Tests(unittest.TestCase):
             with self.subTest(binary=str(binary)):
                 upstream, responses = observe_turns(
                     binary, turns, [buffered_reply(0), buffered_reply(1)],
+                    latest_version="0.166.0",
                 )
                 self.assertEqual([row["status"] for row in responses], [200, 200])
                 self.assertEqual([row["path"] for row in upstream],
@@ -109,7 +112,9 @@ class DeepSeekReasoning01660Tests(unittest.TestCase):
         observations = []
         for binary in (ORACLE, MODEX):
             with self.subTest(binary=str(binary)):
-                upstream, responses = observe_turns(binary, turns, [first, buffered_reply(1)])
+                upstream, responses = observe_turns(
+                    binary, turns, [first, buffered_reply(1)], latest_version="0.166.0",
+                )
                 self.assertEqual([row["status"] for row in responses], [200, 200])
                 self.assertEqual(len(upstream), 2)
                 followup = json.loads(upstream[1]["body"])

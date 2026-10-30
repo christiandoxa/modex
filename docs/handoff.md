@@ -102,6 +102,17 @@ comparisons cover flat and nested effort, tool choice, continuation, and other
 effort controls. The historical comparison records the 0.439.2 divergence.
 These cases do not establish broader DeepSeek parity.
 
+Buffered Chat Completions and Responses passthrough also match the active
+0.166.0 oracle for ASCII/HTAB turn-state headers, non-ASCII omission, binary
+bodies, hop-header filtering and one upstream POST per request. The earlier
+non-ASCII mismatch capture remains historical; this focused comparison does
+not qualify streaming metadata or broader provider parity. See
+`docs/evidence/baseline-0.166.0/provider-buffered-metadata.md`. All active
+0.166.0 callers of the shared process fixture now set its temporary update
+metadata to 0.166.0 explicitly; the historical default remains unchanged. The
+25-method active subset, including the manual fragmented-tool-stream case,
+passed inside a private namespace.
+
 In the Anthropic Messages route, untyped input items without text no longer
 fail preflight solely because `content` is absent. Pinned 0.166.0 process
 comparisons cover selected missing, empty, null and scalar content, mixed

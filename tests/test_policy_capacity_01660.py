@@ -29,6 +29,7 @@ class PolicyCapacityUnavailable01660ApiKeyPathTests(unittest.TestCase):
                         buffered_reply(9),
                     ],
                     api_keys=KEYS,
+                    latest_version="0.166.0",
                 )
                 self.assertEqual(
                     [post["headers"]["authorization"] for post in upstream],
@@ -50,6 +51,7 @@ class PolicyCapacityUnavailable01660ApiKeyPathTests(unittest.TestCase):
                         buffered_reply(9),
                     ],
                     api_keys="synthetic-key-a",
+                    latest_version="0.166.0",
                 )
                 self.assertEqual(len(upstream), 1)
                 self.assertEqual(upstream[0]["headers"]["authorization"], KEY_A)
@@ -69,6 +71,7 @@ class PolicyCapacityUnavailable01660ApiKeyPathTests(unittest.TestCase):
                         buffered_reply(10),
                     ],
                     api_keys=KEYS,
+                    latest_version="0.166.0",
                 )
                 self.assertEqual(
                     [post["headers"]["authorization"] for post in upstream],

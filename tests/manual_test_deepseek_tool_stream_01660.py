@@ -132,7 +132,9 @@ class DeepSeekToolStream01660Tests(unittest.TestCase):
         }
         observations = []
         for binary in (ORACLE, MODEX):
-            upstream, responses = observe_turns(binary, [turn], [streamed_tool_reply()])
+            upstream, responses = observe_turns(
+                binary, [turn], [streamed_tool_reply()], latest_version="0.166.0",
+            )
             self.assertEqual(len(upstream), 1)
             self.assertEqual(len(responses), 1)
             self.assertEqual(responses[0]["status"], 200)

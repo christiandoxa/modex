@@ -37,6 +37,7 @@ class GuardianApiKey01660Tests(unittest.TestCase):
                     GUARDIAN_TURNS,
                     [buffered_reply(1), buffered_reply(2)],
                     api_keys=KEYS,
+                    latest_version="0.166.0",
                 )
                 self.assertEqual(
                     [post["headers"]["authorization"] for post in upstream],
@@ -57,6 +58,7 @@ class GuardianApiKey01660Tests(unittest.TestCase):
                     GUARDIAN_TURNS,
                     [buffered_reply(1), quota, buffered_reply(3)],
                     api_keys=KEYS,
+                    latest_version="0.166.0",
                 )
                 self.assertEqual(
                     [post["headers"]["authorization"] for post in upstream],

@@ -88,11 +88,13 @@ mount namespace with a private user-owned `/tmp`. A plain `unshare -Urn`
 attempt failed Prodex's secret-location validation because host `/tmp`'s owner
 was unmapped; the passing setup retains that validation.
 
-A full isolated `make test` is running against exact Modex commit
+A full isolated `make test` finished against exact Modex commit
 `94b514c2fe3992a9f2219b035746820f8fe17161`, with the verified 0.166.0 oracle
-as `PRODEX_ORACLE` and separate versioned historical oracles. Its log is
-`/tmp/modex-01660-full-94b514c.log` (make PID 771360); it has not finished and
-is not a pass. It has reported a CI-cleanliness test error and a historical
+as `PRODEX_ORACLE` and separate versioned historical oracles. It ran 1,182
+Python tests in 3,416.417 seconds and failed with one error and one failure.
+Its log is `/tmp/modex-01660-full-94b514c.log`, SHA-256
+`e62110a7ce5174463bf0c24a6321fc1bbb8c9a14a7ce9160d805d27e9e527c26`.
+The failures were a CI-cleanliness test error and a historical
 private-temp fixture failure. The first expected an old CI command spelling;
 the second passed a generic oracle variable into a sanitized HOME even though
 its historical fixture now requires a version-specific oracle. Both tests have
@@ -104,7 +106,15 @@ A second full run starts from exact commit
 `418afa07d24d6c89abdc508f55ef287258302dab`, including the fixture corrections
 and custom-tool change, in `/tmp/modex-01660-full-418afa0` (make PID 936634;
 log `/tmp/modex-01660-full-418afa0.log`). It has not finished and is not a
-pass. The earlier run continues separately to expose additional failures.
+pass.
+
+A third full run starts from exact commit
+`b04873c96f55db20151e2c284144824ec470c3aa` in
+`/tmp/modex-01660-full-b04873c`, with a cleared environment, private HOME and
+temporary directory, and explicit active and historical oracle paths. Its log
+is `/tmp/modex-01660-full-b04873c.log` (launcher PID 1751677). It is still
+running and is not a pass. The suite runs against that fixed snapshot, not any
+later changes.
 
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing

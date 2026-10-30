@@ -163,7 +163,7 @@ class CliTests(unittest.TestCase):
     def test_unimplemented_command_fails_without_echoing_arguments(self):
         # This checks honest development behavior, not baseline command parity.
         sentinel = "synthetic-secret-that-must-not-appear"
-        result, mutations = isolated_run(MODEX, ["gateway", "--api-key", sentinel])
+        result, mutations = isolated_run(MODEX, ["gateway", "--provider", "anthropic", "--api-key", sentinel])
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout, b"")
         self.assertIn(b"has not implemented", result.stderr)

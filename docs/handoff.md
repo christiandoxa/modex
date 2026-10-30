@@ -186,6 +186,11 @@ and explicit active and historical binary and source paths, including the
 previously omitted 0.439.1 source. Its launcher PID is 2763309 and log is
 `/tmp/modex-01660-full-8993f0d.log`. It is still running and is not a pass;
 its user/mount/network namespace is a distinct test environment.
+It has reported a CLI regression fixture failure: the omitted-provider
+Gateway now reaches its no-profile preflight, so that fixture's expected
+unimplemented-provider error was stale. The fixture now explicitly selects an
+unsupported provider and still checks that a synthetic key is not echoed; its
+two focused CLI tests pass. The running snapshot predates this correction.
 
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing

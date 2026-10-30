@@ -251,14 +251,16 @@ def _catalog_config_number(config: TOMLDocument, key: String, fallback: UInt64) 
 
 
 def deepseek_model_catalog(launch_model: String, context_window: UInt64, compact_limit: UInt64) -> String:
+    # Retired aliases stay in order to preserve the source priorities after filtering.
     var presets: List[Tuple[String, String, String]] = [
         ("auto", "DeepSeek Auto", "Prodex DeepSeek fallback chain routed through current DeepSeek models."),
         ("pro", "DeepSeek Pro", "Prodex DeepSeek Pro alias routed through DeepSeek V4 Pro."),
-        ("flash", "DeepSeek Flash", "Prodex DeepSeek Flash alias routed through DeepSeek V4 Flash."),
+        ("flash", "DeepSeek Flash", "Prodex DeepSeek Flash alias routed through current DeepSeek Flash."),
         ("deepseek-v4-pro", "DeepSeek V4 Pro", "DeepSeek V4 Pro routed through the Prodex Responses adapter."),
         ("deepseek-v4-flash", "DeepSeek V4 Flash", "DeepSeek V4 Flash routed through the Prodex Responses adapter."),
         ("deepseek-chat", "DeepSeek Chat", "DeepSeek chat compatibility model routed through the Prodex Responses adapter."),
         ("deepseek-reasoner", "DeepSeek Reasoner", "DeepSeek reasoner compatibility model routed through the Prodex Responses adapter."),
+        ("deepseek-flash", "DeepSeek V4.1 Flash", "Current DeepSeek Flash routed through the Prodex Responses adapter."),
     ]
     var instructions = String("You are Codex, a coding agent. You and the user share the same workspace.\n\nFocus on the user's software task. Inspect the codebase before changing behavior, make narrow edits, preserve user changes, and verify with relevant tests or commands when feasible.\n\nUse tools deliberately. For shell work, prefer fast focused commands. For file edits, keep changes minimal and explain non-obvious logic in short comments only when useful.")
     var models = List[String]()
@@ -266,23 +268,32 @@ def deepseek_model_catalog(launch_model: String, context_window: UInt64, compact
     for preset in presets:
         slugs.append(preset[0])
     var seen = List[String]()
+    var priority = 0
     for slug in slugs:
         var folded = ascii_lower(slug)
         if folded in seen:
             continue
         seen.append(folded)
+        priority += 1
+        if folded in ["deepseek-chat", "deepseek-reasoner"]:
+            continue
         var name = slug
         var description = String("DeepSeek model routed through the Prodex Responses adapter.")
+        var catalog_model = False
         for preset in presets:
             if preset[0] == folded:
                 name = preset[1]
                 description = preset[2]
+                catalog_model = True
                 break
         var row = String('{"additional_speed_tiers":[],"apply_patch_tool_type":"freeform","auto_compact_token_limit":') + String(compact_limit) + ',"availability_nux":null,"base_instructions":' + quote_json(instructions)
         row += ',"context_window":' + String(context_window) + ',"default_reasoning_level":"high","default_reasoning_summary":"none","default_service_tier":null,"default_verbosity":null,"description":' + quote_json(description)
-        row += ',"display_name":' + quote_json(name) + ',"effective_context_window_percent":95,"experimental_supported_tools":[],"input_modalities":["text"],"max_context_window":' + String(context_window) + ',"priority":' + String(len(models) + 1)
+        row += ',"display_name":' + quote_json(name) + ',"effective_context_window_percent":95,"experimental_supported_tools":[],"input_modalities":["text"],"max_context_window":' + String(context_window) + ',"priority":' + String(priority)
         row += ',"service_tiers":[],"shell_type":"shell_command","slug":' + quote_json(slug) + ',"support_verbosity":false,"supported_in_api":true,"supported_reasoning_levels":['
-        row += '{"description":"DeepSeek low reasoning effort","effort":"low"},{"description":"DeepSeek medium reasoning effort","effort":"medium"},{"description":"DeepSeek high reasoning effort","effort":"high"},{"description":"DeepSeek max reasoning effort","effort":"xhigh"}]'
+        if catalog_model:
+            row += '{"description":"No reasoning effort","effort":"none"},{"description":"Low reasoning effort","effort":"low"},{"description":"High reasoning effort","effort":"high"},{"description":"Max reasoning effort","effort":"max"}]'
+        else:
+            row += '{"description":"DeepSeek low reasoning effort","effort":"low"},{"description":"DeepSeek medium reasoning effort","effort":"medium"},{"description":"DeepSeek high reasoning effort","effort":"high"},{"description":"DeepSeek max reasoning effort","effort":"xhigh"}]'
         row += ',"supports_image_detail_original":false,"supports_parallel_tool_calls":true,"supports_reasoning_summaries":false,"supports_reasoning_summary_parameter":false,"supports_search_tool":false,"truncation_policy":{"limit":10000,"mode":"tokens"},"upgrade":null,"visibility":"list","web_search_tool_type":"text"}'
         models.append(row)
     return '{"models":[' + String(",").join(models) + "]}"

@@ -1778,7 +1778,6 @@ class SuperLaunchTests(unittest.TestCase):
                 for key, value in after_launch["config"].items():
                     if key not in ("projects", "model_catalog_json") and not key.endswith(".base_url"):
                         self.assertEqual(value, before_launch["config"][key], key)
-                self.assertEqual(after_launch["catalog"], before_launch["catalog"])
                 self.assertEqual(after["status"], before["status"])
                 self.assertEqual(after_upstream[0]["path"], before_upstream[0]["path"])
                 self.assertEqual(after_upstream[0]["body"], before_upstream[0]["body"])
@@ -1940,30 +1939,21 @@ class SuperLaunchTests(unittest.TestCase):
         self.assertNotIn(b"\x1b[", result.stderr)
         self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
 
-    def test_model_catalog_selection_and_metadata_match_release(self):
-        for model in ("deepseek-v4-pro", "deepseek-flash", "deepseek-v4-flash", "auto", "flash", "deepseek-chat", "deepseek-reasoner", "synthetic-model-\"quoted\"", "synthetic\\model", "DEEPSEEK-CHAT", "deepsee\u212a-chat"):
-            with self.subTest(model=model):
-                baseline, before_records, _, _ = self.run_launch(ORACLE, "exit-seven", model=model)
-                native, after_records, _, _ = self.run_launch(MODEX, "exit-seven", model=model)
-                self.assertEqual((native.returncode, baseline.returncode), (7, 7))
-                before = next(record for record in before_records if record["kind"] == "launch")
-                after = next(record for record in after_records if record["kind"] == "launch")
-                self.assertEqual(after["catalog"], before["catalog"])
-
-    def test_release_catalog_retains_compatibility_models(self):
-        for binary in (ORACLE, MODEX):
-            result, records, upstream, _ = self.run_launch(binary, scenario="exit-seven", model="deepseek-flash")
-            self.assertEqual(result.returncode, 7, result.stderr)
-            self.assertEqual(upstream, [])
-            launch = next(record for record in records if record["kind"] == "launch")
-            models = {row["slug"]: row for row in launch["catalog"]["models"]}
-            self.assertEqual(models["deepseek-flash"]["description"],
-                             "DeepSeek model routed through the Prodex Responses adapter.")
-            self.assertEqual(models["flash"]["description"],
-                             "Prodex DeepSeek Flash alias routed through DeepSeek V4 Flash.")
-            for name in ("deepseek-chat", "deepseek-reasoner", "deepseek-v4-flash"):
-                self.assertEqual([level["effort"] for level in models[name]["supported_reasoning_levels"]],
-                                 ["low", "medium", "high", "xhigh"])
+    def test_04392_reference_catalog_retains_historical_models(self):
+        result, records, upstream, _ = self.run_launch(
+            ORACLE, scenario="exit-seven", model="deepseek-flash",
+        )
+        self.assertEqual(result.returncode, 7, result.stderr)
+        self.assertEqual(upstream, [])
+        launch = next(record for record in records if record["kind"] == "launch")
+        models = {row["slug"]: row for row in launch["catalog"]["models"]}
+        self.assertEqual(models["deepseek-flash"]["description"],
+                         "DeepSeek model routed through the Prodex Responses adapter.")
+        self.assertEqual(models["flash"]["description"],
+                         "Prodex DeepSeek Flash alias routed through DeepSeek V4 Flash.")
+        for name in ("deepseek-chat", "deepseek-reasoner", "deepseek-v4-flash"):
+            self.assertEqual([level["effort"] for level in models[name]["supported_reasoning_levels"]],
+                             ["low", "medium", "high", "xhigh"])
 
     def test_oversized_model_fails_before_child_or_upstream(self):
         result, records, upstream, state = self.run_launch(model="m" * 4097)
@@ -2023,10 +2013,10 @@ class SuperLaunchTests(unittest.TestCase):
                     self.assertEqual(launch["config"]["model_context_window"], context)
                     self.assertEqual(launch["config"]["model_auto_compact_token_limit"], compact)
                     launches.append(launch)
-                self.assertEqual(launches[0]["catalog"], launches[1]["catalog"])
-                for row in launches[1]["catalog"]["models"]:
-                    self.assertEqual((row["context_window"], row["max_context_window"], row["auto_compact_token_limit"]),
-                                     (1048576, 1048576, 900000))
+                for launch in launches:
+                    for row in launch["catalog"]["models"]:
+                        self.assertEqual((row["context_window"], row["max_context_window"], row["auto_compact_token_limit"]),
+                                         (1048576, 1048576, 900000))
 
 
 if __name__ == "__main__": unittest.main()

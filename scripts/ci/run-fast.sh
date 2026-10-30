@@ -39,7 +39,7 @@ export MOJO="$TOOLCHAIN_DIR/bin/mojo"
 export PATH="$TOOLCHAIN_DIR/bin:$PATH"
 run_logged prerequisites scripts/ci/bootstrap.sh --check
 run_logged workflow-validation scripts/ci/validate-workflows.sh
-run_logged policy-helper-tests "$PYTHON" scripts/ci/run-unittest.py test_ci_workflow_policy.py test_ci_product_dependencies.py test_ci_oracle_routing.py test_ci_parity_baseline.py
+run_logged policy-helper-tests "$PYTHON" scripts/ci/run-unittest.py test_ci_workflow_policy.py test_ci_product_dependencies.py test_ci_oracle_routing.py test_ci_parity_baseline.py test_capture_cli.py
 run_logged dependency-audit "$PYTHON" scripts/ci/check-product-dependencies.py
 run_logged reference-helper-tests "$PYTHON" scripts/ci/run-unittest.py test_ci_reference.py
 if [[ "${MODEX_CI_ARTIFACT_PRODUCER:-0}" == 1 ]]; then
@@ -62,7 +62,7 @@ fi
 export MODEX_REFERENCE_DIR="$(cat "$EVIDENCE_DIR/reference-source-active.txt")"
 cat "$EVIDENCE_DIR/reference-source-active.log"
 rm -- "$EVIDENCE_DIR/reference-source-active.txt"
-run_logged focused-python-active env -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01660.py test_gateway_default_01660.py test_anthropic_missing_message_content_01660.py test_anthropic_parent_shutdown_01660.py test_deepseek_reasoning_01660.py test_deepseek_stream_ids_01660.py test_policy_capacity_01660.py test_runtime_broker_startup_01660_oracle.py test_profile_list_empty_01660.py test_ci_build_input_cleanliness.py test_ci_python_path_resolution.py test_ci_unit_build_cache.py
+run_logged focused-python-active env -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01660.py test_gateway_default_01660.py test_anthropic_missing_message_content_01660.py test_anthropic_parent_shutdown_01660.py test_deepseek_reasoning_01660.py test_deepseek_stream_ids_01660.py test_deepseek_catalog_01660.py test_guardian_api_key_01660.py test_policy_capacity_01660.py test_runtime_broker_startup_01660_oracle.py test_profile_list_empty_01660.py test_ci_build_input_cleanliness.py test_ci_python_path_resolution.py test_ci_unit_build_cache.py
 if ! PRODEX_ORACLE_04392="${PRODEX_ORACLE_04392:-}" "$PYTHON" scripts/ci/reference.py oracle 0.439.2 >"$EVIDENCE_DIR/oracle-path-04392.txt" 2>"$EVIDENCE_DIR/reference-04392.log"; then
     cat "$EVIDENCE_DIR/reference-04392.log" >&2
     echo 'historical-04392-oracle: BLOCKED (required regression oracle unavailable; CI fails closed)' | tee -a "$EVIDENCE_DIR/summary.txt"

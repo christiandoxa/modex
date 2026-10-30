@@ -1,5 +1,12 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Logout help and selected parser precedence now match the active 0.166.0
+release in isolated process comparisons. Valid non-help logout requests still
+reach the unimplemented guard; logout execution and profile behavior remain
+open. The production build and dependency audit passed, and the focused
+root-help module covers the comparison and no-execution controls. See
+`docs/evidence/baseline-0.166.0/logout-help.md`.
+
 Hosted Fast CI run `41103940113` on `3fbf27876a53c45ffb544eb33b82d520a9571970`
 passed its build and native checks, 102 active 0.166.0 Python tests, 52
 independent relay tests, 121 historical 0.165.1 tests, eight width-memory tests,

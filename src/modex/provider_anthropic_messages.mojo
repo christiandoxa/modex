@@ -503,9 +503,10 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
             elif kind == "tool_use":
                 var id = doc.get(block, "id")
                 var name = doc.get(block, "name")
-                if id < 0 or doc.nodes[id].kind != JSON_STRING or not doc.nodes[id].text:
+                # Both releases accept empty strings when these fields are present.
+                if id < 0 or doc.nodes[id].kind != JSON_STRING:
                     raise Error("Anthropic tool_use block requires an id")
-                if name < 0 or doc.nodes[name].kind != JSON_STRING or not doc.nodes[name].text:
+                if name < 0 or doc.nodes[name].kind != JSON_STRING:
                     raise Error("Anthropic tool_use block requires a name")
                 tool_count += 1
             elif kind == "server_tool_use":

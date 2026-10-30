@@ -4152,9 +4152,12 @@ The buffered DeepSeek path now returns the pinned releases' bodyless HTTP 500
 for JSON roots that are not objects, matching its existing handling for a
 non-object first choice. Buffered Anthropic null, scalar, array, and malformed
 roots continue to return 502. Synthetic three-process tests also cover valid
-response translation and retryable 503 key rotation on DeepSeek and
-Anthropic. The four focused response-shape methods and ten CI oracle-routing
-methods passed on Linux x86-64. This qualifies only the listed buffered cases;
+Buffered Anthropic tool calls also preserve string-valued empty IDs and names,
+as both pinned releases do; missing and non-string fields still fail.
+Synthetic three-process tests also cover valid response translation and
+retryable 503 key rotation on DeepSeek and Anthropic. The five focused
+response-shape methods and ten CI oracle-routing methods passed on Linux
+x86-64. This qualifies only the listed buffered cases;
 it does not establish full provider parity or reduce the six-release
 denominator. See
 `docs/evidence/baseline-0.165.1/provider-buffered-response-shapes.md`.

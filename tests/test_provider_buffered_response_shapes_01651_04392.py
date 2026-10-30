@@ -141,6 +141,79 @@ class ProviderBufferedResponseShapeTests(unittest.TestCase):
                     "synthetic Anthropic response",
                 )
 
+    def test_anthropic_tool_use_empty_string_fields_match_releases(self):
+        cases = (
+            ("empty ID", {"type": "tool_use", "id": "", "name": "lookup", "input": {}}),
+            ("empty name", {"type": "tool_use", "id": "call_synthetic", "name": "", "input": {}}),
+            ("both empty", {"type": "tool_use", "id": "", "name": "", "input": {}}),
+        )
+        for name, block in cases:
+            observations = []
+            reply = {
+                "status": 200,
+                "content_type": "application/json",
+                "body": json.dumps({
+                    "id": "msg_synthetic",
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [block],
+                    "model": "claude-test",
+                    "stop_reason": "tool_use",
+                    "usage": {"input_tokens": 2, "output_tokens": 1},
+                }, separators=(",", ":")).encode(),
+            }
+            for binary in BINARIES:
+                with self.subTest(shape=name, binary=str(binary)):
+                    posts, responses = observe_turns(
+                        binary,
+                        [ANTHROPIC_REQUEST],
+                        [reply],
+                        api_keys=API_KEYS,
+                    )
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual(posts[0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual([response["status"] for response in responses], [200])
+                    observations.append(_json_response(responses[0]))
+            self.assertEqual(observations[1], observations[0])
+            self.assertEqual(observations[2], observations[0])
+            self.assertEqual(observations[0]["output"][0]["call_id"], block["id"])
+            self.assertEqual(observations[0]["output"][0]["name"], block["name"])
+
+        invalid_cases = (
+            ("missing ID", {"type": "tool_use", "name": "lookup", "input": {}}),
+            ("non-string ID", {"type": "tool_use", "id": 7, "name": "lookup", "input": {}}),
+            ("missing name", {"type": "tool_use", "id": "call_synthetic", "input": {}}),
+            ("non-string name", {"type": "tool_use", "id": "call_synthetic", "name": 7, "input": {}}),
+        )
+        for name, block in invalid_cases:
+            response_bodies = []
+            reply = {
+                "status": 200,
+                "content_type": "application/json",
+                "body": json.dumps({
+                    "id": "msg_synthetic",
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [block],
+                    "model": "claude-test",
+                    "stop_reason": "tool_use",
+                    "usage": {"input_tokens": 2, "output_tokens": 1},
+                }, separators=(",", ":")).encode(),
+            }
+            for binary in BINARIES:
+                with self.subTest(shape=name, binary=str(binary)):
+                    posts, responses = observe_turns(
+                        binary,
+                        [ANTHROPIC_REQUEST],
+                        [reply],
+                        api_keys=API_KEYS,
+                    )
+                    self.assertEqual(len(posts), 1)
+                    self.assertEqual([response["status"] for response in responses], [502])
+                    response_bodies.append(bytes.fromhex(responses[0]["body"]))
+            self.assertEqual(response_bodies[1], response_bodies[0])
+            self.assertEqual(response_bodies[2], response_bodies[0])
+
     def test_http_503_retry_rotates_credentials_for_both_buffered_routes(self):
         cases = (
             ("DeepSeek", DEEPSEEK_REQUEST, "/v1/chat/completions", DEEPSEEK_SUCCESS, "authorization"),

@@ -13,6 +13,7 @@ used.
 | DeepSeek malformed JSON | 502, `provider response could not be processed` | Same | Same |
 | Anthropic JSON root `null`, scalar, array, or malformed JSON | 502, `provider response could not be processed` | Same | Same |
 | Anthropic valid buffered message | 200; translated response matches | Same | Same |
+| Anthropic `tool_use` with empty string ID or name | 200; empty value is preserved | Same | Same |
 | Either route: retryable HTTP 503, then valid response | 200 after rotating to key B | Same | Same |
 
 The DeepSeek response kernel now rejects a parsed response root that is not an
@@ -27,13 +28,24 @@ historical 0.165.1 source at commit
 bodyless 500 behavior is established by the three-process comparisons, not
 inferred from the translation helper alone.
 
+Both Anthropic releases accept empty string-valued `tool_use.id` and
+`tool_use.name`. Their `messages/response.rs` sets classifier flags when
+`Value::as_str()` succeeds, and `messages.rs::anthropic_tool_use_item` passes
+those strings to the output kernel without a nonempty check. The two
+`messages.rs` files have SHA-256
+`7379f382d482a15dc7d9f4c03ea94ca2d7506ec40fda2780a3f990b474a35cdb`; their
+`mojo/prodex_core/rich_abi.mojo` classifier files are identical, with SHA-256
+`a516741ac4039adf768859fc114b02a0c9908336f55bc8f0ad63feb9b0863638`. Modex's
+buffered validator now requires string fields but permits empty values.
+Missing and non-string IDs/names remain rejected.
+
 Oracle SHA-256 values: 0.165.1
 `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51`; 0.439.2
 `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`. The
 Modex executable used in the focused run had SHA-256
-`68d1d11ee00267a464f8d2d276204082a0ae1009be0f70ba78aa025b9efac4b9`.
+`3221879dd21c3b5a23cc44c2b19c07b42811142ed1565eb32e211c461d60f650`.
 
-The four-method response-shape suite and ten-method CI oracle-routing suite
+The five-method response-shape suite and ten-method CI oracle-routing suite
 passed on Linux x86-64. Reproduce with the pinned local binaries and a built
 Modex executable:
 

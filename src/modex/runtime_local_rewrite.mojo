@@ -1207,10 +1207,12 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
             if capture_progress: continue
             if accepted_before_scan: continue
             if len(overflow) >= overflow_capacity:
-                sleep(0.001)
+                # shortcut: 5 ms saturated scan interval; use readiness polling if measured latency is material.
+                sleep(0.005)
                 continue
             # Recheck worker completions promptly without polling an idle relay as often.
-            var timeout = 5 if state_ptr[].has_pending_work() else (100 if parent_fd >= 0 or len(parked) > 0 else 1000)
+            # shortcut: 10 ms parked-socket rescan; use socket readiness polling if idle-pool CPU is material.
+            var timeout = 5 if state_ptr[].has_pending_work() else (10 if len(parked) > 0 else (100 if parent_fd >= 0 else 1000))
             if len(overflow) < overflow_capacity:
                 var accepted = listener.accept(UInt64(timeout))
                 if accepted:

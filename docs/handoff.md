@@ -224,6 +224,24 @@ as `min(configured workers, parallelism)`; it claims twelve lanes only where
 the scheduler supports them. This evidence covers Linux x86_64 only and does
 not remove any target or security gap from the parity denominator.
 
+## Local relay polling and keep-alive throughput (2026-10-30)
+
+The full-overflow no-progress scan now waits 5 ms; the no-work wait with parked
+sockets is 10 ms. Three matched process runs cut Modex's 71-request
+keep-alive/churn wall median from 3.685 s to 1.804 s and partial-head flood CPU
+from 0.33 to 0.13 CPU seconds per second. With 128 parked idle sockets, CPU
+rose 0.01 seconds per second at the median; descriptor count stayed 127. The
+normal response and fragmented-head samples showed no added latency.
+
+Admission, eviction, framing, and the starvation boundary did not change.
+Both releases still serve a healthy client before releasing seven body
+blockers and 136 partial heads; Modex still waits until release. Modex also
+remains slower in the keep-alive/churn control than both releases. The
+120-second request-head expiry, non-Linux targets, and full admission parity
+remain unverified. Focused process tests, production dependency audit, and
+`git diff --check` pass. Details, sample ranges, and reproduction commands:
+`docs/evidence/baseline-0.165.1/local-relay-polling-20261030.md`.
+
 Two sequential DeepSeek Super launches expose a core shared-home gap: the
 first Modex launch creates session and history paths, then the second rejects
 them before starting Codex. Both pinned releases launch twice and preserve the

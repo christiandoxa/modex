@@ -89,8 +89,10 @@ sequential stress control requires at least six of eight in each case within
 the window, while testing follow-up service and disconnect cleanup. These
 timing-sensitive observations do not establish large-head admission parity.
 While work is pending, the listener can perform about 200 full parked-socket
-scans per second. Its existing nonblocking accept loop sleeps for 1 ms between
-retries even during the longer wait; neither figure is a measured CPU cost.
+scans per second. The full-overflow no-progress wait is now 5 ms, and an idle
+parked-socket wait is 10 ms. `LoopbackHTTPListener.accept` still retries every
+1 ms. Repeated CPU and throughput measurements are recorded in
+`local-relay-polling-20261030.md`.
 
 Validation on Linux x86-64 with Mojo 1.2.0 passed the production build and the
 three declared native test drivers:

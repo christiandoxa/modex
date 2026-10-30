@@ -86,7 +86,7 @@ test took 1.003 seconds. The production and native driver builds, 71-file
 dependency audit, and `git diff --check` passed. These are regression guards,
 not admission-parity results.
 
-The path explains why no production policy changed: `serve_local_rewrite`
+The path explains why no admission policy changed: `serve_local_rewrite`
 stops accepting when `overflow` reaches `max(2, worker_count)`, while both
 TinyHTTP snapshots create a worker whenever no worker is waiting. A larger cap
 or one reserved slot moves the eviction boundary; selecting a partial request
@@ -109,3 +109,8 @@ capture while saturated, active parsed-head accounting, and other release
 targets were not measured by this run. Existing standalone tests do not qualify
 their behavior when combined with this backlog. The uncommitted aggregate
 budget prototype remains unqualified.
+
+The later polling trial reduces the measured scan CPU but leaves these
+admission outcomes unchanged. Repeated latency, EOF, fairness, and resource
+measurements are in
+`docs/evidence/baseline-0.165.1/local-relay-polling-20261030.md`.

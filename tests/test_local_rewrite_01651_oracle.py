@@ -2972,6 +2972,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                                 f"admission-case[{name}/{label}] "
                                 f"before_release={response['admission_healthy_before_release']} "
                                 f"client_fds_ready={response['admission_client_fds_ready']} "
+                                f"first_elapsed_ms={healthy.get('first_elapsed_ms')} "
                                 f"statuses={healthy.get('first_status')},{healthy.get('second_status')} "
                                 f"upstream_requests={len(records)}"
                             )
@@ -4043,6 +4044,11 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                 self.assertEqual(len(records), 130)
 
     def test_ready_parked_clients_are_served_during_new_client_churn(self):
+        if (
+            not ORACLE_04392.is_file()
+            or hashlib.sha256(ORACLE_04392.read_bytes()).hexdigest() != ORACLE_04392_SHA256
+        ):
+            raise AssertionError("Pinned Prodex 0.439.2 oracle is missing or has the wrong checksum")
         request = request_bytes(target=b"/v1/responses")
         churn_request = request_bytes(
             (("Connection", "close"),), target=b"/v1/chat/completions"
@@ -4062,19 +4068,31 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)
         worker.start()
         try:
-            response, records = run_probe(MODEX, case, upstream)
+            results = {
+                label: run_probe(binary, case, upstream)
+                for label, binary in (
+                    ("0.165.1", ORACLE), ("0.439.2", ORACLE_04392), ("Modex", MODEX),
+                )
+            }
         finally:
             upstream.shutdown()
             upstream.server_close()
             worker.join(timeout=2)
 
-        self.assertEqual(response["process_exit"], 0, response["stderr"])
-        self.assertTrue(response["fairness_workers_finished"])
-        self.assertEqual(response["fairness_errors"], [])
-        self.assertEqual(response["fairness_reused_statuses"], [200] * 39)
-        self.assertEqual(response["fairness_churn_statuses"], [200] * 24)
-        self.assertEqual(response["fairness_churn_interleaved"], [True])
-        self.assertEqual(len(records), 71)
+        for label, (response, records) in results.items():
+            with self.subTest(label=label):
+                self.assertEqual(response["process_exit"], 0, response["stderr"])
+                self.assertTrue(response["fairness_workers_finished"])
+                self.assertEqual(response["fairness_errors"], [])
+                self.assertEqual(response["fairness_reused_statuses"], [200] * 39)
+                self.assertEqual(response["fairness_churn_statuses"], [200] * 24)
+                self.assertEqual(response["fairness_churn_interleaved"], [True])
+                self.assertEqual(len(records), 71)
+                print(
+                    f"fairness[{label}] elapsed_ms={response['response_elapsed_ms']} "
+                    f"reused={len(response['fairness_reused_statuses'])} "
+                    f"churn={len(response['fairness_churn_statuses'])}"
+                )
 
 
 if __name__ == "__main__":

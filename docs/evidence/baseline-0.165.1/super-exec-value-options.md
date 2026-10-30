@@ -24,7 +24,7 @@ selected following flags; the child fixture records identical arguments and
 exits 7. Unknown options and empty values remain guarded.
 
 One local characterization on 2026-10-29 used the installed Codex CLI 0.165.0
-at `/home/doxa/.local/share/upkit/node/24.22.1/node-v24.22.1-linux-x64/lib/node_modules/@openai/codex/bin/codex.js`.
+at `/home/test-user/.local/share/upkit/node/24.22.1/node-v24.22.1-linux-x64/lib/node_modules/@openai/codex/bin/codex.js`.
 The temporary harness in `tests/test_super_probe_diagnostic_04392.py` delegated
 the release child to that binary and observed the pinned releases exit 2 with
 Codex's missing-value diagnostic, while Modex stopped before child launch.

@@ -10,10 +10,10 @@ test_empty_argv0_usage_falls_back_to_command (test_inspection_cli.InspectionCliT
 FAIL: test_empty_argv0_usage_falls_back_to_command (test_inspection_cli.InspectionCliTests.test_empty_argv0_usage_falls_back_to_command) (arguments=['current', '--help'])
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_inspection_cli.py", line 81, in test_empty_argv0_usage_falls_back_to_command
+  File "/home/test-user/IdeaProjects/modex/tests/test_inspection_cli.py", line 81, in test_empty_argv0_usage_falls_back_to_command
     self.assert_matches(arguments, argv0="")
     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_inspection_cli.py", line 69, in assert_matches
+  File "/home/test-user/IdeaProjects/modex/tests/test_inspection_cli.py", line 69, in assert_matches
     self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                      (expected.returncode, expected_stdout, expected_stderr))
@@ -41,10 +41,10 @@ b'Sho[45 chars]ls.\n\nUsage: current\n\nOptions:\n  -h, --help  Print help\n'
 FAIL: test_empty_argv0_usage_falls_back_to_command (test_inspection_cli.InspectionCliTests.test_empty_argv0_usage_falls_back_to_command) (arguments=['info', '--json=true'])
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_inspection_cli.py", line 81, in test_empty_argv0_usage_falls_back_to_command
+  File "/home/test-user/IdeaProjects/modex/tests/test_inspection_cli.py", line 81, in test_empty_argv0_usage_falls_back_to_command
     self.assert_matches(arguments, argv0="")
     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_inspection_cli.py", line 69, in assert_matches
+  File "/home/test-user/IdeaProjects/modex/tests/test_inspection_cli.py", line 69, in assert_matches
     self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                      (expected.returncode, expected_stdout, expected_stderr))
@@ -67,10 +67,10 @@ b"err[71 chars]\nUsage: info --json\n\nFor more information, try '--help'.\n"
 FAIL: test_empty_argv0_usage_falls_back_to_command (test_inspection_cli.InspectionCliTests.test_empty_argv0_usage_falls_back_to_command) (arguments=['status', '--once', '--unknown'])
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_inspection_cli.py", line 81, in test_empty_argv0_usage_falls_back_to_command
+  File "/home/test-user/IdeaProjects/modex/tests/test_inspection_cli.py", line 81, in test_empty_argv0_usage_falls_back_to_command
     self.assert_matches(arguments, argv0="")
     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_inspection_cli.py", line 69, in assert_matches
+  File "/home/test-user/IdeaProjects/modex/tests/test_inspection_cli.py", line 69, in assert_matches
     self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                      (expected.returncode, expected_stdout, expected_stderr))
@@ -98,10 +98,10 @@ b"err[45 chars]Usage: status --once\n\nFor more information, try '--help'.\n"
 FAIL: test_empty_argv0_usage_falls_back_to_command (test_inspection_cli.InspectionCliTests.test_empty_argv0_usage_falls_back_to_command) (arguments=['help', 'status', 'extra'])
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_inspection_cli.py", line 81, in test_empty_argv0_usage_falls_back_to_command
+  File "/home/test-user/IdeaProjects/modex/tests/test_inspection_cli.py", line 81, in test_empty_argv0_usage_falls_back_to_command
     self.assert_matches(arguments, argv0="")
     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_inspection_cli.py", line 69, in assert_matches
+  File "/home/test-user/IdeaProjects/modex/tests/test_inspection_cli.py", line 69, in assert_matches
     self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                      (expected.returncode, expected_stdout, expected_stderr))

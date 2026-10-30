@@ -9,7 +9,7 @@
   "recorded_at_utc": "2026-10-25T20:22:10+00:00",
   "oracle": {
     "release": "Prodex 0.439.0",
-    "path": "/home/doxa/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
+    "path": "/home/test-user/.cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu",
     "sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a"
   },
   "baseline_reference_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",

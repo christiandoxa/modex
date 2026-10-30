@@ -9,11 +9,11 @@
       "sha256": "85e6f030277ac8fc6c0f30d77356a3f43052010058a13b94589fa2a333365cf6"
     },
     "prodex_0.165.1_historical_control": {
-      "path": "/home/doxa/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
+      "path": "/home/test-user/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
       "sha256": "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
     },
     "prodex_0.439.2": {
-      "path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+      "path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
       "sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
     }
   },

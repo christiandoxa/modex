@@ -9,16 +9,16 @@ $ sha256sum build/modex
 
 $ ldd build/modex
 	linux-vdso.so.1 (0x00007c4aadf89000)
-	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007c4aadc34000)
+	libKGENCompilerRTShared.so => /home/test-user/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x00007c4aadc34000)
 	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007c4aada00000)
 	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007c4aad917000)
 	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007c4aad600000)
-	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007c4aad907000)
-	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007c4aaca00000)
+	libMSupportGlobals.so => /home/test-user/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x00007c4aad907000)
+	libAsyncRTRuntimeGlobals.so => /home/test-user/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x00007c4aaca00000)
 	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007c4aad8d9000)
 	/lib64/ld-linux-x86-64.so.2 (0x00007c4aadf8b000)
 
 $ readelf -d build/modex
  0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
  0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
- 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/test-user/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]

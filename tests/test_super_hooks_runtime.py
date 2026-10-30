@@ -20,6 +20,7 @@ DRIVER = Path(os.environ.get("MODEX_SUPER_HOOKS_DRIVER", ROOT / "build/tests/sup
 FIXTURE = ROOT / "tests/fixtures/super_hooks/historical-0.439.2.json"
 ORACLE_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 BASELINE_COMMIT = "72b77478a5198fc5da6b4d2253137f9cdbf43be9"
+SANITIZED_ORACLE_EXECUTABLE = "<SANITIZED_ORACLE_EXECUTABLE>"
 
 EXPECTED = {
     "empty_hooks": (0, "Trusted"),
@@ -303,9 +304,13 @@ class SuperHooksRuntimeTests(unittest.TestCase):
             raise AssertionError("fixture does not identify the pinned Prodex oracle")
         if cls.fixture["baseline_commit"] != BASELINE_COMMIT:
             raise AssertionError("fixture does not identify the frozen baseline commit")
+        if cls.fixture.get("sanitized_fields") != {"cases[*].argv[0]": SANITIZED_ORACLE_EXECUTABLE}:
+            raise AssertionError("fixture must label the sanitized oracle executable path")
         cls.cases = {case["name"]: case for case in cls.fixture["cases"]}
         if set(cls.cases) != set(EXPECTED):
             raise AssertionError("oracle fixture case inventory changed; update native expectations explicitly")
+        if any(not case.get("argv") or case["argv"][0] != SANITIZED_ORACLE_EXECUTABLE for case in cls.cases.values()):
+            raise AssertionError("fixture retained an unsanitized oracle executable path")
 
     def test_oracle_synthetic_peer_captures_success_and_failure_paths(self):
         for name, case in self.cases.items():

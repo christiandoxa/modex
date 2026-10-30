@@ -11,7 +11,7 @@
       "matches": false,
       "observations": [
         {
-          "binary": "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+          "binary": "/home/test-user/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
           "status": 502,
           "upstream_posts": 1,
           "event_types": [],
@@ -20,7 +20,7 @@
           "plain_body": "upstream request failed"
         },
         {
-          "binary": "/home/doxa/IdeaProjects/modex/build/modex",
+          "binary": "/home/test-user/IdeaProjects/modex/build/modex",
           "status": 200,
           "upstream_posts": 1,
           "event_types": [
@@ -40,7 +40,7 @@
       "matches": false,
       "observations": [
         {
-          "binary": "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+          "binary": "/home/test-user/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
           "status": 200,
           "upstream_posts": 1,
           "event_types": [
@@ -59,7 +59,7 @@
           "plain_body": null
         },
         {
-          "binary": "/home/doxa/IdeaProjects/modex/build/modex",
+          "binary": "/home/test-user/IdeaProjects/modex/build/modex",
           "status": 200,
           "upstream_posts": 1,
           "event_types": [

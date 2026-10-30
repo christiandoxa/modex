@@ -85,7 +85,7 @@ class TranscriptTests(unittest.TestCase):
 
     def test_unknown_and_invisible_records_are_skipped(self):
         self.assertIsNone(project("event_msg", {"type": "unrecognized", "message": "hidden"}))
-        payload = {"type": "user_message", "message": "/home/test/.prodex/profiles/.prodex-overlay-x/attachments/a.png"}
+        payload = {"type": "user_message", "message": "/home/test-user/.prodex/profiles/.prodex-overlay-x/attachments/a.png"}
         self.assertEqual(oracle("event_msg", payload), [])
         self.assertIsNone(project("event_msg", payload))
 

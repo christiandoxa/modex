@@ -21,7 +21,7 @@ What this change does: Commit `86b5d08` replaces decoded usage-key lookup with r
 
 **Frozen-source evidence**
 
-All paths below are under `/home/doxa/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3/`. Ten inspected snapshot files matched the exact immutable Git objects.
+All paths below are under `/home/test-user/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3/`. Ten inspected snapshot files matched the exact immutable Git objects.
 
 - `crates/prodex-provider-core/src/translators/deepseek/response_transform.rs:33–45`: buffered input is parsed into `Value`.
 - `crates/prodex-provider-core/src/translators/deepseek/response.rs:69–74,101–121`: usage is taken from that value, serialized, passed to `ResponseUsage`, and parsed again.
@@ -66,7 +66,7 @@ Not checked: native Prodex execution, all six release targets, exhaustive event/
 
 1. **Non-object handling still differs from Prodex.** The frozen metadata kernel rejects `null`, arrays and scalars. Rust turns that rejection into a panic—not an empty chunk or graceful `response.failed`.
 
-   Exact frozen source locations, relative to `/home/doxa/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`:
+   Exact frozen source locations, relative to `/home/test-user/.cache/modex/references/prodex-81c1a01933bc33f536a24452c3fd72c3f8d0b1f3`:
 
    - `mojo/prodex_core/deepseek.mojo:876`: requires an object.
    - `mojo/prodex_core/deepseek.mojo:940`: metadata projection rejects other roots.

@@ -4,7 +4,7 @@ Compiler: Mojo 1.2.0 (2016d0cd). Host: Linux x86_64.
 Initial command: rtk make -C test-results/memory-checkpoint-src test (exit 0; 4 Mojo programs and 58 Python tests).
 The RSS harness and exhaustive Kirat comparison were then finalized and the full Python suite rerun.
 
-make: Entering directory '/home/doxa/IdeaProjects/modex/test-results/memory-checkpoint-src'
+make: Entering directory '/home/test-user/IdeaProjects/modex/test-results/memory-checkpoint-src'
 mkdir -p build
 mojo build -O3 --target-cpu=x86-64-v3 -I src src/main.mojo -o build/modex
 mkdir -p build/tests
@@ -25,7 +25,7 @@ mojo build -O3 --target-cpu=x86-64-v3 -I src tests/zstd_driver.mojo -o build/tes
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/text_driver.mojo -o build/tests/text_driver
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/width_memory_driver.mojo -o build/tests/width_memory_driver
 python3 -m unittest discover -s tests -p 'test_*.py' -v
-make: Leaving directory '/home/doxa/IdeaProjects/modex/test-results/memory-checkpoint-src'
+make: Leaving directory '/home/test-user/IdeaProjects/modex/test-results/memory-checkpoint-src'
 
 Final command from that snapshot: rtk python3 -m unittest discover -s tests -p 'test_*.py' -v (exit 0).
 test_unimplemented_command_fails_without_echoing_arguments (test_cli.CliTests.test_unimplemented_command_fails_without_echoing_arguments) ... ok

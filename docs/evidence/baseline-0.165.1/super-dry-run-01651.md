@@ -135,9 +135,9 @@ Validation on Linux x86-64 used both explicit oracle paths:
 make build BUILD_DIR=/tmp/modex-super-launch-build
 make unit-build UNIT_BUILD_PROGRAMS='codex_argv_child node_version_fixture optional_tool_version_fixture' BUILD_DIR=/tmp/modex-super-launch-build
 MODEX_BINARY=/tmp/modex-super-launch-build/modex \
-  PRODEX_ORACLE_01651=/home/doxa/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu \
-  PRODEX_ORACLE_04392=/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu \
-  PRODEX_ORACLE=/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu \
+  PRODEX_ORACLE_01651=/home/test-user/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu \
+  PRODEX_ORACLE_04392=/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu \
+  PRODEX_ORACLE=/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu \
   PYTHONPATH=tests python3 -m unittest -v \
     test_super_dry_run_01651 test_super_launch_01651 test_super_launch
 ```

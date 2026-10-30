@@ -1,7 +1,7 @@
 # Mojo 1.2.0 network, TLS, and DNS standard-library audit
 
 Audited the official Mojo 1.2.0 compiler `2016d0cd` and installed standard
-library source snapshot at `/home/doxa/.cache/modex/toolchains/mojo-1.2.0-source/std`
+library source snapshot at `/home/test-user/.cache/modex/toolchains/mojo-1.2.0-source/std`
 on 2026-10-29. This is a standard-library capability check, not Modex parity
 evidence.
 

@@ -1,5 +1,5 @@
 {
-  "oracle": "/home/doxa/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
+  "oracle": "/home/test-user/.cache/modex/oracles/0.439.1/prodex-x86_64-unknown-linux-gnu",
   "oracle_sha256": "b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a",
   "worker": "/tmp/modex-cp11-wire-bodyless-review/modex",
   "worker_sha256": "752b403b32ce06eb1b04813e162483d0f35c0f21832c26b90503f267ee3dca2e",

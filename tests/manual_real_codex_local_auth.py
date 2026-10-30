@@ -12,7 +12,7 @@ import unittest
 
 MODEX = Path(os.environ.get("MODEX_BINARY", ""))
 CODEX = Path(os.environ.get("CODEX_BINARY", ""))
-NODE_BIN = Path(os.environ.get("NODE_BIN", "/home/doxa/.local/share/upkit/node/active/bin"))
+NODE_BIN = Path(os.environ.get("NODE_BIN", Path.home() / ".local/share/upkit/node/active/bin"))
 EXPECTED_VERSION = os.environ.get("MODEX_EXPECTED_CODEX_VERSION", "0.166.0")
 
 

@@ -81,7 +81,7 @@ Validation on 2026-10-29 with Mojo 1.2.0:
 ```text
 make build BUILD_DIR=/tmp/modex-session-recovery-build
 MODEX_BINARY=/tmp/modex-session-recovery-build/modex \
-  PRODEX_ORACLE_01651=/home/doxa/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu \
+  PRODEX_ORACLE_01651=/home/test-user/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu \
   python3 -m unittest test_session_resume
 make ci-dependencies
 python3 scripts/ci/check-test-census.py

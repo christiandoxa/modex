@@ -1,16 +1,16 @@
 Pinned release passes all twelve path/route vectors. Checkpoint 9 Modex fails five path pairs (ten requests), forwarding backslashes literally. The percent-encoded backslash control already matches.
 test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) ...
-  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\right', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\\\right', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\/', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/é\\{東京}', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\right', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\\\right', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\/', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/é\\{東京}', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
 
 ======================================================================
-FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\right', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\right', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
     self.assertEqual([row["path"] for row in upstream],
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                      [target, target + "?synthetic=%5C&keep=one"])
@@ -35,10 +35,10 @@ First differing element 0:
 
 
 ======================================================================
-FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\\\right', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/left\\\\right', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
     self.assertEqual([row["path"] for row in upstream],
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                      [target, target + "?synthetic=%5C&keep=one"])
@@ -63,10 +63,10 @@ First differing element 0:
 
 
 ======================================================================
-FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
     self.assertEqual([row["path"] for row in upstream],
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                      [target, target + "?synthetic=%5C&keep=one"])
@@ -91,10 +91,10 @@ First differing element 0:
 
 
 ======================================================================
-FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\/', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/trailing\\/', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
     self.assertEqual([row["path"] for row in upstream],
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                      [target, target + "?synthetic=%5C&keep=one"])
@@ -119,10 +119,10 @@ First differing element 0:
 
 
 ======================================================================
-FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/é\\{東京}', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_backslash_separators_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_backslash_separators_match_release) (path='/v1/é\\{東京}', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 138, in test_upstream_backslash_separators_match_release
     self.assertEqual([row["path"] for row in upstream],
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                      [target, target + "?synthetic=%5C&keep=one"])

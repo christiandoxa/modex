@@ -4,7 +4,7 @@
     "compiler": "Mojo 1.2.0 (2016d0cd)",
     "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
     "baseline_version": "0.439.2",
-    "baseline_oracle": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+    "baseline_oracle": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
     "baseline_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
     "modex_binary": "/tmp/modex-session-profile-build/modex",
     "modex_binary_sha256": "ae57d542291e70d271de0887691b69e1afbc62abcbdd36d5ff14cb97cfe2300b",
@@ -14,7 +14,7 @@
     "isolation_limit": "bwrap user/mount namespace prevents holder /proc/<pid>/exe inspection under host ptrace policy",
     "argv_templates": {
       "holder": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
         "log",
         "stream"
       ],
@@ -53,7 +53,7 @@
         "alive_during_capture": true,
         "fixture": {
           "argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream",
             "--json"
@@ -68,13 +68,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 694023,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14009270",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:45991",
           "source_key": "live-direct-test",
@@ -92,7 +92,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -150,13 +150,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 694095,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14009331",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:44745",
           "source_key": "live-direct-test",
@@ -174,7 +174,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -231,7 +231,7 @@
         "alive_during_capture": true,
         "fixture": {
           "argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream",
             "--json"
@@ -246,13 +246,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 694146,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14009381",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:40029",
           "source_key": "broker-test",
@@ -270,7 +270,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -328,13 +328,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 694230,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14009442",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:34513",
           "source_key": "broker-test",
@@ -352,7 +352,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -410,7 +410,7 @@
         "alive_during_capture": true,
         "fixture": {
           "argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream",
             "--json"
@@ -425,13 +425,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 694479,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14009492",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:39429",
           "source_key": "live-reset-test",
@@ -449,7 +449,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -508,13 +508,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 695258,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14009568",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:38291",
           "source_key": "live-reset-test",
@@ -532,7 +532,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -583,7 +583,7 @@
         "alive_during_capture": true,
         "fixture": {
           "argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream",
             "--json"
@@ -598,13 +598,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 695824,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14009619",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:45753",
           "source_key": "live-invalid-test",
@@ -622,7 +622,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -677,13 +677,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 697029,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14009719",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:33971",
           "source_key": "live-invalid-test",
@@ -701,7 +701,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -752,7 +752,7 @@
         "alive_during_capture": true,
         "fixture": {
           "argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream",
             "--json"
@@ -767,13 +767,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 697706,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14009769",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:42807",
           "source_key": "live-invalid-test",
@@ -791,7 +791,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -846,13 +846,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 698973,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14009869",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:34321",
           "source_key": "live-invalid-test",
@@ -870,7 +870,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -921,7 +921,7 @@
         "alive_during_capture": true,
         "fixture": {
           "argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream",
             "--json"
@@ -936,13 +936,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 699645,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14009919",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:44691",
           "source_key": "live-invalid-test",
@@ -960,7 +960,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -1015,13 +1015,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 700170,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14010019",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:41553",
           "source_key": "live-invalid-test",
@@ -1039,7 +1039,7 @@
             "current_profile": "synthetic",
             "instance_id": "synthetic-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -1090,7 +1090,7 @@
         "alive_during_capture": true,
         "fixture": {
           "argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream",
             "--json"
@@ -1105,13 +1105,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 700304,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14010070",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:32791",
           "source_key": "live-invalid-test",
@@ -1129,7 +1129,7 @@
             "current_profile": "synthetic",
             "instance_id": "different-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -1184,13 +1184,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 700507,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14010170",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:44381",
           "source_key": "live-invalid-test",
@@ -1208,7 +1208,7 @@
             "current_profile": "synthetic",
             "instance_id": "different-live-log-instance",
             "prodex_version": "0.439.2",
-            "executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
             "openai_mount_path": "/v1",
             "realtime_ws_addr": null
@@ -1259,7 +1259,7 @@
         "alive_during_capture": true,
         "fixture": {
           "argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream",
             "--json"
@@ -1274,13 +1274,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 700620,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14010220",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:38599",
           "source_key": "live-invalid-test",
@@ -1353,13 +1353,13 @@
             "PRODEX_RUNTIME_LOG_RECORD": "false"
           },
           "holder_argv": [
-            "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+            "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
             "log",
             "stream"
           ],
           "holder_pid": 700744,
           "holder_birth_identity": "linux:bbebc5d0-ed73-4c33-b05d-b95f4188150f:14010320",
-          "holder_executable_path": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+          "holder_executable_path": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
           "holder_executable_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
           "listen_addr": "127.0.0.1:38777",
           "source_key": "live-invalid-test",

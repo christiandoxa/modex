@@ -1,7 +1,7 @@
 # Mojo 1.2.0 stdlib source audit
 
 Inspected the pinned Mojo 1.2.0 (2016d0cd) standard-library source under
-`/home/doxa/.cache/modex/toolchains/mojo-1.2.0-source/std`. These are API gaps
+`/home/test-user/.cache/modex/toolchains/mojo-1.2.0-source/std`. These are API gaps
 in this toolchain version, not claims about future Mojo releases.
 
 The 0.439.1 checkpoint proved a narrower startup-only alternative to missing

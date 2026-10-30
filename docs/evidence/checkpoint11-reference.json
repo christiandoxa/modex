@@ -168,7 +168,7 @@
         "stdout_sha256": "95d22164a6c27fdc3de91a2d2716f0211699b5ce19d8642e182008882b4bf677",
         "stderr_path": "/tmp/modex-cp11-rpc-memory-review.stderr",
         "stderr_sha256": "2765de2d504c1f58b7281faf11e23b4b0c31089f9bf3874ed0db341e35046c21",
-        "task_file": "/home/doxa/.prodex/profiles/.prodex-overlay-3a2eb7-0/sub-agent-tasks/checkpoint11-rpc-memory-review.txt"
+        "task_file": "/home/test-user/.prodex/profiles/.prodex-overlay-3a2eb7-0/sub-agent-tasks/checkpoint11-rpc-memory-review.txt"
       },
       {
         "task": "wire-bodyless",
@@ -179,7 +179,7 @@
         "stdout_sha256": "93b7f0ebbb923e0e1851547cab840e3d320d5b575a084046705b12c819394daf",
         "stderr_path": "/tmp/modex-cp11-wire-bodyless-review.stderr",
         "stderr_sha256": "c0916b3cbdf1045a52f074d73a379d701fc4b3c73b893ba2bdcd5796b9b74e65",
-        "task_file": "/home/doxa/.prodex/profiles/.prodex-overlay-3a2eb7-0/sub-agent-tasks/checkpoint11-wire-bodyless-review.txt"
+        "task_file": "/home/test-user/.prodex/profiles/.prodex-overlay-3a2eb7-0/sub-agent-tasks/checkpoint11-wire-bodyless-review.txt"
       }
     ],
     "launcher_config_unchanged": true

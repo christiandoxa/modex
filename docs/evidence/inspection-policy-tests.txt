@@ -70,7 +70,7 @@ Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: w
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
+/home/test-user/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
         var output = String()
                            ^
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
@@ -82,11 +82,11 @@ Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: w
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+/home/test-user/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
     append_bytes(path, utf8^)
                            ^
 
-/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+/home/test-user/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
     append_bytes(path, utf8^)
                            ^
 
@@ -301,10 +301,10 @@ build/tests/test_log_time
 Log timestamp checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_time_driver.mojo -o build/tests/log_time_driver
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow.mojo -o build/tests/test_log_follow
-build/tests/test_log_follow /home/doxa/IdeaProjects/modex/build/tests/log-follow-files
+build/tests/test_log_follow /home/test-user/IdeaProjects/modex/build/tests/log-follow-files
 native incremental log follow: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow_paths.mojo -o build/tests/test_log_follow_paths
-build/tests/test_log_follow_paths /home/doxa/IdeaProjects/modex/build/tests/follow-paths
+build/tests/test_log_follow_paths /home/test-user/IdeaProjects/modex/build/tests/follow-paths
 Log follower path selection checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_operational.mojo -o build/tests/test_log_operational
 build/tests/test_log_operational
@@ -338,12 +338,12 @@ Final native process checks build
 Command: mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_spawn.mojo -o build/tests/test_process_spawn
 Exit code: 0
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
+/home/test-user/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
     var missing = False
                   ^
 
 Final native process checks
-Command: build/tests/test_process_spawn /home/doxa/IdeaProjects/modex/build/tests/process_child
+Command: build/tests/test_process_spawn /home/test-user/IdeaProjects/modex/build/tests/process_child
 Exit code: 0
 synthetic-child-ok
 explicit environment spawn checks: PASS

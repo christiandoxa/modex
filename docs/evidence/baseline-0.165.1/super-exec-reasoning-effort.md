@@ -39,9 +39,9 @@ Reproduce after building Modex and the native fixtures:
 make build BUILD_DIR=/tmp/modex-super-parity-build-20261030
 make unit-build UNIT_BUILD_PROGRAMS='codex_argv_child node_version_fixture optional_tool_version_fixture' BUILD_DIR=/tmp/modex-super-parity-build-20261030
 MODEX_BINARY=/tmp/modex-super-parity-build-20261030/modex \
-  PRODEX_ORACLE_01651=/home/doxa/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu \
-  PRODEX_ORACLE_04392=/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu \
-  PRODEX_ORACLE=/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu \
+  PRODEX_ORACLE_01651=/home/test-user/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu \
+  PRODEX_ORACLE_04392=/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu \
+  PRODEX_ORACLE=/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu \
   PYTHONPATH=tests python3 -m unittest -v \
     test_super_dry_run_01651.SuperDryRun01651Tests.test_codex_reasoning_effort_is_preserved_in_dry_run \
     test_super_launch_01651.ActiveSuperLaunchTests.test_supported_exec_flags_match_01651 \

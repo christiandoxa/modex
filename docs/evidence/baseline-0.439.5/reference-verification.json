@@ -3,7 +3,7 @@
   "commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
   "tag": "refs/tags/0.439.5",
   "tag_verified_read_only_remote": true,
-  "source_snapshot": "/home/doxa/.cache/modex/references/prodex-ac9aad08f25d6dc8cda96463ce2045b40f35f510",
+  "source_snapshot": "/home/test-user/.cache/modex/references/prodex-ac9aad08f25d6dc8cda96463ce2045b40f35f510",
   "source_checkout_clean": true,
   "source_sha256": {
     "crates/prodex-app/src/profile_commands/login/identity_commit.rs": "18c3e397fd95a019a9f0118f0284df4f52f297a65a5839dd80e054f9a39d4ed6",
@@ -17,7 +17,7 @@
   "source_repository_modified": false,
   "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.439.5",
   "published_at": "2026-10-27T16:05:30Z",
-  "linux_oracle": "/home/doxa/.cache/modex/oracles/0.439.5/prodex-x86_64-unknown-linux-gnu",
+  "linux_oracle": "/home/test-user/.cache/modex/oracles/0.439.5/prodex-x86_64-unknown-linux-gnu",
   "linux_oracle_sha256": "96cef1bfea9cfd90b769d1d7854e88400beed151ad05c229facdd6d52a5d59c5",
   "sha256sums_sha256": "b3bf336511f314f9bca585aff110aed09d7c6d41d44db68fedb46c40cf52106d",
   "release_manifest_sha256": "4a75b377a2bb909c2f63a135646dd6000e837ebeb00a34b1fd33910abc8d3c8b",

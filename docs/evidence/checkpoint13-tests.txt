@@ -178,7 +178,7 @@ mojo build -O3 --target-cpu=x86-64-v3 -I src tests/width_memory_driver.mojo -o b
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_text_driver.mojo -o build/tests/log_text_driver
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
+/home/test-user/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
         var output = String()
                            ^
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_transcript_driver.mojo -o build/tests/log_transcript_driver
@@ -203,19 +203,19 @@ mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_time_driver.mojo -o build
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow.mojo -o build/tests/test_log_follow
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+/home/test-user/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
     append_bytes(path, utf8^)
                            ^
 
-/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+/home/test-user/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
     append_bytes(path, utf8^)
                            ^
 
-build/tests/test_log_follow /home/doxa/IdeaProjects/modex/build/tests/log-follow-files
+build/tests/test_log_follow /home/test-user/IdeaProjects/modex/build/tests/log-follow-files
 native incremental log follow: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow_paths.mojo -o build/tests/test_log_follow_paths
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_log_follow_paths /home/doxa/IdeaProjects/modex/build/tests/follow-paths
+build/tests/test_log_follow_paths /home/test-user/IdeaProjects/modex/build/tests/follow-paths
 Log follower path selection checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_operational.mojo -o build/tests/test_log_operational
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
@@ -251,28 +251,28 @@ mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_wait_child.mojo -o bu
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_wait.mojo -o build/tests/test_process_wait
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_process_wait /home/doxa/IdeaProjects/modex/build/tests/process_wait_child
+build/tests/test_process_wait /home/test-user/IdeaProjects/modex/build/tests/process_wait_child
 direct-child polling, timeout termination, and cached reap checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_stdio_child.mojo -o build/tests/process_stdio_child
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_stdio.mojo -o build/tests/test_process_stdio
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_process_stdio /home/doxa/IdeaProjects/modex/build/tests/process_stdio_child
+build/tests/test_process_stdio /home/test-user/IdeaProjects/modex/build/tests/process_stdio_child
 native redirected spawn, EOF, environment, and stdio restoration checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_capture_child.mojo -o build/tests/process_capture_child
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_capture.mojo -o build/tests/test_process_capture
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_process_capture /home/doxa/IdeaProjects/modex/build/tests/process_capture_child
+build/tests/test_process_capture /home/test-user/IdeaProjects/modex/build/tests/process_capture_child
 bounded simultaneous process capture, explicit environment and timeout checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_child.mojo -o build/tests/process_child
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_spawn.mojo -o build/tests/test_process_spawn
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
+/home/test-user/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
     var missing = False
                   ^
-build/tests/test_process_spawn /home/doxa/IdeaProjects/modex/build/tests/process_child
+build/tests/test_process_spawn /home/test-user/IdeaProjects/modex/build/tests/process_child
 synthetic-child-ok
 explicit environment spawn checks: PASS
 
@@ -471,7 +471,7 @@ mojo build -O3 --target-cpu=x86-64-v3 -I src tests/width_memory_driver.mojo -o b
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_text_driver.mojo -o build/tests/log_text_driver
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
+/home/test-user/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
         var output = String()
                            ^
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_transcript_driver.mojo -o build/tests/log_transcript_driver
@@ -496,19 +496,19 @@ mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_time_driver.mojo -o build
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow.mojo -o build/tests/test_log_follow
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+/home/test-user/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
     append_bytes(path, utf8^)
                            ^
 
-/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+/home/test-user/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
     append_bytes(path, utf8^)
                            ^
 
-build/tests/test_log_follow /home/doxa/IdeaProjects/modex/build/tests/log-follow-files
+build/tests/test_log_follow /home/test-user/IdeaProjects/modex/build/tests/log-follow-files
 native incremental log follow: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow_paths.mojo -o build/tests/test_log_follow_paths
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_log_follow_paths /home/doxa/IdeaProjects/modex/build/tests/follow-paths
+build/tests/test_log_follow_paths /home/test-user/IdeaProjects/modex/build/tests/follow-paths
 Log follower path selection checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_operational.mojo -o build/tests/test_log_operational
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
@@ -544,28 +544,28 @@ mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_wait_child.mojo -o bu
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_wait.mojo -o build/tests/test_process_wait
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_process_wait /home/doxa/IdeaProjects/modex/build/tests/process_wait_child
+build/tests/test_process_wait /home/test-user/IdeaProjects/modex/build/tests/process_wait_child
 direct-child polling, timeout termination, and cached reap checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_stdio_child.mojo -o build/tests/process_stdio_child
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_stdio.mojo -o build/tests/test_process_stdio
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_process_stdio /home/doxa/IdeaProjects/modex/build/tests/process_stdio_child
+build/tests/test_process_stdio /home/test-user/IdeaProjects/modex/build/tests/process_stdio_child
 native redirected spawn, EOF, environment, and stdio restoration checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_capture_child.mojo -o build/tests/process_capture_child
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_capture.mojo -o build/tests/test_process_capture
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_process_capture /home/doxa/IdeaProjects/modex/build/tests/process_capture_child
+build/tests/test_process_capture /home/test-user/IdeaProjects/modex/build/tests/process_capture_child
 bounded simultaneous process capture, explicit environment and timeout checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_child.mojo -o build/tests/process_child
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_spawn.mojo -o build/tests/test_process_spawn
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
+/home/test-user/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
     var missing = False
                   ^
-build/tests/test_process_spawn /home/doxa/IdeaProjects/modex/build/tests/process_child
+build/tests/test_process_spawn /home/test-user/IdeaProjects/modex/build/tests/process_child
 synthetic-child-ok
 explicit environment spawn checks: PASS
 python3 -m unittest discover -s tests -p 'test_*.py' -v
@@ -938,7 +938,7 @@ test_truncation_and_malformed_frames (test_zstd.ZstdTests.test_truncation_and_ma
 FAIL: test_malformed_release_diagnostics (test_compressed_sessions.CompressedSessionTests.test_malformed_release_diagnostics)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_compressed_sessions.py", line 58, in test_malformed_release_diagnostics
+  File "/home/test-user/IdeaProjects/modex/tests/test_compressed_sessions.py", line 58, in test_malformed_release_diagnostics
     self.assertEqual(capture["oracle_sha256"], ORACLE_SHA256)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: 'b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a' != 'a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e'
@@ -950,7 +950,7 @@ AssertionError: 'b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255
 FAIL: test_release_help_and_argument_diagnostics (test_session_cli.SessionCliTests.test_release_help_and_argument_diagnostics)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_session_cli.py", line 23, in test_release_help_and_argument_diagnostics
+  File "/home/test-user/IdeaProjects/modex/tests/test_session_cli.py", line 23, in test_release_help_and_argument_diagnostics
     self.assertEqual(captured["oracle_sha256"], ORACLE_SHA256)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: 'b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a' != 'a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e'
@@ -962,7 +962,7 @@ AssertionError: 'b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255
 FAIL: test_credential_free_url_validation_matches_frozen_capture (test_super_cli.SuperCliTests.test_credential_free_url_validation_matches_frozen_capture)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_super_cli.py", line 74, in test_credential_free_url_validation_matches_frozen_capture
+  File "/home/test-user/IdeaProjects/modex/tests/test_super_cli.py", line 74, in test_credential_free_url_validation_matches_frozen_capture
     self.assertEqual(capture["oracle_sha256"], ORACLE_SHA256)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: 'b4511d679dd6da53f706400dba5b368ffc5b5663f8764fa0c8f148b358b9255a' != 'a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e'
@@ -1163,7 +1163,7 @@ mojo build -O3 --target-cpu=x86-64-v3 -I src tests/width_memory_driver.mojo -o b
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_text_driver.mojo -o build/tests/log_text_driver
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
+/home/test-user/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
         var output = String()
                            ^
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_transcript_driver.mojo -o build/tests/log_transcript_driver
@@ -1188,19 +1188,19 @@ mojo build -O3 --target-cpu=x86-64-v3 -I src tests/log_time_driver.mojo -o build
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow.mojo -o build/tests/test_log_follow
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+/home/test-user/IdeaProjects/modex/tests/test_log_follow.mojo:40:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
     append_bytes(path, utf8^)
                            ^
 
-/home/doxa/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
+/home/test-user/IdeaProjects/modex/tests/test_log_follow.mojo:46:28: warning: this value is borrowed here, so the transfer has no effect and can be removed
     append_bytes(path, utf8^)
                            ^
 
-build/tests/test_log_follow /home/doxa/IdeaProjects/modex/build/tests/log-follow-files
+build/tests/test_log_follow /home/test-user/IdeaProjects/modex/build/tests/log-follow-files
 native incremental log follow: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_follow_paths.mojo -o build/tests/test_log_follow_paths
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_log_follow_paths /home/doxa/IdeaProjects/modex/build/tests/follow-paths
+build/tests/test_log_follow_paths /home/test-user/IdeaProjects/modex/build/tests/follow-paths
 Log follower path selection checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_log_operational.mojo -o build/tests/test_log_operational
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
@@ -1236,28 +1236,28 @@ mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_wait_child.mojo -o bu
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_wait.mojo -o build/tests/test_process_wait
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_process_wait /home/doxa/IdeaProjects/modex/build/tests/process_wait_child
+build/tests/test_process_wait /home/test-user/IdeaProjects/modex/build/tests/process_wait_child
 direct-child polling, timeout termination, and cached reap checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_stdio_child.mojo -o build/tests/process_stdio_child
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_stdio.mojo -o build/tests/test_process_stdio
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_process_stdio /home/doxa/IdeaProjects/modex/build/tests/process_stdio_child
+build/tests/test_process_stdio /home/test-user/IdeaProjects/modex/build/tests/process_stdio_child
 native redirected spawn, EOF, environment, and stdio restoration checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_capture_child.mojo -o build/tests/process_capture_child
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_capture.mojo -o build/tests/test_process_capture
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-build/tests/test_process_capture /home/doxa/IdeaProjects/modex/build/tests/process_capture_child
+build/tests/test_process_capture /home/test-user/IdeaProjects/modex/build/tests/process_capture_child
 bounded simultaneous process capture, explicit environment and timeout checks: PASS
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/process_child.mojo -o build/tests/process_child
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 mojo build -O3 --target-cpu=x86-64-v3 -I src tests/test_process_spawn.mojo -o build/tests/test_process_spawn
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
+/home/test-user/IdeaProjects/modex/tests/test_process_spawn.mojo:64:19: warning: assignment to 'missing' was never used; assign to '_' instead?
     var missing = False
                   ^
-build/tests/test_process_spawn /home/doxa/IdeaProjects/modex/build/tests/process_child
+build/tests/test_process_spawn /home/test-user/IdeaProjects/modex/build/tests/process_child
 synthetic-child-ok
 explicit environment spawn checks: PASS
 python3 -m unittest discover -s tests -p 'test_*.py' -v

@@ -17,7 +17,7 @@ Objective completed. Read-only review of all three exact commits; no repository 
 
 1. **Conversation histories disappear earlier than in the frozen release.** [provider_conversations.mojo:48](/tmp/modex-luna-conversations-20261026/src/modex/provider_conversations.mojo:48) replaces the frozen logical weight with `max(logical, serialized)`. The immutable baseline counts decoded values and key bytes, excluding the synthetic root array; it explicitly expects `"é", []` to weigh **2**, whereas this commit expects **4**.
 
-   The worker’s eight-turn quote fixture accumulates approximately **61.2 MB** of decoded string content but **122.4 MB** serialized. Frozen accounting retains the first history below its 64 MiB budget; the new accounting evicts it. Production then silently sends only the new input through [runtime_local_rewrite.mojo:191](/home/doxa/IdeaProjects/modex/src/modex/runtime_local_rewrite.mojo:191).
+   The worker’s eight-turn quote fixture accumulates approximately **61.2 MB** of decoded string content but **122.4 MB** serialized. Frozen accounting retains the first history below its 64 MiB budget; the new accounting evicts it. Production then silently sends only the new input through [runtime_local_rewrite.mojo:191](/home/test-user/IdeaProjects/modex/src/modex/runtime_local_rewrite.mojo:191).
 
    **Fix:** preserve frozen accounting for retention decisions. Treat any separate physical-memory policy as an explicit compatibility deviation.
 

@@ -3,7 +3,7 @@ Dynamic section at offset 0x2d30 contains 29 entries:
   Tag        Type                         Name/Value
  0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
  0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
- 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/test-user/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
  0x000000000000000c (INIT)               0x1000
  0x000000000000000d (FINI)               0x1650
  0x0000000000000019 (INIT_ARRAY)         0x3d20

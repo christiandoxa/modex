@@ -5,6 +5,9 @@
   "oracle_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
   "capture_harness": "tests/capture_super_hooks.py",
   "scope": "Frozen Super hook-trust JSON-RPC behavior against isolated synthetic Codex app-server peers.",
+  "sanitized_fields": {
+    "cases[*].argv[0]": "<SANITIZED_ORACLE_EXECUTABLE>"
+  },
   "protocol_sources": [
     "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs:27-90",
     "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs:92-176",
@@ -19,7 +22,7 @@
     {
       "name": "empty_hooks",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -213,7 +216,7 @@
     {
       "name": "untrusted_hook_write",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -480,7 +483,7 @@
     {
       "name": "already_trusted",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -714,7 +717,7 @@
     {
       "name": "batch_write_ok_overridden",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -981,7 +984,7 @@
     {
       "name": "legacy_hooks_list",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -1144,7 +1147,7 @@
     {
       "name": "legacy_batch_write",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -1364,7 +1367,7 @@
     {
       "name": "initialize_method_not_found",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -1460,7 +1463,7 @@
     {
       "name": "hooks_list_error",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -1578,7 +1581,7 @@
     {
       "name": "verification_method_not_found",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -1722,7 +1725,7 @@
     {
       "name": "batch_write_error_status",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -1896,7 +1899,7 @@
     {
       "name": "verification_untrusted",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -2119,7 +2122,7 @@
     {
       "name": "diagnostics_warning",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -2265,7 +2268,7 @@
     {
       "name": "missing_hook_key",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",
@@ -2408,7 +2411,7 @@
     {
       "name": "rpc_timeout",
       "argv": [
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+        "<SANITIZED_ORACLE_EXECUTABLE>",
         "super",
         "--provider",
         "deepseek",

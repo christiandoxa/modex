@@ -4,7 +4,7 @@
   "tag": "72b77478a5198fc5da6b4d2253137f9cdbf43be9\trefs/tags/0.439.2",
   "tag_verified_read_only_remote": true,
   "source_repository_modified": false,
-  "snapshot": "/home/doxa/.cache/modex/references/prodex-72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "snapshot": "/home/test-user/.cache/modex/references/prodex-72b77478a5198fc5da6b4d2253137f9cdbf43be9",
   "snapshot_git_blob_files_verified": 3280,
   "snapshot_verification": "Every Git-tree blob matches the cached archive, including symlink bytes.",
   "previous_baseline": {
@@ -16,7 +16,7 @@
   "published_at": "2026-10-26T10:00:42Z",
   "draft": false,
   "prerelease": false,
-  "linux_oracle": "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+  "linux_oracle": "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
   "linux_oracle_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
   "sha256sums_sha256": "c0d810169f539e50b3eaf875d81b1eb510430cf691d228472d537b12d11822c6",
   "release_manifest_sha256": "9923b31a025a369af82360c2825d8c04d05237cd21b083837ae3f409cc83e721",

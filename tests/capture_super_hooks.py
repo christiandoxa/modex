@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 from test_cli import ORACLE, ORACLE_SHA256
 
 BASELINE_COMMIT = "72b77478a5198fc5da6b4d2253137f9cdbf43be9"
+SANITIZED_ORACLE_EXECUTABLE = "<SANITIZED_ORACLE_EXECUTABLE>"
 OUTPUT = Path(os.environ.get("MODEX_HOOK_CAPTURE_OUTPUT", ROOT / "tests/fixtures/super_hooks/historical-0.439.2.json"))
 
 FAKE_CODEX = r'''#!__PYTHON__
@@ -326,7 +327,7 @@ def run_case(case):
             thread.join(timeout=2)
         return normalized({
             "name": case["name"],
-            "argv": arguments,
+            "argv": [SANITIZED_ORACLE_EXECUTABLE, *arguments[1:]],
             "synthetic_config": config_text,
             "returncode": result.returncode,
             "stdout": result.stdout.decode("utf-8", "replace"),
@@ -350,6 +351,7 @@ def main():
         "oracle_sha256": oracle_sha256,
         "capture_harness": "tests/capture_super_hooks.py",
         "scope": "Frozen Super hook-trust JSON-RPC behavior against isolated synthetic Codex app-server peers.",
+        "sanitized_fields": {"cases[*].argv[0]": SANITIZED_ORACLE_EXECUTABLE},
         "protocol_sources": [
             "Frozen Prodex 0.439.2 crates/prodex-app/src/runtime_tools/hook_trust.rs",
             "Codex app-server/tests/suite/v2/hooks_list.rs:77-113, 190-237",

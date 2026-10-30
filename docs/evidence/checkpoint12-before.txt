@@ -2,43 +2,43 @@ New 23-case/two-route live regression against checkpoint 11 artifact 9fb833d639a
 
 $ PYTHONPATH=tests rtk proxy python3 -m unittest -v test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release
 test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) ...
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/./keep', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2e/keep', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E/keep', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/.', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E/', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/../right', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/.%2e/right', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/%2E./right', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/%2e%2E/right', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/..', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E%2e', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/../../other', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1//../other', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/..//right', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1\\..\\other', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left\\.%2E\\right', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left\\..\\\\right', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/./trail\\', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/é/{東京}/..', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
-  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/é/../{東京}', binary='/home/doxa/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/./keep', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2e/keep', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E/keep', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/.', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E/', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/../right', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/.%2e/right', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/%2E./right', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/%2e%2E/right', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/..', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E%2e', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/../../other', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1//../other', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/..//right', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1\\..\\other', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left\\.%2E\\right', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left\\..\\\\right', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/./trail\\', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/é/{東京}/..', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
+  test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/é/../{東京}', binary='/home/test-user/IdeaProjects/modex/build/modex') ... FAIL
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/./keep', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/./keep', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2e/keep', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2e/keep', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
     self.assertEqual([row["path"] for row in upstream], [target, target + query])
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Lists differ: ['/v1/%2e/keep/chat/completions', '/v1/%2e/keep[41 chars]%5C'] != ['/v1/keep/chat/completions', '/v1/keep/chat/co[33 chars]%5C']
@@ -57,10 +57,10 @@ First differing element 0:
 +  '/v1/keep/chat/completions?keep=%2e%2E&encoded=%2F%5C']
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E/keep', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E/keep', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
     self.assertEqual([row["path"] for row in upstream], [target, target + query])
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Lists differ: ['/v1/%2E/keep/chat/completions', '/v1/%2E/keep[41 chars]%5C'] != ['/v1/keep/chat/completions', '/v1/keep/chat/co[33 chars]%5C']
@@ -79,21 +79,21 @@ First differing element 0:
 +  '/v1/keep/chat/completions?keep=%2e%2E&encoded=%2F%5C']
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/.', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/.', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E/', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E/', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
     self.assertEqual([row["path"] for row in upstream], [target, target + query])
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Lists differ: ['/v1/%2E/chat/completions', '/v1/%2E/chat/comp[31 chars]%5C'] != ['/v1/chat/completions', '/v1/chat/completions?[23 chars]%5C']
@@ -111,21 +111,21 @@ First differing element 0:
 
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/../right', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/../right', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/.%2e/right', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/.%2e/right', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
     self.assertEqual([row["path"] for row in upstream], [target, target + query])
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Lists differ: ['/v1/left/.%2e/right/chat/completions', '/v1/l[55 chars]%5C'] != ['/v1/right/chat/completions', '/v1/right/chat/[35 chars]%5C']
@@ -144,10 +144,10 @@ First differing element 0:
 +  '/v1/right/chat/completions?keep=%2e%2E&encoded=%2F%5C']
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/%2E./right', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/%2E./right', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
     self.assertEqual([row["path"] for row in upstream], [target, target + query])
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Lists differ: ['/v1/left/%2E./right/chat/completions', '/v1/l[55 chars]%5C'] != ['/v1/right/chat/completions', '/v1/right/chat/[35 chars]%5C']
@@ -166,10 +166,10 @@ First differing element 0:
 +  '/v1/right/chat/completions?keep=%2e%2E&encoded=%2F%5C']
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/%2e%2E/right', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/%2e%2E/right', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
     self.assertEqual([row["path"] for row in upstream], [target, target + query])
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Lists differ: ['/v1/left/%2e%2E/right/chat/completions', '/v1[59 chars]%5C'] != ['/v1/right/chat/completions', '/v1/right/chat/[35 chars]%5C']
@@ -188,21 +188,21 @@ First differing element 0:
 +  '/v1/right/chat/completions?keep=%2e%2E&encoded=%2F%5C']
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/..', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/..', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E%2e', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/%2E%2e', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
     self.assertEqual([row["path"] for row in upstream], [target, target + query])
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Lists differ: ['/v1/%2E%2e/chat/completions', '/v1/%2E%2e/[40 chars]%5C'] != ['/chat/completions', '/chat/completions?kee[20 chars]%5C']
@@ -220,54 +220,54 @@ First differing element 0:
 
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/../../other', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/../../other', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1//../other', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1//../other', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/..//right', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left/..//right', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1\\..\\other', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1\\..\\other', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left\\.%2E\\right', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left\\.%2E\\right', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 153, in test_upstream_dot_segments_match_release
     self.assertEqual([row["path"] for row in upstream], [target, target + query])
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Lists differ: ['/v1/left/.%2E/right/chat/completions', '/v1/l[55 chars]%5C'] != ['/v1/right/chat/completions', '/v1/right/chat/[35 chars]%5C']
@@ -286,46 +286,46 @@ First differing element 0:
 +  '/v1/right/chat/completions?keep=%2e%2E&encoded=%2F%5C']
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left\\..\\\\right', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/left\\..\\\\right', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/./trail\\', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/./trail\\', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/é/{東京}/..', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/é/{東京}/..', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 
 ======================================================================
-FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/é/../{東京}', binary='/home/doxa/IdeaProjects/modex/build/modex')
+FAIL: test_upstream_dot_segments_match_release (test_deepseek_continuation.DeepSeekContinuationTests.test_upstream_dot_segments_match_release) (path='/v1/é/../{東京}', binary='/home/test-user/IdeaProjects/modex/build/modex')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 151, in test_upstream_dot_segments_match_release
     upstream, responses = observe_turns(binary, turns, replies, base_path=path)
                           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/doxa/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
+  File "/home/test-user/IdeaProjects/modex/tests/test_deepseek_continuation.py", line 79, in observe_turns
     raise AssertionError((result.returncode, result.stdout, result.stderr, records, server.records))
 AssertionError: (1, b'', b'Error: URL path normalization is not implemented by this Modex gateway\n', [], [])
 

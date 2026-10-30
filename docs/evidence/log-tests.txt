@@ -12,7 +12,7 @@ Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: w
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable
-/home/doxa/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
+/home/test-user/IdeaProjects/modex/tests/log_text_driver.mojo:15:28: warning: assignment to 'output' was never used; assign to '_' instead?
         var output = String()
                            ^
 Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable

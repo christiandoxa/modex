@@ -34,7 +34,7 @@ The complete oracle module passed six tests. The focused interrupt test passed
 three additional fresh-process runs:
 
 ```sh
-PRODEX_ORACLE_01651=/home/doxa/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu \
+PRODEX_ORACLE_01651=/home/test-user/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu \
   python3 -m unittest discover -s tests -p 'test_runtime_proxy_websocket_01651_oracle.py' -k interrupt_is_forwarded -v
 ```
 
@@ -56,7 +56,7 @@ local text after the current text-message flow returns, matching the delayed
 forwarding observed here. The separate test passed three fresh-process runs:
 
 ```sh
-PRODEX_ORACLE_04392=/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu \
+PRODEX_ORACLE_04392=/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu \
   python3 -m unittest discover -s tests -p 'test_runtime_proxy_websocket_04392_oracle.py' -v
 ```
 

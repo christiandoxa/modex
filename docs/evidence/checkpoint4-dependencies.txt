@@ -10,15 +10,15 @@ $ sha256sum build/modex
 a6852131c3ce8a48b9f87b7f735b41593f08d96f7e0ba8088ce58c9686fba9d0  build/modex
 $ ldd build/modex
 	linux-vdso.so.1 (0x000077ca5e897000)
-	libKGENCompilerRTShared.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x000077ca5e543000)
+	libKGENCompilerRTShared.so => /home/test-user/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libKGENCompilerRTShared.so (0x000077ca5e543000)
 	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000077ca5e200000)
 	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000077ca5e439000)
 	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x000077ca5de00000)
-	libMSupportGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x000077ca5e429000)
-	libAsyncRTRuntimeGlobals.so => /home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x000077ca5d200000)
+	libMSupportGlobals.so => /home/test-user/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libMSupportGlobals.so (0x000077ca5e429000)
+	libAsyncRTRuntimeGlobals.so => /home/test-user/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib/libAsyncRTRuntimeGlobals.so (0x000077ca5d200000)
 	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000077ca5e1d2000)
 	/lib64/ld-linux-x86-64.so.2 (0x000077ca5e899000)
 $ readelf -d build/modex
  0x0000000000000001 (NEEDED)             Shared library: [libKGENCompilerRTShared.so]
  0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
- 0x000000000000001d (RUNPATH)            Library runpath: [/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/home/test-user/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib]

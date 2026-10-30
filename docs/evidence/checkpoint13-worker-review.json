@@ -30,7 +30,7 @@
       "decision": "reject",
       "reason": "The new frozen kernel deactivates the earlier generic tool, retaining the later specific slot. The official 0.439.2 binary and checkpoint 12 native CLI both send middle,mcp__s__run,tail with one POST.",
       "live_observation": {
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu": {
+        "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu": {
           "names": [
             "middle",
             "mcp__s__run",
@@ -59,7 +59,7 @@
       "decision": "reject",
       "reason": "The shared message metadata transformer has no proposed 4 MiB aggregate cap. Both real products return 200/one POST with 4,200,071 serialized metadata bytes, retaining both 2,100,000-byte values.",
       "live_observation": {
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu": {
+        "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu": {
           "status": 200,
           "posts": 1,
           "metadata_bytes": 4200071,
@@ -71,7 +71,7 @@
           "provider_reasoning_bytes": 2100000,
           "elapsed_seconds": 0.99
         },
-        "/home/doxa/IdeaProjects/modex/build/modex": {
+        "/home/test-user/IdeaProjects/modex/build/modex": {
           "status": 200,
           "posts": 1,
           "metadata_bytes": 4200071,
@@ -90,7 +90,7 @@
       "decision": "exclude as incomplete panic behavior",
       "reason": "Source uses Rust expect. With 65,537 hooks the official release exits 101, while native exits 1, both before provider I/O. Replacing three strings would leave the process contract mismatched.",
       "live_observation": {
-        "/home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu": {
+        "/home/test-user/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu": {
           "returncode": 101,
           "posts": 0,
           "methods": [
@@ -101,7 +101,7 @@
             "compiled Mojo hook trust selection returned invalid output: InvalidInput"
           ]
         },
-        "/home/doxa/IdeaProjects/modex/build/modex": {
+        "/home/test-user/IdeaProjects/modex/build/modex": {
           "returncode": 1,
           "posts": 0,
           "methods": [

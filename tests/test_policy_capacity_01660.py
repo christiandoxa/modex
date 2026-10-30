@@ -1,6 +1,7 @@
 """0.166.0 DeepSeek API-key 503 behavior; profile runtime remains unimplemented."""
 
 import hashlib
+import json
 import unittest
 
 from test_active_baseline_01660 import MODEX, ORACLE, ORACLE_SHA256
@@ -57,6 +58,30 @@ class PolicyCapacityUnavailable01660ApiKeyPathTests(unittest.TestCase):
                 self.assertEqual(upstream[0]["headers"]["authorization"], KEY_A)
                 self.assertEqual([response["status"] for response in responses], [503])
                 self.assertEqual(bytes.fromhex(responses[0]["body"]), body)
+
+    def test_combo_policy_503_retries_model_before_api_key(self):
+        request = [{"model": "combo:flash,pro", "input": "synthetic policy fallback"}]
+        body = b'{"error":{"code":"policy_capacity_unavailable","message":"synthetic policy"}}'
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary,
+                    request,
+                    [
+                        {"status": 503, "content_type": "application/json", "body": body},
+                        buffered_reply(9),
+                    ],
+                    api_keys=KEYS,
+                    latest_version="0.166.0",
+                )
+                self.assertEqual(
+                    [json.loads(post["body"])["model"] for post in upstream],
+                    ["deepseek-flash", "deepseek-v4-pro"],
+                )
+                self.assertEqual(
+                    [post["headers"]["authorization"] for post in upstream], [KEY_A, KEY_A],
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
 
     def test_unrelated_metadata_does_not_suppress_server_overload_rotation(self):
         request = [{"model": "deepseek-chat", "input": "synthetic overload control"}]

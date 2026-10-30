@@ -1,5 +1,15 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The isolated `make test` run on `751639602fd13c24c216606f086de558e942be88`
+stopped in the native `test_provider_chat_reader` unit before Python tests:
+its direct-reader assertion expected no usage after `message_start`. The
+release reader records the start's usage, and the corrected whole native unit
+passes on the later combined revision. The failed log is
+`/tmp/modex-full-7516396-20261030.log` (SHA-256
+`fcdb8f4c39e4aedb03d51563d3c3d712a07a3a0fa88599e908ff29f21805af18`).
+This focused rerun is not a full-suite pass; rerun the full suite on the
+current combined revision.
+
 The isolated full `make test` run on `89e8c04e7fcd3fb93d52bcafc400d19e5704dfc7`
 finished with three failures in 1,076 Python tests after the production and
 native checks. The local log is `/tmp/modex-full-89e8c04-20261030.log`

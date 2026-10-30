@@ -72,9 +72,12 @@ verified. See `docs/evidence/baseline-0.165.1/super-exec-worktree-options.md`,
 `docs/evidence/baseline-0.165.1/super-exec-working-directory.md` and
 `docs/evidence/baseline-0.165.1/super-exec-value-options.md`.
 
-DeepSeek Super dry-run supports the guarded exec path and selected missing-tool
-or Node-only environments. With both Node and npx present, or managed optional
-tools detected, Modex fails closed instead of reporting readiness. The releases
+DeepSeek Super dry-run supports the guarded exec path and selected missing-tool,
+Node-only, RTK, and Codebase Memory environments. With both Node and npx
+present, or managed Caveman or Ponytail detected, Modex fails closed instead of
+reporting readiness. Managed Codebase Memory symlink escapes are rejected before
+execution and some errors use path-free diagnostics, differing from the releases.
+The releases
 may execute a locally resolved Playwright package to assess that readiness.
 Populated profiles and recovery still fail closed. Modex also masks a chained
 sensitive-flag value that the tested releases expose; this is a security

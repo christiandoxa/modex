@@ -1,5 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Buffered provider metadata matches the active 0.166.0 process for selected
+empty and whitespace fields, first-choice selection, and request metadata
+collisions. The historical 0.439.2 source has a different whitespace
+expectation; see `docs/evidence/baseline-0.166.0/provider-metadata.md`.
+
 For a non-object upstream SSE chunk, a bounded active-oracle probe records
 headers without a body or socket closure within the observation window; Modex
 instead emits a terminal `response.failed` event. Missing-choices and invalid

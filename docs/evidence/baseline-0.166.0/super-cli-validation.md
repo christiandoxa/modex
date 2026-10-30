@@ -21,7 +21,7 @@ Checks run from the isolated Modex worktree:
 
 - `make BUILD_DIR=build build` — passed with existing unused-variable warnings.
 - `mojo run -I src tests/test_super_cli.mojo` — passed.
-- `PYTHONPATH=tests MODEX_BINARY=build/modex PRODEX_ORACLE=/home/doxa/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu python3 -m unittest test_active_baseline_01660.ActiveBaseline01660Tests.test_super_help_and_selected_parser_cases_match_active_release test_active_baseline_01660.ActiveBaseline01660Tests.test_super_validated_option_values_match_active_release test_active_baseline_01660.ActiveBaseline01660Tests.test_super_runtime_url_validation_stays_before_startup -v` — three tests passed against the checksum-verified 0.166.0 oracle.
+- `PYTHONPATH=tests MODEX_BINARY=build/modex PRODEX_ORACLE=/path/to/prodex-0.166.0/prodex-x86_64-unknown-linux-gnu python3 -m unittest test_active_baseline_01660.ActiveBaseline01660Tests.test_super_help_and_selected_parser_cases_match_active_release test_active_baseline_01660.ActiveBaseline01660Tests.test_super_validated_option_values_match_active_release test_active_baseline_01660.ActiveBaseline01660Tests.test_super_runtime_url_validation_stays_before_startup -v` — three tests passed against the checksum-verified 0.166.0 oracle.
 
 The process comparisons use `bwrap --unshare-all`, an empty synthetic HOME,
 empty PATH and no credentials. They verify no files are created for parser

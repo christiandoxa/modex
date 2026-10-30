@@ -25,9 +25,11 @@ used.
 
 Reproduce after building Modex:
 
+Replace `/path/to/` placeholders with verified local paths before running.
+
 ```sh
 MODEX_BINARY="$PWD/build/modex" \
-PRODEX_ORACLE="/home/doxa/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu" \
+PRODEX_ORACLE="/path/to/prodex-0.166.0/prodex-x86_64-unknown-linux-gnu" \
 python3 tests/test_active_baseline_01660.py \
   ActiveBaseline01660Tests.test_log_last_keeps_ambiguous_unicode_secret_tail_masked
 ```
@@ -62,7 +64,7 @@ Reproduce after building Modex:
 
 ```sh
 MODEX_BINARY="$PWD/build/modex" \
-PRODEX_ORACLE="/home/doxa/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu" \
+PRODEX_ORACLE="/path/to/prodex-0.166.0/prodex-x86_64-unknown-linux-gnu" \
 python3 tests/test_active_baseline_01660.py \
   ActiveBaseline01660Tests.test_session_list_keeps_startup_file_gap_visible
 ```

@@ -23,6 +23,8 @@ x86-64; broader input translation and six-platform parity remain open.
 To reproduce the isolated active comparison after building Modex, run from
 the checkout with the local toolchain and oracle paths adjusted if needed:
 
+Replace `/path/to/` placeholders with verified local paths before running.
+
 ```sh
-unshare -Urnm sh -c 'mount --bind "$PWD" /mnt && mount -t tmpfs -o mode=1777 tmpfs /tmp && ip link set lo up && mkdir -m 700 /tmp/home /tmp/work && cd /mnt && exec env -i HOME=/tmp/home TMPDIR=/tmp/work PATH=/home/doxa/.local/bin:/usr/local/bin:/usr/bin:/bin LANG=C.UTF-8 TERM=dumb NO_COLOR=1 PRODEX_ORACLE=/home/doxa/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu python3 scripts/ci/run-unittest.py test_anthropic_missing_message_content_01660.py'
+unshare -Urnm sh -c 'mount --bind "$PWD" /mnt && mount -t tmpfs -o mode=1777 tmpfs /tmp && ip link set lo up && mkdir -m 700 /tmp/home /tmp/work && cd /mnt && exec env -i HOME=/tmp/home TMPDIR=/tmp/work PATH=/usr/local/bin:/usr/bin:/bin LANG=C.UTF-8 TERM=dumb NO_COLOR=1 PRODEX_ORACLE=/path/to/prodex-0.166.0/prodex-x86_64-unknown-linux-gnu python3 scripts/ci/run-unittest.py test_anthropic_missing_message_content_01660.py'
 ```

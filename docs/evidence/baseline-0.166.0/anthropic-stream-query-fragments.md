@@ -49,13 +49,14 @@ limited to these stream inputs and the tested request route/body; broader
 Anthropic parity remains open.
 
 On 2026-10-30, the focused process test passed all 22 cases in 31.484 seconds.
-Each oracle launch verified the pinned SHA at
-`/home/doxa/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu`.
+Each oracle launch verified the pinned oracle SHA-256.
 The `test_provider_chat_reader` and `test_provider_chat_stream` Mojo unit
 programs also passed after the change.
 
 Reproduce from the Modex worktree after building `build/modex`:
 
+Replace `/path/to/` placeholders with verified local paths before running.
+
 ```sh
-timeout 180s unshare -Urnm sh -c 'mount --bind "$PWD" /mnt && mount -t tmpfs -o mode=1777 tmpfs /tmp && mount -t sysfs -o nosuid,nodev,noexec sysfs /sys && ip link set lo up && mkdir -m 700 /tmp/home /tmp/work && cd /mnt && exec env -i HOME=/tmp/home TMPDIR=/tmp/work PATH=/home/doxa/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 TERM=dumb NO_COLOR=1 PYTHONDONTWRITEBYTECODE=1 MODEX_BINARY=/mnt/build/modex PRODEX_ORACLE=/home/doxa/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu PYTHONPATH=tests python3 tests/manual_anthropic_stream_01660.py -v'
+timeout 180s unshare -Urnm sh -c 'mount --bind "$PWD" /mnt && mount -t tmpfs -o mode=1777 tmpfs /tmp && mount -t sysfs -o nosuid,nodev,noexec sysfs /sys && ip link set lo up && mkdir -m 700 /tmp/home /tmp/work && cd /mnt && exec env -i HOME=/tmp/home TMPDIR=/tmp/work PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 TERM=dumb NO_COLOR=1 PYTHONDONTWRITEBYTECODE=1 MODEX_BINARY=/mnt/build/modex PRODEX_ORACLE=/path/to/prodex-0.166.0/prodex-x86_64-unknown-linux-gnu PYTHONPATH=tests python3 tests/manual_anthropic_stream_01660.py -v'
 ```

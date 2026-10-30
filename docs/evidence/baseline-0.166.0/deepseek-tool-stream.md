@@ -59,9 +59,11 @@ Mojo runtime library read-only, verifies the oracle digest, and asserts that
 `lo` is the only interface and both default-route tables are empty. `/tmp` is
 a private mode-700 tmpfs, and HOME is a mode-700 directory inside it.
 
+Replace `/path/to/` placeholders with verified local paths before running.
+
 ```sh
-PRODEX_ORACLE=/home/doxa/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu \
-MOJO_LIBRARY_DIR=/home/doxa/.local/share/upkit/python/3.16.0-a1/python/install/lib/python3.16/site-packages/modular/lib \
+PRODEX_ORACLE=/path/to/prodex-0.166.0/prodex-x86_64-unknown-linux-gnu \
+MOJO_LIBRARY_DIR=/path/to/mojo/lib \
 unshare -Urnm /bin/sh -s <<'NS'
 set -eu
 mount --make-rprivate /

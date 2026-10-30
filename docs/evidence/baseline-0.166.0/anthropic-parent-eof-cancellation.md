@@ -10,7 +10,7 @@ Its chunked provider fixture did not hold the upstream connection open. The
 did not prove that the response or Modex parent remained alive. In the full
 1,195-test run, the Modex parent returned `0` before SIGTERM, while the client
 recorded `IncompleteRead`. The test therefore did not establish cancellation.
-Its full-suite log is `/tmp/modex-01660-full-b04873c.log`, SHA-256
+Its full-suite log had SHA-256
 `b9b4342a09a5ca931cb5d4380fc6c3f9b9a4a2d32a53d70bf1c0a7374e625a18`.
 
 Modex's `_exec` starts the synthetic Codex child, waits for it to exit, then
@@ -48,6 +48,8 @@ the checksum-pinned historical oracles, a private `/tmp`, and a new user,
 mount, and network namespace. The test creates synthetic HOME, config, state,
 and work directories and sends traffic only to loopback.
 
+Replace `/path/to/` placeholders with verified local paths before running.
+
 ```sh
 task_scratch="$(mktemp -d "$HOME/.cache/modex/parent-eof.XXXXXX")"
 trap 'rm -rf -- "$task_scratch"' EXIT
@@ -56,9 +58,9 @@ touch "$task_scratch/oracle/01651" "$task_scratch/oracle/04392"
 TASK_SCRATCH="$task_scratch" unshare --user --map-root-user --mount --net --fork /bin/bash -s <<'SH'
 set -eu
 mount --make-rprivate /
-mount --bind /tmp/modex-01660-full-b04873c "$TASK_SCRATCH/workspace/b04873c"
-mount --bind /home/doxa/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu "$TASK_SCRATCH/oracle/01651"
-mount --bind /home/doxa/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu "$TASK_SCRATCH/oracle/04392"
+mount --bind /path/to/modex-snapshot-b04873c "$TASK_SCRATCH/workspace/b04873c"
+mount --bind /path/to/prodex-0.165.1/prodex-x86_64-unknown-linux-gnu "$TASK_SCRATCH/oracle/01651"
+mount --bind /path/to/prodex-0.439.2/prodex-x86_64-unknown-linux-gnu "$TASK_SCRATCH/oracle/04392"
 mount -o remount,bind,ro "$TASK_SCRATCH/oracle/01651"
 mount -o remount,bind,ro "$TASK_SCRATCH/oracle/04392"
 mount -t tmpfs -o mode=1777,nosuid,nodev tmpfs /tmp

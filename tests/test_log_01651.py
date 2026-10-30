@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import unittest
 
+import capture_log_live
 import test_cli
 import test_log_cli
 import test_logs
@@ -47,7 +48,7 @@ class ActiveOracle01651:
         if not MODEX.is_file():
             raise AssertionError("Build Modex first with make build")
 
-        modules = (test_cli, *LOG_MODULES)
+        modules = (capture_log_live, test_cli, *LOG_MODULES)
         cls._saved_oracle_globals = []
         for module in modules:
             saved = {}

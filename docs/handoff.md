@@ -5,6 +5,13 @@ missing required 0.439.2 reference; dependent lanes remain blocked and the
 overall result still fails closed. Synthetic routing tests cover missing oracle,
 missing source, and all references available. Actual hosted CI still requires
 the verified historical assets; this change does not establish a CI pass.
+Hosted Fast CI run `41074130130` also exposed a historical 0.165.1 live-log
+fixture that retained a separate 0.439.2 holder binary. Its helper now receives
+and restores the same 0.165.1 oracle as the rest of that suite. The originally
+failing test passed with 0.439.2 absent in a private loopback-only namespace.
+An initial broader local log run failed because four native test drivers had
+not been built; after building them, all 15 affected checks passed. This does
+not qualify the missing 0.439.2 regression lane or the complete CI run.
 In a clean checkout of `d16dd4855498517924f4fa1cb8a657352afec9d5`,
 `make build unit` passed, and the exact active Fast CI Python lane passed 56
 tests under a private user, mount and network namespace with only loopback and

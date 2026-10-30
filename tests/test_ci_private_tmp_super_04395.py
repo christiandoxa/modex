@@ -8,7 +8,8 @@ import sys
 import tempfile
 import unittest
 
-from test_cli import ORACLE, ORACLE_SHA256
+from test_cli import (HISTORICAL_04395_ORACLE as ORACLE,
+                      HISTORICAL_04395_ORACLE_SHA256 as ORACLE_SHA256)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,7 +31,8 @@ for name in ("HOME", "TMPDIR", "XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HO
 assert Path(os.environ["TMPDIR"]) != Path(os.environ["MODEX_INHERITED_TMPDIR"])
 
 sys.path.insert(0, os.environ["MODEX_TESTS_DIR"])
-from test_cli import ORACLE, ORACLE_SHA256
+from test_cli import (HISTORICAL_04395_ORACLE as ORACLE,
+                      HISTORICAL_04395_ORACLE_SHA256 as ORACLE_SHA256)
 from test_deepseek_continuation import buffered_reply, observe_turns
 
 assert hashlib.sha256(ORACLE.read_bytes()).hexdigest() == ORACLE_SHA256
@@ -78,7 +80,7 @@ class PrivateTempSuperOracleTests(unittest.TestCase):
                 "MODEX_REGRESSION_DRIVER": str(driver),
                 "MODEX_TESTS_DIR": str(ROOT / "tests"),
                 "MODEX_INHERITED_TMPDIR": str(inherited_tmp),
-                "PRODEX_ORACLE": str(ORACLE),
+                "PRODEX_ORACLE_04395": str(ORACLE),
             }
             if "MODEX_REFERENCE_CACHE" in os.environ:
                 environment["MODEX_REFERENCE_CACHE"] = os.environ["MODEX_REFERENCE_CACHE"]

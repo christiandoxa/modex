@@ -75,8 +75,12 @@ A full isolated `make test` is running against exact Modex commit
 as `PRODEX_ORACLE` and separate versioned historical oracles. Its log is
 `/tmp/modex-01660-full-94b514c.log` (make PID 771360); it has not finished and
 is not a pass. It has reported a CI-cleanliness test error and a historical
-private-temp fixture failure; their causes are under review. The installed
-Prodex and Codex executables are not replaced.
+private-temp fixture failure. The first expected an old CI command spelling;
+the second passed a generic oracle variable into a sanitized HOME even though
+its historical fixture now requires a version-specific oracle. Both tests have
+been corrected, and their five focused cases pass; the running older snapshot
+cannot validate those corrections. The installed Prodex and Codex executables
+are not replaced.
 
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing

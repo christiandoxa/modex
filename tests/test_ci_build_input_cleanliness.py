@@ -121,7 +121,7 @@ class BuildInputCleanlinessTests(unittest.TestCase):
         self.assertIn("MODEX_CI_ARTIFACT_PRODUCER: '1'", producer_step)
         self.assertEqual(WORKFLOW.count("MODEX_CI_ARTIFACT_PRODUCER"), 1)
         python_tests_start = RUN_FAST.index(
-            'run_logged focused-python-active "$PYTHON"'
+            "run_logged focused-python-active "
         )
         python_tests_end = RUN_FAST.index("\n", python_tests_start)
         python_tests = RUN_FAST[python_tests_start:python_tests_end]

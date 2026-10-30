@@ -22,6 +22,14 @@ missing required 0.439.2 reference; dependent lanes remain blocked and the
 overall result still fails closed. Synthetic routing tests cover missing oracle,
 missing source, and all references available. Actual hosted CI still requires
 the verified historical assets; this change does not establish a CI pass.
+Hosted Fast CI run `41097956030` on
+`c63b708b17270152dbe17e1f194680c1f0124091` verified the active 0.166.0 oracle,
+passed the production build and native units, the 94-test active lane, 52
+independent relay tests, 121 historical 0.165.1 tests, and eight independent
+width-memory tests. Both helper shards passed. The run failed closed because
+the required historical 0.439.2 and 0.439.5 oracles were unavailable; their
+comparisons were reported blocked. It did not validate a complete CI run,
+historical parity, or later commits.
 Missing 0.439.5 acquisition now receives the same fail-closed treatment: both
 scripts mark its oracle-dependent lanes blocked, continue independent checks,
 and return failure; Full CI skips the complete suite while that required

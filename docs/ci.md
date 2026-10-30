@@ -65,6 +65,10 @@ checks whose references are available and marks dependent lanes blocked. Full
 CI does not run or claim a complete suite in that case. Either script still
 returns a failing result; another missing reference or a failed independent
 check can stop the run before all independent checks complete.
+Hosted Fast CI run [41097956030](https://github.com/christiandoxa/modex/actions/runs/41097956030)
+passed the active 0.166.0 lane and the available independent checks on its
+recorded commit, then failed closed for the missing required historical
+0.439.2 and 0.439.5 oracles. This is not a complete CI or parity pass.
 The width-RSS measurements and metric fixtures run independently; their
 0.439.2 session comparisons are a separate historical lane. If that oracle or
 source is missing, CI reports the comparisons as blocked and makes no parity

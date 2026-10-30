@@ -8,7 +8,7 @@ def main() raises:
     assert_equal(deepseek_chat_completions_path("/chat/completions", "/v1/chat/completions?x=%2B&x=2"), "/chat/completions?x=%2B&x=2")
     assert_equal(deepseek_chat_completions_path("/chat/completions", "/v1/chat/completions"), "/chat/completions")
     var headers = deepseek_request_headers([("Content-Type", "custom/type"), ("Authorization", "inbound"), ("Connection", "X-Hidden"), ("X-Hidden", "secret")], "fake-key", passthrough=True)
-    assert_equal(headers, List[Tuple[String, String]]([("accept-encoding", "identity"), ("authorization", "Bearer fake-key"), ("Content-Type", "custom/type")]))
+    assert_equal(headers, List[Tuple[String, String]]([("content-type", "application/json"), ("accept-encoding", "identity"), ("accept", "text/event-stream, application/json"), ("authorization", "Bearer fake-key"), ("Content-Type", "custom/type")]))
     for key in ["fake\r\nx: y", "fake\x00key", "fake\x7fkey", "faké"]:
         var rejected = False
         try:

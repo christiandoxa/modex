@@ -46,6 +46,7 @@ def deepseek_chat_completions_stream(
         request_header_limit,
         request_field_limit,
         cancel_fd,
+        request_connection_close=False,
     )
     # The frozen passthrough streams SSE on 2xx/3xx, and buffers non-SSE.
     # Keep >=400 rejection in the send path, before response dispatch; a

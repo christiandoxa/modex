@@ -4190,15 +4190,13 @@ denominator. See
 
 ## Relay large-field dispatch and readiness follow-up (2026-10-30)
 
-The chat-completions passthrough now admits the tested 1,048,577-byte
-`User-Agent` field with a 2 MiB field limit. Its outbound aggregate header cap
-remains 2 MiB + 2 KiB. Both checksum-pinned releases and Modex return 200 and
-dispatch one request for this case. This is dispatch parity only: both releases
-forward two identical `User-Agent` values and include `Accept`, while Modex
-forwards one `User-Agent`, omits `Accept`, and adds `Connection: close`. The
-captured `User-Agent` length and SHA-256 prefix match across all three. The
-translated Responses path retains its 1 MiB field limit; both releases dispatch
-1 MiB + 1-byte values there while Modex returns 502 before dispatch.
+At that checkpoint, the chat-completions passthrough admitted the tested
+1,048,577-byte `User-Agent` with a 2 MiB field limit and 2 MiB + 2 KiB outbound
+aggregate cap. Both releases and Modex dispatched it, but their captured
+headers differed. The later header-parity follow-up below resolves the tested
+duplicate `User-Agent`, default `Accept`, and `Connection` differences. The
+translated Responses path still retains its 1 MiB field limit; both releases
+dispatch 1 MiB + 1-byte values there while Modex returns 502 before dispatch.
 
 The focused large-header production-path tests passed against 0.165.1 and
 0.439.2 after recording the chat-route duplicate count by product. The relay
@@ -4210,3 +4208,26 @@ test commands and captured request-header details are in
 `docs/evidence/baseline-0.165.1/local-relay-concurrency.md` and
 `docs/evidence/baseline-0.165.1/local-relay-http.md`. This does not establish
 complete HTTP, fairness, security or six-target parity.
+
+## Relay chat passthrough header parity follow-up (2026-10-30)
+
+Modex `/v1/chat/completions` now matches the tested 0.165.1 and 0.439.2
+upstream request-header behavior: it emits the default `Accept` and
+`Content-Type`, duplicates the first inbound `User-Agent` before forwarding
+the inbound fields, and omits `Connection: close` on this path. Other HTTP
+stream callers retain the default close header. The production relay test
+captures ordinary, duplicate, and missing `User-Agent`/`Accept` inputs, also
+checking duplicate `Content-Type`, against each pinned release and Modex. The
+1 MiB + 1 byte `User-Agent` reaches all three with two outbound copies.
+
+Fixed-length and chunked upstream responses with `Connection: keep-alive`
+complete while the synthetic upstream holds the socket open; close-delimited
+responses complete at EOF. Request and response framing checks, the 2 MiB +
+2 KiB outbound aggregate cap, field/body limits, and timeout limits remain in
+place. The translated `/v1/responses` route still rejects the 1 MiB + 1 byte
+`User-Agent` accepted by the releases. Larger duplicated fields, other HTTP
+cases, non-host targets, and complete security behavior remain unverified.
+Validation passed on Linux x86-64: production build, focused Mojo header
+driver, four selected-header/framing tests, and both pinned-release large-head
+tests. The test peers, credentials, homes, and ports are synthetic and
+isolated. See `docs/evidence/baseline-0.165.1/local-relay-http.md`.

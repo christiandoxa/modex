@@ -295,6 +295,7 @@ class LargeHeaderUpstreamHandler(socketserver.BaseRequestHandler):
         headers = {}
         pad_headers = {}
         user_agent_values = []
+        selected_header_values = {}
         for line in lines[1:]:
             name, value = line.split(b":", 1)
             lowered_name = name.decode("ascii").lower()
@@ -303,6 +304,10 @@ class LargeHeaderUpstreamHandler(socketserver.BaseRequestHandler):
                 pad_headers[lowered_name] = value.lstrip(b" \t")
             if lowered_name == "user-agent":
                 user_agent_values.append(value.lstrip(b" \t"))
+            if lowered_name in ("accept", "content-type", "connection"):
+                selected_header_values.setdefault(lowered_name, []).append(
+                    value.lstrip(b" \t").decode("ascii")
+                )
         body_length = int(headers.get("content-length", "0"))
         while len(body) < body_length:
             chunk = self.request.recv(min(65536, body_length - len(body)))
@@ -315,6 +320,7 @@ class LargeHeaderUpstreamHandler(socketserver.BaseRequestHandler):
             "headers": headers,
             "pad_headers": pad_headers,
             "user_agent_values": user_agent_values,
+            "selected_header_values": selected_header_values,
             "body": body[:body_length],
             "head_bytes": len(head),
         }
@@ -336,6 +342,83 @@ class LargeHeaderUpstream(socketserver.ThreadingTCPServer):
         self.records = []
         self.records_lock = threading.Lock()
         super().__init__(("127.0.0.1", 0), LargeHeaderUpstreamHandler)
+        self.server_port = self.server_address[1]
+
+    def reset_records(self):
+        with self.records_lock:
+            self.records.clear()
+
+    def snapshot_records(self):
+        with self.records_lock:
+            return list(self.records)
+
+
+class RelayFramingUpstreamHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        self.request.settimeout(10)
+        wire = bytearray()
+        while b"\r\n\r\n" not in wire:
+            chunk = self.request.recv(65536)
+            if not chunk:
+                return
+            wire.extend(chunk)
+            if len(wire) > 3 * 1024 * 1024:
+                raise AssertionError("synthetic framing upstream request exceeded its bound")
+        head, _, body = bytes(wire).partition(b"\r\n\r\n")
+        body = bytearray(body)
+        headers = {}
+        for line in head.split(b"\r\n")[1:]:
+            name, value = line.split(b":", 1)
+            headers[name.decode("ascii").lower()] = value.strip().decode("ascii")
+        body_length = int(headers.get("content-length", "0"))
+        while len(body) < body_length:
+            chunk = self.request.recv(min(65536, body_length - len(body)))
+            if not chunk:
+                return
+            body.extend(chunk)
+        with self.server.records_lock:
+            self.server.records.append({"headers": headers, "body": bytes(body[:body_length])})
+
+        payload = PROVIDER_RESPONSE
+        mode = self.server.response_mode
+        response_head = b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+        if mode == "fixed-keep-alive":
+            self.request.sendall(
+                response_head + b"Content-Length: " + str(len(payload)).encode("ascii")
+                + b"\r\nConnection: keep-alive\r\n\r\n" + payload
+            )
+            _hold_framed_connection_open(self.request)
+        elif mode == "chunked-keep-alive":
+            self.request.sendall(
+                response_head + b"Transfer-Encoding: chunked\r\n"
+                + b"Connection: keep-alive\r\n\r\n"
+                + f"{len(payload):X}\r\n".encode("ascii") + payload + b"\r\n0\r\n\r\n"
+            )
+            _hold_framed_connection_open(self.request)
+        elif mode == "eof":
+            self.request.sendall(response_head + b"Connection: close\r\n\r\n" + payload)
+        else:
+            raise AssertionError(f"unknown synthetic response framing: {mode}")
+
+
+def _hold_framed_connection_open(connection):
+    connection.settimeout(2)
+    try:
+        while connection.recv(1):
+            pass
+    except (OSError, TimeoutError):
+        pass
+
+
+class RelayFramingUpstream(socketserver.ThreadingTCPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+    def __init__(self, response_mode):
+        self.response_mode = response_mode
+        self.records = []
+        self.records_lock = threading.Lock()
+        super().__init__(("127.0.0.1", 0), RelayFramingUpstreamHandler)
         self.server_port = self.server_address[1]
 
     def reset_records(self):
@@ -2560,7 +2643,7 @@ def assert_large_request_head_cases(test, oracle, modex):
                     **large_user_agent_value_case(
                         1024 * 1024 + 1, target=b"/v1/chat/completions",
                     ),
-                    "expected_user_agent_count_by_label": {"oracle": 2, "modex": 1},
+                    "expected_user_agent_count": 2,
                 },
                 200,
                 200,
@@ -2630,6 +2713,85 @@ def assert_large_request_head_cases(test, oracle, modex):
         upstream.shutdown()
         upstream.server_close()
         worker.join(timeout=2)
+
+
+def assert_chat_request_header_parity(test, oracle, modex):
+    upstream = LargeHeaderUpstream()
+    worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+    worker.start()
+    cases = (
+        (
+            "ordinary",
+            (("User-Agent", "synthetic-agent"),),
+            [b"synthetic-agent", b"synthetic-agent"],
+            ["text/event-stream, application/json"],
+            ["application/json", "application/json"],
+        ),
+        (
+            "duplicate",
+            (("User-Agent", "first-agent"), ("User-Agent", "second-agent"),
+             ("Accept", "first-accept"), ("Accept", "second-accept"),
+             ("Content-Type", "application/custom+json")),
+            [b"first-agent", b"first-agent", b"second-agent"],
+            ["text/event-stream, application/json", "first-accept", "second-accept"],
+            ["application/json", "application/custom+json", "application/json"],
+        ),
+        (
+            "missing-user-agent-and-accept",
+            (),
+            [],
+            ["text/event-stream, application/json"],
+            ["application/json", "application/json"],
+        ),
+    )
+    try:
+        for name, headers, expected_user_agents, expected_accept, expected_content_type in cases:
+            case = {
+                "name": f"chat_header_{name}",
+                "request": request_bytes(headers, target=b"/v1/chat/completions"),
+            }
+            for label, binary in (("oracle", oracle), ("modex", modex)):
+                with test.subTest(case=name, binary=label):
+                    response, records = run_probe(binary, case, upstream)
+                    test.assertEqual(response["process_exit"], 0, response["stderr"])
+                    test.assertEqual((response["status"], response["body"]), (200, PROVIDER_RESPONSE), label)
+                    test.assertEqual(len(records), 1, label)
+                    test.assertEqual(records[0]["user_agent_values"], expected_user_agents, label)
+                    selected = records[0]["selected_header_values"]
+                    test.assertEqual(selected.get("accept", []), expected_accept, label)
+                    test.assertEqual(selected.get("content-type", []), expected_content_type, label)
+                    test.assertEqual(selected.get("connection", []), [], label)
+    finally:
+        upstream.shutdown()
+        upstream.server_close()
+        worker.join(timeout=2)
+
+
+def assert_chat_response_framing(test, oracle, modex):
+    request_case = {
+        "name": "chat_response_framing",
+        "request": request_bytes(
+            (("User-Agent", "synthetic-agent"),), target=b"/v1/chat/completions",
+        ),
+    }
+    for mode in ("fixed-keep-alive", "chunked-keep-alive", "eof"):
+        upstream = RelayFramingUpstream(mode)
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for label, binary in (("oracle", oracle), ("modex", modex)):
+                with test.subTest(framing=mode, binary=label):
+                    response, records = run_probe(binary, request_case, upstream)
+                    test.assertEqual(response["process_exit"], 0, response["stderr"])
+                    test.assertEqual((response["status"], response["body"]), (200, PROVIDER_RESPONSE), label)
+                    test.assertEqual(len(records), 1, label)
+                    if mode.endswith("keep-alive"):
+                        # Framed responses complete while the upstream keeps its socket open.
+                        test.assertLess(response["response_elapsed_ms"], 1500, label)
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
 
 
 class LocalRewrite01651OracleTests(unittest.TestCase):
@@ -3120,6 +3282,12 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
 
     def test_large_request_heads_use_bounded_linear_capture(self):
         assert_large_request_head_cases(self, ORACLE, MODEX)
+
+    def test_chat_passthrough_request_header_parity(self):
+        assert_chat_request_header_parity(self, ORACLE, MODEX)
+
+    def test_chat_passthrough_response_framing(self):
+        assert_chat_response_framing(self, ORACLE, MODEX)
 
     def test_identical_expectation_duplicates_match_and_ambiguous_framing_stays_fail_closed(self):
         single_valid_expect = expectation_request_case(

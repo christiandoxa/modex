@@ -251,10 +251,15 @@ def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: Stri
     else:
         output.append(("authorization", "Bearer " + api_key))
     if passthrough:
-        output = [("accept-encoding", "identity"), ("authorization", "Bearer " + api_key)]
+        output = [
+            ("content-type", "application/json"),
+            ("accept-encoding", "identity"),
+            ("accept", "text/event-stream, application/json"),
+            ("authorization", "Bearer " + api_key),
+        ]
     # The frozen auth pass adds the first user agent before copying inbound headers.
     for name, value in headers:
-        if not passthrough and name.lower() == "user-agent":
+        if name.lower() == "user-agent":
             output.append(("user-agent", value))
             break
     for name, value in headers:

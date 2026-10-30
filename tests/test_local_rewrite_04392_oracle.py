@@ -237,6 +237,12 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
     def test_large_request_heads_use_bounded_linear_capture(self):
         transport.assert_large_request_head_cases(self, ORACLE, transport.MODEX)
 
+    def test_chat_passthrough_request_header_parity(self):
+        transport.assert_chat_request_header_parity(self, ORACLE, transport.MODEX)
+
+    def test_chat_passthrough_response_framing(self):
+        transport.assert_chat_response_framing(self, ORACLE, transport.MODEX)
+
     def test_invalid_target_precedes_chunked_body_capture(self):
         upstream = transport.Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)

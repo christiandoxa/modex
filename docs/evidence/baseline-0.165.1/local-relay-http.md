@@ -96,18 +96,11 @@ accepts a 65,536-byte head and rejects 65,537 bytes by default; direct
 defaults. The relay's request-target, header-name, and response-header limits
 are unchanged. These cases do not qualify other framing or security behavior.
 
-The passthrough `/v1/chat/completions` route now allows the tested 1 MiB + 1
-byte `User-Agent` field through its outbound writer. Its field ceiling is 2 MiB;
-the existing outbound aggregate head ceiling remains 2 MiB + 2 KiB and is still
-enforced. Both checksum-pinned releases and Modex return 200 and dispatch one
-synthetic upstream request for this case. This is dispatch parity only, not
-request-header parity: both releases send two identical `User-Agent` values,
-while Modex sends one. The releases also send `Accept` and omit `Connection`,
-while Modex omits `Accept` and sends `Connection: close`. All three send the
-same 1,048,577-byte `User-Agent` value (SHA-256 prefix `9bcd1b106280`). These
-observations came from the synthetic upstream header capture; the test records
-the release/Modex duplicate-count difference instead of treating the request
-as fully matching.
+Before the follow-up below, the passthrough `/v1/chat/completions` route already
+admitted a 1 MiB + 1 byte `User-Agent`, but its capture recorded a duplicate
+`User-Agent`, `Accept`, and `Connection` mismatch. That earlier state is
+preserved here as history; the follow-up below resolves the tested header
+mismatches while retaining the field and aggregate limits.
 
 Validation for this slice: `make build` and focused native driver builds
 passed. Four large-header process tests passed against the pinned 0.165.1 and
@@ -209,19 +202,52 @@ The outbound aggregate limit remains 2 MiB + 2 KiB, so generated headers and
 field bytes are still bounded together. The translated Responses route retains
 its 1 MiB field limit and its 1 MiB + 1-byte mismatch.
 
-The large-head tests passed against both release binaries and rebuilt Modex.
-The separate upstream capture compared status, route, header names, `User-Agent`
-length and digest, and duplicate count. All returned 200 and recorded one
-upstream request. The release binaries preserve two input `User-Agent` values;
-Modex forwards one. Their captured headers also include `Accept` and omit
-`Connection`, while Modex omits `Accept` and sends `Connection: close`. Record
-this as a bounded dispatch fix with explicit header mismatches, not full request
-parity. Commands:
+The initial capture compared status, route, header names, `User-Agent` length
+and digest, and duplicate count. Its recorded header differences are corrected
+by the follow-up below. Commands for the original large-head comparison:
 
 ```sh
 PYTHONPATH=tests python3 -m unittest test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_large_request_heads_use_bounded_linear_capture
 PYTHONPATH=tests python3 -m unittest test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_large_request_heads_use_bounded_linear_capture
 ```
+
+## Passthrough request-header parity follow-up (2026-10-30)
+
+The pinned sources at Prodex 0.165.1 commit
+`10ae15b5d1806302b60f051e4e6fec788044f4c2` and Prodex 0.439.2 commit
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9` use the same
+`runtime_launch/proxy_startup/local_rewrite_transport.rs`: the provider header
+builder adds `Content-Type` and `Accept`; DeepSeek auth adds the first inbound
+`User-Agent`, then the allowed-header copier forwards the inbound fields. A
+synthetic upstream capture against each checksum-pinned process confirms the
+wire results. Modex's native passthrough now follows those steps: one input
+`User-Agent` becomes two equal values, duplicate input values retain the same
+first-value duplication behavior, and the default `Accept` and `Content-Type`
+fields are present. An absent input `User-Agent` remains absent. The HTTP/1.1
+request writer omits its prior `Connection: close` only on the chat passthrough
+path; other `LoopbackHTTPStream` callers keep the default close header.
+
+The synthetic upstream controls check ordinary, duplicate, and missing
+`User-Agent`/`Accept` fields, including duplicate `Content-Type`; each selected
+value list matches both releases and Modex. They also pass a 1 MiB + 1 byte
+`User-Agent` through all three products with the two outbound copies intact.
+Fixed-length and chunked responses with `Connection: keep-alive` complete while
+the synthetic server holds its socket open; an EOF-delimited response completes
+after the server closes. This verifies that the response parser still ends on
+Content-Length or the terminal chunk, and waits for EOF only for close-delimited
+responses. Request limits, response limits, framing validation, timeout caps,
+and per-stream socket cleanup remain unchanged. The outbound aggregate header
+limit remains 2 MiB + 2 KiB, so this does not qualify larger duplicated fields.
+
+Validation on Linux x86-64: `make build`, the focused
+`test_provider_deepseek_transport` and `test_provider_passthrough` Mojo
+drivers, four cross-release header and framing tests, and both large-header
+tests passed. Those Python tests use the
+checksum-pinned 0.165.1 and 0.439.2 release binaries and an isolated synthetic
+loopback upstream. The translated `/v1/responses` route still rejects a 1 MiB
++ 1 byte field that both releases dispatch; HTTP behavior on other targets and
+complete security equivalence remain unverified. No real credentials or paid
+provider traffic were used.
 
 Buffered local-relay responses now add the frozen TinyHTTP defaults when the
 upstream or error response has no case-insensitive `Server` or `Date` field:

@@ -76,6 +76,51 @@ class RootHelpErrors01660Tests(unittest.TestCase):
                                  (baseline.returncode, baseline.stdout, baseline.stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_ping_group_help_matches_without_mutations(self):
+        cases = (
+            (("ping", "--help"), "prodex", "modex", 0),
+            (("ping", "-h"), "prodex", "modex", 0),
+            (("ping", "-hfoo"), "prodex", "modex", 0),
+            (("ping", "-h=bad"), "prodex", "modex", 0),
+            (("ping", "-hV"), "prodex", "modex", 0),
+            (("ping", "help"), "prodex", "modex", 0),
+            (("help", "ping"), "prodex", "modex", 0),
+            (("ping", "--help", "ignored"), "prodex", "modex", 0),
+            (("help", "ping"), "custom-prodex", "custom-modex", 0),
+            (("ping", "help", "openai"), "prodex", "modex", 0),
+            (("help", "ping", "openai"), "prodex", "modex", 0),
+            (("ping", "openai", "--help"), "prodex", "modex", 0),
+            (("ping", "openai", "-h=bad"), "prodex", "modex", 0),
+            (("ping", "--help=bad"), "prodex", "modex", 2),
+            (("ping", "help", "extra"), "prodex", "modex", 2),
+            (("ping", "help", "--help"), "prodex", "modex", 2),
+            (("help", "ping", "--help"), "prodex", "modex", 2),
+            (("ping", "openai", "--help=bad"), "prodex", "modex", 2),
+            (("help", "ping", "openai", "--help"), "prodex", "modex", 2),
+        )
+        for arguments, oracle_argv0, modex_argv0, expected_status in cases:
+            with self.subTest(arguments=arguments, argv0=oracle_argv0):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), oracle_argv0, "01660-ping-help-oracle"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), modex_argv0, "01660-ping-help-modex"
+                )
+                expected_stdout = baseline.stdout.replace(
+                    b"Usage: " + oracle_argv0.encode() + b" ",
+                    b"Usage: " + modex_argv0.encode() + b" ",
+                    1,
+                )
+                expected_stderr = baseline.stderr.replace(
+                    b"Usage: " + oracle_argv0.encode() + b" ",
+                    b"Usage: " + modex_argv0.encode() + b" ",
+                    1,
+                )
+                self.assertEqual(baseline.returncode, expected_status)
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (expected_status, expected_stdout, expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
     def test_logout_help_matches_release_without_execution_or_mutation(self):
         cases = (
             (("logout", "--help"), 0, "prodex", "modex"),

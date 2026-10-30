@@ -125,5 +125,35 @@ Notes:
     )
 
 
+def ping_help(executable: String) -> String:
+    return String("""Send lightweight prompt checks through ready profiles.
+
+Usage: prodex ping <COMMAND>
+
+Commands:
+  openai  Send a minimal application request through the OpenAI/Codex runtime path.
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help
+""").replace("Usage: prodex ", "Usage: " + executable + " ")
+
+
+def ping_openai_help(executable: String) -> String:
+    return String("""Send a minimal application request through the OpenAI/Codex runtime path.
+
+Usage: prodex ping openai [OPTIONS]
+
+Options:
+  -p, --profile <NAME>  Probe only this OpenAI profile; omitted probes every configured eligible OpenAI profile
+      --model <MODEL>   Model passed through to the normal Codex request path
+      --effort <LEVEL>  Reasoning effort passed through to the normal Codex request path
+      --base-url <URL>  Override the ChatGPT backend base URL used by the normal OpenAI request path
+      --no-proxy        Bypass proxy environment variables for the normal OpenAI request path
+      --json            Emit one stable JSON result instead of human-readable output
+  -h, --help            Print help
+""").replace("Usage: prodex ", "Usage: " + executable + " ")
+
+
 def root_help(executable: String) -> String:
     return "Manage multiple Codex account profiles with profile-local auth and shared Codex state.\n\nUsage: " + executable + " <COMMAND>\n\nCommands:\n  profile  Add, inspect, remove, and activate managed profiles.\n  use      Set the active profile used by commands that omit --profile.\n  current  Show the active profile and its CODEX_HOME details.\n  info     Summarize Prodex version, profiles, runtime policy, logs, and secret backend.\n  status   Monitor profiles, quota resets, token efficiency, and Prodex resource usage.\n  log      Follow redacted Prodex runtime logs.\n  session  Inspect shared Codex session metadata.\n  doctor   Inspect local state, Codex resolution, quota readiness, and runtime logs.\n  login    Run provider login flows, using Prodex profiles where supported.\n  logout   Run codex logout for the selected or active profile.\n  update   Update Prodex from the latest verified GitHub release binary.\n  quota    Inspect live quota for one profile or the whole profile pool.\n  redeem   Redeem one reset credit manually for a named OpenAI/Codex profile.\n  ping     Send lightweight prompt checks through ready profiles.\n  run      Run codex through prodex with quota preflight and eligible pre-commit rotation.\n  super    YOLO shortcut for the Super tool stack with opt-in Presidio. [alias: s]\n  gateway  Run a lean OpenAI-compatible provider gateway.\n  help     Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help     Print help\n  -V, --version  Print version\n\nTips:\n  Bare `modex` invocation defaults to `modex run`.\n  Use `modex status` for the live quota, token, and resource dashboard.\n  Use `modex quota` for the detailed live quota view across profiles.\n  Use `modex <command> -h` to see every parameter for that command.\n\nExamples:\n  modex\n  modex exec \"review this repo\"\n  modex profile list\n  modex status\n  modex quota\n  modex redeem main\n  modex run --profile main\n"

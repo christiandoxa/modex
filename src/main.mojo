@@ -11,7 +11,7 @@ from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
 from modex.paths import app_root_is_absent
 from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_list_empty_panel, profile_short_help, top_level_profile_use_help
-from modex.root_help import logout_help, logout_usage, quota_help, quota_short_help, root_help, update_help
+from modex.root_help import logout_help, logout_usage, ping_help, ping_openai_help, quota_help, quota_short_help, root_help, update_help
 from modex.sessions import inspect_sessions, resolve_session_id_from_store, session_resume_has_no_profile_source
 from modex.super_cli import parse_super_arguments, run_super
 from modex.super_help import super_help
@@ -80,6 +80,63 @@ def main():
         print("Error: this Modex development build has not implemented the requested command", file=stderr)
         exit(1)
         return
+    if len(args) >= 3 and args[1] == "ping" and args[2].startswith("--help="):
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        var value = String(args[2][byte=7:])
+        print(session_cli_error("unexpected value '" + value + "' for '--help' found; no more were expected", executable + " ping --help <COMMAND>"), file=stderr, end="")
+        exit(2)
+        return
+    if len(args) >= 3 and args[1] == "ping" and args[2] == "help":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        if len(args) == 3:
+            print(ping_help(executable), end="")
+            return
+        if args[3] == "openai":
+            if len(args) > 4:
+                print(session_cli_error("unrecognized subcommand '" + args[4] + "'", executable + " ping openai [OPTIONS]"), file=stderr, end="")
+                exit(2)
+                return
+            print(ping_openai_help(executable), end="")
+            return
+        print(session_cli_error("unrecognized subcommand '" + args[3] + "'", executable + " ping <COMMAND>"), file=stderr, end="")
+        exit(2)
+        return
+    if len(args) >= 3 and args[1] == "ping" and args[2] == "openai" and len(args) >= 4:
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        if String(args[3]).startswith("--help="):
+            var value = String(args[3][byte=7:])
+            print(session_cli_error("unexpected value '" + value + "' for '--help' found; no more were expected", executable + " ping openai --help"), file=stderr, end="")
+            exit(2)
+            return
+        if args[3] == "--help" or args[3].startswith("-h"):
+            print(ping_openai_help(executable), end="")
+            return
+    if len(args) >= 3 and args[1] == "ping" and (
+        args[2] == "--help" or args[2].startswith("-h")
+    ):
+        var executable_parts = args[0].split("/")
+        print(ping_help(String(executable_parts[len(executable_parts) - 1])), end="")
+        return
+    if len(args) >= 3 and args[1] == "help" and args[2] == "ping":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        if len(args) == 3:
+            print(ping_help(executable), end="")
+            return
+        if args[3] == "openai":
+            if len(args) > 4:
+                print(session_cli_error("unrecognized subcommand '" + args[4] + "'", executable + " ping openai [OPTIONS]"), file=stderr, end="")
+                exit(2)
+                return
+            print(ping_openai_help(executable), end="")
+            return
+        if len(args) > 3:
+            print(session_cli_error("unrecognized subcommand '" + args[3] + "'", executable + " ping <COMMAND>"), file=stderr, end="")
+            exit(2)
+            return
     if len(args) >= 3 and args[1] == "help" and args[2] == "profile":
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])

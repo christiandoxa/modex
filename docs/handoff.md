@@ -1,5 +1,9 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Selected `ping` and `ping openai` help routes and argument errors match
+0.166.0 in isolated process checks. Ping execution is still unimplemented; see
+`docs/evidence/baseline-0.166.0/ping-help.md`.
+
 The local DeepSeek relay now supports the exact root aliases `/responses`,
 `/responses/compact`, and `/chat/completions` seen in 0.166.0, preserving its
 existing client authentication and continuation guard. Other active routes

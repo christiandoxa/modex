@@ -1213,12 +1213,12 @@
         "path": "crates/prodex-app/src/app_commands/doctor.rs",
         "symbol": "handle_doctor",
         "trace_verified": false,
-        "source_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+        "source_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
         "previous_trace": {
-          "source_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+          "source_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
           "trace_verified": false
         },
-        "unchanged_from_previous_trace": true,
+        "unchanged_from_previous_trace": false,
         "target_trace_verified": false
       },
       "required_behavior": "Report local/quota/runtime/install state, redacted bundles, policy suggestions and explicit repairs.",
@@ -1237,14 +1237,18 @@
       "prerequisites": [
         "Codex and optional quota services"
       ],
-      "implementation": null,
-      "tests": [],
+      "implementation": "src/main.mojo; src/modex/doctor_install.mojo; src/modex/inspection_cli.mojo",
+      "tests": [
+        "tests/test_doctor_install_01660.py",
+        "tests/test_inspection_cli_01660.py"
+      ],
       "evidence": [
+        "docs/evidence/baseline-0.166.0/doctor-install.md",
         "docs/evidence/baseline-0.439.2/reference-verification.json"
       ],
-      "status": "NOT_STARTED",
+      "status": "IN_PROGRESS",
       "platform_status": {
-        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-unknown-linux-gnu": "IN_PROGRESS",
         "aarch64-unknown-linux-gnu": "NOT_STARTED",
         "x86_64-apple-darwin": "BLOCKED",
         "aarch64-apple-darwin": "NOT_STARTED",
@@ -1252,7 +1256,8 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
-        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
+        "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
+        "Only the exact install-only invocation and selected help/argument cases are implemented. Other diagnostics, quota/runtime checks, redacted bundles, policy suggestions, and repairs remain unimplemented. Interactive rendering, managed Caveman integrity validation, and process-tree timeout cleanup remain incomplete; see docs/evidence/baseline-0.166.0/doctor-install.md."
       ]
     },
     {

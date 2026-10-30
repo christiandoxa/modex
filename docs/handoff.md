@@ -1,9 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
 Profile parsing now matches selected 0.166.0 diagnostics when `--` appears
-before a subcommand, including help-suggestion differences between direct and
-help-alias paths. Twelve isolated process cases and the 21-test active baseline
-module passed; profile operations remain guarded and unimplemented.
+before a subcommand, including multiple suggestions for direct typos and no
+suggestions for help aliases. Sixteen isolated process cases and the 21-test
+active baseline module passed after the follow-up fix. Profile operations
+remain guarded and unimplemented.
 
 The active compact regression now covers the JSON nesting boundary: 123
 nested payload arrays retain context, while 124 yield the matching parse-failure

@@ -2,7 +2,7 @@
 
 from std.collections import List
 
-from .cli import argument_name, session_cli_error, similar_names
+from .cli import argument_name, session_cli_error, unrecognized_subcommand
 
 
 def _profile_executable(output: String, executable: String) -> String:
@@ -316,14 +316,9 @@ def _profile_unexpected_argument(argument: String, command: String, executable: 
     return session_cli_error(message, _profile_usage(command, executable))
 
 
-def _profile_unknown_subcommand(command: String, executable: String, include_help: Bool = False) -> Error:
-    var message = "unrecognized subcommand '" + command + "'"
-    var choices: List[String] = ["add", "export", "import", "import-current", "list", "remove", "use"]
-    if include_help: choices.append("help")
-    var matches = similar_names(command, choices)
-    if matches:
-        message += "\n\n  tip: a similar subcommand exists: '" + String(matches[len(matches) - 1]) + "'"
-    return session_cli_error(message, _profile_usage("", executable))
+def _profile_unknown_subcommand(command: String, executable: String) -> Error:
+    var choices: List[String] = ["add", "export", "import", "import-current", "list", "remove", "use", "help"]
+    return unrecognized_subcommand(command, executable + " profile", choices)
 
 
 def _profile_duplicate(name: String, command: String, executable: String) -> Error:
@@ -365,7 +360,7 @@ def _parse_profile_help_alias(args: List[String], index: Int, executable: String
         return ProfileHelpRequest("", True, False)
     var command = String(args[index])
     if not _profile_known_command(command):
-        raise _profile_unknown_subcommand(command, executable)
+        raise session_cli_error("unrecognized subcommand '" + command + "'", _profile_usage("", executable))
     if index + 1 < len(args):
         raise session_cli_error("unrecognized subcommand '" + String(args[index + 1]) + "'", _profile_usage(command, executable))
     return ProfileHelpRequest(command, True, False)
@@ -384,7 +379,7 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
         command = String(args[cursor + 1])
         if command == "help" or _profile_known_command(command):
             raise session_cli_error("unexpected argument '" + command + "' found\n\n  tip: subcommand '" + command + "' exists; to use it, remove the '--' before it", _profile_usage("", executable))
-        raise _profile_unknown_subcommand(command, executable, True)
+        raise _profile_unknown_subcommand(command, executable)
     if command == "--help" or command == "-h":
         return ProfileHelpRequest("", True, command == "-h")
     if command.startswith("--help="):
@@ -396,7 +391,7 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
     if command.startswith("-"):
         raise _profile_unexpected_argument(command, "", executable)
     if not _profile_known_command(command):
-        raise _profile_unknown_subcommand(command, executable, True)
+        raise _profile_unknown_subcommand(command, executable)
 
     cursor += 1
     var seen = List[String]()

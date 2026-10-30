@@ -453,7 +453,9 @@ class ActiveBaseline01660Tests(unittest.TestCase):
                           ("profile", "--", "list", "--help"),
                           ("profile", "--", "add", "--help"),
                           ("profile", "--", "--", "list"), ("profile", "hepl"),
-                          ("profile", "help", "hepl"), ("help", "profile", "hepl")):
+                          ("profile", "help", "hepl"), ("help", "profile", "hepl"),
+                          ("profile", "--", "improt"), ("profile", "improt"),
+                          ("profile", "help", "lis"), ("help", "profile", "lis")):
             with self.subTest(arguments=arguments):
                 baseline, baseline_created = isolated_super_cli(ORACLE, arguments, "synthetic")
                 modex, modex_created = isolated_super_cli(MODEX, arguments, "synthetic")

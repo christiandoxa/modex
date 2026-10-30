@@ -176,6 +176,15 @@ directory prefix and preserves its path-disclosure checks. All three pass under
 a nested temporary directory, and the two managed-tool cases also pass with the default.
 The completed snapshot cannot validate this later correction.
 
+A fourth full run starts from exact commit
+`8993f0d2e74ffb1d82e57f847ad68937faed4324` in
+`/tmp/modex-01660-full-8993f0d`. It uses a cleared environment, a private
+user-owned `/tmp` and HOME, loopback-only networking with no default routes,
+and explicit active and historical binary and source paths, including the
+previously omitted 0.439.1 source. Its launcher PID is 2763309 and log is
+`/tmp/modex-01660-full-8993f0d.log`. It is still running and is not a pass;
+its user/mount/network namespace is a distinct test environment.
+
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing
 cookie; six additional offline Guardian broker tests passed. Its local-only

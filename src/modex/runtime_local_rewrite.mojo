@@ -806,7 +806,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     var web = False
     var fallback_web_search = False
     try:
-        if not allow_local_file_access:
+        if not allow_local_file_access or session:
             namespace = Optional[String](_namespace(request.headers, doc))
         var context = state_ptr[].history(doc, namespace)
         previous_found = context[0]

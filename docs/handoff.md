@@ -1,5 +1,14 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The DeepSeek Super conversation cache now scopes tool-history lookup by an
+explicit session ID. A synthetic active-oracle comparison shows that requests
+with different session IDs or only one session ID no longer import the other
+request's prompt in Modex, while 0.166.0 does. Missing IDs still share history,
+and client-supplied session IDs do not authenticate an owner. Both products
+reject the tested same-session follow-up with 503. This is a limited
+security-preserving difference, not full ownership or continuation parity; see
+`docs/evidence/baseline-0.166.0/deepseek-session-tool-history.md`.
+
 Logout help and selected parser precedence now match the active 0.166.0
 release in isolated process comparisons. Valid non-help logout requests still
 reach the unimplemented guard; logout execution and profile behavior remain
@@ -572,14 +581,12 @@ and normalized argument order. Raw `-c` before `--` is still guarded by Modex,
 although both releases accept it; broader Super option combinations and the
 other release targets remain unverified.
 
-Super also has a same-key, cross-session tool-history isolation gap. In real
-processes, a tool output with a reused call ID and a different synthetic session
-ID includes the first session's prompt in the second provider request. This
-was observed in Modex, both pinned releases, and historical 0.439.1; it is a
-security gap, not a parity qualification. See
-`test_deepseek_session_history_isolation_01651_04392.py`. Full-cache tool-call
-lookup also scans stored histories under the shared lock; its load impact has
-not been measured.
+Historically, a same-key tool result with a different session ID imported the
+first session's prompt in Modex and the tested release processes. Modex now
+scopes explicit session IDs as described in the current-work section above;
+absent IDs and untrusted client-supplied identifiers remain limitations.
+Full-cache tool-call lookup also scans stored histories under the shared lock;
+its load impact has not been measured.
 
 The historical note below about nonempty Anthropic text block starts is stale:
 current Modex ignores their initial contents, matching both pinned releases in

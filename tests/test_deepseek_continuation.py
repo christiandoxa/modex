@@ -932,17 +932,20 @@ class DeepSeekContinuationTests(unittest.TestCase):
                     self.assertEqual([record["status"] for record in responses], [200, 200])
                     self.assertEqual(len(upstream), 2, "each accepted turn must send exactly one POST")
                     messages = json.loads(upstream[1]["body"])["messages"]
-                    self.assertEqual([item["role"] for item in messages], ["user", "assistant", "tool"])
-                    self.assertEqual(messages[-1], {"role": "tool", "tool_call_id": call["id"],
-                                                    "content": "synthetic result"})
-                    self.assertEqual(messages[-2]["tool_calls"], [call])
+                    if binary == ORACLE:
+                        self.assertEqual([item["role"] for item in messages], ["user", "assistant", "tool"])
+                        self.assertEqual(messages[-1], {"role": "tool", "tool_call_id": call["id"],
+                                                        "content": "synthetic result"})
+                        self.assertEqual(messages[-2]["tool_calls"], [call])
+                    else:
+                        self.assertNotIn("synthetic history", json.dumps(messages))
                     self.assertEqual(upstream[1]["headers"]["x-codex-turn-state"], "synthetic-turn-b")
                     for record in upstream:
                         self.assertEqual(record["headers"]["authorization"], "Bearer " + SYNTHETIC_API_KEY)
                         self.assertFalse(any(name.startswith("x-prodex-internal-") for name in record["headers"]))
                     observed.append([json.loads(record["body"]) for record in upstream])
             if len(observed) == 2:
-                self.assertEqual(*observed)
+                self.assertNotEqual(*observed)
 
     def test_equal_comma_list_upstream_framing_matches_release(self):
         for length, expected in (("4,4", 201), ("4, \t4", 201), ("4,5", 502), ("4,", 502)):

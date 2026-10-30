@@ -24,7 +24,7 @@ class DeepSeekSessionHistoryIsolationTests(unittest.TestCase):
             raise AssertionError("Build Modex first")
 
     def test_super_tool_output_reuses_history_from_a_different_session(self):
-        """Gap characterization: a same-key tool output imports another session's prompt."""
+        """Historical releases import another session's prompt; Modex scopes it."""
         call_id = "synthetic-cross-session-tool-call"
         turns = [
             {
@@ -74,8 +74,11 @@ class DeepSeekSessionHistoryIsolationTests(unittest.TestCase):
                     ["Bearer " + SYNTHETIC_KEY] * 2,
                 )
                 messages = json.loads(posts[1]["body"])["messages"]
-                self.assertIn("synthetic private prompt from session A", json.dumps(messages))
-                self.assertIn(call_id, json.dumps(messages))
+                if binary == MODEX:
+                    self.assertNotIn("synthetic private prompt from session A", json.dumps(messages))
+                else:
+                    self.assertIn("synthetic private prompt from session A", json.dumps(messages))
+                    self.assertIn(call_id, json.dumps(messages))
 
 
 if __name__ == "__main__":

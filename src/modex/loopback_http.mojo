@@ -605,7 +605,7 @@ def _valid_request_field(name: String, value: String) raises:
         raise Error("caller-controlled HTTP framing header is forbidden")
 
 
-def _stream_request(path: String, headers: List[Tuple[String, String]], host: String, body_length: Int, request_method: String = "POST", request_header_limit: Int = HTTP_HEADER_LIMIT, request_field_limit: Int = HTTP_HEADER_LIMIT, request_connection_close: Bool = True) raises -> List[UInt8]:
+def _stream_request(path: String, headers: List[Tuple[String, String]], host: String, body_length: Int, request_method: String = "POST", request_header_limit: Int = HTTP_HEADER_LIMIT, request_field_limit: Int = HTTP_HEADER_LIMIT, request_connection_close: Bool = True, include_content_length: Bool = True) raises -> List[UInt8]:
     # Reuse GET's target validation without changing its established request bytes.
     _ = _request(path, "X", "", host)
     if not request_method:
@@ -620,7 +620,8 @@ def _stream_request(path: String, headers: List[Tuple[String, String]], host: St
     lines.append("Host: " + host)
     if request_connection_close:
         lines.append("Connection: close")
-    lines.append("Content-Length: " + String(body_length))
+    if include_content_length:
+        lines.append("Content-Length: " + String(body_length))
     var head_bytes = 0
     for line in lines:
         head_bytes += line.byte_length() + 2
@@ -686,6 +687,7 @@ struct LoopbackHTTPStream(Movable):
         request_field_limit: Int = HTTP_HEADER_LIMIT,
         cancel_fd: Int32 = -1,
         request_connection_close: Bool = True,
+        include_content_length: Bool = True,
     ) raises:
         self.fd = -1
         self.downstream_fd = downstream_fd
@@ -738,7 +740,7 @@ struct LoopbackHTTPStream(Movable):
             port = _number(parts[1])
         if port == 0 or port > 65535:
             raise Error("invalid loopback HTTP port")
-        var request = _stream_request(path, headers, address, len(body), request_method, request_header_limit, request_field_limit, request_connection_close)
+        var request = _stream_request(path, headers, address, len(body), request_method, request_header_limit, request_field_limit, request_connection_close, include_content_length)
         _check_downstream_peer(self.downstream_fd)
         _check_cancellation(self.cancel_fd)
         var started = perf_counter()

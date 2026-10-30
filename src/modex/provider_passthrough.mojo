@@ -3,7 +3,7 @@
 from std.collections import List
 
 from .loopback_http import HTTP_HEADER_LIMIT, LoopbackHTTPStream
-from .provider_deepseek_transport import deepseek_request_headers, deepseek_event_stream
+from .provider_deepseek_transport import deepseek_event_stream, deepseek_open_redirectable_stream, deepseek_request_headers
 
 
 comptime DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES = 4 * 1024 * 1024
@@ -21,7 +21,7 @@ def deepseek_chat_completions_stream(
     path: String,
     api_key: String,
     headers: List[Tuple[String, String]],
-    body: List[UInt8],
+    var body: List[UInt8],
     connect_timeout_ms: UInt64,
     request_timeout_ms: UInt64,
     idle_timeout_ms: UInt64,
@@ -31,11 +31,11 @@ def deepseek_chat_completions_stream(
     request_field_limit: Int = HTTP_HEADER_LIMIT,
     cancel_fd: Int32 = -1,
 ) raises -> LoopbackHTTPStream:
-    var stream = LoopbackHTTPStream(
+    var stream = deepseek_open_redirectable_stream(
         address,
         path,
         deepseek_request_headers(headers, api_key, passthrough=True),
-        body,
+        body^,
         connect_timeout_ms,
         request_timeout_ms,
         idle_timeout_ms,
@@ -46,7 +46,7 @@ def deepseek_chat_completions_stream(
         request_header_limit,
         request_field_limit,
         cancel_fd,
-        request_connection_close=False,
+        False,
     )
     # The frozen passthrough streams SSE on 2xx/3xx, and buffers non-SSE.
     # Keep >=400 rejection in the send path, before response dispatch; a

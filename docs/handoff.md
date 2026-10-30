@@ -4554,3 +4554,24 @@ Focused tests and `make build` pass on Linux x86-64. Connection reuse differs
 from the release and remains visible; WebSocket transport and all six release
 targets remain unqualified. See
 `docs/evidence/baseline-0.439.2/local-relay-websocket-framing.md`.
+
+## DeepSeek same-origin redirect following (2026-10-30)
+
+DeepSeek's production transport now follows tested same-origin numeric-loopback
+HTTP redirects. Process comparisons against 0.165.1, frozen 0.439.2 and Modex
+cover 301/302/303 POST-to-GET conversion, 307/308 method and body preservation,
+relative and absolute locations, query resolution, the redirect limit, and
+selection of only the final streamed response. Missing Location and other 3xx
+statuses remain unchanged. A real child launch verifies the rebuilt binary.
+
+Modex refuses cross-origin redirects and returns their original response;
+Prodex follows them while stripping authorization. Modex also cannot follow
+HTTPS, DNS, or other non-numeric-loopback destinations. Keep these limits
+visible; this does not establish full provider transport or redirect security
+parity. See `docs/evidence/deepseek-redirect-following-04392.md`.
+
+Linux x86-64 validation: production build; 35 continuation process tests;
+two native redirect deadline/cancellation tests and native transport header
+checks; three passthrough tests; one Super binary-passthrough comparison;
+product dependency audit; Python syntax check; and `git diff --check` all
+passed. Tests used synthetic loopback peers and credentials only.

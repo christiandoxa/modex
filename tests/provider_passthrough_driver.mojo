@@ -12,7 +12,7 @@ def main() raises:
         raise Error("usage: provider_passthrough_driver ADDRESS API_KEY [CANCEL_FD]")
     var body: List[UInt8] = [0, 255, 10, 123, 125]
     var cancel_fd = Int32(Int(args[3])) if len(args) == 4 else Int32(-1)
-    var stream = deepseek_chat_completions_stream(args[1], deepseek_chat_completions_path("/chat/completions", "/v1/chat/completions?raw=%2B&raw=2"), args[2], [("Content-Type", "application/custom+json"), ("Authorization", "Bearer inbound-fake"), ("Connection", "X-Private"), ("X-Private", "hidden"), ("Accept-Encoding", "gzip")], body, 1000, 5000, 1000, -1, "POST", HTTP_HEADER_LIMIT, HTTP_HEADER_LIMIT, cancel_fd)
+    var stream = deepseek_chat_completions_stream(args[1], deepseek_chat_completions_path("/chat/completions", "/v1/chat/completions?raw=%2B&raw=2"), args[2], [("Content-Type", "application/custom+json"), ("Authorization", "Bearer inbound-fake"), ("Connection", "X-Private"), ("X-Private", "hidden"), ("Accept-Encoding", "gzip")], body^, 1000, 5000, 1000, -1, "POST", HTTP_HEADER_LIMIT, HTTP_HEADER_LIMIT, cancel_fd)
     var output = RawFileDescriptor(1)
     output.write_bytes(("status " + String(stream.status) + "\n").as_bytes())
     var count = 0

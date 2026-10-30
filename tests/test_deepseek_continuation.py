@@ -121,7 +121,15 @@ def observe_turns(binary, turns, responses, *, base_path="/v1", idle_timeout_ms=
             followups_file = root / "followups.json"
             followups_file.write_text(json.dumps(followup_turns))
             environment["MODEX_CONTINUATION_FOLLOWUPS_FILE"] = str(followups_file)
-        with serving(responses) as server:
+        response_fixtures = [dict(response) for response in responses]
+        with serving(response_fixtures) as server:
+            for response in server.responses:
+                headers = response.get("response_headers")
+                if headers:
+                    response["response_headers"] = [
+                        (name, value.replace("{upstream_port}", str(server.server_port)))
+                        for name, value in headers
+                    ]
             auth_args = ["--api-key", SYNTHETIC_API_KEY] if api_keys is None else []
             result = subprocess.run(
                 [str(binary), "super", "--provider", "deepseek", *auth_args,
@@ -151,6 +159,175 @@ class DeepSeekContinuationTests(unittest.TestCase):
         for binary, digest in ((ORACLE_01651, ORACLE_01651_SHA256), (ORACLE, ORACLE_SHA256)):
             if hashlib.sha256(binary.read_bytes()).hexdigest() != digest:
                 raise AssertionError(f"oracle does not match pinned release: {binary}")
+
+    def test_same_origin_redirect_status_and_method_matrix_matches_releases(self):
+        cases = ((301, "GET"), (302, "GET"), (303, "GET"), (307, "POST"), (308, "POST"))
+        for status, expected_method in cases:
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                with self.subTest(status=status, binary=str(binary)):
+                    upstream, responses = observe_turns(
+                        binary,
+                        [{"model": "deepseek-chat", "input": "synthetic redirect request"}],
+                        [{"status": status, "content_type": "text/plain", "body": b"discarded redirect body",
+                          "response_headers": [("Location", "redirected"), ("Content-Type", "text/plain")]},
+                         buffered_reply(9)],
+                    )
+                    self.assertEqual([response["status"] for response in responses], [200])
+                    self.assertEqual([post["method"] for post in upstream], ["POST", expected_method])
+                    self.assertEqual([post["path"] for post in upstream],
+                                     ["/v1/chat/completions", "/v1/chat/redirected"])
+                    self.assertEqual([post["headers"]["authorization"] for post in upstream],
+                                     ["Bearer " + SYNTHETIC_API_KEY] * 2)
+                    self.assertEqual([post["headers"]["accept"] for post in upstream],
+                                     ["text/event-stream, application/json"] * 2)
+                    self.assertEqual([post["headers"]["accept-encoding"] for post in upstream],
+                                     ["identity"] * 2)
+                    self.assertTrue(upstream[0]["body"])
+                    if expected_method == "GET":
+                        self.assertEqual(upstream[1]["body"], b"")
+                        self.assertNotIn("content-length", upstream[1]["headers"])
+                        self.assertNotIn("content-type", upstream[1]["headers"])
+                    else:
+                        self.assertEqual(upstream[1]["body"], upstream[0]["body"])
+                        self.assertEqual(upstream[1]["headers"]["content-length"],
+                                         str(len(upstream[0]["body"])))
+                        self.assertEqual(upstream[1]["headers"]["content-type"], "application/json")
+                    self.assertEqual(json.loads(bytes.fromhex(responses[0]["body"]))["id"],
+                                     "synthetic-chat-9")
+
+    def test_same_origin_absolute_redirect_matches_releases(self):
+        redirect = {"status": 308, "content_type": "text/plain", "body": b"discarded",
+                    "response_headers": [("Location", "http://127.0.0.1:{upstream_port}/v1/absolute?synthetic=1"),
+                                         ("Content-Type", "text/plain")]}
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, [{"model": "deepseek-chat", "input": "synthetic absolute redirect"}],
+                    [redirect, buffered_reply(6)],
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
+                self.assertEqual([post["path"] for post in upstream],
+                                 ["/v1/chat/completions", "/v1/absolute?synthetic=1"])
+                self.assertEqual(upstream[1]["method"], "POST")
+                self.assertEqual(upstream[1]["body"], upstream[0]["body"])
+                self.assertEqual(upstream[1]["headers"]["authorization"],
+                                 "Bearer " + SYNTHETIC_API_KEY)
+
+    def test_redirect_without_location_and_nonredirect_3xx_are_preserved(self):
+        cases = [
+            {"status": 307, "content_type": "text/plain", "body": b"no Location"},
+            *({"status": status, "content_type": "text/plain", "body": b"",
+               "response_headers": [("Location", "redirected"), ("Content-Type", "text/plain")]}
+              for status in (300, 304, 399)),
+        ]
+        for response in cases:
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                with self.subTest(status=response["status"], binary=str(binary)):
+                    upstream, responses = observe_turns(
+                        binary, [{"model": "deepseek-chat", "input": "synthetic unhandled 3xx"}],
+                        [response],
+                    )
+                    self.assertEqual(len(upstream), 1)
+                    self.assertEqual([row["status"] for row in responses], [response["status"]])
+                    self.assertEqual(bytes.fromhex(responses[0]["body"]), response["body"])
+
+    def test_unsupported_redirect_url_is_returned_without_following(self):
+        location = "https://127.0.0.1:1/v1/redirected"
+        upstream, responses = observe_turns(
+            MODEX, [{"model": "deepseek-chat", "input": "synthetic unsupported redirect"}],
+            [{"status": 307, "content_type": "text/plain", "body": b"unsupported origin",
+             "response_headers": [("Location", location), ("Content-Type", "text/plain")] }],
+        )
+        self.assertEqual(len(upstream), 1)
+        self.assertEqual([response["status"] for response in responses], [307])
+        headers = {name.lower(): value for name, value in responses[0]["headers"].items()}
+        self.assertEqual(headers.get("location"), location)
+        self.assertEqual(bytes.fromhex(responses[0]["body"]), b"unsupported origin")
+
+    def test_relative_redirect_query_on_chat_path_matches_releases(self):
+        turn = {"model": "deepseek-chat", "messages": [{"role": "user", "content": "synthetic chat redirect"}],
+                "_path": "/v1/chat/completions"}
+        redirect = {"status": 307, "content_type": "text/plain", "body": b"discarded",
+                    "response_headers": [("Location", "../redirected?synthetic=1"),
+                                         ("Content-Type", "text/plain")]}
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(binary, [turn], [redirect, buffered_reply(4)])
+                self.assertEqual([response["status"] for response in responses], [200])
+                self.assertEqual([post["path"] for post in upstream],
+                                 ["/v1/chat/completions", "/v1/redirected?synthetic=1"])
+                self.assertEqual([post["method"] for post in upstream], ["POST", "POST"])
+                self.assertEqual(upstream[1]["body"], upstream[0]["body"])
+                self.assertEqual(upstream[1]["headers"]["authorization"],
+                                 "Bearer " + SYNTHETIC_API_KEY)
+
+    def test_redirect_limit_matches_releases(self):
+        redirects = [{"status": 307, "content_type": "text/plain", "body": b"",
+                      "response_headers": [("Location", "/v1/chat/completions"),
+                                           ("Content-Type", "text/plain")]}
+                     for _ in range(11)]
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, [{"model": "deepseek-chat", "input": "synthetic redirect cycle"}], redirects,
+                )
+                self.assertEqual(len(upstream), 11)
+                self.assertEqual([post["path"] for post in upstream],
+                                 ["/v1/chat/completions"] * 11)
+                self.assertEqual([response["status"] for response in responses], [502])
+                self.assertEqual(bytes.fromhex(responses[0]["body"]), b"upstream request failed")
+
+    def test_cross_origin_redirect_does_not_disclose_modex_request(self):
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                with serving([buffered_reply(9)]) as redirected_server:
+                    location = f"http://127.0.0.1:{redirected_server.server_port}/v1/redirected"
+                    redirect = {"status": 307, "content_type": "text/plain", "body": b"cross-origin response",
+                                "response_headers": [("Location", location),
+                                                     ("Content-Type", "text/plain")]}
+                    upstream, responses = observe_turns(
+                        binary, [{"model": "deepseek-chat", "input": "synthetic cross-origin body"}],
+                        [redirect],
+                    )
+                    self.assertEqual(len(upstream), 1)
+                    self.assertEqual(upstream[0]["headers"]["authorization"],
+                                     "Bearer " + SYNTHETIC_API_KEY)
+                    if binary == MODEX:
+                        self.assertEqual(redirected_server.records, [])
+                        self.assertEqual([response["status"] for response in responses], [307])
+                        headers = {name.lower(): value for name, value in responses[0]["headers"].items()}
+                        self.assertEqual(headers.get("location"), location)
+                        self.assertEqual(bytes.fromhex(responses[0]["body"]), b"cross-origin response")
+                    else:
+                        self.assertEqual(len(redirected_server.records), 1)
+                        followed = redirected_server.records[0]
+                        self.assertEqual(followed["method"], "POST")
+                        self.assertEqual(followed["headers"].get("authorization"), None)
+                        self.assertEqual(followed["body"], upstream[0]["body"])
+                        self.assertEqual([response["status"] for response in responses], [200])
+
+    def test_redirect_final_stream_is_the_only_committed_response(self):
+        chunk = {"id": "synthetic-redirect-stream", "created": 42, "model": "deepseek-chat",
+                 "choices": [{"index": 0, "delta": {"content": "redirected stream"}}]}
+        first = {"status": 307, "content_type": "text/plain", "body": b"discarded redirect body",
+                 "response_headers": [("Location", "redirected"), ("Content-Type", "text/plain")]}
+        final = {"status": 200, "content_type": "text/event-stream",
+                 "body": b"data: " + json_bytes(chunk) + b"\n\n" + b"data: [DONE]\n\n",
+                 "chunked": True}
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, [{"model": "deepseek-chat", "input": "synthetic stream redirect", "stream": True}],
+                    [first, final],
+                )
+                self.assertEqual([post["path"] for post in upstream],
+                                 ["/v1/chat/completions", "/v1/chat/redirected"])
+                self.assertEqual([response["status"] for response in responses], [200])
+                headers = {name.lower(): value for name, value in responses[0]["headers"].items()}
+                self.assertIn("text/event-stream", headers.get("content-type", ""))
+                body = bytes.fromhex(responses[0]["body"])
+                self.assertIn(b"redirected stream", body)
+                self.assertNotIn(b"discarded redirect body", body)
 
     def test_api_key_cursor_matches_release_request_order(self):
         keys = "synthetic-key-a,synthetic-key-b"

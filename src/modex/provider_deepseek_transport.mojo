@@ -289,6 +289,207 @@ def deepseek_event_stream(headers: List[Tuple[String, String]]) -> Bool:
     return False
 
 
+comptime DEEPSEEK_MAX_REDIRECTS = 10
+
+
+def _deepseek_redirect_status(status: Int) -> Bool:
+    return status in [301, 302, 303, 307, 308]
+
+
+def _deepseek_redirect_location(headers: List[Tuple[String, String]]) -> String:
+    for name, value in headers:
+        if name.lower() == "location":
+            return value
+    return String()
+
+
+def _deepseek_same_redirect_authority(authority: String, address: String) -> Bool:
+    var target = authority.lower()
+    var origin = address.lower()
+    return target == origin or (origin == "127.0.0.1:80" and target == "127.0.0.1") or (origin == "[::1]:80" and target == "[::1]")
+
+
+def _deepseek_encode_redirect_component(value: String) -> String:
+    comptime HEX = StaticString("0123456789ABCDEF")
+    var encoded = String()
+    for byte in value.as_bytes():
+        if byte >= 128 or byte <= 32 or byte == 127 or byte == 34 or byte == 60 or byte == 62 or byte == 96 or byte == 123 or byte == 125:
+            encoded += "%" + HEX[byte=Int(byte) // 16] + HEX[byte=Int(byte) % 16]
+        else:
+            encoded += chr(Int(byte))
+    return encoded
+
+
+def _deepseek_normalize_redirect_path(path: String) -> String:
+    var segments = List[String]()
+    var trailing_slash = path.endswith("/")
+    var last_slash = -1
+    for index in range(path.byte_length()):
+        if path.as_bytes()[index] == 47:
+            last_slash = index
+    var last_segment = String(path[byte=last_slash + 1:]).lower()
+    if last_segment in [".", "..", "%2e", ".%2e", "%2e.", "%2e%2e"]:
+        trailing_slash = True
+    for segment in path.split("/"):
+        var value = String(segment)
+        var lower = value.lower()
+        if len(segments) == 0:
+            segments.append(value^)
+        elif lower in [".", "%2e"]:
+            continue
+        elif lower in ["..", ".%2e", "%2e.", "%2e%2e"]:
+            if len(segments) > 1:
+                _ = segments.pop()
+        else:
+            segments.append(value^)
+    if trailing_slash and len(segments) > 0 and segments[len(segments) - 1]:
+        segments.append("")
+    return String("/").join(segments)
+
+
+# shortcut: only unambiguous numeric-loopback HTTP origins are followed; widen after a full URL parser is adopted.
+def _deepseek_redirect_target(address: String, current: String, location: String) -> Tuple[Bool, String]:
+    var reference = location
+    var fragment = reference.find("#")
+    if fragment >= 0:
+        var without_fragment = String(reference[byte=:fragment])
+        reference = without_fragment^
+    for byte in reference.as_bytes():
+        if byte <= 32 or byte == 127 or byte == 92:
+            return False, String()
+
+    var reference_lower = reference.lower()
+    var suffix: String
+    if reference_lower.startswith("http://") or reference.startswith("//"):
+        var authority_start = 7 if reference_lower.startswith("http://") else 2
+        var authority_end = reference.byte_length()
+        for delimiter in ["/", "?"]:
+            var found = reference.find(delimiter, authority_start)
+            if found >= 0 and found < authority_end:
+                authority_end = found
+        var authority = String(reference[byte=authority_start:authority_end])
+        if not _deepseek_same_redirect_authority(authority, address):
+            return False, String()
+        suffix = String(reference[byte=authority_end:])
+        if not suffix:
+            suffix = "/"
+        elif suffix.startswith("?"):
+            suffix = "/" + suffix
+    elif reference_lower.find("://") >= 0:
+        return False, String()
+    elif reference.startswith("/"):
+        suffix = reference^
+    elif reference.startswith("?"):
+        var base_end = current.find("?")
+        var base_path = String(current[byte=:base_end]) if base_end >= 0 else current
+        suffix = base_path + reference
+    elif not reference:
+        suffix = String(current)
+    else:
+        var first_segment_end = reference.byte_length()
+        for delimiter in ["/", "?"]:
+            var found = reference.find(delimiter)
+            if found >= 0 and found < first_segment_end:
+                first_segment_end = found
+        var colon = reference.find(":")
+        if colon >= 0 and colon < first_segment_end:
+            return False, String()
+        var base_end = current.find("?")
+        var base_path = String(current[byte=:base_end]) if base_end >= 0 else current
+        var last_slash = -1
+        for index in range(base_path.byte_length()):
+            if base_path.as_bytes()[index] == 47:
+                last_slash = index
+        if last_slash < 0:
+            return False, String()
+        suffix = String(base_path[byte=:last_slash + 1]) + reference
+
+    var query_start = suffix.find("?")
+    var path_part = String(suffix[byte=:query_start]) if query_start >= 0 else suffix
+    var query_part = String(suffix[byte=query_start:]) if query_start >= 0 else String()
+    if not path_part.startswith("/"):
+        return False, String()
+    var target = _deepseek_normalize_redirect_path(_deepseek_encode_redirect_component(path_part))
+    target += _deepseek_encode_redirect_component(query_part)
+    if target.byte_length() == 0 or target.byte_length() > HTTP_HEADER_LIMIT or not target.startswith("/"):
+        return False, String()
+    return True, target
+
+
+def _deepseek_drop_body_headers(headers: List[Tuple[String, String]]) -> List[Tuple[String, String]]:
+    var output = List[Tuple[String, String]]()
+    for name, value in headers:
+        var normalized = name.lower()
+        if normalized != "content-length" and normalized != "content-type":
+            output.append((name, value))
+    return output^
+
+
+def deepseek_open_redirectable_stream(
+    address: String,
+    path: String,
+    headers: List[Tuple[String, String]],
+    var body: List[UInt8],
+    connect_timeout_ms: UInt64,
+    request_timeout_ms: UInt64,
+    idle_timeout_ms: UInt64,
+    max_body_bytes: Int,
+    downstream_fd: Int32,
+    allow_unbounded_body: Bool,
+    request_method: String,
+    request_header_limit: Int,
+    request_field_limit: Int,
+    cancel_fd: Int32,
+    request_connection_close: Bool = True,
+) raises -> LoopbackHTTPStream:
+    var outgoing_headers = headers.copy()
+    var outgoing_body = body^
+    var outgoing_method = request_method
+    var redirect_path = path
+    var include_content_length = True
+    var stream = LoopbackHTTPStream(
+        address, redirect_path, outgoing_headers, outgoing_body, connect_timeout_ms,
+        request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd,
+        allow_unbounded_body, outgoing_method, request_header_limit,
+        request_field_limit, cancel_fd, request_connection_close,
+        include_content_length,
+    )
+    var request_deadline = stream.request_deadline
+    var followed_redirects = 0
+    while _deepseek_redirect_status(stream.status):
+        var location = _deepseek_redirect_location(stream.headers)
+        if not location:
+            break
+        var redirect = _deepseek_redirect_target(address, redirect_path, location)
+        if not redirect[0]:
+            break
+        if followed_redirects >= DEEPSEEK_MAX_REDIRECTS:
+            stream.close()
+            raise Error("too many redirects")
+        if (stream.status in [301, 302] and outgoing_method == "POST") or (stream.status == 303 and outgoing_method != "HEAD"):
+            outgoing_method = "GET"
+            outgoing_body.clear()
+            outgoing_headers = _deepseek_drop_body_headers(outgoing_headers)
+            include_content_length = False
+        redirect_path = redirect[1]
+        stream.close()
+        var remaining = request_deadline - perf_counter()
+        if remaining <= 0.0:
+            raise Error("loopback HTTP request timed out")
+        var remaining_timeout_ms = UInt64(remaining * 1000.0)
+        if remaining_timeout_ms == 0:
+            raise Error("loopback HTTP request timed out")
+        stream = LoopbackHTTPStream(
+            address, redirect_path, outgoing_headers, outgoing_body, connect_timeout_ms,
+            remaining_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd,
+            allow_unbounded_body, outgoing_method, request_header_limit,
+            request_field_limit, cancel_fd, request_connection_close,
+            include_content_length,
+        )
+        followed_redirects += 1
+    return stream^
+
+
 struct DeepSeekExchange(Movable):
     var http: LoopbackHTTPStream
     var reader: DeepSeekChatReader
@@ -330,7 +531,12 @@ struct DeepSeekExchange(Movable):
         var bytes = List[UInt8]()
         for byte in self.body.as_bytes():
             bytes.append(byte)
-        self.http = LoopbackHTTPStream(address, path, deepseek_request_headers(headers, api_key, anthropic_messages=native_messages), bytes, connect_timeout_ms, request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd, True, request_method, request_header_limit, request_field_limit, cancel_fd)
+        var outgoing_headers = deepseek_request_headers(headers, api_key, anthropic_messages=native_messages)
+        self.http = deepseek_open_redirectable_stream(
+            address, path, outgoing_headers, bytes^, connect_timeout_ms, request_timeout_ms,
+            idle_timeout_ms, max_body_bytes, downstream_fd, True, request_method,
+            request_header_limit, request_field_limit, cancel_fd,
+        )
 
     def status(self) -> Int:
         return self.http.status

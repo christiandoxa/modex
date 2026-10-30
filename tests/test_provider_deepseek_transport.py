@@ -124,6 +124,56 @@ class UpstreamHandler(BaseHTTPRequestHandler):
         pass
 
 
+class RedirectSequenceUpstream(ThreadingHTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.records = []
+        self.lock = threading.Lock()
+        self.second_request_received = threading.Event()
+        self.release_second_response = threading.Event()
+        super().__init__(("127.0.0.1", 0), RedirectSequenceHandler)
+
+
+class RedirectSequenceHandler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", "0"))
+        self.server.records.append({
+            "method": self.command,
+            "path": self.path,
+            "headers": {key.lower(): value for key, value in self.headers.items()},
+            "body": self.rfile.read(length),
+        })
+        with self.server.lock:
+            response = self.server.responses.pop(0)
+        if response.get("wait_for_release"):
+            self.server.second_request_received.set()
+            self.server.release_second_response.wait(5)
+        if response.get("delay"):
+            time.sleep(response["delay"])
+        self.send_response(response["status"])
+        for name, value in response.get("headers", []):
+            self.send_header(name, value)
+        self.send_header("Content-Length", str(len(response["body"])))
+        self.send_header("Connection", "close")
+        self.end_headers()
+        try:
+            self.wfile.write(response["body"])
+            self.wfile.flush()
+        except OSError:
+            pass
+        self.close_connection = True
+
+    do_GET = do_POST
+
+    def log_message(self, *_args):
+        pass
+
+
 class ProviderDeepSeekTransportTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -654,6 +704,78 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
         output = [json.loads(line) for line in result.stdout.decode().splitlines()]
         self.assertEqual(len(self.records(output, "error")), 1, output)
         self.assertEqual(self.records(output, "headers"), [])
+
+    def test_redirect_hops_share_the_original_request_deadline(self):
+        final_body = self.buffered_cases["text_tool_usage_metadata"]["upstream_response"]["body"].encode()
+        server = RedirectSequenceUpstream([
+            {"status": 307, "headers": [("Location", "/v1/second")], "body": b"", "delay": 0.25},
+            {"status": 307, "headers": [("Location", "/v1/final")], "body": b"", "delay": 0.25},
+            {"status": 200, "headers": [("Content-Type", "application/json")], "body": final_body},
+        ])
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            output, _, _ = self.run_native(
+                server, self.request_cases["defaults"], stream_case=None,
+                options={"request_timeout_ms": 400}, timeout=4,
+            )
+            self.assertEqual(self.records(output, "error"), [
+                {"type": "error", "message": "loopback HTTP stream timed out"},
+            ])
+            self.assertEqual([record["path"] for record in server.records],
+                             ["/v1/chat/completions", "/v1/second"])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
+    def test_cancel_fd_remains_active_after_a_redirect(self):
+        final_body = self.buffered_cases["text_tool_usage_metadata"]["upstream_response"]["body"].encode()
+        server = RedirectSequenceUpstream([
+            {"status": 307, "headers": [("Location", "/v1/second")], "body": b""},
+            {"status": 200, "headers": [("Content-Type", "application/json")],
+             "body": final_body, "wait_for_release": True},
+        ])
+        server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+        server_thread.start()
+        child_cancel, parent_cancel = socket.socketpair()
+        result = []
+
+        def run():
+            try:
+                result.append(self.run_native(
+                    server, self.request_cases["defaults"], stream_case=None,
+                    options={"cancel_fd": child_cancel.fileno()}, timeout=5,
+                    pass_fds=(child_cancel.fileno(),),
+                ))
+            except BaseException as error:
+                result.append(error)
+
+        runner = threading.Thread(target=run)
+        runner.start()
+        try:
+            self.assertTrue(server.second_request_received.wait(3), "redirected request was not sent")
+            parent_cancel.shutdown(socket.SHUT_WR)
+            server.release_second_response.set()
+            runner.join(timeout=4)
+            self.assertFalse(runner.is_alive(), "redirected exchange ignored cancellation")
+            if isinstance(result[0], BaseException):
+                raise result[0]
+            output = result[0][0]
+            self.assertEqual(self.records(output, "error"), [
+                {"type": "error", "message": "loopback HTTP request cancelled"},
+            ])
+            self.assertEqual([record["path"] for record in server.records],
+                             ["/v1/chat/completions", "/v1/second"])
+        finally:
+            server.release_second_response.set()
+            if runner.is_alive():
+                runner.join(timeout=2)
+            child_cancel.close()
+            parent_cancel.close()
+            server.shutdown()
+            server.server_close()
+            server_thread.join(timeout=2)
 
     def test_upstream_disconnect_does_not_retry(self):
         output, _, _, server = self.call(drop_connection=True, stream_name=None)

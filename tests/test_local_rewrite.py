@@ -123,6 +123,8 @@ class UpstreamHandler(BaseHTTPRequestHandler):
     def log_message(self, *_args):
         pass
 
+    do_GET = do_POST
+
 
 @contextmanager
 def serving(responses):

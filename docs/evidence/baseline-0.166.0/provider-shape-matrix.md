@@ -28,44 +28,65 @@ Event JSON matches after normalizing only generated numeric text item IDs.
 Upstream IDs, event order, sequence numbers, response metadata, output text,
 and usage remain directly compared.
 
-The focused two-method process test and the existing 0.166.0 build pass on
+The active process test also compares these model cases: direct `flash`,
+explicit `deepseek-flash`, explicit `deepseek-v4-flash`, `combo:flash,pro`
+retrying after a structured 404 or 429, and empty `combo:,,,` / `combo:`
+inputs. The active oracle and Modex send the same provider model IDs and bodies.
+Direct `flash` resolves to `deepseek-flash`; the explicit compatibility ID
+stays `deepseek-v4-flash`. Both retryable combo errors proceed from
+`deepseek-flash` to `deepseek-v4-pro`; empty combos are sent literally and do
+not retry. The 0.439.2 expectations in the historical cross-release tests stay
+separate and are not used as active evidence.
+A separately run checksum-verified 0.165.1 control also matched Modex on direct
+`flash`, the two combo retry cases, and `combo:,,,`; it remains a historical
+control. No 0.439.2 oracle was run for this evidence.
+
+The focused three-method process test and the existing 0.166.0 build pass on
 Linux x86-64. This is selected request and response-shape evidence only; it
 does not establish full provider parity or qualify the other five release
 targets.
 
 ## Reproduction
 
-From the Modex workspace, set `PRODEX_ORACLE` to the checksum-verified official
-0.166.0 Linux x86-64 binary and `MOJO_LIBRARY_DIR` to the installed Mojo
-runtime library directory. The wrapper mounts the workspace, oracle, and Mojo
-runtime read-only, uses a private tmpfs for test state, and allows only
-loopback networking. The test also creates distinct temporary HOME and state
-directories for each product process.
+Run `make build` first. From the Modex workspace, set `PRODEX_ORACLE_SOURCE`
+to the checksum-verified official 0.166.0 Linux x86-64 binary and
+`MOJO_LIBRARY_DIR` to the installed Mojo runtime library directory. Both paths
+must be outside `/tmp`. The test verifies the oracle digest. Bind the workspace
+before replacing `/tmp`, since a workspace can itself live there.
+The wrapper runs with a cleared environment, read-only workspace/oracle/runtime
+mounts, private mode-700 tmpfs, synthetic HOME/TMPDIR, loopback only, and no
+default routes. The process harness creates distinct temporary state for each
+binary and uses a synthetic loopback provider and API key.
 
 ```sh
-export MODEX_WORKSPACE="$PWD"
-export PRODEX_ORACLE="/path/to/prodex-0.166.0/prodex-x86_64-unknown-linux-gnu"
-export MOJO_LIBRARY_DIR="/path/to/mojo/lib"
+MODEX_WORKSPACE="$PWD" \
+PRODEX_ORACLE_SOURCE="/path/to/prodex-0.166.0/prodex-x86_64-unknown-linux-gnu" \
+MOJO_LIBRARY_DIR="/path/to/mojo/lib" \
 unshare -Urnm /bin/sh -s <<'NS'
 set -eu
 mount --make-rprivate /
-mount -t sysfs -o nosuid,nodev,noexec sysfs /sys
+mount --bind "$MODEX_WORKSPACE" /mnt
+mount -o remount,bind,ro /mnt
 mount -t tmpfs -o mode=0700 tmpfs /tmp
-mkdir -m 700 /tmp/home /tmp/work /tmp/workspace
+mkdir -m 700 /tmp/home /tmp/work
 : > /tmp/oracle
-mount --bind "$MODEX_WORKSPACE" /tmp/workspace
-mount -o remount,bind,ro /tmp/workspace
-mount --bind "$PRODEX_ORACLE" /tmp/oracle
+mount --bind "$PRODEX_ORACLE_SOURCE" /tmp/oracle
 mount -o remount,bind,ro /tmp/oracle
 mount --bind "$MOJO_LIBRARY_DIR" "$MOJO_LIBRARY_DIR"
 mount -o remount,bind,ro "$MOJO_LIBRARY_DIR"
 ip link set lo up
-[ "$(ip -o link show | wc -l)" -eq 1 ]
-[ -z "$(ip route show default)" ]
-[ -z "$(ip -6 route show default)" ]
-cd /tmp/workspace
-export HOME=/tmp/home TMPDIR=/tmp/work PYTHONDONTWRITEBYTECODE=1
-export PRODEX_ORACLE=/tmp/oracle MODEX_BINARY=/tmp/workspace/build/modex
-python3 scripts/ci/run-unittest.py test_provider_shapes_01660.py
+ip -o link show | awk 'END { exit NR != 1 }'
+ip -o link show lo >/dev/null
+ip route show default | awk 'END { exit NR != 0 }'
+ip -6 route show default | awk 'END { exit NR != 0 }'
+test "$(stat -f -c %T /tmp)" = tmpfs
+test "$(stat -c %a /tmp)" = 700
+test "$(stat -c %u /tmp)" = "$(id -u)"
+cd /mnt
+exec env -i HOME=/tmp/home TMPDIR=/tmp/work \
+    PATH=/usr/local/bin:/usr/bin:/usr/sbin:/bin LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+    TERM=dumb NO_COLOR=1 PYTHONDONTWRITEBYTECODE=1 \
+    PRODEX_ORACLE=/tmp/oracle MODEX_BINARY=/mnt/build/modex \
+    python3 scripts/ci/run-unittest.py test_provider_shapes_01660.py
 NS
 ```

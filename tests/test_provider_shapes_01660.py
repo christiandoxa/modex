@@ -175,6 +175,47 @@ class ProviderShapes01660Tests(unittest.TestCase):
             observations.append(events)
         self.assertEqual(observations[1], observations[0])
 
+    def test_flash_aliases_and_combo_retries_match_active_release(self):
+        unsupported = {"status": 404, "content_type": "application/json",
+                       "body": b'{"error":{"code":"model_not_supported"}}'}
+        rate_limited = {"status": 429, "content_type": "application/json",
+                        "body": b'{"error":{"code":"rate_limit_error"}}'}
+        cases = (
+            ("direct alias", "flash", [buffered_reply()], ["deepseek-flash"], [200]),
+            ("explicit current ID", "deepseek-flash", [buffered_reply()],
+             ["deepseek-flash"], [200]),
+            ("explicit compatibility ID", "deepseek-v4-flash", [buffered_reply()],
+             ["deepseek-v4-flash"], [200]),
+            ("404 combo retry", "combo:flash,pro", [unsupported, buffered_reply(1)],
+             ["deepseek-flash", "deepseek-v4-pro"], [200]),
+            ("429 combo retry", "combo:flash,pro", [rate_limited, buffered_reply(1)],
+             ["deepseek-flash", "deepseek-v4-pro"], [200]),
+            ("empty combo", "combo:,,,", [unsupported], ["combo:,,,"], [404]),
+            ("empty suffix", "combo:", [unsupported], ["combo:"], [404]),
+        )
+        for label, model, replies, expected_models, expected_statuses in cases:
+            turns = [{"model": model, "input": "synthetic model fallback"}]
+            observations = []
+            for binary in (ORACLE, MODEX):
+                with self.subTest(case=label, binary=str(binary)):
+                    posts, responses = observe_turns(
+                        binary, turns, replies, latest_version="0.166.0",
+                    )
+                    self.assertEqual([response["status"] for response in responses], expected_statuses)
+                    self.assertEqual(
+                        [post["path"] for post in posts],
+                        ["/v1/chat/completions"] * len(expected_models),
+                    )
+                    self.assertEqual(
+                        [post["headers"]["authorization"] for post in posts],
+                        ["Bearer " + SYNTHETIC_API_KEY] * len(expected_models),
+                    )
+                    self.assertEqual(
+                        [json.loads(post["body"])["model"] for post in posts], expected_models,
+                    )
+                    observations.append([post["body"] for post in posts])
+            self.assertEqual(observations[1], observations[0], label)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -166,6 +166,11 @@ only the generated text-item ID. The focused test is
 `tests/test_provider_shapes_01660.py`; evidence is in
 `docs/evidence/baseline-0.166.0/provider-shape-matrix.md`. These cases found no
 new production mismatch and do not establish broader provider parity.
+The same active test now pins direct `flash`, explicit current and compatibility
+IDs, `combo:flash,pro` retries after structured 404/429 errors, and malformed
+empty combo inputs. Modex and the active oracle produce matching provider
+request bodies and tested statuses. Historical 0.439.2 expectations remain
+version-specific; this is not cross-release parity evidence.
 One synthetic streamed function call split over two argument deltas, followed
 by a usage-only chunk, also matches the 0.166.0 process. This manual isolated
 check is scoped to that case; see

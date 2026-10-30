@@ -235,18 +235,23 @@ class LoopbackHTTPServerTests(unittest.TestCase):
         self.assertEqual(status(response), 400)
         self.assertIn("malformed HTTP header value", stdout)
 
-    def test_tiny_http_compat_collapses_only_identical_content_lengths(self):
-        raw = (
-            b"POST / HTTP/1.1\r\nHost: local\r\n"
-            b"Content-Length: 0\r\ncontent-length: 0\r\n\r\n"
-        )
-        process, client = start("tiny-http-compat")
-        client.sendall(raw)
-        response, stdout = finish(process, client)
-        self.assertEqual(status(response), 200)
-        request_line = next(line for line in stdout.splitlines() if line.startswith("REQUEST "))
-        headers = json.loads(request_line.removeprefix("REQUEST "))["headers"]
-        self.assertEqual([header for header in headers if header[0].lower() == "content-length"], [["Content-Length", "0"]])
+    def test_tiny_http_compat_collapses_equal_numeric_content_lengths(self):
+        for first, second in ((b"0", b"0"), (b"0", b"00"), (b"00", b"0")):
+            with self.subTest(first=first, second=second):
+                raw = (
+                    b"POST / HTTP/1.1\r\nHost: local\r\n"
+                    b"Content-Length: " + first + b"\r\ncontent-length: " + second + b"\r\n\r\n"
+                )
+                process, client = start("tiny-http-compat")
+                client.sendall(raw)
+                response, stdout = finish(process, client)
+                self.assertEqual(status(response), 200)
+                request_line = next(line for line in stdout.splitlines() if line.startswith("REQUEST "))
+                headers = json.loads(request_line.removeprefix("REQUEST "))["headers"]
+                self.assertEqual(
+                    [header for header in headers if header[0].lower() == "content-length"],
+                    [["Content-Length", first.decode()]],
+                )
 
         for mode, framing in (
             ("tiny-http-compat", b"Content-Length: 0\r\nContent-Length: 1\r\n"),

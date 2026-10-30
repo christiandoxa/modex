@@ -207,11 +207,14 @@ class LoopbackHeaderWhitespaceTests(unittest.TestCase):
             upstream.server_close()
             worker.join(timeout=2)
 
-    def test_identical_content_length_duplicates_are_safe_and_pipeline(self):
+    def test_equal_numeric_content_length_duplicates_are_safe_and_pipeline(self):
         duplicate_length = (
             b"Content-Length: \x0b" + str(len(BODY)).encode() + b"\x0c\r\n"
             b"content-length: " + str(len(BODY)).encode() + b"\r\n"
         )
+        length = str(len(BODY)).encode()
+        numeric_duplicate_length = b"Content-Length: 0" + length + b"\r\nContent-Length: " + length + b"\r\n"
+        reverse_numeric_duplicate_length = b"Content-Length: " + length + b"\r\nContent-Length: 0" + length + b"\r\n"
         single_length = b"Content-Length: " + str(len(BODY)).encode() + b"\r\n"
         zero_length = (
             b"GET /unsupported HTTP/1.1\r\nHost: 127.0.0.1\r\n"
@@ -233,31 +236,44 @@ class LoopbackHeaderWhitespaceTests(unittest.TestCase):
                 )
                 self.assertEqual(records, [], label)
 
-            forwarded_bodies = {}
-            for label, binary in PRODUCTS:
-                upstream.reset_records()
-                response, records = self._run(
-                    binary, "duplicate_content_length",
-                    raw_request(framing=duplicate_length), upstream,
-                )
-                self.assertEqual(
-                    (response["status"], response["body"]),
-                    (200, transport.RESPONSES_RESPONSE),
-                    label,
-                )
-                self.assertEqual(len(records), 1, label)
-                outbound_lengths = [
-                    value for name, value in records[0]["raw_headers"]
-                    if name.lower() == "content-length"
-                ]
-                self.assertEqual(outbound_lengths, [str(len(records[0]["body"]))], label)
-                forwarded_bodies[label] = records[0]["body"]
-            self.assertEqual(forwarded_bodies["0.165.1"], forwarded_bodies["0.439.2"])
-            self.assertEqual(forwarded_bodies["0.439.2"], forwarded_bodies["Modex"])
+            for name, framing, fragmented in (
+                ("duplicate_content_length", duplicate_length, False),
+                ("numeric_duplicate_content_length", numeric_duplicate_length, False),
+                ("reverse_numeric_duplicate_content_length", reverse_numeric_duplicate_length, False),
+                ("fragmented_numeric_duplicate_content_length", numeric_duplicate_length, True),
+            ):
+                forwarded_bodies = {}
+                request = raw_request(framing=framing)
+                options = {}
+                if fragmented:
+                    split = request.index(b"Content-Length: 0") + len(b"Content-Length: 0")
+                    options = {
+                        "request_parts": [request[:split], request[split:]],
+                        "request_part_delay_ms": 5,
+                    }
+                for label, binary in PRODUCTS:
+                    upstream.reset_records()
+                    response, records = self._run(binary, name, request, upstream, **options)
+                    self.assertEqual(
+                        (response["status"], response["body"]),
+                        (200, transport.RESPONSES_RESPONSE),
+                        label,
+                    )
+                    self.assertEqual(len(records), 1, label)
+                    outbound_lengths = [
+                        value for header, value in records[0]["raw_headers"]
+                        if header.lower() == "content-length"
+                    ]
+                    self.assertEqual(outbound_lengths, [str(len(records[0]["body"]))], label)
+                    forwarded_bodies[label] = records[0]["body"]
+                self.assertEqual(forwarded_bodies["0.165.1"], forwarded_bodies["0.439.2"])
+                self.assertEqual(forwarded_bodies["0.439.2"], forwarded_bodies["Modex"])
 
             for name, first_framing, second_framing in (
                 ("duplicate_first", duplicate_length, single_length),
                 ("duplicate_second", single_length, duplicate_length),
+                ("numeric_duplicate_first", numeric_duplicate_length, single_length),
+                ("numeric_duplicate_reverse", reverse_numeric_duplicate_length, single_length),
             ):
                 first = COMMON + first_framing + b"\r\n" + BODY
                 second = COMMON + second_framing + b"Connection: close\r\n\r\n" + BODY
@@ -291,15 +307,18 @@ class LoopbackHeaderWhitespaceTests(unittest.TestCase):
                 self.assertEqual(pipelined_bodies["0.165.1"], pipelined_bodies["0.439.2"])
                 self.assertEqual(pipelined_bodies["0.439.2"], pipelined_bodies["Modex"])
 
-            truncated = raw_request(framing=duplicate_length, body=BODY[:-1])
-            for label, binary in PRODUCTS:
-                upstream.reset_records()
-                response, records = self._run(
-                    binary, "truncated_duplicate_content_length", truncated,
-                    upstream, half_close=True,
-                )
-                self.assertIsNone(response["status"], label)
-                self.assertEqual(records, [], label)
+            for name, framing in (
+                ("truncated_duplicate_content_length", duplicate_length),
+                ("truncated_numeric_duplicate_content_length", numeric_duplicate_length),
+            ):
+                truncated = raw_request(framing=framing, body=BODY[:-1])
+                for label, binary in PRODUCTS:
+                    upstream.reset_records()
+                    response, records = self._run(
+                        binary, name, truncated, upstream, half_close=True,
+                    )
+                    self.assertIsNone(response["status"], label)
+                    self.assertEqual(records, [], label)
         finally:
             upstream.shutdown()
             upstream.server_close()
@@ -307,11 +326,6 @@ class LoopbackHeaderWhitespaceTests(unittest.TestCase):
 
     def test_ambiguous_framing_release_dispatch_remains_modex_fail_closed(self):
         mismatched_lengths = (
-            (
-                "different_numeric_text",
-                b"Content-Length: 0" + str(len(BODY)).encode() + b"\r\n"
-                b"Content-Length: " + str(len(BODY)).encode() + b"\r\n",
-            ),
             (
                 "conflicting_numeric_values",
                 b"Content-Length: " + str(len(BODY)).encode() + b"\r\n"
@@ -357,11 +371,18 @@ class LoopbackHeaderWhitespaceTests(unittest.TestCase):
                 ("duplicate_content_length_and_transfer_encoding", conflicting_framing),
                 ("duplicate_transfer_encoding", duplicate_transfer_encoding),
             ):
+                request = raw_request(framing=framing, body=chunked_body)
+                options = {}
+                if name == "duplicate_content_length_and_transfer_encoding":
+                    split = request.index(b"Transfer-Encoding: chunked") + len(b"Transfer-Encoding: chunked") - 3
+                    options = {
+                        "request_parts": [request[:split], request[split:]],
+                        "request_part_delay_ms": 5,
+                    }
                 for label, binary in PRODUCTS:
                     upstream.reset_records()
                     response, records = self._run(
-                        binary, name,
-                        raw_request(framing=framing, body=chunked_body), upstream,
+                        binary, name, request, upstream, **options,
                     )
                     if label == "Modex":
                         self.assertEqual(

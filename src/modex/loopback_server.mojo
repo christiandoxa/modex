@@ -731,7 +731,13 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
         var append_header = True
         if lower == "content-length":
             if has_content_length:
-                if not tiny_http_request_line_compat or value != content_length_value:
+                var same_content_length = value == content_length_value
+                if tiny_http_request_line_compat and not same_content_length:
+                    try:
+                        same_content_length = _number(value) == content_length
+                    except:
+                        same_content_length = False
+                if not tiny_http_request_line_compat or not same_content_length:
                     if defer_expectation_errors:
                         if not deferred_error:
                             deferred_error = "duplicate HTTP content length"

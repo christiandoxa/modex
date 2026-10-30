@@ -481,16 +481,32 @@ The production relay trims ASCII boundary whitespace around request header
 lines and values only in TinyHTTP compatibility mode. Real-process controls
 match checksum-pinned 0.165.1 and 0.439.2 for boundary whitespace, CRLF field
 separation, and rejection of embedded value controls before upstream I/O.
-Identical duplicate `Content-Length` values are now accepted as described
-below; differing values remain rejected by Modex. With valid chunked bodies,
-both releases dispatch conflicting `Content-Length`/`Transfer-Encoding` and
-duplicate `Transfer-Encoding`; Modex returns 502 without upstream dispatch.
+Identical and numerically equal duplicate `Content-Length` values are now
+accepted as described below; conflicting values remain rejected by Modex. With
+valid chunked bodies, both releases dispatch conflicting
+`Content-Length`/`Transfer-Encoding` and duplicate `Transfer-Encoding`; Modex
+returns 502 without upstream dispatch.
 This is a recorded fail-closed security difference, not parity. An earlier
 fixture used a decimal rather than hexadecimal chunk size and did not establish
 release behavior for valid framing. Both releases and Modex now close without
 a response for raw UTF-8 header bytes. Embedded-control and mismatched-length
 cases also avoid upstream dispatch in Modex. These are selected Linux x86-64
 controls; all six baseline targets stay in the denominator. Evidence:
+`docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.
+
+## Relay numeric Content-Length duplicates (2026-10-30)
+
+Both pinned TinyHTTP sources select the first `Content-Length` and parse it as
+decimal when no transfer encoding is present. Modex's production compatibility
+parser now accepts later values only when they parse to the same first length.
+It still rejects conflicting numeric lengths, `Content-Length` with
+`Transfer-Encoding`, and duplicate `Transfer-Encoding` before provider I/O.
+Tests compare both pinned real processes with the production Modex relay for
+leading-zero variants in either order, fragmented and pipelined requests, and
+truncated body half-close. The shared parser defaults and request/body caps did
+not change. The full focused parser and real-process pair passed 36 tests on
+Linux x86-64. Ambiguous transfer framing remains a documented fail-closed
+security difference. See
 `docs/evidence/baseline-0.439.2/local-relay-header-whitespace.md`.
 
 The raw requests `Expect: 100-continue\x00bad` with `Content-Length: 0` and

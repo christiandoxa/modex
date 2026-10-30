@@ -13,7 +13,9 @@ implementations convert request lines to `AsciiString` before calling
 split each line once at `:` and call `trim()` on the value before converting it
 to `AsciiString`. Thus non-ASCII bytes are rejected before trimming. The
 real-process tests also verify the pinned Linux binaries against their recorded
-SHA-256 values.
+SHA-256 values. In both `vendor/tiny_http/src/request.rs::new_request` versions,
+the parser selects the first `Transfer-Encoding`, or otherwise the first
+`Content-Length`, and parses that first length as a decimal number.
 
 `tests/test_loopback_header_whitespace.py` sends raw requests through each
 release and Modex to a synthetic loopback upstream:
@@ -25,7 +27,8 @@ release and Modex to a synthetic loopback upstream:
 | Embedded VT, FF, bare CR or bare LF in a value | 502 `upstream request failed` | Same | Same | No request |
 | Equal duplicate `Content-Length`, including trimmed boundary whitespace | 200 | 200 | 200 | One request; duplicates collapse and outbound length is normalized |
 | Equal duplicate zero lengths on an unsupported route | 404 | 404 | 404 | No request |
-| Different numeric text (`0N` then `N`) or values (`N` then `N+1`) | 200 | 200 | 502 `gateway request capture failed` | Releases dispatch using the first length; Modex does not |
+| Numerically equal duplicate lengths (`0N` then `N`), in either order | 200 | 200 | 200 | One request; outbound body and length match |
+| Conflicting numeric lengths (`N` then `N+1`) | 200 | 200 | 502 `gateway request capture failed` | Releases dispatch using the first length; Modex rejects before dispatch |
 | Duplicate equal `Content-Length` plus `Transfer-Encoding`, or duplicate `Transfer-Encoding`, with a valid chunk body | 200 | 200 | 502 `gateway request capture failed` | Releases dispatch; Modex does not |
 | Raw UTF-8 bytes at header-name or value boundaries | No response; `RemoteDisconnected` | Same | Same after fix; pre-fix Modex returned 400 | No request |
 
@@ -45,18 +48,24 @@ Both controls run against both checksum-pinned releases and Modex in
 `test_identical_expectation_duplicates_match_and_ambiguous_framing_stays_fail_closed`; the former
 Modex-only 400 and 502 expectations were stale.
 
-Only lexically identical duplicate lengths after TinyHTTP-compatible trimming
-are collapsed. Numeric variants and conflicting framing stay fail-closed in
-Modex even though the releases dispatch numeric variants using the first
-length. With valid chunked bodies, both releases also dispatch ambiguous
-`Content-Length`/`Transfer-Encoding` and duplicate `Transfer-Encoding` fields;
-Modex returns 502 before upstream dispatch. This remains a deliberate
-fail-closed difference, not a parity pass. An earlier conflict probe used a
-decimal instead of hexadecimal chunk size, so its no-response observation did
-not establish behavior for valid chunked framing. Raw UTF-8 bytes are rejected
-by TinyHTTP's ASCII line reader; Modex now closes without sending its previous
-400 response. Embedded-control, mismatched-length, and conflicting-framing
-cases avoid upstream dispatch in Modex.
+The production TinyHTTP-compatible parser now collapses duplicate lengths when
+their trimmed decimal values parse to the same number, including leading-zero
+variants, and retains the first parsed length. The shared parser remains strict
+by default. Real-process controls cover either duplicate order, a field split
+across writes, pipelined follow-up requests, and a truncated half-closed body.
+Both releases and Modex dispatch valid equivalent lengths once, preserve the
+pipeline order, and reject the truncated body before upstream dispatch.
+Conflicting numeric lengths still return 502 in Modex without dispatch, while
+both releases use the first length. With valid chunked bodies, both releases
+also dispatch ambiguous `Content-Length`/`Transfer-Encoding` and duplicate
+`Transfer-Encoding` fields; Modex returns 502 before upstream dispatch. These
+framing differences remain fail-closed in Modex and are not counted as parity.
+An earlier conflict probe used a decimal instead of hexadecimal chunk size, so
+its no-response observation did not establish release behavior for valid
+chunked framing. Raw UTF-8 bytes are rejected by TinyHTTP's ASCII line reader;
+Modex now closes without sending its previous 400 response. Embedded-control,
+mismatched-length, and conflicting-framing cases avoid upstream dispatch in
+Modex.
 
 The source trace uses Prodex 0.165.1 at
 `10ae15b5d1806302b60f051e4e6fec788044f4c2` and Prodex 0.439.2 at
@@ -95,6 +104,41 @@ generic `PRODEX_ORACLE`. A focused rerun set that generic variable to the
 still passed. The production import audit and `git diff --check` pass. This
 qualifies selected Linux x86-64 behavior only; it does not reduce the
 six-target denominator or establish full parity.
+
+## Numerically equal duplicate Content-Length follow-up (2026-10-30)
+
+Both pinned `vendor/tiny_http/src/request.rs::new_request` implementations
+select and parse the first `Content-Length` when no `Transfer-Encoding` is
+present. Modex's local relay now accepts later fields only when their decimal
+values parse to the same first length. It retains that first length for body
+capture. This is limited to TinyHTTP compatibility mode; the shared parser's
+default is unchanged.
+
+The process matrix covers numerically equal values with leading zeroes in
+either order, a fragmented field, two pipelined requests, and a truncated
+half-closed body. Both releases and Modex return the same successful response
+for complete requests, dispatch one upstream request per request, and reject
+truncated bodies before dispatch. Conflicting numeric values still fail closed
+in Modex. Fragmented `Content-Length` plus `Transfer-Encoding` and duplicate
+`Transfer-Encoding` controls also remain rejected by Modex without upstream
+traffic; both releases dispatch those valid chunked controls. That security
+difference remains visible.
+
+Validation on Linux x86-64: `make build`, native loopback-server driver build,
+the production dependency audit, and `git diff --check` passed. The full
+`test_loopback_server` and `test_loopback_header_whitespace` modules passed 36
+tests in 38.224 seconds against synthetic Codex/provider processes, both
+checksum-pinned releases, and Modex. Request and body limits remain unchanged;
+other targets and broader HTTP/security behavior remain unqualified.
+
+Reproduce from the Modex worktree root after building the native driver:
+
+```sh
+PRODEX_ORACLE_01651="$HOME/.cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu" \
+PRODEX_ORACLE_04392="$HOME/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu" \
+MODEX_BINARY="$PWD/build/modex" PYTHONPATH=tests rtk python3 -m unittest -v \
+  test_loopback_server test_loopback_header_whitespace
+```
 
 Reproduce the Expect control on both releases and Modex with:
 

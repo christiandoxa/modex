@@ -858,12 +858,14 @@ levels. Other resource boundaries remain unverified.
 
 Three frozen-release log fixtures expose a quoted credential beside Unicode
 whitespace. Modex masks the complete value and preserves the original spacing;
-a fourth fixture differs only in retained spacing. Proposed handling: retain
-complete masking and whitespace preservation, with compatibility approval
-still pending. These are four `UNAPPROVED_SAFE_DIFFERENCE` observations, not
-parity passes. The actual outputs and two resolved regression cases are retained
-in `docs/evidence/log-mismatches.json`; reproduce with
-`python3 tests/capture_log_mismatches.py`.
+these remain unapproved safe differences. The prior unquoted whitespace-only
+case now matches both pinned release processes while keeping the value masked.
+The current capture retains three `UNAPPROVED_SAFE_DIFFERENCE` observations
+and three `MATCHING_OUTPUT` cases; none establishes full log parity. Exact
+outputs and the cross-release regression are in
+`docs/evidence/log-mismatches.json` and
+`docs/evidence/baseline-0.165.1/log-redaction-whitespace-01651-04392.md`;
+reproduce with `python3 tests/capture_log_mismatches.py`.
 
 The release also prints synthetic bearer/API key values unchanged from
 stream_payload source and text, at startup and during follow. Modex masks both

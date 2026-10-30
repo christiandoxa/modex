@@ -1,4 +1,4 @@
-"""Unapproved safe differences from the frozen Prodex 0.439.0 baseline."""
+"""Retained log redaction differences against frozen Prodex 0.439.2."""
 
 import json
 
@@ -45,11 +45,11 @@ UNAPPROVED_SAFE_DIFFERENCE = (
             'password=\u2003"<redacted>"'
         ),
     },
-    {
-        "input": "password=\u2003synthetic-secret-value",
-        "secret": "synthetic-secret-value",
-        "baseline_leaks_secret": False,
-        "baseline_stdout": snapshot_stdout("password=<redacted>"),
-        "modex_stdout": snapshot_stdout("password=\u2003<redacted>"),
-    },
 )
+
+
+UNICODE_WHITESPACE_MATCHING_CASE = {
+    "input": "password=\u2003synthetic-secret-value",
+    "secret": "synthetic-secret-value",
+    "stdout": snapshot_stdout("password=<redacted>"),
+}

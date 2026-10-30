@@ -27,7 +27,7 @@ def run_message(binary, message):
         result = subprocess.run(
             sandbox_command(
                 binary, root, ["log", "last", "--json"],
-                argv0="prodex" if binary == ORACLE else "modex",
+                argv0="modex" if binary == MODEX else "prodex",
                 environment={"TZ": "UTC"},
             ),
             capture_output=True, timeout=10, check=False,
@@ -39,7 +39,7 @@ class LogRedactionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if not ORACLE.is_file():
-            raise AssertionError("The pinned Prodex 0.439.0 oracle is required")
+            raise AssertionError("The pinned Prodex 0.439.2 oracle is required")
         test_cli.CliTests.setUpClass()
 
     def assert_matches_oracle(self, message):
@@ -81,6 +81,45 @@ class LogRedactionTests(unittest.TestCase):
                     mismatch["secret"].encode() in baseline[1],
                     mismatch["baseline_leaks_secret"],
                 )
+
+    def test_ambiguous_sensitive_values_never_expose_synthetic_secrets(self):
+        cases = (
+            ("password= \t \u2003 synthetic-first synthetic-second", ("synthetic-first", "synthetic-second")),
+            ('password= \t\u2003  "synthetic-quoted-value"', ("synthetic-quoted-value",)),
+            (
+                'password=\u0085"synthetic-c1-control-value"',
+                ("synthetic-c1-control-value",),
+            ),
+            ('password=\x1b[31m"synthetic-control-value"', ("synthetic-control-value",)),
+            (
+                'password=prefix \t\u2003"synthetic-after-whitespace-value"',
+                ("synthetic-after-whitespace-value",),
+            ),
+            (
+                'password=prefix \t\x1b[31m"synthetic-after-control-value"',
+                ("synthetic-after-control-value",),
+            ),
+            ('password=\u2028“synthetic-curly-quoted value”', ("synthetic-curly-quoted", "value")),
+            ('password=\u200b"synthetic-zero-width value"', ("synthetic-zero-width", "value")),
+        )
+        for message, sentinels in cases:
+            with self.subTest(message=message):
+                result = run_message(MODEX, message)
+                self.assertEqual(result[0], 0)
+                self.assertEqual(result[2], b"")
+                for sentinel in sentinels:
+                    self.assertNotIn(sentinel.encode(), result[1])
+
+    def test_many_sensitive_assignments_remain_bounded(self):
+        count = 3000
+        message = " ".join(
+            f"password=synthetic-redaction-{index}" for index in range(count)
+        )
+        result = run_message(MODEX, message)
+        self.assertEqual(result[0], 0)
+        self.assertEqual(result[2], b"")
+        self.assertEqual(result[1].count(b"<redacted>"), count)
+        self.assertNotIn(b"synthetic-redaction-", result[1])
 
     def test_bearer_schemes_and_api_key_prefix_boundaries(self):
         for message in (

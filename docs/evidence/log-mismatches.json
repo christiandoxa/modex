@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
-  "oracle_sha256": "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a",
+  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "oracle_sha256": "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e",
   "cases": [
     {
       "status": "UNAPPROVED_SAFE_DIFFERENCE",
@@ -48,7 +48,7 @@
       "proposal": "Keep complete credential masking and preserve Unicode whitespace; compatibility approval remains pending."
     },
     {
-      "status": "UNAPPROVED_SAFE_DIFFERENCE",
+      "status": "MATCHING_OUTPUT",
       "input": "password= synthetic-secret-value",
       "baseline": {
         "exit_code": 0,
@@ -57,10 +57,10 @@
       },
       "modex": {
         "exit_code": 0,
-        "stdout": "{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"user\",\"text\":\"password= <redacted>\"}\n",
+        "stdout": "{\"timestamp\":\"2026-10-24 01:02:04.000 +00:00\",\"source\":\"user\",\"text\":\"password=<redacted>\"}\n",
         "stderr": ""
       },
-      "proposal": "Keep complete credential masking and preserve Unicode whitespace; compatibility approval remains pending."
+      "reason": "Unicode whitespace before an unquoted sensitive value matches both pinned release outputs while keeping the value masked."
     },
     {
       "status": "MATCHING_OUTPUT",

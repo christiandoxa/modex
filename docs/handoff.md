@@ -3495,11 +3495,15 @@ and append fixtures are retained as an additional UNAPPROVED_SAFE_DIFFERENCE in
 This remains an incomplete log contract. Broker feeds and
 terminal views remain unimplemented. Existing insecure application roots still fail instead of
 receiving baseline permission repair. Remaining event selection and projection
-combinations need further verification. Three Unicode-whitespace inputs expose
-credentials in the release while Modex masks them; a fourth preserves spacing
-differently. These four unapproved safe differences and two matching regressions
-are retained by `python3 tests/capture_log_mismatches.py` in
-`docs/evidence/log-mismatches.json`; none is parity PASS.
+combinations need further verification. Three quoted Unicode-whitespace inputs
+still expose synthetic credentials in the frozen release while Modex masks
+them. The earlier unquoted whitespace-only case now matches both 0.165.1 and
+frozen 0.439.2 as `password=<redacted>`; additional multi-space, tab, quote,
+and control-boundary tests keep malformed values fail-closed. The current
+capture retains three unapproved safe differences and three matching outputs
+in `docs/evidence/log-mismatches.json`; focused cross-release evidence is in
+`docs/evidence/baseline-0.165.1/log-redaction-whitespace-01651-04392.md`.
+These observations do not qualify full log parity or any non-host target.
 
 Session help and argument diagnostics now match 271 captured official-release
 cases and 152 seeded generated comparisons. Coverage includes suggestions,

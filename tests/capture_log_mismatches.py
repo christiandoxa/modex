@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from log_mismatches import UNAPPROVED_SAFE_DIFFERENCE
+from log_mismatches import UNAPPROVED_SAFE_DIFFERENCE, UNICODE_WHITESPACE_MATCHING_CASE
 from session_oracle import sandbox_command
 import test_cli
 from test_cli import MODEX, ORACLE, ROOT
@@ -51,6 +51,15 @@ def main():
         cases.append({"status": "UNAPPROVED_SAFE_DIFFERENCE", "input": fixture["input"],
                       "baseline": observe(baseline), "modex": observe(modex),
                       "proposal": "Keep complete credential masking and preserve Unicode whitespace; compatibility approval remains pending."})
+    fixture = UNICODE_WHITESPACE_MATCHING_CASE
+    baseline = run_message(ORACLE, fixture["input"])
+    modex = run_message(MODEX, fixture["input"])
+    assert baseline == (0, fixture["stdout"], b"")
+    assert modex == baseline
+    assert fixture["secret"].encode() not in modex[1]
+    cases.append({"status": "MATCHING_OUTPUT", "input": fixture["input"],
+                  "baseline": observe(baseline), "modex": observe(modex),
+                  "reason": "Unicode whitespace before an unquoted sensitive value matches both pinned release outputs while keeping the value masked."})
     payload = {"type": "function_call_output", "output": "\U00010400" * 8}
     baseline = transcript_snapshot("response_item", payload, ORACLE)
     modex = transcript_snapshot("response_item", payload, MODEX)
@@ -65,11 +74,13 @@ def main():
     cases.append({"status": "MATCHING_OUTPUT", "input": 'version = 1\n[runtime]\nlog_dir = "logs"\n',
                   "baseline": observe(baseline), "modex": observe(modex),
                   "reason": "The retained relative-policy log-directory regression now matches through native TOML loading."})
-    report = {"baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
+    report = {"baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
               "oracle_sha256": test_cli.ORACLE_SHA256, "cases": cases}
     path = ROOT / "docs/evidence/log-mismatches.json"
     path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
-    print("Retained 2 matching regressions and 4 unapproved safe differences:", path)
+    matching = sum(case["status"] == "MATCHING_OUTPUT" for case in cases)
+    differences = sum(case["status"] == "UNAPPROVED_SAFE_DIFFERENCE" for case in cases)
+    print(f"Retained {matching} matching outputs and {differences} unapproved safe differences:", path)
 
 
 if __name__ == "__main__":

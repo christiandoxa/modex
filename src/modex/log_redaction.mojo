@@ -44,18 +44,25 @@ def redact_log_text(text: String) -> String:
                 output += text[byte=index:value_start]
                 index = value_start
                 var whitespace_start = index
+                var first_non_ascii_whitespace = -1
                 while index < text.byte_length():
                     var width = whitespace_width(text, index)
                     if not width:
                         break
+                    if width > 1 and first_non_ascii_whitespace < 0:
+                        first_non_ascii_whitespace = index
                     index += width
-                output += text[byte=whitespace_start:index]
                 if assignment_has_cookie_key(text, assignment_start):
+                    var prefix_end = first_non_ascii_whitespace if first_non_ascii_whitespace >= 0 else index
+                    output += text[byte=whitespace_start:prefix_end]
+                    if first_non_ascii_whitespace >= 0:
+                        index = first_non_ascii_whitespace
                     while index < text.byte_length() and text.as_bytes()[index] != 10:
                         index += 1
                     output += "<redacted>"
                     continue
                 if index < text.byte_length() and (text.as_bytes()[index] == 34 or text.as_bytes()[index] == 39):
+                    output += text[byte=whitespace_start:index]
                     var quote = Int(text.as_bytes()[index])
                     output += chr(quote)
                     index += 1
@@ -67,6 +74,19 @@ def redact_log_text(text: String) -> String:
                     if index < text.byte_length():
                         index += 1
                     output += "<redacted>" + chr(quote)
+                    continue
+                if first_non_ascii_whitespace >= 0:
+                    output += text[byte=whitespace_start:first_non_ascii_whitespace] + "<redacted>"
+                    # shortcut: malformed Unicode-separated values hide the rest of their line; upgrade with a full value parser.
+                    while index < text.byte_length() and text.as_bytes()[index] != 10:
+                        index += 1
+                    continue
+                output += text[byte=whitespace_start:index]
+                if ambiguous_sensitive_value_boundary(text, index):
+                    # shortcut: malformed quote/control values hide the rest of their line; upgrade with a full value parser.
+                    while index < text.byte_length() and text.as_bytes()[index] != 10:
+                        index += 1
+                    output += "<redacted>"
                     continue
                 var scheme_length = authorization_scheme_length(text, index)
                 if scheme_length and index + scheme_length < text.byte_length() and is_ascii_space(Int(text.as_bytes()[index + scheme_length])):
@@ -202,6 +222,36 @@ def is_ascii_alphanumeric(value: Int) -> Bool:
 
 def is_ascii_space(value: Int) -> Bool:
     return value == 32 or value == 9 or value == 10 or value == 11 or value == 12 or value == 13
+
+
+def is_redaction_boundary(text: String, index: Int) -> Bool:
+    var value = Int(text.as_bytes()[index])
+    if value < 32 or value == 34 or value == 39 or value == 127:
+        return True
+    if value == 194 and index + 1 < text.byte_length():
+        var continuation = Int(text.as_bytes()[index + 1])
+        return 128 <= continuation <= 159
+    if value == 226 and index + 2 < text.byte_length() and text.as_bytes()[index + 1] == 128:
+        var quote = Int(text.as_bytes()[index + 2])
+        return quote == 152 or quote == 153 or quote == 156 or quote == 157
+    return False
+
+
+def ambiguous_sensitive_value_boundary(text: String, index: Int) -> Bool:
+    var cursor = index
+    while cursor < text.byte_length() and text.as_bytes()[cursor] != 10:
+        var value = Int(text.as_bytes()[cursor])
+        if is_redaction_boundary(text, cursor) and not is_ascii_space(value):
+            return True
+        if is_secret_end(value):
+            break
+        cursor += utf8_character_width(value)
+    while cursor < text.byte_length() and text.as_bytes()[cursor] != 10:
+        var width = whitespace_width(text, cursor)
+        if not width:
+            break
+        cursor += width
+    return cursor < text.byte_length() and text.as_bytes()[cursor] != 10 and is_redaction_boundary(text, cursor)
 
 
 def utf8_character_width(first: Int) -> Int:

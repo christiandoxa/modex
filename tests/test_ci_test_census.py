@@ -90,6 +90,17 @@ class NativeTestCensusTests(unittest.TestCase):
             )
         )
 
+    def test_cross_release_log_redaction_test_is_discovered_once(self):
+        tests = RUNNER_DISCOVERY.discover_tests(
+            ["test_log_redaction_01651_04392.py"], require_each_pattern=True
+        )
+
+        self.assertEqual(len(tests), 1)
+        self.assertEqual(
+            tests[0].id(),
+            "test_log_redaction_01651_04392.LogRedactionCrossReleaseTests.test_unquoted_unicode_whitespace_matches_both_pinned_releases",
+        )
+
     def test_duplicate_or_omitted_native_build_is_reported(self):
         for operation, expected in (("duplicate", "found 2"), ("omit", "found 0")):
             with self.subTest(operation=operation):

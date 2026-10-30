@@ -1,5 +1,11 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Hosted Fast CI run `41137805159` on `187e7f46e7d52aaa3aa2c6fb721a369b72947406`
+failed while compiling the native Gateway test: its `_response_headers` call
+omitted the new duplicate-content-type argument. The test call is corrected
+and now checks both buffered and streaming duplicate handling. Its focused
+native build and execution passed; the failed hosted run is not a CI pass.
+
 The Responses relay now emits the tested 0.166.0 204 event-stream failure
 instead of closing before headers. This exceptional 204 stream is explicitly
 restricted to the translated event-stream path and closes after its terminal

@@ -133,7 +133,7 @@ def main():
             print("Error:", error, file=stderr)
             exit(1)
         return
-    if len(args) >= 3 and args[1] == "help" and (args[2] == "current" or args[2] == "info" or args[2] == "status"):
+    if len(args) >= 3 and args[1] == "help" and (args[2] == "current" or args[2] == "info" or args[2] == "status" or args[2] == "doctor"):
         var parts = args[0].split("/")
         var executable = String(parts[len(parts) - 1])
         if len(args) > 3:

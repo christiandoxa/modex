@@ -211,6 +211,9 @@ class ActiveBaseline01660Tests(unittest.TestCase):
         cases = (
             (("doctor", "--help"), 0),
             (("doctor", "-h"), 0),
+            (("help", "doctor"), 0),
+            (("help", "doctor", "--help"), 2),
+            (("help", "doctor", "bogus"), 2),
             (("doctor", "--quota", "--help"), 0),
             (("doctor", "--tail-bytes", "12", "--help"), 0),
             (("doctor", "--tail-bytes=12", "--help"), 0),

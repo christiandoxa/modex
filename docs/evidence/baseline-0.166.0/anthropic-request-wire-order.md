@@ -11,6 +11,12 @@ tool fields were ordered differently, including the generated default schema;
 The production translator now emits those fields in the observed order. The
 web-search tool order and field validation are unchanged.
 
+The active runtime invokes `transform_anthropic_chat_request` through the
+Anthropic Chat-to-Messages translator. The corresponding pinned source,
+`mojo/prodex_core/anthropic_chat_tools.mojo`, writes description, schema and
+name in the observed order. A separate `anthropic_request.mojo` tool writer
+uses a different order; it is not the Chat-to-Messages writer exercised here.
+
 `test_anthropic_mixed_tool_request_bytes_match_active_release` compares the
 actual provider request bytes and successful client status from both real
 processes for six synthetic cases: optional description and schema, a default

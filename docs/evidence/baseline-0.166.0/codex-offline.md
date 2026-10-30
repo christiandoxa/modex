@@ -9,12 +9,14 @@ In an isolated user, mount and network namespace with private temporary
 storage, synthetic credentials and loopback only, the real Codex 0.166.0
 success case and synthetic 401 comparison passed. Both launchers routed the
 401 case to `/anthropic/v1/messages` with matching normalized Codex arguments.
-The parsed provider request bodies differ; in one repeat each side made six
-attempts and the first bodies still differed after replacing temporary launch
-and overlay paths and loopback ports. A separate run found matching normalized
-bodies, so the variable difference remains under investigation. The test
-reports comparison results without recording their contents. The release
-removed its temporary overlay, while
+An earlier repeat exposed a host tool directory through `PATH`; optional-tool
+discovery changed the first message and tool count. That observation is not a
+controlled comparison. The harness now exposes only the requested Node binary
+from that directory. With this isolation, both products made six 401 attempts
+and their parsed request bodies matched after replacing temporary launch and
+overlay paths and loopback ports. The raw bodies differ, and the test reports
+both results without recording their contents. Behavior with additional
+optional tools remains unqualified. The release removed its temporary overlay, while
 Modex retained Codex-created state including `auth.json`. The test preserves
 that distinction; neither request-body nor lifecycle parity is established.
 An initial rerun used the older chat-response fixture and failed; the fixture

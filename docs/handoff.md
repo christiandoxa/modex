@@ -157,9 +157,11 @@ An earlier isolated real-Codex 401 comparison observed Prodex routing to
 Anthropic Messages and Modex to Chat Completions with the same normalized
 client arguments. After the catalog and namespace fixes, a fresh isolated
 real-Codex comparison reaches Anthropic Messages for both products; a synthetic
-success case and a 401 case pass. The parsed 401 request bodies differ, and Modex
-retains Codex-created state and `auth.json` while the release removes its
-overlay. These remain gaps; see the same evidence file for scope and reproduction.
+success case and a 401 case pass. With a Node-only tool directory, the 401
+request bodies match after normalizing temporary paths and ports; earlier
+uncontrolled `PATH` exposure enabled optional tools and changed the request.
+Behavior with optional tools and Modex's retention of Codex-created state and
+`auth.json` remain gaps; see the same evidence file for scope and reproduction.
 
 `test_runtime_broker_startup_01660_oracle.py` records the broker gap with a
 synthetic profile: the 0.166.0 process publishes a private capability and

@@ -108,6 +108,12 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
             raise AssertionError("PRODEX_ORACLE must identify the verified Prodex 0.166.0 executable")
         cls.root = tempfile.TemporaryDirectory(prefix="modex-real-codex-auth-", dir="/tmp")
         cls.root_path = Path(cls.root.name)
+        node = (NODE_BIN / "node").resolve(strict=True)
+        if not node.is_file() or not os.access(node, os.X_OK):
+            raise AssertionError("NODE_BIN must contain an executable node")
+        cls.node_bin = cls.root_path / "node-bin"
+        cls.node_bin.mkdir(mode=0o700)
+        (cls.node_bin / "node").symlink_to(node)
         version_home = cls.root_path / "version-home"
         version_codex_home = version_home / ".codex"
         version_codex_home.mkdir(parents=True, mode=0o700)
@@ -115,7 +121,7 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
             "HOME": str(version_home),
             "CODEX_HOME": str(version_codex_home),
             "TMPDIR": os.environ["TMPDIR"],
-            "PATH": f"{NODE_BIN}:/usr/bin:/bin",
+            "PATH": f"{cls.node_bin}:/usr/bin:/bin",
         }
         version = subprocess.run([str(CODEX), "--version"], env=version_env,
                                  capture_output=True, text=True, timeout=10)
@@ -177,7 +183,7 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
                 "Reply with the synthetic provider response.",
             ),
             environment_overrides={
-                "PATH": f"{NODE_BIN}:/usr/bin:/bin",
+                "PATH": f"{self.node_bin}:/usr/bin:/bin",
                 "MODEX_REAL_CODEX": str(CODEX),
                 "MODEX_AUTH_CAPTURE": str(token_capture),
                 "MODEX_CODEX_EXIT_CAPTURE": str(exit_capture),
@@ -225,7 +231,7 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
                     "Reply with the synthetic provider response.",
                 ),
                 environment_overrides={
-                    "PATH": f"{NODE_BIN}:/usr/bin:/bin",
+                    "PATH": f"{self.node_bin}:/usr/bin:/bin",
                     "MODEX_REAL_CODEX": str(CODEX),
                     "MODEX_AUTH_CAPTURE": str(auth_capture),
                     "MODEX_CODEX_EXIT_CAPTURE": str(exit_capture),
@@ -268,6 +274,7 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
 
         self.assertEqual(codex_args["oracle"], codex_args["modex"], observed)
         self.assertEqual(observed["oracle"]["upstream_paths"], observed["modex"]["upstream_paths"], observed)
+        self.assertEqual(normalize_request(request_bodies["oracle"]), normalize_request(request_bodies["modex"]))
         print(json.dumps({
             "codex_version": EXPECTED_VERSION,
             "codex_sha256": CODEX_SHA256,

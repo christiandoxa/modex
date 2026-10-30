@@ -442,7 +442,7 @@ struct LoopbackHTTPConnection(Movable):
 
     def respond(mut self, status: Int, headers: List[Tuple[String, String]], body: List[UInt8], timeout_ms: UInt64, include_bodyless_length: Bool = False, bodyless_chunked: Bool = False, graceful_close: Bool = False) raises:
         try:
-            # The 0.439.2 SSE passthrough writes a chunked header with no body.
+            # Tested 0.166.0 and historical 0.439.2 SSE passthroughs use chunked framing.
             if bodyless_chunked and ((status != 204 and status != 304) or include_bodyless_length):
                 raise Error("chunked bodyless framing requires an empty 204/304 response")
             if len(body) > HTTP_MAX_RESPONSE_BODY_BYTES:
@@ -454,7 +454,7 @@ struct LoopbackHTTPConnection(Movable):
                 response_version = "HTTP/1.1"
             var response = _response_head(
                 status, headers, len(body), False, include_bodyless_length,
-                bodyless_chunked, response_version, not self.keep_alive_enabled,
+                bodyless_chunked, response_version, not self.keep_alive_enabled or bodyless_chunked,
                 self.include_default_response_headers,
             )
             var deadline = _deadline(timeout_ms)

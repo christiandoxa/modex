@@ -1,5 +1,18 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Bodyless 204 and 304 DeepSeek SSE passthrough responses now advertise
+`Connection: close` along with chunked framing, matching the active release.
+The focused raw-socket comparison also verifies that both implementations
+accept a second request on the same connection in the tested case; the header
+does not establish physical closure. JSON 204/304 and SSE 205 controls pass.
+See `docs/evidence/baseline-0.166.0/bodyless-sse-connection.md`.
+
+Quota now exposes the active release's static short and expanded help, including
+selected argument diagnostics, without entering quota execution. Isolated
+0.166.0 process comparisons cover the help routes and a no-state runtime guard;
+quota execution and other targets remain unimplemented or unverified. See
+`docs/evidence/baseline-0.166.0/quota-help.md`.
+
 The DeepSeek Anthropic route now emits function-tool fields and stop sequences
 in the same order as the active release for six tested mixed-tool requests.
 Before the change their JSON values matched but raw provider-request bytes

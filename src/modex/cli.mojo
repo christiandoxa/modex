@@ -123,6 +123,123 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
     return True
 
 
+def quota_help_requested(args: List[String], executable: String) raises -> String:
+    var usage = executable + " quota"
+    var help_index = -1
+    var help_value = String()
+    var has_help_value = False
+    var help_mode = String()
+    var literal = False
+    for index in range(2, len(args)):
+        var argument = args[index]
+        if not literal and argument == "--help":
+            help_index = index
+            help_mode = "full"
+            break
+        if not literal and argument.startswith("-h") and not argument.startswith("--"):
+            help_index = index
+            help_mode = "short"
+            break
+        if not literal and argument.startswith("--help="):
+            help_index = index
+            help_mode = "full"
+            help_value = String(argument[byte=7:])
+            has_help_value = True
+            break
+        if not literal and argument == "--":
+            literal = True
+    if help_index < 0:
+        if not literal:
+            return String()
+        help_index = len(args)
+
+    var choices: List[String] = ["profile", "all", "auth", "provider", "detail", "raw", "watch", "once", "base-url", "help"]
+    var seen = List[String]()
+    literal = False
+    var index = 2
+    while index < help_index:
+        var argument = args[index]
+        if not literal and argument == "--":
+            literal = True
+            index += 1
+            continue
+        if literal or not argument.startswith("-") or argument == "-":
+            raise session_cli_error("unexpected argument '" + argument + "' found", usage + " [OPTIONS]")
+
+        var name = argument_name(argument)
+        var pieces = argument.split("=", maxsplit=1)
+        var canonical = name
+        var takes_value = name == "--profile" or name == "--auth" or name == "--provider" or name == "--base-url" or name == "-p"
+        var short_profile_value = False
+        if name == "-p":
+            canonical = "--profile"
+        elif not name.startswith("--") or String(name[byte=2:]) not in choices:
+            var detail = String("unexpected argument '") + name + "' found"
+            var suggestion = String()
+            if name.startswith("--"):
+                var matches = similar_names(String(name[byte=2:]), choices)
+                if matches:
+                    suggestion = "--" + matches[len(matches) - 1]
+                    detail += "\n\n  tip: a similar argument exists: '" + suggestion + "'"
+            var error_usage = String(usage)
+            for option in seen:
+                error_usage += " " + quota_option_label(option)
+            if suggestion and suggestion not in seen:
+                error_usage += " " + quota_option_label(suggestion)
+            if error_usage == usage:
+                error_usage += " [OPTIONS]"
+            raise session_cli_error(detail, error_usage)
+
+        if argument.startswith("-p") and not argument.startswith("--") and argument != "-p":
+            canonical = "--profile"
+            takes_value = True
+            short_profile_value = True
+
+        if not takes_value and len(pieces) == 2:
+            raise session_cli_error(
+                "unexpected value '" + String(pieces[1]) + "' for '" + canonical + "' found; no more were expected",
+                usage + " " + quota_option_label(canonical),
+            )
+        if takes_value:
+            if len(pieces) == 2 or short_profile_value:
+                pass
+            else:
+                index += 1
+                if index >= help_index:
+                    raise session_cli_error(
+                        "a value is required for '" + quota_option_label(canonical) + "' but none was supplied"
+                    )
+                if args[index].startswith("-") and args[index] != "-":
+                    var next_name = argument_name(args[index])
+                    if next_name == "-p" or (next_name.startswith("--") and String(next_name[byte=2:]) in choices):
+                        raise session_cli_error(
+                            "a value is required for '" + quota_option_label(canonical) + "' but none was supplied"
+                        )
+                    continue
+        if canonical in seen:
+            raise session_cli_error(
+                "the argument '" + quota_option_label(canonical) + "' cannot be used multiple times",
+                usage + " [OPTIONS]",
+            )
+        seen.append(canonical)
+        index += 1
+
+    if has_help_value:
+        raise session_cli_error(
+            "unexpected value '" + help_value + "' for '--help' found; no more were expected",
+            usage + " --help",
+        )
+    return help_mode
+
+
+def quota_option_label(name: String) -> String:
+    if name == "--profile": return name + " <NAME>"
+    if name == "--auth": return name + " <AUTH>"
+    if name == "--provider": return name + " <PROVIDER>"
+    if name == "--base-url": return name + " <URL>"
+    return name
+
+
 def option_label(name: String) -> String:
     if name == "--profile":
         return name + " <NAME>"

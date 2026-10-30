@@ -1,5 +1,14 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Hosted Fast CI run `41103940113` on `3fbf27876a53c45ffb544eb33b82d520a9571970`
+passed its build and native checks, 102 active 0.166.0 Python tests, 52
+independent relay tests, 121 historical 0.165.1 tests, eight width-memory tests,
+and both helper shards. The product dependency audit passed for 73 Mojo files.
+The run failed closed because the required historical 0.439.2 and 0.439.5
+oracles were unavailable; their dependent lanes were blocked and the 0.439.2
+source lane was skipped. Neither historical lane is counted as passed. This is
+evidence for the recorded commit, not full CI or parity qualification.
+
 The DeepSeek loopback provider now accepts case-insensitive `http` URL schemes,
 matching the verified 0.166.0 release for a synthetic `HTTP://` request. Its
 existing numeric-loopback and credential-free restrictions remain in place.

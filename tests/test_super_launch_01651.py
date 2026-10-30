@@ -45,7 +45,43 @@ class ActiveSuperLaunchTests(unittest.TestCase):
             raise AssertionError("Build the native Codex fixture with make unit-build")
 
     def test_supported_exec_flags_match_01651(self):
-        launch_support.check_safe_exec_flags(self, active_cli.ORACLE)
+        launch_support.check_safe_exec_flags(self, active_cli.ORACLE, ORACLE_04392)
+
+    def test_reasoning_effort_keeps_provider_key_out_of_codex_launch(self):
+        secret = "synthetic-tail-provider-key"
+        traces = []
+        for binary in (active_cli.ORACLE, ORACLE_04392, launch_support.MODEX):
+            result, records, upstream, state = launch_support.run_private_launch(
+                binary,
+                scenario="exit-seven",
+                api_key=None,
+                codex_arguments=(
+                    "exec", "--api-key", secret, "--reasoning-effort", "high",
+                    "synthetic prompt",
+                ),
+            )
+            self.assertEqual((result.returncode, result.stdout), (7, b""), result.stderr)
+            self.assertEqual((upstream, state["leftovers"]), ([], []))
+            self.assertNotIn(secret.encode(), result.stdout + result.stderr)
+            launch = next(record for record in records if record["kind"] == "launch")
+            self.assertNotIn(secret, repr(launch["args"]))
+            self.assertNotIn(secret, repr(launch["config"]))
+            self.assertNotIn(secret, repr(launch["environment"]))
+            self.assertNotIn(secret, repr(launch["auth"]))
+            self.assertNotIn(secret, repr(launch["runtime_config"]))
+            launch_args = launch_support.normalized_app_server_args(launch["args"])
+            self.assertNotIn("--api-key", launch_args)
+            self.assertIn("--reasoning-effort", launch_args)
+            traces.append((
+                launch_args,
+                {
+                    key: launch_support.normalized_app_server_args([value])[0]
+                    if isinstance(value, str) else value
+                    for key, value in launch["config"].items()
+                },
+            ))
+        self.assertEqual(traces[0], traces[1])
+        self.assertEqual(traces[0], traces[2])
 
     def test_missing_exec_values_reach_child_for_both_releases(self):
         for arguments in (("exec", "--add-dir"), ("exec", "--enable"),

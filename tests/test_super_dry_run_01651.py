@@ -191,6 +191,41 @@ class SuperDryRun01651Tests(unittest.TestCase):
         self.assertEqual(outputs[0], outputs[1])
         self.assertEqual(outputs[0], outputs[2])
 
+    def test_codex_reasoning_effort_is_preserved_in_dry_run(self):
+        cases = (
+            ("separate", ("--reasoning-effort", "high"), False),
+            ("attached", ("--reasoning-effort=high",), False),
+            ("attached-empty", ("--reasoning-effort=",), False),
+            ("attached-invalid", ("--reasoning-effort=not-a-real-effort",), False),
+            ("after-prompt", ("--reasoning-effort", "high"), True),
+            ("invalid-value", ("--reasoning-effort", "not-a-real-effort"), False),
+            ("option-looking-value", ("--reasoning-effort", "--json"), False),
+            ("missing-value", ("--reasoning-effort",), True),
+            ("after-delimiter", ("--", "--reasoning-effort", "high"), False),
+        )
+        for label, flags, append_after_prompt in cases:
+            with self.subTest(case=label):
+                arguments = list(DRY_RUN_ARGS)
+                if append_after_prompt:
+                    arguments.extend(flags)
+                else:
+                    insert_at = arguments.index("exec") + 1
+                    arguments[insert_at:insert_at] = flags
+                outputs = []
+                for binary, argv0 in ((ORACLE_01651, "prodex"),
+                                      (ORACLE, "prodex"),
+                                      (MODEX, "modex")):
+                    result, before, after = run_dry_run(
+                        binary, argv0, arguments=arguments,
+                    )
+                    self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                    self.assertIn(b"--reasoning-effort", result.stdout)
+                    self.assertEqual(after, before)
+                    self.assertNotIn("codex-invoked", after)
+                    outputs.append(result.stdout)
+                self.assertEqual(outputs[0], outputs[1])
+                self.assertEqual(outputs[0], outputs[2])
+
     def test_malformed_explicit_key_is_not_needed_or_exposed(self):
         arguments = list(DRY_RUN_ARGS)
         arguments[arguments.index("--api-key") + 1] = "synthetic malformed key with spaces"

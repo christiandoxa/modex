@@ -605,7 +605,7 @@ def run_private_launch(binary=MODEX, **kwargs):
         )
 
 
-def check_safe_exec_flags(test, oracle):
+def check_safe_exec_flags(test, *oracles):
     cases = (
         ("exec", "--json", "synthetic prompt"),
         ("exec", "--color", "never", "synthetic prompt"),
@@ -641,12 +641,21 @@ def check_safe_exec_flags(test, oracle):
         ("exec", "-i", "one.png,two.png", "synthetic prompt"),
         ("exec", "-ione.png", "synthetic prompt"),
         ("exec", "-i", "one.png", "--image", "two.png", "synthetic prompt"),
+        ("exec", "--reasoning-effort", "high", "synthetic prompt"),
+        ("exec", "--reasoning-effort=high", "synthetic prompt"),
+        ("exec", "--reasoning-effort=", "synthetic prompt"),
+        ("exec", "--reasoning-effort=not-a-real-effort", "synthetic prompt"),
+        ("exec", "synthetic prompt", "--reasoning-effort", "high"),
+        ("exec", "--reasoning-effort", "not-a-real-effort", "synthetic prompt"),
+        ("exec", "--reasoning-effort", "--json", "synthetic prompt"),
+        ("exec", "--reasoning-effort"),
+        ("exec", "--", "--reasoning-effort", "high", "synthetic prompt"),
     )
     for arguments in cases:
         with test.subTest(arguments=arguments):
             captures = []
             configs = []
-            for binary in (oracle, MODEX):
+            for binary in (*oracles, MODEX):
                 result, records, upstream, state = run_private_launch(
                     binary, scenario="exit-seven", codex_arguments=arguments,
                 )

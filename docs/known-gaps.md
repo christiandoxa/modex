@@ -65,12 +65,16 @@ and `--disable` arguments in separated or attached-value form without adding
 them to Modex configuration. Missing values and selected following flags reach
 the child as in both releases; empty values and unknown options remain guarded.
 A local network-isolated Codex CLI 0.165.0 run confirmed missing-value errors.
-Other Codex
-arguments remain guarded. `--strict-config`, `--worktree`, and nonempty
-`--thread-source` also reach the child; their real Codex effects have not been
-verified. See `docs/evidence/baseline-0.165.1/super-exec-worktree-options.md`,
+The guarded DeepSeek `super ... exec` path also forwards `--reasoning-effort`
+in separate and attached forms. Dry-run and captured child argv match both
+pinned releases; malformed and missing values remain Codex-owned pass-through
+tokens. Other Codex arguments remain guarded. `--strict-config`, `--worktree`,
+and nonempty `--thread-source` also reach the child; their real Codex effects
+have not been verified. See
+`docs/evidence/baseline-0.165.1/super-exec-worktree-options.md`,
 `docs/evidence/baseline-0.165.1/super-exec-working-directory.md` and
-`docs/evidence/baseline-0.165.1/super-exec-value-options.md`.
+`docs/evidence/baseline-0.165.1/super-exec-value-options.md` and
+`docs/evidence/baseline-0.165.1/super-exec-reasoning-effort.md`.
 
 DeepSeek Super dry-run supports the guarded exec path and selected missing-tool,
 Node-only, RTK, Codebase Memory, and selected Playwright environments. Managed

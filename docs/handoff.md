@@ -28,6 +28,25 @@ An isolated full `make test` on `7bad09f` is running in
 All six release targets, broader behavior and security qualification remain
 open.
 
+## Super Codex reasoning effort (2026-10-30)
+
+The guarded DeepSeek `super ... exec` launch and dry-run now preserve Codex
+`--reasoning-effort` in separate and attached forms. Both pinned releases
+consume their known Super tail overrides and pass this unrecognized Codex
+option through unchanged. Captured app-server argv and generated settings
+match Prodex 0.165.1 and 0.439.2 for normal, malformed, missing,
+option-looking and delimiter-separated values. Synthetic provider-key controls
+confirm that `--api-key` remains a Super override and is absent from Codex
+argv, config, environment, auth and runtime config; the local synthetic peer
+receives no request.
+
+The production build and native Codex fixture build passed. The focused
+three-release dry-run report, launch argument matrix and API-key scrub check
+passed on Linux x86-64. Invalid and missing values are only verified as
+pass-through; no real Codex parser was used for those controls. Other Codex
+arguments, five release targets, and full Super parity remain open. See
+`docs/evidence/baseline-0.165.1/super-exec-reasoning-effort.md`.
+
 RTK dry-run version selection now uses the shared semantic-version token
 scanner: selected punctuation, Unicode whitespace, invalid candidates, and
 first-valid precedence match both pinned releases. The production build,

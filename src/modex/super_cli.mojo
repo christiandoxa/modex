@@ -400,6 +400,12 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
         if argument in ["--json", "--skip-git-repo-check", "--ephemeral", "--strict-config", "--worktree"]:
             index += 1
             continue
+        if argument == "--reasoning-effort":
+            index += 2 if index + 1 < len(arguments) and arguments[index + 1] != "--" else 1
+            continue
+        if argument.startswith("--reasoning-effort="):
+            index += 1
+            continue
         if argument in ["--cd", "-C"]:
             if index + 1 >= len(arguments):
                 return False

@@ -54,3 +54,26 @@ class ProviderBaseUrlScheme01660Tests(unittest.TestCase):
                     self.assertEqual([request["path"] for request in upstream], [expected_path])
                     self.assertEqual(upstream[0]["headers"]["authorization"],
                                      "Bearer synthetic-provider-key")
+
+    def test_spaces_in_anthropic_messages_upstream_paths_are_percent_encoded(self):
+        reply = {"status": 200, "content_type": "application/json", "body": (
+            b'{"id":"msg_synthetic","type":"message","role":"assistant",'
+            b'"model":"deepseek-chat","content":[{"type":"text","text":"synthetic reply"}],'
+            b'"stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}'
+        )}
+        cases = (
+            ("/v1/hello world", "/v1/hello%20world/anthropic/v1/messages"),
+            ("/v1/é space/", "/v1/%C3%A9%20space/anthropic/v1/messages"),
+        )
+        for base_path, expected_path in cases:
+            for binary in (ORACLE, MODEX):
+                with self.subTest(base_path=base_path, reference=binary == ORACLE):
+                    upstream, responses = observe_turns(
+                        binary,
+                        [{"model": "deepseek-chat", "input": "synthetic path", "stream": False,
+                          "tools": [{"type": "web_search_preview"}]}],
+                        [reply], base_path=base_path, latest_version="0.166.0",
+                    )
+                    self.assertEqual([response["status"] for response in responses], [200])
+                    self.assertEqual([request["path"] for request in upstream], [expected_path])
+                    self.assertEqual(upstream[0]["headers"]["x-api-key"], "synthetic-provider-key")

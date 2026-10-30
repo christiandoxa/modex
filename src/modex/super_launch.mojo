@@ -495,11 +495,16 @@ def _managed_optimizer_roots() -> List[String]:
     return roots^
 
 
-def _path_has_executable(command: String) -> Bool:
+def _first_regular_path(command: String) -> String:
     for candidate in _path_candidates(command, getenv("PATH", "\0")):
-        if _executable_path(candidate):
-            return True
-    return False
+        try:
+            var resolved = realpath(candidate)
+            var info = lstat(resolved)
+            if info.st_mode & 0o170000 == 0o100000:
+                return resolved^
+        except:
+            continue
+    return String()
 
 
 def _managed_tool_present(tool: String, command: String = "") -> Bool:
@@ -835,8 +840,8 @@ def _dry_run_ponytail_node_status(binary: String) -> String:
 
 def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String, String]:
     var present = _managed_tool_present("caveman")
-    var node_found = _path_has_executable("node")
-    var npx_found = _path_has_executable("npx")
+    var node = _first_regular_path("node")
+    var npx = _first_regular_path("npx")
     present = present or _managed_tool_present("ponytail")
     if present:
         raise Error("Super dry-run cannot report installed optional tools yet")
@@ -844,19 +849,11 @@ def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String, St
     var codebase_status = _dry_run_codebase_status()
     var playwright_status = String("skipped (Node.js 18+ was not found on PATH)")
     var ponytail_status = String("Node.js was not found on PATH")
-    if node_found and npx_found:
-        var npx = String()
-        for candidate in _path_candidates("npx", getenv("PATH", "\0")):
-            npx = _executable_path(candidate)
-            if npx: break
+    if node and npx:
         playwright_status = _dry_run_playwright_status(npx)
-    elif node_found:
+    elif node:
         playwright_status = "skipped (npx was not found on PATH)"
-    if node_found:
-        var node = String()
-        for candidate in _path_candidates("node", getenv("PATH", "\0")):
-            node = _executable_path(candidate)
-            if node: break
+    if node:
         ponytail_status = _dry_run_ponytail_node_status(node)
     return rtk_status^, codebase_status^, playwright_status^, ponytail_status^
 

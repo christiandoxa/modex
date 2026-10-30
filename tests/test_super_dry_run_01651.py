@@ -338,6 +338,39 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 if label == "Modex":
                     self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
 
+    def test_node_and_npx_first_regular_path_shadows_later_executable(self):
+        for command in ("node", "npx"):
+            for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                         ("0.439.2", ORACLE, "prodex"),
+                                         ("Modex", MODEX, "modex")):
+                with self.subTest(command=command, binary=label):
+                    def prepare(root):
+                        first = root / "first"
+                        first.mkdir(mode=0o700)
+                        (first / command).write_bytes(OPTIONAL_TOOL_FIXTURE.read_bytes())
+                        (first / command).chmod(0o600)
+                        write_node(root / "bin/node")
+                        write_optional_tool(root / "bin/npx")
+                        (root / "home/.npx-version-fixture").write_text("0.0.83")
+
+                    result, before, after = run_dry_run(
+                        binary, argv0, prepare,
+                        environment=lambda root: {"PATH": str(root / "first") + ":" + str(root / "bin")},
+                        extra_binaries=(NODE_FIXTURE, OPTIONAL_TOOL_FIXTURE),
+                    )
+                    self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                    self.assertEqual(after, before)
+                    if command == "node":
+                        self.assertIn(b"playwright-mcp: resolved", result.stdout)
+                        self.assertIn(b"ponytail: skipped (", result.stdout)
+                        self.assertNotIn(b"Ponytail 4.9.0+ was not found", result.stdout)
+                        if label == "Modex":
+                            self.assertIn(b"Node.js health check failed", result.stdout)
+                            self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+                    else:
+                        self.assertIn(b"Playwright MCP is not installed or is currently unavailable", result.stdout)
+                        self.assertNotIn(b"playwright-mcp: resolved", result.stdout)
+
     def test_proxy_environment_secret_and_path_controls_are_redacted(self):
         def environment(root):
             workspace = root / "workspace"

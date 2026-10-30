@@ -92,9 +92,12 @@ probe stream now reports unavailable, even when the other stream has a valid
 version. Ponytail readiness probes Node separately: both releases accept any
 successful output, including invalid UTF-8, and report a nonzero exit in the
 Ponytail row. Synthetic three-process tests cover those cases with and without
-`npx` and verify filtered probe environments. Node timeouts are bounded at five
-seconds; Modex omits the executable path printed by the releases. Complete path
-discovery, descendant cleanup, and non-host platforms remain unqualified.
+`npx` and verify filtered probe environments. The first regular `node` or
+`npx` file on `PATH` shadows later files even when it is not executable, as in
+both releases. A failed Node spawn and a Node timeout use path-free Modex
+diagnostics where the releases print the executable path. Node timeouts are
+bounded at five seconds; other discovery cases, descendant cleanup, and
+non-host platforms remain unqualified.
 Installed Caveman and Ponytail remain fail-closed.
 
 Separated and attached sensitive CLI flag values and secret-looking proxy

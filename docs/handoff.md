@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Node and `npx` dry-run discovery now selects the first regular file on `PATH`,
+including a non-executable file that shadows later candidates. Synthetic
+three-process controls match both releases' readiness outcomes for both
+commands; Modex keeps a path-free Node spawn error where the releases print the
+path. Focused Node and Playwright probe regressions passed on Linux x86-64.
+Other path cases, process descendants and non-host targets remain unqualified.
+See `docs/evidence/baseline-0.165.1/super-dry-run-01651.md`.
+
 The running `2e7dcc8` full suite reported a passthrough-driver failure because
 its synthetic peer still expected the single `Content-Type` from before the
 relay header-parity change. The fixture now asserts both release-matching

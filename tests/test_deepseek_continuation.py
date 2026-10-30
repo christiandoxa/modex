@@ -91,6 +91,7 @@ def observe_turns(
     binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None,
     lookahead_timeout_ms=None, api_keys=None, concurrent=False,
     followup_turns=None, shared_config=None, latest_version="0.439.2",
+    base_scheme="http",
 ):
     with tempfile.TemporaryDirectory(prefix="modex-continuation-") as temporary:
         root = Path(temporary)
@@ -140,7 +141,7 @@ def observe_turns(
             auth_args = ["--api-key", SYNTHETIC_API_KEY] if api_keys is None else []
             result = subprocess.run(
                 [str(binary), "super", "--provider", "deepseek", *auth_args,
-                 "--base-url", f"http://127.0.0.1:{server.server_port}{base_path}", "--model", "deepseek-chat",
+                 "--base-url", f"{base_scheme}://127.0.0.1:{server.server_port}{base_path}", "--model", "deepseek-chat",
                  "--no-presidio", "--no-sub-agent", "--skip-quota-check", "exec", "--", "synthetic"],
                 cwd=root / "work", env=environment, capture_output=True, timeout=45,
             )

@@ -37,7 +37,7 @@ from .uuid7 import new_uuid7, runtime_request_id_from_uuid7, runtime_request_seq
 
 
 def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
-    if not url.startswith("http://") or "@" in url or "?" in url or "#" in url:
+    if not url.lower().startswith("http://") or "@" in url or "?" in url or "#" in url:
         raise Error("this Modex gateway requires a credential-free numeric loopback HTTP upstream URL")
     for byte in url.as_bytes():
         if byte <= 32 or byte == 127:

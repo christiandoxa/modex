@@ -1,5 +1,13 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The DeepSeek loopback provider now accepts case-insensitive `http` URL schemes,
+matching the verified 0.166.0 release for a synthetic `HTTP://` request. Its
+existing numeric-loopback and credential-free restrictions remain in place.
+The production build, active provider process comparisons, and native URL
+rejection checks passed; see
+`docs/evidence/baseline-0.166.0/provider-base-url-scheme.md`. HTTPS and other
+provider transports remain unqualified.
+
 A synthetic process comparison found that the DeepSeek local relay does not
 implement `POST /v1/responses/compact`: Modex returns 404, while 0.166.0
 returns a local fallback summary with `x-prodex-compact-*` headers and makes no

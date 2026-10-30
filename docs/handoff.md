@@ -77,17 +77,21 @@ closes; that existing difference remains. The separate runtime-broker
 WebSocket path is still unimplemented.
 
 After repairing direct-relay authentication fixtures, slow-body probes,
-probe-environment expectations and exact on-wire header sizing, a new isolated
-full `make test` is running in `/tmp/modex-auth-full-repaired-1030` (make PID
-3771723; log `/tmp/modex-auth-full-repaired-1030.log`). Its base is `af5344e`,
+probe-environment expectations and exact on-wire header sizing, an isolated
+full `make test` in `/tmp/modex-auth-full-repaired-1030` finished with six
+failures in 1,172 tests. All six binary-selection subtests compare the child
+environment and encounter the intentional provider-secret scrub: the release
+supplies a synthetic `OPENAI_API_KEY` and Modex removes it. The fixture is
+being corrected with explicit assertions for both behaviors. Its log
+`/tmp/modex-auth-full-repaired-1030.log` has SHA-256
+`c13d48e8f63c605280d59b44f5020830cd2de87bbf8037b63cf913864d17e745`.
+The snapshot base is `af5344e`,
 with tracked patch SHA-256
 `b4ba84dfa49774df9dc9805a2815ec19e3be5295f9e4cec0142b5e86dbbeaa55`
 and `src/modex/auth_token.mojo` SHA-256
 `4bfc5234c572703350fb459d6cc494e2db92d07a7895bff085838f772dc05eea`.
-It predates any further production correction. A fragmented WebSocket fallback
-still reproducibly resets rather than cleanly closes after the expected 426;
-that assertion remains strict and a production fix is under investigation.
-The new full run has not finished and is not a pass.
+It predates the later 426 correction and continuation work, and is not a full
+pass or validation of those later changes.
 
 The authentication-snapshot full suite finished with 28 failures and one error
 in 1,167 tests. Failures include large relay headers, WebSocket body handling,

@@ -487,10 +487,10 @@ def _evict_oldest_idle_connection(mut parked: List[LoopbackHTTPConnection]) rais
     return evicted
 
 
-def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Optional[String]) raises -> String:
+def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Optional[String], credential_index: Int) raises -> Tuple[String, Bool, Bool]:
     var previous = doc.string(doc.get(doc.root, "previous_response_id"))
-    var saved = store.history(previous, namespace)
-    if saved: return saved.value()
+    var saved = store.history(previous, namespace, credential_index)
+    if saved: return (saved.value(), True, False)
     var input = doc.get(doc.root, "input")
     if input >= 0 and doc.nodes[input].kind == JSON_ARRAY:
         for item in doc.nodes[input].children:
@@ -500,10 +500,11 @@ def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Opt
                     var value = doc.get(item, key)
                     if value >= 0 and doc.nodes[value].kind == JSON_STRING:
                         var id = doc.nodes[value].text
-                        if not trim_text(id): return "[]"
-                        var history = store.find_tool_history(id, namespace)
-                        return history.value() if history else String("[]")
-    return "[]"
+                        if not trim_text(id): return ("[]", False, False)
+                        var history = store.find_tool_history(id, namespace, credential_index)
+                        if history: return (history.value(), True, False)
+                        return ("[]", False, store.has_tool_history_other_credential(id, namespace, credential_index))
+    return ("[]", False, False)
 
 
 struct LocalRewriteSharedState(Movable):
@@ -590,6 +591,12 @@ struct LocalRewriteSharedState(Movable):
     def api_key_at(self, index: Int) -> String:
         return self.api_keys[index]
 
+    def credential_scope_index(self, index: Int) -> Int:
+        for previous in range(index):
+            if self.api_keys[previous] == self.api_keys[index]:
+                return previous
+        return index
+
     def __deinit__(deinit self):
         if self.cancel_read_fd >= 0: _ = close(self.cancel_read_fd)
         if self.cancel_write_fd >= 0: _ = close(self.cancel_write_fd)
@@ -617,18 +624,23 @@ struct LocalRewriteSharedState(Movable):
         with BlockingScopedLock(self.lock):
             self.bindings.remember(kind, key, self.api_keys[api_key_index])
 
-    def history(mut self, doc: JsonDocument, namespace: Optional[String]) raises -> Tuple[Bool, String]:
+    def history(mut self, doc: JsonDocument, namespace: Optional[String], credential_index: Int) raises -> Tuple[Bool, String, Bool, Bool]:
         var found: Bool
         var messages: String
+        var other_credential: Bool
+        var history_used: Bool
         with BlockingScopedLock(self.lock):
             var previous = doc.string(doc.get(doc.root, "previous_response_id"))
-            found = self.conversations.contains(previous, namespace)
-            messages = _history(doc, self.conversations, namespace)
-        return (found, messages)
+            found = self.conversations.contains(previous, namespace, credential_index)
+            var context = _history(doc, self.conversations, namespace, credential_index)
+            messages = context[0]
+            history_used = context[1]
+            other_credential = context[2]
+        return (found, messages, other_credential, history_used)
 
-    def insert_conversation(mut self, response_id: String, messages: String, namespace: Optional[String]) raises:
+    def insert_conversation(mut self, response_id: String, messages: String, namespace: Optional[String], credential_index: Int) raises:
         with BlockingScopedLock(self.lock):
-            self.conversations.insert(response_id, messages, namespace)
+            self.conversations.insert(response_id, messages, namespace, credential_index)
 
     def has_capacity(mut self, worker_count: Int) -> Bool:
         var available: Bool
@@ -803,14 +815,20 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     var history: String
     var namespace = Optional[String]()
     var previous_found: Bool
+    var history_used: Bool
     var web = False
     var fallback_web_search = False
     try:
         if not allow_local_file_access or session:
             namespace = Optional[String](_namespace(request.headers, doc))
-        var context = state_ptr[].history(doc, namespace)
+        var credential_scope = state_ptr[].credential_scope_index(key_start)
+        var context = state_ptr[].history(doc, namespace, credential_scope)
+        if context[2]:
+            _binding_error(connection)
+            return
         previous_found = context[0]
         history = context[1]
+        history_used = context[3]
         var tools = doc.get(doc.root, "tools")
         web = doc.get(doc.root, "web_search_options") >= 0
         if tools >= 0 and doc.nodes[tools].kind == JSON_ARRAY:
@@ -912,7 +930,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                     if deepseek_retryable_model_response(exchange.status(), prebuffered_error, model_index, len(model_attempts)):
                         exchange.close()
                         continue
-                    if deepseek_retryable_api_key_response(exchange.status(), prebuffered_error, attempt_index, attempt_count):
+                    if not history_used and deepseek_retryable_api_key_response(exchange.status(), prebuffered_error, attempt_index, attempt_count):
                         exchange.close()
                         exit_credentials = True
                         break
@@ -927,7 +945,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                     return
                 if web and first_event_class >= 0 and native_first_event_retries == 0:
                     var can_retry_model = first_event_class >= 1 and first_event_class <= 4 and deepseek_model_retry_available(model_index, len(model_attempts))
-                    var can_retry_key = first_event_class <= 3 and attempt_index + 1 < attempt_count
+                    var can_retry_key = not history_used and first_event_class <= 3 and attempt_index + 1 < attempt_count
                     if can_retry_model:
                         native_first_event_retries += 1
                         exchange.close()
@@ -964,7 +982,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         var response = JsonDocument(body)
         state_ptr[].remember_binding(0, _binding_response_id(body), key_index)
         if response.string(response.get(response.root, "status")) != "failed" and trim_text(response.string(response.get(response.root, "id"))):
-            state_ptr[].insert_conversation(response.string(response.get(response.root, "id")), exchange.conversation_messages, namespace)
+            state_ptr[].insert_conversation(response.string(response.get(response.root, "id")), exchange.conversation_messages, namespace, state_ptr[].credential_scope_index(key_index))
         var response_headers = List[Tuple[String, String]]()
         response_headers.append(("content-type", "application/json; charset=utf-8"))
         response_headers.extend(deepseek_codex_rate_limit_headers(exchange.headers()))
@@ -981,7 +999,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             state_ptr[].remember_binding(0, exchange.reader.state.response_id, key_index)
             for event in events:
                 if event.startswith("event: response.completed\r\n") and trim_text(exchange.reader.state.response_id):
-                    state_ptr[].insert_conversation(exchange.reader.state.response_id, _stream_history(exchange), namespace)
+                    state_ptr[].insert_conversation(exchange.reader.state.response_id, _stream_history(exchange), namespace, state_ptr[].credential_scope_index(key_index))
                 _write_event(connection, event)
         if exchange.downstream_body_incomplete:
             # Both releases answer queued requests after leaving this response chunk open.

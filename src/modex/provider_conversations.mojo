@@ -9,18 +9,37 @@ comptime CONVERSATION_SCOPE_LIMIT = 256
 comptime CONVERSATION_TOTAL_LIMIT = 2048
 comptime CONVERSATION_BYTE_LIMIT = 67108864
 comptime CONVERSATION_SCOPE_PREFIX = "\0prodex:"
+comptime CONVERSATION_CREDENTIAL_PREFIX = "\0credential:"
 
 
-def conversation_key(response_id: String, namespace: Optional[String] = None) -> String:
+def _namespace_prefix(namespace: Optional[String]) -> String:
     if namespace:
         var name = namespace.value()
-        return CONVERSATION_SCOPE_PREFIX + String(name.byte_length()) + ":" + name + ":" + response_id
-    return response_id
+        return CONVERSATION_SCOPE_PREFIX + String(name.byte_length()) + ":" + name + ":"
+    return CONVERSATION_SCOPE_PREFIX + "missing:"
 
 
-def _in_scope(key: String, namespace: Optional[String]) -> Bool:
+def conversation_key(response_id: String, namespace: Optional[String] = None, credential_index: Int = -1) -> String:
+    var prefix = String()
+    if namespace or credential_index >= 0:
+        prefix = _namespace_prefix(namespace)
+    if credential_index >= 0:
+        prefix += CONVERSATION_CREDENTIAL_PREFIX + String(credential_index) + ":"
+    return prefix + response_id
+
+
+def _in_namespace(key: String, namespace: Optional[String]) -> Bool:
+    var prefix = _namespace_prefix(namespace)
     if namespace:
-        return key.startswith(conversation_key("", namespace))
+        return key.startswith(prefix)
+    return not key.startswith(CONVERSATION_SCOPE_PREFIX) or key.startswith(prefix + CONVERSATION_CREDENTIAL_PREFIX)
+
+
+def _in_scope(key: String, namespace: Optional[String], credential_index: Int = -1) -> Bool:
+    if credential_index >= 0:
+        return key.startswith(_namespace_prefix(namespace) + CONVERSATION_CREDENTIAL_PREFIX + String(credential_index) + ":")
+    if namespace:
+        return key.startswith(_namespace_prefix(namespace))
     return not key.startswith(CONVERSATION_SCOPE_PREFIX)
 
 
@@ -72,26 +91,36 @@ struct ProviderConversationStore:
         self.next_sequence = 0
         self.estimated_bytes = 0
 
-    def history(self, response_id: String, namespace: Optional[String] = None) -> Optional[String]:
-        var key = conversation_key(response_id, namespace)
+    def history(self, response_id: String, namespace: Optional[String] = None, credential_index: Int = -1) -> Optional[String]:
+        var key = conversation_key(response_id, namespace, credential_index)
         for row in self.rows:
             if row.key == key:
                 return Optional[String](row.messages)
         return Optional[String]()
 
-    def contains(self, response_id: String, namespace: Optional[String] = None) -> Bool:
-        return Bool(self.history(response_id, namespace))
+    def contains(self, response_id: String, namespace: Optional[String] = None, credential_index: Int = -1) -> Bool:
+        return Bool(self.history(response_id, namespace, credential_index))
 
-    def find_tool_history(self, call_id: String, namespace: Optional[String] = None) raises -> Optional[String]:
+    def find_tool_history(self, call_id: String, namespace: Optional[String] = None, credential_index: Int = -1) raises -> Optional[String]:
         var item = JsonDocument('{"call_id":' + quote_json(call_id) + "}")
         var selected = -1
         for index in range(len(self.rows)):
-            if not _in_scope(self.rows[index].key, namespace):
+            if not _in_scope(self.rows[index].key, namespace, credential_index):
                 continue
             var history = JsonDocument(self.rows[index].messages)
             if _history_has_call(history, item, item.root) and (selected < 0 or self.rows[index].sequence >= self.rows[selected].sequence):
                 selected = index
         return Optional[String](self.rows[selected].messages) if selected >= 0 else Optional[String]()
+
+    def has_tool_history_other_credential(self, call_id: String, namespace: Optional[String], credential_index: Int) raises -> Bool:
+        var item = JsonDocument('{"call_id":' + quote_json(call_id) + "}")
+        for row in self.rows:
+            if not row.key.startswith(_namespace_prefix(namespace) + CONVERSATION_CREDENTIAL_PREFIX) or _in_scope(row.key, namespace, credential_index):
+                continue
+            var history = JsonDocument(row.messages)
+            if _history_has_call(history, item, item.root):
+                return True
+        return False
 
     def _remove(mut self, index: Int):
         self.estimated_bytes -= self.rows[index].estimated_bytes
@@ -100,16 +129,16 @@ struct ProviderConversationStore:
     def _oldest(self, namespace: Optional[String], scoped: Bool) -> Int:
         var selected = -1
         for index in range(len(self.rows)):
-            if scoped and not _in_scope(self.rows[index].key, namespace):
+            if scoped and not _in_namespace(self.rows[index].key, namespace):
                 continue
             if selected < 0 or self.rows[index].sequence < self.rows[selected].sequence:
                 selected = index
         return selected
 
-    def insert(mut self, response_id: String, messages: String, namespace: Optional[String] = None) raises:
+    def insert(mut self, response_id: String, messages: String, namespace: Optional[String] = None, credential_index: Int = -1) raises:
         var doc = JsonDocument(messages)
         var canonical = serialize_json(doc, doc.root)
-        var key = conversation_key(response_id, namespace)
+        var key = conversation_key(response_id, namespace, credential_index)
         var estimated = conversation_estimated_bytes(key, canonical)
         for index in range(len(self.rows)):
             if self.rows[index].key == key:
@@ -126,7 +155,7 @@ struct ProviderConversationStore:
         self.estimated_bytes += estimated
         var scope_count = 0
         for row in self.rows:
-            if _in_scope(row.key, namespace):
+            if _in_namespace(row.key, namespace):
                 scope_count += 1
         while scope_count > CONVERSATION_SCOPE_LIMIT:
             self._remove(self._oldest(namespace, True))

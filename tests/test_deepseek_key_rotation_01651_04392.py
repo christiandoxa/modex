@@ -25,8 +25,8 @@ class DeepSeekKeyRotationTests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError("Build Modex first")
 
-    def test_published_cross_key_tool_history_gap_is_present(self):
-        """Gap characterization, not parity: key-A history reaches key B on every binary."""
+    def test_published_cross_key_tool_history_gap_is_fixed_in_modex(self):
+        """The older releases forward key-A history to key B; Modex blocks the lookup."""
         call_id = "synthetic-cross-key-tool-call"
         turns = [
             {"model": "deepseek-chat", "input": "synthetic key A history"},
@@ -56,13 +56,20 @@ class DeepSeekKeyRotationTests(unittest.TestCase):
             {"content": "synthetic tool output", "role": "tool", "tool_call_id": call_id},
         ]
 
-        # This records an exposed behavior; it is not a parity assertion.
-        for binary in (ORACLE_01651, ORACLE, MODEX):
+        for binary, latest_version in ((ORACLE_01651, "0.439.2"), (ORACLE, "0.439.2")):
             with self.subTest(binary=str(binary)):
-                posts, responses = observe_turns(binary, turns, replies, api_keys=KEYS)
+                posts, responses = observe_turns(
+                    binary, turns, replies, api_keys=KEYS, latest_version=latest_version,
+                )
                 self.assertEqual([response["status"] for response in responses], [200, 200])
                 self.assertEqual([post["headers"]["authorization"] for post in posts], [KEY_A, KEY_B])
                 self.assertEqual(json.loads(posts[1]["body"])["messages"], expected_history)
+
+        with self.subTest(binary=str(MODEX)):
+            posts, responses = observe_turns(MODEX, turns, replies, api_keys=KEYS)
+            self.assertEqual([response["status"] for response in responses], [200, 503])
+            self.assertEqual([post["headers"]["authorization"] for post in posts], [KEY_A])
+            self.assertIn(b"bound_continuation_unavailable", bytes.fromhex(responses[1]["body"]))
 
     def test_releases_rotate_unbound_requests_and_constrain_continuations(self):
         turns = [{"model": "deepseek-chat", "input": "synthetic first"},

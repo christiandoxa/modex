@@ -42,21 +42,15 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
             save(result)
     followups_file = os.environ.get("MODEX_CONTINUATION_FOLLOWUPS_FILE")
     if followups_file:
-        for source_turn in json.loads(pathlib.Path(followups_file).read_text()):
-            turn = dict(source_turn)
-            path = turn.pop("_path", target.path)
-            method = turn.pop("_method", "POST")
-            raw_body = turn.pop("_raw_body", None)
-            headers = {"Content-Type": "application/json", "Authorization": authorization,
-                       **turn.pop("_headers", {})}
-            connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
-            body = raw_body.encode() if raw_body is not None else json.dumps(turn, separators=(",", ":")).encode()
-            connection.request(method, path, body, headers)
-            response = connection.getresponse()
-            payload = response.read()
-            save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),
-                  "body": payload.hex(), "started": int(time.time()), "finished": int(time.time())})
-            connection.close()
+        followups = json.loads(pathlib.Path(followups_file).read_text())
+        if os.environ.get("MODEX_CONTINUATION_FOLLOWUPS_CONCURRENT") == "1":
+            with ThreadPoolExecutor(max_workers=len(followups)) as executor:
+                for result in executor.map(request_turn, followups):
+                    save(result)
+        else:
+            for source_turn in followups:
+                result = request_turn(source_turn)
+                save(result)
     print("synthetic-continuation-complete")
     raise SystemExit(0)
 for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()):
@@ -93,7 +87,7 @@ print("synthetic-continuation-complete")
 def observe_turns(
     binary, turns, responses, *, base_path="/v1", idle_timeout_ms=None,
     lookahead_timeout_ms=None, api_keys=None, concurrent=False,
-    followup_turns=None, shared_config=None, latest_version="0.439.2",
+    followup_turns=None, followup_concurrent=False, shared_config=None, latest_version="0.439.2",
     base_scheme="http",
 ):
     with tempfile.TemporaryDirectory(prefix="modex-continuation-") as temporary:
@@ -120,6 +114,7 @@ def observe_turns(
             "MODEX_LAUNCH_SCENARIO": "buffered", "MODEX_CONTINUATION_TURNS_FILE": str(turns_file),
             "TERM": "dumb", "NO_COLOR": "1", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
             "MODEX_CONTINUATION_CONCURRENT": "1" if concurrent else "0",
+            "MODEX_CONTINUATION_FOLLOWUPS_CONCURRENT": "1" if followup_concurrent else "0",
             **{key: str(root / "home") for key in ("XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HOME")},
         }
         if idle_timeout_ms is not None:

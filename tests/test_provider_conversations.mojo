@@ -13,6 +13,8 @@ def main() raises:
     assert_equal(store.history("response", "a:b").value(), '[{"content":"other"}]')
     assert_true(not store.contains("response", "absent"))
     assert_equal(conversation_key("response", "é"), "\0prodex:2:é:response")
+    assert_true(conversation_key("response", None, 0) != conversation_key("response", Optional[String](""), 0))
+    assert_true(conversation_key("response", None, 0) != conversation_key("response", None, 1))
     assert_equal(_saturating_estimate_add(UInt64.MAX - 3, 4), UInt64.MAX)
     assert_equal(_saturating_estimate_add(UInt64.MAX - 3, 3), UInt64.MAX)
     assert_equal(_saturating_estimate_add(UInt64.MAX, UInt64.MAX), UInt64.MAX)
@@ -34,6 +36,21 @@ def main() raises:
         store.rows[index].sequence = UInt64.MAX
     store.next_sequence = UInt64.MAX
     assert_equal(store.find_tool_history("synthetic-call", "a").value(), '[{"content":"old","tool_calls":[{"id":"synthetic-call"}]}]')
+
+    var credential_store = ProviderConversationStore()
+    credential_store.insert("same-response", '[{"content":"key a","tool_calls":[{"id":"shared-call"}]}]', "same-session", 0)
+    credential_store.insert("same-response", '[{"content":"key b","tool_calls":[{"id":"shared-call"}]}]', "same-session", 1)
+    assert_equal(credential_store.history("same-response", "same-session", 0).value(), '[{"content":"key a","tool_calls":[{"id":"shared-call"}]}]')
+    assert_equal(credential_store.history("same-response", "same-session", 1).value(), '[{"content":"key b","tool_calls":[{"id":"shared-call"}]}]')
+    assert_equal(credential_store.find_tool_history("shared-call", "same-session", 0).value(), '[{"content":"key a","tool_calls":[{"id":"shared-call"}]}]')
+    assert_equal(credential_store.find_tool_history("shared-call", "same-session", 1).value(), '[{"content":"key b","tool_calls":[{"id":"shared-call"}]}]')
+    assert_true(credential_store.has_tool_history_other_credential("shared-call", "same-session", 0))
+
+    var absent_namespace_store = ProviderConversationStore()
+    absent_namespace_store.insert("absent-response", '[{"content":"absent","tool_calls":[{"id":"shared-call"}]}]', None, 0)
+    assert_true(absent_namespace_store.has_tool_history_other_credential("shared-call", None, 1))
+    assert_true(not absent_namespace_store.find_tool_history("shared-call", Optional[String](""), 1))
+    assert_true(not absent_namespace_store.has_tool_history_other_credential("shared-call", Optional[String](""), 1))
 
     var scoped = ProviderConversationStore()
     scoped.insert("other", "[]", "b")

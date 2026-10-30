@@ -1,6 +1,7 @@
 """Compare current/info/status argument errors with Prodex 0.166.0."""
 
 import hashlib
+import itertools
 import os
 from pathlib import Path
 import unittest
@@ -116,17 +117,15 @@ class InspectionCli01660Tests(unittest.TestCase):
                                  (2, b"", expected_stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
-    def test_doctor_missing_requirement_pairs_match_release(self):
-        cases = (
-            ("doctor", "--runtime", "--redacted"),
-            ("doctor", "--runtime", "--bundle"),
-            ("doctor", "--suggest-policy", "--redacted"),
-            ("doctor", "--redacted", "--suggest-policy"),
-            ("doctor", "--suggest-policy", "--bundle"),
-            ("doctor", "--bundle", "--suggest-policy"),
-            ("doctor", "--redacted", "--json"),
-            ("doctor", "--json", "--redacted"),
-        )
+    def test_doctor_requirement_and_conflict_order_matches_release(self):
+        flags = ("--json", "--suggest-policy", "--bundle", "--redacted")
+        cases = [
+            ("doctor", *ordered)
+            for size in (2, 3)
+            for ordered in itertools.permutations(flags, size)
+            if not (size == 2 and set(ordered) == {"--bundle", "--redacted"})
+        ]
+        self.assertEqual(len(cases), 34)
         for index, arguments in enumerate(cases):
             with self.subTest(arguments=arguments):
                 baseline, baseline_created = isolated_run(
@@ -134,6 +133,37 @@ class InspectionCli01660Tests(unittest.TestCase):
                 )
                 modex, modex_created = isolated_run(
                     MODEX, list(arguments), "modex", f"01660-doctor-requires-modex-{index}"
+                )
+                expected_stderr = baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex ")
+                self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_doctor_runtime_requirement_and_conflict_errors_match_release(self):
+        controls = (
+            ("doctor", "--runtime", "--redacted"),
+            ("doctor", "--runtime", "--bundle"),
+        )
+        invalid_pairs = (
+            ("--json", "--bundle"),
+            ("--suggest-policy", "--bundle"),
+            ("--suggest-policy", "--redacted"),
+        )
+        cases = list(controls)
+        for pair in invalid_pairs:
+            cases.extend(
+                ("doctor", *ordered)
+                for ordered in itertools.permutations(("--runtime", *pair))
+            )
+        self.assertEqual(len(cases), 20)
+        for index, arguments in enumerate(cases):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "prodex", f"01660-doctor-runtime-oracle-{index}"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "modex", f"01660-doctor-runtime-modex-{index}"
                 )
                 expected_stderr = baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex ")
                 self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))

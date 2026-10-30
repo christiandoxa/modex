@@ -85,6 +85,31 @@ def inspection_value_error(name: String, value: String, command: String, executa
     return session_cli_error("unexpected value '" + value + "' for '" + name + "' found; no more were expected", usage)
 
 
+def _doctor_requirement(name: String) -> String:
+    if name in ["--json", "--suggest-policy"]: return "--runtime"
+    if name == "--bundle": return "--redacted"
+    if name == "--redacted": return "--bundle"
+    return ""
+
+
+def _doctor_missing_usage_options(seen: List[String]) -> List[String]:
+    var options = List[String]()
+    # Match Clap's root order when expanding the circular bundle/redacted requires.
+    for name in seen:
+        var requirement = _doctor_requirement(name)
+        if requirement == "--runtime":
+            if requirement not in options: options.append(requirement)
+        elif requirement == "--redacted":
+            for option in [String("--bundle"), "--redacted"]:
+                if option not in options: options.append(option)
+        elif requirement == "--bundle":
+            for option in [String("--redacted"), "--bundle"]:
+                if option not in options: options.append(option)
+    for name in seen:
+        if name not in options: options.append(name)
+    return options^
+
+
 def inspection_help_requested(args: List[String], executable: String) raises -> Bool:
     var command = args[1]
     var flags = inspection_flags(command)
@@ -183,14 +208,8 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
     if command == "doctor":
         var missing = List[String]()
         for name in seen:
-            var requirement = String()
-            if name in ["--json", "--suggest-policy"] and "--runtime" not in seen:
-                requirement = "--runtime"
-            elif name == "--bundle" and "--redacted" not in seen:
-                requirement = "--redacted"
-            elif name == "--redacted" and "--bundle" not in seen:
-                requirement = "--bundle"
-            if requirement and requirement not in missing:
+            var requirement = _doctor_requirement(name)
+            if requirement and requirement not in seen and requirement not in missing:
                 missing.append(requirement)
 
         if "--json" in seen and "--bundle" in seen:
@@ -203,14 +222,19 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
             var json_first = json_index < bundle_index
             var first = String("--json" if json_first else "--bundle")
             var second = String("--bundle" if json_first else "--json")
-            var first_requirement = String("--runtime" if json_first else "--redacted")
             var message = "the argument '" + inspection_label(first) + "' cannot be used with '" + inspection_label(second) + "'"
+            var relevant = List[String]()
             for index in range(len(seen)):
                 var name = seen[index]
-                if name == second:
-                    continue
-                if name == first and first_requirement not in seen:
-                    conflict_usage += " " + first_requirement
+                if name != second: relevant.append(name)
+            var direct_requirements = List[String]()
+            for name in relevant:
+                var requirement = _doctor_requirement(name)
+                if requirement and requirement != second and requirement not in relevant and requirement not in direct_requirements:
+                    direct_requirements.append(requirement)
+            for name in direct_requirements:
+                conflict_usage += " " + inspection_label(name)
+            for name in relevant:
                 conflict_usage += " " + inspection_label(name)
             raise session_cli_error(message, conflict_usage)
 
@@ -219,26 +243,8 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
             for name in missing:
                 message += "\n  " + inspection_label(name)
             var error_usage = _inspection_prefix(command, executable)
-            var emitted = List[String]()
-            for requirement in missing:
-                if requirement == "--runtime":
-                    error_usage += " --runtime"
-                    emitted.append("--runtime")
-                elif requirement == "--redacted":
-                    error_usage += " " + inspection_label("--bundle") + " --redacted"
-                    emitted.append("--bundle")
-                    emitted.append("--redacted")
-                elif requirement == "--bundle":
-                    if "--redacted" in seen:
-                        error_usage += " --redacted " + inspection_label("--bundle")
-                        emitted.append("--redacted")
-                        emitted.append("--bundle")
-                    else:
-                        error_usage += " " + inspection_label("--bundle")
-                        emitted.append("--bundle")
-            for name in seen:
-                if name not in emitted:
-                    error_usage += " " + inspection_label(name)
+            for name in _doctor_missing_usage_options(seen):
+                error_usage += " " + inspection_label(name)
             raise session_cli_error(message, error_usage)
     return False
 

@@ -1,7 +1,8 @@
 # Current work: Prodex 0.166.0 parity and CI
 
-Doctor missing-requirement diagnostics match eight additional two-option
-0.166.0 cases. Other option-order mismatches remain; see
+Doctor missing-requirement and conflict diagnostics match 54 tested two- and
+three-option 0.166.0 cases. The release accepts `--runtime --json --redacted`,
+which Modex still rejects; doctor runtime remains unimplemented. See
 `docs/evidence/baseline-0.166.0/doctor-missing-requirement-order.md`.
 
 Buffered provider metadata matches the active 0.166.0 process for selected

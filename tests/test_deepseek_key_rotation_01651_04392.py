@@ -25,6 +25,45 @@ class DeepSeekKeyRotationTests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError("Build Modex first")
 
+    def test_published_cross_key_tool_history_gap_is_present(self):
+        """Gap characterization, not parity: key-A history reaches key B on every binary."""
+        call_id = "synthetic-cross-key-tool-call"
+        turns = [
+            {"model": "deepseek-chat", "input": "synthetic key A history"},
+            {"model": "deepseek-chat", "input": [{"type": "function_call_output",
+             "call_id": call_id, "output": "synthetic tool output"}],
+             "safety_identifier": "synthetic-history-lookup"},
+        ]
+        call = {"id": call_id, "type": "function", "function": {
+            "name": "lookup", "arguments": '{"source":"key-a"}',
+        }}
+        replies = [
+            {"status": 200, "content_type": "application/json", "body": json.dumps({
+                "id": "synthetic-key-a-response", "created": 42, "model": "deepseek-chat",
+                "choices": [{"index": 0, "message": {
+                    "role": "assistant", "content": "", "tool_calls": [call],
+                }, "finish_reason": "tool_calls"}],
+            }).encode()},
+            buffered_reply(1),
+        ]
+        expected_history = [
+            {"content": "synthetic key A history", "role": "user"},
+            {"role": "assistant", "content": "", "tool_calls": [{
+                "id": call_id, "type": "function", "function": {
+                    "name": "lookup", "arguments": '{"source":"key-a"}',
+                },
+            }]},
+            {"content": "synthetic tool output", "role": "tool", "tool_call_id": call_id},
+        ]
+
+        # This records an exposed behavior; it is not a parity assertion.
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                posts, responses = observe_turns(binary, turns, replies, api_keys=KEYS)
+                self.assertEqual([response["status"] for response in responses], [200, 200])
+                self.assertEqual([post["headers"]["authorization"] for post in posts], [KEY_A, KEY_B])
+                self.assertEqual(json.loads(posts[1]["body"])["messages"], expected_history)
+
     def test_releases_rotate_unbound_requests_and_constrain_continuations(self):
         turns = [{"model": "deepseek-chat", "input": "synthetic first"},
                  {"model": "deepseek-chat", "input": "synthetic second"}]

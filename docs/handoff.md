@@ -8,10 +8,11 @@ conversation. Both pinned release processes do the same. The per-launch
 client token does not separate provider-key ownership. A candidate in
 `/tmp/modex-auth-integrate-1030` rejects this with 503 and one provider POST,
 but remains unpublished while collision, eviction and concurrent ownership
-handling are reviewed. Reproduce its expected published-code failure using
-`test_deepseek_continuation.DeepSeekContinuationTests.test_tool_call_history_across_api_key_rotation_fails_closed_in_modex`
-from that worktree with `MODEX_BINARY` pointing to the `e405fd0` build at
-`/tmp/modex-auth-baseline-e405fd0/build/modex` and both pinned oracles set.
+handling are reviewed. The real-process test
+`test_deepseek_key_rotation_01651_04392.DeepSeekKeyRotationTests.test_published_cross_key_tool_history_gap_is_present`
+reproduces the exposure with a current Modex build and both pinned release
+oracles. It characterizes a known security gap, not a parity pass, and must be
+updated when the ownership fix is integrated.
 
 The 0.165.1 runtime-broker path was traced through bootstrap, profile auth,
 registry lifecycle and WebSocket transport. Mojo 1.2.0 compiler probes again

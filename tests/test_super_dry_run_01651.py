@@ -18,6 +18,7 @@ from test_cli_01651 import ORACLE as ORACLE_01651, ORACLE_SHA256 as ORACLE_SHA25
 ORACLE = Path(os.environ.get("PRODEX_ORACLE_04392", DEFAULT_ORACLE))
 NODE_FIXTURE = MODEX.parent / "tests/node_version_fixture"
 OPTIONAL_TOOL_FIXTURE = MODEX.parent / "tests/optional_tool_version_fixture"
+TEMP_ROOT_PREFIX = os.fsencode(str(Path(tempfile.gettempdir()) / "modex-super-dry-run-"))
 
 
 DRY_RUN_ARGS = (
@@ -371,7 +372,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertIn(b"health check timed out after 5s", result.stdout)
                 self.assertEqual(after, before)
                 if label == "Modex":
-                    self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+                    self.assertNotIn(TEMP_ROOT_PREFIX, result.stdout)
 
     def test_node_and_npx_first_regular_path_shadows_later_executable(self):
         for command in ("node", "npx"):
@@ -401,7 +402,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                         self.assertNotIn(b"Ponytail 4.9.0+ was not found", result.stdout)
                         if label == "Modex":
                             self.assertIn(b"Node.js health check failed", result.stdout)
-                            self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+                            self.assertNotIn(TEMP_ROOT_PREFIX, result.stdout)
                     else:
                         self.assertIn(b"Playwright MCP is not installed or is currently unavailable", result.stdout)
                         self.assertNotIn(b"playwright-mcp: resolved", result.stdout)
@@ -562,11 +563,11 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertEqual(after, before)
                 outputs.append(result.stdout)
         normalized_releases = [
-            re.sub(rb"/tmp/modex-super-dry-run-[^/]+", b"<temporary-root>", output)
+            re.sub(re.escape(TEMP_ROOT_PREFIX) + rb"[^/]+", b"<temporary-root>", output)
             for output in outputs[:2]
         ]
         self.assertEqual(normalized_releases[0], normalized_releases[1])
-        self.assertNotIn(b"/tmp/modex-super-dry-run-", outputs[2])
+        self.assertNotIn(TEMP_ROOT_PREFIX, outputs[2])
 
     def test_path_codebase_version_reports_match_both_releases(self):
         versions = (
@@ -618,7 +619,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertIn(b"health check timed out after 5s", result.stdout)
                 self.assertEqual(after, before)
                 if label == "Modex":
-                    self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+                    self.assertNotIn(TEMP_ROOT_PREFIX, result.stdout)
 
     def test_playwright_probe_matches_release_reports(self):
         versions = ("0.0.83", "playwright-mcp 0.0.79", "0.0.78", "0.0.79-rc.1",
@@ -785,11 +786,11 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertEqual(after, before)
                 if label != "Modex":
                     release_outputs.append(
-                        re.sub(rb"/tmp/modex-super-dry-run-[^/]+", b"<temporary-root>", result.stdout)
+                        re.sub(re.escape(TEMP_ROOT_PREFIX) + rb"[^/]+", b"<temporary-root>", result.stdout)
                     )
                 else:
                     self.assertIn(b"managed Codebase Memory root is not a real directory", result.stdout)
-                    self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+                    self.assertNotIn(TEMP_ROOT_PREFIX, result.stdout)
         self.assertEqual(release_outputs[0], release_outputs[1])
 
     def test_managed_codebase_symlink_inside_root_is_reported(self):
@@ -848,7 +849,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
                 self.assertIn("home/.codebase-probe-invoked", after)
                 release_outputs.append(
-                    re.sub(rb"/tmp/modex-super-dry-run-[^/]+", b"<temporary-root>", result.stdout)
+                    re.sub(re.escape(TEMP_ROOT_PREFIX) + rb"[^/]+", b"<temporary-root>", result.stdout)
                 )
         self.assertEqual(release_outputs[0], release_outputs[1])
 
@@ -861,7 +862,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
         )
         self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
         self.assertIn(b"command escapes its root", result.stdout)
-        self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+        self.assertNotIn(TEMP_ROOT_PREFIX, result.stdout)
         self.assertEqual(after, before)
         self.assertNotIn("home/.codebase-probe-invoked", after)
 
@@ -896,7 +897,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertNotIn(b"resolved (activation deferred until launch)", result.stdout)
                 self.assertEqual(after, before)
                 release_outputs.append(
-                    re.sub(rb"/tmp/modex-super-dry-run-[^/]+", b"<temporary-root>", result.stdout)
+                    re.sub(re.escape(TEMP_ROOT_PREFIX) + rb"[^/]+", b"<temporary-root>", result.stdout)
                 )
         self.assertEqual(release_outputs[0], release_outputs[1])
 
@@ -910,7 +911,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
         self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
         self.assertIn(b"codebase-memory-mcp health check failed", result.stdout)
         self.assertNotIn(b"resolved (activation deferred until launch)", result.stdout)
-        self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+        self.assertNotIn(TEMP_ROOT_PREFIX, result.stdout)
         self.assertEqual(after, before)
 
     def test_valid_profile_state_is_read_by_releases_but_modex_stays_fail_closed(self):

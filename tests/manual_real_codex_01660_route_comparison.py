@@ -27,6 +27,14 @@ def normalize_codex_capture(value):
     return re.sub(r"http://127\.0\.0\.1:\d+", "http://127.0.0.1:<port>", value)
 
 
+def normalize_request(value):
+    if isinstance(value, dict):
+        return {key: normalize_request(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [normalize_request(item) for item in value]
+    return normalize_codex_capture(value) if isinstance(value, str) else value
+
+
 def sha256_file(path):
     digest = hashlib.sha256()
     with path.open("rb") as source:
@@ -267,6 +275,11 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
             "oracle_sha256": ORACLE_SHA256,
             "codex_args_match": True,
             "request_bodies_match": request_bodies["oracle"] == request_bodies["modex"],
+            "normalized_request_bodies_match": normalize_request(request_bodies["oracle"])
+            == normalize_request(request_bodies["modex"]),
+            "request_counts": {key: len(value) for key, value in request_bodies.items()},
+            "normalized_first_request_matches": normalize_request(request_bodies["oracle"][0])
+            == normalize_request(request_bodies["modex"][0]),
             "runs": observed,
         }, indent=2))
 

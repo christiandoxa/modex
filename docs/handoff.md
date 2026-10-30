@@ -25,6 +25,11 @@ processes and retains isolated synthetic provider and Codex fixtures; the
 older 0.165.1 and 0.439.2 expectations remain explicitly historical. This
 qualifies only the tested initialize request, not Guardian, TLS, or overall
 Codex 0.166.0 compatibility.
+Isolated 0.166.0 process comparisons also match Super help and selected parser
+diagnostics without creating state. For `super exec --model --help`, the
+release instead proceeds to a no-profile error and creates housekeeping
+files, while Modex stops at its unimplemented startup guard; this is a
+recorded difference, not a parity pass.
 
 The official historical 0.439.2 tag currently resolves to no ref and its
 SHA256SUMS URL returned 404 on 2026-10-30. Previously verified local bytes

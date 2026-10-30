@@ -666,11 +666,17 @@ behavioral verification. Source: `runtime_broker/registry/store.rs`,
 `tests/capture_log_live.py` characterizes the actual oracle with synthetic
 loopback snapshots and validates the capability header, cursor advance/reset,
 gap markers and rejected identities. All eight current Modex comparisons are
-FAIL in `docs/evidence/log-live-mismatch.json`, including rejection cases where
-Modex exits while the release keeps following. The harness uses isolated HOME,
-working directories and ports in the host PID/network namespaces: its attempted
-bubblewrap isolation could not inspect the host identity holder's executable.
-This is limited test evidence, not clean-runtime or live-source parity.
+FAIL against the pinned Prodex 0.439.2 binary from commit
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9` in
+`docs/evidence/log-live-mismatch.json`. The focused real-process regression in
+`tests/test_log_runtime.py` confirms that the release authenticates to the
+synthetic snapshot endpoint, advances its cursor and emits the bounded-buffer
+gap, while Modex exits before making a request. The test reproduces an
+unfinished feature; it does not establish parity. The harness uses isolated
+HOME, working directories and ports in the host PID/network namespaces: its
+attempted bubblewrap isolation could not inspect the host identity holder's
+executable. This is limited test evidence, not clean-runtime or live-source
+parity.
 
 Native SHA-256 and loopback HTTP foundations now have standalone tests; they
 are not connected to CLI broker acquisition. SHA known-answer and independent

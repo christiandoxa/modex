@@ -16,6 +16,30 @@ matrix and buffered/streaming invalid-UTF-8 comparisons passed with the new
 interval; this test-only change does not establish additional product parity.
 The two older full-suite runs remain in progress on their original revisions.
 
+## Live broker log source gap (2026-10-30)
+
+Added a focused real-process characterization against the frozen Prodex 0.439.2
+binary (commit `72b77478a5198fc5da6b4d2253137f9cdbf43be9`, SHA-256
+`a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`). With a
+synthetic registry, matching capability and loopback snapshot server, Prodex
+requests cursors 0 and 1, emits the synthetic token event and bounded-buffer
+gap, and remains alive. Modex exits with `live runtime log sources are not
+implemented` before connecting. All eight direct/broker, cursor-reset and
+invalid-identity comparisons remain FAIL in
+`docs/evidence/log-live-mismatch.json`; the new regression deliberately
+verifies this known gap and does not count as parity.
+
+The production gap remains blocked on the frozen registry store's lock,
+recovery and legacy-artifact contract plus source executable identity checks.
+The pinned Mojo standard library does not provide compatible locking and
+durable replacement primitives, and invoking Prodex for identity discovery is
+prohibited. The implementation remains fail-closed. Linux x86-64 checks:
+isolated `make build BUILD_DIR=/tmp/modex-session-profile-build`; the focused
+`test_log_runtime.LogRuntimeTests.test_live_broker_log_gap_is_reproduced_against_frozen_release`;
+the eight-case `tests/capture_log_live.py` capture; and `git diff --check`.
+The fixtures use a temporary HOME/cwd and synthetic capability, with only an
+ephemeral 127.0.0.1 listener.
+
 The combined production build at `fa01212` passed, as did eight focused
 three-process redirect tests, five native deadline/cancellation and passthrough
 tests, and the native transport units. The dependency audit, 50-native/155-

@@ -137,7 +137,7 @@ def write_source(root, key, address, holder):
         "smart_context_enabled": key.startswith("live-"),
         "current_profile": "synthetic",
         "instance_id": INSTANCE,
-        "prodex_version": "0.439.0",
+        "prodex_version": "0.439.2",
         "executable_path": str(executable),
         "executable_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(),
         "openai_mount_path": "/v1",
@@ -392,6 +392,8 @@ def capture_modex_mismatches():
     metadata = {
         "schema_version": 1,
         "compiler": compiler,
+        "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+        "baseline_version": "0.439.2",
         "baseline_oracle": str(ORACLE),
         "baseline_sha256": test_cli.ORACLE_SHA256,
         "modex_binary": str(test_cli.MODEX),

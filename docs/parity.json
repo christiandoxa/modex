@@ -922,6 +922,7 @@
         "docs/evidence/log-foundations-tests.txt",
         "docs/evidence/log-foundations-link.txt",
         "docs/evidence/log-live-mismatch.json",
+        "docs/evidence/baseline-0.439.2/log-live-source-gap.md",
         "docs/evidence/inspection-policy-tests.txt",
         "docs/evidence/inspection-policy-link.txt",
         "docs/evidence/checkpoint2-reference.json",

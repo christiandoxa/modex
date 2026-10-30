@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import unittest
 
+from capture_log_live import LiveLogCapture, TOKEN, token_event_count
 from session_oracle import sandbox_command
 import test_cli
 from test_cli import MODEX, ORACLE
@@ -99,6 +100,34 @@ class LogRuntimeTests(unittest.TestCase):
             session_record(root, "runtime-order-session")
         result = self.assert_matches_oracle(prepare)
         self.assertIn(b'"input_tokens":11', result[1])
+
+    def test_live_broker_log_gap_is_reproduced_against_frozen_release(self):
+        capture = LiveLogCapture()
+        (release_output, release_requests, release_exit, release_auth_failures,
+         release_alive, _, release_request_errors) = capture.capture_live(ORACLE, "live-direct-test")
+        (modex_output, modex_requests, modex_exit, modex_auth_failures,
+         modex_alive, _, modex_request_errors) = capture.capture_live(MODEX, "live-direct-test")
+
+        self.assertIsNone(release_exit)
+        self.assertTrue(release_alive)
+        self.assertEqual(release_auth_failures, 0)
+        self.assertEqual(release_requests, [
+            "GET /__prodex/runtime/log/snapshot?after=0&limit=512 HTTP/1.1",
+            "GET /__prodex/runtime/log/snapshot?after=1&limit=512 HTTP/1.1",
+        ])
+        self.assertEqual(release_request_errors, [])
+        self.assertEqual(token_event_count(release_output), 1)
+        self.assertIn(b"dropped=2", release_output["stdout"])
+        self.assertNotIn(TOKEN.encode(), release_output["stdout"])
+        self.assertNotIn(TOKEN.encode(), release_output["stderr"])
+
+        self.assertEqual(modex_exit, 1)
+        self.assertFalse(modex_alive)
+        self.assertEqual(modex_output["stdout"], b"")
+        self.assertEqual(modex_output["stderr"], b"Error: live runtime log sources are not implemented\n")
+        self.assertEqual(modex_requests, [])
+        self.assertEqual(modex_auth_failures, 0)
+        self.assertEqual(modex_request_errors, [])
 
     def test_invalid_base64_payload_is_ignored(self):
         def prepare(root, runtime):

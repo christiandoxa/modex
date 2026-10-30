@@ -1,10 +1,11 @@
 # Local relay request versions and bounded heads
 
-The active frozen reference is Prodex 0.439.2 at
+The historical frozen reference for this observation is Prodex 0.439.2 at
 `72b77478a5198fc5da6b4d2253137f9cdbf43be9`; Prodex 0.165.1 is included as a
-historical comparison. Both Linux binaries are checksum-pinned by the test
-harness. All requests use isolated synthetic homes, a local fake Codex client,
-and a loopback provider. No real credentials or provider traffic are used.
+comparison. The active target is 0.166.0. Both historical binaries are
+checksum-pinned by the test harness. All requests use isolated synthetic
+homes, a local fake Codex client, and a loopback provider. No real credentials
+or provider traffic are used.
 
 ## HTTP/2.0 and HTTP/3.0 request lines
 

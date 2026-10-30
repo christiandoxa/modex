@@ -51,7 +51,7 @@ signature, are ignored. The oracle is
 Modex now applies that projection in its production buffered Messages adapter.
 `test_buffered_thinking_blocks_match_release` compares full provider request
 bodies and normalized responses from the checksum-verified 0.165.1 and 0.439.2
-Linux binaries with Modex. The active 0.439.2 oracle is
+Linux binaries with Modex. The historical 0.439.2 oracle is
 `~/.cache/modex/oracles/0.439.2/prodex-x86_64-unknown-linux-gnu`, SHA-256
 `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`.
 Synthetic cases cover UTF-8 and empty reasoning, missing/non-string values,

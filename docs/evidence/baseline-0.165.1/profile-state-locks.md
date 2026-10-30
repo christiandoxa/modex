@@ -1,8 +1,9 @@
 # Profile state access against Prodex 0.165.1
 
 The verified Prodex 0.165.1 Linux binary and source are pinned at
-`10ae15b5d1806302b60f051e4e6fec788044f4c2`. Prodex 0.439.2 is the active
-comparison release. Both release binaries were checked by SHA-256 in
+`10ae15b5d1806302b60f051e4e6fec788044f4c2`. Prodex 0.439.2 was the
+comparison release for this historical observation; the current target is
+0.166.0. Both historical binaries were checked by SHA-256 in
 `tests/test_profile_state_01651.py`.
 
 `profile list` is not a lock-free read in either release. In the 0.165.1

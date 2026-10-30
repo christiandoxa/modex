@@ -31,9 +31,9 @@ reports `invalid value '-'`, while a following option still reports a missing
 value. `tests/test_gateway_cli_01651.py` covers 17 isolated process-precedence
 cases and seven unknown-option cases after separate and attached values,
 including synthetic API keys without echoing them. The provider-dash comparison
-also matches the active 0.439.2 binary.
+also matched the historical 0.439.2 binary.
 
-Gateway help parsing now matches the active 0.439.2 and historical 0.165.1
+Gateway help parsing matched the historical 0.439.2 and 0.165.1
 processes (oracle SHA-256 `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`
 and `dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51`) for
 short clusters beginning with `-h`, unknown short options before help, and

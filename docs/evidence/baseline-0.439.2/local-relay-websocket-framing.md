@@ -1,7 +1,7 @@
 # Local rewrite WebSocket framing precedence
 
 The frozen 0.165.1 source is commit
-`10ae15b5d1806302b60f051e4e6fec788044f4c2`; the active frozen 0.439.2 source
+`10ae15b5d1806302b60f051e4e6fec788044f4c2`; the historical frozen 0.439.2 source
 is commit `72b77478a5198fc5da6b4d2253137f9cdbf43be9`. Both versions implement
 the local rewrite fallback in
 `crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_pipeline_websocket.rs`.

@@ -33,7 +33,7 @@ the owner-only app directory would bypass the directory's access control.
 `tests/test_session_report_01651.py` and
 `tests/test_session_profile_04392.py` run both production executables in
 separate bubblewrap sandboxes with synthetic sessions and profile bindings.
-They use no credentials. The active suite also checks 0.439.2, a 16,384-entry
+They use no credentials. The historical suite also checks 0.439.2, a 16,384-entry
 response map, the 2,048-binding cutoff, duplicate keys and high-volume report
 lookups.
 

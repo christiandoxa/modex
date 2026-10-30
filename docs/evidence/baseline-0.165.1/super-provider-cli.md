@@ -28,4 +28,4 @@ exit 1 and `Error: --option requires a value`, while Modex creates no state and
 Prodex creates its lock files. `super exec --model --help` reaches startup in
 both releases and reports that no active profile is selected; Modex still
 fails closed as an unimplemented Super command. Tests compare exit, stderr and
-state mutations for both the 0.165.1 target and historical 0.439.2.
+state mutations for both historical references, 0.165.1 and 0.439.2.

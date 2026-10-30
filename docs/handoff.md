@@ -10,7 +10,7 @@ The production CLI supports `doctor --install`, including one optional valid
 `--tail-bytes` value, with bounded local prerequisite probes and a plain Install
 Checks panel. Active 0.166.0 process tests cover accepted argument orderings,
 invalid and duplicate flags, synthetic present/missing tools, probe limits, and
-no state creation. False-valued boolean flag usage text still differs. Probe
+no state creation. Selected invalid boolean diagnostics also match. Probe
 environments exclude provider secrets; output and paths are redacted and
 terminal controls escaped. TTY rendering, Caveman integrity
 validation, descendant cleanup and other doctor modes remain incomplete or

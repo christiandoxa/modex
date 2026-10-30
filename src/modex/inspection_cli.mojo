@@ -66,10 +66,16 @@ def inspection_unknown(argument: String, command: String, executable: String, se
     return session_cli_error(message, usage)
 
 
-def inspection_value_error(name: String, value: String, command: String, executable: String, seen: List[String]) -> Error:
+def inspection_value_error(name: String, value: String, command: String, executable: String, seen: List[String], doctor_group: Bool) -> Error:
     var usage = _inspection_prefix(command, executable)
     if command == "doctor":
-        usage += " " + name
+        if doctor_group:
+            var choices = List[String]()
+            for flag in inspection_flags(command):
+                if flag != "--help": choices.append(inspection_label(flag))
+            usage += (" --help" if name == "--help" else "") + " <" + "|".join(choices) + ">"
+        else:
+            usage += " " + name
         return session_cli_error("unexpected value '" + value + "' for '" + name + "' found; no more were expected", usage)
     var boolean_seen = "--json" in seen or "--tokens" in seen or "--once" in seen
     if name == "--help" or not boolean_seen:
@@ -84,6 +90,7 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
     var flags = inspection_flags(command)
     var seen = List[String]()
     var literal = False
+    var doctor_group = False
     var pending_interval_error = String()
     var index = 2
     while index < len(args):
@@ -113,7 +120,7 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
         if literal or name not in flags:
             raise inspection_unknown(argument, command, executable, seen, literal)
         if name not in ["--interval", "--tail-bytes", "--bundle"] and "=" in argument:
-            raise inspection_value_error(name, String(argument.split("=", maxsplit=1)[1]), command, executable, seen)
+            raise inspection_value_error(name, String(argument.split("=", maxsplit=1)[1]), command, executable, seen, doctor_group)
         if name in seen:
             raise session_cli_error("the argument '" + inspection_label(name) + "' cannot be used multiple times", inspection_usage(command, executable))
         if name == "--bundle":
@@ -167,6 +174,8 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
                 if "=" in argument:
                     raise session_cli_error(interval_error)
                 pending_interval_error = interval_error
+        if command == "doctor" and (name not in ["--tail-bytes", "--bundle"] or "=" in argument):
+            doctor_group = True
         seen.append(name)
         index += 1
     if pending_interval_error:

@@ -316,6 +316,11 @@ class DoctorInstall01660Tests(unittest.TestCase):
             (("--install", "--install"), b"cannot be used multiple times"),
             (("--install", "--runtime=false"), b"unexpected value 'false' for '--runtime'"),
             (("--install", "--quota=false"), b"unexpected value 'false' for '--quota'"),
+            (("--runtime=false", "--install"), b"unexpected value 'false' for '--runtime'"),
+            (("--tail-bytes=17", "--install=false"), b"unexpected value 'false' for '--install'"),
+            (("--tail-bytes", "17", "--quota=false"), b"unexpected value 'false' for '--quota'"),
+            (("--bundle=synthetic", "--install=false"), b"unexpected value 'false' for '--install'"),
+            (("--install", "--help=false"), b"unexpected value 'false' for '--help'"),
             (("--install", "--tail-bytes"), b"a value is required for '--tail-bytes <BYTES>'"),
             (("--install", "--tail-bytes=-1"), b"invalid value '-1'"),
             (("--install", "--tail-bytes=12", "--tail-bytes=13"), b"cannot be used multiple times"),
@@ -342,8 +347,7 @@ class DoctorInstall01660Tests(unittest.TestCase):
                 self.assertEqual((baseline.stdout, modex.stdout), (b"", b""))
                 self.assertIn(diagnostic, baseline.stderr)
                 self.assertIn(diagnostic, modex.stderr)
-                if "--runtime=false" not in arguments and "--quota=false" not in arguments:
-                    self.assertEqual(modex.stderr, baseline.stderr)
+                self.assertEqual(modex.stderr, baseline.stderr)
                 self.assertEqual(list(home.iterdir()), [])
 
     def test_skipped_codex_wrapper_is_not_executed(self):

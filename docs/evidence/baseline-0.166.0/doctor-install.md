@@ -62,5 +62,6 @@ order and keeps the install-only panel unchanged; the argument is ignored by
 that report mode. Modex supports one `--install` plus an optional validated
 `--tail-bytes` value. The oracle rejects repeated `--install`, missing or
 invalid tail-byte values, duplicate tail-byte options, and false-valued
-`--runtime`/`--quota` flags before running probes. Modex rejects the same
-cases; its usage line differs for the false-valued boolean cases.
+`--runtime`/`--quota` flags before running probes. Modex rejects the tested
+cases with matching diagnostics, including selected attached and separated
+option orderings.

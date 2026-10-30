@@ -44,6 +44,12 @@ The five active identity and API-key tests also passed with both historical
 oracle overrides set to nonexistent paths, confirming those tests do not
 require a 0.165.1 or 0.439.2 binary.
 
+A full isolated `make test` is running against exact Modex commit
+`94b514c2fe3992a9f2219b035746820f8fe17161`, with the verified 0.166.0 oracle
+as `PRODEX_ORACLE` and separate versioned historical oracles. Its log is
+`/tmp/modex-01660-full-94b514c.log` (make PID 771360); it has not finished and
+is not a pass. The installed Prodex and Codex executables are not replaced.
+
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing
 cookie; six additional offline Guardian broker tests passed. Its local-only

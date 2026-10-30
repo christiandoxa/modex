@@ -182,12 +182,24 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
 
         if "--json" in seen and "--bundle" in seen:
             var conflict_usage = _inspection_prefix(command, executable)
-            if "--runtime" not in seen:
-                conflict_usage += " --runtime"
-            for name in seen:
-                if name != "--bundle":
-                    conflict_usage += " " + inspection_label(name)
-            raise session_cli_error("the argument '--json' cannot be used with '--bundle [<PATH>]'", conflict_usage)
+            var json_index = -1
+            var bundle_index = -1
+            for index in range(len(seen)):
+                if seen[index] == "--json": json_index = index
+                if seen[index] == "--bundle": bundle_index = index
+            var json_first = json_index < bundle_index
+            var first = String("--json" if json_first else "--bundle")
+            var second = String("--bundle" if json_first else "--json")
+            var first_requirement = String("--runtime" if json_first else "--redacted")
+            var message = "the argument '" + inspection_label(first) + "' cannot be used with '" + inspection_label(second) + "'"
+            for index in range(len(seen)):
+                var name = seen[index]
+                if name == second:
+                    continue
+                if name == first and first_requirement not in seen:
+                    conflict_usage += " " + first_requirement
+                conflict_usage += " " + inspection_label(name)
+            raise session_cli_error(message, conflict_usage)
 
         if missing:
             var message = "the following required arguments were not provided:"

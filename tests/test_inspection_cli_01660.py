@@ -89,6 +89,33 @@ class InspectionCli01660Tests(unittest.TestCase):
                                  (2, b"", expected_stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_doctor_json_bundle_conflict_diagnostics_follow_argument_order(self):
+        cases = (
+            ("doctor", "--json", "--bundle"),
+            ("doctor", "--bundle", "--json"),
+            ("doctor", "--redacted", "--bundle", "--json"),
+            ("doctor", "--bundle", "--redacted", "--json"),
+            ("doctor", "--runtime", "--json", "--redacted", "--bundle"),
+            ("doctor", "--runtime", "--bundle", "--redacted", "--json"),
+            ("doctor", "--json", "--redacted", "--runtime", "--bundle"),
+            ("doctor", "--bundle", "--redacted", "--runtime", "--json"),
+            ("doctor", "--bundle", "--json", "--redacted", "--runtime"),
+            ("doctor", "--json", "--bundle", "--redacted", "--runtime"),
+        )
+        for arguments in cases:
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "prodex", "01660-doctor-conflict-oracle"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "modex", "01660-doctor-conflict-modex"
+                )
+                expected_stderr = baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex ")
+                self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -266,6 +266,11 @@ require a 0.165.1 or 0.439.2 binary.
 A separate isolated three-case DeepSeek 503 differential also passes; generic
 profile-runtime policy remains unimplemented. See
 `docs/evidence/policy-capacity-01660-process.md`.
+An additional isolated Super launch uses a synthetic Codex HTTP client and
+one synthetic provider key to compare the 503 body through both real launchers.
+It checks one upstream request and overlay cleanup, not the real Codex binary
+or profile-backed policy; see
+`docs/evidence/baseline-0.166.0/policy-capacity-synthetic-codex.md`.
 Guardian reviewer metadata does not pin the DeepSeek API-key path in two
 isolated comparisons, including quota retry; this does not implement the
 profile-backed Guardian broker or cookie routing. See

@@ -890,7 +890,14 @@ class SuperLaunchTests(unittest.TestCase):
                                      "content_type_values": peer.headers.get_all("Content-Type", []),
                                      "body": body.hex()})
                     status = 200
-                    if scenario.startswith("error-"):
+                    if scenario == "policy-capacity-503":
+                        status = 503
+                        payload = (
+                            b'{"error":{"code":"policy_capacity_unavailable",'
+                            b'"message":"synthetic policy capacity"}}'
+                        )
+                        content_type = "application/json"
+                    elif scenario.startswith("error-"):
                         status = int(scenario.rsplit("-", 1)[1])
                         payload = b'{"error":{"type":"synthetic_error","message":"synthetic upstream failure"}}'
                         content_type = "application/json"

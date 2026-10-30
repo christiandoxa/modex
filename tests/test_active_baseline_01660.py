@@ -132,6 +132,8 @@ class ActiveBaseline01660Tests(unittest.TestCase):
         missing = object()
         custom_values = [
             ("object", {"query": "synthetic"}, '{"query":"synthetic"}', {}),
+            ("nested-object", {"z": 1, "a": 2, "nested": {"z": 1, "a": 2}},
+             '{"a":2,"nested":{"a":2,"z":1},"z":1}', {}),
             ("missing", missing, "", {}),
             ("null", None, "null", {}),
             ("string", "raw patch", "raw patch", {}),

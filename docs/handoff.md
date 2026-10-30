@@ -33,9 +33,9 @@ recorded difference, not a parity pass.
 For DeepSeek `custom_tool_call`, both production request paths now encode the
 input as a string inside the function arguments, using compact JSON text for
 non-string values and an empty string for a missing input. The active 0.166.0
-process comparison covers both paths, Unicode, escaping and argument
-precedence; ordinary function calls retain their tested precedence. Broader
-tool conversion remains unverified.
+process comparison covers both paths, nested object key ordering, Unicode,
+escaping and argument precedence; ordinary function calls retain their tested
+precedence. Broader tool conversion remains unverified.
 
 The official historical 0.439.2 tag currently resolves to no ref and its
 SHA256SUMS URL returned 404 on 2026-10-30. Previously verified local bytes

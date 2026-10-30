@@ -85,6 +85,35 @@ class SuperCliTests(unittest.TestCase):
                 self.assertFalse(mutated)
                 self.assertNotIn("synthetic-secret".encode(), native.stderr)
 
+    def test_invalid_percent_encoded_url_hosts_fail_before_launch(self):
+        secret = "synthetic-url-api-key"
+        for url in (
+            "https://%zz.example.test/path",
+            "https://%2z.example.test/path",
+            "https://foo%2Fbar.example.test/path",
+            "https://%25.example.test/path",
+            "https://%20.example.test/path",
+            "https://a%40b.example.test/path",
+            "https://a|b.example.test/path",
+            "https://a^b.example.test/path",
+            "https://a%EF%BC%8Fb.example.test/path",
+            "https://a%FFb.example.test/path",
+            "https://a%C2%A0b.example.test/path",
+        ):
+            observed = []
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                result, _ = isolated_super(
+                    binary,
+                    ["super", "exec", "--provider", "deepseek", "--api-key", secret,
+                     "--url", url, "synthetic prompt"],
+                )
+                self.assertEqual((result.returncode, result.stdout), (1, b""))
+                self.assertIn(b"invalid --url", result.stderr)
+                self.assertNotIn(secret.encode(), result.stdout + result.stderr)
+                observed.append((result.returncode, result.stdout, result.stderr))
+            with self.subTest(url=url):
+                self.assertEqual(observed[1:], observed[:1] * 2)
+
     def test_rollout_weight_float_diagnostics_match_both_releases(self):
         self.assertEqual(hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest(), ORACLE_01651_SHA256)
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)

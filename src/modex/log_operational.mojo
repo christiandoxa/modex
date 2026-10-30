@@ -3,6 +3,7 @@ from std.collections import List, Optional, Span
 from .log_redaction import redact_log_text
 from .log_time import local_log_timestamp
 from .logs import LogEvent, RuntimeRecord
+from .text import is_whitespace
 
 
 def operational_event(record: RuntimeRecord) raises -> Optional[LogEvent]:
@@ -209,12 +210,18 @@ def safe_endpoint(value: String) -> String:
                 if found >= 0 and found < authority_end:
                     authority_end = found
             if authority_end == authority.byte_length():
+                if is_file_drive_prefix(authority):
+                    return "/" + file_drive_path(authority) + "/"
                 if not valid_file_authority(authority):
                     return "upstream"
                 return "/" if authority else "upstream"
-            if authority_end > 0 and not valid_file_authority(String(authority[byte=:authority_end])):
-                return "upstream"
-            path = String(authority[byte=authority_end:]) if authority.as_bytes()[authority_end] == 47 else "/"
+            var host = String(authority[byte=:authority_end])
+            if is_file_drive_prefix(host):
+                path = "/" + file_drive_path(host) + String(authority[byte=authority_end:])
+            else:
+                if authority_end > 0 and not valid_file_authority(host):
+                    return "upstream"
+                path = String(authority[byte=authority_end:]) if authority.as_bytes()[authority_end] == 47 else "/"
         else:
             var authority = String(rest[byte=2:])
             var authority_end = authority.find("/")
@@ -224,9 +231,10 @@ def safe_endpoint(value: String) -> String:
                 return "upstream"
             if authority_end < 0:
                 return "upstream"
-            if authority_end == 0:
-                return "upstream"
-            path = String(authority[byte=authority_end:])
+            elif authority_end == 0:
+                path = String(authority)
+            else:
+                path = String(authority[byte=authority_end:])
     else:
         path = rest
         if scheme == "file" and not path.startswith("/"):
@@ -278,6 +286,13 @@ def valid_url_authority(authority: String) -> Bool:
     if not host_port.startswith("["):
         var host_end = port_start - 1 if port_start >= 0 else host_port.byte_length()
         var host = String(host_port[byte=:host_end])
+        if host.find("%") >= 0:
+            var decoded = decode_url_host(host)
+            if not decoded:
+                return False
+            host = decoded.value()
+        if not valid_url_host(host):
+            return False
         if host_ends_in_number(host) and not valid_ipv4_host(host):
             return False
     if port_start < 0:
@@ -501,13 +516,70 @@ def encode_url_path(path: String) -> String:
 
 
 def safe_path_byte(byte: Int) -> Bool:
-    return (65 <= byte <= 90) or (97 <= byte <= 122) or (48 <= byte <= 57) or byte == 45 or byte == 46 or byte == 95 or byte == 126 or byte == 33 or byte == 36 or byte == 38 or byte == 39 or byte == 40 or byte == 41 or byte == 42 or byte == 43 or byte == 44 or byte == 59 or byte == 61 or byte == 58 or byte == 64 or byte == 47 or byte == 37 or byte == 91 or byte == 93
+    return (65 <= byte <= 90) or (97 <= byte <= 122) or (48 <= byte <= 57) or byte == 45 or byte == 46 or byte == 95 or byte == 126 or byte == 33 or byte == 36 or byte == 38 or byte == 39 or byte == 40 or byte == 41 or byte == 42 or byte == 43 or byte == 44 or byte == 59 or byte == 61 or byte == 58 or byte == 64 or byte == 47 or byte == 37 or byte == 91 or byte == 93 or byte == 94 or byte == 124
+
+
+def is_file_drive_prefix(value: String) -> Bool:
+    if value.byte_length() != 2:
+        return False
+    var letter = Int(value.as_bytes()[0])
+    return ((65 <= letter <= 90) or (97 <= letter <= 122)) and (value.as_bytes()[1] == 58 or value.as_bytes()[1] == 124)
+
+
+def file_drive_path(value: String) -> String:
+    return String(value[byte=:1]) + ":"
+
+
+# shortcut: validates forbidden host scalars, not full UTS #46; upgrade when stdlib URL parsing exists.
+def valid_url_host(value: String) -> Bool:
+    for character in value.codepoints():
+        var code = Int(character)
+        if code <= 32 or code == 127 or code == 35 or code == 37 or code == 47 or code == 58 or code == 60 or code == 62 or code == 63 or code == 64 or code == 91 or code == 92 or code == 93 or code == 94 or code == 124 or is_whitespace(code):
+            return False
+        if 0xFF01 <= code <= 0xFF5E:
+            var mapped = code - 0xFEE0
+            if mapped == 35 or mapped == 37 or mapped == 47 or mapped == 58 or mapped == 60 or mapped == 62 or mapped == 63 or mapped == 64 or mapped == 91 or mapped == 92 or mapped == 93 or mapped == 94 or mapped == 124:
+                return False
+    return True
 
 
 def hex_byte(byte: Int) -> String:
     var high = (byte >> 4) & 15
     var low = byte & 15
     return hex_digit(high) + hex_digit(low)
+
+
+def decode_url_host(value: String) -> Optional[String]:
+    var bytes = List[UInt8]()
+    var index = 0
+    while index < value.byte_length():
+        var byte = Int(value.as_bytes()[index])
+        if byte == 37:
+            if index + 2 >= value.byte_length():
+                return Optional[String]()
+            var high = url_hex_value(Int(value.as_bytes()[index + 1]))
+            var low = url_hex_value(Int(value.as_bytes()[index + 2]))
+            if high < 0 or low < 0:
+                return Optional[String]()
+            byte = high * 16 + low
+            if byte <= 32 or byte == 35 or byte == 37 or byte == 47 or byte == 58 or byte == 63 or byte == 64 or byte == 91 or byte == 92 or byte == 93 or byte == 127:
+                return Optional[String]()
+            bytes.append(UInt8(byte))
+            index += 3
+        else:
+            bytes.append(UInt8(byte))
+            index += 1
+    try:
+        return Optional(String(from_utf8=Span(bytes)))
+    except:
+        return Optional[String]()
+
+
+def url_hex_value(byte: Int) -> Int:
+    if 48 <= byte <= 57: return byte - 48
+    if 65 <= byte <= 70: return byte - 55
+    if 97 <= byte <= 102: return byte - 87
+    return -1
 
 
 def hex_digit(value: Int) -> String:

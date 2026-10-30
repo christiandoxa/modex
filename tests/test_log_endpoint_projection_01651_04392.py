@@ -20,8 +20,26 @@ END_MARKER = "/end-marker"
 URL_CASES = (
     ("custom URL without path", "custom://example.test", "path=upstream"),
     ("custom URL query without path", "custom://example.test?token=/hidden", "path=upstream"),
+    ("custom URL with empty authority", "custom:///foo", "path=/foo"),
+    ("custom URL with encoded dot segment", "custom:///%2e/foo", "path=/foo"),
     ("file URL backslash separator", "file://localhost/a\\b", "path=/a/b"),
     ("file URL backslash dot segments", "file://localhost/a\\..\\b", "path=/b"),
+    ("file URL path keeps vertical bar", "file:///C|/a", "path=/C|/a"),
+    ("file URL drive host with colon", "file://C:/a?token=/hidden", "path=/C:/a"),
+    ("file URL drive host with vertical bar", "file://c|/a#fragment", "path=/c:/a"),
+    ("file URL localhost path keeps vertical bar", "file://localhost/C|/a", "path=/C|/a"),
+    ("invalid percent escape in host", "https://%zz/path", "path=upstream"),
+    ("invalid percent encoded host delimiter", "https://foo%2Fbar/path", "path=upstream"),
+    ("invalid percent encoded host credential delimiter", "https://a%40b/path", "path=upstream"),
+    ("invalid unescaped host separator", "https://a|b/path", "path=upstream"),
+    ("invalid unescaped host caret", "https://a^b/path", "path=upstream"),
+    ("invalid percent encoded IDNA separator", "https://a%EF%BC%8Fb/path", "path=upstream"),
+    ("invalid percent encoded UTF-8 host", "https://a%FFb/path", "path=upstream"),
+    ("invalid percent encoded host whitespace", "https://a%C2%A0b/path", "path=upstream"),
+    ("percent encoded valid host", "https://%65xample.test/path", "path=/path"),
+    ("path vertical bar and redacted query", "https://example.test/a|b?token=synthetic-url-secret#fragment", "path=/a|b"),
+    ("path caret", "https://example.test/a^b", "path=/a^b"),
+    ("path reserved chars and query", "https://example.test/a;b,c=$&()+!@[]%/x?token=/hidden#fragment", "path=/a;b,c=$&()+!@[]%/x"),
     ("final marker", "https://example.test/end-marker", "path=/end-marker"),
 )
 
@@ -64,6 +82,7 @@ class EndpointURLProjectionTests(unittest.TestCase):
         actual = trace_urls(MODEX, "modex")
         self.assertEqual(expected, current)
         self.assertEqual(actual, expected)
+        self.assertNotIn(b"synthetic-url-secret", actual["stdout"] + actual["stderr"])
         for label, _, display in URL_CASES:
             with self.subTest(case=label):
                 self.assertIn(display.encode(), expected["stdout"])

@@ -247,11 +247,16 @@ and the six-target denominator are unchanged. See
 ## Operational endpoint URL projection (2026-10-30)
 
 The operational stream now renders empty paths on non-special custom URLs as
-`upstream`, and normalizes file-URL backslashes before dot-segment removal.
-Three-process tests cover both pinned releases and Modex for both cases. The
-existing operational event corpus and plain runtime parser tests also pass.
-Complete URL parser equivalence remains open. The standard-library TUI API
-limitation and exact outputs are in
+`upstream`, handles empty-authority custom paths and file drive-letter
+authorities, preserves path `|`/`^`, and rejects percent-decoded host
+separators such as encoded `%40`, as well as IDNA-mapped separators. The
+23-case real-process URL matrix matches Prodex 0.165.1, frozen 0.439.2, and
+Modex, including query/fragment omission and a synthetic
+query-secret check. The shared authority validator also serves Super URL and
+DeepSeek beta URL validation; process controls reject malformed hosts before
+launch and keep a synthetic API-key sentinel private. Focused operational,
+plain-log, Super, and DeepSeek tests pass. Full UTS #46 URL parsing, live log
+registries, TUI rendering, and the other release targets remain open. See
 `docs/evidence/baseline-0.165.1/log-endpoint-url-projection.md`.
 
 The isolated full `make test` run on `0023b4669e547e27bc4d660786f791c33546d79c`

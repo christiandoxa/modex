@@ -46,6 +46,23 @@ resource accounting and non-Linux targets remain unqualified. The private
 1.2.0 library but is documented as unstable; upgrades require revalidation.
 All six release targets remain in the denominator.
 
+## Socket-readiness API follow-up (2026-10-30)
+
+The saturated admission/fairness comparison remains a mismatch: with seven
+incomplete-body blockers and 136 partial-header clients, both pinned releases
+serve two healthy keep-alive requests before release, while Modex waits until
+the held clients close. No scheduler or admission policy changed in this
+follow-up. Mojo 1.2.0's official [`std.net` documentation](https://mojolang.org/docs/std/net/)
+says public networking types are not yet available. Its public
+[`std.runtime` documentation](https://mojolang.org/docs/std/runtime/) describes
+only runtime initialization and worker-count queries and says async/coroutine
+primitives are in private `_asyncrt` and carry no stability guarantees. The
+current task-group path waits for task completion; it does not provide a
+supported socket-readiness wait. Thus this toolchain exposes no supported
+stdlib readiness-multiplexing API for waking a worker when a client socket
+becomes ready. The bounded 7-blocker/136-partial-head fairness gap remains
+open; behavior is not promoted to parity.
+
 Validation on Linux x86-64 with Mojo 1.2.0: the production build and focused
 native drivers passed. Before the independent SSE update, the complete selected
 0.165.1 and 0.439.2 relay oracle modules passed 30 tests, including the new

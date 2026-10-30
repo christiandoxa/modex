@@ -4161,3 +4161,26 @@ x86-64. This qualifies only the listed buffered cases;
 it does not establish full provider parity or reduce the six-release
 denominator. See
 `docs/evidence/baseline-0.165.1/provider-buffered-response-shapes.md`.
+
+## Relay large-field dispatch and readiness follow-up (2026-10-30)
+
+The chat-completions passthrough now admits the tested 1,048,577-byte
+`User-Agent` field with a 2 MiB field limit. Its outbound aggregate header cap
+remains 2 MiB + 2 KiB. Both checksum-pinned releases and Modex return 200 and
+dispatch one request for this case. This is dispatch parity only: both releases
+forward two identical `User-Agent` values and include `Accept`, while Modex
+forwards one `User-Agent`, omits `Accept`, and adds `Connection: close`. The
+captured `User-Agent` length and SHA-256 prefix match across all three. The
+translated Responses path retains its 1 MiB field limit; both releases dispatch
+1 MiB + 1-byte values there while Modex returns 502 before dispatch.
+
+The focused large-header production-path tests passed against 0.165.1 and
+0.439.2 after recording the chat-route duplicate count by product. The relay
+fairness mismatch for seven incomplete-body blockers and 136 partial heads is
+unchanged. Mojo 1.2.0 documents no public socket-readiness API: `std.net` has
+no public networking types, and runtime async primitives remain private and
+unstable. No readiness scheduling change was made. The supported API finding,
+test commands and captured request-header details are in
+`docs/evidence/baseline-0.165.1/local-relay-concurrency.md` and
+`docs/evidence/baseline-0.165.1/local-relay-http.md`. This does not establish
+complete HTTP, fairness, security or six-target parity.

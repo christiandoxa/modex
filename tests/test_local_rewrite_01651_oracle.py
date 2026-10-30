@@ -1135,13 +1135,13 @@ def large_user_agent_case(head_bytes=1024 * 1024):
     }
 
 
-def large_user_agent_value_case(value_bytes):
-    request = request_bytes(headers=(("User-Agent", "u" * value_bytes),))
+def large_user_agent_value_case(value_bytes, target=b"/v1/responses"):
+    request = request_bytes(headers=(("User-Agent", "u" * value_bytes),), target=target)
     return {
         "name": f"large_user_agent_value_{value_bytes}",
         "request": request,
         "expected_status": 200,
-        "expected_body": RESPONSES_RESPONSE,
+        "expected_body": PROVIDER_RESPONSE if target == b"/v1/chat/completions" else RESPONSES_RESPONSE,
         "upstream": True,
         "expected_user_agent_count": 2,
         "expected_error_body": b"upstream request failed",
@@ -2555,6 +2555,16 @@ def assert_large_request_head_cases(test, oracle, modex):
             (large_user_agent_case(), 200, 200),
             (large_user_agent_value_case(1024 * 1024), 200, 200),
             (large_user_agent_value_case(1024 * 1024 + 1), 200, 502),
+            (
+                {
+                    **large_user_agent_value_case(
+                        1024 * 1024 + 1, target=b"/v1/chat/completions",
+                    ),
+                    "expected_user_agent_count_by_label": {"oracle": 2, "modex": 1},
+                },
+                200,
+                200,
+            ),
             (many_small_header_case(1024 * 1024), 200, 200),
             (many_connection_token_headers_case(), 200, 200),
             (many_small_header_case(1024 * 1024 + 1), 200, 200),
@@ -2576,15 +2586,18 @@ def assert_large_request_head_cases(test, oracle, modex):
                         test.assertEqual(response["body"], case["expected_body"], label)
                         test.assertEqual(len(records), 1, label)
                         test.assertEqual(records[0]["pad_headers"], expected_pad_headers(case["request"]), label)
-                        if "expected_user_agent_count" in case:
+                        if "expected_user_agent_count" in case or "expected_user_agent_count_by_label" in case:
                             expected_user_agent = next(
                                 line.partition(b":")[2].strip()
                                 for line in case["request"].split(b"\r\n")
                                 if line.lower().startswith(b"user-agent:")
                             )
+                            expected_count = case.get("expected_user_agent_count_by_label", {}).get(
+                                label, case.get("expected_user_agent_count"),
+                            )
                             test.assertEqual(
                                 records[0]["user_agent_values"],
-                                [expected_user_agent] * case["expected_user_agent_count"],
+                                [expected_user_agent] * expected_count,
                                 label,
                             )
                         if case["name"].startswith("large_request_head_"):

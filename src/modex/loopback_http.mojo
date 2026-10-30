@@ -17,6 +17,7 @@ from std.time import perf_counter, sleep
 
 comptime HTTP_HEADER_LIMIT = 65536
 comptime HTTP_REQUEST_FIELD_LIMIT = 1024 * 1024
+comptime HTTP_MAX_REQUEST_FIELD_LIMIT = 2 * 1024 * 1024
 # Leave room for a copied User-Agent plus generated provider headers.
 comptime HTTP_OUTBOUND_REQUEST_HEADER_LIMIT = HTTP_REQUEST_FIELD_LIMIT * 2 + 2048
 
@@ -613,7 +614,7 @@ def _stream_request(path: String, headers: List[Tuple[String, String]], host: St
     for byte in request_method.as_bytes():
         if not _http_token_byte(byte):
             raise Error("malformed HTTP request method")
-    if request_header_limit < 2 or request_header_limit > HTTP_OUTBOUND_REQUEST_HEADER_LIMIT or request_field_limit < 0 or request_field_limit > HTTP_REQUEST_FIELD_LIMIT or request_field_limit > request_header_limit:
+    if request_header_limit < 2 or request_header_limit > HTTP_OUTBOUND_REQUEST_HEADER_LIMIT or request_field_limit < 0 or request_field_limit > HTTP_MAX_REQUEST_FIELD_LIMIT or request_field_limit > request_header_limit:
         raise Error("invalid or unsupported HTTP request header limit")
     var lines = List[String]()
     lines.append(request_method + " " + path + " HTTP/1.1")

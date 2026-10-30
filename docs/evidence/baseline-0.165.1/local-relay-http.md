@@ -87,14 +87,27 @@ values byte-for-byte, confirm nominated hop headers are removed, and exercise
 a 1 MiB translated-route `User-Agent` whose two outbound copies are both
 preserved.
 
-The 1 MiB cap is intentionally bounded: both releases accept a 1 MiB + 1-byte
-head and reach the upstream, while Modex returns 502 `gateway request capture
-failed` before dispatch. This remains a reproducible parity gap. The shared
-parser still accepts a 65,536-byte head and rejects 65,537 bytes by default;
-direct `LoopbackHTTPStream` callers retain their 65,536-byte aggregate and
-field defaults. The relay's request-target, header-name, and response-header
-limits are unchanged. These cases do not qualify other framing or security
-behavior.
+The translated Responses route still has a bounded outbound field limit: both
+releases accept a `User-Agent` value of 1 MiB + 1 byte and reach the upstream,
+while Modex returns 502 `gateway request capture failed` before dispatch. This
+remains a reproducible Responses-route parity gap. The shared parser still
+accepts a 65,536-byte head and rejects 65,537 bytes by default; direct
+`LoopbackHTTPStream` callers retain their 65,536-byte aggregate and field
+defaults. The relay's request-target, header-name, and response-header limits
+are unchanged. These cases do not qualify other framing or security behavior.
+
+The passthrough `/v1/chat/completions` route now allows the tested 1 MiB + 1
+byte `User-Agent` field through its outbound writer. Its field ceiling is 2 MiB;
+the existing outbound aggregate head ceiling remains 2 MiB + 2 KiB and is still
+enforced. Both checksum-pinned releases and Modex return 200 and dispatch one
+synthetic upstream request for this case. This is dispatch parity only, not
+request-header parity: both releases send two identical `User-Agent` values,
+while Modex sends one. The releases also send `Accept` and omit `Connection`,
+while Modex omits `Accept` and sends `Connection: close`. All three send the
+same 1,048,577-byte `User-Agent` value (SHA-256 prefix `9bcd1b106280`). These
+observations came from the synthetic upstream header capture; the test records
+the release/Modex duplicate-count difference instead of treating the request
+as fully matching.
 
 Validation for this slice: `make build` and focused native driver builds
 passed. Four large-header process tests passed against the pinned 0.165.1 and
@@ -186,6 +199,29 @@ shared-parser trailer support. The production dependency audit,
 `git diff --check` passed.
 
 Broader framing, timeout and security behavior remain unverified or different.
+
+## Outbound large chat header follow-up (2026-10-30)
+
+The 0.165.1 and 0.439.2 process probes both dispatch a chat-completions request
+with a 1,048,577-byte `User-Agent`; before the change, Modex rejected it before
+upstream dispatch. Modex's chat passthrough now uses a 2 MiB per-field limit.
+The outbound aggregate limit remains 2 MiB + 2 KiB, so generated headers and
+field bytes are still bounded together. The translated Responses route retains
+its 1 MiB field limit and its 1 MiB + 1-byte mismatch.
+
+The large-head tests passed against both release binaries and rebuilt Modex.
+The separate upstream capture compared status, route, header names, `User-Agent`
+length and digest, and duplicate count. All returned 200 and recorded one
+upstream request. The release binaries preserve two input `User-Agent` values;
+Modex forwards one. Their captured headers also include `Accept` and omit
+`Connection`, while Modex omits `Accept` and sends `Connection: close`. Record
+this as a bounded dispatch fix with explicit header mismatches, not full request
+parity. Commands:
+
+```sh
+PYTHONPATH=tests python3 -m unittest test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_large_request_heads_use_bounded_linear_capture
+PYTHONPATH=tests python3 -m unittest test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_large_request_heads_use_bounded_linear_capture
+```
 
 Buffered local-relay responses now add the frozen TinyHTTP defaults when the
 upstream or error response has no case-insensitive `Server` or `Date` field:

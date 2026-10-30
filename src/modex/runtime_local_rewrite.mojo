@@ -15,7 +15,7 @@ from std.time.time import _realtime_nanoseconds
 from std.utils.lock import BlockingScopedLock, BlockingSpinLock
 
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument
-from .loopback_http import HTTP_HEADER_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, HTTP_REQUEST_FIELD_LIMIT, LoopbackHTTPStream, _number
+from .loopback_http import HTTP_HEADER_LIMIT, HTTP_MAX_REQUEST_FIELD_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, HTTP_REQUEST_FIELD_LIMIT, LoopbackHTTPStream, _number
 from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
 from .log_operational import valid_url_authority
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_model_retry_available, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_api_key_response, deepseek_retryable_model_response
@@ -739,7 +739,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                 connection.fd,
                 request.method,
                 request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT,
-                request_field_limit=HTTP_REQUEST_FIELD_LIMIT,
+                request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT,
                 cancel_fd=state_ptr[].cancel_read_fd,
             )
         except:
@@ -762,7 +762,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                         connection.fd,
                         request.method,
                         request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT,
-                        request_field_limit=HTTP_REQUEST_FIELD_LIMIT,
+                        request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT,
                         cancel_fd=state_ptr[].cancel_read_fd,
                     )
                 except:

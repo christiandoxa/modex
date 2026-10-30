@@ -33,8 +33,10 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
         connection.request(method, path, body, headers)
         response = connection.getresponse()
         payload = response.read()
-        result = {"kind": "response", "status": response.status, "headers": dict(response.getheaders()),
-                  "body": payload.hex(), "started": started, "finished": int(time.time())}
+        response_headers = response.getheaders()
+        result = {"kind": "response", "status": response.status, "headers": dict(response_headers),
+                  "header_list": response_headers, "body": payload.hex(),
+                  "started": started, "finished": int(time.time())}
         connection.close()
         return result
     with ThreadPoolExecutor(max_workers=len(json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()))) as executor:
@@ -69,8 +71,10 @@ for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"])
     connection.request(method, path, body, headers)
     response = connection.getresponse()
     payload = response.read()
-    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),
-          "body": payload.hex(), "started": started, "finished": int(time.time())})
+    response_headers = response.getheaders()
+    save({"kind": "response", "status": response.status, "headers": dict(response_headers),
+          "header_list": response_headers, "body": payload.hex(),
+          "started": started, "finished": int(time.time())})
     connection.close()
     if response.status == 200:
         if "text/event-stream" in response.getheader("Content-Type", ""):

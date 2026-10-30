@@ -472,6 +472,15 @@ class LoopbackHTTPServerTests(unittest.TestCase):
                 self.assertEqual(payload, b"0\r\n\r\n")
                 self.assertIn("BODYLESS_SENT", stdout)
 
+    def test_stream_start_still_rejects_204_and_304_by_default(self):
+        for response_status in (204, 304):
+            with self.subTest(status=response_status):
+                process, client = start(f"forbidden-stream-{response_status}")
+                client.sendall(request(body=b""))
+                response, stdout = finish(process, client)
+                self.assertEqual(response, b"")
+                self.assertIn('STREAM_REJECTED "HTTP response status forbids a stream body"', stdout)
+
     def test_head_buffered_reply_suppresses_body_but_keeps_representation_length(self):
         process, client = start("head-buffered")
         client.sendall(request(body=b"", method=b"HEAD"))

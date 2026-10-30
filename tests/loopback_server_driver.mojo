@@ -86,6 +86,14 @@ def run(mode: String, mut output: RawFileDescriptor) raises:
         headers.append(("Content-Type", "text/event-stream"))
         connection.respond(204 if mode == "bodyless-sse-204" else 304, headers, List[UInt8](), 1000, False, True)
         emit(output, "BODYLESS_SENT")
+    elif mode == "forbidden-stream-204" or mode == "forbidden-stream-304":
+        var headers = List[Tuple[String, String]]()
+        headers.append(("Content-Type", "text/event-stream"))
+        try:
+            connection.start_stream(204 if mode == "forbidden-stream-204" else 304, headers, 1000)
+            emit(output, "STREAM_STARTED")
+        except error:
+            emit(output, "STREAM_REJECTED " + quote_json(String(error)))
     elif mode == "head-buffered":
         var headers = List[Tuple[String, String]]()
         headers.append(("Content-Type", "application/octet-stream"))

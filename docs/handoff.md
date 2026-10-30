@@ -1,5 +1,18 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The Responses relay now emits the tested 0.166.0 204 event-stream failure
+instead of closing before headers. This exceptional 204 stream is explicitly
+restricted to the translated event-stream path and closes after its terminal
+chunk; the oracle kept the tested keep-alive socket open. Generic 204/304
+stream starts remain rejected, and a pipelined request is not forwarded after
+the Modex 204. See `docs/evidence/baseline-0.166.0/responses-204-stream.md`.
+
+Buffered DeepSeek passthrough now retains the last valid duplicate
+`Content-Type` at its first position, matching tested active-release responses.
+Streaming responses retain their observed duplicate headers; first-value SSE
+classification and unrelated duplicate headers are unchanged. See
+`docs/evidence/baseline-0.166.0/duplicate-content-type.md`.
+
 Mixed Anthropic tool history now requires function arguments to decode to a
 JSON object, matching the active release's pre-provider HTTP 400 for arrays,
 scalars and null. The separate OpenAI Chat route retains its observed behavior.

@@ -151,6 +151,7 @@ struct LoopbackHTTPConnection(Movable):
     var keep_alive_enabled: Bool
     var include_default_response_headers: Bool
     var keep_alive: Bool
+    var graceful_close_after_stream: Bool
     var waiting_for_request: Bool
     var worker_tracked: Bool
     var request_header_scan: Int
@@ -173,6 +174,7 @@ struct LoopbackHTTPConnection(Movable):
         self.keep_alive_enabled = False
         self.include_default_response_headers = False
         self.keep_alive = False
+        self.graceful_close_after_stream = False
         self.waiting_for_request = False
         self.worker_tracked = False
         self.request_header_scan = 0
@@ -468,11 +470,16 @@ struct LoopbackHTTPConnection(Movable):
             self.close()
             raise
 
-    def start_stream(mut self, status: Int, headers: List[Tuple[String, String]], timeout_ms: UInt64) raises:
+    def start_stream(mut self, status: Int, headers: List[Tuple[String, String]], timeout_ms: UInt64, allow_204_event_stream: Bool = False) raises:
         try:
             if self.streaming or self.done:
                 raise Error("loopback HTTP response stream already started")
-            if status == 204 or status == 304:
+            if status == 204:
+                if not allow_204_event_stream or not _has_event_stream_content_type(headers):
+                    raise Error("HTTP response status forbids a stream body")
+                self.keep_alive = False
+                self.graceful_close_after_stream = True
+            elif status == 304:
                 raise Error("HTTP response status forbids a stream body")
             # TinyHTTP marks streams close even when it has already queued a pipelined request.
             var response = _response_head(
@@ -511,7 +518,7 @@ struct LoopbackHTTPConnection(Movable):
                 for byte in "0\r\n\r\n".as_bytes():
                     final.append(byte)
                 _send_all(self.fd, final, _deadline(timeout_ms))
-            self._finish_response()
+            self._finish_response(self.graceful_close_after_stream)
         except:
             self.close()
             raise
@@ -1008,6 +1015,13 @@ def _request_keep_alive(version: String, headers: List[Tuple[String, String]]) -
     if version == "HTTP/1.0":
         return "keep-alive" in connection
     return True
+
+
+def _has_event_stream_content_type(headers: List[Tuple[String, String]]) -> Bool:
+    for name, value in headers:
+        if name.lower() == "content-type":
+            return "text/event-stream" in value.lower()
+    return False
 
 
 def _ascii(bytes: List[UInt8], start: Int, end: Int) raises -> String:

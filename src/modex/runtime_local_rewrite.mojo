@@ -318,12 +318,13 @@ def _invalid_request_target(mut connection: LoopbackHTTPConnection) raises:
     ], _bytes('{"error":{"code":"invalid_request_target","message":"request target is invalid"}}'), 30000)
 
 
-def _response_headers(headers: List[Tuple[String, String]]) -> List[Tuple[String, String]]:
+def _response_headers(headers: List[Tuple[String, String]], collapse_duplicate_content_type: Bool) -> List[Tuple[String, String]]:
     var tokens = List[String]()
     for name, value in headers:
         if name.lower() == "connection":
             for token in value.split(","): tokens.append(trim_text(String(token)).lower())
     var output = List[Tuple[String, String]]()
+    var content_type_index = -1
     for name, value in headers:
         var lower = name.lower()
         if lower in tokens or lower in ["connection", "content-length", "transfer-encoding", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "upgrade"]:
@@ -335,7 +336,14 @@ def _response_headers(headers: List[Tuple[String, String]]) -> List[Tuple[String
                 break
         if not valid:
             continue
-        output.append((lower, value))
+        if lower == "content-type" and collapse_duplicate_content_type:
+            if content_type_index < 0:
+                content_type_index = len(output)
+                output.append((lower, value))
+            else:
+                output[content_type_index] = (lower, value)
+        else:
+            output.append((lower, value))
     return output^
 
 
@@ -368,7 +376,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
             # after its response is accepted, as a provider processing error.
             _reply(connection, 502, "provider response could not be processed" if 300 <= stream.status < 400 else "upstream request failed")
             return
-    var response_headers = _response_headers(stream.headers.copy())
+    var response_headers = _response_headers(stream.headers.copy(), not streaming)
     if not streaming:
         var body = prebuffered_body.copy()
         try:
@@ -1013,7 +1021,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         var response_headers = List[Tuple[String, String]]()
         response_headers.append(("content-type", "text/event-stream; charset=utf-8"))
         response_headers.extend(deepseek_codex_rate_limit_headers(exchange.headers()))
-        connection.start_stream(exchange.status(), response_headers, 30000)
+        connection.start_stream(exchange.status(), response_headers, 30000, exchange.status() == 204)
         while not exchange.done:
             var events = exchange.read_events()
             state_ptr[].remember_binding(0, exchange.reader.state.response_id, key_index)

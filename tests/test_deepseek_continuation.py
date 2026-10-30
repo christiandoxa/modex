@@ -549,6 +549,77 @@ class DeepSeekContinuationTests(unittest.TestCase):
                       "message": "bound continuation provider is unavailable"},
         })
 
+    def test_streamed_history_prefetch_gap_and_credential_boundary(self):
+        first = {
+            "model": "deepseek-chat", "created": 42,
+            "choices": [{"index": 0, "delta": {"content": "synthetic answer"}, "finish_reason": None}],
+        }
+        last = {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]}
+        for name in ("prefix_id", "fallback_id", "late_id", "session", "different_client", "multiple_keys"):
+            with self.subTest(case=name):
+                initial = dict(first)
+                if name != "fallback_id":
+                    initial["id"] = "synthetic-streamed-id"
+                final = dict(last)
+                if name == "late_id":
+                    final["id"] = "synthetic-streamed-id"
+                first_frame = b"data: " + json_bytes(initial) + b"\n\n"
+                wire = first_frame + b"data: " + json_bytes(final) + b"\n\ndata: [DONE]\n\n"
+                reply = {"status": 200, "content_type": "text/event-stream", "body": wire}
+                if name == "late_id":
+                    reply.update({"chunked": True, "chunk_size": len(first_frame), "delay": 0.2})
+                first_turn = {"model": "deepseek-chat", "input": "synthetic first", "stream": True}
+                followup = {"model": "deepseek-chat", "input": "synthetic followup"}
+                if name == "fallback_id":
+                    followup["use_previous"] = True
+                else:
+                    followup["previous_response_id"] = "synthetic-streamed-id"
+                if name == "session":
+                    first_turn["session_id"] = followup["session_id"] = "synthetic-session"
+                if name == "different_client":
+                    followup["_headers"] = {"Authorization": "Bearer synthetic-other-client"}
+                keys = "synthetic-key-a,synthetic-key-b" if name == "multiple_keys" else None
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    with self.subTest(binary=str(binary)):
+                        posts, responses = observe_turns(binary, [first_turn, followup], [reply, buffered_reply(2)], api_keys=keys)
+                        blocked = name in ("late_id", "session") or binary == MODEX
+                        self.assertEqual([row["status"] for row in responses], [200, 503 if blocked else 200])
+                        self.assertEqual(len(posts), 1 if blocked else 2)
+                        if not blocked:
+                            messages = json.loads(posts[1]["body"])["messages"]
+                            self.assertEqual([item["content"] for item in messages],
+                                             ["synthetic first", "synthetic answer", "synthetic followup"])
+                        if name == "multiple_keys":
+                            self.assertEqual([post["headers"]["authorization"] for post in posts],
+                                             ["Bearer synthetic-key-a"] if blocked else
+                                             ["Bearer synthetic-key-a", "Bearer synthetic-key-b"])
+
+    def test_native_streamed_history_prefetch_gap(self):
+        events = [
+            {"type": "message_start", "message": {"id": "synthetic-native", "model": "deepseek-chat", "usage": {"input_tokens": 1}}},
+            {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}},
+            {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "synthetic native answer"}},
+            {"type": "content_block_stop", "index": 0},
+            {"type": "message_delta", "delta": {"stop_reason": "end_turn"}, "usage": {"output_tokens": 1}},
+            {"type": "message_stop"},
+        ]
+        reply = {"status": 200, "content_type": "text/event-stream",
+                 "body": b"".join(b"data: " + json_bytes(event) + b"\n\n" for event in events)}
+        turns = [{"model": "deepseek-chat", "input": "synthetic first", "stream": True,
+                  "tools": [{"type": "web_search_preview"}]},
+                 {"model": "deepseek-chat", "input": "synthetic followup", "use_previous": True}]
+        for binary in (ORACLE_01651, ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                posts, responses = observe_turns(binary, turns, [reply, buffered_reply(2)],
+                                                 shared_config='[deepseek]\nweb_search_mode = "anthropic"\n')
+                blocked = binary == MODEX
+                self.assertEqual([row["status"] for row in responses], [200, 503 if blocked else 200])
+                self.assertEqual(len(posts), 1 if blocked else 2)
+                if not blocked:
+                    messages = json.loads(posts[1]["body"])["messages"]
+                    self.assertEqual([item["content"] for item in messages],
+                                     ["synthetic first", "synthetic native answer", "synthetic followup"])
+
     def test_malformed_quota_reset_is_not_projected(self):
         reply = buffered_reply(created=42)
         reply["response_headers"] = [

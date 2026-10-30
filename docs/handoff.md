@@ -1,5 +1,24 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Single-key streamed DeepSeek continuations expose an unfinished prefetch
+binding gap: both releases accept selected follow-ups while Modex returns 503.
+A candidate change reproduced the release behavior but also let a different
+unauthenticated synthetic loopback client replay stored history. It was not
+integrated. Both releases also replayed synthetic prior history with a different
+synthetic configured key; Modex retains 503. See
+`docs/evidence/baseline-0.165.1/streamed-continuation-prefetch.md`. Verified
+client authentication and history ownership, runtime WebSocket ownership,
+broader timing, and security behavior remain open.
+
+The isolated `fa01212` full suite finished with seven failures and seven
+errors in 1,146 Python tests after native checks. Six gated precommit failures
+and seven fragmented-fixture errors predate the response-list fixture repairs;
+the remaining failure is the truncated WebSocket body fixed in `79ff1b6`.
+Focused reruns of the repaired fixtures and the three-process WebSocket case
+passed. The log is `/tmp/modex-full-fa01212-20261030.log` (SHA-256
+`34c0d50e8c7ebf147e15104c1e76340bef29b059d833bb59a598e235ca867bf7`).
+This historical failed run does not qualify the current revision.
+
 The isolated `2cf20df` full suite finished with one failure in 1,136 Python
 tests after the native checks. Its only failure was the truncated WebSocket
 body mismatch fixed and rerun in `79ff1b6` and the combined checks below.
@@ -19,8 +38,8 @@ The `7bad09f` full run has reported six gated precommit subtest failures; it
 predates the gated fixture correction below. A new isolated full `make test`
 on `777cd3a` is running in `/tmp/modex-full-777cd3a-20261030`, with log
 `/tmp/modex-full-777cd3a-20261030.log`; no full-suite pass is claimed. The
-earlier `2cf20df`, `fa01212`, and `7bad09f` runs remain active on their own
-revisions. Runtime-proxy WebSocket/WSS, ambiguous-header and connection-reuse
+earlier `2cf20df` and `fa01212` runs finished with the failures recorded above;
+`7bad09f` remains active. Runtime-proxy WebSocket/WSS, ambiguous-header and connection-reuse
 differences, security qualification, and all six release targets remain open.
 
 The `fa01212` full run has reported failures in fragmented and gated

@@ -202,6 +202,12 @@ epoch, matching the active release when no record timestamp overrides it.
 The isolated comparison covers 18 combinations of file formats, boundary
 timestamps, and record timestamp precedence; remaining limits are in
 `docs/evidence/baseline-0.166.0/session-pre-epoch-mtime.md`.
+Invalid UTF-8 in `.json` sessions now reports the active release's path and
+byte-offset diagnostic after rejecting the input. Isolated comparisons cover
+malformed sequences, JSONL controls, and valid Unicode; no file contents are
+echoed. Modex escapes terminal controls in the error path where the release
+emits them raw; this is a retained safety difference. See
+`docs/evidence/baseline-0.166.0/session-json-invalid-utf8.md`.
 
 DeepSeek `low` reasoning effort now remains `low` in both request paths,
 matching 0.166.0 rather than the 0.439.2 mapping to `high`. Isolated process

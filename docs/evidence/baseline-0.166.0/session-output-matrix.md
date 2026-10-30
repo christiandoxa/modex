@@ -4,9 +4,10 @@
 against the checksum-verified Prodex 0.166.0 Linux binary and Modex. Selected
 cases compare populated listings, filters, JSON metadata, archived children,
 malformed records, Unicode and timestamp/timezone output. One inherited
-non-object-record check exercises Modex alone and is not differential evidence.
+non-object-record check exercises Modex alone, and the terminal-control path
+test records an intentional safer difference; neither establishes parity.
 
-The 15 test methods passed on Linux x86-64 in a private user, mount and network
+The 18 test methods passed on Linux x86-64 in a private user, mount and network
 namespace with isolated HOME and temporary storage, loopback only and no
 default routes. The shared fixture normalizes temporary root paths and the
 product name in resume commands. It checks output; it does not compare startup

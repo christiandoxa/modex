@@ -12,6 +12,11 @@ creating state. Housekeeping files may appear asynchronously. This is a
 characterized gap, not a completed profile-list slice. See
 `docs/evidence/baseline-0.166.0/profile-list-empty-store.md`.
 
+For invalid UTF-8 in `.json` sessions, Modex escapes terminal controls in the
+reported path while 0.166.0 emits them raw. The malformed input remains rejected;
+this safety difference is not parity. See
+`docs/evidence/baseline-0.166.0/session-json-invalid-utf8.md`.
+
 The remaining entries preserve their original release provenance. Most are
 observations against 0.165.1 or 0.439.x and do not establish 0.166.0 behavior
 unless the entry names that release explicitly.

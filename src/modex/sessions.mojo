@@ -501,6 +501,41 @@ def decode_session_line(bytes: List[UInt8], path: String) raises -> String:
         raise Error("failed to read session " + path + ": stream did not contain valid UTF-8")
 
 
+def session_json_utf8_error(bytes: List[UInt8]) -> String:
+    var index = 0
+    while index < len(bytes):
+        var first = bytes[index]
+        if first < 0x80:
+            index += 1
+            continue
+        var width: Int
+        if first >= 0xC2 and first <= 0xDF:
+            width = 2
+        elif first >= 0xE0 and first <= 0xEF:
+            width = 3
+        elif first >= 0xF0 and first <= 0xF4:
+            width = 4
+        else:
+            return "invalid utf-8 sequence of 1 bytes from index " + String(index)
+        for offset in range(1, width):
+            if index + offset >= len(bytes):
+                return "incomplete utf-8 byte sequence from index " + String(index)
+            var byte = bytes[index + offset]
+            var invalid = byte < 0x80 or byte > 0xBF
+            var invalid_second = offset == 1 and (
+                first == 0xE0 and byte < 0xA0
+                or first == 0xED and byte > 0x9F
+                or first == 0xF0 and byte < 0x90
+                or first == 0xF4 and byte > 0x8F
+            )
+            if invalid_second:
+                invalid = True
+            if invalid:
+                return "invalid utf-8 sequence of " + String(offset) + " bytes from index " + String(index)
+        index += width
+    return "invalid utf-8"
+
+
 def apply_session_block(mut report: SessionReport, block: List[UInt8], mut pending: List[UInt8], mut started: Bool, path: String) raises -> Bool:
     for byte in block:
         pending.append(byte)
@@ -549,7 +584,11 @@ def read_session(path: String) raises -> Optional[SessionReport]:
             var bytes = file.read_bytes(SESSION_LINE_LIMIT + 1)
             if len(bytes) > SESSION_LINE_LIMIT:
                 raise Error("session exceeds safe size limit (67108864 bytes)")
-            var text = String(from_utf8=Span(bytes))
+            var text: String
+            try:
+                text = String(from_utf8=Span(bytes))
+            except:
+                raise Error("failed to decode session " + escape_terminal_controls(path) + ": " + session_json_utf8_error(bytes))
             var parsed = False
             try:
                 var document = JsonDocument(text)

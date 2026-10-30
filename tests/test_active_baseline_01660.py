@@ -154,6 +154,47 @@ class ActiveBaseline01660Tests(unittest.TestCase):
         self.assertEqual(events[2]["event"], "token_usage")
         self.assertEqual(events[2]["input_tokens"], 12)
 
+    def test_log_last_orders_session_millisecond_ties_by_path(self):
+        from test_logs import session_fixture
+
+        outputs = []
+        for binary in (ORACLE, MODEX):
+            with tempfile.TemporaryDirectory(prefix="modex-active-log-order-") as directory:
+                root = Path(directory)
+                (root / "home").mkdir(mode=0o700)
+                (root / "workspace").mkdir()
+                session_fixture(root, "ascending-path")
+                original = next((root / "home/.codex").rglob("*.jsonl"))
+                a_path = original.with_name("a-session.jsonl")
+                original.rename(a_path)
+                z_path = original.with_name("z-session.jsonl")
+                z_path.write_text(a_path.read_text().replace("ascending-path", "submillisecond-newer"))
+                os.utime(a_path, ns=(1_800_000_000_000_000_100,) * 2)
+                os.utime(z_path, ns=(1_800_000_000_000_000_900,) * 2)
+                a_mtime = a_path.stat().st_mtime_ns
+                z_mtime = z_path.stat().st_mtime_ns
+                self.assertEqual((a_mtime, z_mtime),
+                                 (1_800_000_000_000_000_100, 1_800_000_000_000_000_900))
+                self.assertEqual(a_mtime // 1_000_000, z_mtime // 1_000_000)
+
+                result = subprocess.run(
+                    sandbox_command(
+                        binary, root, ["log", "last", "--json"],
+                        argv0="prodex" if binary == ORACLE else "modex",
+                        environment={"TZ": "UTC"},
+                    ),
+                    stdin=subprocess.DEVNULL, capture_output=True, timeout=10, check=False,
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""))
+                outputs.append(result.stdout)
+
+        self.assertEqual(outputs[0], outputs[1])
+        self.assertEqual(
+            json.loads(outputs[0]),
+            {"timestamp": "2026-10-24 01:02:04.000 +00:00",
+             "source": "user", "text": "ascending-path"},
+        )
+
     def test_log_last_keeps_ambiguous_unicode_secret_tail_masked(self):
         from test_logs import session_fixture
 

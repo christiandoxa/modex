@@ -148,7 +148,8 @@ def parse_gateway_arguments(args: List[String], executable: String) raises -> Ga
 
 
 def run_gateway(options: GatewayOptions) raises:
-    if options.provider != "deepseek":
+    # shortcut: omitted-provider preflight only, upgrade when profile-backed Gateway startup is supported.
+    if options.provider != "deepseek" and options.provider != "":
         raise Error("this Modex development build has not implemented the requested gateway provider")
     var root = ensure_app_root()
     for name in listdir(root):
@@ -175,7 +176,7 @@ def run_gateway(options: GatewayOptions) raises:
             if config.string(model_provider) == "prodex-deepseek":
                 # The frozen gateway forces its OpenAI proxy and excludes local rewrite.
                 raise Error("gateway provider does not expose an OpenAI-compatible proxy")
-            if model_provider < 0:
+            if model_provider < 0 or options.provider == "":
                 raise Error("no active profile selected and no Codex-compatible profiles are available; use `prodex use --profile <name>` or pass --profile")
             raise Error("gateway startup for this Codex configuration is not implemented by this Modex build")
     raise Error("no active profile selected and no Codex-compatible profiles are available; use `prodex use --profile <name>` or pass --profile")

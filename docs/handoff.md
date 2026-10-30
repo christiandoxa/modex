@@ -37,6 +37,13 @@ see `docs/evidence/baseline-0.166.0/super-cli-validation.md` for its scope.
 Selected `doctor` help and invalid argument diagnostics also match isolated
 0.166.0 comparisons; valid execution still reaches the unimplemented guard.
 Other argument combinations remain unqualified.
+Gateway without an explicit provider now reaches the existing fail-closed
+profile preflight. Selected empty-home and profileless-config diagnostics
+match 0.166.0; a synthetic selected profile still stops at Modex's existing
+state guard without modifying state or auth. The release starts its Gateway
+for that fixture in an isolated network namespace. This covers preflight
+only, not profile lifecycle, broker or Gateway runtime parity; see
+`tests/test_gateway_default_01660.py`.
 For DeepSeek `custom_tool_call`, both production request paths now encode the
 input as a string inside the function arguments, using compact JSON text for
 non-string values and an empty string for a missing input. The active 0.166.0

@@ -50,6 +50,9 @@ log is `/tmp/modex-ownership-rerun-1030.log` (SHA-256
 `18ac529e7b774e21379a48bc22127e46b3fe262a3f6f8e8400bfcde65a27dedc`)
 and it is not a pass. Its tracked diff SHA-256 was
 `2283d6eb5bc8b57df0a54a272fd3560dba62cf1ef9ead53ed0d49538d4450e54`.
+After integrating the corrected fixture and rollout-budget launch slice, a
+fresh full run is active at `/tmp/modex-ownership-combined-1030.log` on the
+same tracked ownership diff and untracked binding test; it is not yet a pass.
 The untracked native binding test SHA-256 is
 `62be13c2d1a34a648d9ded15b74c31657fd093ea2091c048d4878fdeb29431b3`.
 An earlier candidate incorrectly allowed a buffered `previous_response_id`;

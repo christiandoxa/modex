@@ -477,6 +477,11 @@ class SuperDryRun01651Tests(unittest.TestCase):
         cases = (
             ("rtk 0.45.9", b"rtk 0.45.9 is too old"),
             ("rtk 0.46.0-rc.1", b"rtk 0.46.0-rc.1 is too old"),
+            ("rtk (vv0.50.0) version", b"rtk: resolved (activation deferred until launch)"),
+            ("tool 0.45.9 1.1.0", b"rtk 0.45.9 is too old"),
+            ("version [01.2.3] 1.1.0", b"rtk: resolved (activation deferred until launch)"),
+            ("tool\u2003[v0.46.0-rc.1]", b"rtk 0.46.0-rc.1 is too old"),
+            ("V1.2.3 invalid", b"rtk did not report a recognizable semantic version"),
             ("rtk latest", b"rtk did not report a recognizable semantic version: rtk latest"),
             ("stderr:rtk 1.1.0", b"rtk: resolved (activation deferred until launch)"),
             ("empty", b"rtk did not report a recognizable semantic version: available"),

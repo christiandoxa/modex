@@ -82,6 +82,21 @@ passed. Full repository tests and Fast/Full CI were not run. This qualifies
 selected Linux x86-64 behavior only; all six release targets and unverified
 security behavior remain in the parity denominator.
 
+RTK version selection now scans the first valid semantic-version token, using
+the same token scanner as Playwright. Both pinned releases accept punctuation,
+repeated leading `v`, and Unicode spaces; invalid candidates are skipped and
+the first valid candidate controls the minimum-version decision. Previously,
+Modex rejected noncanonical banners such as `rtk (vv0.50.0) version` and
+`tool 0.45.9 1.1.0`. The frozen 0.439.2
+`mojo/prodex_core/optional_tool_probe_version.mojo` snapshot matches the Git
+object SHA-256 `1ca10dcc9a788bb09f2abac68c8ea5ee741e76cfae62f0af243a21bb466b746d`;
+the 0.165.1 `probe_version.rs` tests also specify token precedence. Synthetic
+three-process RTK and Playwright version comparisons pass after rebuilding
+Modex. An initial combined test command named a nonexistent Playwright method;
+the corrected two-method command passed. The dependency audit and test census
+passed. This does not qualify arbitrary probe output, tool activation, security
+behavior, or the other five release targets.
+
 When Node and `npx` are on `PATH`, Modex now runs the same bounded
 `npx --no-install @playwright/mcp --version` readiness probe as both releases.
 This executes locally resolved package code. Synthetic native fixtures and

@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+RTK dry-run version selection now uses the shared semantic-version token
+scanner: selected punctuation, Unicode whitespace, invalid candidates, and
+first-valid precedence match both pinned releases. The production build,
+three-process RTK and Playwright version checks, dependency audit and census
+passed. An initial test command included a nonexistent method; its corrected
+rerun passed. See `docs/evidence/baseline-0.165.1/super-dry-run-01651.md`.
+Broader optional-tool behavior, all six target qualifications and security
+behavior remain open.
+
 The shared synthetic upstream fixture polls for shutdown every 50 ms instead
 of the Python default 500 ms. Eight empty fixture lifetimes took 4.012 seconds
 before and 0.408 seconds after on this host. The three-process redirect status

@@ -589,48 +589,10 @@ def _dry_run_semver_identifiers(value: String, prerelease: Bool) -> Bool:
     return start < value.byte_length() and not (prerelease and numeric and value.byte_length() - start > 1 and value.as_bytes()[start] == 48)
 
 
-# shortcut: only canonical RTK SemVer lines are accepted, broaden after other real banners are qualified.
 def _dry_run_rtk_version_status(line: String) -> String:
-    var invalid = "skipped (rtk did not report a recognizable semantic version: " + redact_log_text(line) + ")"
-    if not line.startswith("rtk "):
-        return invalid^
-    var version_text = String(line[byte=4:])
-    if version_text.startswith("v"):
-        var stripped_version = String(version_text[byte=1:])
-        version_text = stripped_version
-    var dash = version_text.find("-")
-    var plus = version_text.find("+")
-    var core_end = version_text.byte_length()
-    var prerelease = False
-    if plus >= 0:
-        if not _dry_run_semver_identifiers(String(version_text[byte=plus + 1:]), False):
-            return invalid^
-        core_end = plus
-    if dash >= 0 and (plus < 0 or dash < plus):
-        var prerelease_end = plus if plus >= 0 else version_text.byte_length()
-        if not _dry_run_semver_identifiers(String(version_text[byte=dash + 1:prerelease_end]), True):
-            return invalid^
-        core_end = dash
-        prerelease = True
-    var components = String(version_text[byte=:core_end]).split(".")
-    if len(components) != 3:
-        return invalid^
-    var version = List[UInt64]()
-    for component in components:
-        var part = String(component)
-        var number: UInt64
-        try:
-            number = unsigned_value(part)
-        except:
-            return invalid^
-        if String(number) != part:
-            return invalid^
-        version.append(number)
-    var too_old = version[0] == UInt64(0) and version[1] < UInt64(46)
-    too_old = too_old or (version[0] == UInt64(0) and version[1] == UInt64(46) and version[2] == UInt64(0) and prerelease)
-    if too_old:
-        return "skipped (" + redact_log_text(line) + " is too old; Prodex requires 0.46.0 or newer. Update rtk to the latest stable release (release-qualified reference: 1.1.0))"
-    return "resolved (activation deferred until launch)"
+    var status = _optional_tool_version_status(line, True)
+    if status: return status^
+    return "skipped (rtk did not report a recognizable semantic version: " + redact_log_text(line) + ")"
 
 
 def _dry_run_rtk_status() raises -> String:
@@ -753,7 +715,7 @@ def _dry_run_codebase_status() raises -> String:
     return "skipped (codebase-memory-mcp lacks shared daemon coordination; Prodex requires 0.9.1-rc.1 or newer. Update to the latest stable release (release-qualified reference: 0.12.1))"
 
 
-def _playwright_version_token(token: String) -> String:
+def _optional_tool_version_token(token: String, rtk: Bool) -> String:
     var start = 0
     var end = token.byte_length()
     while start < end:
@@ -789,10 +751,28 @@ def _playwright_version_token(token: String) -> String:
             return String()
         if String(number) != text: return String()
         numbers.append(number)
+    if rtk:
+        var old = numbers[0] == UInt64(0) and (numbers[1] < UInt64(46) or (numbers[1] == UInt64(46) and numbers[2] == UInt64(0) and prerelease))
+        if old:
+            return "skipped (rtk " + version + " is too old; Prodex requires 0.46.0 or newer. Update rtk to the latest stable release (release-qualified reference: 1.1.0))"
+        return "resolved (activation deferred until launch)"
     var old = numbers[0] == UInt64(0) and numbers[1] == UInt64(0) and (numbers[2] < UInt64(79) or (numbers[2] == UInt64(79) and prerelease))
     if old:
         return "skipped (playwright-mcp " + version + " is too old; Prodex requires 0.0.79 or newer. Update playwright-mcp to the latest stable release (release-qualified reference: 0.0.83))"
     return "resolved (activation deferred until launch)"
+
+
+def _optional_tool_version_status(line: String, rtk: Bool) -> String:
+    var token = String()
+    for character in line.codepoints():
+        var code = Int(character)
+        if is_whitespace(code):
+            var status = _optional_tool_version_token(token, rtk)
+            if status: return status^
+            token = String()
+        else:
+            token += chr(code)
+    return _optional_tool_version_token(token, rtk)
 
 
 def _dry_run_playwright_status(binary: String) -> String:
@@ -810,16 +790,7 @@ def _dry_run_playwright_status(binary: String) -> String:
         return unavailable^
     var line = _dry_run_probe_first_line(probe.stdout)
     if not line: line = _dry_run_probe_first_line(probe.stderr)
-    var token = String()
-    for character in line.codepoints():
-        var code = Int(character)
-        if is_whitespace(code):
-            var status = _playwright_version_token(token)
-            if status: return status^
-            token = String()
-        else:
-            token += chr(code)
-    var status = _playwright_version_token(token)
+    var status = _optional_tool_version_status(line, False)
     return status^ if status else unavailable^
 
 

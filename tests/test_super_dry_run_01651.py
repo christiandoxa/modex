@@ -67,6 +67,12 @@ def write_rtk_version(root, version, *, managed=False):
     path.chmod(0o600)
 
 
+def write_codebase_version(root, binary, version):
+    path = Path(f"{binary}.fixture")
+    path.write_text(version)
+    path.chmod(0o600)
+
+
 def run_dry_run(binary, argv0, prepare=None, *, arguments=DRY_RUN_ARGS,
                 include_codex=True, environment=None, extra_binaries=(), timeout=15):
     with tempfile.TemporaryDirectory(prefix="modex-super-dry-run-") as directory:
@@ -497,6 +503,251 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 if label == "Modex":
                     self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
 
+    def test_managed_codebase_candidate_and_root_order_matches_both_releases(self):
+        for selected_index in range(4):
+            outputs = []
+            for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                         ("0.439.2", ORACLE, "prodex"),
+                                         ("Modex", MODEX, "modex")):
+                with self.subTest(candidate=selected_index, binary=label):
+                    def prepare(root):
+                        managed = root / "home/managed-optimizers"
+                        candidates = (
+                            managed / "codebase-memory-mcp",
+                            managed / "codebase-memory-mcp/codebase-memory-mcp",
+                            managed / "codebase-memory-mcp/build/c/codebase-memory-mcp",
+                            managed / "codebase-memory-mcp/bin/codebase-memory-mcp",
+                        )
+                        stop = 1 if selected_index == 0 else len(candidates)
+                        for index in range(selected_index, stop):
+                            candidate = candidates[index]
+                            candidate.parent.mkdir(parents=True, exist_ok=True)
+                            write_optional_tool(candidate)
+                            write_codebase_version(
+                                root,
+                                candidate,
+                                "codebase-memory-mcp 0.9.0" if index == selected_index else "codebase-memory-mcp 0.12.1",
+                            )
+                        path_binary = root / "bin/codebase-memory-mcp"
+                        write_optional_tool(path_binary)
+                        write_codebase_version(root, path_binary, "codebase-memory-mcp 0.12.1")
+
+                    result, before, after = run_dry_run(
+                        binary,
+                        argv0,
+                        prepare,
+                        environment=lambda root: {
+                            "PRODEX_OPTIMIZERS_HOME": str(root / "home/managed-optimizers"),
+                        },
+                        extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                    )
+                    self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                    self.assertIn(b"lacks shared daemon coordination", result.stdout)
+                    self.assertNotIn(b"resolved (activation deferred until launch)", result.stdout)
+                    self.assertEqual(after, before)
+                    outputs.append(result.stdout)
+            self.assertEqual(outputs[0], outputs[1])
+            self.assertEqual(outputs[0], outputs[2])
+
+        for selected_index in range(3):
+            outputs = []
+            for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                         ("0.439.2", ORACLE, "prodex"),
+                                         ("Modex", MODEX, "modex")):
+                with self.subTest(root=selected_index, binary=label):
+                    def prepare(root):
+                        managed_roots = (
+                            root / "home/managed-optimizers",
+                            root / "home/xdg-data/prodex-optimizers",
+                            root / "home/.local/share/prodex-optimizers",
+                        )
+                        for index in range(selected_index, len(managed_roots)):
+                            candidate = managed_roots[index] / "codebase-memory-mcp"
+                            candidate.parent.mkdir(parents=True, exist_ok=True)
+                            write_optional_tool(candidate)
+                            write_codebase_version(
+                                root,
+                                candidate,
+                                "codebase-memory-mcp 0.9.0" if index == selected_index else "codebase-memory-mcp 0.12.1",
+                            )
+                        path_binary = root / "bin/codebase-memory-mcp"
+                        write_optional_tool(path_binary)
+                        write_codebase_version(root, path_binary, "codebase-memory-mcp 0.12.1")
+
+                    result, before, after = run_dry_run(
+                        binary,
+                        argv0,
+                        prepare,
+                        environment=lambda root: {
+                            "PRODEX_OPTIMIZERS_HOME": str(root / "home/managed-optimizers"),
+                            "XDG_DATA_HOME": str(root / "home/xdg-data"),
+                        },
+                        extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                    )
+                    self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                    self.assertIn(b"lacks shared daemon coordination", result.stdout)
+                    self.assertNotIn(b"resolved (activation deferred until launch)", result.stdout)
+                    self.assertEqual(after, before)
+                    outputs.append(result.stdout)
+            self.assertEqual(outputs[0], outputs[1])
+            self.assertEqual(outputs[0], outputs[2])
+
+    def test_managed_codebase_symlink_root_stays_fail_closed(self):
+        def prepare(root):
+            target = root / "optimizer-target"
+            target.mkdir(mode=0o700)
+            write_optional_tool(target / "codebase-memory-mcp")
+            managed = root / "home/managed-optimizers"
+            managed.symlink_to(target)
+            write_optional_tool(root / "bin/codebase-memory-mcp")
+
+        release_outputs = []
+        for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                     ("0.439.2", ORACLE, "prodex"),
+                                     ("Modex", MODEX, "modex")):
+            with self.subTest(binary=label):
+                result, before, after = run_dry_run(
+                    binary,
+                    argv0,
+                    prepare,
+                    environment=lambda root: {
+                        "PRODEX_OPTIMIZERS_HOME": str(root / "home/managed-optimizers"),
+                    },
+                    extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertIn(b"managed", result.stdout)
+                self.assertEqual(after, before)
+                if label != "Modex":
+                    release_outputs.append(
+                        re.sub(rb"/tmp/modex-super-dry-run-[^/]+", b"<temporary-root>", result.stdout)
+                    )
+                else:
+                    self.assertIn(b"managed Codebase Memory root is not a real directory", result.stdout)
+                    self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+        self.assertEqual(release_outputs[0], release_outputs[1])
+
+    def test_managed_codebase_symlink_inside_root_is_reported(self):
+        def prepare(root):
+            managed = root / "home/managed-optimizers"
+            target = managed / "versions/codebase-memory-mcp"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            write_optional_tool(target)
+            (managed / "codebase-memory-mcp").symlink_to(target)
+            write_codebase_version(root, target, "codebase-memory-mcp 0.12.1")
+
+        outputs = []
+        for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                     ("0.439.2", ORACLE, "prodex"),
+                                     ("Modex", MODEX, "modex")):
+            with self.subTest(binary=label):
+                result, before, after = run_dry_run(
+                    binary,
+                    argv0,
+                    prepare,
+                    environment=lambda root: {
+                        "PRODEX_OPTIMIZERS_HOME": str(root / "home/managed-optimizers"),
+                    },
+                    extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertIn(b"codebase-memory-mcp: resolved (activation deferred until launch)", result.stdout)
+                self.assertEqual(after, before)
+                outputs.append(result.stdout)
+        self.assertEqual(outputs[0], outputs[1])
+        self.assertEqual(outputs[0], outputs[2])
+
+    def test_managed_codebase_escaping_symlink_is_not_executed(self):
+        def prepare(root):
+            managed = root / "home/managed-optimizers"
+            managed.mkdir(mode=0o700)
+            target = root / "outside/codebase-memory-mcp"
+            target.parent.mkdir(mode=0o700)
+            write_optional_tool(target)
+            (managed / "codebase-memory-mcp").symlink_to(target)
+            write_optional_tool(root / "bin/codebase-memory-mcp")
+
+        environment = lambda root: {
+            "PRODEX_OPTIMIZERS_HOME": str(root / "home/managed-optimizers"),
+        }
+        release_outputs = []
+        for label, binary in (("0.165.1", ORACLE_01651), ("0.439.2", ORACLE)):
+            with self.subTest(binary=label):
+                result, before, after = run_dry_run(
+                    binary,
+                    "prodex",
+                    prepare,
+                    environment=environment,
+                    extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertIn("home/.codebase-probe-invoked", after)
+                release_outputs.append(
+                    re.sub(rb"/tmp/modex-super-dry-run-[^/]+", b"<temporary-root>", result.stdout)
+                )
+        self.assertEqual(release_outputs[0], release_outputs[1])
+
+        result, before, after = run_dry_run(
+            MODEX,
+            "modex",
+            prepare,
+            environment=environment,
+            extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+        )
+        self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+        self.assertIn(b"command escapes its root", result.stdout)
+        self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+        self.assertEqual(after, before)
+        self.assertNotIn("home/.codebase-probe-invoked", after)
+
+    def test_managed_codebase_first_non_executable_candidate_shadows_fallbacks(self):
+        def prepare(root):
+            managed = root / "home/managed-optimizers"
+            checkout = managed / "codebase-memory-mcp"
+            first = checkout / "codebase-memory-mcp"
+            first.parent.mkdir(parents=True, exist_ok=True)
+            write_optional_tool(first)
+            first.chmod(0o600)
+            fallback = checkout / "build/c/codebase-memory-mcp"
+            fallback.parent.mkdir(parents=True, exist_ok=True)
+            write_optional_tool(fallback)
+            write_optional_tool(root / "bin/codebase-memory-mcp")
+
+        environment = lambda root: {
+            "PRODEX_OPTIMIZERS_HOME": str(root / "home/managed-optimizers"),
+        }
+        release_outputs = []
+        for label, binary in (("0.165.1", ORACLE_01651), ("0.439.2", ORACLE)):
+            with self.subTest(binary=label):
+                result, before, after = run_dry_run(
+                    binary,
+                    "prodex",
+                    prepare,
+                    environment=environment,
+                    extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertIn(b"failed to execute", result.stdout)
+                self.assertNotIn(b"resolved (activation deferred until launch)", result.stdout)
+                self.assertEqual(after, before)
+                release_outputs.append(
+                    re.sub(rb"/tmp/modex-super-dry-run-[^/]+", b"<temporary-root>", result.stdout)
+                )
+        self.assertEqual(release_outputs[0], release_outputs[1])
+
+        result, before, after = run_dry_run(
+            MODEX,
+            "modex",
+            prepare,
+            environment=environment,
+            extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+        )
+        self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+        self.assertIn(b"codebase-memory-mcp health check failed", result.stdout)
+        self.assertNotIn(b"resolved (activation deferred until launch)", result.stdout)
+        self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+        self.assertEqual(after, before)
+
     def test_valid_profile_state_is_read_by_releases_but_modex_stays_fail_closed(self):
         def prepare(root):
             app = root / "home/.prodex"
@@ -541,10 +792,6 @@ class SuperDryRun01651Tests(unittest.TestCase):
 
     def test_installed_optional_tools_fail_closed_without_launching_them(self):
         cases = (
-            ("managed codebase", lambda root: (
-                (root / "home/.local/share/prodex-optimizers/codebase-memory-mcp").mkdir(parents=True),
-                write_tool(root / "bin/codebase-memory-mcp", root / "codebase-memory-invoked"),
-            )),
             ("managed tool", lambda root: (root / "home/.local/share/prodex-optimizers/caveman/4.0.1").mkdir(parents=True)),
             ("node and npx", lambda root: (write_node(root / "bin/node"), write_tool(root / "bin/npx", root / "npx-invoked"))),
         )

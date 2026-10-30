@@ -16,9 +16,16 @@ def main() raises:
                 file.write("probe received unapproved environment")
         var home = getenv("HOME", "")
         var config = home + "/.rtk-version-fixture"
-        if String(arguments[0]).endswith("/codebase-memory-mcp"):
+        var executable = String(arguments[0])
+        if executable.find("/outside/codebase-memory-mcp") >= 0:
+            with open(home + "/.codebase-probe-invoked", "w") as file:
+                file.write("managed symlink target was executed")
+        if executable.endswith("/codebase-memory-mcp"):
             config = home + "/.codebase-version-fixture"
-        if String(arguments[0]).find("/.local/share/prodex-optimizers/rtk") >= 0:
+            var version_override = executable + ".fixture"
+            if exists(version_override):
+                config = version_override^
+        if executable.find("/.local/share/prodex-optimizers/rtk") >= 0:
             config = home + "/.rtk-managed-version-fixture"
         var version = String("rtk 1.1.0")
         if exists(config):

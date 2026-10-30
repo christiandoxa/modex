@@ -47,19 +47,43 @@ The standard-library process wrapper can kill the direct child but cannot
 terminate a descendant process group, so a misbehaving probe that leaves a
 descendant running remains an unverified safety gap.
 
-Codebase Memory executables discovered on `PATH` now use the same bounded,
-filtered version probe. Three-process tests cover `dev`, stable and build
-versions, prerelease ordering around `0.9.1-rc.1`, invalid banners, stderr,
-nonzero exit, report ordering with RTK, and environment isolation. The timeout
-test checks the five-second bound; Modex omits the executable path that both
-releases include. Managed Codebase Memory installations remain fail-closed,
-including a managed entry that precedes a `PATH` command. The direct-child
-cleanup limitation above applies to this probe as well.
-The 18-test dry-run module, managed-entry guard control, production import
-audit, test census, and workflow validation passed after this change.
+Codebase Memory executables discovered on `PATH` or under managed roots use the
+same bounded, filtered version probe. Prodex checks roots in this order:
+`PRODEX_OPTIMIZERS_HOME`, `XDG_DATA_HOME/prodex-optimizers`, then
+`HOME/.local/share/prodex-optimizers`. Within each root it checks
+`codebase-memory-mcp`, `codebase-memory-mcp/codebase-memory-mcp`,
+`codebase-memory-mcp/build/c/codebase-memory-mcp`, and
+`codebase-memory-mcp/bin/codebase-memory-mcp`, before scanning `PATH`. The
+missing and non-regular candidates are skipped, while the first regular file
+shadows later candidates even when it is not executable.
 
-Installed Caveman, managed Codebase Memory, Ponytail, or Playwright tools remain
-fail-closed. Modex does not run `npx --no-install @playwright/mcp --version`,
+Three-process tests cover each managed candidate and root taking precedence
+over later candidates and `PATH`, plus stable and build versions, prerelease
+ordering around `0.9.1-rc.1`, invalid banners, stderr, nonzero exit, output
+ordering with RTK, timeout, and environment isolation. A symlink to a file
+inside the managed root is accepted. A symlinked managed root is rejected with
+`skipped (managed Codebase Memory root is not a real directory)`.
+Prodex executes a candidate symlink that escapes its managed root before its
+containment check; Modex checks the resolved path first and reports
+`skipped (managed codebase-memory-mcp command escapes its root)` without
+executing the target. For a non-executable first candidate, both releases stop
+before later candidates; Modex reports
+`skipped (codebase-memory-mcp health check failed)` instead of the release
+diagnostic containing the temporary executable path. These are intentional
+safety/reporting differences. The timeout test checks the
+five-second bound; Modex also omits the executable path that both releases
+include. The standard-library process wrapper cannot terminate descendant
+process groups, so a probe that leaves a child running remains unverified.
+
+The latest 23-test dry-run module passed against both pinned releases and
+Modex. The production import audit passed for 71 Mojo files, the test census
+passed for 50 native sources and 154 Python modules, and `git diff --check`
+passed. Full repository tests and Fast/Full CI were not run. This qualifies
+selected Linux x86-64 behavior only; all six release targets and unverified
+security behavior remain in the parity denominator.
+
+Installed Caveman, Ponytail, or Playwright tools remain fail-closed. Modex does
+not run `npx --no-install @playwright/mcp --version`,
 which both releases use to decide Playwright readiness.
 
 When both Node and `npx` are available, Modex remains fail-closed. The pinned

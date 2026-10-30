@@ -511,6 +511,17 @@ def _managed_tool_present(tool: String, command: String = "") -> Bool:
     return False
 
 
+def _managed_codebase_candidates(root: String) -> List[String]:
+    var base = root if root else "."
+    var checkout = base + "/codebase-memory-mcp"
+    var candidates = List[String]()
+    candidates.append(base + "/codebase-memory-mcp")
+    candidates.append(checkout + "/codebase-memory-mcp")
+    candidates.append(checkout + "/build/c/codebase-memory-mcp")
+    candidates.append(checkout + "/bin/codebase-memory-mcp")
+    return candidates^
+
+
 def _dry_run_rtk_binary() raises -> String:
     for root in _managed_optimizer_roots():
         var candidate = _executable_path(root + "/rtk")
@@ -689,9 +700,35 @@ def _dry_run_codebase_version_supported(line: String) -> Bool:
 
 def _dry_run_codebase_status() raises -> String:
     var binary = String()
-    for candidate in _path_candidates("codebase-memory-mcp", getenv("PATH", "\0")):
-        binary = _executable_path(candidate)
-        if binary: break
+    for root in _managed_optimizer_roots():
+        for candidate in _managed_codebase_candidates(root):
+            if not exists(candidate):
+                continue
+            try:
+                var resolved = realpath(candidate)
+                var info = lstat(resolved)
+                if info.st_mode & 0o170000 != 0o100000:
+                    continue
+                var root_path = root if root else "."
+                var root_info = lstat(root_path)
+                if root_info.st_mode & 0o170000 != 0o040000:
+                    return "skipped (managed Codebase Memory root is not a real directory)"
+                var resolved_root = realpath(root_path)
+                var prefix = resolved_root if resolved_root.endswith("/") else resolved_root + "/"
+                # Do not execute a managed symlink target until containment is known.
+                if not resolved.startswith(prefix):
+                    return "skipped (managed codebase-memory-mcp command escapes its root)"
+                binary = resolved^
+            except:
+                return "skipped (managed codebase-memory-mcp health check failed)"
+            if binary:
+                break
+        if binary:
+            break
+    if not binary:
+        for candidate in _path_candidates("codebase-memory-mcp", getenv("PATH", "\0")):
+            binary = _executable_path(candidate)
+            if binary: break
     if not binary:
         return "skipped (codebase-memory-mcp was not found in managed roots or PATH)"
     var probe: CapturedProcessOutput
@@ -713,8 +750,6 @@ def _dry_run_codebase_status() raises -> String:
 
 def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String, String]:
     var present = _managed_tool_present("caveman")
-    # shortcut: managed Codebase Memory discovery is guarded until containment is qualified.
-    present = present or _managed_tool_present("codebase-memory-mcp", "codebase-memory-mcp")
     var node_found = _path_has_executable("node")
     var npx_found = _path_has_executable("npx")
     present = present or (node_found and npx_found)

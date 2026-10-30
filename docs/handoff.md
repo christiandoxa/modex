@@ -26,17 +26,31 @@ workflow validation passed. A full `make test` is running in the isolated
 `/tmp/modex-full-b405bc2-20261030.log`. An earlier full run on `c5609d0` is
 also still running. Neither run is a completed full-suite result yet.
 
-## Codebase Memory PATH dry-run probe (2026-10-30)
+## Codebase Memory dry-run discovery (2026-10-30)
 
-Super dry-run now reports a Codebase Memory executable found on `PATH` using
-the filtered, bounded version probe. Synthetic real-process comparisons cover
-both pinned releases, minimum-version prerelease ordering, failures, output
-ordering with RTK, and timeout. Managed installations remain fail-closed, and
-the standard-library probe cannot terminate descendant process groups. The
-timeout diagnostic deliberately omits the path printed by the releases. This
-qualifies selected Linux x86-64 behavior only; all six release targets and
-unverified security behavior remain in the parity denominator. See
-`docs/evidence/baseline-0.165.1/super-dry-run-01651.md`.
+Super dry-run follows both pinned releases' managed-root and candidate order:
+`PRODEX_OPTIMIZERS_HOME`, `XDG_DATA_HOME/prodex-optimizers`, then
+`HOME/.local/share/prodex-optimizers`; within each root it checks the root
+command, checkout command, `build/c`, and `bin` command before `PATH`. The
+missing and non-regular candidates are skipped; the first regular file
+shadows later candidates even if it is not executable.
+Synthetic real-process tests compare all four candidate positions and all
+three roots across 0.165.1, 0.439.2, and Modex. Internal managed symlinks are
+accepted; symlinked roots report `skipped (managed Codebase Memory root is not
+a real directory)`. Prodex executes an escaping command symlink before checking
+containment, while Modex returns `skipped (managed codebase-memory-mcp command
+escapes its root)` before execution. For a non-executable first candidate,
+Modex returns `skipped (codebase-memory-mcp health check failed)` without the
+temporary path printed by the releases.
+
+The complete 23-test dry-run module passed against both pinned Linux binaries
+and Modex. The production import audit passed for 71 Mojo files, the test
+census passed for 50 native sources and 154 Python modules, and `git diff --check`
+passed. The probe still cannot terminate descendant process groups,
+and its timeout message omits the executable path printed by the releases.
+This evidence qualifies tested Linux x86-64 cases only; all six release
+targets and unverified security behavior remain in the parity denominator.
+See `docs/evidence/baseline-0.165.1/super-dry-run-01651.md`.
 
 The isolated `make test` run on `751639602fd13c24c216606f086de558e942be88`
 stopped in the native `test_provider_chat_reader` unit before Python tests:

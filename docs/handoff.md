@@ -8,17 +8,20 @@ rejection checks passed; see
 `docs/evidence/baseline-0.166.0/provider-base-url-scheme.md`. HTTPS and other
 provider transports remain unqualified.
 
-A synthetic process comparison found that the DeepSeek local relay does not
-implement `POST /v1/responses/compact`: Modex returns 404, while 0.166.0
-returns a local fallback summary with `x-prodex-compact-*` headers and makes no
-upstream request. Empty input and one synthetic user message are covered by
-`tests/test_local_compact_gap_01660.py`; the test explicitly records the gap,
-not a parity pass. The release's summary preserves recent conversation/tool
-state and has truncation and formatting rules, so a placeholder summary could
-discard context. Implement the complete formatter and production route, then
-replace this characterization with comparisons across representative input
-and error cases. This local fallback is separate from the unimplemented
-profile-backed remote compact 503 behavior.
+The DeepSeek local relay now handles `POST /v1/responses/compact` with the
+0.166.0 local fallback summary, response body and `x-prodex-compact-*` headers.
+`tests/test_local_compact_gap_01660.py` compares ten compact requests against
+the verified oracle, covering generic and tool content, whitespace, non-object
+items, 24-item retention, UTF-8 snippet/summary caps, an 8 MiB model, 20,000
+items, nested input, invalid JSON, query and method routing, and a neighboring
+unsupported path. The synthetic fixtures observe no upstream request. These
+checks run in isolated user, mount and network namespaces and do not qualify
+all input shapes or full parity. The 0.166.0 oracle accepts an invalid
+`Authorization` value for compact and returns 200; Modex rejects the same
+request with 401 in its shared request parser before `_serve`. Keep this
+client-token guard; record the difference as a security-preserving baseline
+mismatch rather than weakening authentication. This local fallback is
+separate from the unimplemented profile-backed remote compact 503 behavior.
 
 Active 0.166.0 process comparisons now cover unknown short options after valid
 `info` and `status` options. Modex preserves the full `[OPTIONS]` usage for

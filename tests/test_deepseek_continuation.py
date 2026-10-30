@@ -23,13 +23,14 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
     def request_turn(source_turn):
         turn = dict(source_turn)
         path = turn.pop("_path", target.path)
+        method = turn.pop("_method", "POST")
         raw_body = turn.pop("_raw_body", None)
         headers = {"Content-Type": "application/json", "Authorization": authorization,
                    **turn.pop("_headers", {})}
         started = int(time.time())
         connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
         body = raw_body.encode() if raw_body is not None else json.dumps(turn, separators=(",", ":")).encode()
-        connection.request("POST", path, body, headers)
+        connection.request(method, path, body, headers)
         response = connection.getresponse()
         payload = response.read()
         result = {"kind": "response", "status": response.status, "headers": dict(response.getheaders()),
@@ -44,12 +45,13 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
         for source_turn in json.loads(pathlib.Path(followups_file).read_text()):
             turn = dict(source_turn)
             path = turn.pop("_path", target.path)
+            method = turn.pop("_method", "POST")
             raw_body = turn.pop("_raw_body", None)
             headers = {"Content-Type": "application/json", "Authorization": authorization,
                        **turn.pop("_headers", {})}
             connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
             body = raw_body.encode() if raw_body is not None else json.dumps(turn, separators=(",", ":")).encode()
-            connection.request("POST", path, body, headers)
+            connection.request(method, path, body, headers)
             response = connection.getresponse()
             payload = response.read()
             save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),
@@ -59,6 +61,7 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
     raise SystemExit(0)
 for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()):
     path = turn.pop("_path", target.path)
+    method = turn.pop("_method", "POST")
     raw_body = turn.pop("_raw_body", None)
     headers = {"Content-Type": "application/json", "Authorization": authorization,
                **turn.pop("_headers", {})}
@@ -69,7 +72,7 @@ for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"])
     started = int(time.time())
     connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
     body = raw_body.encode() if raw_body is not None else json.dumps(turn, separators=(",", ":")).encode()
-    connection.request("POST", path, body, headers)
+    connection.request(method, path, body, headers)
     response = connection.getresponse()
     payload = response.read()
     save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),

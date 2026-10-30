@@ -27,6 +27,7 @@ from .provider_request import translate_deepseek_request
 from .provider_request_params import request_format
 from .auth_token import valid_local_client_token
 from .runtime_binding import RuntimeBindings
+from .runtime_local_compact import local_compact_response_body, local_compact_summary
 from .runtime_sse_binding_observer import RuntimeSSEBindingObserver
 
 comptime HTTP_KEEP_ALIVE_MAX_PARKED = 128
@@ -706,6 +707,17 @@ struct LocalRewriteSharedState(Movable):
 
 def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, messages_address: String, messages_path: String, request_id: UInt64, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
+    if target == "/v1/responses/compact":
+        var summary = local_compact_summary(request.body)
+        var body = local_compact_response_body(summary)
+        connection.respond(200, [
+            ("content-type", "application/json; charset=utf-8"),
+            ("x-prodex-compact-mode", "local-fallback"),
+            ("x-prodex-compact-provider", "deepseek"),
+            ("x-prodex-compact-degraded", "true"),
+            ("x-prodex-compact-reason", "local-policy"),
+        ], _bytes(body), 30000)
+        return
     if target != "/v1/chat/completions" and target != "/v1/responses":
         _route_error(connection)
         return

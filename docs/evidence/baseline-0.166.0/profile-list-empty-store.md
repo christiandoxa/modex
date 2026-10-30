@@ -18,8 +18,12 @@ oracle is pinned by the SHA-256 recorded in `test_active_baseline_01660.py`.
 The same active-release module verifies that malformed state and a dangling
 root symlink with a trailing slash do not produce the empty panel. It also
 checks a dangling ancestor symlink; Modex treats only a missing final entry
-under an existing resolved directory as absence. Other lookup failures stay
-fail-closed.
+under an existing resolved directory owned and owner-writable by the current
+user as absence. For synthetic parent modes 0555 and 0557, both processes fail
+without creating state; Modex reports its unimplemented-command error rather
+than the release's permission error. Other lookup failures stay fail-closed.
+Owner and mode checks do not detect access denied by ACLs or read-only mounts,
+so Modex can still render an empty panel where the release cannot create state.
 
 Reproduce from the repository root with Mojo 1.2.0:
 

@@ -35,7 +35,9 @@ PYTHONPATH=tests python3 -m unittest \
 ```
 
 This covers the tested parse diagnostics only. It does not establish parity for
-other `doctor` modes or the remaining release targets. A broader local probe
-found an unresolved three-option usage-order mismatch for
+other `doctor` modes or the remaining release targets. An exploratory comparison
+of 34 invalid two- and three-option orderings without `--runtime` found no
+regressions against the prior Modex build and 11 remaining mismatches. A
+separate probe found a three-option usage-order mismatch for
 `doctor --runtime --suggest-policy --bundle`; it lacks `--redacted`, so both
 processes stop at argument validation without running the doctor backend.

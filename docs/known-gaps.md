@@ -7,10 +7,13 @@ remain BLOCKED. Current-target observations are tracked in
 `docs/handoff.md` and `docs/evidence/baseline-0.166.0/`.
 
 For an absent app root, Modex now matches the Prodex 0.166.0 `profile list`
-empty panel and exit code without creating state. The release creates lifecycle
-and update locks, and housekeeping files may appear asynchronously; Modex does
+empty panel and exit code in the tested writable-home case without creating
+state. The release creates lifecycle and update locks, and housekeeping files
+may appear asynchronously; Modex does
 not match those effects. Existing roots, dangling ancestors, and lookup failures
 other than a missing final entry under an existing directory remain fail-closed.
+The fast path requires an owned, owner-writable parent; ACL and read-only mount
+denials are not detected and can still produce a different result.
 Populated listing, state recovery, locking and the full `PROFILE-LIST` contract
 remain unimplemented. See
 `docs/evidence/baseline-0.166.0/profile-list-empty-store.md`.

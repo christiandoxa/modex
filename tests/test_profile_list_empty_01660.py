@@ -49,12 +49,12 @@ def observe(binary, argv0):
     return temporary, root, command, result, effects, store_absent_before
 
 
-def observe_modex_root(root, app_root):
+def observe_root(binary, argv0, root, app_root):
     command = sandbox_command(
-        MODEX,
+        binary,
         root,
         ["profile", "list"],
-        argv0="modex",
+        argv0=argv0,
         environment={"PRODEX_HOME": str(app_root)},
     )
     result = subprocess.run(
@@ -153,12 +153,41 @@ class ProfileListEmpty01660GapTests(unittest.TestCase):
                     expected_effects = {"home/link"}
 
                 configured_root = str(app_root) + "/" if root_kind == "dangling-symlink" else str(app_root)
-                result, effects = observe_modex_root(root, configured_root)
-                self.assertEqual((result.returncode, result.stdout, result.stderr),
-                                 (1, b"", UNIMPLEMENTED))
+                result, effects = observe_root(MODEX, "modex", root, configured_root)
+                self.assertEqual(
+                    (result.returncode, result.stdout, result.stderr),
+                    (1, b"", UNIMPLEMENTED),
+                )
                 self.assertEqual(effects, expected_effects)
                 if root_kind == "malformed-state":
                     self.assertEqual(state.read_bytes(), b"{invalid state\n")
+
+    def test_known_non_writable_searchable_parents_do_not_render_empty_panel(self):
+        for mode in (0o555, 0o557):
+            with self.subTest(mode=oct(mode)), tempfile.TemporaryDirectory(
+                prefix="modex-profile-list-readonly-parent-01660-"
+            ) as directory:
+                root = Path(directory)
+                home = root / "home"
+                home.mkdir(mode=0o700)
+                home.chmod(mode)
+                (root / "workspace").mkdir(mode=0o700)
+
+                reference, reference_effects = observe_root(
+                    ORACLE, "prodex", root, home / ".prodex"
+                )
+                result, effects = observe_root(
+                    MODEX, "modex", root, home / ".prodex"
+                )
+
+                self.assertNotEqual(reference.returncode, 0)
+                self.assertEqual(reference.stdout, b"")
+                self.assertEqual(reference_effects, set())
+                self.assertEqual(
+                    (result.returncode, result.stdout, result.stderr),
+                    (1, b"", UNIMPLEMENTED),
+                )
+                self.assertEqual(effects, set())
 
 if __name__ == "__main__":
     unittest.main()

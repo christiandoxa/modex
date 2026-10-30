@@ -44,6 +44,9 @@ def app_root_is_absent() raises -> Bool:
         var parent_info = stat(resolved_parent)
         if (parent_info.st_mode & 0o170000) != 0o040000:
             return False
+        # shortcut: ACLs and read-only mounts can deny writes; add a platform probe if parity expands.
+        if parent_info.st_uid != getuid() or (parent_info.st_mode & 0o200) == 0:
+            return False
     except:
         return False
     var entry = resolved_parent

@@ -17,7 +17,7 @@ from std.utils.lock import BlockingScopedLock, BlockingSpinLock
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument
 from .loopback_http import HTTP_HEADER_LIMIT, HTTP_MAX_REQUEST_FIELD_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, LoopbackHTTPStream, _number, normalize_loopback_ipv4_host
 from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
-from .log_operational import decode_url_host, valid_url_authority
+from .log_operational import decode_url_host, valid_ipv6_literal, valid_url_authority
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_model_retry_available, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_api_key_response, deepseek_retryable_model_response
 from .provider_conversations import ProviderConversationStore
 from .provider_anthropic_messages import anthropic_auto_chat_fallback_safe, anthropic_search_filters_conflict, deepseek_anthropic_messages_body
@@ -37,6 +37,21 @@ from .text import is_whitespace, trim_text, unsigned_value
 from .uuid7 import new_uuid7, runtime_request_id_from_uuid7, runtime_request_sequence_take
 
 
+def _ipv6_loopback_literal(host: String) -> Bool:
+    if not valid_ipv6_literal(host): return False
+    var separator = host.rfind(":")
+    if separator < 0: return False
+    for byte in host[byte=:separator].as_bytes():
+        if byte != 48 and byte != 58: return False
+    var last = String(host[byte=separator + 1:])
+    if last == "0.0.0.1": return True
+    if not last or last.byte_length() > 4: return False
+    for index in range(last.byte_length()):
+        if Int(last.as_bytes()[index]) != (49 if index == last.byte_length() - 1 else 48):
+            return False
+    return True
+
+
 def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
     if not url.lower().startswith("http://") or "@" in url or "?" in url or "#" in url:
         raise Error("this Modex gateway requires a credential-free numeric loopback HTTP upstream URL")
@@ -47,8 +62,13 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
     var slash = remaining.find("/")
     var address = String(remaining[byte=:slash]) if slash >= 0 else remaining
     var path = String(remaining[byte=slash:]) if slash >= 0 else String()
-    if address == "[::1]" or address.startswith("[::1]:"):
-        var port = 80 if address.byte_length() <= 6 else _number(address[byte=6:])
+    if address.startswith("["):
+        var close = address.find("]")
+        if close < 0 or not _ipv6_loopback_literal(String(address[byte=1:close])):
+            raise Error("HTTP address is not loopback")
+        if close + 1 < address.byte_length() and address.as_bytes()[close + 1] != 58:
+            raise Error("invalid loopback HTTP address")
+        var port = 80 if close + 2 >= address.byte_length() else _number(address[byte=close + 2:])
         if port < 1 or port > 65535: raise Error("invalid loopback HTTP port")
         address = "[::1]:" + String(port)
     else:

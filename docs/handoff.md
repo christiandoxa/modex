@@ -1,5 +1,13 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The DeepSeek loopback boundary now accepts selected equivalent IPv6 `::1`
+spellings and emits the canonical Host authority. The native Gateway test and
+five active-oracle authority tests passed, including non-loopback rejection, in
+a private loopback-only network namespace with isolated temporary state. The
+production build and dependency audit also passed. This does not qualify other
+IPv6 forms, providers, release targets, or full parity; see
+`docs/evidence/baseline-0.166.0/provider-ipv6-loopback.md`.
+
 The DeepSeek URL boundary now accepts selected percent-encoded numeric
 loopback hosts such as `127%2e1`, matching 0.166.0 in Chat and Anthropic
 process comparisons. Decoded values still pass the numeric `127/8` check;
@@ -24,8 +32,7 @@ such as `127.1` and integer, octal, hexadecimal, and trailing-dot forms, while
 requiring a numeric `127/8` destination. Active 0.166.0 comparisons cover Chat
 and Anthropic routes, canonical Host headers, padded ports, and rejection of
 selected malformed and non-loopback authorities. Hostname and non-loopback
-guards remain in place. Other numeric spellings, default ports, expanded IPv6,
-and other targets remain unverified; see
+guards remain in place. Other numeric spellings and targets remain unverified; see
 `docs/evidence/baseline-0.166.0/provider-base-url-authority.md`.
 Full `make unit` passed on `29d7bae37098574974fcdeac753cff64efd9ab99`, after
 the numeric-loopback change. This is native unit evidence, not full CI or

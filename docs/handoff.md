@@ -1,5 +1,11 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Hosted Fast CI run `41145337204` failed one active Doctor test because a long
+private scratch path wrapped a redaction marker across display lines. The test
+now reconstructs wrapped markers while still checking raw output for synthetic
+secrets. A long-path reproduction and all seven Doctor install tests passed;
+the failed hosted run is not a CI pass.
+
 The local relay now accepts selected Unicode digit and dot spellings of numeric
 loopback hosts observed in 0.166.0, then applies the existing 127/8 guard and
 connects to the canonical address without DNS. General IDNA handling remains

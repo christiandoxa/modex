@@ -102,6 +102,10 @@ def without_panel_fields(output, excluded):
     return b"\n".join(rows) + (b"\n" if output.endswith(b"\n") else b"")
 
 
+def unwrapped_output(output):
+    return b"".join(line.strip() for line in output.splitlines())
+
+
 def run_doctor(binary, root, environment, arguments=("--install",)):
     system_tools = (Path("/bin/sh").resolve(), Path("/bin/cat").resolve())
     command = sandbox_command(
@@ -196,8 +200,8 @@ class DoctorInstall01660Tests(unittest.TestCase):
             self.assertNotIn(b"synthetic-provider-key", modex.stdout)
             self.assertNotIn(b"synthetic-prodex-path-secret", modex.stdout)
             self.assertNotIn(b"synthetic-shared-path-secret", modex.stdout)
-            self.assertIn(b"api_key=<redacted>", modex.stdout)
-            self.assertIn(b"token=<redacted>", modex.stdout)
+            self.assertIn(b"api_key=<redacted>", unwrapped_output(modex.stdout))
+            self.assertIn(b"token=<redacted>", unwrapped_output(modex.stdout))
             self.assertNotIn(b"\x1b", modex.stdout)
             self.assertNotIn(b"\x07", modex.stdout)
             expected_probes = {
@@ -259,8 +263,8 @@ class DoctorInstall01660Tests(unittest.TestCase):
             self.assertNotIn(b"synthetic-prodex-path-secret", modex.stdout)
             self.assertNotIn(b"synthetic-shared-path-secret", modex.stdout)
             self.assertNotIn(b"synthetic-optimizer-path-secret", modex.stdout)
-            self.assertIn(b"api_key=<redacted>", modex.stdout)
-            self.assertIn(b"token=<redacted>", modex.stdout)
+            self.assertIn(b"api_key=<redacted>", unwrapped_output(modex.stdout))
+            self.assertIn(b"token=<redacted>", unwrapped_output(modex.stdout))
             self.assertNotIn(b"\x1b", modex.stdout)
             self.assertNotIn(b"\x07", modex.stdout)
             self.assertFalse((home / ".prodex").exists())
@@ -412,7 +416,7 @@ class DoctorInstall01660Tests(unittest.TestCase):
             )
             self.assertEqual(modex.stderr, baseline.stderr)
             self.assertIn(b"Codex CLI:", modex.stdout)
-            self.assertIn(b"api_key=<redacted>", modex.stdout)
+            self.assertIn(b"api_key=<redacted>", unwrapped_output(modex.stdout))
             self.assertNotIn(b"synthetic-command-path-secret", modex.stdout)
             self.assertNotIn(b"\x1b", modex.stdout)
             self.assertNotIn(b"\x07", modex.stdout)
@@ -455,8 +459,8 @@ class DoctorInstall01660Tests(unittest.TestCase):
             self.assertNotIn(b"synthetic-prodex-path-secret", modex.stdout)
             self.assertNotIn(b"synthetic-shared-path-secret", modex.stdout)
             self.assertNotIn(b"synthetic-optimizer-path-secret", modex.stdout)
-            self.assertIn(b"api_key=<redacted>", modex.stdout)
-            self.assertIn(b"token=<redacted>", modex.stdout)
+            self.assertIn(b"api_key=<redacted>", unwrapped_output(modex.stdout))
+            self.assertIn(b"token=<redacted>", unwrapped_output(modex.stdout))
             self.assertNotIn(b"\x1b", modex.stdout)
             self.assertNotIn(b"\x07", modex.stdout)
             self.assertEqual(

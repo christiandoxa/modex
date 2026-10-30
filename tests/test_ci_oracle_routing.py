@@ -42,11 +42,25 @@ class CIOracleRoutingTests(unittest.TestCase):
         )
         self.assertEqual(result.stdout.splitlines(), ["/synthetic/oracle-04392", "/synthetic/oracle-01651"])
 
+    def test_buffered_response_shapes_suite_uses_explicit_release_overrides(self):
+        environment = {
+            **os.environ,
+            "PYTHONPATH": str(ROOT / "tests"),
+            "PRODEX_ORACLE": "/synthetic/wrong-generic-oracle",
+            "PRODEX_ORACLE_04392": "/synthetic/oracle-04392",
+            "PRODEX_ORACLE_01651": "/synthetic/oracle-01651",
+        }
+        result = subprocess.run(
+            [sys.executable, "-c", "import test_provider_buffered_response_shapes_01651_04392 as suite; print(suite.ORACLE_04392); print(suite.ORACLE_01651)"],
+            cwd=ROOT, env=environment, capture_output=True, text=True, check=True,
+        )
+        self.assertEqual(result.stdout.splitlines(), ["/synthetic/oracle-04392", "/synthetic/oracle-01651"])
+
     def test_fast_ci_checks_04392_before_historical_oracles(self):
         script = (ROOT / "scripts/ci/run-fast.sh").read_text(encoding="utf-8")
         active = script.index("reference.py oracle active")
         historical = script.index("reference.py oracle 0.165.1")
-        cross_release = script.index("run_logged focused-python-active-cross-release")
+        cross_release = script.index('run_logged focused-python-active-cross-release "$PYTHON"')
         cross_release_tests = script[cross_release:script.index("\n", cross_release)]
         active_source = script.index("reference.py source active")
         active_suite = script.index("run_logged focused-python-active ")
@@ -56,6 +70,10 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(historical, cross_release)
         self.assertLess(script.index("run_logged build-input-check"), historical)
         self.assertLess(script.index("run_logged focused-build make build unit"), historical)
+        self.assertIn(
+            'run_logged focused-python-active-cross-release-buffered-response-shapes env PRODEX_ORACLE_04392="$PRODEX_ORACLE_04392" PRODEX_ORACLE_01651="$PRODEX_ORACLE_01651" "$PYTHON" scripts/ci/run-unittest.py test_provider_buffered_response_shapes_01651_04392.py',
+            script,
+        )
         active_tests = script[script.index("run_logged focused-python-active"):historical]
         self.assertIn("test_app_server_rpc_04392.py", active_tests)
         self.assertIn("test_gateway_cli.py", active_tests)
@@ -90,7 +108,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         script = (ROOT / "scripts/ci/run-full.sh").read_text(encoding="utf-8")
         active = script.index("reference.py oracle active")
         historical = script.index("reference.py oracle 0.165.1")
-        cross_release = script.index("run_logged focused-python-active-cross-release")
+        cross_release = script.index('run_logged focused-python-active-cross-release "$PYTHON"')
         cross_release_tests = script[cross_release:script.index("\n", cross_release)]
         active_source = script.index("reference.py source active")
         active_suite = script.index("run_logged focused-python-active ")
@@ -100,6 +118,10 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(historical, cross_release)
         self.assertLess(script.index("run_logged build-input-check"), historical)
         self.assertLess(script.index("run_logged focused-build make build"), historical)
+        self.assertIn(
+            'run_logged focused-python-active-cross-release-buffered-response-shapes env PRODEX_ORACLE_04392="$PRODEX_ORACLE_04392" PRODEX_ORACLE_01651="$PRODEX_ORACLE_01651" "$PYTHON" scripts/ci/run-unittest.py test_provider_buffered_response_shapes_01651_04392.py',
+            script,
+        )
         active_tests = script[script.index("run_logged focused-python-active"):historical]
         self.assertIn("test_app_server_rpc_04392.py", active_tests)
         self.assertIn("test_anthropic_stream_optional_metadata_shared.py", script)

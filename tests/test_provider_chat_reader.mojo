@@ -110,7 +110,7 @@ def main() raises:
     var end_turn_sequence_events = collect_anthropic_completed(before_stop + end_turn_sequence_delta + message_stop)
     assert_true('"finish_reason":"stop"' in end_turn_sequence_events[len(end_turn_sequence_events) - 1])
     var missing_delta_events = collect_anthropic_completed(before_stop + message_stop)
-    assert_true('"usage"' not in missing_delta_events[len(missing_delta_events) - 1])
+    assert_true('"usage":{"input_tokens":3,"output_tokens":0,"total_tokens":3}' in missing_delta_events[len(missing_delta_events) - 1])
     assert_true('"finish_reason"' not in missing_delta_events[len(missing_delta_events) - 1])
     var missing_reason_delta = 'data: {"type":"message_delta","delta":{"stop_sequence":null},"usage":{"output_tokens":5}}\n\n'
     var missing_reason_events = collect_anthropic_completed(before_stop + missing_reason_delta + message_stop)

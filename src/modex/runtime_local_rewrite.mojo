@@ -937,8 +937,8 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         try:
             body = exchange.read_buffered()
         except error:
-            # Match the releases' internal failure for a non-object first choice.
-            if String(error) == "DeepSeek chat response choice is not an object":
+            # Match the releases' internal failure for a non-object response root or first choice.
+            if String(error) == "DeepSeek chat response choice is not an object" or String(error) == "DeepSeek chat response is not an object":
                 connection.respond(500, [], List[UInt8](), 30000)
             else:
                 _reply(connection, 502, "provider response could not be processed")

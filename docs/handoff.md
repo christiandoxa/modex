@@ -6,6 +6,8 @@ process comparisons. Decoded values still pass the numeric `127/8` check;
 encoded separators, controls, malformed escapes, hostnames and non-loopback
 destinations remain rejected. Other host spellings and release targets remain
 unqualified; see `docs/evidence/baseline-0.166.0/provider-percent-encoded-host.md`.
+Full native `make unit` passed on `89d1dc406ca2a8325e23e2889cedd43340542abf`;
+this is not full CI or release qualification.
 
 The DeepSeek numeric-loopback HTTP relay now uses port 80 for omitted and empty
 ports and omits the default port from the Host header. A manual, isolated

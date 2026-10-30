@@ -24,3 +24,5 @@ and loopback-only network namespace, the active authority, scheme, and
 session-history modules passed 12 tests; a subsequent authority-module rerun
 with additional malformed-escape controls passed all three tests. The manual
 default-port comparison also passed, and the native Gateway checks passed.
+Full native `make unit` passed on
+`89d1dc406ca2a8325e23e2889cedd43340542abf`; this is not a full CI verdict.

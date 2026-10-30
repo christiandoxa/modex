@@ -47,22 +47,27 @@ class ProviderBufferedChoiceTests(unittest.TestCase):
 
         turns = [
             {"model": "deepseek-chat", "input": "synthetic malformed choice"},
+            {"model": "deepseek-chat", "input": "synthetic scalar choice"},
+            {"model": "deepseek-chat", "input": "synthetic array choice"},
             {"model": "deepseek-chat", "input": "synthetic empty choices"},
             {"model": "deepseek-chat", "input": "synthetic later malformed choice"},
         ]
         replies = [
             _reply(0, [None, {"message": {"content": "must be ignored"}}]),
-            _reply(1, []),
-            _reply(2, [{"message": {"content": "first choice wins"}}, None]),
+            _reply(1, [7, {"message": {"content": "must be ignored"}}]),
+            _reply(2, [["malformed"], {"message": {"content": "must be ignored"}}]),
+            _reply(3, []),
+            _reply(4, [{"message": {"content": "first choice wins"}}, None]),
         ]
         observed = []
         for binary in (ORACLE_01651, ORACLE_04392, MODEX):
             posts, responses = observe_turns(binary, turns, replies)
-            self.assertEqual(len(posts), 3)
-            self.assertEqual([post["path"] for post in posts], ["/v1/chat/completions"] * 3)
-            self.assertEqual([response["status"] for response in responses], [500, 200, 200])
-            self.assertEqual(bytes.fromhex(responses[0]["body"]), b"")
-            bodies = [json.loads(bytes.fromhex(response["body"])) for response in responses[1:]]
+            self.assertEqual(len(posts), 5)
+            self.assertEqual([post["path"] for post in posts], ["/v1/chat/completions"] * 5)
+            self.assertEqual([response["status"] for response in responses], [500, 500, 500, 200, 200])
+            for response in responses[:3]:
+                self.assertEqual(bytes.fromhex(response["body"]), b"")
+            bodies = [json.loads(bytes.fromhex(response["body"])) for response in responses[3:]]
             self.assertEqual(bodies[0]["output"], [])
             self.assertEqual(bodies[1]["output"][0]["content"][0]["text"], "first choice wins")
             observed.append([response["status"] for response in responses])

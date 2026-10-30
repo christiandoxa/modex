@@ -4694,3 +4694,23 @@ The prefetch boolean latch does discard read-error text, but repeated chat and
 Anthropic-native partial-frame fixtures returned the same generic decoding
 diagnostic from both frozen releases and Modex. The focused three-process
 regression now locks this observed behavior; no production change was justified.
+
+## Buffered DeepSeek first-choice type (2026-10-30)
+
+The real 0.165.1 and frozen 0.439.2 processes return an empty HTTP 500 when the
+first Chat Completions `choices` entry is null, numeric, or an array, even if a
+later entry is valid. Modex previously returned HTTP 200 with an empty output
+for scalar and array entries. The buffered response mapper now rejects any
+present first choice that is not an object using the existing transport error
+mapping. Empty choices still return HTTP 200, and a valid first choice still
+wins over later entries.
+
+At both commits, the buffered response path calls the assistant-history
+extractor after translation. Its native `deepseek_chat_assistant_messages`
+operation rejects a present first choice that is not an object. The
+three-process comparison confirms this reaches the client as HTTP 500. Focused
+production build, native buffered-provider test, real-process comparison,
+71-file dependency audit, 50-native/155-Python test census, and diff check pass
+on Linux x86-64. Other response shapes, all six release targets, and broader
+provider parity remain unqualified. See
+`docs/evidence/baseline-0.439.2/provider-buffered-choice-history.md`.

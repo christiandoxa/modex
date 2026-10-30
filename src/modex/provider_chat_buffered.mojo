@@ -26,6 +26,9 @@ def deepseek_buffered_response(
         raise Error("failed to parse DeepSeek chat response JSON")
     if doc.nodes[doc.root].kind != JSON_OBJECT:
         raise Error("DeepSeek chat response is not an object")
+    var choice = _first_choice(doc)
+    if choice >= 0 and doc.nodes[choice].kind != JSON_OBJECT:
+        raise Error("DeepSeek chat response choice is not an object")
     var id = _string_member(doc, doc.root, "id")
     var response_id = id.value() if id else fallback_response_id
     var created = json_unsigned(doc, doc.get(doc.root, "created"))
@@ -34,7 +37,6 @@ def deepseek_buffered_response(
 
     var output = "["
     var output_count = 0
-    var choice = _first_choice(doc)
     var message = doc.get(choice, "message")
     var content = _string_member(doc, message, "content")
     if content and content.value().byte_length() > 0:

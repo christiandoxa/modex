@@ -113,6 +113,13 @@ def main() raises:
     except error:
         rejected = String(error) == "failed to parse DeepSeek chat response JSON"
     assert_true(rejected)
+    for source in ['{"choices":[null,{"message":{"content":"ignored"}}]}', '{"choices":[7]}', '{"choices":[[]]}']:
+        var rejected_choice = False
+        try:
+            _ = deepseek_buffered_response(source, 1, "resp_choice")
+        except error:
+            rejected_choice = String(error) == "DeepSeek chat response choice is not an object"
+        assert_true(rejected_choice)
     var prefix = String('{"id":"at-cap","ignored":"')
     var suffix = String('"}')
     var at_cap = prefix + String("x") * (4194304 - prefix.byte_length() - suffix.byte_length()) + suffix

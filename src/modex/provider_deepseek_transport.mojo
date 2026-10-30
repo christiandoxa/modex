@@ -687,10 +687,13 @@ struct DeepSeekExchange(Movable):
                     raise Error("error decoding response body")
                 try:
                     self.pending = self.http.read_chunk()
-                except:
-                    # The frozen Rust body reader reports framing and read failures generically.
+                except error:
                     provider_stream_read_error = True
-                    raise Error("error decoding response body")
+                    var message = "error decoding response body"
+                    if String(error) == "loopback HTTP stream timed out":
+                        # Prodex 0.439.2 preserves this error from its continuation reader.
+                        message = "runtime upstream stream idle timed out"
+                    raise Error(message)
                 self.pending_offset = 0
                 if not self.pending:
                     var events: List[String]

@@ -4623,3 +4623,21 @@ two native redirect deadline/cancellation tests and native transport header
 checks; three passthrough tests; one Super binary-passthrough comparison;
 product dependency audit; Python syntax check; and `git diff --check` all
 passed. Tests used synthetic loopback peers and credentials only.
+
+## DeepSeek stream idle-timeout diagnostics (2026-10-30)
+
+The provider event reader now preserves the frozen continuation reader's
+`runtime upstream stream idle timed out` diagnostic when its loopback reader
+reports that exact idle timeout. Framing and other body-read errors retain
+`error decoding response body`. Both pinned source releases use the timeout
+diagnostic, though a three-process probe showed the 0.165.1 process can emit
+either message depending on which timeout/read path wins. One controlled capture
+reported generic on 0.165.1 and timeout-specific on 0.439.2 and Modex; a repeat
+reported timeout-specific on 0.165.1 too. Keep this observed run difference
+visible without treating it as a stable cross-release mismatch.
+
+Pre-commit empty-body, post-commit text-idle, and truncated length/chunked-body
+controls pass across 0.165.1, 0.439.2 and Modex. The direct native transport
+idle regression checks the new Modex message. The focused production build,
+provider unit and process comparisons passed on Linux x86-64. See
+`docs/evidence/provider-stream-idle-04392.md`.

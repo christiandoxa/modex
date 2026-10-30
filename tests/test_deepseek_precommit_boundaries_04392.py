@@ -122,6 +122,7 @@ class GatedUpstream(FragmentedUpstream):
 @contextmanager
 def fragmented_serving(responses):
     server = FragmentedUpstream(responses[0]["raw_parts"])
+    server.responses = responses
     try:
         yield server
     finally:
@@ -310,6 +311,8 @@ class DeepSeekPrecommitBoundaryTests(unittest.TestCase):
         test_cli.CliTests.setUpClass()
         if hashlib.sha256(test_cli.ORACLE.read_bytes()).hexdigest() != test_cli.ORACLE_SHA256:
             raise AssertionError("oracle does not match frozen Prodex 0.439.2")
+        if hashlib.sha256(continuation.ORACLE_01651.read_bytes()).hexdigest() != continuation.ORACLE_01651_SHA256:
+            raise AssertionError("oracle does not match pinned Prodex 0.165.1")
 
     def test_partial_status_header_chunk_size_and_body_framing_match_release(self):
         event = {"id": "synthetic-fragmented", "created": 42, "model": "deepseek-chat",
@@ -369,7 +372,7 @@ class DeepSeekPrecommitBoundaryTests(unittest.TestCase):
         for name, parts in cases:
             with self.subTest(case=name):
                 observations = []
-                for binary in (test_cli.ORACLE, test_cli.MODEX):
+                for binary in (continuation.ORACLE_01651, test_cli.ORACLE, test_cli.MODEX):
                     upstream, responses = observe_raw(binary, parts)
                     self.assertEqual(len(upstream), 1)
                     self.assertEqual(len(responses), 1)

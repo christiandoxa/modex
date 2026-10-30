@@ -575,6 +575,9 @@ class ProviderDeepSeekTransportTests(unittest.TestCase):
         self.assertTrue(self.records(output, "headers"))
         failed = [item["sse"] for item in self.records(output, "event")]
         self.assertTrue(any("response.failed" in event for event in failed), output)
+        self.assertTrue(any(
+            '"message":"runtime upstream stream idle timed out"' in event for event in failed
+        ), output)
         self.assertEqual(self.records(output, "done"), [{"type": "done", "cancelled": False}])
 
     def test_connected_local_rewrite_streams_over_4_mib_total(self):

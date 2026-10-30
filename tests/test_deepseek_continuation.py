@@ -433,7 +433,7 @@ class DeepSeekContinuationTests(unittest.TestCase):
             ("partial_lookahead_first", b"data: {", 500, 100, 200, ["response.failed"], []),
         ]
         for name, body, idle, lookahead, status, types, deltas in cases:
-            for binary in (ORACLE, MODEX):
+            for binary in (ORACLE_01651, ORACLE, MODEX):
                 with self.subTest(case=name, binary=str(binary)):
                     posts, responses = observe_turns(
                         binary, [{"model": "deepseek-chat", "input": "synthetic idle", "stream": True}],
@@ -454,13 +454,12 @@ class DeepSeekContinuationTests(unittest.TestCase):
                                       if event["type"] == "response.output_text.delta"], deltas)
                     error = events[-1]["response"]["error"]
                     self.assertEqual(error["code"], "provider_stream_error")
-                    # Either source-backed idle diagnostic can win the release's
-                    # transport race. Modex currently emits the decoding form.
+                    # Release idle errors can win or lose to the generic body-read path.
                     self.assertIn(error["message"], (
                         "error decoding response body", "runtime upstream stream idle timed out",
                     ))
-                    if binary == MODEX:
-                        self.assertEqual(error["message"], "error decoding response body")
+                    if name == "text_idle_first" and binary == MODEX:
+                        self.assertEqual(error["message"], "runtime upstream stream idle timed out")
 
     def test_precommit_failure_does_not_bind_later_requests(self):
         identities = (

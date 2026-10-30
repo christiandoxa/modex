@@ -132,22 +132,26 @@ def _compact_optional_string(doc: JsonDocument, item: Int, field: String) -> Tup
 
 def _compact_trimmed_model(text: String) -> String:
     var start = -1
+    var end = 0
     var offset = 0
     for character in text.codepoints():
-        var width = chr(Int(character)).byte_length()
-        if not is_whitespace(Int(character)):
-            start = offset
-            break
+        var code = Int(character)
+        var width = chr(code).byte_length()
+        if not is_whitespace(code):
+            if start < 0:
+                start = offset
+            end = offset + width
+            if end - start > LOCAL_COMPACT_MAX_SUMMARY_BYTES + 1:
+                break
         offset += width
     if start < 0:
         return ""
+    end = min(end, start + LOCAL_COMPACT_MAX_SUMMARY_BYTES + 1)
     var bytes = text.as_bytes()
-    var end = min(text.byte_length(), start + LOCAL_COMPACT_MAX_SUMMARY_BYTES + 1)
     if end < text.byte_length():
         while end > start and (Int(bytes[end]) & 192) == 128:
             end -= 1
-    var prefix = String(text[byte=start:end])
-    return trim_text(prefix) if end == text.byte_length() else prefix^
+    return String(text[byte=start:end])
 
 
 def _compact_truncate(text: String, maximum: Int) -> String:

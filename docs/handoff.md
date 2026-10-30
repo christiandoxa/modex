@@ -17,6 +17,14 @@ rejection checks passed; see
 `docs/evidence/baseline-0.166.0/provider-base-url-scheme.md`. HTTPS and other
 provider transports remain unqualified.
 
+The DeepSeek local compact formatter now trims a model's full whitespace
+suffix before applying the bounded summary limit. This preserves input counts
+and synthetic conversation context when an otherwise short model is followed
+by more than 24 KiB of whitespace. Active release comparisons include Unicode
+whitespace, an all-whitespace model, and a long internal gap with a nonblank
+suffix. Broader compact input shapes remain unqualified; see
+`docs/evidence/baseline-0.166.0/local-compact-fallback.md`.
+
 The DeepSeek local relay now handles `POST /v1/responses/compact` with the
 0.166.0 local fallback summary, response body and `x-prodex-compact-*` headers.
 `tests/test_local_compact_gap_01660.py` compares ten compact requests against

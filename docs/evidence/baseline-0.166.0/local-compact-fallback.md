@@ -18,6 +18,14 @@ temporary HOME and `/tmp`, and read-only bindings for the worktree, oracle, and
 Mojo runtime libraries. It has no real credentials and observed no upstream
 traffic.
 
+The model formatter trims the complete Unicode whitespace suffix before
+applying its bounded summary prefix. Previously, a short model followed by
+more than 24 KiB of whitespace consumed the summary budget and omitted the
+synthetic conversation context. The active process regression compares ASCII
+and Unicode suffixes, whitespace-only model values, and a long internal gap
+followed by non-whitespace against the verified release. The input stays
+bounded by the existing request limit; model prefix allocation remains bounded.
+
 The invalid-token control exposes a security-preserving baseline mismatch:
 the 0.166.0 oracle accepts `Bearer synthetic-invalid-token` on the compact
 route and returns 200, while Modex rejects it with 401 in its shared request

@@ -124,6 +124,33 @@ class LocalCompactGap01660Tests(unittest.TestCase):
         self.assertIn("- user message: large-19976\n", large_collection_summary)
         self.assertIn("- user message: large-19999", large_collection_summary)
 
+    def test_long_model_whitespace_does_not_discard_context(self):
+        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        models = (
+            "synthetic-model" + " " * 30000,
+            "  synthetic-model" + "\u3000" * 9000,
+            "synthetic-model" + " " * 30000 + "suffix",
+            " " * 30000,
+        )
+        turns = [
+            {"model": model, "input": [{"type": "message", "role": "user",
+             "content": "synthetic retained context"}], "_path": "/v1/responses/compact"}
+            for model in models
+        ]
+        observations = []
+        for binary in (ORACLE, MODEX):
+            upstream, responses = observe_turns(binary, turns, [], latest_version="0.166.0", concurrent=True)
+            self.assertEqual(upstream, [])
+            self.assertEqual(len(responses), len(turns))
+            self.assertTrue(all(response["status"] == 200 for response in responses))
+            observations.append([json.loads(bytes.fromhex(response["body"])) for response in responses])
+        self.assertEqual(observations[0], observations[1])
+        for index in (0, 1, 3):
+            text = observations[1][index]["output"][0]["content"][0]["text"]
+            self.assertIn("Original input items: 1", text)
+            self.assertIn("synthetic retained context", text)
+        self.assertTrue(observations[1][2]["output"][0]["content"][0]["text"].endswith("[truncated]"))
+
     def test_route_controls_match_active_baseline(self):
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
         turns = [

@@ -1,7 +1,7 @@
 from std.collections import List
 from std.testing import assert_equal, assert_false, assert_true
 
-from modex.uuid7 import new_uuid7, uuid7_from_parts, uuid7_suffix_u32
+from modex.uuid7 import new_uuid7, runtime_request_id_from_uuid7, runtime_request_sequence_next, uuid7_from_parts, uuid7_suffix_u32
 
 
 def main() raises:
@@ -22,6 +22,19 @@ def main() raises:
     assert_equal(uuid7_from_parts(1645557742000, random), "017f22e2-79b0-7cc3-98c4-dc0c0c07398f")
     assert_equal(uuid7_suffix_u32("017f22e2-79b0-7cc3-98c4-dc0c0c07398f"), UInt64(0x0C07398F))
     assert_equal(uuid7_suffix_u32("ffffffff-ffff-7fff-bfff-ffffffffffff"), UInt64(0xFFFFFFFF))
+    # Fixed vectors from Rust 1.99.1 DefaultHasher for UUID-as-u128 then u64 sequence.
+    var entropy = "017f22e2-79b0-7cc3-98c4-dc0c0c07398f"
+    assert_equal(runtime_request_id_from_uuid7(entropy, UInt64(1)), UInt64(0x3C2A7A9D00000001))
+    assert_equal(runtime_request_id_from_uuid7(entropy, UInt64(0x123456789ABCDEF0)), UInt64(0x9A52489A9ABCDEF0))
+    assert_equal(runtime_request_id_from_uuid7(entropy, UInt64.MAX), UInt64(0x14E68C0DFFFFFFFF))
+    assert_equal(runtime_request_sequence_next(UInt64(0)), UInt64(1))
+    assert_equal(runtime_request_sequence_next(UInt64.MAX), UInt64(0))
+    var invalid_id = False
+    try:
+        _ = runtime_request_id_from_uuid7("017f22e2-79b0-7cc3-98c4_dc0c0c07398f", UInt64(1))
+    except error:
+        invalid_id = String(error) == "UUIDv7 string has invalid format"
+    assert_true(invalid_id)
     var invalid_suffix = False
     try:
         _ = uuid7_suffix_u32("not-a-uuid")

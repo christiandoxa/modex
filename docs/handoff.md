@@ -197,11 +197,11 @@ and broader Anthropic parity remain unqualified. The manual test requires an
 isolated network and private temporary storage; see
 `docs/evidence/baseline-0.166.0/anthropic-stream-query-fragments.md`.
 
-DeepSeek streamed text-item IDs now combine a UUIDv7-derived prefix with the
-local sequence, matching the tested 0.166.0 decimal ID shape and low 32-bit
-sequence. Modex's prefix differs from the release's hash and can collide; the
-comparison covers selected request and event consistency, not exact random
-values or global uniqueness. See
+DeepSeek streamed text-item IDs now use the 0.166.0 hash mapping for UUIDv7
+entropy and sequence, checked against fixed pinned-Rust vectors. The process
+comparison covers the ID shape and selected event consistency. Modex still
+lacks the release's per-instance sequence seed; generated prefixes can collide,
+and full generator parity and global uniqueness remain unqualified. See
 `docs/evidence/baseline-0.166.0/deepseek-stream-item-ids.md`.
 An additional isolated 0.166.0 matrix compares eight translated provider
 request bodies and seven streamed response shapes through both real processes;

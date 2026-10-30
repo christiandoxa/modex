@@ -33,7 +33,7 @@ comptime HTTP_KEEP_ALIVE_MAX_PARKED = 128
 # Each parked socket gets bounded read/scan work per event-loop pass.
 comptime LOCAL_REWRITE_HEADER_CAPTURE_BYTES_PER_CONNECTION = 512
 from .text import is_whitespace, trim_text, unsigned_value
-from .uuid7 import new_uuid7, uuid7_suffix_u32
+from .uuid7 import new_uuid7, runtime_request_id_from_uuid7, runtime_request_sequence_next
 
 
 def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
@@ -538,6 +538,7 @@ struct LocalRewriteSharedState(Movable):
         self.lock = BlockingSpinLock()
         self.conversations = ProviderConversationStore()
         self.bindings = RuntimeBindings(api_keys[0], endpoint)
+        # shortcut: omit Prodex's instance sequence prefix; derive it if exact process-level IDs are required.
         self.sequence = 0
         self.api_keys = api_keys.copy()
         self.api_key_cursor = 0
@@ -593,16 +594,12 @@ struct LocalRewriteSharedState(Movable):
         if self.cancel_write_fd >= 0: _ = close(self.cancel_write_fd)
 
     def next_request_id(mut self) raises -> UInt64:
-        var request_id: UInt64
+        var local_sequence: UInt64
         with BlockingScopedLock(self.lock):
-            if self.sequence < UInt64.MAX:
-                self.sequence += 1
-            request_id = self.sequence & UInt64(0xFFFFFFFF)
-        var prefix = uuid7_suffix_u32(new_uuid7())
-        if prefix == 0:
-            prefix = 1
-        # shortcut: 32-bit prefixes can collide across processes; use a persistent allocator if uniqueness is contractual.
-        return (prefix << UInt64(32)) | request_id
+            self.sequence = runtime_request_sequence_next(self.sequence)
+            local_sequence = self.sequence
+        # shortcut: 32-bit hash prefixes can collide; use a persistent allocator if global uniqueness is contractual.
+        return runtime_request_id_from_uuid7(new_uuid7(), local_sequence)
 
     def permits(mut self, previous: String, turn: String, session: String) -> Bool:
         var allowed: Bool

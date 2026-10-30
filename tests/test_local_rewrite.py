@@ -106,7 +106,7 @@ class UpstreamHandler(BaseHTTPRequestHandler):
             self.close_connection = True
             return
         if response.get("hold_open"):
-            self.connection.settimeout(3)
+            self.connection.settimeout(response.get("hold_open_timeout", 3))
             try:
                 if self.connection.recv(1) == b"":
                     self.server.client_closed.set()

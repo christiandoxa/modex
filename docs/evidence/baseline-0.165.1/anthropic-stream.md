@@ -188,20 +188,40 @@ socket. Additional real-process probes verify that ordinary upstream EOF after
 the failure closes the body, a 100 ms upstream idle timeout leaves it open
 until client disconnect, and an upstream reset after the failure has the same
 open-body result. A request `SHUT_WR` control produces the same incomplete body
-in both releases and Modex. A parent-shutdown probe keeps the downstream client
-open after `response.failed`, sends 1 MiB of a pipelined request while keeping
-the client write side open, then terminates `super`. Pending pipeline bytes
-keep `client_disconnected()` false, so parent EOF must stop the open relay
-through its shared stopping signal. Each release child exits within two seconds and the
-caller observes `IncompleteRead`. The earlier serial Modex parent exited but
-left its relay and synthetic Codex children alive. The pooled cancellation
-path now closes the open stream despite the pending pipeline.
-`test_parent_eof_cancels_failed_open_stream_with_pending_pipeline` records the
-release and Modex behavior. The normal client-close probe also
-exercises the launcher cleanup path. Valid continuation through `message_stop`
-still closes normally. Clients that retain their socket after a read timeout
-and other invalid UTF-8 framing positions were not tested. Broader malformed
-shapes and aggregate stream-state limits remain unverified.
+in both releases and Modex. Parent-EOF cancellation has separate active and
+historical held-open process tests:
+`test_parent_eof_cancels_held_failed_stream_with_truncated_pipeline_body`
+in this historical module compares 0.165.1/0.439.2 with Modex; the active
+counterpart in `test_anthropic_parent_shutdown_01660.py` compares 0.166.0 with
+Modex. Both stop upstream after `response.failed`, send a pipeline head plus
+1,024 bytes of a declared 1 MiB body, and keep the client write side open.
+They require a live parent before SIGTERM, exit on SIGTERM, close upstream
+before the 30-second fixture timeout, and leave no direct children after two
+seconds. A held-open truncated-head control covers the incomplete-head case.
+The earlier serial Modex parent exited but left its relay
+and synthetic Codex children alive; the pooled cancellation path now closes
+the open stream despite pending pipeline bytes. A complete 1 MiB pipeline
+control can finish naturally after the queued 502, so it checks completion
+without requiring SIGTERM. A forced four-second observation delay once left a
+direct child of the active 0.166.0 launcher alive at the two-second check;
+five later active-oracle repetitions with the same delay had no survivor. Its
+role was not captured, and the child assertion is unchanged. The original
+invalid-UTF-8-tail plus parent-EOF combination is retained as a historical
+characterization in
+`test_parent_eof_with_invalid_utf8_truncated_pipeline_is_characterized`; its
+active 0.166.0 counterpart is in
+`test_anthropic_parent_shutdown_01660.AnthropicParentShutdown01660Tests.test_parent_eof_with_invalid_utf8_truncated_pipeline_is_characterized`.
+Both distinguish an actual SIGTERM exit from a clean status-0 return before
+SIGTERM; the latter is not counted as cancellation. The historical case
+compares Modex with 0.165.1/0.439.2; the active case compares Modex with
+0.166.0. The old full-suite snapshot observed Modex return 0 before SIGTERM,
+while an isolated follow-up sent SIGTERM to all four processes. See
+`docs/evidence/baseline-0.166.0/anthropic-parent-eof-cancellation.md`. The
+normal client-close probe also exercises launcher cleanup, and valid
+continuation through `message_stop` closes normally. Clients that retain their
+socket after a read timeout and other invalid UTF-8 framing positions were not
+tested. Broader malformed shapes and aggregate stream-state limits remain
+unverified.
 
 The first four-module run reported four failures and one test-helper error.
 Three failures came from terminating a stream after `response.failed` instead

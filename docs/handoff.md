@@ -171,6 +171,13 @@ the early exit remains unresolved. The run omitted the historical 0.439.1
 source override, so the strict runner correctly rejected its skipped recovery
 policy comparison. That comparison passed on rerun with the explicit pinned
 0.439.1 source path. This snapshot does not validate later changes.
+The parent-EOF fixture now separately characterizes the original invalid-UTF-8
+pipeline case and tests cancellation with the upstream held open. The latter
+requires a live parent before SIGTERM, upstream closure and no surviving direct
+children; active 0.166.0 and historical controls are independently runnable.
+A single delayed 0.166.0 reference observation left a child alive at two seconds
+and remains unresolved. See
+`docs/evidence/baseline-0.166.0/anthropic-parent-eof-cancellation.md`.
 The same run also reported three historical optional-tool fixture failures.
 All three reproduce with an isolated `TMPDIR` because their output normalizer
 assumed `/tmp` directly. The fixture now uses Python's actual temporary

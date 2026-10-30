@@ -159,12 +159,12 @@ paths, and ten further repetitions passed in a loopback-only network
 namespace with private `/tmp` and synthetic HOME. The full run has not printed
 its failure traceback yet, so the cause is unresolved. The suite runs against
 that fixed snapshot, not later changes.
-The same run also reported two historical managed-tool fixture failures. Both
-reproduce with an isolated `TMPDIR` because their output normalizer assumed
-`/tmp` directly; the fixture now uses Python's actual temporary-directory
-prefix and preserves its path-disclosure checks. The affected checks pass
-under both default and nested temporary directories. The in-progress snapshot
-cannot validate this later correction.
+The same run also reported three historical optional-tool fixture failures.
+All three reproduce with an isolated `TMPDIR` because their output normalizer
+assumed `/tmp` directly. The fixture now uses Python's actual temporary
+directory prefix and preserves its path-disclosure checks. All three pass under
+a nested temporary directory, and the two managed-tool cases also pass with the default.
+The in-progress snapshot cannot validate this later correction.
 
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing

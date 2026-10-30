@@ -29,6 +29,12 @@ pass. The exercised cases include missing or non-string stop reasons,
 non-string stop sequences and a missing message delta; other stream shapes
 remain unverified. See `test_provider_stream_01651_characterization.py` and
 `test_provider_tools_04392_characterization.py`.
+The historical message-array note is also outdated for metadata: tested
+message IDs, statuses and extra fields are accepted and ignored like both
+releases. For the tested mixed text-and-image input, Modex and both releases
+instead return 502 without a provider POST. Five existing message-array tests
+passed against each release; other rich inputs remain unverified. See
+`test_anthropic_message_arrays_04392.py`.
 
 Published Modex still has a cross-key tool-history ownership gap. With two
 synthetic provider keys, a buffered response under key A containing a tool

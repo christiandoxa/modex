@@ -1,5 +1,15 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The isolated `c5609d0` full suite finished with 40 failures and one error in
+1,096 Python tests after the native checks. The log is
+`/tmp/modex-full-c5609d0-20261030.log` (SHA-256
+`8da2310bbef4635e5ecbb2307ae1a47df73e6d57f6246b3b8138af0df37f7350`). Its
+failing Super, app-server, Gateway, and terminal-width tests use fixtures that
+did not seed the 0.165.1 update-cache filename. After correcting those
+fixtures, focused reruns of all 19 Super/terminal methods, six app-server
+methods, and six Gateway classification methods pass. The full run predates
+those corrections and cannot qualify the current revision.
+
 Playwright dry-run readiness now rejects invalid UTF-8 on either captured probe
 stream, matching both pinned releases even when the other stream contains a
 valid version. A synthetic three-process regression and the 25-test dry-run

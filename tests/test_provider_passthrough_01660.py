@@ -14,6 +14,9 @@ from test_local_rewrite import SYNTHETIC_API_KEY, serving
 from test_super_launch import CODEX
 
 
+WIRE_READ_TIMEOUT_SECONDS = 1.5
+
+
 REUSE_CLIENT = CODEX[:CODEX.index("passthrough = scenario")] + r'''
 import socket
 target = urlsplit(config["model_providers.prodex-deepseek.base_url"] + "/responses")
@@ -73,21 +76,24 @@ second_request = (
     f"Content-Length: {len(second_body)}\r\nConnection: close\r\n\r\n"
 ).encode() + second_body
 connection = socket.create_connection((target.hostname, target.port), timeout=10)
-connection.settimeout(1.5)
+connection.settimeout(float(os.environ["MODEX_WIRE_READ_TIMEOUT_SECONDS"]))
 connection.sendall(request + (second_request if os.environ.get("MODEX_WIRE_PIPELINE") == "1" else b""))
 wire = bytearray()
 eof = False
+timed_out = False
 while True:
     try:
         chunk = connection.recv(65536)
     except TimeoutError:
+        timed_out = True
         break
     if not chunk:
         eof = True
         break
     wire.extend(chunk)
 connection.close()
-save({"kind": "wire-response", "wire": bytes(wire).hex(), "eof": eof})
+save({"kind": "wire-response", "wire": bytes(wire).hex(), "eof": eof,
+      "timed_out": timed_out})
 print("synthetic-wire-complete")
 raise SystemExit(0)
 '''
@@ -154,6 +160,7 @@ def observe_response_wire(binary, reply, *, request_close=False, pipeline_second
             "PRODEX_CODEX_BIN": str(codex), "MODEX_LAUNCH_CAPTURE": str(capture),
             "MODEX_LAUNCH_SCENARIO": "buffered", "MODEX_WIRE_CLOSE": "1" if request_close else "0",
             "MODEX_WIRE_PIPELINE": "1" if pipeline_second else "0",
+            "MODEX_WIRE_READ_TIMEOUT_SECONDS": str(WIRE_READ_TIMEOUT_SECONDS),
             "TERM": "dumb", "NO_COLOR": "1", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
             **{key: str(root / "home") for key in ("XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HOME")},
         }
@@ -175,7 +182,8 @@ def observe_response_wire(binary, reply, *, request_close=False, pipeline_second
         responses = [record for record in records if record.get("kind") == "wire-response"]
         if len(responses) != 1:
             raise AssertionError(f"expected one wire response, found {len(responses)}")
-        return upstream, bytes.fromhex(responses[0]["wire"]), responses[0]["eof"]
+        return (upstream, bytes.fromhex(responses[0]["wire"]),
+                responses[0]["eof"], responses[0]["timed_out"])
 
 
 def parse_raw_response(wire):
@@ -205,6 +213,22 @@ def decode_chunked_body(body):
             raise AssertionError(f"incomplete chunk payload: {remainder!r}")
         output.extend(remainder[:size])
         body = remainder[size + 2:]
+
+
+def parse_sse_events(body):
+    events = []
+    event_name = None
+    data_lines = []
+    for line in body.splitlines() + [b""]:
+        if line.startswith(b"event: "):
+            event_name = line[7:].decode("ascii")
+        elif line.startswith(b"data: "):
+            data_lines.append(line[6:])
+        elif not line and data_lines:
+            events.append((event_name, json.loads(b"\n".join(data_lines))))
+            event_name = None
+            data_lines = []
+    return events
 
 
 class ProviderBufferedMetadata01660Tests(unittest.TestCase):
@@ -436,7 +460,9 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         for label, reply, request_close, expected_status, expected_body in cases:
             for binary in (ORACLE, MODEX):
                 with self.subTest(case=label, binary=str(binary)):
-                    upstream, wire, eof = observe_response_wire(binary, reply, request_close=request_close)
+                    upstream, wire, eof, timed_out = observe_response_wire(
+                        binary, reply, request_close=request_close,
+                    )
                     self.assertEqual(len(upstream), 1)
                     self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
                     status, headers, body = parse_raw_response(wire)
@@ -464,7 +490,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                         self.assertEqual(headers.get("content-length"), "0")
                         self.assertEqual(body, b"")
 
-        upstream, wire, eof = observe_response_wire(
+        upstream, wire, eof, _ = observe_response_wire(
             MODEX,
             {"status": 204, "content_type": "text/event-stream", "body": b""},
             pipeline_second=True,
@@ -476,6 +502,61 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         self.assertIn(b"unexpected end of stream", decode_chunked_body(body))
         self.assertTrue(eof, "a pipelined request must not keep the 204 stream socket alive")
         self.assertEqual(len(upstream), 1, "the pipelined second request must not reach the provider")
+
+    def test_malformed_sse_oracle_gap_and_modex_failure_with_valid_controls(self):
+        """Record the pinned open-stream mismatch; require Modex to fail terminally."""
+        cases = (
+            ("non-object chunk", b"data: []\n\ndata: [DONE]\n\n"),
+            ("missing choices", b"data: {}\n\ndata: [DONE]\n\n"),
+            ("invalid JSON", b"data: {broken}\n\ndata: [DONE]\n\n"),
+        )
+        observed = {}
+        for label, binary in (("oracle", ORACLE), ("modex", MODEX)):
+            observed[label] = {}
+            for name, body in cases:
+                reply = {"status": 200, "content_type": "text/event-stream", "body": body}
+                upstream, wire, eof, timed_out = observe_response_wire(binary, reply)
+                with self.subTest(binary=label, case=name):
+                    self.assertEqual(len(upstream), 1)
+                    self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
+                    self.assertIn(b'"stream":true', upstream[0]["body"])
+                    status, headers, framed_body = parse_raw_response(wire)
+                    self.assertEqual(status, 200)
+                    self.assertEqual(headers.get("transfer-encoding"), "chunked")
+                    self.assertEqual(headers.get("connection"), "close")
+                    observed[label][name] = (framed_body, eof, timed_out)
+
+        # The timeout reproduces a baseline mismatch; it does not count as a
+        # successful or complete stream response.
+        oracle_body, oracle_eof, oracle_timed_out = observed["oracle"]["non-object chunk"]
+        self.assertTrue(oracle_timed_out, "the bounded raw read must report the oracle timeout")
+        self.assertFalse(oracle_eof, "the pinned oracle leaves its response socket open")
+        self.assertEqual(oracle_body, b"", "known mismatch: the oracle emits no event or terminal chunk")
+
+        modex_body, _, _ = observed["modex"]["non-object chunk"]
+        modex_payload = decode_chunked_body(modex_body)
+        modex_events = parse_sse_events(modex_payload)
+        self.assertEqual([event for event, _ in modex_events], ["response.failed"])
+        self.assertEqual(modex_events[0][1]["response"]["error"]["code"], "provider_stream_error")
+        self.assertEqual(modex_events[0][1]["response"]["error"]["message"],
+                         "chat stream chunk is not an object")
+        self.assertTrue(modex_body.endswith(b"0\r\n\r\n"), "Modex must terminate the failed stream")
+        for label in ("oracle", "modex"):
+            completed_payload = decode_chunked_body(observed[label]["missing choices"][0])
+            completed_events = parse_sse_events(completed_payload)
+            with self.subTest(binary=label, case="missing choices"):
+                self.assertEqual([event for event, _ in completed_events],
+                                 ["response.created", "response.completed"])
+                self.assertEqual(completed_events[-1][1]["response"]["output"], [])
+
+            invalid_payload = decode_chunked_body(observed[label]["invalid JSON"][0])
+            invalid_events = parse_sse_events(invalid_payload)
+            with self.subTest(binary=label, case="invalid JSON"):
+                self.assertEqual([event for event, _ in invalid_events], ["response.failed"])
+                self.assertEqual(invalid_events[0][1]["response"]["error"]["code"],
+                                 "provider_stream_error")
+                self.assertEqual(invalid_events[0][1]["response"]["error"]["message"],
+                                 "incomplete JSON segment")
 
 
 if __name__ == "__main__":

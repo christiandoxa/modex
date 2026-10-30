@@ -1,5 +1,19 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+For a non-object upstream SSE chunk, a bounded active-oracle probe records
+headers without a body or socket closure within the observation window; Modex
+instead emits a terminal `response.failed` event. Missing-choices and invalid
+JSON controls match. This fail-closed difference remains a parity gap; see
+`docs/evidence/baseline-0.166.0/malformed-sse-nonobject.md`.
+
+The production CLI now supports the exact `doctor --install` path with bounded
+local prerequisite probes and a plain Install Checks panel. Active 0.166.0
+process tests cover synthetic present/missing tools, probe limits, and no state
+creation. Probe environments exclude provider secrets; output and paths are
+redacted and terminal controls escaped. TTY rendering, Caveman integrity
+validation, descendant cleanup and other doctor modes remain incomplete or
+different; see `docs/evidence/baseline-0.166.0/doctor-install.md`.
+
 Hosted Fast CI run `41137805159` on `187e7f46e7d52aaa3aa2c6fb721a369b72947406`
 failed while compiling the native Gateway test: its `_response_headers` call
 omitted the new duplicate-content-type argument. The test call is corrected

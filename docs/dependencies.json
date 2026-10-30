@@ -8,6 +8,7 @@
     "src/modex/cli.mojo",
     "src/modex/root_help.mojo",
     "src/modex/inspection_cli.mojo",
+    "src/modex/doctor_install.mojo",
     "src/modex/profile_cli.mojo",
     "src/modex/json.mojo",
     "src/modex/json_float.mojo",

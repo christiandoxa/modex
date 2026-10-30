@@ -112,6 +112,14 @@ class ZstdTests(unittest.TestCase):
         encoded += compressor.flush()
         self.assert_decode(encoded, b"".join(parts))
 
+    def test_noncanonical_huffman_leftover_bits_stay_rejected(self):
+        encoded = NONCANONICAL.read_bytes()
+        self.assertTrue(zstd.decompress(encoded))
+        result, output = decode(encoded)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b"Data corruption detected", result.stderr)
+        self.assertEqual(output, b"")
+
     def test_truncation_and_malformed_frames(self):
         encoded = zstd.compress(b"frame fixture " * 300, options={zstd.CompressionParameter.checksum_flag: 1})
         cases = [encoded[:index] for index in range(1, len(encoded))]
@@ -146,7 +154,7 @@ class ZstdTests(unittest.TestCase):
                     self.assertEqual(result.returncode, 1)
                 else:
                     if damaged == known_difference:
-                        # Retained RFC-consumption difference, not a parity PASS.
+                        # The frozen release accepts unused Huffman bits; RFC 8878 requires exact consumption.
                         result, unused = decode(damaged)
                         self.assertEqual(result.returncode, 1)
                         self.assertIn(b"Data corruption detected", result.stderr)

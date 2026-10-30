@@ -18,7 +18,8 @@ unqualified; see `docs/evidence/baseline-0.166.0/provider-uts46-loopback-host.md
 
 Compressed session reads now match selected 0.166.0 diagnostics for impossible
 short Zstandard frame prefixes while retaining the incomplete-frame result for
-valid partial prefixes. See
+valid partial prefixes. For a synthetic Huffman stream with unconsumed bits,
+Modex retains strict rejection while the release reaches UTF-8 validation. See
 `docs/evidence/baseline-0.166.0/session-zstd-magic-diagnostics.md`.
 
 Doctor missing-requirement and conflict diagnostics match 54 tested two- and

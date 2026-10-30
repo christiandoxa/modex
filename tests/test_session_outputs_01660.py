@@ -67,6 +67,58 @@ class SessionOutputs01660Tests(test_sessions.SessionOutputTests):
                 )
                 self.assertEqual(observations, [expected, expected])
 
+    def test_noncanonical_huffman_rejection_and_compressed_frame_controls(self):
+        encoded = (Path(__file__).parent / "fixtures/zstd-noncanonical-huffman.zst").read_bytes()
+        overfull_data = b"{}\n"
+        overfull = (
+            b"\x28\xb5\x2f\xfd\xa0" + (2).to_bytes(4, "little")
+            + ((len(overfull_data) << 3 | 1).to_bytes(3, "little")) + overfull_data
+        )
+        truncated = zstd.compress(
+            b'{"type":"session_meta","payload":{"id":"synthetic"}}\n',
+            options={zstd.CompressionParameter.checksum_flag: 1},
+        )[:-1]
+        cases = (
+            ("noncanonical", encoded, "stream did not contain valid UTF-8", "Data corruption detected"),
+            ("truncated-checksum", truncated, "incomplete frame", "incomplete frame"),
+            ("overfull", overfull, "Data corruption detected", "Data corruption detected"),
+        )
+        for name, data, release_error, modex_error in cases:
+            observations = []
+            for binary, argv0, detail in (
+                (ORACLE, "prodex", release_error), (MODEX, "modex", modex_error),
+            ):
+                with tempfile.TemporaryDirectory(prefix="modex-session-zstd-control-") as directory:
+                    root = Path(directory)
+                    test_sessions.fixture(root)
+                    session = next((root / "home/.codex").rglob("*.jsonl"))
+                    session.unlink()
+                    compressed = session.with_name("rollout-" + name + ".jsonl.zst")
+                    compressed.write_bytes(data)
+                    result = subprocess.run(
+                        test_sessions.sandbox_command(
+                            binary, root, ["session", "list", "--json"],
+                            timezone="UTC", argv0=argv0,
+                        ),
+                        stdin=subprocess.DEVNULL, capture_output=True, timeout=10, check=False,
+                    )
+                    self.assertEqual(compressed.read_bytes(), data)
+                    observations.append((
+                        result.returncode,
+                        result.stdout.replace(str(root).encode(), b"<FIXTURE_ROOT>"),
+                        result.stderr.replace(str(root).encode(), b"<FIXTURE_ROOT>"),
+                    ))
+            expected_release = (1, b"", (
+                "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/"
+                f"rollout-{name}.jsonl.zst: {release_error}\n"
+            ).encode())
+            self.assertEqual(observations[0], expected_release)
+            expected_modex = (1, b"", (
+                "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/"
+                f"rollout-{name}.jsonl.zst: {modex_error}\n"
+            ).encode())
+            self.assertEqual(observations[1], expected_modex)
+
     def test_pre_epoch_file_time_falls_back_to_unix_epoch(self):
         for format_name in ("json", "jsonl", "jsonl.zst"):
             for mtime_ns in (-1_000_000_000, -1, 0):

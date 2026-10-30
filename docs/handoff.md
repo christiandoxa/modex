@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The 0.165.1 runtime-broker path was traced through bootstrap, profile auth,
+registry lifecycle and WebSocket transport. Mojo 1.2.0 compiler probes again
+confirmed the listed standard-library networking, DNS, crypto and file-lock
+APIs are unavailable; the seven pinned-process WebSocket observations passed.
+This identifies implementation work, not an impossibility proof or Modex
+parity. See `docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
+
 DeepSeek Super now gives its local relay a fresh per-launch bearer token and
 scrubs the pinned provider-secret environment variables from Codex children.
 The relay rejects missing, empty, wrong, duplicate and stale tokens before

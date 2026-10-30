@@ -234,3 +234,73 @@ profile-backed runtime-proxy WebSocket path or WSS.
 This only secures the local rewrite fallback. It does not implement the
 separate profile-backed runtime-proxy WebSocket path or WSS; those remain
 unimplemented and are not counted as parity.
+
+## Runtime-broker prerequisite recheck (2026-10-30)
+
+This recheck used official Mojo 1.2.0 (`2016d0cd`) and Prodex 0.165.1 source
+commit `10ae15b5d1806302b60f051e4e6fec788044f4c2`. It changes no production
+code and establishes no Modex WebSocket parity.
+
+The baseline startup chain is production-owned: `RuntimeProxyStartupFactory`
+selects a profile and calls `ensure_runtime_rotation_proxy_endpoint`
+(`crates/prodex-app/src/app_commands/runtime_launch.rs:366-443`). The endpoint
+spawns the current executable as `__runtime-broker`, writes its private pipe
+bootstrap, waits for a compatible broker and readiness, and activates the
+selected profile (`crates/prodex-app/src/runtime_broker/spawn.rs:288-317,
+335-478`). The version 1 bootstrap is capped at 64 KiB and carries profile,
+upstream, instance, and admin-token fields
+(`crates/prodex-runtime-broker/src/process.rs:7-11,343-410`). The broker
+loads application state, starts the profile-backed proxy, publishes its
+registry/capability, waits for active requests and leases, then removes its
+instance-scoped artifacts (`crates/prodex-app/src/app_commands/broker.rs:22-79`).
+
+WebSocket credentials are selected from that profile when the first message
+needs an upstream connection: `connect_runtime_proxy_upstream_websocket`
+calls `runtime_profile_usage_auth` for the selected profile
+(`crates/prodex-app/src/runtime_proxy/websocket.rs:79-107`,
+`crates/prodex-app/src/runtime_persistence/auth.rs:77-114,155-166`). The
+separate connector resolves host names, applies timeouts and may establish an
+HTTP proxy tunnel before WebSocket/TLS
+(`crates/prodex-app/src/runtime_proxy/websocket/connect.rs:3-23,25-69`;
+`crates/prodex-app/src/runtime_proxy/websocket.rs:493-505` calls
+`client_tls_with_config`).
+Profile/runtime state uses cross-process exclusive file locks through `fs2`
+(`crates/prodex-app/src/runtime_store/io.rs:35-67,81-92`; workspace
+`Cargo.toml:83`). The production WebSocket path also depends on `tungstenite`
+and `rustls` (`Cargo.toml:137-139,155`; `crates/prodex-app/Cargo.toml:108`).
+The pinned `std/sys/_libc.mojo:305-323` has an internal variadic `fcntl`
+wrapper and descriptor-flag constants, but no file-lock record or lock API.
+
+The pinned compiler probes reproduced these exact limits:
+
+| Probe | Result |
+| --- | --- |
+| `mojo run probes/gaps/network_platform.mojo` | `16 53`; creates and closes one internal UDP socket, sends no packet |
+| `mojo build probes/gaps/network.mojo` | Fails: `std.net` has no `TcpListener`, `TcpStream`, or `TlsStream` |
+| `mojo build probes/gaps/dns.mojo` | Fails: `std.net` has no `getaddrinfo` or `getnameinfo` |
+| `mojo build probes/gaps/crypto.mojo` | Fails: `std.hash` has no `SHA256`; `std.random` has no `secure_random_bytes` |
+| `mojo build probes/gaps/filesystem.mojo` | Fails: `std.os` has no `chmod`, `flock`, `fsync`, or `rename` |
+
+`mojo build --target-triple TARGET --emit=llvm -o /tmp/network-TARGET.ll
+probes/gaps/network_platform.mojo` compiles for Linux x86-64/ARM64 and macOS
+x86-64/ARM64. Both Windows targets fail because the official internal POSIX
+socket layer has no `SockaddrIn` witness. LLVM emission proves only compilation,
+not target linking or runtime behavior. The successful local probe proves only
+raw socket creation; it does not supply a public TCP stream, DNS, TLS,
+certificate validation, WebSocket client, or HTTP proxy implementation.
+
+Those missing standard-library facilities leave substantial implementation
+work for a profile-backed WSS message path under the project rules. Adding Rust/WebSocket/TLS dependencies, calling
+OpenSSL or another executable, or declaring new native bindings is forbidden.
+Manually modeling the platform `flock` ABI would also exceed the audited Mojo
+API and would leave target-specific locking unverified. No viable complete
+production path was established by this recheck. A local 101 handshake or a
+bootstrap parser alone would not establish broker lifecycle, selected-profile
+auth, or an upstream WSS message path, so no production slice was added.
+
+The bootstrap/process files at 0.165.1 and 0.439.2 are byte-identical. The
+0.165.1 WebSocket dispatch/session files still exist at 0.439.2, but the
+dispatch and session source differs and must retain separate release-targeted
+evidence. The 0.165.1 reference-only WebSocket suite was rerun with six tests
+passing using isolated synthetic profiles and loopback peers. This remains
+baseline characterization only.

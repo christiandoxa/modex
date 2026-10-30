@@ -48,6 +48,11 @@ One synthetic `log last --json` transcript, upstream payload and token-usage
 snapshot matches the active release, including bearer-token redaction and
 unchanged session bytes. This does not establish live logging or broader
 redaction parity; see `docs/evidence/baseline-0.166.0/log-last-synthetic.md`.
+For one ambiguous Unicode-separated synthetic credential, the release emits
+the suffix while Modex masks it. Modex retains that safer behavior. An empty
+home session-list comparison also records missing startup locks and
+housekeeping in Modex. These are characterized gaps, not parity passes; see
+`docs/evidence/baseline-0.166.0/session-log-process-gaps.md`.
 
 DeepSeek `low` reasoning effort now remains `low` in both request paths,
 matching 0.166.0 rather than the 0.439.2 mapping to `high`. Isolated process

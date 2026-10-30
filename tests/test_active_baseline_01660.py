@@ -146,6 +146,60 @@ class ActiveBaseline01660Tests(unittest.TestCase):
         self.assertEqual(events[2]["event"], "token_usage")
         self.assertEqual(events[2]["input_tokens"], 12)
 
+    def test_log_last_keeps_ambiguous_unicode_secret_tail_masked(self):
+        from test_logs import session_fixture
+
+        sentinel = "synthetic-sensitive-tail"
+        message = 'password=prefix \t \u2003"' + sentinel + '"'
+        outputs = []
+        for binary in (ORACLE, MODEX):
+            with tempfile.TemporaryDirectory(prefix="modex-active-redaction-") as directory:
+                root = Path(directory)
+                (root / "home").mkdir(mode=0o700)
+                (root / "workspace").mkdir()
+                session_fixture(root, message)
+                result = subprocess.run(
+                    sandbox_command(
+                        binary, root, ["log", "last", "--json"],
+                        argv0="prodex" if binary == ORACLE else "modex",
+                        environment={"TZ": "UTC"},
+                    ),
+                    stdin=subprocess.DEVNULL, capture_output=True, timeout=10, check=False,
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""))
+                outputs.append(result.stdout)
+
+        # The release exposes this ambiguous suffix; Modex keeps the safer mask.
+        self.assertIn(sentinel.encode(), outputs[0])
+        self.assertIn(b"<redacted>", outputs[1])
+        self.assertNotIn(sentinel.encode(), outputs[1])
+
+    def test_session_list_keeps_startup_file_gap_visible(self):
+        observations = []
+        for binary, argv0 in ((ORACLE, "prodex"), (MODEX, "modex")):
+            with tempfile.TemporaryDirectory(prefix="modex-active-session-startup-") as directory:
+                root = Path(directory)
+                home = root / "home"
+                workspace = root / "workspace"
+                home.mkdir(mode=0o700)
+                workspace.mkdir()
+                result = subprocess.run(
+                    sandbox_command(binary, root, ["session", "list", "--json"], argv0=argv0),
+                    stdin=subprocess.DEVNULL, capture_output=True, timeout=10, check=False,
+                )
+                created = sorted(
+                    str(path.relative_to(root))
+                    for path in root.rglob("*")
+                    if path not in (home, workspace)
+                )
+                observations.append((result.returncode, result.stdout, result.stderr, created))
+
+        self.assertEqual(observations[0][:3], (0, b"[]\n", b""))
+        self.assertEqual(observations[1][:3], observations[0][:3])
+        self.assertIn("home/.prodex/profile-lifecycle.json.lock", observations[0][3])
+        self.assertIn("home/.prodex/update-check.lock", observations[0][3])
+        self.assertEqual(observations[1][3], ["home/.prodex"])
+
     def test_super_help_and_selected_parser_cases_match_active_release(self):
         cases = (
             ("help", ("super", "--help"), 0),

@@ -8,6 +8,15 @@ production build and dependency audit also passed. This does not qualify other
 IPv6 forms, providers, release targets, or full parity; see
 `docs/evidence/baseline-0.166.0/provider-ipv6-loopback.md`.
 
+On `bc3a6c69966ac3ce143e2722cf408fe935bac45f`, eight active-oracle
+policy-capacity and Guardian API-key tests passed in a private loopback-only
+namespace with isolated temporary state. With one API key, the tested 503 is
+forwarded unchanged; with multiple keys, this distinct API-key route follows
+the release's status-based retry behavior. These tests do not implement or
+qualify profile-backed 503 handling, Guardian affinity, or socket reuse.
+The isolated active WebSocket fallback framing comparison also passed on the
+same build; it does not cover reviewer routing-pin socket reuse.
+
 The DeepSeek URL boundary now accepts selected percent-encoded numeric
 loopback hosts such as `127%2e1`, matching 0.166.0 in Chat and Anthropic
 process comparisons. Decoded values still pass the numeric `127/8` check;

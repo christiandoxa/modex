@@ -1,5 +1,13 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The DeepSeek Anthropic route now emits function-tool fields and stop sequences
+in the same order as the active release for six tested mixed-tool requests.
+Before the change their JSON values matched but raw provider-request bytes
+differed. The production build, eight active provider-shape and Anthropic
+stream tests, and the dependency audit passed; see
+`docs/evidence/baseline-0.166.0/anthropic-request-wire-order.md`. Other request
+shapes, provider behavior and release targets remain unqualified.
+
 Profile parsing now matches selected 0.166.0 diagnostics when `--` appears
 before a subcommand, including multiple suggestions for direct typos and no
 suggestions for help aliases. Sixteen isolated process cases and the 21-test

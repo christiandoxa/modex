@@ -160,11 +160,11 @@ def deepseek_anthropic_messages_body(source: String) raises -> String:
     var translated_messages = _messages(body)
     fields.append('"messages":' + translated_messages[1])
     fields.append('"model":' + _field(body, "model", '"auto"'))
-    fields.append('"stream":' + _field(body, "stream", "false"))
-    if translated_messages[0]: fields.append('"system":' + translated_messages[0])
     var stop = body.get(body.root, "stop")
     if stop >= 0:
         fields.append('"stop_sequences":' + ("[" + serialize_json(body, stop) + "]" if body.nodes[stop].kind == JSON_STRING else serialize_json(body, stop)))
+    fields.append('"stream":' + _field(body, "stream", "false"))
+    if translated_messages[0]: fields.append('"system":' + translated_messages[0])
     if body.get(body.root, "temperature") >= 0:
         fields.append('"temperature":' + serialize_json(body, body.get(body.root, "temperature")))
     var tools = _tools(body)
@@ -288,9 +288,10 @@ def _tools(doc: JsonDocument) raises -> String:
             var parameters = doc.get(function, "parameters")
             if parameters >= 0 and doc.nodes[parameters].kind != JSON_OBJECT:
                 raise Error("Anthropic function tool parameters must be an object")
-            var item = '{"name":' + serialize_json(doc, name) + ',"input_schema":' + (serialize_json(doc, parameters) if parameters >= 0 else '{"type":"object","properties":{}}')
             var description = doc.get(function, "description")
-            if description >= 0: item += ',"description":' + serialize_json(doc, description)
+            var item = '{"description":' + serialize_json(doc, description) + "," if description >= 0 else "{"
+            item += '"input_schema":' + (serialize_json(doc, parameters) if parameters >= 0 else '{"properties":{},"type":"object"}')
+            item += ',"name":' + serialize_json(doc, name)
             output.append(item + "}")
     var web = doc.get(doc.root, "web_search_options")
     if web >= 0:

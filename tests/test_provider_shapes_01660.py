@@ -157,6 +157,39 @@ class ProviderShapes01660Tests(unittest.TestCase):
             ))
         self.assertEqual(observations[1], observations[0])
 
+    def test_anthropic_mixed_tool_request_bytes_match_active_release(self):
+        function = {"type": "function", "name": "lookup", "description": "synthetic search",
+                    "parameters": {"type": "object", "properties": {"q": {"type": "string"}}}}
+        cases = (
+            {"tools": [{"type": "web_search_preview"}, function]},
+            {"tools": [{"type": "web_search_preview", "allowed_domains": ["example.test"],
+                        "max_uses": 2}, function]},
+            {"tools": [{"type": "web_search_preview"}, function], "tool_choice": "required"},
+            {"tools": [{"type": "web_search_preview"}, function], "instructions": "synthetic system",
+             "stop": ["stop"], "temperature": 0.5, "top_p": 0.8},
+            {"tools": [{"type": "web_search_preview"}, {"type": "function", "name": "lookup"}]},
+            {"tools": [{"type": "web_search_preview"}, {"type": "function", "name": "lookup",
+                                                       "parameters": {"type": "object"}}]},
+        )
+        reply = {"status": 200, "content_type": "application/json", "body": json_bytes({
+            "id": "msg_synthetic", "type": "message", "role": "assistant", "model": "deepseek-chat",
+            "content": [{"type": "text", "text": "synthetic reply"}], "stop_reason": "end_turn",
+            "usage": {"input_tokens": 1, "output_tokens": 1},
+        })}
+        for fields in cases:
+            bodies = []
+            for binary in (ORACLE, MODEX):
+                with self.subTest(fields=fields, reference=binary == ORACLE):
+                    posts, responses = observe_turns(
+                        binary, [{"model": "deepseek-chat", "input": "synthetic query", **fields}],
+                        [reply], latest_version="0.166.0",
+                    )
+                    self.assertEqual([response["status"] for response in responses], [200])
+                    self.assertEqual([post["path"] for post in posts], ["/anthropic/v1/messages"])
+                    bodies.append(posts[0]["body"])
+            self.assertEqual(len(bodies), 2)
+            self.assertEqual(bodies[0], bodies[1])
+
     def test_chat_stream_response_shapes_match_active_release(self):
         turns = [{"model": "deepseek-chat", "input": "synthetic stream matrix",
                   "stream": True} for _ in STREAM_CHUNKS]

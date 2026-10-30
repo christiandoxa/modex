@@ -47,8 +47,14 @@ files, while Modex stops at its unimplemented startup guard; this is a
 recorded difference, not a parity pass.
 Super now rejects unknown optional-tool IDs and reports invalid sub-agent URLs
 as typed argument errors before help, matching selected 0.166.0 process cases.
+It also validates `--sub-agent-provider` against the active release's provider
+IDs and aliases before later help flags. The process test covers each alias,
+invalid separated/attached values and help precedence. A native test covers
+`LOCAL_OPENAI` normalization before the local URL requirement; delegated
+execution remains unimplemented.
 Plain provider URL validation runs after help parsing but still before startup;
-see `docs/evidence/baseline-0.166.0/super-cli-validation.md` for its scope.
+see `docs/evidence/baseline-0.166.0/super-cli-validation.md` for the parser
+scope and test commands.
 Selected `doctor` help and invalid argument diagnostics also match isolated
 0.166.0 comparisons; valid execution still reaches the unimplemented guard.
 Other argument combinations remain unqualified.

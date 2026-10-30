@@ -246,6 +246,17 @@ def _provider(value: String, clap_diagnostic: Bool) raises -> String:
 
 def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -> String:
     if name == "--provider": return _provider(value, clap_diagnostic)
+    if name == "--sub-agent-provider":
+        var provider = ascii_lower(trim_text(value))
+        if provider in ["openai", "openai-responses", "openai_compatible", "openai-compatible"]: return "openai"
+        if provider in ["anthropic", "claude"]: return "anthropic"
+        if provider in ["copilot", "github-copilot", "github_copilot"]: return "copilot"
+        if provider == "deepseek": return "deepseek"
+        if provider in ["gemini", "google"]: return "gemini"
+        if provider == "kiro": return "kiro"
+        if provider in ["local", "local-openai", "local_openai"]: return "local"
+        var reason = "invalid --sub-agent-provider: supported values are openai, anthropic, copilot, deepseek, gemini, kiro, local, got " + _debug_quoted(value)
+        raise _typed_value_error(name, _clap_value(value), reason, clap_diagnostic)
     if name == "--sub-agent-url" and not _valid_http_url(value):
         raise _typed_value_error(
             name, value,

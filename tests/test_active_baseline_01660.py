@@ -242,6 +242,43 @@ class ActiveBaseline01660Tests(unittest.TestCase):
                 )
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_sub_agent_provider_aliases_and_errors_match_active_release(self):
+        valid_providers = (
+            "openai", "openai-responses", "openai_compatible", "openai-compatible",
+            "anthropic", "claude", "copilot", "github-copilot", "github_copilot",
+            "deepseek", "gemini", "google", "kiro", "local", "local-openai", "local_openai",
+            " OPENAI-compatible ",
+        )
+        for provider in valid_providers:
+            with self.subTest(provider=provider):
+                arguments = ("super", "--sub-agent", "--sub-agent-provider", provider, "--help")
+                baseline, baseline_created = isolated_super_cli(ORACLE, arguments, "prodex")
+                modex, modex_created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual((baseline.returncode, modex.returncode), (0, 0))
+                self.assertEqual(
+                    (modex.stdout, modex.stderr),
+                    (normalize_super_cli_executable(baseline.stdout),
+                     normalize_super_cli_executable(baseline.stderr)),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        invalid_cases = (
+            (("super", "--sub-agent", "--sub-agent-provider", "synthetic-invalid", "--help"), 2),
+            (("super", "--sub-agent", "--sub-agent-provider=synthetic-invalid", "--help"), 2),
+            (("super", "--help", "--sub-agent", "--sub-agent-provider", "synthetic-invalid"), 0),
+        )
+        for arguments, status in invalid_cases:
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_super_cli(ORACLE, arguments, "prodex")
+                modex, modex_created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual((baseline.returncode, modex.returncode), (status, status))
+                self.assertEqual(
+                    (modex.stdout, modex.stderr),
+                    (normalize_super_cli_executable(baseline.stdout),
+                     normalize_super_cli_executable(baseline.stderr)),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
     def test_super_runtime_url_validation_stays_before_startup(self):
         invalid = "ftp://synthetic.invalid"
         valid = "http://127.0.0.1:8131"

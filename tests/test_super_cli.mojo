@@ -83,7 +83,7 @@ def main() raises:
     rejects([String("modex"), "super", "exec", "--sub-agent", "--no-sub-agent"], "--sub-agent conflicts with --no-sub-agent")
     rejects([String("modex"), "super", "exec", "--api-key", "synthetic-key"], "--api-key requires --provider")
     rejects([String("modex"), "super", "exec", "--context-window", "16384"], "context-window options require --provider or --url")
-    rejects([String("modex"), "super", "exec", "--sub-agent", "--sub-agent-provider", "local"], "local sub-agent provider requires --sub-agent-url")
+    rejects([String("modex"), "super", "exec", "--sub-agent", "--sub-agent-provider", "LOCAL_OPENAI"], "local sub-agent provider requires --sub-agent-url")
     rejects([String("modex"), "super", "exec", "--sub-agent", "--sub-agent-url", "http://127.0.0.1:8131"], "--sub-agent-url requires --sub-agent-provider local")
     rejects([String("modex"), "super", "exec", "--url", "http://synthetic-user:synthetic-secret@127.0.0.1:8131"], "invalid --url: expected an absolute http(s) URL with host and no credentials, query, or fragment")
     rejects([String("modex"), "super", "exec", "--url", "https://%zz.example.test/path"], "invalid --url: expected an absolute http(s) URL with host and no credentials, query, or fragment")

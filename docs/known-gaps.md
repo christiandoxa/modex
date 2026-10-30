@@ -364,8 +364,8 @@ encoding while native omits it; that framing mismatch remains visible.
 Binding ownership, oversized-302 diagnostics and broad transport/security
 qualification remain unfinished. See checkpoint14-reference.json.
 
-Checkpoint 13 targets 0.439.2. Earlier 0.439.1 and 0.439.0 evidence below
-retains historical provenance and is not automatically current-target evidence.
+At checkpoint 13 the target was 0.439.2. That checkpoint and earlier 0.439.1
+and 0.439.0 evidence retain historical provenance and are not current-target evidence.
 Known five-hour or weekly exhaustion, pre-I/O hard-owner HTTP/WebSocket recovery
 and busy/cooling recoverable alternatives are new explicit obligations. Modex
 still has no real account pool, WebSocket transport or connected native recovery

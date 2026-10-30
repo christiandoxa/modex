@@ -37,6 +37,12 @@ process comparison covers both paths, nested object key ordering, Unicode,
 escaping and argument precedence; ordinary function calls retain their tested
 precedence. Broader tool conversion remains unverified.
 
+DeepSeek `low` reasoning effort now remains `low` in both request paths,
+matching 0.166.0 rather than the 0.439.2 mapping to `high`. Isolated process
+comparisons cover flat and nested effort, tool choice, continuation, and other
+effort controls. The historical comparison records the 0.439.2 divergence.
+These cases do not establish broader DeepSeek parity.
+
 The official historical 0.439.2 tag currently resolves to no ref and its
 SHA256SUMS URL returned 404 on 2026-10-30. Previously verified local bytes
 remain available, but fresh hosted runners cannot acquire that historical

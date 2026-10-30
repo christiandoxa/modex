@@ -48,8 +48,10 @@ def reasoning_fields(effort: Optional[String]) raises -> String:
     var value = trim_text(effort.value()).lower()
     if value == "max" or value == "xhigh":
         return '{"thinking":{"type":"enabled"},"reasoning_effort":"max"}'
-    if value == "high" or value == "medium" or value == "low":
+    if value == "high" or value == "medium":
         return '{"thinking":{"type":"enabled"},"reasoning_effort":"high"}'
+    if value == "low":
+        return '{"thinking":{"type":"enabled"},"reasoning_effort":"low"}'
     if value == "none" or value == "minimal":
         return '{"thinking":{"type":"disabled"}}'
     raise Error("DeepSeek reasoning effort is not supported")

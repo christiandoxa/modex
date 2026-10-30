@@ -64,9 +64,9 @@ def main() raises:
     var choice_with_high_reasoning = JsonDocument('{"input":"x","tool_choice":"required","reasoning_effort":"high"}')
     assert_equal(prepare_request_body(choice_with_high_reasoning, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}],"thinking":{"type":"enabled"},"reasoning_effort":"high"}')
     var choice_with_low_reasoning = JsonDocument('{"input":"x","tool_choice":"required","reasoning_effort":"low"}')
-    assert_equal(prepare_request_body(choice_with_low_reasoning, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}],"thinking":{"type":"enabled"},"reasoning_effort":"high"}')
+    assert_equal(prepare_request_body(choice_with_low_reasoning, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}],"thinking":{"type":"enabled"},"reasoning_effort":"low"}')
     var nested_low_reasoning = JsonDocument('{"input":"x","tool_choice":"required","reasoning_effort":"high","reasoning":{"effort":"  LoW "}}')
-    assert_equal(prepare_request_body(nested_low_reasoning, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}],"thinking":{"type":"enabled"},"reasoning_effort":"high"}')
+    assert_equal(prepare_request_body(nested_low_reasoning, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}],"thinking":{"type":"enabled"},"reasoning_effort":"low"}')
 
     var null_choice = JsonDocument('{"input":"x","tool_choice":null}')
     assert_equal(prepare_request_body(null_choice, '{"runtime":true}'), '{"model":"deepseek-chat","stream":false,"messages":[{"role":"user","content":"x"}]}')

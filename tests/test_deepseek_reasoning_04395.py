@@ -1,4 +1,4 @@
-"""Compare reasoning fields with both the active and historical releases."""
+"""Keep the 0.439.2 low-effort divergence visible against 0.166.0 behavior."""
 
 import hashlib
 import json
@@ -104,7 +104,7 @@ def _reasoning_codex():
 
 
 class DeepseekReasoning04395Tests(unittest.TestCase):
-    def test_reasoning_wire_mapping_matches_release_on_synthetic_loopback(self):
+    def test_reasoning_wire_mapping_keeps_historical_low_effort_divergence(self):
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
         self.assertEqual(hashlib.sha256(HISTORICAL_04395_ORACLE.read_bytes()).hexdigest(),
                          HISTORICAL_04395_ORACLE_SHA256)
@@ -123,22 +123,32 @@ class DeepseekReasoning04395Tests(unittest.TestCase):
                     self.assertEqual(len(upstream), 1, scenario)
                     records.append(upstream[0])
                 baseline, historical, modex = records
+                self.assertEqual(historical["path"], baseline["path"], scenario)
                 self.assertEqual(modex["path"], baseline["path"], scenario)
                 baseline_body = json.loads(bytes.fromhex(baseline["body"]))
                 historical_body = json.loads(bytes.fromhex(historical["body"]))
                 modex_body = json.loads(bytes.fromhex(modex["body"]))
-                self.assertEqual(modex_body, baseline_body, scenario)
                 if scenario == "reasoning-direct-chat-low":
                     self.assertEqual(baseline["path"], "/v1/chat/completions?synthetic=1")
                     self.assertEqual(baseline_body, CASES[scenario][0])
                     self.assertEqual(historical_body, baseline_body)
+                    self.assertEqual(modex_body, baseline_body)
                 else:
                     self.assertEqual(baseline["path"], "/v1/chat/completions")
-                    active_effort = "high" if effort == "low" else effort
-                    self.assertEqual(baseline_body.get("reasoning_effort"), active_effort, scenario)
+                    # Prodex 0.439.2 promoted low to high; 0.439.5 and the active
+                    # 0.166.0 target preserve low.
+                    historical_04392_effort = "high" if effort == "low" else effort
+                    self.assertEqual(baseline_body.get("reasoning_effort"), historical_04392_effort, scenario)
                     self.assertEqual(historical_body.get("reasoning_effort"), effort, scenario)
+                    self.assertEqual(modex_body.get("reasoning_effort"), effort, scenario)
                     self.assertEqual(baseline_body.get("thinking"), {"type": thinking}, scenario)
                     self.assertEqual(historical_body.get("thinking"), {"type": thinking}, scenario)
+                    self.assertEqual(modex_body.get("thinking"), {"type": thinking}, scenario)
+                    normalized_baseline = dict(baseline_body)
+                    if effort == "low":
+                        normalized_baseline["reasoning_effort"] = "low"
+                    self.assertEqual(normalized_baseline, historical_body, scenario)
+                    self.assertEqual(historical_body, modex_body, scenario)
                 observed[scenario] = baseline_body
         self.assertEqual(len(observed), len(CASES))
 

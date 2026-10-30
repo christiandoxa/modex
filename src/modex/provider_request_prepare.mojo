@@ -257,7 +257,7 @@ def _native_body(doc: JsonDocument, default_model: String) raises -> String:
         if len(kept) > 0: out += ',"tools":[' + _join(kept) + "]"
     var reasoning = _reasoning(doc)
     var choice = _native_choice(doc, doc.get(doc.root, "tool_choice"))
-    if choice and reasoning != 6 and reasoning != 7: out += ',"tool_choice":' + choice
+    if choice and reasoning != 6 and reasoning != 7 and reasoning != 9: out += ',"tool_choice":' + choice
     for key in ["temperature", "top_p"]:
         var value = doc.get(doc.root, key)
         if value >= 0: out += "," + quote_json(key) + ":" + serialize_json(doc, value)
@@ -280,6 +280,7 @@ def _native_body(doc: JsonDocument, default_model: String) raises -> String:
     if user >= 0 and doc.nodes[user].kind == JSON_STRING and trim_text(doc.nodes[user].text): out += ',"user_id":' + quote_json(trim_text(doc.nodes[user].text))
     if reasoning == 6: out += ',"thinking":{"type":"enabled"},"reasoning_effort":"max"'
     elif reasoning == 7: out += ',"thinking":{"type":"enabled"},"reasoning_effort":"high"'
+    elif reasoning == 9: out += ',"thinking":{"type":"enabled"},"reasoning_effort":"low"'
     elif reasoning == 8: out += ',"thinking":{"type":"disabled"}'
     var format = doc.get(doc.root, "response_format")
     if format >= 0:
@@ -451,7 +452,8 @@ def _reasoning(doc: JsonDocument) -> Int:
     if effort < 0 or doc.nodes[effort].kind != JSON_STRING: return 0
     var value = trim_text(doc.nodes[effort].text).lower()
     if value == "max" or value == "xhigh": return 6
-    if value == "high" or value == "medium" or value == "low": return 7
+    if value == "high" or value == "medium": return 7
+    if value == "low": return 9
     if value == "minimal" or value == "none": return 8
     return 0
 

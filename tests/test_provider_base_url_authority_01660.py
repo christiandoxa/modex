@@ -23,6 +23,12 @@ LOOPBACK_ALIASES = (
     "%31%32%37.1",
     "0x7f0000%30%31",
     "%31%32%37%2e%30%2e%30%2e%31",
+    "１２７．１",
+    "127。1",
+    "127｡1",
+    "１２７.1",
+    "127．１",
+    "127%EF%BC%8E1",
 )
 
 
@@ -69,7 +75,7 @@ class ProviderBaseUrlAuthority01660Tests(unittest.TestCase):
         })}
         turn = {"model": "deepseek-chat", "input": "synthetic search", "stream": False,
                 "tools": [{"type": "web_search_preview"}]}
-        for host, ipv6 in (("127.1", False), ("127%2e1", False), ("[0:0::1]", True)):
+        for host, ipv6 in (("127.1", False), ("127%2e1", False), ("１２７．１", False), ("[0:0::1]", True)):
             observations = []
             for binary in (ORACLE, MODEX):
                 with self.subTest(host=host, reference=binary == ORACLE):
@@ -133,7 +139,7 @@ class ProviderBaseUrlAuthority01660Tests(unittest.TestCase):
             "0x", "0x100000000", "126.0.0.1", "128.0.0.1", "8.8.8.8",
             "0x08080808", "167772161", "128%2e0%2e0%2e1", "127.0.0.1%3a80",
             "127%2f1", "127%5c1", "127%401", "127%252e1", "127%001", "127%0d1",
-            "127%7f1", "127%ff1", "127%xx1",
+            "127%7f1", "127%ff1", "127%xx1", "１２８．１", "１２７．．１", "１２７＠１",
         ):
             with self.subTest(host=host):
                 try:
@@ -150,6 +156,25 @@ class ProviderBaseUrlAuthority01660Tests(unittest.TestCase):
                 else:
                     self.fail(f"Modex accepted {host}: {len(upstream)} requests, statuses "
                               f"{[row['status'] for row in responses]}")
+
+    def test_fullwidth_hex_ipv4_spelling_is_rejected_by_both_processes(self):
+        host = "０ｘ７ｆ００００００１"
+        for candidate in (host, "".join(f"%{byte:02X}" for byte in host.encode())):
+            for binary in (ORACLE, MODEX):
+                with self.subTest(host=candidate, reference=binary == ORACLE):
+                    try:
+                        upstream, responses = observe_turns(
+                            binary, [{"model": "deepseek-chat", "input": "synthetic rejected host"}],
+                            [buffered_reply()], latest_version="0.166.0", base_host=candidate,
+                        )
+                    except AssertionError as error:
+                        status, _, stderr, _, upstream = error.args[0]
+                        self.assertNotEqual(status, 0)
+                        self.assertTrue(stderr)
+                        self.assertEqual(upstream, [])
+                    else:
+                        self.fail(f"{binary} accepted {candidate}: {len(upstream)} requests, "
+                                  f"statuses {[row['status'] for row in responses]}")
 
 
 if __name__ == "__main__":

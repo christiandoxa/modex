@@ -1,5 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The local relay now accepts selected Unicode digit and dot spellings of numeric
+loopback hosts observed in 0.166.0, then applies the existing 127/8 guard and
+connects to the canonical address without DNS. General IDNA handling remains
+unqualified; see `docs/evidence/baseline-0.166.0/provider-uts46-loopback-host.md`.
+
 Compressed session reads now match selected 0.166.0 diagnostics for impossible
 short Zstandard frame prefixes while retaining the incomplete-frame result for
 valid partial prefixes. See

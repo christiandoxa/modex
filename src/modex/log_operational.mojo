@@ -293,6 +293,7 @@ def valid_url_authority(authority: String) -> Bool:
             host = decoded.value()
         if not valid_url_host(host):
             return False
+        host = url_numeric_host_compatibility(host)
         if host_ends_in_number(host) and not valid_ipv4_host(host):
             return False
     if port_start < 0:
@@ -308,6 +309,18 @@ def valid_url_authority(authority: String) -> Bool:
         if port > 65535:
             return False
     return True
+
+
+def url_numeric_host_compatibility(host: String) -> String:
+    var output = String()
+    for character in host.codepoints():
+        var code = Int(character)
+        if 0xFF10 <= code <= 0xFF19:
+            code -= 0xFEE0
+        elif code == 0xFF0E or code == 0x3002 or code == 0xFF61:
+            code = 46
+        output += chr(code)
+    return output
 
 
 def valid_file_authority(authority: String) -> Bool:

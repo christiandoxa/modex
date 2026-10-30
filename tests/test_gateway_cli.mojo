@@ -4,7 +4,7 @@ from std.testing import assert_equal, assert_true
 from modex.runtime_local_rewrite import _binding_response_id, _continuation_identity_valid, _history, _namespace, _response_headers, local_rewrite_anthropic_messages_upstream, local_rewrite_upstream
 from modex.gateway_cli import gateway_help, parse_gateway_arguments
 from modex.json import JsonDocument, quote_json
-from modex.loopback_http import _request_authority
+from modex.loopback_http import _request_authority, normalize_loopback_ipv4_host
 from modex.provider_conversations import ProviderConversationStore
 from modex.runtime_binding import RuntimeBindings
 
@@ -138,6 +138,15 @@ def main() raises:
     assert_equal(_request_authority("127.0.0.1", 80), "127.0.0.1")
     assert_equal(_request_authority("[::1]", 80), "[::1]")
     assert_equal(_request_authority("127.0.0.1", 8080), "127.0.0.1:8080")
+    for host in ["１２７．１", "127。1", "127｡1", "１２７.1", "127．１"]:
+        assert_equal(normalize_loopback_ipv4_host(host), "127.0.0.1")
+    for host in ["１２７／１", "１２８．１", "１２７．．１", "１２７＠１"]:
+        var rejected_unicode_host = False
+        try:
+            _ = normalize_loopback_ipv4_host(host)
+        except:
+            rejected_unicode_host = True
+        assert_true(rejected_unicode_host)
     assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/v1"), (String("127.0.0.1:1234"), String("/anthropic/v1/messages")))
     assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/proxy/v1" )[1], "/proxy/anthropic/v1/messages")
     assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/beta")[1], "/anthropic/v1/messages")

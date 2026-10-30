@@ -14,6 +14,7 @@ from std.sys import Endian, size_of
 from std.sys._libc import FcntlCommands, FcntlFDFlags, close, fcntl
 from std.sys._libc_errno import ErrNo, get_errno
 from std.time import perf_counter, sleep
+from .log_operational import url_numeric_host_compatibility
 
 comptime HTTP_HEADER_LIMIT = 65536
 comptime HTTP_MAX_REQUEST_FIELD_LIMIT = 2 * 1024 * 1024
@@ -36,7 +37,10 @@ def _number(text: StringSlice) raises -> Int:
 
 
 def normalize_loopback_ipv4_host(host: String) raises -> String:
-    var value = String(host)
+    var value = url_numeric_host_compatibility(host)
+    for byte in value.as_bytes():
+        if byte > 127:
+            raise Error("invalid loopback HTTP address")
     if value.endswith("."):
         var without_trailing_dot = String(value[byte=:value.byte_length() - 1])
         value = without_trailing_dot^

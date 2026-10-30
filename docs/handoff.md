@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Super also has a same-key, cross-session tool-history isolation gap. In real
+processes, a tool output with a reused call ID and a different synthetic session
+ID includes the first session's prompt in the second provider request. This
+was observed in Modex, both pinned releases, and historical 0.439.1; it is a
+security gap, not a parity qualification. See
+`test_deepseek_session_history_isolation_01651_04392.py`. Full-cache tool-call
+lookup also scans stored histories under the shared lock; its load impact has
+not been measured.
+
 The historical note below about nonempty Anthropic text block starts is stale:
 current Modex ignores their initial contents, matching both pinned releases in
 real-process tests. The 0.165.1 cases also cover empty, missing and numeric

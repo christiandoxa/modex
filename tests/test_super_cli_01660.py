@@ -177,6 +177,25 @@ class SuperCli01660Tests(unittest.TestCase):
                 self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
                                  (baseline.returncode, baseline.stdout, expected_error))
 
+    def test_post_positional_api_key_errors_do_not_echo_value(self):
+        secret = "synthetic-secret-sentinel"
+        cases = (
+            ("super", "exec", "--api-key", secret),
+            ("super", "exec", "--api-key=" + secret),
+        )
+        for arguments in cases:
+            with self.subTest(arguments=arguments):
+                baseline, _ = isolated_run(ORACLE, arguments)
+                modex, _ = isolated_run(MODEX, arguments)
+                self.assertEqual((baseline.returncode, baseline.stdout), (1, b""))
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (baseline.returncode, baseline.stdout,
+                     normalize_super_cli_executable(baseline.stderr)),
+                )
+                self.assertNotIn(secret.encode(), baseline.stdout + baseline.stderr)
+                self.assertNotIn(secret.encode(), modex.stdout + modex.stderr)
+
     def test_help_precedence_with_positional_exec(self):
         cases = (
             ("super", "--help", "--api-key", "synthetic-key"),

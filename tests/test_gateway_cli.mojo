@@ -47,6 +47,12 @@ def main() raises:
     except error:
         terminator_error = String(error)
     assert_equal(terminator_error, "error: unexpected argument '--help' found\n\nUsage: modex gateway [OPTIONS]\n\nFor more information, try '--help'.\n")
+    var hyphen_value_error = String()
+    try:
+        _ = parse_gateway_arguments(["modex", "gateway", "--listen", "-1"], "modex")
+    except error:
+        hyphen_value_error = String(error)
+    assert_equal(hyphen_value_error, "error: unexpected argument '-1' found\n\nUsage: modex gateway [OPTIONS]\n\nFor more information, try '--help'.\n")
     for invalid in [
         List[String](copy=["modex", "gateway", "--presidio", "--no-presidio"]),
         List[String](copy=["modex", "gateway", "--provider"]),

@@ -130,6 +130,37 @@ class GatewayDefault01660Tests(unittest.TestCase):
                 )
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_gateway_parse_diagnostics_match_active_release(self):
+        secret = b"synthetic-secret-sentinel"
+        cases = (
+            (("gateway", "--listen", "-1"), 2),
+            (("gateway", "--provider", "deepseek", "--listen", "--unknown"), 2),
+            (("gateway", "--listen=127.0.0.1:0", "--provder"), 2),
+            (("gateway", "--api-key=synthetic-secret-sentinel", "-x"), 2),
+            (("gateway", "--api-key=synthetic-secret-sentinel", "--unknown"), 2),
+            (("gateway", "--api-key=synthetic-secret-sentinel", "argument"), 2),
+            (("gateway", "--listen"), 2),
+            (("gateway", "--listen", "--provider"), 2),
+            (("gateway", "--listen", "--help=bad"), 2),
+            (("gateway", "--help", "--unknown"), 0),
+            (("gateway", "--unknown", "--help"), 2),
+            (("gateway", "--listen=127.0.0.1:0", "--help"), 0),
+            (("gateway", "--", "--help"), 2),
+        )
+        for arguments, expected_status in cases:
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_cli(ORACLE, arguments, "prodex")
+                modex, modex_created = isolated_cli(MODEX, arguments, "modex")
+                self.assertEqual(baseline.returncode, expected_status)
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (baseline.returncode,
+                     baseline.stdout.replace(b"prodex gateway", b"modex gateway"),
+                     baseline.stderr.replace(b"prodex gateway", b"modex gateway")),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+                self.assertNotIn(secret, baseline.stdout + baseline.stderr + modex.stdout + modex.stderr)
+
     def test_profileless_config_matches_the_active_preflight(self):
         for model_provider, diagnostic in (
             ("openai", b"no active profile selected"),

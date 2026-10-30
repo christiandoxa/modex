@@ -84,26 +84,39 @@ def parse_gateway_arguments(args: List[String], executable: String) raises -> Ga
             var suggested_usage = suggestion
             if suggested_usage == "--url": suggested_usage = "--base-url"
             var usage = executable + " gateway"
-            for prior in seen:
-                usage += " " + _label(prior)
+            if name.startswith("--"):
+                for prior in seen:
+                    usage += " " + _label(prior)
             var message = "unexpected argument '" + name + "' found"
             if suggestion:
                 message += "\n\n  tip: a similar argument exists: '" + suggestion + "'"
                 usage += " " + _label(suggested_usage)
-            elif not seen:
+            elif not name.startswith("--") or not seen:
                 usage += " [OPTIONS]"
             raise session_cli_error(message, usage)
         if name in seen:
             raise session_cli_error("the argument '" + _label(name) + "' cannot be used multiple times", executable + " gateway [OPTIONS]")
-        seen.append(name)
         if value_option:
             var value: String
             if "=" in argument:
                 group_usage = True
                 value = String(argument.split("=", maxsplit=1)[1])
             else:
-                if index + 1 >= len(args) or (args[index + 1].startswith("-") and args[index + 1] != "-"):
+                if index + 1 >= len(args):
                     raise session_cli_error("a value is required for '" + _label(name) + "' but none was supplied")
+                var next_argument = String(args[index + 1])
+                if next_argument == "--":
+                    if index + 2 < len(args):
+                        index += 1
+                        continue
+                    raise session_cli_error("a value is required for '" + _label(name) + "' but none was supplied")
+                if next_argument.startswith("-") and next_argument != "-":
+                    var next_name = argument_name(next_argument)
+                    if next_name == "--url": next_name = "--base-url"
+                    if next_argument == "--help" or next_argument.startswith("-h") or next_name in ["--listen", "--provider", "--base-url", "--api-key", "--smart-context", "--presidio", "--no-presidio"]:
+                        raise session_cli_error("a value is required for '" + _label(name) + "' but none was supplied")
+                    index += 1
+                    continue
                 index += 1
                 value = args[index]
             if name == "--listen": options.listen = value
@@ -131,6 +144,7 @@ def parse_gateway_arguments(args: List[String], executable: String) raises -> Ga
                 if options.presidio and not conflict_second:
                     conflict_first = "--presidio"
                     conflict_second = name
+        seen.append(name)
         index += 1
     if conflict_second:
         var usage = executable + " gateway"

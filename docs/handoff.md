@@ -170,7 +170,13 @@ Buffered Chat Completions and Responses passthrough also match the active
 bodies, hop-header filtering and one upstream POST per request. The earlier
 non-ASCII mismatch capture remains historical; this focused comparison does
 not qualify streaming metadata or broader provider parity. See
-`docs/evidence/baseline-0.166.0/provider-buffered-metadata.md`. All active
+`docs/evidence/baseline-0.166.0/provider-buffered-metadata.md`.
+The passthrough path now also lowercases validated forwarded header names,
+matching a synthetic 0.166.0 503 response on the wire. Header names are
+case-insensitive; status, body, values and generated framing remain covered
+separately. This does not implement profile-backed policy handling; see
+`docs/evidence/baseline-0.166.0/local-relay-response-header-casing.md`.
+All active
 0.166.0 callers of the shared process fixture now set its temporary update
 metadata to 0.166.0 explicitly; the historical default remains unchanged. The
 25-method active subset, including the manual fragmented-tool-stream case,

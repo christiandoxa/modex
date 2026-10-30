@@ -51,6 +51,33 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                         self.assertEqual(sent["x-codex-turn-state"], f"synthetic-client-turn-{index}")
                         self.assertFalse(any(name.startswith("x-prodex-internal-") for name in sent))
 
+    def test_503_passthrough_header_names_match_active_release(self):
+        body = b"synthetic policy capacity"
+        request = [{"model": "deepseek-chat", "messages": [],
+                    "_path": "/v1/chat/completions?synthetic=header-casing"}]
+        reply = {"status": 503, "content_type": "application/x-synthetic", "body": body,
+                 "response_headers": [("Content-Type", "application/x-synthetic"),
+                                      ("X-Request-ID", "synthetic-request"),
+                                      ("X-RateLimit-Remaining", "0")]}
+
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, request, [reply], latest_version="0.166.0",
+                )
+                self.assertEqual(len(upstream), 1)
+                self.assertEqual(responses[0]["status"], 503)
+                self.assertEqual(bytes.fromhex(responses[0]["body"]), body)
+                headers = responses[0]["headers"]
+                for name in ("server", "date", "content-type", "x-request-id",
+                             "x-ratelimit-remaining"):
+                    self.assertIn(name, headers)
+                    self.assertFalse(any(header.lower() == name and header != name
+                                          for header in headers))
+                self.assertEqual(headers["x-request-id"], "synthetic-request")
+                self.assertEqual(headers["x-ratelimit-remaining"], "0")
+                self.assertEqual(headers["Content-Length"], str(len(body)))
+
 
 if __name__ == "__main__":
     unittest.main()

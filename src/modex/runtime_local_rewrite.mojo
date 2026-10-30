@@ -314,7 +314,7 @@ def _response_headers(headers: List[Tuple[String, String]]) -> List[Tuple[String
                 break
         if not valid:
             continue
-        output.append((name, value))
+        output.append((lower, value))
     return output^
 
 

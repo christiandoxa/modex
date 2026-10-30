@@ -162,6 +162,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         historical_04392_tests = script[historical_04392_suite:script.index("\n", historical_04392_suite)]
         self.assertIn("test_cli.py", historical_04392_tests)
         self.assertIn("test_gateway_cli.py", historical_04392_tests)
+        self.assertIn("test_session_text_memory_04392.py", historical_04392_tests)
         self.assertIn(
             'run_logged historical-python-cross-release-buffered-response-shapes env PRODEX_ORACLE_04392="$PRODEX_ORACLE_04392" PRODEX_ORACLE_01651="$PRODEX_ORACLE_01651" "$PYTHON" scripts/ci/run-unittest.py test_provider_buffered_response_shapes_01651_04392.py',
             script,
@@ -564,6 +565,8 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "fi\n"
                 "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_provider_catalog_04395.py '* ]]; then printf 'historical-04395-test\\n' >>\"$FAKE_LOG\"; fi\n"
                 "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_provider_embedded_tool_calls_04395.py '* ]]; then printf 'cross-04392-04395-test\\n' >>\"$FAKE_LOG\"; fi\n"
+                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_text_memory.py '* ]]; then printf 'width-memory-independent-test\\n' >>\"$FAKE_LOG\"; fi\n"
+                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_session_text_memory_04392.py '* ]]; then printf 'width-memory-parity-test\\n' >>\"$FAKE_LOG\"; fi\n"
                 "echo 'synthetic command passed'\n",
                 encoding="utf-8",
             )
@@ -712,6 +715,10 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("historical-python-cross-release-04392-04395: BLOCKED", summary)
         self.assertIn("Fast CI finished independent checks", summary)
         self.assertIn("historical-04395-test", events)
+        self.assertIn("width-memory: PASS", summary)
+        self.assertIn("width-memory-session-parity: BLOCKED", summary)
+        self.assertIn("width-memory-independent-test", events)
+        self.assertNotIn("width-memory-parity-test", events)
         self.assertNotIn("cross-04392-04395-test", events)
         self.assertLess(events.index("reference\toracle 0.439.2"), events.index("reference\toracle 0.165.1"))
         self.assertLess(events.index("reference\toracle 0.165.1"), next(i for i, event in enumerate(events) if event.startswith("historical-test\t")))
@@ -739,6 +746,10 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("historical-python-04395: PASS", summary)
         self.assertIn("historical-python-cross-release-04392-04395: BLOCKED", summary)
         self.assertIn("historical-04395-test", events)
+        self.assertIn("width-memory: PASS", summary)
+        self.assertIn("width-memory-session-parity: BLOCKED", summary)
+        self.assertIn("width-memory-independent-test", events)
+        self.assertNotIn("width-memory-parity-test", events)
         self.assertNotIn("cross-04392-04395-test", events)
 
     def test_missing_historical_04395_oracle_runs_independent_fast_checks_and_fails_closed(self):
@@ -754,6 +765,8 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("focused-python-active: PASS", summary)
         self.assertIn("focused-helper-python: PASS", summary)
         self.assertIn("width-memory: PASS", summary)
+        self.assertIn("width-memory-parity-test", events)
+        self.assertNotIn("width-memory-session-parity: BLOCKED", summary)
         self.assertIn("Fast CI finished independent checks", summary)
         self.assertNotIn("historical-04395-test", events)
         self.assertNotIn("cross-04392-04395-test", events)
@@ -770,6 +783,9 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("focused-python-active: PASS", summary)
         self.assertIn("independent-native-unit: PASS", summary)
         self.assertIn("supported-platform-probes: PASS", summary)
+        self.assertIn("independent-width-memory: PASS", summary)
+        self.assertIn("width-memory-session-parity: PASS", summary)
+        self.assertIn("width-memory-parity-test", events)
         self.assertIn("capability-probes: PASS", summary)
         self.assertIn("complete-suite: BLOCKED", summary)
         self.assertIn("Full CI finished independent checks", summary)
@@ -802,6 +818,8 @@ class CIOracleRoutingTests(unittest.TestCase):
                 self.assertIn("historical-python-04395: PASS", summary)
                 self.assertIn("historical-python-cross-release-04392-04395: BLOCKED", summary)
                 self.assertIn("complete-suite: BLOCKED", summary)
+                self.assertIn("independent-width-memory: PASS", summary)
+                self.assertIn("width-memory-independent-test", events)
                 self.assertIn("Full CI finished independent checks", summary)
                 self.assertTrue(any(event.startswith("make\tunit\t") for event in events))
                 self.assertTrue(any(event.startswith("make\tprobes\t") for event in events))
@@ -814,6 +832,8 @@ class CIOracleRoutingTests(unittest.TestCase):
                 else:
                     self.assertIn("historical-04392-source: BLOCKED", summary)
                     self.assertIn("reference\tsource 0.439.2", events)
+                self.assertIn("width-memory-session-parity: BLOCKED", summary)
+                self.assertNotIn("width-memory-parity-test", events)
 
     def test_full_ci_runs_complete_suite_when_all_references_are_available(self):
         result, events, summary, *_ = self.run_full_with_fake_tools()
@@ -828,7 +848,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("Full CI checks passed.", result.stdout)
 
     def test_active_and_historical_suites_receive_their_pinned_oracles(self):
-        (result, events, _, active_oracle_path, historical_04392_oracle_path,
+        (result, events, summary, active_oracle_path, historical_04392_oracle_path,
          historical_01651_oracle_path) = self.run_fast_with_fake_tools(missing_active=False)
 
         self.assertEqual(result.returncode, 0, result.stdout)
@@ -882,6 +902,10 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(events.index("reference\toracle 0.165.1"), events.index(cross_release))
         self.assertIn("historical-04395-test", events)
         self.assertIn("cross-04392-04395-test", events)
+        self.assertIn("width-memory-independent-test", events)
+        self.assertIn("width-memory-parity-test", events)
+        self.assertIn("width-memory: PASS", summary)
+        self.assertNotIn("width-memory-session-parity: BLOCKED", summary)
         self.assertLess(events.index("reference\toracle 0.439.5"), events.index("historical-04395-test"))
         self.assertLess(events.index("reference\toracle 0.439.5"), events.index("cross-04392-04395-test"))
         self.assertIn("Fast CI checks passed.", result.stdout)

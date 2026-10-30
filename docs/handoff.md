@@ -18,6 +18,20 @@ reference is unavailable. Synthetic routing coverage exercises both scripts;
 all 21 `test_ci_oracle_routing.py` tests passed with fake reference tools, and
 both CI scripts passed `bash -n`. This verifies routing only, not hosted CI or
 the missing historical comparisons.
+Hosted Fast CI run `41087191880` on `8f458fa6f1a047db726b4808f031abc6fb14e0df`
+was superseded and cancelled after its `Run fast CI` step failed in the bundled
+width-memory module: `SessionTextMemoryParityTests.setUpClass` still required
+the unavailable historical 0.439.2 oracle. The native width measurement and
+the two oracle comparisons now live in separate modules. Fast CI continues the
+independent width checks and reports the missing session comparison as
+`width-memory-session-parity: BLOCKED`; Full CI does the same before marking
+the complete suite blocked. If 0.439.2 is available but another required
+reference blocks the full suite, Full CI runs the parity lane independently;
+with all references available, `make test` discovers it once. Synthetic
+routing and strict-discovery checks passed locally with missing and available
+references, along with the seven
+memory-metric tests and both shell syntax checks. Hosted validation of this
+change is pending; no 0.439.2 comparison or full-suite pass is claimed.
 Hosted Fast CI run `41074130130` also exposed a historical 0.165.1 live-log
 fixture that retained a separate 0.439.2 holder binary. Its helper now receives
 and restores the same 0.165.1 oracle as the rest of that suite. The originally

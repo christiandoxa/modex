@@ -93,10 +93,11 @@ printf 'source_sha=%s\nreference_commit=%s\nmojo=%s\npython=%s\nreference_oracle
     "$($MOJO --version)" "$($PYTHON --version 2>&1)" \
     "$(sha256sum "$PRODEX_ORACLE" | cut -d ' ' -f1)" \
     "$(sha256sum "$PRODEX_ORACLE_04392" | cut -d ' ' -f1)" >"$EVIDENCE_DIR/identity.txt"
-run_logged historical-python-04392 "$PYTHON" scripts/ci/run-unittest.py test_anthropic_buffered_payload_04392.py test_anthropic_message_arrays_04392.py test_anthropic_text_stream_04392.py test_app_server_rpc_04392.py test_cli.py test_continuation_binding_04392.py test_deepseek_web_search_mode_04392.py test_gateway_cli.py test_local_rewrite_04392_oracle.py test_profile_cli.py test_provider_request_untyped_role_04392.py test_provider_tools_04392_characterization.py test_provider_requests.py test_runtime.py test_runtime_observer_04392.py test_runtime_observer_fuzz.py test_super_probe_diagnostic_04392.py
+run_logged historical-python-04392 "$PYTHON" scripts/ci/run-unittest.py test_anthropic_buffered_payload_04392.py test_anthropic_message_arrays_04392.py test_anthropic_text_stream_04392.py test_app_server_rpc_04392.py test_cli.py test_continuation_binding_04392.py test_deepseek_web_search_mode_04392.py test_gateway_cli.py test_local_rewrite_04392_oracle.py test_profile_cli.py test_provider_request_untyped_role_04392.py test_provider_tools_04392_characterization.py test_provider_requests.py test_runtime.py test_runtime_observer_04392.py test_runtime_observer_fuzz.py test_session_text_memory_04392.py test_super_probe_diagnostic_04392.py
 fi
 if [[ "$HISTORICAL_04392_READY" == 0 ]]; then
     unset PRODEX_ORACLE_04392 PRODEX_GATEWAY_ORACLE_04392 MODEX_REFERENCE_04392_DIR
+    echo 'width-memory-session-parity: BLOCKED (required 0.439.2 oracle or source unavailable; no comparison claimed)' | tee -a "$EVIDENCE_DIR/summary.txt"
 fi
 run_logged focused-relay-python "$PYTHON" scripts/ci/run-unittest.py test_local_rewrite.py test_loopback_server.py
 if ! "$PYTHON" scripts/ci/reference.py oracle 0.165.1 >"$EVIDENCE_DIR/oracle-path-01651.txt" 2>"$EVIDENCE_DIR/reference-01651.log"; then

@@ -168,6 +168,12 @@ echo 'reference sources: PASS' | tee -a "$EVIDENCE_DIR/summary.txt"
 rm -- "$EVIDENCE_DIR/reference-source-04391.txt" "$EVIDENCE_DIR/reference-source-01651.txt"
 run_logged supported-platform-probes make probes
 if [[ "$CI_REQUIRED_BLOCKED" == 1 ]]; then
+    run_logged independent-width-memory env MODEX_WIDTH_MEMORY_ARTIFACTS="$EVIDENCE_DIR/width-memory" MODEX_WIDTH_MEMORY_DRIVER="$ROOT/build/tests/width_memory_driver" "$PYTHON" scripts/ci/run-unittest.py test_text_memory.py
+    if [[ "$HISTORICAL_04392_READY" == 0 ]]; then
+        echo 'width-memory-session-parity: BLOCKED (required 0.439.2 oracle or source unavailable; no comparison claimed)' | tee -a "$EVIDENCE_DIR/summary.txt"
+    else
+        run_logged width-memory-session-parity "$PYTHON" scripts/ci/run-unittest.py test_session_text_memory_04392.py
+    fi
     echo 'complete-suite: BLOCKED (required historical reference unavailable; no full-suite result claimed)' | tee -a "$EVIDENCE_DIR/summary.txt"
 else
     run_logged complete-suite make test

@@ -999,6 +999,7 @@
         "tests/test_unicode_width.py",
         "tests/text_driver.mojo",
         "tests/test_text_memory.py",
+        "tests/test_session_text_memory_04392.py",
         "tests/width_memory_driver.mojo",
         "tests/test_session_cli.mojo",
         "tests/test_session_04395_slice.py",
@@ -1101,6 +1102,7 @@
         "tests/test_unicode_width.py",
         "tests/text_driver.mojo",
         "tests/test_text_memory.py",
+        "tests/test_session_text_memory_04392.py",
         "tests/width_memory_driver.mojo",
         "tests/test_session_cli.mojo",
         "tests/test_session_query_01651.py"

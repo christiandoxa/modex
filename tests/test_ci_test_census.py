@@ -68,6 +68,23 @@ class NativeTestCensusTests(unittest.TestCase):
             all(test.__class__.__module__ == "test_super_launch_01651" for test in tests)
         )
 
+    def test_memory_parity_tests_are_discovered_once_in_the_04392_module(self):
+        tests = RUNNER_DISCOVERY.discover_tests(
+            ["test_text_memory.py", "test_session_text_memory_04392.py"],
+            require_each_pattern=True,
+        )
+        ids = [test.id() for test in tests]
+        parity = [test for test in tests if test.__class__.__name__ == "SessionTextMemoryParityTests"]
+
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(len(parity), 2)
+        self.assertEqual(
+            {test.__class__.__module__ for test in parity},
+            {"test_session_text_memory_04392"},
+        )
+        self.assertTrue(any(test.__class__.__name__ == "WidthMemoryTests" for test in tests))
+        self.assertTrue(any(test.__class__.__name__ == "MemoryMetricFixtureTests" for test in tests))
+
     def test_cross_release_provider_stream_tests_are_discovered_once(self):
         tests = RUNNER_DISCOVERY.discover_tests(
             ["test_provider_stream_cross_release_characterization.py"],

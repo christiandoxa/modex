@@ -35,6 +35,62 @@ def _number(text: StringSlice) raises -> Int:
     return n
 
 
+def normalize_loopback_ipv4_host(host: String) raises -> String:
+    var value = String(host)
+    if value.endswith("."):
+        var without_trailing_dot = String(value[byte=:value.byte_length() - 1])
+        value = without_trailing_dot^
+    var parts = value.split(".")
+    if len(parts) == 0 or len(parts) > 4:
+        raise Error("invalid loopback HTTP address")
+
+    var numbers = List[UInt64]()
+    for part in parts:
+        if part.byte_length() == 0:
+            raise Error("invalid loopback HTTP address")
+        var radix = 10
+        var start = 0
+        if part.byte_length() > 1 and part.as_bytes()[0] == 48:
+            if part.as_bytes()[1] == 120 or part.as_bytes()[1] == 88:
+                radix = 16
+                start = 2
+            else:
+                radix = 8
+                start = 1
+        var number = UInt64(0)
+        for index in range(start, part.byte_length()):
+            var byte = part.as_bytes()[index]
+            var digit: Int
+            if byte >= 48 and byte <= 57:
+                digit = Int(byte) - 48
+            elif byte >= 65 and byte <= 70:
+                digit = Int(byte) - 55
+            elif byte >= 97 and byte <= 102:
+                digit = Int(byte) - 87
+            else:
+                raise Error("invalid loopback HTTP address")
+            if digit >= radix:
+                raise Error("invalid loopback HTTP address")
+            if number > (UInt64(4294967295) - UInt64(digit)) // UInt64(radix):
+                raise Error("invalid loopback HTTP address")
+            number = number * UInt64(radix) + UInt64(digit)
+        numbers.append(number)
+
+    for index in range(len(numbers) - 1):
+        if numbers[index] > 255:
+            raise Error("invalid loopback HTTP address")
+    var last = len(numbers) - 1
+    var last_bits = 8 * (5 - len(numbers))
+    if numbers[last] >= (UInt64(1) << UInt64(last_bits)):
+        raise Error("invalid loopback HTTP address")
+    var ip = numbers[last]
+    for index in range(last):
+        ip = ip | (numbers[index] << UInt64(24 - 8 * index))
+    if ip >> 24 != 127:
+        raise Error("HTTP address is not loopback")
+    return String(Int((ip >> 24) & 255)) + "." + String(Int((ip >> 16) & 255)) + "." + String(Int((ip >> 8) & 255)) + "." + String(Int(ip & 255))
+
+
 
 def _hex(text: StringSlice) raises -> Int:
     if text.byte_length() == 0:
@@ -438,6 +494,7 @@ def loopback_get(
         raise Error("invalid or unsupported HTTP body limit")
     var fd: Int32
     var req: List[UInt8]
+    var request_address: String
     var ipv6 = address.byte_length() > 0 and address.startswith("[")
     var started: Float64
     var result: Int32
@@ -450,7 +507,8 @@ def loopback_get(
         var port = _number(address[byte=close_bracket + 2:])
         if port == 0 or port > 65535:
             raise Error("invalid loopback HTTP port")
-        req = _request(path, header_name, header_value, address)
+        request_address = "[::1]:" + String(port)
+        req = _request(path, header_name, header_value, request_address)
         fd = _open_loopback_socket(True)
         var addr_bytes = Array[UInt8, 16](fill=0)
         addr_bytes[15] = 1
@@ -462,9 +520,8 @@ def loopback_get(
         var parts = address.split(":")
         if len(parts) != 2:
             raise Error("invalid loopback HTTP address")
-        var octets = parts[0].split(".")
-        if len(octets) != 4:
-            raise Error("invalid loopback HTTP address")
+        var host = normalize_loopback_ipv4_host(String(parts[0]))
+        var octets = host.split(".")
         var ip = UInt32(0)
         for i in range(4):
             var octet = _number(octets[i])
@@ -476,7 +533,8 @@ def loopback_get(
         var port = _number(parts[1])
         if port == 0 or port > 65535:
             raise Error("invalid loopback HTTP port")
-        req = _request(path, header_name, header_value, address)
+        request_address = host + ":" + String(port)
+        req = _request(path, header_name, header_value, request_address)
         fd = _open_loopback_socket(False)
         var peer = sockaddr_in(port=_port_bytes(port), addr=in_addr(s_addr=_network32(ip)))
         started = perf_counter()
@@ -716,7 +774,9 @@ struct LoopbackHTTPStream(Movable):
             raise Error("invalid or unsupported HTTP stream limits")
 
         var ipv6 = address.byte_length() > 0 and address.startswith("[")
+        var request_address: String
         var port: Int
+        var host = String()
         var ip: UInt32 = 0
         if ipv6:
             var close_bracket = address.find("]")
@@ -727,9 +787,8 @@ struct LoopbackHTTPStream(Movable):
             var parts = address.split(":")
             if len(parts) != 2:
                 raise Error("invalid loopback HTTP address")
-            var octets = parts[0].split(".")
-            if len(octets) != 4:
-                raise Error("invalid loopback HTTP address")
+            host = normalize_loopback_ipv4_host(String(parts[0]))
+            var octets = host.split(".")
             for i in range(4):
                 var octet = _number(octets[i])
                 if octet > 255:
@@ -740,7 +799,11 @@ struct LoopbackHTTPStream(Movable):
             port = _number(parts[1])
         if port == 0 or port > 65535:
             raise Error("invalid loopback HTTP port")
-        var request = _stream_request(path, headers, address, len(body), request_method, request_header_limit, request_field_limit, request_connection_close, include_content_length)
+        if ipv6:
+            request_address = "[::1]:" + String(port)
+        else:
+            request_address = host + ":" + String(port)
+        var request = _stream_request(path, headers, request_address, len(body), request_method, request_header_limit, request_field_limit, request_connection_close, include_content_length)
         _check_downstream_peer(self.downstream_fd)
         _check_cancellation(self.cancel_fd)
         var started = perf_counter()

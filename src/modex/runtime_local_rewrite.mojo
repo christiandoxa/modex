@@ -15,7 +15,7 @@ from std.time.time import _realtime_nanoseconds
 from std.utils.lock import BlockingScopedLock, BlockingSpinLock
 
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument
-from .loopback_http import HTTP_HEADER_LIMIT, HTTP_MAX_REQUEST_FIELD_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, LoopbackHTTPStream, _number
+from .loopback_http import HTTP_HEADER_LIMIT, HTTP_MAX_REQUEST_FIELD_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, LoopbackHTTPStream, _number, normalize_loopback_ipv4_host
 from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
 from .log_operational import valid_url_authority
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_model_retry_available, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_api_key_response, deepseek_retryable_model_response
@@ -50,16 +50,14 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
     if address.startswith("[::1]:"):
         var port = _number(address[byte=6:])
         if port < 1 or port > 65535: raise Error("invalid loopback HTTP port")
+        address = "[::1]:" + String(port)
     else:
         var parts = address.split(":")
         if len(parts) != 2: raise Error("this Modex gateway requires a numeric loopback upstream with an explicit port")
-        var octets = parts[0].split(".")
-        if len(octets) != 4: raise Error("HTTP address is not loopback")
-        for index in range(4):
-            var octet = _number(octets[index])
-            if octet > 255 or index == 0 and octet != 127: raise Error("HTTP address is not loopback")
+        var host = normalize_loopback_ipv4_host(String(parts[0]))
         var port = _number(parts[1])
         if port < 1 or port > 65535: raise Error("invalid loopback HTTP port")
+        address = host + ":" + String(port)
     while path.endswith("/"):
         var shorter = String(path[byte=:path.byte_length() - 1])
         path = shorter^

@@ -136,6 +136,24 @@ class LoopbackHTTPStreamTests(unittest.TestCase):
         self.assertIn(b"S 201\nH X-Trace: one\nH X-Trace: two\nH X.Foo: a\tb\nH Content-Length: 2\n\nok", result.stdout)
         self.assertEqual(errors, [])
 
+    def test_ipv4_shorthand_normalizes_before_streaming(self):
+        captured = []
+
+        def respond(conn, request):
+            captured.append(request)
+            conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok")
+
+        address, accepted, errors, thread = self.serve(respond)
+        _, port = address.rsplit(":", 1)
+        shorthand = f"127.1:{int(port):08d}"
+        result = self.call(shorthand, path="/")
+        thread.join(2)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, b"S 200\nH Content-Length: 2\n\nok")
+        self.assertEqual(accepted, [True])
+        self.assertIn(b"Host: " + address.encode() + b"\r\n", captured[0])
+        self.assertEqual(errors, [])
+
     def test_bodyless_status_skips_length_cap_and_body_read(self):
         for status in (204, 304):
             with self.subTest(status=status):

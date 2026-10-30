@@ -125,6 +125,34 @@ class LoopbackHTTPTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, b"200\nok")
 
+    def test_ipv4_shorthand_normalizes_to_numeric_loopback(self):
+        address, observed, thread = self.serve(
+            b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok"
+        )
+        _, port = address.rsplit(":", 1)
+        shorthand = f"127.1:{int(port):08d}"
+        result = self.call(shorthand)
+        thread.join(1)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, b"200\nok")
+        self.assertIn(b"Host: " + address.encode() + b"\r\n", observed[0])
+
+    def test_rejects_malformed_numeric_and_hostname_authorities(self):
+        for address in (
+            "127.0.0.08:1", "127..1:1", "127.1.2.3.4:1", "127.1.example:1",
+            "localhost:1", "0x:1", "0x100000000:1", "126.0.0.1:1",
+            "128.0.0.1:1", "8.8.8.8:1", "0x08080808:1", "167772161:1",
+        ):
+            with self.subTest(address=address):
+                result = self.call(address)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(
+                    b"invalid loopback HTTP address" in result.stderr
+                    or b"not loopback" in result.stderr,
+                    result.stderr,
+                )
+                self.assertNotIn(b"connect failed", result.stderr)
+
     def test_rejects_nonloopback_and_header_injection(self):
         nonloopback = self.call("127.0.0.1:1", value="x\r\nInjected: yes")
         self.assertNotEqual(nonloopback.returncode, 0)

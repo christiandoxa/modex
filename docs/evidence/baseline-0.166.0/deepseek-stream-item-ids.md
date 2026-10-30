@@ -23,11 +23,13 @@ request ID through the SSE state. Provider-core delegates the text item ID to
 the Mojo stream policy, whose mode 1 formats `msg_{provider}_{request}`. The
 resulting item ID is `msg_deepseek_<decimal UInt64>`.
 
-Modex's production local-rewrite path now hashes the UUIDv7 entropy and full
-local sequence using the same pinned input order and SipHash-1-3 rounds, then
-formats `msg_deepseek_<decimal UInt64>`. Its sequence counter now wraps at
-`u64::MAX`. `tests/test_uuid7.mojo` checks three fixed outputs generated with
-Rust 1.99.1 `DefaultHasher::new()` for UUID
+Modex's production local-rewrite path hashes UUIDv7 entropy and the full local
+sequence using the same pinned input order and SipHash-1-3 rounds, then formats
+`msg_deepseek_<decimal UInt64>`. Its counter starts at 1 and takes the current
+value under the existing lock before incrementing with wrapping arithmetic,
+matching the first returned value and wrap behavior of `fetch_add`. The locked
+counter remains thread-safe. `tests/test_uuid7.mojo` checks three fixed outputs
+generated with Rust 1.99.1 `DefaultHasher::new()` for UUID
 `017f22e2-79b0-7cc3-98c4-dc0c0c07398f`:
 
 | Sequence | Request ID |
@@ -37,10 +39,15 @@ Rust 1.99.1 `DefaultHasher::new()` for UUID
 | `u64::MAX` | `14e68c0dffffffff` |
 
 This verifies the deterministic hash mapping for the supplied UUID and
-sequence. Full generated-ID parity remains open: Modex's request sequence
-starts at zero instead of using Prodex's random instance prefix, and each
-process generates independent UUIDv7 entropy. These process values cannot be
-compared directly without controlling both sources.
+sequence. Modex still lacks Prodex's full per-instance seed, which hashes a
+fresh UUID, process ID, current thread ID, and log path. The audited public
+Mojo 1.2 `std.os.process` and `std.runtime` interfaces expose no PID or
+current-thread-ID getter; a compile probe confirmed the shipped
+`std.sys._libc` also exports neither POSIX `getpid` nor `pthread_self`. Project
+rules disallow adding native bindings, so exact seed parity remains blocked
+with the audited interfaces. Each request still uses independent UUIDv7
+entropy; process observations do not establish seed parity or exact
+cross-process IDs.
 
 ## Process comparison
 
@@ -49,25 +56,27 @@ the built Modex binary through their real local-rewrite processes. A synthetic
 loopback provider returns two streamed chat completions in one process. For
 both binaries, each response uses the same item ID in its `output_item.added`
 and `output_item.done` events, the decimal value fits in `UInt64`, and its low
-32 bits are 1 then 2. After normalizing only the numeric item ID, the SSE
-responses match byte-for-byte. A second process starts at local sequence 1 and
-produces a different full item ID for each binary. The fixture checks one
-upstream POST per request and uses only synthetic authorization data.
+32 bits are 1 then 2. A concurrent two-request observation also checks that
+those sequence values are unique under load. After normalizing only the numeric
+item ID, the serial SSE responses match byte-for-byte. A second process starts
+at local sequence 1 and produces a different full item ID for each binary.
+The fixture checks one upstream POST per request and uses only synthetic
+authorization data.
 
 These samples establish the tested shape and observed uniqueness cases. The
 random 32-bit hash prefix can collide across processes, and the low sequence
 field repeats after 2^32 requests. IDs are not a security token or a global
 collision-free identifier. The deterministic vector check does not qualify
 the upstream instance-seed derivation or exact cross-process ID parity. The
-sequence-wrap helper is unit-tested, but process-level overflow was not
-exercised end-to-end.
+sequence-take helper checks that `u64::MAX` is returned before stored state
+wraps to zero; process-level overflow was not exercised end-to-end.
 
 ## Checks
 
-- `make build` passed with Mojo 1.2.0.
-- `make unit BUILD_DIR=/tmp/modex-hash-check-build UNIT_BUILD_PROGRAMS=test_uuid7 UNIT_RUNS=test_uuid7`
-  passed, including the fixed Rust hash vectors, sequence wrap, UUIDv7 suffix
-  bounds, and invalid-input cases.
+- `make build` passed with Mojo 1.2.0 after the fetch-add ordering change.
+- `make unit BUILD_DIR=/tmp/modex-request-id-01660-unit UNIT_BUILD_PROGRAMS=test_uuid7 UNIT_RUNS=test_uuid7`
+  passed, including the fixed Rust hash vectors and assertions that the final
+  sequence value is returned before the stored sequence wraps to zero.
 - `make build` and `make unit-build BUILD_DIR=build UNIT_BUILD_PROGRAMS=local_rewrite_driver`
   passed with Mojo 1.2.0.
 - Under `unshare -Urnm`, with loopback as the only interface, no default route,
@@ -78,6 +87,11 @@ exercised end-to-end.
   synthetic authorization data and a loopback provider.
 - With `PRODEX_ORACLE_04392` unset and `HOME=/proc/self/nonexistent`, the
   active stream-ID process test passed using only the pinned 0.166.0 oracle.
+- After adding the concurrent-ID case, both tests in
+  `test_deepseek_stream_ids_01660.py` passed against the pinned oracle and
+  Modex under user, mount, and network namespaces, with private tmpfs `/tmp`,
+  loopback only, and synthetic provider credentials. The concurrency fixture
+  held both requests until both reached the synthetic provider.
 - `python3 scripts/ci/run-unittest.py test_ci_oracle_routing.py` passed 14
   tests, including active-suite routing for the new process test.
 - `make ci-dependencies` passed; 72 Mojo files use only standard or internal

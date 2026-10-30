@@ -1,7 +1,7 @@
 from std.collections import List
 from std.testing import assert_equal, assert_false, assert_true
 
-from modex.uuid7 import new_uuid7, runtime_request_id_from_uuid7, runtime_request_sequence_next, uuid7_from_parts, uuid7_suffix_u32
+from modex.uuid7 import new_uuid7, runtime_request_id_from_uuid7, runtime_request_sequence_next, runtime_request_sequence_take, uuid7_from_parts, uuid7_suffix_u32
 
 
 def main() raises:
@@ -29,6 +29,12 @@ def main() raises:
     assert_equal(runtime_request_id_from_uuid7(entropy, UInt64.MAX), UInt64(0x14E68C0DFFFFFFFF))
     assert_equal(runtime_request_sequence_next(UInt64(0)), UInt64(1))
     assert_equal(runtime_request_sequence_next(UInt64.MAX), UInt64(0))
+    var taken = runtime_request_sequence_take(UInt64(1))
+    assert_equal(taken[0], UInt64(1))
+    assert_equal(taken[1], UInt64(2))
+    taken = runtime_request_sequence_take(UInt64.MAX)
+    assert_equal(taken[0], UInt64.MAX)
+    assert_equal(taken[1], UInt64(0))
     var invalid_id = False
     try:
         _ = runtime_request_id_from_uuid7("017f22e2-79b0-7cc3-98c4_dc0c0c07398f", UInt64(1))

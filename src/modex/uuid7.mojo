@@ -61,6 +61,10 @@ def runtime_request_sequence_next(sequence: UInt64) -> UInt64:
     return UInt64(0) if sequence == UInt64.MAX else sequence + UInt64(1)
 
 
+def runtime_request_sequence_take(sequence: UInt64) -> Tuple[UInt64, UInt64]:
+    return (sequence, runtime_request_sequence_next(sequence))
+
+
 def _uuid7_u64(identifier: String, start_hex: Int) raises -> UInt64:
     if identifier.byte_length() != 36:
         raise Error("UUIDv7 string has invalid length")

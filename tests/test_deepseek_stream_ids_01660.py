@@ -99,6 +99,26 @@ class DeepSeekStreamItemIDs01660Tests(unittest.TestCase):
                     normalize_item_id(observed[label][0][0]),
                 )
 
+    def test_concurrent_requests_take_unique_local_sequences(self):
+        turns = [
+            {"model": "deepseek-chat", "input": "synthetic concurrent stream one", "stream": True},
+            {"model": "deepseek-chat", "input": "synthetic concurrent stream two", "stream": True},
+        ]
+        replies = [stream_reply("chatcmpl_concurrent", "parallel") for _ in turns]
+        for reply in replies:
+            reply["release_after_requests"] = len(turns)
+
+        for label, binary in (("oracle", ORACLE), ("modex", MODEX)):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, turns, replies, concurrent=True, latest_version="0.166.0",
+                )
+                self.assertEqual(len(upstream), len(turns))
+                self.assertEqual([row["status"] for row in responses], [200] * len(turns))
+                ids = [item_id(bytes.fromhex(row["body"]))[1] for row in responses]
+                self.assertEqual(sorted(value & 0xFFFFFFFF for value in ids), [1, 2])
+                self.assertEqual(len(set(ids)), len(turns))
+
 
 if __name__ == "__main__":
     unittest.main()

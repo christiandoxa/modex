@@ -214,8 +214,14 @@ isolated network and private temporary storage; see
 DeepSeek streamed text-item IDs now use the 0.166.0 hash mapping for UUIDv7
 entropy and sequence, checked against fixed pinned-Rust vectors. The process
 comparison covers the ID shape and selected event consistency. Modex still
-lacks the release's per-instance sequence seed; generated prefixes can collide,
-and full generator parity and global uniqueness remain unqualified. See
+lacks the release's per-instance sequence seed: audited public Mojo 1.2
+`std.os.process` and `std.runtime` interfaces expose no PID or current-thread-ID
+getter, while the shipped `std.sys._libc` exports neither POSIX `getpid` nor
+`pthread_self`; project rules prohibit adding native bindings. The counter now
+uses `fetch_add` return-before-wrap semantics under its existing lock; an
+active-release concurrent process comparison checks distinct local sequence
+values. Generated prefixes can collide, and full generator parity and global
+uniqueness remain unqualified. See
 `docs/evidence/baseline-0.166.0/deepseek-stream-item-ids.md`.
 An additional isolated 0.166.0 matrix compares eight translated provider
 request bodies and seven streamed response shapes through both real processes;

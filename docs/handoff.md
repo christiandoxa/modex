@@ -1,5 +1,16 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The isolated full `make test` run on `89e8c04e7fcd3fb93d52bcafc400d19e5704dfc7`
+finished with three failures in 1,076 Python tests after the production and
+native checks. The local log is `/tmp/modex-full-89e8c04-20261030.log`
+(SHA-256 `f292b8829be8ee968e03df844df76a4088b35d3feb0ec28e37d42977a229e14a`).
+The session PTY comparison had a timing race and was subsequently synchronized;
+its focused rerun passes. The Anthropic search-edge comparison passes on the
+later integrated revision, after its prefetch changes. The test census had an
+outdated exact method list; it now requires the five relevant methods and checks
+that discovered IDs are unique, and the census/routing tests pass. These
+focused reruns do not qualify the current revision as a full-suite pass.
+
 The isolated full `make test` run on `0023b4669e547e27bc4d660786f791c33546d79c`
 completed successfully: production and native checks passed and 1,050 Python
 tests passed in 3,356.477 seconds. The local log is

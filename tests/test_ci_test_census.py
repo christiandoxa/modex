@@ -74,13 +74,15 @@ class NativeTestCensusTests(unittest.TestCase):
             require_each_pattern=True,
         )
 
-        self.assertEqual(
-            {test._testMethodName for test in tests},
-            {
-                "test_anthropic_tool_use_index_and_stop_boundaries",
-                "test_anthropic_tool_use_name_validation_matches_both_releases",
-            },
-        )
+        names = [test.id() for test in tests]
+        self.assertEqual(len(names), len(set(names)))
+        self.assertTrue({
+            "test_anthropic_tool_use_index_and_stop_boundaries",
+            "test_anthropic_tool_use_name_validation_matches_both_releases",
+            "test_anthropic_message_delta_before_message_start_is_ignored",
+            "test_anthropic_out_of_order_stream_matrix_and_start_metadata",
+            "test_anthropic_native_prefetch_consumes_exact_prefix",
+        }.issubset({test._testMethodName for test in tests}))
         self.assertTrue(
             all(
                 test.__class__.__module__ == "test_provider_stream_cross_release_characterization"

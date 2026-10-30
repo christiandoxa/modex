@@ -1,7 +1,7 @@
 from std.collections import List
 from std.sys import argv, exit, stderr
 
-from modex.cli import argument_name, parse_session_options, parse_update_help_arguments, session_cli_error, session_help
+from modex.cli import argument_name, logout_help_requested, parse_session_options, parse_update_help_arguments, session_cli_error, session_help
 from modex.gateway_cli import GatewayOptions, gateway_help, parse_gateway_arguments, run_gateway
 from modex.inspection_cli import inspection_help, inspection_help_requested, inspection_usage
 from modex.log_cli import log_help, log_short_help, parse_log_arguments
@@ -9,7 +9,7 @@ from modex.logs import log_last
 from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
 from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_short_help, top_level_profile_use_help
-from modex.root_help import root_help, update_help
+from modex.root_help import logout_help, logout_usage, root_help, update_help
 from modex.sessions import inspect_sessions, resolve_session_id_from_store, session_resume_has_no_profile_source
 from modex.super_cli import parse_super_arguments, run_super
 from modex.super_help import super_help
@@ -107,12 +107,32 @@ def main():
             return
         print(update_help(executable), end="")
         return
+    if len(args) >= 3 and args[1] == "help" and args[2] == "logout":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        if len(args) == 3:
+            print(logout_help(executable), end="")
+            return
+        print(session_cli_error("unrecognized subcommand '" + args[3] + "'", logout_usage(executable)), file=stderr, end="")
+        exit(2)
+        return
     if len(args) >= 2 and args[1] == "update":
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])
         try:
             if parse_update_help_arguments(args, executable):
                 print(update_help(executable), end="")
+                return
+        except error:
+            print(error, file=stderr, end="")
+            exit(2)
+            return
+    if len(args) >= 2 and args[1] == "logout":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        try:
+            if logout_help_requested(args, executable):
+                print(logout_help(executable), end="")
                 return
         except error:
             print(error, file=stderr, end="")

@@ -59,6 +59,70 @@ def parse_update_help_arguments(args: List[String], executable: String) raises -
     return False
 
 
+def logout_help_requested(args: List[String], executable: String) raises -> Bool:
+    var usage = executable + " logout [OPTIONS] [NAME]"
+    var help_index = -1
+    var help_value = String()
+    var has_help_value = False
+    var literal = False
+    for index in range(2, len(args)):
+        var argument = args[index]
+        if not literal and (argument == "--help" or (argument.startswith("-h") and not argument.startswith("--"))):
+            help_index = index
+            break
+        if not literal and argument.startswith("--help="):
+            help_index = index
+            help_value = String(argument[byte=7:])
+            has_help_value = True
+            break
+        if not literal and argument == "--":
+            literal = True
+    if help_index < 0:
+        return False
+
+    var profile_seen = False
+    var positional_seen = False
+    literal = False
+    var index = 2
+    while index < help_index:
+        var argument = args[index]
+        if not literal and argument == "--":
+            literal = True
+            index += 1
+            continue
+        if not literal and (argument == "--profile" or argument == "-p"):
+            if profile_seen:
+                raise session_cli_error("the argument '--profile <NAME>' cannot be used multiple times", usage)
+            if index + 1 >= help_index or (args[index + 1].startswith("-") and args[index + 1] != "-"):
+                raise session_cli_error("a value is required for '--profile <NAME>' but none was supplied")
+            profile_seen = True
+            index += 2
+            continue
+        if not literal and (argument.startswith("--profile=") or (argument.startswith("-p") and not argument.startswith("--") and argument != "-p")):
+            if profile_seen:
+                raise session_cli_error("the argument '--profile <NAME>' cannot be used multiple times", usage)
+            profile_seen = True
+            index += 1
+            continue
+        if not literal and argument.startswith("-") and argument != "-":
+            var name = argument_name(argument)
+            var message = "unexpected argument '" + name + "' found"
+            if name.startswith("-"):
+                message += "\n\n  tip: to pass '" + name + "' as a value, use '-- " + name + "'"
+            raise session_cli_error(message, usage)
+        if positional_seen:
+            raise session_cli_error("unexpected argument '" + argument + "' found", usage)
+        positional_seen = True
+        index += 1
+
+    if has_help_value:
+        raise session_cli_error(
+            "unexpected value '" + help_value + "' for '--help' found; no more were expected",
+            executable + " logout --help [NAME]",
+        )
+    return True
+
+
 def option_label(name: String) -> String:
     if name == "--profile":
         return name + " <NAME>"

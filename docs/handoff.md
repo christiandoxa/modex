@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The isolated `2cf20df` full suite finished with one failure in 1,136 Python
+tests after the native checks. Its only failure was the truncated WebSocket
+body mismatch fixed and rerun in `79ff1b6` and the combined checks below.
+The log is `/tmp/modex-full-2cf20df-20261030.log` (SHA-256
+`0addeb36b9049ff040a10944d389cf90b2e21a55d3cb7b5a14074148c549c62e`).
+This historical failed run does not establish a full pass for current code.
+
 The combined build at `777cd3a` passed. Its native buffered-provider unit,
 six buffered response process checks, five relay upgrade/framing process
 checks, and five Super dry-run/launch/key-isolation checks passed. A direct

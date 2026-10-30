@@ -86,6 +86,10 @@ sequence. Modex's prefix differs from the release's hash and can collide; the
 comparison covers selected request and event consistency, not exact random
 values or global uniqueness. See
 `docs/evidence/baseline-0.166.0/deepseek-stream-item-ids.md`.
+One synthetic streamed function call split over two argument deltas, followed
+by a usage-only chunk, also matches the 0.166.0 process. This manual isolated
+check is scoped to that case; see
+`docs/evidence/baseline-0.166.0/deepseek-tool-stream.md`.
 
 The official historical 0.439.2 tag currently resolves to no ref and its
 SHA256SUMS URL returned 404 on 2026-10-30. Previously verified local bytes

@@ -217,6 +217,13 @@ existing-state guards would be encountered first. The test now accepts either
 fail-closed diagnostic while still requiring unchanged state; the valid and
 invalid state controls pass. This snapshot predates that correction too.
 
+A fifth isolated `make test` run uses exact commit
+`e2be12831aa97e16770f91429293a64ede15c2aa` in
+`/tmp/modex-01660-full-e2be128`. It uses a private user/mount/network namespace,
+private HOME and `/tmp`, loopback only, no default routes, and explicit active
+and historical oracle and source paths. Its launcher PID is 3523995 and log is
+`/tmp/modex-01660-full-e2be128.log`. It is running and is not a pass.
+
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing
 cookie; six additional offline Guardian broker tests passed. Its local-only

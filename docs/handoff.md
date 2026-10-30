@@ -165,6 +165,15 @@ escaped custom IDs. This qualifies only the tested Linux x86-64 launch cases,
 not provider traffic or broader Super parity; see
 `docs/evidence/baseline-0.166.0/deepseek-model-catalog.md`.
 
+Codex 0.166.0's direct help documents `--json` as JSONL output, and its
+duplicate-option diagnostic confirms `--experimental-json` is a hidden alias.
+The active Prodex oracle forwards the alias to the synthetic Codex client;
+Modex stops before launching it, while the existing `--json` control reaches
+the client. Keep this argument guarded while the launcher injects
+`--dangerously-bypass-approvals-and-sandbox`. No real Codex Super run or JSONL
+model output was used; see
+`docs/evidence/baseline-0.166.0/super-experimental-json-guard.md`.
+
 One synthetic `log last --json` transcript, upstream payload and token-usage
 snapshot matches the active release, including bearer-token redaction and
 unchanged session bytes. This does not establish live logging or broader

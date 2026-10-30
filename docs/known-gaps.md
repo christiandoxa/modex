@@ -94,6 +94,14 @@ have not been verified. See
 `docs/evidence/baseline-0.165.1/super-exec-value-options.md` and
 `docs/evidence/baseline-0.165.1/super-exec-reasoning-effort.md`.
 
+Codex 0.166.0 also has a hidden `--experimental-json` alias for its JSONL
+`--json` output option. The active release forwards that alias through Super;
+Modex keeps it guarded, as its current launcher injects
+`--dangerously-bypass-approvals-and-sandbox`. The manual comparison uses only a
+synthetic Codex client and direct Codex help/parser checks; actual JSONL output
+is unverified. See
+`docs/evidence/baseline-0.166.0/super-experimental-json-guard.md`.
+
 DeepSeek Super dry-run supports the guarded exec path and selected missing-tool,
 Node-only, RTK, Codebase Memory, and selected Playwright environments. Managed
 Caveman or Ponytail installations still fail closed. Playwright readiness runs

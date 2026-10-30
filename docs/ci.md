@@ -60,6 +60,11 @@ previously verified historical bytes therefore cannot run that regression
 lane; acquisition fails closed. Active 0.166.0 tests run first, and the
 historical failure is reported separately as blocked. This does not make
 0.439.2 the active target or count the missing regression lane as passed.
+When the 0.439.2 oracle or source is unavailable, CI attempts independent
+checks whose references are available and marks dependent lanes blocked. Full
+CI does not run or claim a complete suite in that case. Either script still
+returns a failing result; another missing reference or a failed independent
+check can stop the run before all independent checks complete.
 
 Native unit programs compile with bounded parallelism; set `MODEX_UNIT_JOBS`
 to override the default of four. Reuse requires a fingerprint of the Mojo

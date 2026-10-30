@@ -1,8 +1,11 @@
 """Keep the active and historical CI oracle paths explicit and ordered."""
 
+import ast
+import collections
 import hashlib
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -12,6 +15,40 @@ from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def unittest_files(script):
+    return [
+        name
+        for line in script.splitlines()
+        if "scripts/ci/run-unittest.py" in line
+        for name in re.findall(r"test_[A-Za-z0-9_]+\.py", line)
+    ]
+
+
+def unittest_files_for_lane(script, lane):
+    lines = [line.lstrip() for line in script.splitlines() if line.lstrip().startswith(f"run_logged {lane} ")]
+    if len(lines) != 1:
+        raise AssertionError(f"expected one {lane} command, found {len(lines)}")
+    return set(re.findall(r"test_[A-Za-z0-9_]+\.py", lines[0]))
+
+
+def test_uses_04392_cli_fixture(test_name):
+    tree = ast.parse((ROOT / "tests" / test_name).read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == "test_cli":
+            if any(alias.name in {"ORACLE", "ORACLE_SHA256"} for alias in node.names):
+                return True
+        if isinstance(node, ast.Attribute) and node.attr == "setUpClass":
+            fixture_class = node.value
+            if isinstance(fixture_class, ast.Attribute) and fixture_class.attr == "CliTests":
+                return True
+        if isinstance(node, ast.Name) and node.id in {"ORACLE_04392", "ORACLE_04392_SHA256"}:
+            return True
+        if isinstance(node, ast.Attribute) and node.attr in {"ORACLE", "ORACLE_SHA256"}:
+            if isinstance(node.value, ast.Name) and node.value.id == "test_cli":
+                return True
+    return False
 
 
 class CIOracleRoutingTests(unittest.TestCase):
@@ -114,6 +151,8 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_deepseek_catalog_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_guardian_api_key_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_policy_capacity_01660.py", script[active_suite:script.index("\n", active_suite)])
+        self.assertIn("test_provider_passthrough_01660.py", script[active_suite:script.index("\n", active_suite)])
+        self.assertIn("test_super_cli_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_runtime_broker_startup_01660_oracle.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_profile_list_empty_01660.py", script[active_suite:script.index("\n", active_suite)])
         historical_04392_tests = script[historical_04392_suite:script.index("\n", historical_04392_suite)]
@@ -141,16 +180,52 @@ class CIOracleRoutingTests(unittest.TestCase):
         historical_tests = script[historical_suite:script.index("\n", historical_suite)]
         self.assertNotIn("test_anthropic_mixed_tools_01651.py", historical_tests)
         self.assertNotIn("test_provider_stream_cross_release_characterization.py", historical_tests)
+        for test_name in (
+            "test_gateway_launch_01651.py", "test_local_rewrite_01651_oracle.py",
+            "test_session_query_01651.py", "test_super_launch_01651.py",
+            "test_super_dry_run_01651.py", "test_gateway_cli_01651.py",
+            "test_profile_state_01651.py",
+        ):
+            self.assertNotIn(test_name, historical_tests)
+        self.assertNotIn("historical-profile-state-01651", script)
+        self.assertIn("historical-python-04395", script)
+        self.assertIn("historical-python-cross-release-04392-04395: BLOCKED", script)
+        self.assertIn("test_provider_catalog_04395.py", script)
+        self.assertIn("test_runtime_binding_04395_slice.py", script)
+        self.assertIn("test_session_04395_slice.py", script)
+        self.assertIn("test_session_state_backup_04395.py", script)
+        historical_04395_suite = script.index('run_logged historical-python-04395 "$PYTHON"')
+        cross_04392_04395_suite = script.index('run_logged historical-python-cross-release-04392-04395 "$PYTHON"')
+        historical_04395_tests = script[historical_04395_suite:script.index("\n", historical_04395_suite)]
+        cross_04392_04395_tests = script[cross_04392_04395_suite:script.index("\n", cross_04392_04395_suite)]
+        self.assertLess(historical_04395_suite, cross_04392_04395_suite)
+        for test_name in (
+            "test_provider_embedded_tool_calls_04395.py", "test_provider_nonstring_model_04395.py",
+            "test_provider_request_tool_role_04395.py", "test_provider_request_untyped_content_04395.py",
+            "test_session_04395_slice.py", "test_session_state_backup_04395.py",
+        ):
+            self.assertIn(test_name, cross_04392_04395_tests)
+            self.assertNotIn(test_name, historical_04395_tests)
         self.assertIn("test_session_invalid_utf8_04392.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_resume.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_text.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_super_concurrency_shared.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_profile_04392.py", script[cross_release:script.index("\n", cross_release)])
+        for test_name in (
+            "test_gateway_launch_01651.py", "test_local_rewrite_01651_oracle.py",
+            "test_session_query_01651.py", "test_super_launch_01651.py",
+            "test_super_dry_run_01651.py", "test_gateway_cli_01651.py",
+            "test_profile_state_01651.py",
+        ):
+            self.assertIn(test_name, script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_super_subagent_model_shared.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_terminal_dimensions.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_ci_parity_baseline.py", script)
         self.assertIn("run_logged historical-python-01651", script)
         self.assertIn("test_provider_stream_01651_characterization.py", script)
+        self.assertIn("historical-04392-oracle: BLOCKED (required regression oracle unavailable; CI fails closed)", script)
+        self.assertIn("historical-python-cross-release-01651-04392: BLOCKED", script)
+        self.assertIn("Fast CI finished independent checks with a required historical lane blocked; overall CI fails closed.", script)
         self.assertIn('export PRODEX_ORACLE="$(cat "$EVIDENCE_DIR/oracle-path-active.txt")"', script)
         self.assertIn('reference.py oracle 0.439.2', script)
         self.assertIn('export PRODEX_ORACLE_04392="$(cat "$EVIDENCE_DIR/oracle-path-04392.txt")"', script)
@@ -194,6 +269,8 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_runtime_broker_startup_01660_oracle.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_profile_list_empty_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_app_server_rpc_04392.py", script[historical_04392_suite:script.index("\n", historical_04392_suite)])
+        self.assertIn("test_provider_passthrough_01660.py", script[active_suite:script.index("\n", active_suite)])
+        self.assertIn("test_super_cli_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn(
             'run_logged historical-python-cross-release-buffered-response-shapes env PRODEX_ORACLE_04392="$PRODEX_ORACLE_04392" PRODEX_ORACLE_01651="$PRODEX_ORACLE_01651" "$PYTHON" scripts/ci/run-unittest.py test_provider_buffered_response_shapes_01651_04392.py',
             script,
@@ -225,6 +302,35 @@ class CIOracleRoutingTests(unittest.TestCase):
         complete_suite = script.index("run_logged complete-suite make test")
         self.assertLess(historical_01651, complete_suite)
         self.assertIn("run_logged historical-python-01651", script)
+        self.assertIn("historical-python-04395", script)
+        self.assertIn("historical-python-cross-release-04392-04395: BLOCKED", script)
+        for test_name in (
+            "test_gateway_launch_01651.py", "test_local_rewrite_01651_oracle.py",
+            "test_session_query_01651.py", "test_super_launch_01651.py",
+            "test_super_dry_run_01651.py", "test_gateway_cli_01651.py",
+            "test_profile_state_01651.py",
+        ):
+            self.assertIn(test_name, script[cross_release:script.index("\n", cross_release)])
+            self.assertNotIn(test_name, historical_tests)
+        self.assertNotIn("historical-profile-state-01651", script)
+        self.assertIn("test_provider_catalog_04395.py", script)
+        self.assertIn("test_runtime_binding_04395_slice.py", script)
+        self.assertIn("test_session_04395_slice.py", script)
+        self.assertIn("test_session_state_backup_04395.py", script)
+        self.assertIn("complete-suite: BLOCKED (required historical 0.439.2 comparisons are unavailable; no full-suite result claimed)", script)
+        self.assertIn("Full CI finished independent checks with a required historical lane blocked; overall CI fails closed.", script)
+        historical_04395_suite = script.index('run_logged historical-python-04395 "$PYTHON"')
+        cross_04392_04395_suite = script.index('run_logged historical-python-cross-release-04392-04395 "$PYTHON"')
+        historical_04395_tests = script[historical_04395_suite:script.index("\n", historical_04395_suite)]
+        cross_04392_04395_tests = script[cross_04392_04395_suite:script.index("\n", cross_04392_04395_suite)]
+        self.assertLess(historical_04395_suite, cross_04392_04395_suite)
+        for test_name in (
+            "test_provider_embedded_tool_calls_04395.py", "test_provider_nonstring_model_04395.py",
+            "test_provider_request_tool_role_04395.py", "test_provider_request_untyped_content_04395.py",
+            "test_session_04395_slice.py", "test_session_state_backup_04395.py",
+        ):
+            self.assertIn(test_name, cross_04392_04395_tests)
+            self.assertNotIn(test_name, historical_04395_tests)
         self.assertIn("reference.py source 0.439.1", script)
         self.assertIn("reference.py source 0.165.1", script)
         self.assertIn('export PRODEX_ORACLE="$(cat "$EVIDENCE_DIR/oracle-path-active.txt")"', script)
@@ -234,6 +340,43 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn('export PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE"', script)
         self.assertIn('export PRODEX_GATEWAY_ORACLE_04392="$PRODEX_ORACLE_04392"', script)
         self.assertIn('export MODEX_REFERENCE_04392_DIR="$(cat "$EVIDENCE_DIR/reference-source-04392.txt")"', script)
+
+    def test_04395_lanes_follow_imported_oracle_fixture_dependencies(self):
+        historical_04395 = {
+            "test_ci_private_tmp_super_04395.py",
+            "test_provider_catalog_04395.py",
+            "test_runtime_binding_04395_slice.py",
+        }
+        cross_04392_04395 = {
+            "test_provider_embedded_tool_calls_04395.py",
+            "test_provider_nonstring_model_04395.py",
+            "test_provider_request_tool_role_04395.py",
+            "test_provider_request_untyped_content_04395.py",
+            "test_session_04395_slice.py",
+            "test_session_state_backup_04395.py",
+        }
+        self.assertTrue(test_uses_04392_cli_fixture("test_session_04395_slice.py"))
+
+        for script_path in (ROOT / "scripts/ci/run-fast.sh", ROOT / "scripts/ci/run-full.sh"):
+            with self.subTest(script=script_path.name):
+                script = script_path.read_text(encoding="utf-8")
+                historical = unittest_files_for_lane(script, "historical-python-04395")
+                cross = unittest_files_for_lane(script, "historical-python-cross-release-04392-04395")
+                self.assertEqual(historical, historical_04395)
+                self.assertEqual(cross, cross_04392_04395)
+                self.assertEqual(
+                    {name for name in historical | cross if test_uses_04392_cli_fixture(name)},
+                    cross,
+                )
+
+    def test_fast_and_full_focused_test_invocations_have_no_duplicate_files(self):
+        for script_path in (ROOT / "scripts/ci/run-fast.sh", ROOT / "scripts/ci/run-full.sh"):
+            with self.subTest(script=script_path.name):
+                names = unittest_files(script_path.read_text(encoding="utf-8"))
+                duplicates = {
+                    name: count for name, count in collections.Counter(names).items() if count > 1
+                }
+                self.assertEqual(duplicates, {})
 
     def test_historical_provider_stream_setup_does_not_require_active_oracle(self):
         import test_provider_stream_01651_characterization as historical_suite
@@ -340,15 +483,16 @@ class CIOracleRoutingTests(unittest.TestCase):
                 self.assertEqual(cross_release_suite.require_oracle_04392(), historical_04392)
                 cross_release_suite.ProviderStreamCrossReleaseCharacterizationTests.setUpClass()
 
-    def run_fast_with_fake_tools(
-        self, *, missing_active, missing_04392_oracle=False, missing_04392_source=False,
+    def run_ci_with_fake_tools(
+        self, script_name, *, missing_active=False, missing_04392_oracle=False,
+        missing_04392_source=False,
     ):
         with tempfile.TemporaryDirectory(prefix="modex-ci-oracle-routing-") as temporary:
             temp = Path(temporary)
             root = temp / "repo"
             ci = root / "scripts/ci"
             ci.mkdir(parents=True)
-            shutil.copy2(ROOT / "scripts/ci/run-fast.sh", ci / "run-fast.sh")
+            shutil.copy2(ROOT / "scripts/ci" / script_name, ci / script_name)
             shutil.copy2(ROOT / "scripts/ci/private-scratch.sh", ci / "private-scratch.sh")
             for name in ("bootstrap.sh", "validate-workflows.sh"):
                 path = ci / name
@@ -386,7 +530,7 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "    oracle:active) printf 'reference\\toracle active\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_ACTIVE\" == 1 ]]; then echo 'synthetic missing Prodex 0.166.0 oracle' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_ACTIVE_ORACLE\" ;;\n"
                 "    oracle:0.439.2) printf 'reference\\toracle 0.439.2\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_04392_ORACLE\" == 1 ]]; then echo 'synthetic missing historical Prodex 0.439.2 oracle' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_HISTORICAL_04392_ORACLE\" ;;\n"
                 "    oracle:0.165.1) printf 'reference\\toracle 0.165.1\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_HISTORICAL_ORACLE\" ;;\n"
-                "    oracle:0.439.5) printf '%s\\n' \"$FAKE_LATER_HISTORICAL_ORACLE\" ;;\n"
+                "    oracle:0.439.5) printf 'reference\\toracle 0.439.5\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_LATER_HISTORICAL_ORACLE\" ;;\n"
                 "    source:active) printf 'reference\\tsource active\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_SOURCE_ACTIVE\" ;;\n"
                 "    source:0.439.2) printf 'reference\\tsource 0.439.2\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_04392_SOURCE\" == 1 ]]; then echo 'synthetic missing historical Prodex 0.439.2 source' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_SOURCE_04392\" ;;\n"
                 "    source:*) printf '%s\\n' \"$FAKE_SOURCE_ACTIVE\" ;;\n"
@@ -410,6 +554,8 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_cli_01651.py '* ]]; then\n"
                 "  printf 'historical-test\\t%s\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE_01651-}\" \"${PRODEX_ORACLE-}\" \"${PRODEX_GATEWAY_ORACLE-}\" \"${PRODEX_ORACLE_04392-}\" >>\"$FAKE_LOG\"\n"
                 "fi\n"
+                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_provider_catalog_04395.py '* ]]; then printf 'historical-04395-test\\n' >>\"$FAKE_LOG\"; fi\n"
+                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_provider_embedded_tool_calls_04395.py '* ]]; then printf 'cross-04392-04395-test\\n' >>\"$FAKE_LOG\"; fi\n"
                 "echo 'synthetic command passed'\n",
                 encoding="utf-8",
             )
@@ -456,7 +602,7 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "LC_ALL": "C.UTF-8",
             }
             result = subprocess.run(
-                ["/bin/bash", str(ci / "run-fast.sh")],
+                ["/bin/bash", str(ci / script_name)],
                 cwd=root,
                 env=environment,
                 text=True,
@@ -475,6 +621,22 @@ class CIOracleRoutingTests(unittest.TestCase):
                 str(historical_04392_oracle),
                 str(historical_oracle),
             )
+
+    def run_fast_with_fake_tools(
+        self, *, missing_active, missing_04392_oracle=False, missing_04392_source=False,
+    ):
+        return self.run_ci_with_fake_tools(
+            "run-fast.sh", missing_active=missing_active,
+            missing_04392_oracle=missing_04392_oracle,
+            missing_04392_source=missing_04392_source,
+        )
+
+    def run_full_with_fake_tools(self, *, missing_04392_oracle=False, missing_04392_source=False):
+        return self.run_ci_with_fake_tools(
+            "run-full.sh", missing_active=False,
+            missing_04392_oracle=missing_04392_oracle,
+            missing_04392_source=missing_04392_source,
+        )
 
     def test_missing_active_oracle_still_builds_but_skips_oracle_tests_and_artifacts(self):
         result, events, summary, _, _, _ = self.run_fast_with_fake_tools(missing_active=True)
@@ -528,6 +690,16 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(active_test, events.index("reference\toracle 0.439.2"))
         self.assertFalse(any(event.startswith("historical-04392-test\t") for event in events))
         self.assertFalse(any(event.startswith("cross-release-test\t") for event in events))
+        self.assertTrue(any(event.startswith("historical-test\t") for event in events))
+        self.assertIn("historical-python-cross-release-01651-04392: BLOCKED", summary)
+        self.assertIn("historical-python-01651: PASS", summary)
+        self.assertIn("historical-python-04395: PASS", summary)
+        self.assertIn("historical-python-cross-release-04392-04395: BLOCKED", summary)
+        self.assertIn("Fast CI finished independent checks", summary)
+        self.assertIn("historical-04395-test", events)
+        self.assertNotIn("cross-04392-04395-test", events)
+        self.assertLess(events.index("reference\toracle 0.439.2"), events.index("reference\toracle 0.165.1"))
+        self.assertLess(events.index("reference\toracle 0.165.1"), next(i for i, event in enumerate(events) if event.startswith("historical-test\t")))
 
     def test_missing_historical_04392_source_fails_after_active_suite(self):
         result, events, summary, _, _, _ = self.run_fast_with_fake_tools(
@@ -546,6 +718,51 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(active_test, events.index("reference\toracle 0.439.2"))
         self.assertLess(active_test, events.index("reference\tsource 0.439.2"))
         self.assertFalse(any(event.startswith("historical-04392-test\t") for event in events))
+        self.assertTrue(any(event.startswith("historical-test\t") for event in events))
+        self.assertIn("historical-python-cross-release-01651-04392: BLOCKED", summary)
+        self.assertIn("historical-python-01651: PASS", summary)
+        self.assertIn("historical-python-04395: PASS", summary)
+        self.assertIn("historical-python-cross-release-04392-04395: BLOCKED", summary)
+        self.assertIn("historical-04395-test", events)
+        self.assertNotIn("cross-04392-04395-test", events)
+
+    def test_full_ci_runs_independent_lanes_and_fails_closed_without_04392_oracle_or_source(self):
+        for missing in ("oracle", "source"):
+            with self.subTest(missing=missing):
+                options = {f"missing_04392_{missing}": True}
+                result, events, summary, *_ = self.run_full_with_fake_tools(**options)
+
+                self.assertNotEqual(result.returncode, 0, result.stdout)
+                self.assertIn("focused-python-active: PASS", summary)
+                self.assertIn("independent-native-unit: PASS", summary)
+                self.assertIn("historical-python-01651: PASS", summary)
+                self.assertIn("historical-python-04395: PASS", summary)
+                self.assertIn("historical-python-cross-release-04392-04395: BLOCKED", summary)
+                self.assertIn("complete-suite: BLOCKED", summary)
+                self.assertIn("Full CI finished independent checks", summary)
+                self.assertTrue(any(event.startswith("make\tunit\t") for event in events))
+                self.assertTrue(any(event.startswith("make\tprobes\t") for event in events))
+                self.assertFalse(any(event.startswith("make\ttest\t") for event in events))
+                self.assertIn("historical-04395-test", events)
+                self.assertNotIn("cross-04392-04395-test", events)
+                if missing == "oracle":
+                    self.assertIn("historical-04392-oracle: BLOCKED", summary)
+                    self.assertIn("historical-04392-source: SKIPPED", summary)
+                else:
+                    self.assertIn("historical-04392-source: BLOCKED", summary)
+                    self.assertIn("reference\tsource 0.439.2", events)
+
+    def test_full_ci_runs_complete_suite_when_all_references_are_available(self):
+        result, events, summary, *_ = self.run_full_with_fake_tools()
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertTrue(any(event.startswith("make\ttest\t") for event in events))
+        self.assertIn("complete-suite: PASS", summary)
+        self.assertTrue(any(event.startswith("historical-04392-test\t") for event in events))
+        self.assertIn("cross-release-test", "\n".join(events))
+        self.assertNotIn("historical-04395-test", events)
+        self.assertNotIn("cross-04392-04395-test", events)
+        self.assertIn("Full CI checks passed.", result.stdout)
 
     def test_active_and_historical_suites_receive_their_pinned_oracles(self):
         (result, events, _, active_oracle_path, historical_04392_oracle_path,
@@ -600,6 +817,10 @@ class CIOracleRoutingTests(unittest.TestCase):
         ))
         self.assertLess(events.index("reference\toracle 0.439.2"), historical_04392_test_index)
         self.assertLess(events.index("reference\toracle 0.165.1"), events.index(cross_release))
+        self.assertIn("historical-04395-test", events)
+        self.assertIn("cross-04392-04395-test", events)
+        self.assertLess(events.index("reference\toracle 0.439.5"), events.index("historical-04395-test"))
+        self.assertLess(events.index("reference\toracle 0.439.5"), events.index("cross-04392-04395-test"))
         self.assertIn("Fast CI checks passed.", result.stdout)
 
 

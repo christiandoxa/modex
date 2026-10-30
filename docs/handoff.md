@@ -1,5 +1,11 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Fast and full CI now attempt independent historical checks after recording a
+missing required 0.439.2 reference; dependent lanes remain blocked and the
+overall result still fails closed. Synthetic routing tests cover missing oracle,
+missing source, and all references available. Actual hosted CI still requires
+the verified historical assets; this change does not establish a CI pass.
+
 `tests/capture_cli.py` now verifies the pinned 0.166.0 baseline, release
 identity and oracle checksum before capturing. It writes
 `docs/cli-inventory-0.166.0.json` and

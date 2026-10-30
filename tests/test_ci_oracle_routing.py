@@ -113,6 +113,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_deepseek_stream_ids_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_policy_capacity_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_runtime_broker_startup_01660_oracle.py", script[active_suite:script.index("\n", active_suite)])
+        self.assertIn("test_profile_list_empty_01660.py", script[active_suite:script.index("\n", active_suite)])
         historical_04392_tests = script[historical_04392_suite:script.index("\n", historical_04392_suite)]
         self.assertIn("test_cli.py", historical_04392_tests)
         self.assertIn("test_gateway_cli.py", historical_04392_tests)
@@ -187,6 +188,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_deepseek_stream_ids_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_policy_capacity_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_runtime_broker_startup_01660_oracle.py", script[active_suite:script.index("\n", active_suite)])
+        self.assertIn("test_profile_list_empty_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_app_server_rpc_04392.py", script[historical_04392_suite:script.index("\n", historical_04392_suite)])
         self.assertIn(
             'run_logged historical-python-cross-release-buffered-response-shapes env PRODEX_ORACLE_04392="$PRODEX_ORACLE_04392" PRODEX_ORACLE_01651="$PRODEX_ORACLE_01651" "$PYTHON" scripts/ci/run-unittest.py test_provider_buffered_response_shapes_01651_04392.py',
@@ -392,6 +394,9 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_active_baseline_01660.py '* ]]; then\n"
                 "  printf 'active-test\\t%s\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE-}\" \"${PRODEX_ORACLE_04392-}\" \"${PRODEX_GATEWAY_ORACLE-}\" \"${PRODEX_ORACLE_01651-}\" >>\"$FAKE_LOG\"\n"
                 "fi\n"
+                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_profile_list_empty_01660.py '* ]]; then\n"
+                "  printf 'profile-list-active-test\\t%s\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE-}\" \"${PRODEX_ORACLE_04392-}\" \"${PRODEX_GATEWAY_ORACLE-}\" \"${PRODEX_ORACLE_01651-}\" >>\"$FAKE_LOG\"\n"
+                "fi\n"
                 "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_app_server_rpc_04392.py '* ]]; then\n"
                 "  printf 'historical-04392-test\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE-}\" \"${PRODEX_ORACLE_04392-}\" \"${PRODEX_GATEWAY_ORACLE-}\" \"${PRODEX_GATEWAY_ORACLE_04392-}\" \"${MODEX_REFERENCE_DIR-}\" \"${MODEX_REFERENCE_04392_DIR-}\" >>\"$FAKE_LOG\"\n"
                 "fi\n"
@@ -545,6 +550,9 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertTrue(any(event.startswith("active-test\t") for event in events), f"events={events!r}; output={result.stdout}")
         active = next(event for event in events if event.startswith("active-test\t"))
+        profile_list_active = next(
+            event for event in events if event.startswith("profile-list-active-test\t")
+        )
         historical_04392 = next(event for event in events if event.startswith("historical-04392-test\t"))
         cross_release = next(event for event in events if event.startswith("cross-release-test\t"))
         historical_01651 = next(event for event in events if event.startswith("historical-test\t"))
@@ -554,6 +562,11 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertEqual(active_environment[2], "")
         self.assertEqual(active_environment[3], active_oracle_path)
         self.assertEqual(active_environment[4], "")
+        profile_list_environment = profile_list_active.split("\t")
+        self.assertEqual(profile_list_environment[1], active_oracle_path)
+        self.assertEqual(profile_list_environment[2], "")
+        self.assertEqual(profile_list_environment[3], active_oracle_path)
+        self.assertEqual(profile_list_environment[4], "")
         historical_04392_environment = historical_04392.split("\t")
         self.assertEqual(historical_04392_environment[1:5], [
             active_oracle_path,
@@ -576,6 +589,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertEqual(historical_01651_environment[4], historical_04392_oracle_path)
         self.assertLess(events.index("reference\toracle active"), active_test_index)
         self.assertLess(events.index("reference\tsource active"), active_test_index)
+        self.assertLess(events.index("reference\toracle active"), events.index(profile_list_active))
         self.assertLess(active_test_index, events.index("reference\toracle 0.439.2"))
         historical_04392_test_index = events.index(next(
             event for event in events if event.startswith("historical-04392-test\t")

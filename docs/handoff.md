@@ -146,6 +146,12 @@ mount namespace with a private user-owned `/tmp`. A plain `unshare -Urn`
 attempt failed Prodex's secret-location validation because host `/tmp`'s owner
 was unmapped; the passing setup retains that validation.
 
+For an absent profile store, 0.166.0 `profile list` renders the empty panel
+and acquires lifecycle and update locks; Modex remains fail-closed without
+creating state. Housekeeping files can appear asynchronously. This is a
+characterized gap, not a completed profile-list slice; see
+`docs/evidence/baseline-0.166.0/profile-list-empty-store.md`.
+
 A full isolated `make test` finished against exact Modex commit
 `94b514c2fe3992a9f2219b035746820f8fe17161`, with the verified 0.166.0 oracle
 as `PRODEX_ORACLE` and separate versioned historical oracles. It ran 1,182

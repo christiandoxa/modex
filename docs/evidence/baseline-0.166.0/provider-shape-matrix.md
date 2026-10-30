@@ -19,6 +19,13 @@ All requests reach the provider once; upstream route, synthetic authorization,
 HTTP status, and exact translated request bodies match between the oracle and
 Modex. The response comparison also confirms that the `local_tag` and
 provider-specific `trace` metadata survive into the final response metadata.
+The local metadata additionally sets `deepseek.finish_reason` to an object with
+a synthetic `local_tag`, while the provider reply supplies the string
+`"stop"`. Both final responses retain the request's tag object, matching the
+release's request-metadata merge in
+`mojo/prodex_core/deepseek_message_metadata.mojo::ds_merge_metadata` and
+Modex's production `deepseek_buffered_response` metadata merge. This covers one
+local-over-provider collision only.
 
 The streaming response matrix covers metadata with empty choices, multiple
 choices, a non-string text delta, reasoning followed by text, finish without

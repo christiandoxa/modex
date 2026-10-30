@@ -66,7 +66,9 @@ REQUEST_TURNS = [
                                "ok": {"type": "boolean"}}}}}},
     {"model": "deepseek-chat", "input": "synthetic metadata",
      "metadata": {"local_tag": "synthetic-tag",
-                  "deepseek": {"trace": "synthetic-trace"}}},
+                  "deepseek": {"trace": "synthetic-trace",
+                               "finish_reason": {
+                                   "local_tag": "synthetic-finish-tag"}}}},
     {"model": "deepseek-chat", "input": "synthetic function",
      "tools": [{"type": "function", "name": "lookup",
                 "description": "synthetic description",
@@ -145,6 +147,10 @@ class ProviderShapes01660Tests(unittest.TestCase):
             metadata = provider_responses[6].get("metadata", {})
             self.assertEqual(metadata.get("local_tag"), "synthetic-tag")
             self.assertEqual(metadata.get("deepseek", {}).get("trace"), "synthetic-trace")
+            self.assertEqual(
+                metadata.get("deepseek", {}).get("finish_reason"),
+                {"local_tag": "synthetic-finish-tag"},
+            )
             observations.append((
                 [row["body"] for row in upstream],
                 provider_responses,

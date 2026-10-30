@@ -193,7 +193,12 @@ the translated bodies match exactly and event JSON matches after normalizing
 only the generated text-item ID. The focused test is
 `tests/test_provider_shapes_01660.py`; evidence is in
 `docs/evidence/baseline-0.166.0/provider-shape-matrix.md`. These cases found no
-new production mismatch and do not establish broader provider parity.
+new production mismatch and do not establish broader provider parity. The
+active process matrix now also checks a synthetic local metadata tag colliding
+with provider `finish_reason`; both processes preserve the local tag object.
+This qualifies only that response merge case. The separate release-metadata
+local-Git-tag contract remains unverified because Modex has no release-sync
+runtime path.
 The same active test now pins direct `flash`, explicit current and compatibility
 IDs, `combo:flash,pro` retries after structured 404/429 errors, and malformed
 empty combo inputs. Modex and the active oracle produce matching provider

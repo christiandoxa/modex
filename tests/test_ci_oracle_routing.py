@@ -323,7 +323,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_runtime_binding_04395_slice.py", script)
         self.assertIn("test_session_04395_slice.py", script)
         self.assertIn("test_session_state_backup_04395.py", script)
-        self.assertIn("complete-suite: BLOCKED (required historical 0.439.2 comparisons are unavailable; no full-suite result claimed)", script)
+        self.assertIn("complete-suite: BLOCKED (required historical reference unavailable; no full-suite result claimed)", script)
         self.assertIn("Full CI finished independent checks with a required historical lane blocked; overall CI fails closed.", script)
         historical_04395_suite = script.index('run_logged historical-python-04395 "$PYTHON"')
         cross_04392_04395_suite = script.index('run_logged historical-python-cross-release-04392-04395 "$PYTHON"')
@@ -491,7 +491,7 @@ class CIOracleRoutingTests(unittest.TestCase):
 
     def run_ci_with_fake_tools(
         self, script_name, *, missing_active=False, missing_04392_oracle=False,
-        missing_04392_source=False,
+        missing_04392_source=False, missing_04395_oracle=False,
     ):
         with tempfile.TemporaryDirectory(prefix="modex-ci-oracle-routing-") as temporary:
             temp = Path(temporary)
@@ -536,7 +536,7 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "    oracle:active) printf 'reference\\toracle active\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_ACTIVE\" == 1 ]]; then echo 'synthetic missing Prodex 0.166.0 oracle' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_ACTIVE_ORACLE\" ;;\n"
                 "    oracle:0.439.2) printf 'reference\\toracle 0.439.2\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_04392_ORACLE\" == 1 ]]; then echo 'synthetic missing historical Prodex 0.439.2 oracle' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_HISTORICAL_04392_ORACLE\" ;;\n"
                 "    oracle:0.165.1) printf 'reference\\toracle 0.165.1\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_HISTORICAL_ORACLE\" ;;\n"
-                "    oracle:0.439.5) printf 'reference\\toracle 0.439.5\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_LATER_HISTORICAL_ORACLE\" ;;\n"
+                "    oracle:0.439.5) printf 'reference\\toracle 0.439.5\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_04395_ORACLE\" == 1 ]]; then echo 'synthetic missing historical Prodex 0.439.5 oracle' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_LATER_HISTORICAL_ORACLE\" ;;\n"
                 "    source:active) printf 'reference\\tsource active\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_SOURCE_ACTIVE\" ;;\n"
                 "    source:0.439.2) printf 'reference\\tsource 0.439.2\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_04392_SOURCE\" == 1 ]]; then echo 'synthetic missing historical Prodex 0.439.2 source' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_SOURCE_04392\" ;;\n"
                 "    source:*) printf '%s\\n' \"$FAKE_SOURCE_ACTIVE\" ;;\n"
@@ -599,6 +599,7 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "FAKE_MISSING_ACTIVE": "1" if missing_active else "0",
                 "FAKE_MISSING_04392_ORACLE": "1" if missing_04392_oracle else "0",
                 "FAKE_MISSING_04392_SOURCE": "1" if missing_04392_source else "0",
+                "FAKE_MISSING_04395_ORACLE": "1" if missing_04395_oracle else "0",
                 "MODEX_CI_ARTIFACT_PRODUCER": "1",
                 "PRODEX_ORACLE": "/synthetic/inherited-old-oracle",
                 "PRODEX_ORACLE_04392": "/synthetic/inherited-old-historical-oracle",
@@ -630,18 +631,24 @@ class CIOracleRoutingTests(unittest.TestCase):
 
     def run_fast_with_fake_tools(
         self, *, missing_active, missing_04392_oracle=False, missing_04392_source=False,
+        missing_04395_oracle=False,
     ):
         return self.run_ci_with_fake_tools(
             "run-fast.sh", missing_active=missing_active,
             missing_04392_oracle=missing_04392_oracle,
             missing_04392_source=missing_04392_source,
+            missing_04395_oracle=missing_04395_oracle,
         )
 
-    def run_full_with_fake_tools(self, *, missing_04392_oracle=False, missing_04392_source=False):
+    def run_full_with_fake_tools(
+        self, *, missing_04392_oracle=False, missing_04392_source=False,
+        missing_04395_oracle=False,
+    ):
         return self.run_ci_with_fake_tools(
             "run-full.sh", missing_active=False,
             missing_04392_oracle=missing_04392_oracle,
             missing_04392_source=missing_04392_source,
+            missing_04395_oracle=missing_04395_oracle,
         )
 
     def test_missing_active_oracle_still_builds_but_skips_oracle_tests_and_artifacts(self):
@@ -731,6 +738,54 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("historical-python-cross-release-04392-04395: BLOCKED", summary)
         self.assertIn("historical-04395-test", events)
         self.assertNotIn("cross-04392-04395-test", events)
+
+    def test_missing_historical_04395_oracle_runs_independent_fast_checks_and_fails_closed(self):
+        result, events, summary, *_ = self.run_fast_with_fake_tools(
+            missing_active=False, missing_04395_oracle=True,
+        )
+
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("synthetic missing historical Prodex 0.439.5 oracle", result.stdout)
+        self.assertIn("historical-04395-oracle: BLOCKED", summary)
+        self.assertIn("historical-python-04395: BLOCKED", summary)
+        self.assertIn("historical-python-cross-release-04392-04395: BLOCKED", summary)
+        self.assertIn("focused-python-active: PASS", summary)
+        self.assertIn("focused-helper-python: PASS", summary)
+        self.assertIn("width-memory: PASS", summary)
+        self.assertIn("Fast CI finished independent checks", summary)
+        self.assertNotIn("historical-04395-test", events)
+        self.assertNotIn("cross-04392-04395-test", events)
+        self.assertLess(events.index("reference\toracle 0.165.1"), events.index("reference\toracle 0.439.5"))
+
+    def test_full_ci_runs_independent_lanes_when_04395_oracle_is_missing(self):
+        result, events, summary, *_ = self.run_full_with_fake_tools(missing_04395_oracle=True)
+
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("synthetic missing historical Prodex 0.439.5 oracle", result.stdout)
+        self.assertIn("historical-04395-oracle: BLOCKED", summary)
+        self.assertIn("historical-python-04395: BLOCKED", summary)
+        self.assertIn("historical-python-cross-release-04392-04395: BLOCKED", summary)
+        self.assertIn("focused-python-active: PASS", summary)
+        self.assertIn("independent-native-unit: PASS", summary)
+        self.assertIn("supported-platform-probes: PASS", summary)
+        self.assertIn("capability-probes: PASS", summary)
+        self.assertIn("complete-suite: BLOCKED", summary)
+        self.assertIn("Full CI finished independent checks", summary)
+        self.assertTrue(any(event.startswith("make\tprobes\t") for event in events))
+        self.assertFalse(any(event.startswith("make\ttest\t") for event in events))
+        self.assertNotIn("historical-04395-test", events)
+        self.assertNotIn("cross-04392-04395-test", events)
+
+    def test_full_ci_with_both_historical_oracles_missing_runs_units_once(self):
+        result, events, summary, *_ = self.run_full_with_fake_tools(
+            missing_04392_oracle=True, missing_04395_oracle=True,
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("historical-04392-oracle: BLOCKED", summary)
+        self.assertIn("historical-04395-oracle: BLOCKED", summary)
+        self.assertIn("complete-suite: BLOCKED", summary)
+        self.assertEqual(sum(event.startswith("make\tunit\t") for event in events), 1)
+        self.assertIn("capability-probes: PASS", summary)
 
     def test_full_ci_runs_independent_lanes_and_fails_closed_without_04392_oracle_or_source(self):
         for missing in ("oracle", "source"):

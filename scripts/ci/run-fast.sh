@@ -112,18 +112,29 @@ else
     echo 'historical-python-cross-release-01651-04392: BLOCKED (required 0.439.2 oracle or source unavailable)' | tee -a "$EVIDENCE_DIR/summary.txt"
 fi
 run_logged historical-python-01651 env -u PRODEX_ORACLE -u PRODEX_GATEWAY_ORACLE "$PYTHON" scripts/ci/run-unittest.py test_cli_01651.py test_provider_stream_01651_characterization.py test_unicode_case_properties.py test_session_report_01651.py test_log_01651.py test_runtime_proxy_websocket_01651_oracle.py test_app_server_rpc_01651.py test_super_model_toml_01651.py
+HISTORICAL_04395_READY=1
 if ! "$PYTHON" scripts/ci/reference.py oracle 0.439.5 >"$EVIDENCE_DIR/oracle-path-04395.txt" 2>"$EVIDENCE_DIR/reference-04395.log"; then
     cat "$EVIDENCE_DIR/reference-04395.log" >&2
-    exit 1
-fi
-export PRODEX_ORACLE_04395="$(cat "$EVIDENCE_DIR/oracle-path-04395.txt")"
-rm -- "$EVIDENCE_DIR/oracle-path-04395.txt"
-"$PYTHON" scripts/ci/reference.py identity active >"$EVIDENCE_DIR/reference.json"
-run_logged historical-python-04395 "$PYTHON" scripts/ci/run-unittest.py test_ci_private_tmp_super_04395.py test_provider_catalog_04395.py test_runtime_binding_04395_slice.py
-if [[ "$HISTORICAL_04392_READY" == 1 ]]; then
-    run_logged historical-python-cross-release-04392-04395 "$PYTHON" scripts/ci/run-unittest.py test_provider_embedded_tool_calls_04395.py test_provider_nonstring_model_04395.py test_provider_request_tool_role_04395.py test_provider_request_untyped_content_04395.py test_session_04395_slice.py test_session_state_backup_04395.py
+    echo 'historical-04395-oracle: BLOCKED (required regression oracle unavailable; CI fails closed)' | tee -a "$EVIDENCE_DIR/summary.txt"
+    HISTORICAL_04395_READY=0
+    CI_REQUIRED_BLOCKED=1
+    rm -f -- "$EVIDENCE_DIR/oracle-path-04395.txt"
 else
-    echo 'historical-python-cross-release-04392-04395: BLOCKED (required 0.439.2 oracle or source unavailable)' | tee -a "$EVIDENCE_DIR/summary.txt"
+    export PRODEX_ORACLE_04395="$(cat "$EVIDENCE_DIR/oracle-path-04395.txt")"
+    rm -- "$EVIDENCE_DIR/oracle-path-04395.txt"
+fi
+"$PYTHON" scripts/ci/reference.py identity active >"$EVIDENCE_DIR/reference.json"
+if [[ "$HISTORICAL_04395_READY" == 1 ]]; then
+    run_logged historical-python-04395 "$PYTHON" scripts/ci/run-unittest.py test_ci_private_tmp_super_04395.py test_provider_catalog_04395.py test_runtime_binding_04395_slice.py
+    if [[ "$HISTORICAL_04392_READY" == 1 ]]; then
+        run_logged historical-python-cross-release-04392-04395 "$PYTHON" scripts/ci/run-unittest.py test_provider_embedded_tool_calls_04395.py test_provider_nonstring_model_04395.py test_provider_request_tool_role_04395.py test_provider_request_untyped_content_04395.py test_session_04395_slice.py test_session_state_backup_04395.py
+    else
+        echo 'historical-python-cross-release-04392-04395: BLOCKED (required 0.439.2 oracle or source unavailable)' | tee -a "$EVIDENCE_DIR/summary.txt"
+    fi
+else
+    unset PRODEX_ORACLE_04395
+    echo 'historical-python-04395: BLOCKED (required 0.439.5 oracle unavailable)' | tee -a "$EVIDENCE_DIR/summary.txt"
+    echo 'historical-python-cross-release-04392-04395: BLOCKED (required 0.439.5 oracle unavailable)' | tee -a "$EVIDENCE_DIR/summary.txt"
 fi
 if [[ "${MODEX_CI_FAST_HELPER_TESTS_IN_SHARDS:-0}" == 1 ]]; then
     echo 'Fast CI helper tests are assigned to independent shards.'

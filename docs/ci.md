@@ -66,6 +66,14 @@ CI does not run or claim a complete suite in that case. Either script still
 returns a failing result; another missing reference or a failed independent
 check can stop the run before all independent checks complete.
 
+The historical 0.439.5 oracle is also required for its regression lane. If it
+is unavailable, Fast CI marks the 0.439.5-only and cross-release lanes blocked,
+then runs its independent helper and width-memory checks before failing. Full
+CI marks those comparisons and the complete suite blocked, then runs available
+source checks, native units, platform probes, and capability probes before
+failing. Missing historical bytes never count as a pass or change the active
+0.166.0 target.
+
 Native unit programs compile with bounded parallelism; set `MODEX_UNIT_JOBS`
 to override the default of four. Reuse requires a fingerprint of the Mojo
 sources, compiler and standard-library files, target flags, and host, plus a

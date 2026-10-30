@@ -11,6 +11,13 @@ missing required 0.439.2 reference; dependent lanes remain blocked and the
 overall result still fails closed. Synthetic routing tests cover missing oracle,
 missing source, and all references available. Actual hosted CI still requires
 the verified historical assets; this change does not establish a CI pass.
+Missing 0.439.5 acquisition now receives the same fail-closed treatment: both
+scripts mark its oracle-dependent lanes blocked, continue independent checks,
+and return failure; Full CI skips the complete suite while that required
+reference is unavailable. Synthetic routing coverage exercises both scripts;
+all 21 `test_ci_oracle_routing.py` tests passed with fake reference tools, and
+both CI scripts passed `bash -n`. This verifies routing only, not hosted CI or
+the missing historical comparisons.
 Hosted Fast CI run `41074130130` also exposed a historical 0.165.1 live-log
 fixture that retained a separate 0.439.2 holder binary. Its helper now receives
 and restores the same 0.165.1 oracle as the rest of that suite. The originally

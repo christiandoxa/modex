@@ -241,6 +241,41 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
     def test_large_request_heads_use_bounded_linear_capture(self):
         transport.assert_large_request_head_cases(self, ORACLE, transport.MODEX)
 
+    def test_exact_four_mib_head_exposes_release_and_modex_bounds(self):
+        self.assertEqual(
+            hashlib.sha256(transport.ORACLE_01651.read_bytes()).hexdigest(),
+            transport.ORACLE_SHA256,
+        )
+        upstream = transport.LargeHeaderUpstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            case = transport.large_request_head_case(4 * 1024 * 1024)
+            self.assertEqual(case["request"].index(b"\r\n\r\n"), 4 * 1024 * 1024)
+            for label, binary, expected_status in (
+                ("0.165.1", transport.ORACLE_01651, 200),
+                ("0.439.2", ORACLE, 200),
+                ("Modex", transport.MODEX, 502),
+            ):
+                with self.subTest(binary=label):
+                    response, records = transport.run_probe(binary, case, upstream)
+                    self.assertEqual(response["process_exit"], 0, response["stderr"])
+                    self.assertEqual(response["status"], expected_status)
+                    if expected_status == 200:
+                        self.assertEqual(response["body"], case["expected_body"])
+                        self.assertEqual(len(records), 1)
+                        self.assertEqual(
+                            records[0]["pad_headers"],
+                            transport.expected_pad_headers(case["request"]),
+                        )
+                        self.assertGreater(records[0]["head_bytes"], 4 * 1024 * 1024)
+                    else:
+                        self.assertEqual(records, [])
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
     def test_chat_passthrough_request_header_parity(self):
         transport.assert_chat_request_header_parity(self, ORACLE, transport.MODEX)
 
@@ -363,6 +398,101 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
                             transport.normalize_response_body(case, oracle["body"]),
                             transport.normalize_response_body(case, modex["body"]),
                         )
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_http_2_and_3_tokens_preserve_observed_release_wire_behavior(self):
+        self.assertEqual(
+            hashlib.sha256(transport.ORACLE_01651.read_bytes()).hexdigest(),
+            transport.ORACLE_SHA256,
+        )
+        second = transport.request_bytes(
+            (("Connection", "close"),), body=transport.REQUEST_BODY,
+        )
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            controls = (
+                CASES["http_0_9_request_uses_request_version"],
+                CASES["http_1_0_buffered_responses_keep_request_version"],
+                {
+                    "name": "http_1_1_supported_control",
+                    "request": transport.request_bytes(
+                        (("Connection", "close"),), version=b"HTTP/1.1",
+                    ),
+                    "expected_status": 200,
+                    "expected_response_line": "HTTP/1.1 200 OK",
+                    "expected_wire_response_line": "HTTP/1.1 200 OK",
+                    "expected_body": transport.RESPONSES_RESPONSE,
+                    "upstream": True,
+                    "check_close": True,
+                },
+                CASES["http_1_2_request_line_is_malformed"],
+            )
+            for case in controls:
+                for label, binary in (
+                    ("0.165.1", transport.ORACLE_01651),
+                    ("0.439.2", ORACLE),
+                    ("Modex", transport.MODEX),
+                ):
+                    with self.subTest(control=case["name"], binary=label):
+                        response, records = transport.run_probe(binary, case, upstream)
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(response["status"], case["expected_status"])
+                        self.assertEqual(response["response_line"], case["expected_response_line"])
+                        self.assertEqual(
+                            response["raw_response_head"].split(b"\r\n", 1)[0].decode("ascii"),
+                            case.get("expected_wire_response_line", case["expected_response_line"]),
+                        )
+                        self.assertEqual(response["body"], case["expected_body"])
+                        self.assertEqual(response["read_error"], "")
+                        self.assertTrue(response["connection_closed"])
+                        self.assertEqual(len(records), int(case["upstream"]))
+
+            for version in (b"HTTP/2.0", b"HTTP/3.0"):
+                first = (
+                    b"POST /v1/responses " + version
+                    + b"\r\nHost: 127.0.0.1\r\nContent-Length: 0\r\n\r\n"
+                )
+                case = {
+                    "name": "unsupported-version-" + version.decode("ascii"),
+                    "request": first,
+                    "pipelined_requests": [first, second],
+                    "raw_response": True,
+                    "raw_response_timeout_ms": 1200,
+                    "check_close": True,
+                    "process_timeout": 20,
+                }
+                for label, binary in (
+                    ("0.165.1", transport.ORACLE_01651),
+                    ("0.439.2", ORACLE),
+                    ("Modex", transport.MODEX),
+                ):
+                    with self.subTest(version=version, binary=label):
+                        response, records = transport.run_probe(binary, case, upstream)
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(response["request_parts_sent_at_response"], 2)
+                        self.assertEqual(response["wire_body_probe_complete"], True)
+                        self.assertEqual(records, [])
+                        if label != "Modex":
+                            self.assertEqual(response["wire_body"], b"")
+                            self.assertFalse(response["connection_closed"])
+                            continue
+                        raw_head, separator, body = response["wire_body"].partition(b"\r\n\r\n")
+                        self.assertTrue(separator)
+                        self.assertEqual(raw_head.split(b"\r\n", 1)[0], b"HTTP/1.1 400 Bad Request")
+                        headers = {
+                            name.strip().lower(): value.strip()
+                            for name, value in (
+                                line.split(b":", 1) for line in raw_head.split(b"\r\n")[1:]
+                            )
+                        }
+                        self.assertEqual(headers[b"content-length"], b"0")
+                        self.assertEqual(body, b"")
+                        self.assertTrue(response["connection_closed"])
         finally:
             upstream.shutdown()
             upstream.server_close()

@@ -613,7 +613,27 @@ def read_expect_response():
 
 try:
     request_method = os.environ.get("PROBE_REQUEST_METHOD")
-    if admission_stress:
+    if os.environ.get("PROBE_RAW_RESPONSE") == "1":
+        raw_requests = pipelined_requests or [base64.b64decode(os.environ["PROBE_REQUEST_BASE64"])]
+        connection.sendall(b"".join(raw_requests))
+        request_parts_sent[0] = len(raw_requests)
+        if half_close:
+            connection.shutdown(socket.SHUT_WR)
+        raw_response = bytearray()
+        deadline = time.monotonic() + int(os.environ.get("PROBE_RAW_RESPONSE_TIMEOUT_MS", "1000")) / 1000
+        while time.monotonic() < deadline:
+            connection.settimeout(max(0.001, deadline - time.monotonic()))
+            try:
+                chunk = connection.recv(65536)
+            except socket.timeout:
+                break
+            if not chunk:
+                result["connection_closed"] = True
+                break
+            raw_response.extend(chunk)
+        result["wire_body_base64"] = base64.b64encode(raw_response).decode("ascii")
+        result["wire_body_probe_complete"] = True
+    elif admission_stress:
         baseline_resources = admission_baseline_resources
         partial_count = int(os.environ.get("PROBE_ADMISSION_PARTIAL_COUNT", "136"))
         blocker_count = int(os.environ.get("PROBE_ADMISSION_BLOCKER_COUNT", "7"))
@@ -2558,6 +2578,8 @@ def run_probe(binary: Path, case, upstream: Upstream):
             "PROBE_REQUEST_METHOD": case["request"].split(b" ", 1)[0].decode("ascii"),
             "PROBE_HALF_CLOSE": "1" if case.get("half_close") else "0",
             "PROBE_CHECK_CLOSE": "1" if case.get("check_close") else "0",
+            "PROBE_RAW_RESPONSE": "1" if case.get("raw_response") else "0",
+            "PROBE_RAW_RESPONSE_TIMEOUT_MS": str(case.get("raw_response_timeout_ms", 1000)),
             "PROBE_FOLLOWUP_REQUEST_HEX": case.get("followup_request", b"").hex(),
             "PROBE_RESULT_PATH": str(result_path),
         }

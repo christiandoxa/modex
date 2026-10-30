@@ -48,6 +48,26 @@ test` is running in `/tmp/modex-full-fa01212-20261030`, with log
 `/tmp/modex-full-fa01212-20261030.log`; no full-suite result is claimed yet.
 Cross-origin redirects, HTTPS and general URL behavior remain unqualified.
 
+## Local relay request versions and large heads (2026-10-30)
+
+Three-process production tests cover supported HTTP/0.9, HTTP/1.0, and
+HTTP/1.1, malformed HTTP/1.2, and unsupported HTTP/2.0 and HTTP/3.0 tokens.
+For HTTP/2.0 and HTTP/3.0, both pinned releases return no bytes and keep the
+connection open during a 1.2-second raw capture plus a 0.5-second close check;
+Modex sends HTTP/1.1 400 with an empty body and closes. The frozen TinyHTTP
+source suggests its 505 response is buffered while it waits for another
+request; that explanation is an inference. Modex keeps its bounded close
+behavior and records this release mismatch. The supported HTTP/0.9 reuse and
+pipeline control passes.
+
+An exact 4 MiB request head reaches the synthetic provider through both
+releases; Modex returns 502 without dispatch at its current 2 MiB cap. Raising
+the cap to 4 MiB would permit up to 152 live head slots (128 parked, 12
+overflow, and 12 active/queued), or an estimated 608 MiB of raw head bytes
+before copies. This is a worst-case byte estimate, not an RSS measurement, so
+the 2 MiB cap remains. Focused tests pass; details and reproduction are in
+`docs/evidence/baseline-0.439.2/local-relay-version-and-head-bounds.md`.
+
 The isolated `dd82b3b` full suite finished with two failures in 1,127 Python
 tests after native checks. Both are the stale passthrough header assertions
 corrected and rerun below. Its log is `/tmp/modex-full-dd82b3b-20261030.log`

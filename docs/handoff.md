@@ -1,5 +1,11 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Selected DeepSeek and Anthropic stream ordering cases now have active 0.166.0
+process comparisons, including partial errors and search-mode configuration.
+Two provider request bodies differ in object member order but match as
+duplicate-free JSON structures. These synthetic cases do not qualify broader
+stream parity; see `docs/evidence/baseline-0.166.0/provider-stream-edge-ordering.md`.
+
 Fast and full CI now attempt independent historical checks after recording a
 missing required 0.439.2 reference; dependent lanes remain blocked and the
 overall result still fails closed. Synthetic routing tests cover missing oracle,

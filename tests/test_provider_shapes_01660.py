@@ -175,6 +175,63 @@ class ProviderShapes01660Tests(unittest.TestCase):
             observations.append(events)
         self.assertEqual(observations[1], observations[0])
 
+    def test_chat_stream_metadata_tool_order_and_error_match_active_release(self):
+        chunks = [
+            [{"id": "chatcmpl_metadata", "model": "deepseek-chat", "created": 42,
+              "system_fingerprint": "synthetic-fingerprint",
+              "choices": [{"index": 0, "delta": {
+                  "content": "synthetic answer", "refusal": "synthetic refusal",
+                  "annotations": [{"type": "url_citation",
+                                   "url": "https://synthetic.invalid",
+                                   "title": "synthetic source"}],
+              }, "finish_reason": "stop", "logprobs": {
+                  "content": [{"token": "synthetic", "logprob": -0.25}],
+              }}],
+              "usage": {"prompt_tokens": 3, "completion_tokens": 2,
+                        "total_tokens": 5, "prompt_cache_hit_tokens": 1,
+                        "prompt_cache_miss_tokens": 2,
+                        "completion_tokens_details": {"reasoning_tokens": 1}}}],
+            [{"id": "chatcmpl_tools", "model": "deepseek-chat", "created": 43,
+              "choices": [{"index": 0, "delta": {"tool_calls": [
+                  {"index": 2, "id": "call_synthetic_two", "function": {
+                      "name": "two", "arguments": "{}"}},
+                  {"index": 0, "id": "call_synthetic_zero", "function": {
+                      "name": "zero", "arguments": "{}"}},
+              ]}, "finish_reason": "tool_calls"}] }],
+            [{"error": {"type": 500, "code": 401,
+                         "detail": "synthetic provider failure"}}],
+        ]
+        turns = [{"model": "deepseek-chat", "input": f"synthetic stream edge {index}",
+                  "stream": True} for index in range(len(chunks))]
+        replies = [_stream_reply(events) for events in chunks]
+        observations = []
+        for binary in (ORACLE, MODEX):
+            upstream, responses = observe_turns(
+                binary, turns, replies, latest_version="0.166.0",
+            )
+            self.assertEqual([row["status"] for row in responses], [200] * len(turns))
+            self.assertEqual(len(upstream), len(turns))
+            self.assertEqual([row["path"] for row in upstream],
+                             ["/v1/chat/completions"] * len(turns))
+            self.assertEqual([row["headers"]["authorization"] for row in upstream],
+                             ["Bearer " + SYNTHETIC_API_KEY] * len(turns))
+            events = [_stream_events(bytes.fromhex(row["body"])) for row in responses]
+            self.assertEqual(events[0][-1]["response"]["metadata"]["deepseek"]["refusal"],
+                             "synthetic refusal")
+            self.assertEqual([event["output_index"] for event in events[1]
+                              if event["type"] == "response.output_item.added"], [2, 0])
+            failed = events[2][0]
+            self.assertEqual(failed["type"], "response.failed")
+            self.assertEqual(failed["response"]["error"], {
+                "code": "500", "message": "synthetic provider failure",
+            })
+            self.assertRegex(failed["response"]["id"], r"^resp_deepseek_[0-9a-f-]{36}$")
+            self.assertGreater(failed["created_at"], 0)
+            failed["response"]["id"] = "resp_deepseek_RUNTIME_ID"
+            failed["created_at"] = "runtime timestamp"
+            observations.append(events)
+        self.assertEqual(observations[1], observations[0])
+
     def test_flash_aliases_and_combo_retries_match_active_release(self):
         unsupported = {"status": 404, "content_type": "application/json",
                        "body": b'{"error":{"code":"model_not_supported"}}'}

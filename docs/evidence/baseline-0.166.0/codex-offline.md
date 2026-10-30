@@ -1,5 +1,21 @@
 # Codex 0.166.0 isolated 401 comparison
 
+## Current comparison
+
+After the active catalog and Anthropic namespace fixes, the Linux x86-64 build
+from production sources at `2163ce9245513a73f5d30b6ff60bc757f714acb5` has
+SHA-256 `eb64b60bbad9116ccf55ef9d0a8a3d1bc3bae59e0c2f6fe42850bcad506bcb5a`.
+In an isolated user, mount and network namespace with private temporary
+storage, synthetic credentials and loopback only, the real Codex 0.166.0
+success case and synthetic 401 comparison passed. Both launchers routed the
+401 case to `/anthropic/v1/messages` with matching normalized Codex arguments.
+The parsed provider request bodies differ; the test reports this without
+capturing their contents. The release removed its temporary overlay, while
+Modex retained Codex-created state including `auth.json`. The test preserves
+that distinction; neither request-body nor lifecycle parity is established.
+An initial rerun used the older chat-response fixture and failed; the fixture
+was updated to send Anthropic events for the observed route before these checks.
+
 ## Pinned artifacts
 
 - Codex `rust-v0.166.0` Linux x86-64 musl archive SHA-256:
@@ -26,7 +42,7 @@ interface is an already-up loopback, and IPv4/IPv6 have no default route.
 uses synthetic provider credentials and isolated config/storage. Neither
 login nor external provider traffic occurs.
 
-## Observed route and retained-state mismatch
+## Earlier observed route and retained-state mismatch
 
 | Launcher | Upstream path | Codex exit | `auth.json` during exit | Overlay after exit |
 | --- | --- | ---: | --- | --- |

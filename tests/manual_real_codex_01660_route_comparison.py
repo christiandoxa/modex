@@ -11,14 +11,14 @@ import subprocess
 import tempfile
 import unittest
 
+from test_active_baseline_01660 import ORACLE, ORACLE_SHA256
+
 
 MODEX = Path(os.environ.get("MODEX_BINARY", ""))
 CODEX = Path(os.environ.get("CODEX_BINARY", ""))
-NODE_BIN = Path(os.environ.get("NODE_BIN", "/home/doxa/.local/share/upkit/node/active/bin"))
+NODE_BIN = Path(os.environ.get("NODE_BIN", "/usr/bin"))
 EXPECTED_VERSION = "0.166.0"
 CODEX_SHA256 = "b8a11fedf24b2dfb59a70c9e52b030f9a508dcd49cd2dd0d41956f4c785156b8"
-ORACLE = Path(os.environ.get("PRODEX_ORACLE", "/home/doxa/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu"))
-ORACLE_SHA256 = "349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d09735"
 
 
 def normalize_codex_capture(value):
@@ -161,7 +161,7 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
 
         result, _, upstream, state = SuperLaunchTests().run_launch(
             MODEX,
-            scenario="stream",
+            scenario="anthropic-stream",
             temporary_directory=self.root_path,
             codex_binary=wrapper,
             codex_arguments=(
@@ -180,10 +180,9 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
         self.assertTrue(all(Path(path).is_relative_to(self.root_path) for path in state["leftovers"]))
         self.assertEqual(len(upstream), 1)
-        self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
-        authorization = next(value for key, value in upstream[0]["headers"].items()
-                             if key.lower() == "authorization")
-        self.assertEqual(authorization, "Bearer synthetic-provider-key")
+        self.assertEqual(upstream[0]["path"], "/anthropic/v1/messages")
+        headers = {key.lower(): value for key, value in upstream[0]["headers"].items()}
+        self.assertEqual(headers.get("x-api-key"), "synthetic-provider-key")
         self.assertTrue(token_capture.is_file())
         captured = [json.loads(line) for line in token_capture.read_text().splitlines()]
         self.assertTrue(captured)
@@ -205,6 +204,7 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
 
         observed = {}
         codex_args = {}
+        request_bodies = {}
         for label, binary in (("oracle", ORACLE), ("modex", MODEX)):
             wrapper, auth_capture, exit_capture = self.observing_codex(label)
             result, _, upstream, state = SuperLaunchTests().run_launch(
@@ -230,13 +230,9 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 1, output.decode("utf-8", "replace"))
                 self.assertTrue(upstream)
                 for attempt in upstream:
-                    expected_path = "/anthropic/v1/messages" if label == "oracle" else "/v1/chat/completions"
-                    self.assertEqual(attempt["path"], expected_path)
+                    self.assertEqual(attempt["path"], "/anthropic/v1/messages")
                     headers = {key.lower(): value for key, value in attempt["headers"].items()}
-                    if label == "oracle":
-                        self.assertEqual(headers.get("x-api-key"), "synthetic-provider-key")
-                    else:
-                        self.assertEqual(headers.get("authorization"), "Bearer synthetic-provider-key")
+                    self.assertEqual(headers.get("x-api-key"), "synthetic-provider-key")
                 self.assertTrue(all(Path(path).is_relative_to(self.root_path) for path in state["leftovers"]))
                 self.assertNotIn(b"synthetic-provider-key", output)
                 self.assertNotIn(b"synthetic-wrong-openai-key", output)
@@ -260,15 +256,17 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
                 "leftover_entries": overlay_entries,
             }
             codex_args[label] = normalize_codex_capture(json.dumps(client_config["args"]))
+            request_bodies[label] = [json.loads(bytes.fromhex(attempt["body"])) for attempt in upstream]
 
         self.assertEqual(codex_args["oracle"], codex_args["modex"], observed)
-        self.assertNotEqual(observed["oracle"]["upstream_paths"], observed["modex"]["upstream_paths"], observed)
+        self.assertEqual(observed["oracle"]["upstream_paths"], observed["modex"]["upstream_paths"], observed)
         print(json.dumps({
             "codex_version": EXPECTED_VERSION,
             "codex_sha256": CODEX_SHA256,
             "oracle_version": "0.166.0",
             "oracle_sha256": ORACLE_SHA256,
             "codex_args_match": True,
+            "request_bodies_match": request_bodies["oracle"] == request_bodies["modex"],
             "runs": observed,
         }, indent=2))
 

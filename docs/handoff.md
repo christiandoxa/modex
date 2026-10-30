@@ -147,26 +147,13 @@ Modex through a synthetic loopback provider inside a network namespace with
 no default routes. Its release archive and executable hashes, isolation and
 reproduction command are in `docs/evidence/baseline-0.166.0/codex-offline.md`.
 This is one local-auth case, not general Codex or Guardian parity.
-An additional isolated real-Codex 401 comparison observes Prodex routing to
+An earlier isolated real-Codex 401 comparison observed Prodex routing to
 Anthropic Messages and Modex to Chat Completions with the same normalized
-client arguments. Both clients exit with the synthetic error; Prodex removes
-its overlay while Modex preserves Codex-created state and `auth.json`. The
-raw request body was not recovered, so the route difference's cause is open.
-The characterization does not delete retained state; see the same evidence
-file for its scope and reproduction.
-An unpublished catalog draft in an isolated temporary worktree matches selected
-0.166.0 catalog rows, including filtering retired IDs. Its three focused
-process tests passed, but the real Codex `deepseek-chat` success case then
-returned 502 before any synthetic provider POST; the internal adapter error
-is not yet identified. An independent isolated rerun reproduced Codex's
-missing-model-metadata warning and 502 with no provider POST; temporary adapter
-diagnostics did not reveal the rejected field and were removed. Five focused
-active and historical catalog comparisons passed in a separate worktree;
-they do not qualify the real-client path. With `deepseek-v4-pro` or no wrapper
-model, the worker observed a successful Chat Completions request. The draft
-remains unpublished: diagnose the 502, preserve the launch guards, rerun the
-real-client and historical regressions, and document the results before
-integrating it.
+client arguments. After the catalog and namespace fixes, a fresh isolated
+real-Codex comparison reaches Anthropic Messages for both products; a synthetic
+success case and a 401 case pass. The parsed 401 request bodies differ, and Modex
+retains Codex-created state and `auth.json` while the release removes its
+overlay. These remain gaps; see the same evidence file for scope and reproduction.
 
 `test_runtime_broker_startup_01660_oracle.py` records the broker gap with a
 synthetic profile: the 0.166.0 process publishes a private capability and

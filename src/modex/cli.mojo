@@ -262,6 +262,8 @@ def parse_session_options(args: List[String]) raises -> SessionOptions:
         for index in range(3, len(args)):
             if command or args[index] not in commands:
                 var suffix = " <COMMAND>" if not command else " <ID>" if command == "resume" else " [COMMAND]..." if command == "help" else " [OPTIONS]"
+                if command == "help":
+                    raise Error("error: unrecognized subcommand '" + args[index] + "'\n\nUsage: " + usage + " " + command + suffix + "\n")
                 raise session_cli_error("unrecognized subcommand '" + args[index] + "'", usage + (" " + command if command else String()) + suffix)
             command = args[index]
         return SessionOptions(False, "help", None, command^, None, None, False)
@@ -378,6 +380,19 @@ def parse_session_options(args: List[String]) raises -> SessionOptions:
             try:
                 limit = unsigned_value(value)
             except error:
+                if len(pieces) == 1 and index + 1 < len(args):
+                    var following = args[index + 1]
+                    var following_name = argument_name(following)
+                    var following_pieces = following.split("=", maxsplit=1)
+                    if following_name in flags and not takes_value(following_name, command) and len(following_pieces) == 2:
+                        raise value_error(
+                            usage,
+                            command,
+                            following_name,
+                            String(following_pieces[1]),
+                            seen,
+                            attached_value_seen or len(seen) > 1,
+                        )
                 # Clap reports a direct stray argument before split-limit conversion.
                 if len(pieces) == 1 and index + 1 < len(args):
                     var following = args[index + 1]

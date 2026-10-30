@@ -290,6 +290,89 @@ class SessionCliTests(unittest.TestCase):
                     self.assertEqual(outputs[0], (2, "", expected))
                     self.assertEqual(outputs[1], outputs[0])
 
+    def test_split_limit_value_precedence_matches_both_releases(self):
+        cases = (
+            ["session", "list", "--limit", "bad", "--json="],
+            ["session", "list", "--profile", "main", "--limit", "bad", "--json="],
+            ["session", "list", "--limit", "bad", "--profile", "main", "--json="],
+            ["session", "list", "--limit", "bad", "--query", "text", "--json="],
+            ["session", "list", "--limit=bad", "--json="],
+            ["session", "current", "--profile", "foo", "--limit", "main", "--json=", "--limit"],
+        )
+        if hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest() != ORACLE_01651_SHA256:
+            raise AssertionError("PRODEX_ORACLE_01651 must identify the verified 0.165.1 Linux release")
+        with tempfile.TemporaryDirectory(prefix="modex-session-limit-precedence-") as directory:
+            for index, arguments in enumerate(cases):
+                outputs = []
+                for label, binary, argv0 in (
+                    ("01651", ORACLE_01651, "prodex"),
+                    ("04392", ORACLE, "prodex"),
+                    ("modex", MODEX, "modex"),
+                ):
+                    root = Path(directory) / f"{index}-{label}"
+                    root.mkdir()
+                    fixture(root)
+                    before = {
+                        str(path.relative_to(root)): path.read_bytes() if path.is_file() else None
+                        for path in root.rglob("*")
+                    }
+                    result = subprocess.run(
+                        sandbox_command(binary, root, arguments, argv0=argv0),
+                        capture_output=True, timeout=10, check=False,
+                    )
+                    outputs.append((
+                        result.returncode,
+                        map_executable(result.stdout.decode().replace(str(root), "<ROOT>")),
+                        map_executable(result.stderr.decode().replace(str(root), "<ROOT>")),
+                    ))
+                    after = {
+                        str(path.relative_to(root)): path.read_bytes() if path.is_file() else None
+                        for path in root.rglob("*")
+                    }
+                    self.assertEqual(after, before)
+                with self.subTest(arguments=arguments):
+                    self.assertEqual(outputs[0], outputs[1])
+                    self.assertEqual(outputs[1], outputs[2])
+
+    def test_nested_help_subcommand_errors_match_both_releases(self):
+        cases = (
+            ["session", "help", "help", "--help=x"],
+            ["session", "help", "help", "unknown"],
+            ["session", "help", "list", "unknown"],
+        )
+        with tempfile.TemporaryDirectory(prefix="modex-session-help-nested-") as directory:
+            for index, arguments in enumerate(cases):
+                outputs = []
+                for label, binary, argv0 in (
+                    ("01651", ORACLE_01651, "prodex"),
+                    ("04392", ORACLE, "prodex"),
+                    ("modex", MODEX, "modex"),
+                ):
+                    root = Path(directory) / f"{index}-{label}"
+                    root.mkdir()
+                    fixture(root)
+                    before = {
+                        str(path.relative_to(root)): path.read_bytes() if path.is_file() else None
+                        for path in root.rglob("*")
+                    }
+                    result = subprocess.run(
+                        sandbox_command(binary, root, arguments, argv0=argv0),
+                        capture_output=True, timeout=10, check=False,
+                    )
+                    outputs.append((
+                        result.returncode,
+                        map_executable(result.stdout.decode().replace(str(root), "<ROOT>")),
+                        map_executable(result.stderr.decode().replace(str(root), "<ROOT>")),
+                    ))
+                    after = {
+                        str(path.relative_to(root)): path.read_bytes() if path.is_file() else None
+                        for path in root.rglob("*")
+                    }
+                    self.assertEqual(after, before)
+                with self.subTest(arguments=arguments):
+                    self.assertEqual(outputs[0], outputs[1])
+                    self.assertEqual(outputs[1], outputs[2])
+
     def test_generated_argument_sequences(self):
         generator = random.Random(439)
         choices = ["--json", "--id-only", "--resume-command", "--parent-only", "--include-subagents",

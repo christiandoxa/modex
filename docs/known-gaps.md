@@ -602,11 +602,12 @@ difference is retained beside the Huffman case, with the exact input bytes;
 keeping size/window validation is proposed and remains unapproved.
 
 Session help and argument-error output match 271 captured frozen-release
-cases and 152 seeded generated comparisons, including suggestions, short-flag
-clusters, literal boundaries, help routing and ordered conflicts. This does
-not establish complete CLI coverage. Other commands and remaining combinations
-are unverified. Resume now matches both pinned releases for missing/ambiguous
-selection, exact-ID precedence, ASCII casing, surrounding and blank
+cases, 152 seeded generated comparisons, and a later 608-sequence three-release
+sweep, including suggestions, short-flag clusters, literal boundaries, help
+routing, ordered conflicts, split-limit precedence, and nested help errors.
+This does not establish complete CLI coverage. Other commands and remaining
+combinations are unverified. Resume now matches both pinned releases for
+missing/ambiguous selection, exact-ID precedence, ASCII casing, surrounding and blank
 whitespace, and duplicate IDs. Valid selection still stops before launch
 because managed profile authorization and runtime launch are not connected. Metadata repair
 and state database-only candidates remain unimplemented. Modex also retains a

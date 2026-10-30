@@ -18,6 +18,21 @@ the timeout path printed by the releases. Managed Ponytail installation,
 descendant cleanup and non-host targets remain unqualified. See
 `docs/evidence/baseline-0.165.1/super-dry-run-01651.md`.
 
+## Session CLI edge diagnostics (2026-10-30)
+
+Session CLI parsing now matches both pinned releases for two edge cases found
+by a three-process sweep: a malformed boolean switch immediately after a
+split invalid `--limit` value takes precedence as in Clap, and invalid nested
+`session help help` subcommands omit the generic help footer. Six numeric-value
+sequences and three nested-help cases run against 0.165.1, frozen 0.439.2, and
+Modex with synthetic temporary homes and no fixture mutation. The full seeded
+608-sequence three-release sweep had zero mismatches after the fix. All seven
+focused `test_session_cli.py` methods, the production import audit, and test
+census passed on Linux x86-64. This qualifies only selected diagnostics; state
+locking/recovery, broader CLI behavior, security behavior, and the other five
+release targets remain open. Evidence:
+`docs/evidence/baseline-0.165.1/session-cli-precedence.md`.
+
 The combined production build at `dd82b3b` passed. Focused real-process
 redaction, numerically equal relay-length and duplicate web-search checks
 passed on that build; the dependency audit, 50-native/155-Python test census,

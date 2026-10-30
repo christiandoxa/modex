@@ -49,3 +49,35 @@ every case exits before startup. This slice verifies argument handling only:
 it does not qualify delegated execution, the still-guarded Super runtime,
 Guardian routing, or any of the other five release targets. This evidence uses
 only the verified Linux x86-64 oracle.
+
+## Sub-agent URL boundary whitespace
+
+Prodex 0.166.0's `parse_sub_agent_url` validates through `Url::parse` and then
+returns `value.to_owned()`. Its sub-agent config keeps that string, so URL
+parsing accepts boundary whitespace while retaining the original downstream.
+Modex accepts only surrounding ASCII spaces, validates a trimmed view, and
+retains those spaces in its parsed option. It continues to reject CR/LF and
+all C0/DEL bytes anywhere in the raw value, even though the reference accepts
+the tested controls. This keeps control bytes out of the unimplemented
+sub-agent runtime. It does not change `--url` or `--base-url`.
+
+The focused process matrix covers boundary spaces and rejects non-ASCII
+whitespace, credentials, query, fragment, invalid ports and IPv6; all cases
+leave state unchanged. The reference also accepts CR/LF/C0 controls, empty
+userinfo (`@host`), tabs inside a host, and a padded triple-slash URL that its
+URL parser normalizes. Modex keeps rejecting those inputs to avoid passing
+control-bearing or rewritten authorities downstream. These conservative
+differences remain explicit and are not counted as parity. A Modex process
+check confirms that an accepted space-padded URL still reaches the existing
+Super startup guard without creating state; no sub-agent request is sent.
+
+Final checks from the detached worktree:
+
+- `make BUILD_DIR=build build` — passed with existing unused-variable warnings.
+- `mojo run -I src tests/test_super_cli.mojo` — passed, including raw space retention.
+- Sixteen focused 0.166.0 Super, doctor and Gateway process tests passed.
+  Oracle cases run with the verified binary inside `bwrap --unshare-all`, with
+  synthetic HOME and empty PATH. Gateway parser coverage includes
+  `GatewayDefault01660Tests.test_dry_run_and_config_flags_remain_parser_errors`.
+- `python3 scripts/ci/check-product-dependencies.py` — passed; all 72 Mojo
+  production files use only standard-library and internal imports.

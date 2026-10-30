@@ -224,6 +224,26 @@ def _valid_http_url(value: String) -> Bool:
     return authority.find("@") < 0 and valid_url_authority(authority)
 
 
+def _url_validation_input(value: String) -> String:
+    # Preserve plain-space compatibility without admitting control bytes downstream.
+    var bytes = value.as_bytes()
+    var start = 0
+    var end = len(bytes)
+    while start < end and bytes[start] == Byte(32):
+        start += 1
+    while end > start and bytes[end - 1] == Byte(32):
+        end -= 1
+    return String(value[byte=start:end])
+
+
+def _has_url_control(value: String) -> Bool:
+    var bytes = value.as_bytes()
+    for index in range(len(bytes)):
+        if bytes[index] < Byte(32) or bytes[index] == Byte(127):
+            return True
+    return False
+
+
 def _known_optional_tool(value: String) -> Bool:
     var tool = ascii_lower(trim_text(value))
     return tool in [
@@ -257,9 +277,14 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
         if provider in ["local", "local-openai", "local_openai"]: return "local"
         var reason = "invalid --sub-agent-provider: supported values are openai, anthropic, copilot, deepseek, gemini, kiro, local, got " + _debug_quoted(value)
         raise _typed_value_error(name, _clap_value(value), reason, clap_diagnostic)
-    if name == "--sub-agent-url" and not _valid_http_url(value):
+    if name == "--sub-agent-url" and (
+        _has_url_control(value) or not _valid_http_url(_url_validation_input(value))
+    ):
+        var display_value = value
+        if clap_diagnostic:
+            display_value = _clap_value(value)
         raise _typed_value_error(
-            name, value,
+            name, display_value,
             "invalid " + name + ": expected an absolute http(s) URL with host and no credentials, query, or fragment",
             clap_diagnostic,
         )

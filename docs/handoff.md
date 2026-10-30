@@ -85,6 +85,13 @@ and the valid Gemini launcher remains unimplemented; see
 Plain provider URL validation runs after help parsing but still before startup;
 see `docs/evidence/baseline-0.166.0/super-cli-validation.md` for the parser
 scope and test commands.
+The 0.166.0 `--sub-agent-url` parser accepts leading/trailing ASCII spaces and
+retains the raw value downstream. Modex validates a space-trimmed view but
+preserves those spaces. It continues to reject C0/DEL controls, credentials,
+query, fragment, invalid authorities and non-ASCII whitespace. Other URL forms
+that the reference rewrites remain documented conservative mismatches. A
+sanitized process probe confirms accepted input still reaches the Super startup
+guard; the local sub-agent runtime remains unimplemented.
 Selected `doctor` help and invalid argument diagnostics also match isolated
 0.166.0 comparisons; valid execution still reaches the unimplemented guard.
 Other argument combinations remain unqualified.

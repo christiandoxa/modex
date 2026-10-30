@@ -242,6 +242,61 @@ class ActiveBaseline01660Tests(unittest.TestCase):
                 )
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_sub_agent_url_boundary_spaces_and_security_controls_match_active_release(self):
+        cases = (
+            (" http://127.0.0.1:8131/v1 ", 0),
+            (" https://[::1]:8131/v1 ", 0),
+            ("\u00a0http://synthetic.example.test\u00a0", 2),
+            ("\x7fhttp://synthetic.example.test", 2),
+            ("\thttp://synthetic-user:synthetic-pass@synthetic.example.test\r\n", 2),
+            (" http://synthetic.example.test/path?key=synthetic ", 2),
+            (" http://synthetic.example.test/path#synthetic ", 2),
+            (" http://synthetic.example.test:99999 ", 2),
+            (" http://[invalid-ipv6] ", 2),
+        )
+        for url, expected_status in cases:
+            arguments = ("super", "--sub-agent-url", url, "--help")
+            with self.subTest(url=url):
+                baseline, baseline_created = isolated_super_cli(ORACLE, arguments, "prodex")
+                modex, modex_created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual((baseline.returncode, modex.returncode), (expected_status, expected_status))
+                self.assertEqual(
+                    (modex.stdout, modex.stderr),
+                    (normalize_super_cli_executable(baseline.stdout),
+                     normalize_super_cli_executable(baseline.stderr)),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_sub_agent_url_controls_and_authority_normalization_stay_fail_closed(self):
+        for url in (
+            "\thttp://synthetic.example.test\r\n",
+            "\x01http://synthetic.example.test\x1f",
+            "http://synthetic.example.test/path\nbreak",
+            "http://@synthetic.example.test",
+            "http://synthetic\texample.test",
+            " http:///synthetic.example.test ",
+        ):
+            arguments = ("super", "--sub-agent-url", url, "--help")
+            with self.subTest(url=url):
+                baseline, baseline_created = isolated_super_cli(ORACLE, arguments, "prodex")
+                modex, modex_created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual((baseline.returncode, modex.returncode), (0, 2))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+                self.assertIn(b"invalid value", modex.stderr)
+
+    def test_sub_agent_url_with_spaces_stays_guarded_from_runtime(self):
+        modex, created = isolated_super_cli(
+            MODEX,
+            ("super", "--sub-agent", "--sub-agent-provider", "local", "--sub-agent-url", " http://127.0.0.1:8131/v1 "),
+            "modex",
+        )
+        self.assertEqual(modex.returncode, 1)
+        self.assertEqual(
+            modex.stderr,
+            b"Error: Super startup is not implemented: secure temporary overlays, Smart Context initialization, and Codex launch supervision remain unavailable\n",
+        )
+        self.assertEqual(created, [])
+
     def test_sub_agent_provider_aliases_and_errors_match_active_release(self):
         valid_providers = (
             "openai", "openai-responses", "openai_compatible", "openai-compatible",

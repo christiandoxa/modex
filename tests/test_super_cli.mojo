@@ -56,6 +56,10 @@ def main() raises:
     validate_super_options(options)
     options = parse_super_arguments([String("modex"), "super", "exec", "--sub-agent", "--sub-agent-provider", "local", "--sub-agent-url", "https://[::1]:8131/v1"], "modex")
     validate_super_options(options)
+    var raw_sub_agent_url = " https://[::1]:8131/v1 "
+    options = parse_super_arguments([String("modex"), "super", "--sub-agent", "--sub-agent-provider", "local", "--sub-agent-url", raw_sub_agent_url], "modex")
+    assert_equal(options.value("--sub-agent-url"), raw_sub_agent_url)
+    validate_super_options(options)
     options = parse_super_arguments([String("modex"), "super", "--sub-agent", "--sub-agent-model", "  雪 model  "], "modex")
     assert_equal(options.value("--sub-agent-model"), "  雪 model  ")
     validate_super_options(options)

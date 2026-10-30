@@ -1,12 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
-The in-progress authentication-snapshot full suite has reported multiple
-failing subtests, including large relay headers, WebSocket body handling,
-direct relay startup, slow partial requests and Super probe environments.
-The snapshot predates later fixture repairs. Their causes and any production
-regressions are under investigation; no full pass is claimed. An earlier
-status update overlooked indented failure lines; use the full log rather than
-only failure summaries when polling the run.
+The authentication-snapshot full suite finished with 28 failures and one error
+in 1,167 tests. Failures include large relay headers, WebSocket body handling,
+direct relay startup, slow partial requests and Super probe environments. The
+snapshot predates later fixture repairs; their causes and any production
+regressions are under investigation. No full pass is claimed. The log
+`/tmp/modex-auth-full-1030.log` has SHA-256
+`ad35399915ac6e5d2bbb91abcae676db75e977b8ad8c28808ac16dd4d55fa60f`.
+An earlier status update overlooked indented failure lines.
 
 Two pinned runtime-broker WebSocket processes now have separate synthetic
 interrupt characterizations. In the tested 0.165.1 case a foreign-session
@@ -33,14 +34,13 @@ parent `OPENAI_API_KEY`. The relay still cannot authenticate partial headers:
 132 unauthenticated partial connections delayed a valid request until the
 connections were closed. Same-user access and broader security remain open.
 
-An isolated full `make test` is running in `/tmp/modex-auth-full-1030` with
-log `/tmp/modex-auth-full-1030.log` and make PID 3051799. It uses `c386b71`,
+The isolated full `make test` in `/tmp/modex-auth-full-1030` used `c386b71`,
 plus tracked draft patch SHA-256
 `69211338b7c3e6f4e4879059bfbf7ffc200def806b865671407152d99630dae2`
 and `src/modex/auth_token.mojo` SHA-256
 `4bfc5234c572703350fb459d6cc494e2db92d07a7895bff085838f772dc05eea`.
 It predates the later environment-scrub and continuation work and is not a
-pass for those changes. The full run has not finished.
+pass for those changes. Its failure is recorded above.
 
 Invalid post-`exec` `--rollout-budget-reminders` values now report the same
 comma-separated-integer error as both release processes. The focused test

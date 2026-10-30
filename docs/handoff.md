@@ -10,8 +10,11 @@ fixture that retained a separate 0.439.2 holder binary. Its helper now receives
 and restores the same 0.165.1 oracle as the rest of that suite. The originally
 failing test passed with 0.439.2 absent in a private loopback-only namespace.
 An initial broader local log run failed because four native test drivers had
-not been built; after building them, all 15 affected checks passed. This does
-not qualify the missing 0.439.2 regression lane or the complete CI run.
+not been built; after building them, the complete 40-test log suite passed.
+The seven other independent 0.165.1 modules passed 81 tests separately in the
+same isolation. The official 0.439.5 tag and release were unavailable on a
+subsequent lookup, so the later historical lane also remains blocked. These
+checks do not qualify the missing historical lanes or the complete CI run.
 In a clean checkout of `d16dd4855498517924f4fa1cb8a657352afec9d5`,
 `make build unit` passed, and the exact active Fast CI Python lane passed 56
 tests under a private user, mount and network namespace with only loopback and

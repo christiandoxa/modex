@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The combined production build at `dd82b3b` passed. Focused real-process
+redaction, numerically equal relay-length and duplicate web-search checks
+passed on that build; the dependency audit, 50-native/155-Python test census,
+oracle routing and workflow validation passed. A full `make test` is running
+in `/tmp/modex-full-dd82b3b-20261030` with log
+`/tmp/modex-full-dd82b3b-20261030.log`; it is not yet a completed result.
+
 The isolated `c5609d0` full suite finished with 40 failures and one error in
 1,096 Python tests after the native checks. The log is
 `/tmp/modex-full-c5609d0-20261030.log` (SHA-256

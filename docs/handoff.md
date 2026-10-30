@@ -1,5 +1,18 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The combined production build at `636d01c` passed; later commits through
+`7bad09f` add tests and evidence only. Focused RTK/Playwright, live-log,
+provider idle/partial/truncation/cancellation and relay version/head controls
+passed on the combined worktree. The native transport unit, dependency audit,
+test census, oracle routing and workflow validation also passed. Independent
+review checked the RTK scanner against Unicode separators and SemVer
+boundaries, and led to the prefetched partial-frame investigation below.
+An isolated full `make test` on `7bad09f` is running in
+`/tmp/modex-full-7bad09f-20261030`, logging to
+`/tmp/modex-full-7bad09f-20261030.log`; no full-suite pass is claimed yet.
+All six release targets, broader behavior and security qualification remain
+open.
+
 RTK dry-run version selection now uses the shared semantic-version token
 scanner: selected punctuation, Unicode whitespace, invalid candidates, and
 first-valid precedence match both pinned releases. The production build,

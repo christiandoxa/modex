@@ -1,5 +1,28 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+An updated, unpublished authentication draft is under active validation in
+`/tmp/modex-auth-integrate-1030`, based on `c386b71`; the earlier draft remains
+preserved in `/tmp/modex-integration-20261030`. A write-side shutdown before
+closing on non-ASCII headers passed the six-test header suite, including
+coalesced and fragmented pipeline controls against both releases. The worker
+also tested delayed input, queued bodies, a write flood and peer reset on Linux;
+other operating systems remain unqualified. The draft now scrubs the pinned
+12 provider-key environment variables from child processes. The installed
+Codex CLI 0.165.0 successfully used the launch credential with a synthetic
+provider in a loopback-only network namespace, including a conflicting synthetic
+parent `OPENAI_API_KEY`. The relay still cannot authenticate partial headers:
+132 unauthenticated partial connections delayed a valid request until the
+connections were closed. Same-user access and broader security remain open.
+
+An isolated full `make test` is running in `/tmp/modex-auth-full-1030` with
+log `/tmp/modex-auth-full-1030.log` and make PID 3051799. It uses `c386b71`,
+plus tracked draft patch SHA-256
+`69211338b7c3e6f4e4879059bfbf7ffc200def806b865671407152d99630dae2`
+and `src/modex/auth_token.mojo` SHA-256
+`4bfc5234c572703350fb459d6cc494e2db92d07a7895bff085838f772dc05eea`.
+It predates the later environment-scrub and continuation work and is not a
+pass for those changes. The full run has not finished.
+
 Invalid post-`exec` `--rollout-budget-reminders` values now report the same
 comma-separated-integer error as both release processes. The focused test
 also retains the release/Modex startup-lock side-effect difference and checks

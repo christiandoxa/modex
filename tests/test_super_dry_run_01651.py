@@ -445,6 +445,58 @@ class SuperDryRun01651Tests(unittest.TestCase):
         self.assertEqual(normalized_releases[0], normalized_releases[1])
         self.assertNotIn(b"/tmp/modex-super-dry-run-", outputs[2])
 
+    def test_path_codebase_version_reports_match_both_releases(self):
+        versions = (
+            "codebase-memory-mcp dev", "codebase-memory-mcp 0.12.1+build.1",
+            "codebase-memory-mcp 0.9.1-rc.1", "codebase-memory-mcp 0.9.1-rc.1.1",
+            "codebase-memory-mcp 0.9.1-rc.0", "codebase-memory-mcp 0.9.1-alpha",
+            "codebase-memory-mcp 0.9.1-rc", "codebase-memory-mcp 0.9.1-rc.alpha",
+            "codebase-memory-mcp 0.9.1-s", "codebase-memory-mcp 0.9.1-2",
+            "codebase-memory-mcp 0.9.1-rc.0a", "codebase-memory-mcp 0.9.1-rc.1-foo",
+            "codebase-memory-mcp 18446744073709551616.0.0", "codebase-memory-mcp 0.9.1+foo+bar",
+            "codebase-memory-mcp 0.9.1-rc.01", "codebase-memory-mcp v0.12.1",
+            "nonsense", "empty", "stderr:codebase-memory-mcp 0.12.1", "exit:7",
+        )
+        for version in versions:
+            outputs = []
+            for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                         ("0.439.2", ORACLE, "prodex"),
+                                         ("Modex", MODEX, "modex")):
+                with self.subTest(version=version, binary=label):
+                    def prepare(root):
+                        write_optional_tool(root / "bin/codebase-memory-mcp")
+                        (root / "home/.codebase-version-fixture").write_text(version)
+                        write_optional_tool(root / "bin/rtk")
+
+                    result, before, after = run_dry_run(
+                        binary, argv0, prepare,
+                        environment=lambda root: {"SYNTHETIC_PROBE_MARKER": str(root / "probe-environment-leaked")},
+                        extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                    )
+                    self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                    self.assertEqual(after, before)
+                    outputs.append(result.stdout)
+            self.assertEqual(outputs[0], outputs[1])
+            self.assertEqual(outputs[0], outputs[2])
+
+    def test_path_codebase_timeout_is_bounded_and_redacted(self):
+        for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                     ("0.439.2", ORACLE, "prodex"),
+                                     ("Modex", MODEX, "modex")):
+            with self.subTest(binary=label):
+                def prepare(root):
+                    write_optional_tool(root / "bin/codebase-memory-mcp")
+                    (root / "home/.codebase-version-fixture").write_text("timeout")
+
+                result, before, after = run_dry_run(
+                    binary, argv0, prepare, extra_binaries=(OPTIONAL_TOOL_FIXTURE,), timeout=30,
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertIn(b"health check timed out after 5s", result.stdout)
+                self.assertEqual(after, before)
+                if label == "Modex":
+                    self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+
     def test_valid_profile_state_is_read_by_releases_but_modex_stays_fail_closed(self):
         def prepare(root):
             app = root / "home/.prodex"
@@ -489,7 +541,10 @@ class SuperDryRun01651Tests(unittest.TestCase):
 
     def test_installed_optional_tools_fail_closed_without_launching_them(self):
         cases = (
-            ("path command", lambda root: write_tool(root / "bin/codebase-memory-mcp", root / "codebase-memory-invoked")),
+            ("managed codebase", lambda root: (
+                (root / "home/.local/share/prodex-optimizers/codebase-memory-mcp").mkdir(parents=True),
+                write_tool(root / "bin/codebase-memory-mcp", root / "codebase-memory-invoked"),
+            )),
             ("managed tool", lambda root: (root / "home/.local/share/prodex-optimizers/caveman/4.0.1").mkdir(parents=True)),
             ("node and npx", lambda root: (write_node(root / "bin/node"), write_tool(root / "bin/npx", root / "npx-invoked"))),
         )

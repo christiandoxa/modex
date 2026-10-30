@@ -47,7 +47,18 @@ The standard-library process wrapper can kill the direct child but cannot
 terminate a descendant process group, so a misbehaving probe that leaves a
 descendant running remains an unverified safety gap.
 
-Installed Caveman, codebase-memory-mcp, Ponytail, or Playwright tools remain
+Codebase Memory executables discovered on `PATH` now use the same bounded,
+filtered version probe. Three-process tests cover `dev`, stable and build
+versions, prerelease ordering around `0.9.1-rc.1`, invalid banners, stderr,
+nonzero exit, report ordering with RTK, and environment isolation. The timeout
+test checks the five-second bound; Modex omits the executable path that both
+releases include. Managed Codebase Memory installations remain fail-closed,
+including a managed entry that precedes a `PATH` command. The direct-child
+cleanup limitation above applies to this probe as well.
+The 18-test dry-run module, managed-entry guard control, production import
+audit, test census, and workflow validation passed after this change.
+
+Installed Caveman, managed Codebase Memory, Ponytail, or Playwright tools remain
 fail-closed. Modex does not run `npx --no-install @playwright/mcp --version`,
 which both releases use to decide Playwright readiness.
 

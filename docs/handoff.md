@@ -1,5 +1,17 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+## Codebase Memory PATH dry-run probe (2026-10-30)
+
+Super dry-run now reports a Codebase Memory executable found on `PATH` using
+the filtered, bounded version probe. Synthetic real-process comparisons cover
+both pinned releases, minimum-version prerelease ordering, failures, output
+ordering with RTK, and timeout. Managed installations remain fail-closed, and
+the standard-library probe cannot terminate descendant process groups. The
+timeout diagnostic deliberately omits the path printed by the releases. This
+qualifies selected Linux x86-64 behavior only; all six release targets and
+unverified security behavior remain in the parity denominator. See
+`docs/evidence/baseline-0.165.1/super-dry-run-01651.md`.
+
 The isolated `make test` run on `751639602fd13c24c216606f086de558e942be88`
 stopped in the native `test_provider_chat_reader` unit before Python tests:
 its direct-reader assertion expected no usage after `message_start`. The

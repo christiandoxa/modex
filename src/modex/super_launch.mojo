@@ -638,9 +638,83 @@ def _dry_run_rtk_status() raises -> String:
     return _dry_run_rtk_version_status(line)
 
 
-def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String]:
+def _dry_run_codebase_version_supported(line: String) -> Bool:
+    var prefix = String("codebase-memory-mcp ")
+    if not line.startswith(prefix): return False
+    var version = String(line[byte=prefix.byte_length():])
+    if version == "dev": return True
+    var plus = version.find("+")
+    var end = version.byte_length()
+    if plus >= 0:
+        if not _dry_run_semver_identifiers(String(version[byte=plus + 1:]), False): return False
+        end = plus
+    var dash = version.find("-")
+    var prerelease = String()
+    if dash >= 0 and dash < end:
+        prerelease = String(version[byte=dash + 1:end])
+        if not _dry_run_semver_identifiers(prerelease, True): return False
+        end = dash
+    var components = String(version[byte=:end]).split(".")
+    if len(components) != 3: return False
+    var numbers = List[UInt64]()
+    for component in components:
+        var part = String(component)
+        var number: UInt64
+        try:
+            number = unsigned_value(part)
+        except:
+            return False
+        if String(number) != part: return False
+        numbers.append(number)
+    if numbers[0] > UInt64(0) or numbers[1] > UInt64(9): return True
+    if numbers[1] < UInt64(9) or numbers[2] < UInt64(1): return False
+    if numbers[2] > UInt64(1) or not prerelease: return True
+    var identifiers = prerelease.split(".")
+    var first = String(identifiers[0])
+    # Compare the first identifier to the minimum's "rc", including numeric precedence.
+    var first_numeric = True
+    for byte in first.as_bytes():
+        first_numeric = first_numeric and 48 <= Int(byte) <= 57
+    if first_numeric: return False
+    if first != "rc":
+        var bytes = first.as_bytes()
+        if Int(bytes[0]) != 114: return Int(bytes[0]) > 114
+        if len(bytes) == 1: return False
+        if Int(bytes[1]) != 99: return Int(bytes[1]) > 99
+        return len(bytes) > 2
+    if len(identifiers) < 2: return False
+    var second = String(identifiers[1])
+    return second != "0"
+
+
+def _dry_run_codebase_status() raises -> String:
+    var binary = String()
+    for candidate in _path_candidates("codebase-memory-mcp", getenv("PATH", "\0")):
+        binary = _executable_path(candidate)
+        if binary: break
+    if not binary:
+        return "skipped (codebase-memory-mcp was not found in managed roots or PATH)"
+    var probe: CapturedProcessOutput
+    try:
+        probe = capture_with_env(binary, [String("--version")], _dry_run_probe_environment(), "codebase-memory-mcp health check", 5000, 65536, argv0=binary)
+    except error:
+        if String(error).find("timed out") >= 0:
+            return "skipped (codebase-memory-mcp health check timed out after 5s)"
+        return "skipped (codebase-memory-mcp health check failed)"
+    var line = _dry_run_probe_first_line(probe.stdout)
+    if not line: line = _dry_run_probe_first_line(probe.stderr)
+    if not line: line = "available"
+    if not probe.status.exit_code or probe.status.exit_code.value() != 0:
+        return "skipped (version check exited with exit status: " + String(_child_exit_code(probe.status)) + ": " + redact_log_text(line) + ")"
+    if _dry_run_codebase_version_supported(line):
+        return "resolved (activation deferred until launch)"
+    return "skipped (codebase-memory-mcp lacks shared daemon coordination; Prodex requires 0.9.1-rc.1 or newer. Update to the latest stable release (release-qualified reference: 0.12.1))"
+
+
+def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String, String]:
     var present = _managed_tool_present("caveman")
-    present = present or _managed_tool_present("codebase-memory-mcp", "codebase-memory-mcp") or _path_has_executable("codebase-memory-mcp")
+    # shortcut: managed Codebase Memory discovery is guarded until containment is qualified.
+    present = present or _managed_tool_present("codebase-memory-mcp", "codebase-memory-mcp")
     var node_found = _path_has_executable("node")
     var npx_found = _path_has_executable("npx")
     present = present or (node_found and npx_found)
@@ -672,19 +746,21 @@ def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String]:
             raise Error("Super dry-run cannot report optional tools with an invalid Node.js version")
         playwright_status = "npx was not found on PATH" if major >= 18 else "Node.js 18+ is required; found " + output
         ponytail_status = "Ponytail 4.9.0+ was not found under a managed optional-tool root; latest stable reference is 5.3.2"
-    return _dry_run_rtk_status(), playwright_status^, ponytail_status^
+    return _dry_run_rtk_status(), _dry_run_codebase_status(), playwright_status^, ponytail_status^
 
 
-def _print_dry_run_optional_tools(rtk_status: String, playwright_status: String, ponytail_status: String):
+def _print_dry_run_optional_tools(rtk_status: String, codebase_status: String, playwright_status: String, ponytail_status: String):
     var caveman_missing = "Caveman 2.3.1+ was not found under a managed optional-tool root; latest stable reference is 4.0.1"
-    var command_missing = "was not found in managed roots or PATH"
     print("Optional tools:")
     if rtk_status.startswith("resolved "):
         print("  rtk: " + rtk_status)
+    if codebase_status.startswith("resolved "):
+        print("  codebase-memory-mcp: " + codebase_status)
     print("  caveman: skipped (" + caveman_missing + ")")
     if not rtk_status.startswith("resolved "):
         print("  rtk: " + rtk_status)
-    print("  codebase-memory-mcp: skipped (codebase-memory-mcp " + command_missing + ")")
+    if not codebase_status.startswith("resolved "):
+        print("  codebase-memory-mcp: " + codebase_status)
     print("  playwright-mcp: skipped (" + playwright_status + ")")
     print("  ponytail: skipped (" + ponytail_status + ")")
 
@@ -1032,7 +1108,7 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
             print("  " + name)
         print("Codex/TUI not started because --dry-run was set.")
         print("Profile: (active/default)")
-        _print_dry_run_optional_tools(optional_tool_statuses[0], optional_tool_statuses[1], optional_tool_statuses[2])
+        _print_dry_run_optional_tools(optional_tool_statuses[0], optional_tool_statuses[1], optional_tool_statuses[2], optional_tool_statuses[3])
         print("Dry run: optional overlays and services are not started.")
         print("Sub-agent: disabled")
         print("Sub-agent inherited Presidio: disabled")

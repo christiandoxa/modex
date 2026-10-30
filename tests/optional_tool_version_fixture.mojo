@@ -16,6 +16,8 @@ def main() raises:
                 file.write("probe received unapproved environment")
         var home = getenv("HOME", "")
         var config = home + "/.rtk-version-fixture"
+        if String(arguments[0]).endswith("/codebase-memory-mcp"):
+            config = home + "/.codebase-version-fixture"
         if String(arguments[0]).find("/.local/share/prodex-optimizers/rtk") >= 0:
             config = home + "/.rtk-managed-version-fixture"
         var version = String("rtk 1.1.0")

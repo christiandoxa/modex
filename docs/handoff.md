@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The running `2e7dcc8` full suite reported a passthrough-driver failure because
+its synthetic peer still expected the single `Content-Type` from before the
+relay header-parity change. The fixture now asserts both release-matching
+`Content-Type` fields, the default `Accept`, and the absence of `Connection`;
+all three passthrough tests pass after rebuilding the native driver. This
+focused correction does not establish a full-suite pass.
+
 The combined production build at `d536403` passed. Its focused Node readiness,
 WebSocket framing-precedence, and DeepSeek metadata-stream process checks
 passed; the combined Node/session regression passed eight methods, and the

@@ -82,7 +82,9 @@ full `make test` in `/tmp/modex-auth-full-repaired-1030` finished with six
 failures in 1,172 tests. All six binary-selection subtests compare the child
 environment and encounter the intentional provider-secret scrub: the release
 supplies a synthetic `OPENAI_API_KEY` and Modex removes it. The fixture is
-being corrected with explicit assertions for both behaviors. Its log
+now corrected with explicit assertions for both behaviors; the six 0.165.1
+path modes, eight 0.439.2 path modes, and secret-scrub test passed separately.
+The full suite has not yet passed with that correction. Its log
 `/tmp/modex-auth-full-repaired-1030.log` has SHA-256
 `c13d48e8f63c605280d59b44f5020830cd2de87bbf8037b63cf913864d17e745`.
 The snapshot base is `af5344e`,

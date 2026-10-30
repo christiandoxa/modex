@@ -289,16 +289,34 @@ class ActiveSuperLaunchTests(unittest.TestCase):
                         [["--version"], ["app-server", "--help"]],
                     )
                     launch = next(record for record in records if record["kind"] == "launch")
-                    trace = [
-                        (
+                    if binary == active_cli.ORACLE:
+                        self.assertEqual(
+                            launch["environment"]["OPENAI_API_KEY"],
+                            "prodex-runtime-provider",
+                        )
+                    else:
+                        for record in records:
+                            for name in launch_support.PROVIDER_SECRET_ENV_KEYS:
+                                self.assertIsNone(
+                                    record.get("environment", {}).get(name),
+                                    (record["kind"], name),
+                                )
+                    trace = []
+                    for record in records:
+                        environment = record.get("environment")
+                        if environment is not None:
+                            environment = {
+                                name: value
+                                for name, value in environment.items()
+                                if name not in launch_support.PROVIDER_SECRET_ENV_KEYS
+                            }
+                        trace.append((
                             record["kind"],
                             launch_support.normalized_app_server_args(record["args"])
                             if "args" in record else None,
                             record.get("method"),
-                            record.get("environment"),
-                        )
-                        for record in records
-                    ]
+                            environment,
+                        ))
                     outputs.append((
                         result.returncode,
                         result.stdout,

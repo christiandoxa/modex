@@ -73,6 +73,8 @@ def validate_deepseek_anthropic_request(source: String) raises:
                 continue
             if not _is_web_search_tool(kind):
                 raise Error("Anthropic Messages slice supports function and web_search_preview tools")
+            # Prodex uses the first recognized web-search tool's options.
+            if web_count > 0: continue
             web_count += 1
             var allowed_domains = doc.get(tool, "allowed_domains")
             var blocked_domains = doc.get(tool, "blocked_domains")
@@ -100,7 +102,7 @@ def validate_deepseek_anthropic_request(source: String) raises:
                 or (doc.nodes[search_context].text != "low" and doc.nodes[search_context].text != "medium" and doc.nodes[search_context].text != "high")
             ):
                 raise Error("Anthropic web search search_context_size must be low, medium, or high")
-    if web_count != 1 and not (web_count == 0 and web_search_options >= 0):
+    if web_count == 0 and web_search_options < 0:
         raise Error("Anthropic Messages slice requires exactly one web_search_preview tool")
 
 
@@ -110,10 +112,13 @@ def anthropic_search_filters_conflict(source: String) raises -> Bool:
     if _has_both_domain_filters(doc, options):
         return True
     var tools = doc.get(doc.root, "tools")
+    # Match the first-tool selection used by the translator.
+    var found_web_search = False
     if tools >= 0 and doc.nodes[tools].kind == JSON_ARRAY:
         for tool in doc.nodes[tools].children:
-            if _is_web_search_tool(doc.string(doc.get(tool, "type"))) and _has_both_domain_filters(doc, tool):
-                return True
+            if _is_web_search_tool(doc.string(doc.get(tool, "type"))) and not found_web_search:
+                found_web_search = True
+                if _has_both_domain_filters(doc, tool): return True
     return False
 
 

@@ -4371,6 +4371,7 @@ production build, 71-file dependency audit, 50-native/154-Python census, and
 response shapes; all six release targets and broader Anthropic parity remain
 unqualified. See
 `docs/evidence/baseline-0.165.1/anthropic-orphan-result.md`.
+
 ## Super rollout float diagnostics (2026-10-30)
 
 The Super parser now matches 0.165.1 and frozen 0.439.2 diagnostics for the two
@@ -4382,3 +4383,24 @@ Codex child or provider request, with the key redacted. Only Linux x86-64 CLI
 diagnostics are qualified; rollout weight launch effects and other targets
 remain open. See
 `docs/evidence/baseline-0.165.1/super-rollout-float-diagnostics.md`.
+
+## Anthropic duplicate web-search tool selection (2026-10-30)
+
+Anthropic request translation now matches both pinned releases when a Responses
+request contains multiple web-search tools: the first recognized tool supplies
+the single provider search tool and later recognized duplicates are ignored.
+The validator still checks the first tool's options and rejects unrecognized
+tool types; invalid `max_uses` on the first tool fails before POST, while
+invalid options on later duplicates are ignored and are never forwarded.
+Conflicting-domain fallback uses the first tool too: an invalid first tool
+falls back to Chat in auto mode and returns 400 in explicit Anthropic mode,
+while a conflict on a later duplicate has no effect.
+
+Synthetic three-process comparisons cover auto, forced Anthropic, and forced
+Chat routes, function tools alongside duplicates, malformed input and unknown
+tool controls. The production build, seven focused provider test methods, the
+71-file dependency audit, 50-native/154-Python test census, and diff check
+passed on Linux x86-64. This qualifies only the listed request shapes; other
+Anthropic behavior, targets, and the six-release parity denominator remain
+unchanged. See
+`docs/evidence/baseline-0.165.1/anthropic-web-search-duplicate-selection.md`.

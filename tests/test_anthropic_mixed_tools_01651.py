@@ -2603,6 +2603,164 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                     )
                     self.assertEqual(result["state"]["leftovers"], [])
 
+    def test_duplicate_web_search_tools_use_first_tool_across_modes(self):
+        first = {"type": "web_search_preview", "allowed_domains": ["first.test"]}
+        second = {"type": "web_search", "blocked_domains": ["later.test"], "max_uses": 2}
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic duplicate search query",
+            "stream": False,
+            "tools": [first, second, FUNCTION],
+        }
+        expected_search = {
+            "name": "web_search",
+            "type": "web_search_20250305",
+            "allowed_domains": ["first.test"],
+        }
+        for mode, path in ((None, "/anthropic/v1/messages"),
+                           ("anthropic", "/anthropic/v1/messages"),
+                           ("openai_chat", "/v1/chat/completions")):
+            with self.subTest(mode=mode or "auto"):
+                captures = []
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    result, response, upstream, state = _run_mode(
+                        binary, request, "anthropic-buffered", mode=mode,
+                    )
+                    self.assertEqual((result.returncode, response["status"]), (0, 200))
+                    self.assertEqual(len(upstream), 1)
+                    self.assertEqual(upstream[0]["path"], path)
+                    body = json.loads(bytes.fromhex(upstream[0]["body"]))
+                    self.assertEqual(len(body["tools"]), 2 if path == "/anthropic/v1/messages" else 1)
+                    if path == "/anthropic/v1/messages":
+                        self.assertEqual(body["tools"][-1], expected_search)
+                        self.assertEqual(body["tools"][0]["name"], "lookup")
+                    else:
+                        self.assertEqual(body["tools"][0]["function"]["name"], "lookup")
+                    self.assertEqual(state["leftovers"], [])
+                    captures.append((body, _normalize(json.loads(bytes.fromhex(response["body"])))))
+                self.assertEqual(captures[1:], captures[:1] * 2)
+
+    def test_duplicate_web_search_ignores_later_invalid_options_and_validates_first(self):
+        first = {"type": "web_search_preview", "allowed_domains": ["first.test"]}
+        later_tools = (
+            {"type": "web_search_preview", "max_uses": 0},
+            {"type": "web_search_preview", "user_location": "malformed"},
+            {"type": "web_search_preview", "allowed_domains": ["later.test"],
+             "blocked_domains": ["also-later.test"]},
+        )
+        for later in later_tools:
+            for mode in (None, "anthropic"):
+                with self.subTest(later=later, mode=mode or "auto"):
+                    request = {
+                        "model": "deepseek-chat",
+                        "input": "synthetic duplicate search query",
+                        "stream": False,
+                        "tools": [first, later],
+                    }
+                    captures = []
+                    for binary in (ORACLE_01651, ORACLE, MODEX):
+                        result, response, upstream, state = _run_mode(
+                            binary, request, "anthropic-buffered", mode=mode,
+                        )
+                        self.assertEqual((result.returncode, response["status"]), (0, 200))
+                        self.assertEqual(len(upstream), 1)
+                        self.assertEqual(upstream[0]["path"], "/anthropic/v1/messages")
+                        body = json.loads(bytes.fromhex(upstream[0]["body"]))
+                        self.assertEqual(body["tools"], [{
+                            "name": "web_search", "type": "web_search_20250305",
+                            "allowed_domains": ["first.test"],
+                        }])
+                        self.assertEqual(state["leftovers"], [])
+                        captures.append((body, _normalize(json.loads(bytes.fromhex(response["body"])))))
+                    self.assertEqual(captures[1:], captures[:1] * 2)
+
+        invalid_first = {
+            "model": "deepseek-chat",
+            "input": "synthetic duplicate search query",
+            "stream": False,
+            "tools": [
+                {"type": "web_search_preview", "max_uses": 0},
+                {"type": "web_search_preview", "allowed_domains": ["later.test"]},
+            ],
+        }
+        for mode in (None, "anthropic"):
+            with self.subTest(first="invalid", mode=mode or "auto"):
+                captures = []
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    result, response, upstream, state = _run_mode(
+                        binary, invalid_first, "anthropic-buffered", mode=mode,
+                    )
+                    self.assertEqual((result.returncode, response["status"]), (1, 502))
+                    self.assertEqual(upstream, [])
+                    self.assertEqual(state["leftovers"], [])
+                    captures.append(bytes.fromhex(response["body"]))
+                self.assertEqual(captures[1:], captures[:1] * 2)
+
+    def test_duplicate_web_search_keeps_first_conflict_and_other_validation(self):
+        conflicting_first = {
+            "model": "deepseek-chat",
+            "input": "synthetic duplicate search query",
+            "stream": False,
+            "tools": [
+                {"type": "web_search_preview", "allowed_domains": ["first.test"],
+                 "blocked_domains": ["blocked.test"]},
+                {"type": "web_search_preview", "allowed_domains": ["later.test"]},
+            ],
+        }
+        for mode, path, status in ((None, "/v1/chat/completions", 200),
+                                   ("anthropic", None, 400),
+                                   ("openai_chat", "/v1/chat/completions", 200)):
+            with self.subTest(case="first conflict", mode=mode or "auto"):
+                captures = []
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    result, response, upstream, state = _run_mode(
+                        binary, conflicting_first, "anthropic-buffered", mode=mode,
+                    )
+                    self.assertEqual(response["status"], status)
+                    if path is None:
+                        self.assertEqual((result.returncode, upstream), (1, []))
+                        captures.append((response["status"], bytes.fromhex(response["body"])))
+                    else:
+                        self.assertEqual((result.returncode, len(upstream)), (0, 1))
+                        self.assertEqual(upstream[0]["path"], path)
+                        captures.append((upstream[0]["path"], json.loads(bytes.fromhex(upstream[0]["body"])),
+                                         _normalize(json.loads(bytes.fromhex(response["body"]))))
+                        )
+                    self.assertEqual(state["leftovers"], [])
+                self.assertEqual(captures[1:], captures[:1] * 2)
+
+        invalid_cases = (
+            {
+                "model": "deepseek-chat",
+                "input": "synthetic duplicate search query",
+                "stream": False,
+                "tools": [
+                    {"type": "web_search_preview"},
+                    {"type": "web_search_preview"},
+                    {"type": "web_search_previewX2025_03_11"},
+                ],
+            },
+            {
+                "model": "deepseek-chat",
+                "input": [{"type": "message", "role": "critic", "content": "synthetic"}],
+                "stream": False,
+                "tools": [{"type": "web_search_preview"}, {"type": "web_search_preview"}],
+            },
+        )
+        for request in invalid_cases:
+            for mode in (None, "anthropic", "openai_chat"):
+                with self.subTest(case="invalid request", mode=mode or "auto"):
+                    captures = []
+                    for binary in (ORACLE_01651, ORACLE, MODEX):
+                        result, response, upstream, state = _run_mode(
+                            binary, request, "anthropic-buffered", mode=mode,
+                        )
+                        self.assertEqual((result.returncode, response["status"]), (1, 502))
+                        self.assertEqual(upstream, [])
+                        self.assertEqual(state["leftovers"], [])
+                        captures.append(bytes.fromhex(response["body"]))
+                    self.assertEqual(captures[1:], captures[:1] * 2)
+
     def test_near_prefix_web_search_types_are_rejected_by_both_releases(self):
         for alias in ("web_search_previewX2025_03_11", "web_search_preview-2025_03_11"):
             request = {

@@ -16,6 +16,12 @@ releases. A synthetic API key supplied as a tail `--api-key` remains a Super
 override; it does not enter Codex argv, config, environment, auth or runtime
 config.
 
+The Modex launch guard consumes only a nonempty value that does not start with
+`-`, or the lone `-`. A missing value or option-looking token remains for the
+normal allowlist; a synthetic `--dangerously-bypass-approvals-and-sandbox`
+following `--reasoning-effort` is rejected before Codex starts. The literal
+`--` still ends guard parsing and preserves following tokens verbatim.
+
 Tests use isolated synthetic homes and a synthetic Codex child. The launch
 matrix exits through the fixture with status 7 and records no upstream request.
 The dry-run matrix compares complete stdout across both releases and Modex,
@@ -40,5 +46,6 @@ MODEX_BINARY=/tmp/modex-super-parity-build-20261030/modex \
     test_super_dry_run_01651.SuperDryRun01651Tests.test_codex_reasoning_effort_is_preserved_in_dry_run \
     test_super_launch_01651.ActiveSuperLaunchTests.test_supported_exec_flags_match_01651 \
     test_super_launch_01651.ActiveSuperLaunchTests.test_reasoning_effort_keeps_provider_key_out_of_codex_launch \
+    test_super_launch_01651.ActiveSuperLaunchTests.test_reasoning_effort_cannot_hide_unverified_option \
     test_super_launch.SuperLaunchTests.test_deepseek_api_key_environment_resolution_and_child_scrubbing
 ```

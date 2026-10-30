@@ -646,10 +646,12 @@ def check_safe_exec_flags(test, *oracles):
         ("exec", "--reasoning-effort=", "synthetic prompt"),
         ("exec", "--reasoning-effort=not-a-real-effort", "synthetic prompt"),
         ("exec", "synthetic prompt", "--reasoning-effort", "high"),
+        ("exec", "--reasoning-effort", "-", "synthetic prompt"),
         ("exec", "--reasoning-effort", "not-a-real-effort", "synthetic prompt"),
         ("exec", "--reasoning-effort", "--json", "synthetic prompt"),
         ("exec", "--reasoning-effort"),
         ("exec", "--", "--reasoning-effort", "high", "synthetic prompt"),
+        ("exec", "--reasoning-effort", "--", "--dangerously-bypass-approvals-and-sandbox"),
     )
     for arguments in cases:
         with test.subTest(arguments=arguments):

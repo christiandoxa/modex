@@ -40,6 +40,12 @@ confirm that `--api-key` remains a Super override and is absent from Codex
 argv, config, environment, auth and runtime config; the local synthetic peer
 receives no request.
 
+A follow-up guard regression now rejects an unverified option-looking token
+after `--reasoning-effort` instead of treating it as that option's value. The
+guard consumes only a nonempty non-option value or lone `-`; `--` still ends
+validation. The synthetic blocked case confirms no Codex child or upstream
+request starts.
+
 The production build and native Codex fixture build passed. The focused
 three-release dry-run report, launch argument matrix and API-key scrub check
 passed on Linux x86-64. Invalid and missing values are only verified as

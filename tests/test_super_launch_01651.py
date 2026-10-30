@@ -83,6 +83,19 @@ class ActiveSuperLaunchTests(unittest.TestCase):
         self.assertEqual(traces[0], traces[1])
         self.assertEqual(traces[0], traces[2])
 
+    def test_reasoning_effort_cannot_hide_unverified_option(self):
+        result, records, upstream, state = launch_support.run_private_launch(
+            launch_support.MODEX,
+            scenario="exit-seven",
+            codex_arguments=(
+                "exec", "--reasoning-effort",
+                "--dangerously-bypass-approvals-and-sandbox", "synthetic prompt",
+            ),
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b"Super startup is not implemented", result.stderr)
+        self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+
     def test_missing_exec_values_reach_child_for_both_releases(self):
         for arguments in (("exec", "--add-dir"), ("exec", "--enable"),
                           ("exec", "--disable"),

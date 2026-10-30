@@ -401,7 +401,11 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
             index += 1
             continue
         if argument == "--reasoning-effort":
-            index += 2 if index + 1 < len(arguments) and arguments[index + 1] != "--" else 1
+            if index + 1 < len(arguments):
+                var value = arguments[index + 1]
+                index += 2 if value and (not value.startswith("-") or value == "-") else 1
+            else:
+                index += 1
             continue
         if argument.startswith("--reasoning-effort="):
             index += 1

@@ -145,8 +145,10 @@ is `/tmp/modex-01660-full-b04873c.log` (launcher PID 1751677). It is still
 running and is not a pass. It has reported a failure in
 `test_parent_eof_cancels_failed_open_stream_with_truncated_pipeline_body`;
 the same test passed when rerun alone under the same isolated HOME and oracle
-paths. The full run has not printed its failure traceback yet, so the cause
-is unresolved. The suite runs against that fixed snapshot, not later changes.
+paths, and ten further repetitions passed in a loopback-only network
+namespace with private `/tmp` and synthetic HOME. The full run has not printed
+its failure traceback yet, so the cause is unresolved. The suite runs against
+that fixed snapshot, not later changes.
 
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing

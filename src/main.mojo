@@ -8,7 +8,7 @@ from modex.log_cli import log_help, log_short_help, parse_log_arguments
 from modex.logs import log_last
 from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
-from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_short_help
+from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_short_help, top_level_profile_use_help
 from modex.root_help import root_help, update_help
 from modex.sessions import inspect_sessions, resolve_session_id_from_store, session_resume_has_no_profile_source
 from modex.super_cli import parse_super_arguments, run_super
@@ -47,6 +47,28 @@ def main():
         print("Error: this Modex development build has not implemented the requested command", file=stderr)
         exit(1)
         return
+    if len(args) >= 2 and args[1] == "use":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        var rewritten: List[String] = [args[0], "profile", "use"]
+        for index in range(2, len(args)):
+            rewritten.append(args[index])
+        try:
+            var request = parse_profile_help_arguments(rewritten, 2, executable)
+            if request.help:
+                print(top_level_profile_use_help(executable), end="")
+                return
+        except error:
+            var message = String(error).replace(
+                "Usage: " + executable + " profile use",
+                "Usage: " + executable + " use",
+            )
+            print(message, file=stderr, end="")
+            exit(2)
+            return
+        print("Error: this Modex development build has not implemented the requested command", file=stderr)
+        exit(1)
+        return
     if len(args) >= 3 and args[1] == "help" and args[2] == "profile":
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])
@@ -57,6 +79,22 @@ def main():
                 return
         except error:
             print(error, file=stderr, end="")
+            exit(2)
+            return
+    if len(args) >= 3 and args[1] == "help" and args[2] == "use":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        try:
+            var request = parse_profile_help_arguments(args, 2, executable, True)
+            if request.help:
+                print(top_level_profile_use_help(executable), end="")
+                return
+        except error:
+            var message = String(error).replace(
+                "Usage: " + executable + " profile use",
+                "Usage: " + executable + " use",
+            )
+            print(message, file=stderr, end="")
             exit(2)
             return
     if len(args) >= 3 and args[1] == "help" and args[2] == "update":

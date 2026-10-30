@@ -181,6 +181,17 @@ Options:
     return String()
 
 
+def top_level_profile_use_help(executable: String) -> String:
+    return _profile_executable(String("""Set the active profile used by commands that omit --profile.
+
+Usage: prodex use [OPTIONS]
+
+Options:
+  -p, --profile <NAME>  Profile name. If omitted, prodex uses the active profile
+  -h, --help            Print help
+"""), executable)
+
+
 def profile_short_help(command: String, executable: String) -> String:
     if command == "add":
         return _profile_executable(String("""Add a profile entry and optionally seed it from another CODEX_HOME

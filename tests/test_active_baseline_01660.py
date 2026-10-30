@@ -50,6 +50,14 @@ def normalize_super_cli_executable(output):
     return output
 
 
+def normalize_use_executable(output, baseline_executable, executable):
+    return output.replace(
+        b"Usage: " + baseline_executable.encode() + b" use",
+        b"Usage: " + executable.encode() + b" use",
+        1,
+    )
+
+
 class ActiveBaseline01660Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -396,6 +404,55 @@ class ActiveBaseline01660Tests(unittest.TestCase):
                      normalize_super_cli_executable(baseline.stderr)),
                 )
                 self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_top_level_use_help_and_invalid_help_order_match_without_state_changes(self):
+        cases = (
+            (("use", "--help"), 0),
+            (("use", "-h"), 0),
+            (("help", "use"), 0),
+            (("use", "--profile", "synthetic", "--help"), 0),
+            (("use", "--profile=synthetic", "--help"), 0),
+            (("use", "--help", "ignored"), 0),
+            (("use", "--bogus", "--help"), 2),
+            (("use", "--profile"), 2),
+            (("use", "--profile", "--help"), 2),
+            (("use", "synthetic", "--help"), 2),
+            (("help", "use", "--help"), 2),
+        )
+        for arguments, expected_status in cases:
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_super_cli(ORACLE, arguments, "prodex")
+                modex, modex_created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual((baseline.returncode, modex.returncode),
+                                 (expected_status, expected_status))
+                self.assertEqual(
+                    (modex.stdout, modex.stderr),
+                    (normalize_use_executable(baseline.stdout, "prodex", "modex"),
+                     normalize_use_executable(baseline.stderr, "prodex", "modex")),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        baseline, baseline_created = isolated_super_cli(
+            ORACLE, ("use", "--help"), "custom-prodex"
+        )
+        modex, modex_created = isolated_super_cli(
+            MODEX, ("use", "--help"), "custom-modex"
+        )
+        self.assertEqual((baseline.returncode, modex.returncode), (0, 0))
+        self.assertEqual(
+            (modex.stdout, modex.stderr),
+            (normalize_use_executable(baseline.stdout, "custom-prodex", "custom-modex"),
+             baseline.stderr),
+        )
+        self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_top_level_use_operation_remains_guarded_without_state_changes(self):
+        for arguments in (("use",), ("use", "--profile", "synthetic")):
+            with self.subTest(arguments=arguments):
+                result, created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual(result.returncode, 1)
+                self.assertIn(b"has not implemented the requested command", result.stderr)
+                self.assertEqual(created, [])
 
     def test_doctor_invalid_arguments_match_release_without_help(self):
         cases = (

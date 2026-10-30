@@ -246,6 +246,9 @@ and acquires lifecycle and update locks; Modex remains fail-closed without
 creating state. Housekeeping files can appear asynchronously. This is a
 characterized gap, not a completed profile-list slice; see
 `docs/evidence/baseline-0.166.0/profile-list-empty-store.md`.
+The top-level `use` help and selected argument diagnostics now match the
+active release without state changes; profile selection remains guarded. See
+`docs/evidence/baseline-0.166.0/profile-use-help.md`.
 
 A full isolated `make test` finished against exact Modex commit
 `94b514c2fe3992a9f2219b035746820f8fe17161`, with the verified 0.166.0 oracle

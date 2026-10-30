@@ -128,11 +128,14 @@ been corrected, and their five focused cases pass; the running older snapshot
 cannot validate those corrections. The installed Prodex and Codex executables
 are not replaced.
 
-A second full run starts from exact commit
+A second full run used exact commit
 `418afa07d24d6c89abdc508f55ef287258302dab`, including the fixture corrections
-and custom-tool change, in `/tmp/modex-01660-full-418afa0` (make PID 936634;
-log `/tmp/modex-01660-full-418afa0.log`). It has not finished and is not a
-pass.
+and custom-tool change, in `/tmp/modex-01660-full-418afa0`. Its log reports
+1,186 Python tests passed in 3,443.472 seconds and the native checks completed;
+the original shell exit status was not retained. The log is
+`/tmp/modex-01660-full-418afa0.log`, SHA-256
+`0ac6167a1ef120853367905442819d02cd91b58905fb08ece16455ee9430fff7`.
+This is evidence for that snapshot, not a full-suite result for later commits.
 
 A third full run starts from exact commit
 `b04873c96f55db20151e2c284144824ec470c3aa` in

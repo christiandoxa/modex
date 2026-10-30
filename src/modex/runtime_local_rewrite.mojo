@@ -20,7 +20,7 @@ from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnecti
 from .log_operational import decode_url_host, valid_ipv6_literal, valid_url_authority
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_model_retry_available, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_api_key_response, deepseek_retryable_model_response
 from .provider_conversations import ProviderConversationStore
-from .provider_anthropic_messages import anthropic_auto_chat_fallback_safe, anthropic_search_filters_conflict, deepseek_anthropic_messages_body
+from .provider_anthropic_messages import anthropic_auto_chat_fallback_safe, anthropic_request_incompatible, anthropic_search_filters_conflict, deepseek_anthropic_messages_body
 from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
 from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
@@ -882,7 +882,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                 _ = deepseek_anthropic_messages_body(translated)
             except error:
                 var reason = String(error)
-                if reason == "Anthropic Messages slice requires a user or assistant message" or reason == "Anthropic tool function arguments must be valid JSON":
+                if anthropic_request_incompatible(reason):
                     connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
                     return
                 elif anthropic_auto_chat_fallback_safe(reason):
@@ -917,7 +917,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         var exchange_path = messages_path if web else (beta_path if strict_tools else path)
         exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[0])
     except error:
-        if web and (String(error) == "Anthropic Messages slice requires a user or assistant message" or String(error) == "Anthropic tool function arguments must be valid JSON"):
+        if web and anthropic_request_incompatible(String(error)):
             connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
         else:
             _reply(connection, 502, "upstream request failed")
@@ -933,7 +933,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                     var exchange_path = messages_path if web else (beta_path if strict_tools else path)
                     exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[model_index])
                 except error:
-                    if web and (String(error) == "Anthropic Messages slice requires a user or assistant message" or String(error) == "Anthropic tool function arguments must be valid JSON"):
+                    if web and anthropic_request_incompatible(String(error)):
                         connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
                     else:
                         _reply(connection, 502, "upstream request failed")

@@ -135,6 +135,10 @@ def anthropic_auto_chat_fallback_safe(reason: String) -> Bool:
     )
 
 
+def anthropic_request_incompatible(reason: String) -> Bool:
+    return reason in ["Anthropic Messages slice requires a user or assistant message", "Anthropic tool function arguments must be valid JSON", "Anthropic tool function arguments must be a JSON object"]
+
+
 def _has_both_domain_filters(doc: JsonDocument, node: Int) -> Bool:
     return node >= 0 and doc.nodes[node].kind == JSON_OBJECT and doc.get(node, "allowed_domains") >= 0 and doc.get(node, "blocked_domains") >= 0
 
@@ -246,11 +250,15 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
                 if name < 0 or doc.nodes[name].kind != JSON_STRING or not doc.nodes[name].text or arguments < 0 or doc.nodes[arguments].kind != JSON_STRING:
                     raise Error("Anthropic tool function requires a name and JSON arguments")
                 var parsed_arguments_json: String
+                var arguments_are_object: Bool
                 try:
                     var parsed_arguments = JsonDocument(doc.nodes[arguments].text)
+                    arguments_are_object = parsed_arguments.nodes[parsed_arguments.root].kind == JSON_OBJECT
                     parsed_arguments_json = serialize_json(parsed_arguments, parsed_arguments.root)
                 except:
                     raise Error("Anthropic tool function arguments must be valid JSON")
+                if not arguments_are_object:
+                    raise Error("Anthropic tool function arguments must be a JSON object")
                 content_parts.append('{"type":"tool_use","id":' + serialize_json(doc, call_id) + ',"name":' + serialize_json(doc, name) + ',"input":' + parsed_arguments_json + "}")
     if not has_message:
         raise Error("Anthropic Messages slice requires a user or assistant message")

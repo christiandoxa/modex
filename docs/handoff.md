@@ -1,5 +1,11 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Mixed Anthropic tool history now requires function arguments to decode to a
+JSON object, matching the active release's pre-provider HTTP 400 for arrays,
+scalars and null. The separate OpenAI Chat route retains its observed behavior.
+Active process comparisons cover both Anthropic modes and Chat controls; see
+`docs/evidence/baseline-0.166.0/anthropic-tool-argument-object.md`.
+
 Bodyless 204 and 304 DeepSeek SSE passthrough responses now advertise
 `Connection: close` along with chunked framing, matching the active release.
 The focused raw-socket comparison also verifies that both implementations

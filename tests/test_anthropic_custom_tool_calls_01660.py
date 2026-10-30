@@ -5,6 +5,8 @@ import json
 import unittest
 
 from test_active_baseline_01660 import MODEX, ORACLE, ORACLE_SHA256
+from test_deepseek_continuation import buffered_reply, observe_turns
+from test_local_rewrite import json_bytes
 from test_provider_tools_04392_characterization import _run
 
 
@@ -114,6 +116,39 @@ class AnthropicCustomToolCalls01660Tests(unittest.TestCase):
                     self.assertEqual((result["exit_code"], result["status"]), (1, 502))
                     self.assertEqual(result["upstream"], [])
                 self.assertEqual(actual["response_body"], reference["response_body"])
+
+    def test_function_history_requires_object_arguments_on_anthropic_route(self):
+        anthropic_reply = {"status": 200, "content_type": "application/json", "body": json_bytes({
+            "id": "msg_synthetic", "type": "message", "role": "assistant", "model": "deepseek-chat",
+            "content": [{"type": "text", "text": "synthetic reply"}], "stop_reason": "end_turn",
+            "usage": {"input_tokens": 1, "output_tokens": 1},
+        })}
+        cases = [(mode, arguments, 400) for mode in ("auto", "anthropic")
+                 for arguments in ("[]", "null", "true", "17", '"synthetic"', "{bad")]
+        cases += [(mode, "{}", 200) for mode in ("auto", "anthropic")]
+        cases += [("openai_chat", arguments, 200) for arguments in ("[]", "{bad")]
+        for mode, arguments, status in cases:
+            turn = {"model": "deepseek-chat", "tools": [{"type": "web_search_preview"}], "input": [
+                {"type": "function_call", "call_id": "call_synthetic", "name": "lookup",
+                 "arguments": arguments},
+                {"type": "function_call_output", "call_id": "call_synthetic", "output": "synthetic result"},
+            ]}
+            observations = []
+            for binary in (ORACLE, MODEX):
+                with self.subTest(mode=mode, arguments=arguments, reference=binary == ORACLE):
+                    posts, responses = observe_turns(
+                        binary, [turn], [buffered_reply() if mode == "openai_chat" else anthropic_reply],
+                        latest_version="0.166.0", shared_config=f'[deepseek]\nweb_search_mode = "{mode}"\n',
+                    )
+                    self.assertEqual([response["status"] for response in responses], [status])
+                    self.assertEqual([post["path"] for post in posts],
+                                     [] if status == 400 else ["/v1/chat/completions" if mode == "openai_chat" else "/anthropic/v1/messages"])
+                    if status == 400:
+                        observations.append(bytes.fromhex(responses[0]["body"]))
+                    else:
+                        observations.append(json.loads(posts[0]["body"]))
+            self.assertEqual(len(observations), 2)
+            self.assertEqual(observations[0], observations[1])
 
 
 if __name__ == "__main__":

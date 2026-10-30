@@ -60,6 +60,9 @@ cookie store and release metadata synchronization path. An existing Modex
 local-rewrite process test returns 426 for the tested WebSocket upgrades and
 makes no upstream request. Commands and scope are in
 `docs/evidence/baseline-0.166.0/guardian-and-release.md`.
+The pinned upstream Codex compatibility-baseline guard and five offline
+capture/replay fixture checks also passed. They do not exercise Modex or
+establish compatibility with the installed Codex 0.165.0.
 
 # Historical work: Prodex 0.439.2 parity and CI
 

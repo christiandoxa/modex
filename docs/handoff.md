@@ -1,5 +1,11 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Invalid post-`exec` `--rollout-budget-reminders` values now report the same
+comma-separated-integer error as both release processes. The focused test
+also retains the release/Modex startup-lock side-effect difference and checks
+a valid reminder list; Modex's valid launch path remains guarded. See
+`docs/evidence/baseline-0.165.1/super-rollout-reminder-element-errors.md`.
+
 For pre-command `--rollout-budget-reminders` lists, invalid comma-separated
 elements now appear individually in the diagnostic, matching both 0.165.1
 and 0.439.2. Four malformed lists were compared through real isolated CLI

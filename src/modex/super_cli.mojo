@@ -290,7 +290,13 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
     if name == "--rollout-budget-reminders":
         for threshold in value.split(","):
             var element = String(threshold)
-            _validate_unsigned_value(name, element, element, clap_diagnostic)
+            if clap_diagnostic:
+                _validate_unsigned_value(name, element, element, clap_diagnostic)
+            else:
+                try:
+                    _ = unsigned_value(element)
+                except error:
+                    raise Error("expected comma-separated unsigned integers")
     return value
 
 

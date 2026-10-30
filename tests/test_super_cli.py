@@ -177,6 +177,72 @@ class SuperCliTests(unittest.TestCase):
                 self.assertEqual(outputs[0], outputs[1])
                 self.assertEqual(outputs[1], outputs[2])
 
+    def test_positional_rollout_budget_reminder_error_preserves_state_effects(self):
+        self.assertEqual(hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest(), ORACLE_01651_SHA256)
+        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        binaries = (ORACLE_01651, ORACLE, MODEX)
+        expected_managed = {
+            ORACLE_01651.resolve(): (
+                {"state/profile-lifecycle.json.lock", "state/runtime-housekeeping.lock",
+                 "state/update-check-codex-aligned-v1.json", "state/update-check.json"},
+                {"state/runtime-housekeeping.last-run"},
+            ),
+            ORACLE.resolve(): (
+                {"state/profile-lifecycle.json.lock", "state/runtime-housekeeping.lock",
+                 "state/update-check.json"},
+                {"state/runtime-housekeeping.last-run"},
+            ),
+            MODEX.resolve(): ({"state/update-check.json"}, set()),
+        }
+        for value in ("1,,2", "1,invalid,2"):
+            with self.subTest(value=value):
+                outputs = []
+                for binary in binaries:
+                    result, records, upstream, state = run_private_launch(
+                        binary, scenario="exit-seven",
+                        codex_arguments=(
+                            "exec", "--rollout-budget-tokens", "100",
+                            "--rollout-budget-reminders", value,
+                        ),
+                    )
+                    self.assertEqual((result.returncode, result.stdout), (1, b""))
+                    self.assertEqual(result.stderr, b"Error: expected comma-separated unsigned integers\n")
+                    self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                    self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+                    required, optional = expected_managed[Path(binary).resolve()]
+                    observed = set(state["managed"])
+                    self.assertTrue(required <= observed, (str(binary), required, observed))
+                    self.assertLessEqual(observed - required, optional, (str(binary), observed))
+                    outputs.append((result.returncode, result.stdout, result.stderr))
+                self.assertEqual(outputs[0], outputs[1])
+                self.assertEqual(outputs[1], outputs[2])
+
+        valid_arguments = (
+            "exec", "--rollout-budget-tokens", "100",
+            "--rollout-budget-reminders", "1,2", "synthetic prompt",
+        )
+        for binary in (ORACLE_01651, ORACLE):
+            result, records, upstream, state = run_private_launch(
+                binary, scenario="exit-seven", codex_arguments=valid_arguments,
+            )
+            launch = next(record for record in records if record["kind"] == "launch")
+            self.assertEqual((result.returncode, result.stdout), (7, b""))
+            self.assertIn(
+                'features.rollout_budget.reminder_at_remaining_tokens=[2,1]', launch["args"],
+            )
+            self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+            self.assertEqual((upstream, state["leftovers"]), ([], []))
+
+        result, records, upstream, state = run_private_launch(
+            MODEX, scenario="exit-seven", codex_arguments=valid_arguments,
+        )
+        self.assertEqual((result.returncode, result.stdout), (1, b""))
+        self.assertIn(b"Super startup is not implemented", result.stderr)
+        self.assertNotIn(b"expected comma-separated unsigned integers", result.stderr)
+        self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+        self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+        self.assertEqual(state["managed"], ["state/update-check.json"])
+
     def test_unavailable_startup_fails_before_side_effects_and_keeps_keys_private(self):
         sentinel = "synthetic-key-never-print-this"
         for arguments in (

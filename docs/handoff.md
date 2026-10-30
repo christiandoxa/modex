@@ -1,5 +1,15 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The integrated production build at `2e7dcc8` and native Super parser test
+passed. Focused three-process float and Anthropic result-ID tests passed;
+both large-header release comparisons passed on the preceding combined relay
+revision. The 25-test dry-run module and Gateway fixture checks passed after
+their changes. The dependency audit, test census, oracle routing and workflow
+validation also passed. A fresh full `make test` is running from an isolated
+`2e7dcc8` worktree; its log is `/tmp/modex-full-2e7dcc8-20261030.log` and no
+full-suite result is claimed yet. The older runs retain the fixture failures
+documented below.
+
 The older full-suite runs also reported Gateway classification failures from
 the same release-specific update-cache mismatch. The Gateway fixture now seeds
 the aligned 0.165.1 cache filename for that oracle and a non-newer synthetic

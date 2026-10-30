@@ -131,9 +131,13 @@ backlog. See
 
 The local rewrite adapter's 426 WebSocket fallback matches its selected
 0.165.1 behavior and rejects a valid upgrade after headers without reading a
-declared body. Conflicting content lengths remain a stricter Modex 502 versus
-the release 426 fallback. The separate runtime-proxy route requires bounded idle
-WebSocket parking, independently reclaimed handshake capacity,
+declared body. With conflicting content lengths, `Connection: Upgrade` plus
+`Upgrade: websocket` now gets the same 426 before body capture; invalid targets
+still return 400 and unsupported expectations still return 417. Modex closes
+the connection on that fallback. Other ambiguous framing remains fail-closed.
+A WebSocket header without `Connection: Upgrade` stays stricter Modex 502 and
+close versus release 426 and reuse. The separate runtime-proxy route requires
+bounded idle WebSocket parking, independently reclaimed handshake capacity,
 message-level admission, connection-owned interruption, and acknowledgement
 ordering. Modex has no production WebSocket transport; these requirements
 remain unimplemented and unverified on all six targets. The pinned release

@@ -2830,8 +2830,50 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             "websocket_ambiguous_framing_precedes_upgrade_fallback",
             b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
             b"Connection: Upgrade\r\nUpgrade: websocket\r\n"
+            b"Authorization: Bearer synthetic-websocket-key\r\n"
+            b"Content-Length: 0\r\nContent-Length: 100\r\n\r\n"
+            + request_bytes(headers=(("Connection", "close"),)),
+        )
+        invalid_target_framing_case = raw_expectation_case(
+            "websocket_ambiguous_framing_keeps_invalid_target_precedence",
+            b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Connection: Upgrade\r\nUpgrade: websocket\r\n"
             b"Content-Length: 0\r\nContent-Length: 100\r\n\r\n",
         )
+        unsupported_expect_framing_case = raw_expectation_case(
+            "websocket_ambiguous_framing_keeps_unsupported_expect_precedence",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Connection: Upgrade\r\nUpgrade: websocket\r\nExpect: 100-wait\r\n"
+            b"Content-Length: 0\r\nContent-Length: 100\r\n\r\n",
+        )
+        missing_connection_upgrade_case = raw_expectation_case(
+            "websocket_header_without_connection_upgrade_stays_fail_closed",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Upgrade: websocket\r\nContent-Length: 0\r\n"
+            b"Content-Length: 100\r\n\r\n",
+        )
+        missing_connection_upgrade_case["expected_connection_closed"] = {
+            "0.165.1": False, "0.439.2": False, "Modex": True,
+        }
+        non_websocket_upgrade_case = raw_expectation_case(
+            "ambiguous_framing_h2c_upgrade_does_not_use_websocket_fallback",
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Connection: Upgrade\r\nUpgrade: h2c\r\n"
+            b"Content-Length: 0\r\nContent-Length: 100\r\n\r\n",
+            half_close=True,
+        )
+        non_websocket_upgrade_case["expected_connection_closed"] = {
+            "0.165.1": True, "0.439.2": True, "Modex": True,
+        }
+        for case in (
+            ambiguous_framing_case,
+            invalid_target_framing_case,
+            unsupported_expect_framing_case,
+            non_websocket_upgrade_case,
+        ):
+            case["expected_connection_closed"] = {
+                "0.165.1": True, "0.439.2": True, "Modex": True,
+            }
         scenarios = (
             (websocket_upgrade_declared_body_case(), {
                 "0.165.1": (426, WEBSOCKET_FALLBACK),
@@ -2851,6 +2893,26 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             (ambiguous_framing_case, {
                 "0.165.1": (426, WEBSOCKET_FALLBACK),
                 "0.439.2": (426, WEBSOCKET_FALLBACK),
+                "Modex": (426, WEBSOCKET_FALLBACK),
+            }),
+            (invalid_target_framing_case, {
+                "0.165.1": (400, INVALID_REQUEST_TARGET_BODY),
+                "0.439.2": (400, INVALID_REQUEST_TARGET_BODY),
+                "Modex": (400, INVALID_REQUEST_TARGET_BODY),
+            }),
+            (unsupported_expect_framing_case, {
+                "0.165.1": (417, b""),
+                "0.439.2": (417, b""),
+                "Modex": (417, b""),
+            }),
+            (missing_connection_upgrade_case, {
+                "0.165.1": (426, WEBSOCKET_FALLBACK),
+                "0.439.2": (426, WEBSOCKET_FALLBACK),
+                "Modex": (502, b"gateway request capture failed"),
+            }),
+            (non_websocket_upgrade_case, {
+                "0.165.1": (502, b"upstream request failed"),
+                "0.439.2": (502, b"upstream request failed"),
                 "Modex": (502, b"gateway request capture failed"),
             }),
         )
@@ -2895,6 +2957,14 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                         )
                         self.assertEqual(response["read_error"], "")
                         self.assertEqual(response["request_parts_sent_at_response"], 1)
+                        if case is ambiguous_framing_case:
+                            self.assertNotIn(b"synthetic-websocket-key", response["stdout"])
+                            self.assertNotIn(b"synthetic-websocket-key", response["stderr"])
+                        if "expected_connection_closed" in case:
+                            self.assertEqual(
+                                response["connection_closed"],
+                                case["expected_connection_closed"][label],
+                            )
                         self.assertEqual(response["interim_statuses"], [])
                         self.assertTrue(response["raw_response_head"].endswith(b"\r\n\r\n"))
                         dates = [

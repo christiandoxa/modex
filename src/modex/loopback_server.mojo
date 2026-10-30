@@ -332,7 +332,7 @@ struct LoopbackHTTPConnection(Movable):
         var max_request_line_bytes = HTTP_HEADER_LIMIT if validate_request_target else 8192
         if use_request_version_for_response:
             self.response_version = _request_line_version(self.input, max_request_line_bytes, tiny_http_request_line_compat)
-        var head = _parse_request_head(self.input, header_end, allow_upgrade_headers, max_request_line_bytes, defer_expectation_errors, tiny_http_request_line_compat)
+        var head = _parse_request_head(self.input, header_end, allow_upgrade_headers, max_request_line_bytes, defer_expectation_errors, tiny_http_request_line_compat, validate_request_target)
         self.request_head_parsed = True
         self.request_body_deferred = defer_expectation_errors and (head.expect_continue or head.chunked or head.length > HTTP_DEFERRED_BODY_THRESHOLD)
         self.head_request = head.method == "HEAD"
@@ -642,7 +642,7 @@ struct ParsedRequestHead(Movable):
     var unsupported_expectation: Bool
 
 
-def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Bool, max_request_line_bytes: Int, defer_expectation_errors: Bool = False, tiny_http_request_line_compat: Bool = False) raises -> ParsedRequestHead:
+def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Bool, max_request_line_bytes: Int, defer_expectation_errors: Bool = False, tiny_http_request_line_compat: Bool = False, validate_request_target: Bool = False) raises -> ParsedRequestHead:
     var head = _ascii(bytes, 0, end)
     var lines = head.split("\r\n")
     if not lines or lines[0].byte_length() > max_request_line_bytes:
@@ -692,6 +692,7 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
     var unsupported_expectation = False
     var deferred_error = String()
     var has_connection_upgrade = False
+    var has_websocket_upgrade = False
     var has_non_websocket_upgrade = False
     var offset = lines[0].byte_length() + 2
     for index in range(1, len(lines)):
@@ -793,6 +794,8 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
                 raise Error("HTTP protocol upgrades are unsupported")
             if value.lower() != "websocket":
                 has_non_websocket_upgrade = True
+            else:
+                has_websocket_upgrade = True
         if append_header:
             headers.append((name, value))
     if has_content_length and has_transfer_encoding and not deferred_error:
@@ -801,6 +804,14 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
         if unsupported_expectation:
             return ParsedRequestHead(String(request_line[0]), String(request_line[1]), version, headers^, content_length, chunked, expect_continue, True)
         if deferred_error:
+            if validate_request_target:
+                if malformed_target:
+                    raise Error("malformed HTTP request target")
+                if not request_target_valid(String(request_line[1])):
+                    raise Error("invalid HTTP request target")
+            # Reject this unsupported route before reading its ambiguous body.
+            if allow_upgrade_headers and not malformed_suffix and not malformed_target and has_websocket_upgrade and has_connection_upgrade:
+                raise Error("websocket upgrade fallback")
             raise Error(deferred_error)
         if malformed_suffix:
             raise Error("malformed HTTP request line suffix")

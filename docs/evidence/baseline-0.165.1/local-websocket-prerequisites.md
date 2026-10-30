@@ -188,10 +188,22 @@ their earlier 400 and 417 errors. A checksum-pinned process test sends only
 the header block with `Content-Length: 100`; 0.165.1, 0.439.2, and Modex return
 complete responses without any body bytes or upstream request. It compares
 status, normalized response headers except generated `Date`, and the complete
-body. It does not assert socket-close timing or claim a `Connection: close`
-contract. The test also records the strict framing divergence: for conflicting
-content lengths, Modex rejects the request with 502 before its WebSocket
-fallback, while both releases return 426. See
+body.
+
+The process comparison also covers conflicting `Content-Length: 0` and
+`Content-Length: 100`. For a valid target with `Connection: Upgrade` and
+`Upgrade: websocket`, Modex now returns the same 426 fallback as both releases
+before reading a body. The response closes the connection, so a pipelined
+second request cannot be reused
+and is not forwarded to the provider. A synthetic Authorization header does
+not appear in response or diagnostics. Invalid targets still take precedence
+with 400, and unsupported `Expect` still takes precedence with 417. An `h2c`
+upgrade retains the 502 error and does not reach the provider.
+
+For `Upgrade: websocket` without `Connection: Upgrade`, both releases return
+426 and leave the socket open; Modex rejects the ambiguous framing with 502 and
+closes it. This stricter rejection preserves the framing boundary. Ambiguous
+framing without a recognized WebSocket upgrade remains fail-closed. See
 `test_websocket_upgrade_rejects_before_reading_declared_body` in
 `tests/test_local_rewrite_01651_oracle.py`.
 

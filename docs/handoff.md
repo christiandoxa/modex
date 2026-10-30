@@ -4448,3 +4448,25 @@ passed on Linux x86-64. This qualifies only the listed request shapes; other
 Anthropic behavior, targets, and the six-release parity denominator remain
 unchanged. See
 `docs/evidence/baseline-0.165.1/anthropic-web-search-duplicate-selection.md`.
+
+## Local relay WebSocket framing precedence (2026-10-30)
+
+The relay now returns the 426 fallback before body parsing when a request with
+both `Connection: Upgrade` and `Upgrade: websocket` has conflicting
+Content-Length fields. This matches both pinned Linux releases and closes the
+connection, so an appended pipeline request is not reused or dispatched. A
+synthetic Authorization header
+is not reflected. Invalid target and unsupported `Expect` precedence remain
+400 and 417; non-WebSocket `h2c` framing remains fail-closed with no upstream
+dispatch. For a WebSocket header without `Connection: Upgrade`, the releases
+leave the connection open after 426, while Modex returns 502 and closes it to
+protect the ambiguous framing boundary.
+
+The check used the production Super relay with checksum-pinned 0.165.1 and
+0.439.2 processes, isolated homes and loopback peers. The focused real-process
+tests and production build pass on Linux x86-64. The distinct admission
+fairness mismatch under a saturated bounded pool remains open; no idle or
+partial client eviction rule changed. Other malformed framing and all six
+release targets remain unqualified. See
+`docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md` and
+`docs/evidence/baseline-0.439.2/local-relay-websocket-framing.md`.

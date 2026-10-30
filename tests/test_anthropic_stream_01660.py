@@ -158,6 +158,80 @@ class AnthropicStream01660Tests(unittest.TestCase):
             with self.subTest(case=name):
                 self._assert_process_pair(*observations)
 
+    def test_tool_completion_waits_for_string_stop_reason(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic tool request",
+            "stream": True,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        cases = (
+            ("missing", {}, True, False),
+            ("null", {"stop_reason": None}, True, False),
+            ("non-string", {"stop_reason": 7}, True, False),
+            ("string control", {"stop_reason": "tool_use"}, False, False),
+            ("incomplete arguments at message_stop", {"stop_reason": None}, False, True),
+        )
+        for name, stop_delta, send_late_fragment, malformed_at_stop in cases:
+            arguments = '{"query":"early"}' if name == "string control" else '{"query":'
+            events = [
+                {"type": "message_start", "message": {
+                    "id": "msg_synthetic", "model": "deepseek-chat",
+                    "usage": {"input_tokens": 1, "output_tokens": 0},
+                }},
+                {"type": "content_block_start", "index": 0,
+                 "content_block": {"type": "tool_use", "id": "call_synthetic",
+                                   "name": "lookup", "input": {}}},
+                {"type": "content_block_delta", "index": 0,
+                 "delta": {"type": "input_json_delta", "partial_json": arguments}},
+                {"type": "message_delta", "delta": stop_delta,
+                 "usage": {"output_tokens": 1}},
+            ]
+            if send_late_fragment:
+                events.append({"type": "content_block_delta", "index": 0,
+                               "delta": {"type": "input_json_delta",
+                                         "partial_json": '"synthetic"}'}})
+            events.extend((
+                {"type": "content_block_stop", "index": 0},
+                {"type": "message_stop"},
+            ))
+            if malformed_at_stop:
+                events.append({"type": "content_block_delta", "index": 0,
+                               "delta": {"type": "input_json_delta",
+                                         "partial_json": '"late"}'}})
+
+            observations = []
+            results = []
+            for binary in (ORACLE, MODEX):
+                result = _run(
+                    binary, request, scenario="anthropic-custom-events",
+                    mode_override="anthropic", anthropic_events=events,
+                )
+                self.assertEqual((result["exit_code"], result["status"]), (0, 200), name)
+                self.assertEqual(len(result["upstream"]), 1, name)
+                self.assertEqual(result["upstream"][0]["path"], "/anthropic/v1/messages", name)
+                results.append(result)
+                observations.append((
+                    result["upstream"],
+                    [{"status": result["status"], "body": result["response_body"]}],
+                ))
+
+            with self.subTest(case=name):
+                self._assert_process_pair(*observations)
+                event_types = [
+                    item[1]["type"] for item in _normalized_events(results[0]["response_body"])
+                ]
+                self.assertEqual(event_types[-1],
+                                 "response.failed" if malformed_at_stop else "response.completed")
+                if malformed_at_stop:
+                    self.assertNotIn("response.function_call_arguments.delta",
+                                     event_types[event_types.index("response.failed") + 1:])
+                elif send_late_fragment:
+                    self.assertEqual(event_types.count("response.function_call_arguments.delta"), 2)
+                else:
+                    self.assertLess(event_types.index("response.output_item.done"),
+                                    event_types.index("response.completed"))
+
     def test_search_mode_environment_and_toml_match_active_release(self):
         request, reply = overlapping_search_result_case()
         configurations = (

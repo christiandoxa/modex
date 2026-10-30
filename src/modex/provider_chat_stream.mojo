@@ -308,11 +308,12 @@ struct DeepSeekChatState:
             var delta = doc.get(doc.root, "delta")
             var stop_reason = doc.get(delta, "stop_reason")
             # The release reads string stop_reason only and ignores stop_sequence.
+            var has_stop_reason = stop_reason >= 0 and doc.nodes[stop_reason].kind == JSON_STRING
             var usage = doc.get(doc.root, "usage")
             var output = json_unsigned(doc, doc.get(usage, "output_tokens"))
             if output: self.anthropic_output_tokens = output.value()
             self.anthropic_message_delta_seen = True
-            if stop_reason >= 0 and doc.nodes[stop_reason].kind == JSON_STRING:
+            if has_stop_reason:
                 var reason = doc.nodes[stop_reason].text
                 if reason == "tool_use":
                     self.finish_reason = Optional[String]("tool_calls")
@@ -326,11 +327,12 @@ struct DeepSeekChatState:
             if not self.created and self.anthropic_searches:
                 self.created = True
                 events.append(self.event("response.created", '"response":{"id":' + quote_json(self.response_id) + "}", True))
-            var failure = self.validate_tools()
-            if failure:
-                events.extend(self.fail("invalid_tool_call_arguments", failure.value()))
-            else:
-                events.extend(self.complete_tools())
+            if has_stop_reason:
+                var failure = self.validate_tools()
+                if failure:
+                    events.extend(self.fail("invalid_tool_call_arguments", failure.value()))
+                else:
+                    events.extend(self.complete_tools())
             return events^
         if kind == "message_stop":
             self.anthropic_stream_terminal = True

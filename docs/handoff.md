@@ -313,6 +313,14 @@ and broader Anthropic parity remain unqualified. The manual test requires an
 isolated network and private temporary storage; see
 `docs/evidence/baseline-0.166.0/anthropic-stream-query-fragments.md`.
 
+Anthropic tool streams now defer validation when `message_delta` has an absent,
+null, or non-string `stop_reason`, matching Prodex 0.166.0 until
+`message_stop`. The active process comparison also covers a string-reason
+control and malformed arguments rejected at `message_stop`; trailing frames
+are ignored after that final failure. Other Anthropic stream orders and broader
+provider parity remain open; see
+`docs/evidence/baseline-0.166.0/anthropic-stream-stop-reason.md`.
+
 DeepSeek streamed text-item IDs now use the 0.166.0 hash mapping for UUIDv7
 entropy and sequence, checked against fixed pinned-Rust vectors. The process
 comparison covers the ID shape and selected event consistency. Modex still

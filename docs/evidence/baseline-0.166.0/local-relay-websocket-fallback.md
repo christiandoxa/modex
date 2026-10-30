@@ -53,8 +53,10 @@ with explicit read-only binds after mounting the private tmpfs. It supports
 both `/tmp` and non-`/tmp` input layouts. The dedicated sandbox tests exercise
 these layouts and reject inputs overlapping writable scratch. Local evidence
 and scope limits are recorded in
-`docs/evidence/baseline-0.166.0/websocket-fallback-ci-sandbox.md`. No hosted CI
-run has validated this change yet; evidence remains limited to Linux x86-64.
+`docs/evidence/baseline-0.166.0/websocket-fallback-ci-sandbox.md`. Hosted Fast
+CI run `41120572378` passed the sandbox comparison on its recorded commit;
+the overall run failed closed on missing historical oracles. Evidence remains
+limited to Linux x86-64.
 
 ## Historical manual validation (2026-10-30)
 

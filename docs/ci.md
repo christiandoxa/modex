@@ -38,8 +38,10 @@ for required inputs below host `/tmp`, so those layouts are supported alongside
 ordinary worktree paths. `tests/test_ci_websocket_fallback_sandbox.py` checks
 both layouts and runs the real pinned-oracle comparison. Current local
 validation and its Linux x86-64 scope are documented in
-`docs/evidence/baseline-0.166.0/websocket-fallback-ci-sandbox.md`; no hosted run
-has validated the change yet.
+`docs/evidence/baseline-0.166.0/websocket-fallback-ci-sandbox.md`. Hosted Fast
+CI run [41120572378](https://github.com/christiandoxa/modex/actions/runs/41120572378)
+passed the sandbox module on commit `37c7812`; the overall run failed closed
+because historical 0.439.2 and 0.439.5 oracle assets were unavailable.
 
 The reference helper obtains the frozen 0.166.0 active release and the
 explicitly historical source snapshots outside the repository, verifies release and

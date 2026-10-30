@@ -29,7 +29,14 @@ open. The production build and dependency audit passed, and the focused
 root-help module covers the comparison and no-execution controls. See
 `docs/evidence/baseline-0.166.0/logout-help.md`.
 
-Hosted Fast CI run `41103940113` on `3fbf27876a53c45ffb544eb33b82d520a9571970`
+Hosted Fast CI run `41120572378` on `37c78129280c4c5666a5a1562b2f28201e9e127c`
+passed the three WebSocket sandbox tests, 115 active 0.166.0 tests, 52
+independent relay tests, 121 historical 0.165.1 tests, eight width-memory
+tests, and both helper shards. It failed closed because required historical
+0.439.2 and 0.439.5 oracles were unavailable. This does not qualify full CI,
+the missing historical lanes, or later commits.
+
+Earlier hosted Fast CI run `41103940113` on `3fbf27876a53c45ffb544eb33b82d520a9571970`
 passed its build and native checks, 102 active 0.166.0 Python tests, 52
 independent relay tests, 121 historical 0.165.1 tests, eight width-memory tests,
 and both helper shards. The product dependency audit passed for 73 Mojo files.
@@ -46,8 +53,8 @@ toolchain inputs read-only. Inputs below host `/tmp` are rebound explicitly;
 the manual preflight rejects writable `/tmp` search paths and scratch-path
 overlap. Its dedicated CI tests cover the real checksum-verified oracle
 comparison plus synthetic `/tmp` and normal host-path layouts. Local build,
-three focused tests, shell/workflow validation and the test census passed; no
-hosted run has validated this change yet. Details are in
+three focused tests, shell/workflow validation and the test census passed;
+hosted Fast CI run `41120572378` passed the sandbox module. Details are in
 `docs/evidence/baseline-0.166.0/websocket-fallback-ci-sandbox.md`.
 
 DeepSeek Super now percent-encodes ASCII spaces in numeric-loopback upstream
@@ -124,8 +131,8 @@ loopback-only networking, and it could not preserve Python or oracle inputs
 below host `/tmp`; direct host invocation failed before comparison. That setup
 is historical. Fast and Full CI now schedule the real-oracle comparison through
 the bubblewrap runner, which supports host `/tmp` inputs with explicit
-read-only binds. CI does not exclude the regression. Local checks passed, but
-hosted CI has not validated the change yet. This does not implement WebSocket
+read-only binds. CI does not exclude the regression. Local checks and the
+hosted sandbox module passed on the recorded commit. This does not implement WebSocket
 transport or qualify other targets. See
 `docs/evidence/baseline-0.166.0/local-relay-websocket-fallback.md` and
 `docs/evidence/baseline-0.166.0/websocket-fallback-ci-sandbox.md`.

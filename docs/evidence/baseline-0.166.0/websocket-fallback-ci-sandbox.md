@@ -43,7 +43,11 @@ Local validation on Linux x86-64:
 - `python3 scripts/ci/check-test-census.py` found one owner for all 50 native
   test sources and 182 Python test modules.
 
+Hosted Fast CI run [41120572378](https://github.com/christiandoxa/modex/actions/runs/41120572378)
+on `37c78129280c4c5666a5a1562b2f28201e9e127c` passed all three sandbox tests.
+It also passed the 115-test active lane, but the overall run failed closed for
+missing historical 0.439.2 and 0.439.5 oracles. These observations do not
+qualify the full CI run, later commits, or other release targets.
+
 The active oracle SHA-256 is
-`349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d09735`. These
-local checks do not establish a hosted CI result or broader parity beyond the
-tested Linux x86-64 slice.
+`349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d09735`.

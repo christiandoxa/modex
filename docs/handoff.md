@@ -39,10 +39,10 @@ scratch path is part of the handoff.
 The active target is official Prodex 0.166.0 at
 `9f69e1835808f478f59f12a3ae3fa88027d896a4`. Its Linux x86-64 release and
 SHA256SUMS have been verified; see
-`docs/evidence/baseline-0.166.0/reference-verification.json`. The installed
-`prodex` reports 0.165.1 and is not the active test oracle. Versions 0.165.1
-and 0.439.x are historical controls only. The installed Codex CLI reports
-0.165.0; Codex 0.166.0 compatibility is not established by that installation.
+`docs/evidence/baseline-0.166.0/reference-verification.json`. An installed
+`prodex` is separate from the pinned test oracle. Versions 0.165.1 and 0.439.x
+are historical controls only. Codex is also a separate installation; the
+isolated comparison uses the verified Codex 0.166.0 executable.
 Existing 0.439.2 acceptance routing
 was caused by the README and baseline pin, `test_cli.py` defaulting
 `PRODEX_ORACLE` to 0.439.2, and CI aliasing the active oracle/source to 0.439.2
@@ -127,6 +127,9 @@ the suffix while Modex masks it. Modex retains that safer behavior. An empty
 home session-list comparison also records missing startup locks and
 housekeeping in Modex. These are characterized gaps, not parity passes; see
 `docs/evidence/baseline-0.166.0/session-log-process-gaps.md`.
+An additional active-release comparison covers selected session output,
+filtering, timestamps and timezones; it does not qualify startup side effects
+or profile recovery. See `docs/evidence/baseline-0.166.0/session-output-matrix.md`.
 
 DeepSeek `low` reasoning effort now remains `low` in both request paths,
 matching 0.166.0 rather than the 0.439.2 mapping to `high`. Isolated process
@@ -185,8 +188,9 @@ check is scoped to that case; see
 
 The official historical 0.439.2 tag currently resolves to no ref and its
 SHA256SUMS URL returned 404 on 2026-10-30. Previously verified local bytes
-remain available, but fresh hosted runners cannot acquire that historical
-oracle until its official asset or a verified cache is provisioned. The
+are not present in the current oracle cache, and fresh hosted runners cannot
+acquire that historical oracle until its official asset or a verified cache is
+provisioned. The
 historical lane must fail closed rather than count a missing oracle as a pass.
 
 The 0.166.0 policy-capacity change is in the profile-backed Responses and

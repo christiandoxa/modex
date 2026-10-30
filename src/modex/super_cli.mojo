@@ -420,6 +420,8 @@ def validate_super_options(options: SuperOptions) raises:
         raise Error("context-window options require --provider or --url")
     if options.has("--sub-agent") and options.codex_args and options.codex_args[0] == "gui":
         raise Error("--sub-agent is unsupported with the Codex Desktop frontend")
+    if options.has("--cli") and options.value("--cli") == "agy" and options.value("--provider") != "gemini":
+        raise Error("--cli agy requires --provider gemini; use modex s gemini --cli agy")
 
 
 def _supported_exec_arguments(arguments: List[String]) -> Bool:

@@ -52,6 +52,11 @@ IDs and aliases before later help flags. The process test covers each alias,
 invalid separated/attached values and help precedence. A native test covers
 `LOCAL_OPENAI` normalization before the local URL requirement; delegated
 execution remains unimplemented.
+For `--cli agy`, selected missing or non-Gemini providers now receive the
+0.166.0 provider guard after existing option validation. Isolated comparisons
+cover four launch forms and selected error-precedence controls. Other conflict
+diagnostics differ, and the valid Gemini launcher remains unimplemented; see
+`tests/test_super_cli_01660.py`.
 Plain provider URL validation runs after help parsing but still before startup;
 see `docs/evidence/baseline-0.166.0/super-cli-validation.md` for the parser
 scope and test commands.

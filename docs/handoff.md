@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The combined production build at `b405bc2` passed, as did the focused
+three-process Codebase Memory, endpoint projection, and Anthropic empty-field
+tests, plus the large-header relay comparisons against each pinned release.
+The production import audit, 154-module test census, oracle-routing tests, and
+workflow validation passed. A full `make test` is running in the isolated
+`/tmp/modex-full-b405bc2-20261030` worktree; its log is
+`/tmp/modex-full-b405bc2-20261030.log`. An earlier full run on `c5609d0` is
+also still running. Neither run is a completed full-suite result yet.
+
 ## Codebase Memory PATH dry-run probe (2026-10-30)
 
 Super dry-run now reports a Codebase Memory executable found on `PATH` using

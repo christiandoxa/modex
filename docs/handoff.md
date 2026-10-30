@@ -69,6 +69,21 @@ CI helper modules on the same script line were not part of this process run.
 Some tests characterize known gaps or exercise Modex alone, so this result is
 not a full parity or full CI verdict.
 
+The local relay keeps an HTTP/1.x connection reusable after a 426 WebSocket
+fallback only when the request was fully captured with unambiguous fixed-length
+framing and no duplicate Connection or Upgrade fields. Manual active 0.166.0
+process comparisons cover contiguous and fragmented bodies, explicit
+zero-length bodies, a first request with `Connection: keep-alive`, an
+unauthorized follow-up, conflicting framing, and a truncated body. Modex
+separately rejects an unauthorized second request with 401 and closes on
+ambiguous framing; the oracle accepts those follow-ups, so those controls
+remain security-preserving differences. The probe is outside automatic test
+discovery and fast/full CI. Its preflight fails unless the private tmpfs and
+loopback-only network namespace are verified. Host `/tmp` path preservation for
+Python and the oracle is still unverified, so automation remains out. This does
+not implement WebSocket transport or qualify other targets. See
+`docs/evidence/baseline-0.166.0/local-relay-websocket-fallback.md`.
+
 Selected DeepSeek and Anthropic stream ordering cases now have active 0.166.0
 process comparisons, including partial errors and search-mode configuration.
 Two provider request bodies differ in object member order but match as

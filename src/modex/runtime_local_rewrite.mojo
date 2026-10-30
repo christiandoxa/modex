@@ -1061,8 +1061,22 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
                         websocket_upgrade = True
                         break
                 if websocket_upgrade:
-                    connection.keep_alive = False
-                    _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback", True)
+                    var reusable = connection.keep_alive
+                    var connection_headers = 0
+                    var upgrade_headers = 0
+                    for header in request.headers:
+                        var name = String(header[0]).lower()
+                        if name == "connection":
+                            connection_headers += 1
+                        elif name == "upgrade":
+                            upgrade_headers += 1
+                            if String(header[1]).lower() != "websocket":
+                                reusable = False
+                    if connection_headers > 1 or upgrade_headers > 1:
+                        reusable = False
+                    if not reusable:
+                        connection.keep_alive = False
+                    _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback", not reusable)
                 else:
                     _serve(connection, request, address, path, messages_address, messages_path, request_id, state_ptr, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
         except error:

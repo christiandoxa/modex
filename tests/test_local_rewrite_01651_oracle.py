@@ -3160,12 +3160,21 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                         self.assertNotIn(b"synthetic-websocket-key", response["stdout"])
                         self.assertNotIn(b"synthetic-websocket-key", response["stderr"])
                         if label == "Modex":
-                            self.assertEqual(
-                                [(item["status"], item["body"]) for item in response["pipelined_responses"]],
-                                [(426, WEBSOCKET_FALLBACK)],
-                            )
-                            self.assertEqual(response["read_error"], "RemoteDisconnected")
-                            self.assertEqual(records, [])
+                            if name == "valid_websocket_pipeline_without_connection_upgrade":
+                                self.assertEqual(
+                                    [(item["status"], item["body"]) for item in response["pipelined_responses"]],
+                                    [(426, WEBSOCKET_FALLBACK), (200, RESPONSES_RESPONSE)],
+                                )
+                                self.assertEqual(response["read_error"], "")
+                                self.assertEqual(len(records), 1)
+                                self.assertEqual(records[0]["path"], "/v1/chat/completions")
+                            else:
+                                self.assertEqual(
+                                    [(item["status"], item["body"]) for item in response["pipelined_responses"]],
+                                    [(426, WEBSOCKET_FALLBACK)],
+                                )
+                                self.assertEqual(response["read_error"], "RemoteDisconnected")
+                                self.assertEqual(records, [])
                         else:
                             self.assertEqual(
                                 (response["status"], response["body"]),

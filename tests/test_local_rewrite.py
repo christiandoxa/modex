@@ -811,8 +811,8 @@ class LocalRewriteTests(unittest.TestCase):
         expected = b"provider adapter requires HTTPS Responses transport fallback"
         body = b'{"model":"deepseek-chat","input":"synthetic websocket probe"}'
         requests = (
-            (b"Upgrade: WebSocket\r\n",),
-            (b"Connection: keep-alive\r\n", b"Upgrade: websocket\r\n"),
+            (b"Connection: close\r\n", b"Upgrade: WebSocket\r\n"),
+            (b"Connection: close\r\n", b"Upgrade: websocket\r\n"),
             (
                 b"Connection: keep-alive\r\n", b"Connection: Upgrade\r\n",
                 b"Upgrade: websocket\r\n",

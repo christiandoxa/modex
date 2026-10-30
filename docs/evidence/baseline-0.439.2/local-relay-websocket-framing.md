@@ -98,3 +98,13 @@ MODEX_BINARY="$PWD/build/modex" PYTHONPATH=tests python3 -m unittest -v \
 
 This qualifies the selected loopback controls only. Broader malformed framing,
 resource behavior, other targets, and all six release targets remain open.
+
+## Complete-frame reuse follow-up (2026-10-31)
+
+The active 0.166.0 comparison now covers the earlier unambiguous reuse gap:
+after a 426 fallback, Modex serves the next request when the first request was
+fully captured with fixed-length framing, a persistent connection, and no
+duplicate Connection or Upgrade fields. Explicit zero-length bodies follow the
+same bounded capture path. Conflicting or malformed framing still closes in
+Modex; those oracle differences remain unqualified. See
+`docs/evidence/baseline-0.166.0/local-relay-websocket-fallback.md`.

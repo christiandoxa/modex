@@ -374,7 +374,7 @@ struct LoopbackHTTPConnection(Movable):
             and not connection_upgrade
             and not head.expect_continue
             and not head.chunked
-            and head.length > 0
+            and head.length >= 0
             and head.length <= HTTP_DEFERRED_BODY_THRESHOLD
         )
         if defer_expectation_errors and websocket_upgrade and not tiny_http_preloads_websocket_body:

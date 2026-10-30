@@ -185,19 +185,20 @@ directory prefix and preserves its path-disclosure checks. All three pass under
 a nested temporary directory, and the two managed-tool cases also pass with the default.
 The completed snapshot cannot validate this later correction.
 
-A fourth full run starts from exact commit
+A fourth full run used exact commit
 `8993f0d2e74ffb1d82e57f847ad68937faed4324` in
 `/tmp/modex-01660-full-8993f0d`. It uses a cleared environment, a private
 user-owned `/tmp` and HOME, loopback-only networking with no default routes,
 and explicit active and historical binary and source paths, including the
-previously omitted 0.439.1 source. Its launcher PID is 2763309 and log is
-`/tmp/modex-01660-full-8993f0d.log`. It is still running and is not a pass;
-its user/mount/network namespace is a distinct test environment.
-It has reported a CLI regression fixture failure: the omitted-provider
+previously omitted 0.439.1 source. It exited 2 after 1,205 tests in 3,204.329
+seconds, with two failures and no reported skips. Its log is
+`/tmp/modex-01660-full-8993f0d.log`, SHA-256
+`5b0fa9d26b533e6cb73eba84f59dc1ba207dedf157203408a6b7446a6b221ca8`.
+It reported a CLI regression fixture failure: the omitted-provider
 Gateway now reaches its no-profile preflight, so that fixture's expected
 unimplemented-provider error was stale. The fixture now explicitly selects an
 unsupported provider and still checks that a synthetic key is not echoed; its
-two focused CLI tests pass. The running snapshot predates this correction.
+two focused CLI tests pass. The tested snapshot predates this correction.
 It also reported a historical dry-run assertion that assumed which of two
 existing-state guards would be encountered first. The test now accepts either
 fail-closed diagnostic while still requiring unchanged state; the valid and

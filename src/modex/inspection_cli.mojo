@@ -57,7 +57,7 @@ def inspection_unknown(argument: String, command: String, executable: String, se
             suggestion = "--" + candidates[len(candidates) - 1]
             message += "\n\n  tip: a similar argument exists: '" + suggestion + "'"
     var usage = inspection_usage(command, executable)
-    if flag and (seen or suggestion):
+    if flag and name.startswith("--") and (seen or suggestion):
         usage = _inspection_prefix(command, executable)
         for option in seen:
             usage += " " + inspection_label(option)

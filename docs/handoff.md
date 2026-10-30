@@ -12,6 +12,16 @@ replace this characterization with comparisons across representative input
 and error cases. This local fallback is separate from the unimplemented
 profile-backed remote compact 503 behavior.
 
+Active 0.166.0 process comparisons now cover unknown short options after valid
+`info` and `status` options. Modex preserves the full `[OPTIONS]` usage for
+these errors, matching the release; focused process cases also confirm current
+errors and long-option typo suggestions remain unchanged. See
+`docs/evidence/baseline-0.166.0/inspection-cli-unknown-short-usage.md`.
+A separate probe still finds an interval-error precedence mismatch for
+`status --interval bad --unknown --help` and
+`status --interval bad -- --interval --help`; those remain open and are not
+counted as parity.
+
 The 19 active-release process modules listed in `scripts/ci/run-fast.sh`
 passed 78 tests in 106.422 seconds against the verified 0.166.0 oracle on
 `a9d4ff15ea0eb714a3159185e3c327f22727cb2b`. The Modex executable SHA-256 was

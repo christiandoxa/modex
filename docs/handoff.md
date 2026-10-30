@@ -1,5 +1,9 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Doctor missing-requirement diagnostics match eight additional two-option
+0.166.0 cases. A three-option usage-order mismatch remains; see
+`docs/evidence/baseline-0.166.0/doctor-missing-requirement-order.md`.
+
 Buffered provider metadata matches the active 0.166.0 process for selected
 empty and whitespace fields, first-choice selection, and request metadata
 collisions. The historical 0.439.2 source has a different whitespace

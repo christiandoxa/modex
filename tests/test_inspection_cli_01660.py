@@ -116,6 +116,31 @@ class InspectionCli01660Tests(unittest.TestCase):
                                  (2, b"", expected_stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_doctor_missing_requirement_pairs_match_release(self):
+        cases = (
+            ("doctor", "--runtime", "--redacted"),
+            ("doctor", "--runtime", "--bundle"),
+            ("doctor", "--suggest-policy", "--redacted"),
+            ("doctor", "--redacted", "--suggest-policy"),
+            ("doctor", "--suggest-policy", "--bundle"),
+            ("doctor", "--bundle", "--suggest-policy"),
+            ("doctor", "--redacted", "--json"),
+            ("doctor", "--json", "--redacted"),
+        )
+        for index, arguments in enumerate(cases):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "prodex", f"01660-doctor-requires-oracle-{index}"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "modex", f"01660-doctor-requires-modex-{index}"
+                )
+                expected_stderr = baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex ")
+                self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
 
 if __name__ == "__main__":
     unittest.main()

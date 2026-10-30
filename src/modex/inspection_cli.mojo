@@ -182,12 +182,16 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
         raise session_cli_error(pending_interval_error)
     if command == "doctor":
         var missing = List[String]()
-        if ("--json" in seen or "--suggest-policy" in seen) and "--runtime" not in seen:
-            missing.append("--runtime")
-        if "--bundle" in seen and "--redacted" not in seen:
-            missing.append("--redacted")
-        if "--redacted" in seen and "--bundle" not in seen:
-            missing.append("--bundle")
+        for name in seen:
+            var requirement = String()
+            if name in ["--json", "--suggest-policy"] and "--runtime" not in seen:
+                requirement = "--runtime"
+            elif name == "--bundle" and "--redacted" not in seen:
+                requirement = "--redacted"
+            elif name == "--redacted" and "--bundle" not in seen:
+                requirement = "--bundle"
+            if requirement and requirement not in missing:
+                missing.append(requirement)
 
         if "--json" in seen and "--bundle" in seen:
             var conflict_usage = _inspection_prefix(command, executable)
@@ -215,19 +219,26 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
             for name in missing:
                 message += "\n  " + inspection_label(name)
             var error_usage = _inspection_prefix(command, executable)
-            var combined_json_bundle = "--runtime" in missing and "--bundle" in missing and "--json" in seen and "--redacted" in seen
-            if "--runtime" in missing:
-                error_usage += " --runtime"
+            var emitted = List[String]()
+            for requirement in missing:
+                if requirement == "--runtime":
+                    error_usage += " --runtime"
+                    emitted.append("--runtime")
+                elif requirement == "--redacted":
+                    error_usage += " " + inspection_label("--bundle") + " --redacted"
+                    emitted.append("--bundle")
+                    emitted.append("--redacted")
+                elif requirement == "--bundle":
+                    if "--redacted" in seen:
+                        error_usage += " --redacted " + inspection_label("--bundle")
+                        emitted.append("--redacted")
+                        emitted.append("--bundle")
+                    else:
+                        error_usage += " " + inspection_label("--bundle")
+                        emitted.append("--bundle")
             for name in seen:
-                if combined_json_bundle and name == "--json":
-                    continue
-                error_usage += " " + inspection_label(name)
-            if "--redacted" in missing:
-                error_usage += " --redacted"
-            if "--bundle" in missing:
-                error_usage += " " + inspection_label("--bundle")
-            if combined_json_bundle:
-                error_usage += " --json"
+                if name not in emitted:
+                    error_usage += " " + inspection_label(name)
             raise session_cli_error(message, error_usage)
     return False
 

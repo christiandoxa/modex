@@ -1,5 +1,17 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+A synthetic process comparison found that the DeepSeek local relay does not
+implement `POST /v1/responses/compact`: Modex returns 404, while 0.166.0
+returns a local fallback summary with `x-prodex-compact-*` headers and makes no
+upstream request. Empty input and one synthetic user message are covered by
+`tests/test_local_compact_gap_01660.py`; the test explicitly records the gap,
+not a parity pass. The release's summary preserves recent conversation/tool
+state and has truncation and formatting rules, so a placeholder summary could
+discard context. Implement the complete formatter and production route, then
+replace this characterization with comparisons across representative input
+and error cases. This local fallback is separate from the unimplemented
+profile-backed remote compact 503 behavior.
+
 The 19 active-release process modules listed in `scripts/ci/run-fast.sh`
 passed 78 tests in 106.422 seconds against the verified 0.166.0 oracle on
 `a9d4ff15ea0eb714a3159185e3c327f22727cb2b`. The Modex executable SHA-256 was

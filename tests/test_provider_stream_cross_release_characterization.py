@@ -9,6 +9,7 @@ import uuid
 import unittest
 
 from test_cli import MODEX
+from test_deepseek_continuation import observe_turns
 from test_provider_tools_04392_characterization import _normalized_events, _run
 
 
@@ -120,6 +121,56 @@ class ProviderStreamCrossReleaseCharacterizationTests(unittest.TestCase):
                 for observed in observations[1:]:
                     events = _normalize_fallback_tool_call_ids(_normalized_events(observed["response_body"]))
                     self.assertEqual(events, reference_events)
+
+    def test_deepseek_metadata_only_chat_chunk_matches_shared_releases(self):
+        request = {"model": "deepseek-chat", "input": "synthetic stream", "stream": True}
+        chunks = (
+            {
+                "id": "chatcmpl-synthetic-metadata",
+                "object": "chat.completion.chunk",
+                "created": 42,
+                "model": "deepseek-chat",
+                "system_fingerprint": "fp_synthetic",
+                "choices": [],
+                "usage": {"prompt_tokens": 3, "completion_tokens": 0, "total_tokens": 3},
+            },
+            {
+                "choices": [{"index": 0, "delta": {"content": "synthetic stream"}, "finish_reason": None}],
+            },
+            {
+                "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+            },
+        )
+        body = b"".join(
+            b"data: " + json.dumps(chunk, separators=(",", ":")).encode() + b"\n\n"
+            for chunk in chunks
+        ) + b"data: [DONE]\n\n"
+        reply = {"status": 200, "content_type": "text/event-stream", "body": body}
+        observations = [
+            observe_turns(binary, [request], [reply])
+            for binary in (self.oracle_01651, self.oracle_04392, MODEX)
+        ]
+
+        normalized = []
+        for upstream, responses in observations:
+            self.assertEqual(len(upstream), 1)
+            self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
+            self.assertEqual([response["status"] for response in responses], [200])
+            normalized.append(_normalized_events(bytes.fromhex(responses[0]["body"])))
+        self.assertEqual(normalized[1:], [normalized[0], normalized[0]])
+
+        self.assertEqual([name for name, _ in normalized[0]], [
+            "response.created",
+            "response.output_item.added",
+            "response.output_text.delta",
+            "response.output_item.done",
+            "response.completed",
+        ])
+        response = normalized[0][-1][1]["response"]
+        self.assertEqual(response["id"], "chatcmpl-synthetic-metadata")
+        self.assertEqual(response["model"], "deepseek-chat")
+        self.assertEqual(response["usage"], {"input_tokens": 3, "output_tokens": 0, "total_tokens": 3})
+        self.assertEqual(response["metadata"]["deepseek"]["system_fingerprint"], "fp_synthetic")
 
     def test_anthropic_message_delta_before_message_start_is_ignored(self):
         request = {

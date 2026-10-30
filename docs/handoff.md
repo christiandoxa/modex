@@ -33,6 +33,16 @@ locking/recovery, broader CLI behavior, security behavior, and the other five
 release targets remain open. Evidence:
 `docs/evidence/baseline-0.165.1/session-cli-precedence.md`.
 
+## DeepSeek metadata-only Chat stream chunk (2026-10-30)
+
+A synthetic loopback Chat Completions stream begins with a `choices: []` chunk
+containing ID, model, creation time, fingerprint, and usage, then sends text,
+`stop`, and `[DONE]`. A focused real-process comparison passed against pinned
+Prodex 0.165.1, Prodex 0.439.2, and Modex; event order and the final response
+metadata match. This qualifies only that stream shape on Linux x86-64 and does
+not reduce the six-release denominator. Details and reproduction:
+`docs/evidence/baseline-0.165.1/provider-chat-stream-shared-releases.md`.
+
 The combined production build at `dd82b3b` passed. Focused real-process
 redaction, numerically equal relay-length and duplicate web-search checks
 passed on that build; the dependency audit, 50-native/155-Python test census,

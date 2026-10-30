@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The `2e7dcc8` full run also reported a stale Super passthrough assertion: the
+synthetic upstream converted duplicate headers to a dictionary and expected
+only the caller's `Content-Type`. It now records all values and asserts the
+default and forwarded fields in release order. The focused buffered/binary
+passthrough and ordinary streamed-launch controls pass. One initial rerun
+used a nonexistent unittest method name and failed at test discovery; the
+corrected two-method rerun passed. The full run predates this test fix.
+
 Node and `npx` dry-run discovery now selects the first regular file on `PATH`,
 including a non-executable file that shadows later candidates. Synthetic
 three-process controls match both releases' readiness outcomes for both

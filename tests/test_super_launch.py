@@ -822,7 +822,9 @@ class SuperLaunchTests(unittest.TestCase):
             class Upstream(BaseHTTPRequestHandler):
                 def do_POST(peer):
                     body = peer.rfile.read(int(peer.headers["Content-Length"]))
-                    observed.append({"path": peer.path, "headers": dict(peer.headers), "body": body.hex()})
+                    observed.append({"path": peer.path, "headers": dict(peer.headers),
+                                     "content_type_values": peer.headers.get_all("Content-Type", []),
+                                     "body": body.hex()})
                     status = 200
                     if scenario.startswith("error-"):
                         status = int(scenario.rsplit("-", 1)[1])
@@ -1495,7 +1497,8 @@ class SuperLaunchTests(unittest.TestCase):
                 if scenario == "passthrough":
                     self.assertEqual(bytes.fromhex(response["body"]), b"\x00synthetic upstream\xff")
                     self.assertEqual(upstream[0]["path"], "/v1/chat/completions?synthetic=1")
-                    self.assertEqual(upstream[0]["headers"]["Content-Type"], "application/x-synthetic")
+                    self.assertEqual(upstream[0]["content_type_values"],
+                                     ["application/json", "application/x-synthetic"])
                     self.assertEqual(bytes.fromhex(upstream[0]["body"]), b"\x00synthetic\xff")
                 self.assertEqual(state["leftovers"], [])
 

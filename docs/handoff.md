@@ -4,10 +4,14 @@ The new malformed-trailer raw-wire regression initially failed locally on
 Modex because the probe discarded already received bytes when the peer reset
 the connection. The probe now retains those bytes and records the reset as a
 closed connection. Both new raw-wire comparisons and all five focused local
-admission tests passed after that repair. The ongoing `777cd3a` full run has
-reported a separate 0.439.2 chunked invalid-target subtest failure; its
-focused rerun passed, and the full run has not finished. Its cause remains
-unverified.
+admission tests passed after that repair. The isolated `777cd3a` full run
+finished with one failure in 1,157 Python tests: its 0.439.2 chunked
+invalid-target connection-close assertion observed a close where it expected
+an open socket. The later `b6dd839` test records the release's bounded second
+400 using raw bytes instead of relying on HTTPResponse buffering; its focused
+rerun passed. The historical full run does not qualify the later revision.
+The log is `/tmp/modex-full-777cd3a-20261030.log` (SHA-256
+`b85a538bb1db382c72b640daabe9ce8fc48deeec74b7a06c22024489c2ef6a00`).
 
 Single-key streamed DeepSeek continuations expose an unfinished prefetch
 binding gap: both releases accept selected follow-ups while Modex returns 503.
@@ -44,9 +48,8 @@ test census, oracle routing, workflow validation and parity JSON validation
 passed. Independent reviews covered relay framing and the Super option guard.
 
 The `7bad09f` full run has reported six gated precommit subtest failures; it
-predates the gated fixture correction below. A new isolated full `make test`
-on `777cd3a` is running in `/tmp/modex-full-777cd3a-20261030`, with log
-`/tmp/modex-full-777cd3a-20261030.log`; no full-suite pass is claimed. The
+predates the gated fixture correction below. The isolated full `make test`
+on `777cd3a` finished with the failure described above. The
 earlier `2cf20df` and `fa01212` runs finished with the failures recorded above;
 `7bad09f` remains active. Runtime-proxy WebSocket/WSS, ambiguous-header and connection-reuse
 differences, security qualification, and all six release targets remain open.

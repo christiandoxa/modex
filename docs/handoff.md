@@ -7,6 +7,8 @@ checks cover authority selection and formatting. The port-80 comparison is not
 automated in CI because the existing bubblewrap launcher cannot bind that port.
 Other providers, URL forms, and release targets remain unqualified; see
 `docs/evidence/baseline-0.166.0/provider-default-port.md`.
+Full `make unit` passed on `7834b9284531833cd16a1349c80bd64062ffa89b` after
+the default-port change; this does not establish complete CI or parity.
 
 The DeepSeek loopback transport now canonicalizes tested numeric IPv4 aliases
 such as `127.1` and integer, octal, hexadecimal, and trailing-dot forms, while
@@ -49,7 +51,14 @@ open. The production build and dependency audit passed, and the focused
 root-help module covers the comparison and no-execution controls. See
 `docs/evidence/baseline-0.166.0/logout-help.md`.
 
-Hosted Fast CI run `41124656633` on `627d555552af519794fd6099fd269861d575e68a`
+Hosted Fast CI run `41128005328` on `ce6c75654af2b5546d112ac74a16dffb5f863fe6`
+passed the native build and units, three WebSocket sandbox tests, 124 active
+0.166.0 tests, 52 independent relay tests, 121 historical 0.165.1 tests, eight
+width-memory tests, and both helper shards. It failed closed for missing
+historical 0.439.2 and 0.439.5 oracles; it does not validate the later default
+port change or establish full CI.
+
+Earlier hosted Fast CI run `41124656633` on `627d555552af519794fd6099fd269861d575e68a`
 passed the native build and units, three WebSocket sandbox tests, 121 active
 0.166.0 tests, 52 independent relay tests, 121 historical 0.165.1 tests, eight
 width-memory tests, and both helper shards. The overall run failed closed

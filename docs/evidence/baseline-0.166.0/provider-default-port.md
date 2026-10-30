@@ -46,8 +46,9 @@ NS
 ```
 
 The manual process comparison passed for all seven forms in 4.081 seconds. The
-production build, native Gateway and DeepSeek transport checks, and the
-production dependency audit passed. The existing loopback GET and stream suites
+production build, full native `make unit` at
+`7834b9284531833cd16a1349c80bd64062ffa89b`, and the dependency audit passed.
+The existing loopback GET and stream suites
 passed 52 tests; the active URL and session-history modules passed 12 tests. A
 fragmented-response helper control also passed against 0.166.0 after the test
 harness change. These checks cover Linux x86-64 and do not establish general

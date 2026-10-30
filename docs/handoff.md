@@ -1,5 +1,15 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Profile parsing now matches selected 0.166.0 diagnostics when `--` appears
+before a subcommand, including help-suggestion differences between direct and
+help-alias paths. Twelve isolated process cases and the 21-test active baseline
+module passed; profile operations remain guarded and unimplemented.
+
+The active compact regression now covers the JSON nesting boundary: 123
+nested payload arrays retain context, while 124 yield the matching parse-failure
+summary. All four compact tests passed with synthetic requests in a private
+loopback-only namespace; wider compact and profile-runtime parity remain open.
+
 The DeepSeek loopback boundary now accepts selected equivalent IPv6 `::1`
 spellings and emits the canonical Host authority. The native Gateway test and
 five active-oracle authority tests passed, including non-loopback rejection, in

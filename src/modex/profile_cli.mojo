@@ -316,9 +316,10 @@ def _profile_unexpected_argument(argument: String, command: String, executable: 
     return session_cli_error(message, _profile_usage(command, executable))
 
 
-def _profile_unknown_subcommand(command: String, executable: String) -> Error:
+def _profile_unknown_subcommand(command: String, executable: String, include_help: Bool = False) -> Error:
     var message = "unrecognized subcommand '" + command + "'"
     var choices: List[String] = ["add", "export", "import", "import-current", "list", "remove", "use"]
+    if include_help: choices.append("help")
     var matches = similar_names(command, choices)
     if matches:
         message += "\n\n  tip: a similar subcommand exists: '" + String(matches[len(matches) - 1]) + "'"
@@ -379,6 +380,11 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
         return ProfileHelpRequest("", False, False)
 
     var command = String(args[cursor])
+    if command == "--" and cursor + 1 < len(args):
+        command = String(args[cursor + 1])
+        if command == "help" or _profile_known_command(command):
+            raise session_cli_error("unexpected argument '" + command + "' found\n\n  tip: subcommand '" + command + "' exists; to use it, remove the '--' before it", _profile_usage("", executable))
+        raise _profile_unknown_subcommand(command, executable, True)
     if command == "--help" or command == "-h":
         return ProfileHelpRequest("", True, command == "-h")
     if command.startswith("--help="):
@@ -390,7 +396,7 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
     if command.startswith("-"):
         raise _profile_unexpected_argument(command, "", executable)
     if not _profile_known_command(command):
-        raise _profile_unknown_subcommand(command, executable)
+        raise _profile_unknown_subcommand(command, executable, True)
 
     cursor += 1
     var seen = List[String]()

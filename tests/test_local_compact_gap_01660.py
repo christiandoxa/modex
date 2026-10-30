@@ -1,4 +1,8 @@
-"""Differentially verify DeepSeek's local compact fallback against 0.166.0."""
+"""Differentially verify DeepSeek's local compact fallback against 0.166.0.
+
+Also pin the JSON nesting edge through the real Super route: the release parses
+compact bodies with ``serde_json::from_slice::<Value>``.
+"""
 
 import hashlib
 import json
@@ -150,6 +154,39 @@ class LocalCompactGap01660Tests(unittest.TestCase):
             self.assertIn("Original input items: 1", text)
             self.assertIn("synthetic retained context", text)
         self.assertTrue(observations[1][2]["output"][0]["content"][0]["text"].endswith("[truncated]"))
+
+    def test_nested_json_depth_boundary_matches_active_baseline(self):
+        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        turns = []
+        for depth in (123, 124):
+            nested = {"text": "synthetic deep state"}
+            for _ in range(depth):
+                nested = [nested]
+            turns.append({
+                "model": "deepseek-chat",
+                "input": [{"type": "other", "payload": nested}],
+                "_path": "/v1/responses/compact",
+            })
+
+        observations = {}
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, turns, [], latest_version="0.166.0", concurrent=True,
+                )
+                self.assertEqual(upstream, [])
+                self.assertEqual([response["status"] for response in responses], [200, 200])
+                observations[binary] = [
+                    json.loads(bytes.fromhex(response["body"])) for response in responses
+                ]
+
+        self.assertEqual(observations[ORACLE], observations[MODEX])
+        accepted = observations[MODEX][0]["output"][0]["content"][0]["text"]
+        rejected = observations[MODEX][1]["output"][0]["content"][0]["text"]
+        self.assertIn("synthetic deep state", accepted)
+        self.assertTrue(rejected.endswith(
+            "Local Prodex compact fallback could not parse the compact request body."
+        ))
 
     def test_route_controls_match_active_baseline(self):
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)

@@ -30,7 +30,7 @@ def main():
     if len(args) >= 2 and args[1] == "profile":
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])
-        if len(args) == 2:
+        if len(args) == 2 or (len(args) == 3 and args[2] == "--"):
             print(profile_help("", executable), file=stderr, end="")
             exit(2)
             return

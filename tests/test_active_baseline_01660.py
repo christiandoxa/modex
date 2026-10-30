@@ -446,6 +446,21 @@ class ActiveBaseline01660Tests(unittest.TestCase):
                 )
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_profile_leading_separator_diagnostics_match_without_state_changes(self):
+        for arguments in (("profile", "--"), ("profile", "--", "--help"),
+                          ("profile", "--", "-h"), ("profile", "--", "bogus"),
+                          ("profile", "--", "hepl"), ("profile", "--", "help"),
+                          ("profile", "--", "list", "--help"),
+                          ("profile", "--", "add", "--help"),
+                          ("profile", "--", "--", "list"), ("profile", "hepl"),
+                          ("profile", "help", "hepl"), ("help", "profile", "hepl")):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_super_cli(ORACLE, arguments, "synthetic")
+                modex, modex_created = isolated_super_cli(MODEX, arguments, "synthetic")
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (baseline.returncode, baseline.stdout, baseline.stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
     def test_top_level_use_help_and_invalid_help_order_match_without_state_changes(self):
         cases = (
             (("use", "--help"), 0),

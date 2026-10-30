@@ -28,9 +28,18 @@ call can be followed by a tool output without `previous_response_id`; the
 next provider request uses key B and includes key A's prior synthetic
 conversation. Both pinned release processes do the same. The per-launch
 client token does not separate provider-key ownership. A candidate in
-`/tmp/modex-auth-integrate-1030` rejects this with 503 and one provider POST,
-but remains unpublished while collision, eviction and concurrent ownership
-handling are reviewed. The real-process test
+`/tmp/modex-ownership-final-1030` rejects this with 503 and one provider POST.
+It remains unpublished pending a full suite: 76 continuation, key-rotation and
+session-history tests passed, and an independent source review found no new
+ownership race. Its full `make test` is running with log
+`/tmp/modex-ownership-full-1030.log`; tracked diff SHA-256 is
+`c868da3e5b04772b38c26bf0139b21d94dd6184356b7bc3ae765de22a4cec77c`
+and the untracked native binding test SHA-256 is
+`62be13c2d1a34a648d9ded15b74c31657fd093ea2091c048d4878fdeb29431b3`.
+An earlier candidate incorrectly allowed a buffered `previous_response_id`;
+that regression was fixed and the original assertion retained. A separate
+`realpath` failure occurred while a concurrent build replaced the test binary;
+an isolated rerun passed, but the cause has not been proven. The real-process test
 `test_deepseek_key_rotation_01651_04392.DeepSeekKeyRotationTests.test_published_cross_key_tool_history_gap_is_present`
 reproduces the exposure with a current Modex build and both pinned release
 oracles. It characterizes a known security gap, not a parity pass, and must be

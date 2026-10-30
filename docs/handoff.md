@@ -1,8 +1,15 @@
 # Current work: Prodex 0.166.0 parity and CI
 
-`tests/capture_cli.py` currently selects the historical 0.439.2 oracle but
-labels output as 0.439.1 and overwrites the older help inventory. Do not run
-it until its oracle identity and versioned output paths are corrected.
+`tests/capture_cli.py` now verifies the pinned 0.166.0 baseline, release
+identity and oracle checksum before capturing. It writes
+`docs/cli-inventory-0.166.0.json` and
+`docs/evidence/baseline-0.166.0/help/`, preserving the historical 0.439.1
+inventory and fixtures. Four focused tests passed; a real capture recorded 35
+routes and 326 option mentions with no stderr or state mutations. A fresh
+0.439.1 capture remains unavailable because no checksum-verified matching
+oracle was available for this run. This is an unavailable historical input,
+not a failure of the fixed active capture script. Help captures are discovery
+evidence only and do not establish parity.
 
 Set `TASK_SCRATCH` to a private temporary directory when reproducing commands.
 Paths under `$TASK_SCRATCH` are generalized per-run locations; no host-specific
@@ -125,6 +132,10 @@ require a 0.165.1 or 0.439.2 binary.
 A separate isolated three-case DeepSeek 503 differential also passes; generic
 profile-runtime policy remains unimplemented. See
 `docs/evidence/policy-capacity-01660-process.md`.
+Guardian reviewer metadata does not pin the DeepSeek API-key path in two
+isolated comparisons, including quota retry; this does not implement the
+profile-backed Guardian broker or cookie routing. See
+`docs/evidence/baseline-0.166.0/guardian-api-key-scope.md`.
 
 The official Codex 0.166.0 Linux binary passed the real local-auth test against
 Modex through a synthetic loopback provider inside a network namespace with
@@ -4143,11 +4154,14 @@ There are 186 distinct verified Python methods across the prior full run and
 this focused run; no full 186-method run is claimed. Evidence:
 `docs/evidence/provider-chat-tests.txt`.
 
-The frozen help inventory now contains 35 routes and 326 option mentions,
-including four hidden commands and both Super exposure/short aliases. Capture
-command: `python3 tests/capture_cli.py`; all help routes exit 0 with empty stderr
-and no state mutations. Help mentions still require source validation for
-registered flags, hidden flags, defaults, precedence and passthrough.
+The historical 0.439.1 help inventory contains 35 routes and 326 option
+mentions, including four hidden commands and both Super exposure/short aliases.
+Its checked-in fixtures remain historical evidence; a fresh capture is
+unavailable without the checksum-verified matching 0.439.1 oracle. The active
+capture command, `python3 tests/capture_cli.py`, now writes versioned 0.166.0
+inventory and fixtures without touching the historical files. Help mentions
+still require source validation for registered flags, hidden flags, defaults,
+precedence and passthrough.
 Root `--help`, `-h` and bare `help` are now connected, including ignored
 trailing arguments after help flags and custom executable names in Usage.
 Their release comparisons check isolated homes and no created paths.

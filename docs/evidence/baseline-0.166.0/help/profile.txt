@@ -1,0 +1,37 @@
+Add, inspect, remove, and activate managed profiles.
+
+Usage: prodex profile <COMMAND>
+
+Commands:
+  add             Add a profile entry and optionally seed it from another CODEX_HOME
+  export          Export one or more profiles, including supported profile secrets
+  import          Import profiles from an export bundle or supported built-in source
+  import-current  Copy the current shared Codex home into a new managed profile and activate it
+  list            List configured profiles and show which one is active
+  remove          Remove one profile entry or every profile entry and optionally delete managed homes
+  use             Set the active profile used by commands that omit --profile
+  help            Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help
+
+Examples:
+  prodex profile list
+  prodex profile add main --activate
+  prodex profile add main --insecure
+  prodex profile export
+  prodex profile export backup.json
+  prodex profile import backup.json
+  prodex profile import backup.json --insecure
+  prodex profile import claude
+  prodex profile import copilot
+  prodex profile import kiro
+  prodex profile import copilot --name copilot-main --activate
+  prodex profile import-current main
+  prodex profile remove main
+  prodex profile remove --all
+
+Notes:
+  `--insecure` bypasses local private-file permission and ACL validation; use it only with trusted files.
+  `prodex profile import kiro` reads the installed Kiro CLI auth store and profile metadata.
+  Prodex prefers `kiro-cli-chat`, falls back to `kiro-cli`, and accepts `PRODEX_KIRO_BIN` for an explicit path override.

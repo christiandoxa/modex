@@ -1,0 +1,25 @@
+Inspect local state, Codex resolution, quota readiness, and runtime logs.
+
+Usage: prodex doctor [OPTIONS]
+
+Options:
+      --quota                        Also probe each profile's quota endpoint
+      --runtime                      Also summarize runtime proxy state and recent logs from the configured log directory
+      --install                      Also check install/runtime prerequisites without mutating local state
+      --repair-import-auth-journals  Recover orphaned profile import auth rollback journals before reporting
+      --repair-session-index         Explicitly run Codex's full active and archived thread-index repair
+      --tail-bytes <BYTES>           Bytes of runtime log tail to inspect for --runtime/--json [default: 131072]
+      --suggest-policy               Suggest policy.toml tuning snippets from recent runtime markers
+      --json                         Emit machine-readable JSON output for --runtime diagnostics
+      --bundle [<PATH>]              Emit a redacted diagnostic bundle as JSON. Omit PATH or use '-' for stdout
+      --redacted                     Required for --bundle; secret values are never emitted
+  -h, --help                         Print help
+
+Examples:
+  prodex doctor
+  prodex doctor --install
+  prodex doctor --quota
+  prodex doctor --runtime
+  prodex doctor --runtime --json
+  prodex doctor --bundle ./prodex-doctor.json --redacted
+  prodex doctor --repair-session-index

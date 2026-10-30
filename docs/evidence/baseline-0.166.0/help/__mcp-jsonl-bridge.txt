@@ -1,0 +1,8 @@
+Usage: prodex __mcp-jsonl-bridge <COMMAND> [ARGS]...
+
+Arguments:
+  <COMMAND>  JSON-lines MCP server command to bridge to Codex stdio framing
+  [ARGS]...  Arguments passed to the JSON-lines MCP server
+
+Options:
+  -h, --help  Print help

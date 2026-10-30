@@ -1,0 +1,13 @@
+Run a lean OpenAI-compatible provider gateway.
+
+Usage: prodex gateway [OPTIONS]
+
+Options:
+      --listen <ADDR>        Address to bind the OpenAI-compatible gateway to. Defaults to loopback with an ephemeral port
+      --provider <PROVIDER>  External provider preset. Omit for an OpenAI-compatible upstream
+      --base-url <URL>       Upstream base URL [alias: --url]
+      --api-key <KEY>        Provider API key. Prefer provider-specific environment variables
+      --smart-context        Enable Smart Context Autopilot
+      --presidio             Enable Presidio request-body redaction
+      --no-presidio          Disable policy-enabled Presidio redaction
+  -h, --help                 Print help

@@ -1,0 +1,6 @@
+List configured profiles and show which one is active
+
+Usage: prodex profile list
+
+Options:
+  -h, --help  Print help

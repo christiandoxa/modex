@@ -1,0 +1,68 @@
+Run codex through prodex with quota preflight and eligible pre-commit rotation.
+
+Usage: prodex run [OPTIONS] [CODEX_ARG]...
+
+Arguments:
+  [CODEX_ARG]...  Arguments passed through to `codex`. A lone session id is normalized to `codex resume <session-id>`
+
+Options:
+  -p, --profile <NAME>
+          Starting profile for the run. If omitted, prodex uses the active profile
+      --auto-rotate
+          Allow eligible pre-commit rotation. This is the default behavior
+      --no-auto-rotate
+          Keep the selected profile fixed and fail instead of rotating
+      --auto-redeem
+          Allow Prodex to redeem one earned reset credit automatically when all configured OpenAI/Codex profiles are weekly-exhausted
+      --skip-quota-check
+          Skip the preflight quota gate before launching codex
+      --full-access
+          Start Codex with launch-time full access by passing Codex's sandbox-bypass launch flag
+      --base-url <URL>
+          Override the upstream ChatGPT base URL used for quota preflight and the runtime proxy
+      --no-proxy
+          Disable system and environment proxy settings for upstream OpenAI/quota HTTP requests
+      --dry-run
+          Print resolved launch diagnostics without starting Codex
+      --web-search <MODE>
+          Override Codex hosted web search mode: disabled, cached, indexed, or live [possible values: disabled, cached, indexed, live]
+      --rollout-budget-tokens <TOKENS>
+          Enable Codex rollout token-budget reminders with this total token limit
+      --rollout-budget-reminders <TOKENS>
+          Remaining-token thresholds for rollout budget reminders. Defaults to 75%,50%,25% of the limit
+      --rollout-budget-sampling-weight <WEIGHT>
+          Sampling token weight used by Codex rollout budget accounting
+      --rollout-budget-prefill-weight <WEIGHT>
+          Prefill token weight used by Codex rollout budget accounting
+      --current-time-reminder
+          Enable Codex current-time reminders
+      --current-time-reminder-interval <REQUESTS>
+          Model-request interval for Codex current-time reminders
+      --current-time-clock-source <SOURCE>
+          Clock source for Codex current-time reminders [possible values: system, external]
+      --respect-system-proxy
+          Enable Codex auth clients to respect the OS system proxy when upstream Codex supports it
+      --no-respect-system-proxy
+          Disable Codex auth system-proxy routing even when the profile config enables it
+  -h, --help
+          Print help
+
+Examples:
+  prodex
+  prodex run
+  prodex super
+  prodex exec "review this repo"
+  prodex run --profile main
+  prodex run --web-search indexed
+  prodex run --rollout-budget-tokens 100000
+  prodex run --current-time-reminder
+  prodex run --respect-system-proxy
+  prodex run exec "review this repo"
+  prodex run 019c9e3d-45a0-7ad0-a6ee-b194ac2d44f9
+
+Notes:
+  Eligible pre-commit rotation is allowed by default when another supported profile or key is available.
+  Bare `prodex <args>` is treated as `prodex run <args>`.
+  A lone session id is forwarded as `codex resume <session-id>`.
+  Codex runtime feature overrides are passed through with `-c`: `--web-search disabled|cached|indexed|live`, `--rollout-budget-tokens`, `--current-time-reminder`, and `--respect-system-proxy` / `--no-respect-system-proxy`.
+  If the selected profile's `config.toml` sets `model_provider` to a non-OpenAI backend, prodex launches Codex directly without quota preflight or the local auto-rotate proxy.

@@ -1,0 +1,22 @@
+Export one or more profiles, including supported profile secrets
+
+Usage: prodex profile export [OPTIONS] [PATH]
+
+Arguments:
+  [PATH]
+          Write the export bundle to this path. Defaults to a timestamped JSON file in the current directory
+
+Options:
+  -p, --profile <NAME>
+          Export only the named profile. Repeat to export multiple profiles. Defaults to all profiles
+
+      --password-protect
+          Protect the export bundle with a password.
+          
+          In non-interactive use, set PRODEX_PROFILE_EXPORT_PASSWORD.
+
+      --no-password
+          Explicitly export without password protection and skip the interactive prompt
+
+  -h, --help
+          Print help (see a summary with '-h')

@@ -1,0 +1,22 @@
+Import profiles from an export bundle or supported built-in source
+
+Usage: prodex profile import [OPTIONS] <PATH_OR_SOURCE>
+
+Arguments:
+  <PATH_OR_SOURCE>
+          Path to a profile export bundle created by `prodex profile export`, or a built-in source such as `claude`, `copilot`, or `kiro`
+
+Options:
+      --name <NAME>
+          Override the imported profile name when using a built-in source such as `claude`, `copilot`, or `kiro`
+
+      --activate
+          Activate the imported profile immediately when using a built-in source such as `claude`, `copilot`, or `kiro`
+
+      --insecure
+          Bypass private-file permission and ACL validation for this operation.
+          
+          This is unsafe; use it only when the profile files are otherwise trusted.
+
+  -h, --help
+          Print help (see a summary with '-h')

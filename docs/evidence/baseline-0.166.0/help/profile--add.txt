@@ -1,0 +1,28 @@
+Add a profile entry and optionally seed it from another CODEX_HOME
+
+Usage: prodex profile add [OPTIONS] <NAME>
+
+Arguments:
+  <NAME>
+          Name of the profile to create
+
+Options:
+      --codex-home <PATH>
+          Register an existing CODEX_HOME path instead of creating a managed profile home
+
+      --copy-from <PATH>
+          Copy initial state from another CODEX_HOME path into the new managed profile
+
+      --copy-current
+          Seed the new managed profile from the default shared Codex home
+
+      --activate
+          Make the new profile active after creation
+
+      --insecure
+          Bypass private-file permission and ACL validation for this operation.
+          
+          This is unsafe; use it only when the profile files are otherwise trusted.
+
+  -h, --help
+          Print help (see a summary with '-h')

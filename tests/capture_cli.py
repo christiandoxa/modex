@@ -1,4 +1,4 @@
-"""Capture official-release help fixtures for the frozen contract inventory."""
+"""Capture version-specific official-release CLI help fixtures."""
 
 import hashlib
 import json
@@ -8,9 +8,12 @@ import subprocess
 import tempfile
 
 from session_oracle import sandbox_command
-from test_cli import ORACLE, ORACLE_SHA256, ROOT
+from test_active_baseline_01660 import ORACLE, ORACLE_SHA256, ROOT
 
 
+ACTIVE_VERSION = "0.166.0"
+ACTIVE_COMMIT = "9f69e1835808f478f59f12a3ae3fa88027d896a4"
+ACTIVE_EVIDENCE = "docs/evidence/baseline-0.166.0/reference-verification.json"
 HIDDEN = ("__super-expose", "__runtime-broker", "__mcp-jsonl-bridge", "__sub-agent-exec")
 
 
@@ -28,9 +31,21 @@ def subcommands(text):
 
 
 def main():
-    if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-        raise SystemExit("The oracle checksum does not match the frozen official release")
-    output = ROOT / "docs/evidence/baseline/help"
+    baseline = json.loads((ROOT / "docs/baseline.json").read_text(encoding="utf-8"))["reference"]
+    evidence = json.loads((ROOT / ACTIVE_EVIDENCE).read_text(encoding="utf-8"))
+    if (baseline.get("tag"), baseline.get("commit"), baseline.get("evidence")) != (
+        ACTIVE_VERSION, ACTIVE_COMMIT, ACTIVE_EVIDENCE,
+    ):
+        raise SystemExit("The active baseline is not the pinned Prodex 0.166.0 capture target")
+    if (evidence.get("version"), evidence.get("commit"), evidence.get("linux_oracle_sha256")) != (
+        ACTIVE_VERSION, ACTIVE_COMMIT, ORACLE_SHA256,
+    ):
+        raise SystemExit("The Prodex 0.166.0 reference evidence does not match the pinned capture identity")
+    if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
+        raise SystemExit("PRODEX_ORACLE must identify the checksum-verified Prodex 0.166.0 Linux release")
+
+    output = ROOT / "docs/evidence/baseline-0.166.0/help"
+    inventory_path = ROOT / "docs/cli-inventory-0.166.0.json"
     output.mkdir(parents=True, exist_ok=True)
     queue = [(), *((command,) for command in HIDDEN), ("super", "expose"), ("s",)]
     captured = set()
@@ -67,12 +82,19 @@ def main():
                             "exit_code": result.returncode, "stderr": "", "file_mutations": []})
             if command not in (("super", "expose"), ("s",)):
                 queue.extend((*command, child) for child in children)
-    inventory = {"schema_version": 1, "baseline_commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
-                 "oracle_sha256": ORACLE_SHA256, "reproduce": "python3 tests/capture_cli.py",
+    inventory = {"schema_version": 1, "baseline_version": ACTIVE_VERSION,
+                 "baseline_commit": ACTIVE_COMMIT, "oracle_sha256": ORACLE_SHA256,
+                 "reproduce": "python3 tests/capture_cli.py",
+                 "evidence_policy": "Help output is release-specific discovery evidence; it does not establish source trace, runtime behavior, or parity.",
                  "coverage": "Visible command tree plus four hidden production helpers, super expose and s alias. Help mentions are discovery evidence; hidden flags, defaults, precedence, passthrough and runtime contracts still require source tracing.",
                  "commands": records}
-    (ROOT / "docs/cli-inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")
-    print(f"Captured {len(records)} help routes and {sum(len(record['options_mentioned']) for record in records)} option mentions; all exit 0 with no stderr or state mutation")
+    inventory_path.write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8")
+    print(
+        f"Captured {len(records)} Prodex {ACTIVE_VERSION} help routes and "
+        f"{sum(len(record['options_mentioned']) for record in records)} option mentions; "
+        f"all exit 0 with no stderr or state mutation. Inventory: "
+        f"{inventory_path.relative_to(ROOT)}"
+    )
 
 
 if __name__ == "__main__":

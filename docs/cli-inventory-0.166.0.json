@@ -1,0 +1,869 @@
+{
+  "schema_version": 1,
+  "baseline_version": "0.166.0",
+  "baseline_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
+  "oracle_sha256": "349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d09735",
+  "reproduce": "python3 tests/capture_cli.py",
+  "evidence_policy": "Help output is release-specific discovery evidence; it does not establish source trace, runtime behavior, or parity.",
+  "coverage": "Visible command tree plus four hidden production helpers, super expose and s alias. Help mentions are discovery evidence; hidden flags, defaults, precedence, passthrough and runtime contracts still require source tracing.",
+  "commands": [
+    {
+      "command": [],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--profile",
+        "--version"
+      ],
+      "subcommands": [
+        "profile",
+        "use",
+        "current",
+        "info",
+        "status",
+        "log",
+        "session",
+        "doctor",
+        "login",
+        "logout",
+        "update",
+        "quota",
+        "redeem",
+        "ping",
+        "run",
+        "super",
+        "gateway"
+      ],
+      "fixture": "docs/evidence/baseline-0.166.0/help/root.txt",
+      "sha256": "981d3a5c8126052c4cfbbacf77a8a6f6891c672205fa1d094da63e2093f6bee3",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "__super-expose"
+      ],
+      "hidden": true,
+      "options_mentioned": [
+        "--api-key",
+        "--auto-compact-token-limit",
+        "--auto-redeem",
+        "--auto-rotate",
+        "--base-url",
+        "--cli",
+        "--context-window",
+        "--current-time-clock-source",
+        "--current-time-reminder",
+        "--current-time-reminder-interval",
+        "--dry-run",
+        "--full-access",
+        "--help",
+        "--listen",
+        "--local-auto-compact-token-limit",
+        "--local-context-window",
+        "--local-model",
+        "--model",
+        "--name",
+        "--no-auto-rotate",
+        "--no-presidio",
+        "--no-proxy",
+        "--no-respect-system-proxy",
+        "--no-sub-agent",
+        "--no-tunnel",
+        "--openai-tunnel-id",
+        "--presidio",
+        "--profile",
+        "--provider",
+        "--require-tool",
+        "--respect-system-proxy",
+        "--rollout-budget-prefill-weight",
+        "--rollout-budget-reminders",
+        "--rollout-budget-sampling-weight",
+        "--rollout-budget-tokens",
+        "--skip-quota-check",
+        "--sub-agent",
+        "--sub-agent-max-concurrency",
+        "--sub-agent-model",
+        "--sub-agent-model-reasoning-effort",
+        "--sub-agent-provider",
+        "--sub-agent-url",
+        "--tool",
+        "--tunnel",
+        "--url",
+        "--web-search"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/__super-expose.txt",
+      "sha256": "634754d283508d3b2998cdb1cf097a0e0e0e345255cb19484264510e6f0301e1",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "__runtime-broker"
+      ],
+      "hidden": true,
+      "options_mentioned": [
+        "--help"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/__runtime-broker.txt",
+      "sha256": "2f7b2142c72f249af2acadcdcac35269ab86b9dce4359ba4cf905337a07d5469",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "__mcp-jsonl-bridge"
+      ],
+      "hidden": true,
+      "options_mentioned": [
+        "--help"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/__mcp-jsonl-bridge.txt",
+      "sha256": "0685b470ad0a6521920be619ccb8999e39203c434abdd74120ff952a23977836",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "__sub-agent-exec"
+      ],
+      "hidden": true,
+      "options_mentioned": [
+        "--config",
+        "--help",
+        "--task-file"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/__sub-agent-exec.txt",
+      "sha256": "4538e9add439ac4ec070802ecafbc62490b7ef8d490926c96a513f7d9de0f670",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "super",
+        "expose"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--api-key",
+        "--auto-compact-token-limit",
+        "--auto-redeem",
+        "--auto-rotate",
+        "--base-url",
+        "--cli",
+        "--context-window",
+        "--current-time-clock-source",
+        "--current-time-reminder",
+        "--current-time-reminder-interval",
+        "--dry-run",
+        "--full-access",
+        "--help",
+        "--listen",
+        "--local-auto-compact-token-limit",
+        "--local-context-window",
+        "--local-model",
+        "--model",
+        "--name",
+        "--no-auto-rotate",
+        "--no-presidio",
+        "--no-proxy",
+        "--no-respect-system-proxy",
+        "--no-sub-agent",
+        "--no-tunnel",
+        "--openai-tunnel-id",
+        "--presidio",
+        "--profile",
+        "--provider",
+        "--require-tool",
+        "--respect-system-proxy",
+        "--rollout-budget-prefill-weight",
+        "--rollout-budget-reminders",
+        "--rollout-budget-sampling-weight",
+        "--rollout-budget-tokens",
+        "--skip-quota-check",
+        "--sub-agent",
+        "--sub-agent-max-concurrency",
+        "--sub-agent-model",
+        "--sub-agent-model-reasoning-effort",
+        "--sub-agent-provider",
+        "--sub-agent-url",
+        "--tool",
+        "--tunnel",
+        "--url",
+        "--web-search"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/super--expose.txt",
+      "sha256": "634754d283508d3b2998cdb1cf097a0e0e0e345255cb19484264510e6f0301e1",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "s"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--api-key",
+        "--auto-compact-token-limit",
+        "--auto-redeem",
+        "--auto-rotate",
+        "--base-url",
+        "--cli",
+        "--context-window",
+        "--current-time-clock-source",
+        "--current-time-reminder",
+        "--current-time-reminder-interval",
+        "--dangerously-skip-permissions",
+        "--dry-run",
+        "--full-access",
+        "--help",
+        "--install",
+        "--local-auto-compact-token-limit",
+        "--local-context-window",
+        "--local-model",
+        "--model",
+        "--no-auto-rotate",
+        "--no-presidio",
+        "--no-proxy",
+        "--no-respect-system-proxy",
+        "--no-sub-agent",
+        "--no-tunnel",
+        "--presidio",
+        "--profile",
+        "--provider",
+        "--require-tool",
+        "--respect-system-proxy",
+        "--rollout-budget-prefill-weight",
+        "--rollout-budget-reminders",
+        "--rollout-budget-sampling-weight",
+        "--rollout-budget-tokens",
+        "--skip-quota-check",
+        "--sub-agent",
+        "--sub-agent-max-concurrency",
+        "--sub-agent-model",
+        "--sub-agent-model-reasoning-effort",
+        "--sub-agent-provider",
+        "--sub-agent-url",
+        "--tool",
+        "--url",
+        "--web-search",
+        "--with-claude"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/s.txt",
+      "sha256": "4cd634f3b513a15eb3836f84de4dde3b5285cb7aa8450bb5deac74dcf80b338e",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "profile"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--activate",
+        "--all",
+        "--help",
+        "--insecure",
+        "--name",
+        "--profile"
+      ],
+      "subcommands": [
+        "add",
+        "export",
+        "import",
+        "import-current",
+        "list",
+        "remove",
+        "use"
+      ],
+      "fixture": "docs/evidence/baseline-0.166.0/help/profile.txt",
+      "sha256": "08a9e62e3ff19f5498a8ea6ee1847b4baa4caa6da949312f144b34d454849c54",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "use"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--profile"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/use.txt",
+      "sha256": "cb9cdfd587a4367ca782c3ea11d87d5356fd1d0768d885866a9df07d1ad386da",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "current"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/current.txt",
+      "sha256": "dd40a5de543ad6c474c401f4765c7b52c3b488fbdd6ae9d0d20b71d9be1498e1",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "info"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--json",
+        "--tokens"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/info.txt",
+      "sha256": "e7ae12ded705b6e1b0b4f46503bd6eaa6590c014123298ffb9ed382eeab7f083",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "status"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--interval",
+        "--once"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/status.txt",
+      "sha256": "60007e5d08dae906e4d98b469b6c254c7c0568f7eee091e65d898b265b325d42",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "log"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--json"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/log.txt",
+      "sha256": "04568c9ef14c58480fc28ed944ddc9d1304135da6e6eedf71eebbec002b2eb7e",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "session"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--id-only",
+        "--json",
+        "--limit",
+        "--parent-only",
+        "--profile",
+        "--query",
+        "--resume-command"
+      ],
+      "subcommands": [
+        "list",
+        "current",
+        "resume"
+      ],
+      "fixture": "docs/evidence/baseline-0.166.0/help/session.txt",
+      "sha256": "1cebc40f0081a6eb04333287bd0faa02cd2e092e20a700ded6cb4a06fcd8ebf7",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "doctor"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--bundle",
+        "--help",
+        "--install",
+        "--json",
+        "--quota",
+        "--redacted",
+        "--repair-import-auth-journals",
+        "--repair-session-index",
+        "--runtime",
+        "--suggest-policy",
+        "--tail-bytes"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/doctor.txt",
+      "sha256": "7fffc625c42321311f2dc9402afefe34565c07702e0eab9ccf5774048906fc57",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "login"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--cli",
+        "--device-auth",
+        "--help",
+        "--profile",
+        "--with-antigravity",
+        "--with-claude"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/login.txt",
+      "sha256": "59bf18b1a8961b25319bb253a96b3ff29f79b04378cf4fc557a82fe63de4a010",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "logout"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--profile"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/logout.txt",
+      "sha256": "b84a78e03fd9f02969801286bec1582f329068fc2b485749e2d675900bffcdf4",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "update"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/update.txt",
+      "sha256": "62a2e31a0e28ecd5519d9453a242d9a063f6232119dba4ba6d4080d9456b188f",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "quota"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--all",
+        "--auth",
+        "--base-url",
+        "--detail",
+        "--help",
+        "--once",
+        "--profile",
+        "--provider",
+        "--raw"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/quota.txt",
+      "sha256": "54ffe147fbcff7a76905a1da5657e4147f65122bfddf7ddf2dd19bcded2ccca7",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "redeem"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--base-url",
+        "--help",
+        "--no-proxy",
+        "--yes"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/redeem.txt",
+      "sha256": "7678b7f49a9d4d380c34d16d154f30137d1c6a519648ef0a78518db54ef93d9f",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "ping"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help"
+      ],
+      "subcommands": [
+        "openai"
+      ],
+      "fixture": "docs/evidence/baseline-0.166.0/help/ping.txt",
+      "sha256": "614f68800d0d3ede6f3449a974f5fd89909618ca4635924e7d5390b67b8c9ee6",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "run"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--auto-redeem",
+        "--auto-rotate",
+        "--base-url",
+        "--current-time-clock-source",
+        "--current-time-reminder",
+        "--current-time-reminder-interval",
+        "--dry-run",
+        "--full-access",
+        "--help",
+        "--no-auto-rotate",
+        "--no-proxy",
+        "--no-respect-system-proxy",
+        "--profile",
+        "--respect-system-proxy",
+        "--rollout-budget-prefill-weight",
+        "--rollout-budget-reminders",
+        "--rollout-budget-sampling-weight",
+        "--rollout-budget-tokens",
+        "--skip-quota-check",
+        "--web-search"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/run.txt",
+      "sha256": "6f6aca2f6acb1ca442365adafb2678d518d52a4571042deb812a6165e5b4e777",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "super"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--api-key",
+        "--auto-compact-token-limit",
+        "--auto-redeem",
+        "--auto-rotate",
+        "--base-url",
+        "--cli",
+        "--context-window",
+        "--current-time-clock-source",
+        "--current-time-reminder",
+        "--current-time-reminder-interval",
+        "--dangerously-skip-permissions",
+        "--dry-run",
+        "--full-access",
+        "--help",
+        "--install",
+        "--local-auto-compact-token-limit",
+        "--local-context-window",
+        "--local-model",
+        "--model",
+        "--no-auto-rotate",
+        "--no-presidio",
+        "--no-proxy",
+        "--no-respect-system-proxy",
+        "--no-sub-agent",
+        "--no-tunnel",
+        "--presidio",
+        "--profile",
+        "--provider",
+        "--require-tool",
+        "--respect-system-proxy",
+        "--rollout-budget-prefill-weight",
+        "--rollout-budget-reminders",
+        "--rollout-budget-sampling-weight",
+        "--rollout-budget-tokens",
+        "--skip-quota-check",
+        "--sub-agent",
+        "--sub-agent-max-concurrency",
+        "--sub-agent-model",
+        "--sub-agent-model-reasoning-effort",
+        "--sub-agent-provider",
+        "--sub-agent-url",
+        "--tool",
+        "--url",
+        "--web-search",
+        "--with-claude"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/super.txt",
+      "sha256": "4cd634f3b513a15eb3836f84de4dde3b5285cb7aa8450bb5deac74dcf80b338e",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "gateway"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--api-key",
+        "--base-url",
+        "--help",
+        "--listen",
+        "--no-presidio",
+        "--presidio",
+        "--provider",
+        "--smart-context",
+        "--url"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/gateway.txt",
+      "sha256": "b59c570d6ed557393263108416995419f62b6528407ff853dd6418c1e351e2ee",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "profile",
+        "add"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--activate",
+        "--codex-home",
+        "--copy-current",
+        "--copy-from",
+        "--help",
+        "--insecure"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/profile--add.txt",
+      "sha256": "7a5b63e8dda762ea31c6ece2cc7f101c4f198e455ee55752a375583269df08f6",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "profile",
+        "export"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--no-password",
+        "--password-protect",
+        "--profile"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/profile--export.txt",
+      "sha256": "639ee9de50dde223678f512d181fafedc7b414c510f82521b50146feaf3389d4",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "profile",
+        "import"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--activate",
+        "--help",
+        "--insecure",
+        "--name"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/profile--import.txt",
+      "sha256": "b729d387c3c198a9009bdcdc7df33b7ccb7592a025090d710b0615730818f106",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "profile",
+        "import-current"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--insecure"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/profile--import-current.txt",
+      "sha256": "6267c480bd3316607eaa0530240b89a03e15836d840c82a83095311a7e60f7c2",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "profile",
+        "list"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/profile--list.txt",
+      "sha256": "219c0ccd6534f431f206e8826229c49e1f0d3c04c7c5aa311f9b35faf2760c68",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "profile",
+        "remove"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--all",
+        "--delete-home",
+        "--help"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/profile--remove.txt",
+      "sha256": "a4d79114a44f207640f19d48d7f73d4cfa226ffc7be40096915f069f8e9bb8b8",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "profile",
+        "use"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--profile"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/profile--use.txt",
+      "sha256": "dca210e13469ab3f2b0c163644fe800ce57144421c041100d587060762645ef1",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "session",
+        "list"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--id-only",
+        "--include-subagents",
+        "--json",
+        "--limit",
+        "--parent-only",
+        "--profile",
+        "--query",
+        "--resume-command"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/session--list.txt",
+      "sha256": "2f6dc2a9fad773f490c50081c0a38e241a52b338e838cdaf102e8fc1b8efe45d",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "session",
+        "current"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help",
+        "--id-only",
+        "--include-subagents",
+        "--json",
+        "--limit",
+        "--parent-only",
+        "--profile",
+        "--query",
+        "--resume-command"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/session--current.txt",
+      "sha256": "2f4a196c92fa2ad6451d515fca986210640642a79390f1aa0e571e615283888d",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "session",
+        "resume"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--help"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/session--resume.txt",
+      "sha256": "e31c4e2706da549316898f6a13ba4ced59f68d5eca3d2df35ee7e71e86c09e7f",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    },
+    {
+      "command": [
+        "ping",
+        "openai"
+      ],
+      "hidden": false,
+      "options_mentioned": [
+        "--base-url",
+        "--effort",
+        "--help",
+        "--json",
+        "--model",
+        "--no-proxy",
+        "--profile"
+      ],
+      "subcommands": [],
+      "fixture": "docs/evidence/baseline-0.166.0/help/ping--openai.txt",
+      "sha256": "74311beea8a5d6931aa97d609ac6808432a6204ca9d6fe1700861e3867c032e7",
+      "exit_code": 0,
+      "stderr": "",
+      "file_mutations": []
+    }
+  ]
+}

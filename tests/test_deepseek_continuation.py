@@ -62,6 +62,8 @@ for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"])
     raw_body = turn.pop("_raw_body", None)
     headers = {"Content-Type": "application/json", "Authorization": authorization,
                **turn.pop("_headers", {})}
+    if turn.pop("use_guardian_parent", False):
+        turn["client_metadata"] = {"parent_response_id": previous}
     if turn.pop("use_previous", False):
         turn["previous_response_id"] = previous
     started = int(time.time())

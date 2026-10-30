@@ -47,6 +47,13 @@ reference assets fail CI. Tests use synthetic credentials and loopback peers.
 Required sandbox or reference checks fail if their prerequisites are missing;
 a skip is not a pass.
 
+`python3 tests/capture_cli.py` uses the checksum-pinned active `PRODEX_ORACLE`
+and writes `docs/cli-inventory-0.166.0.json` with help fixtures under
+`docs/evidence/baseline-0.166.0/help/`. It leaves the historical
+`docs/cli-inventory.json` and `docs/evidence/baseline/help/` untouched. Help
+output is discovery evidence only; source tracing and behavior comparisons are
+still required.
+
 On 2026-10-30 the historical 0.439.2 tag lookup returned no ref and its
 official SHA256SUMS URL returned HTTP 404. A clean hosted runner without the
 previously verified historical bytes therefore cannot run that regression

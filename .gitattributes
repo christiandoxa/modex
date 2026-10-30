@@ -1,2 +1,3 @@
 # Preserve exact release-help fixtures, including space-only description lines.
 docs/evidence/baseline/help/*.txt whitespace=-blank-at-eol
+docs/evidence/baseline-0.166.0/help/*.txt whitespace=-blank-at-eol

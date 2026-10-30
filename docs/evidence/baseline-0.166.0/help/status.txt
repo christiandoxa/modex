@@ -1,0 +1,8 @@
+Monitor profiles, quota resets, token efficiency, and Prodex resource usage.
+
+Usage: prodex status [OPTIONS]
+
+Options:
+      --once                Render one snapshot instead of the live dashboard
+      --interval <SECONDS>  Resource sampling interval in seconds [default: 1]
+  -h, --help                Print help

@@ -1,5 +1,16 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+## Playwright dry-run readiness (2026-10-30)
+
+Super dry-run now probes a locally resolved `npx --no-install @playwright/mcp
+--version` with the filtered environment and a five-second bound, as both
+pinned releases do. Synthetic three-process comparisons cover version
+selection, failure, timeout, report ordering and environment isolation; no
+network or real package is used by these tests. Malformed Node probes still
+fail closed and the Mojo process wrapper cannot terminate descendants. This
+qualifies selected Linux x86-64 behavior, not all six targets or security.
+See `docs/evidence/baseline-0.165.1/super-dry-run-01651.md`.
+
 The combined production build at `64e37c1` passed. Its focused three-process
 Anthropic alias checks passed, and the preceding combined relay build passed
 six header, framing, and large-field process tests. The integrated managed

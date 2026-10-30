@@ -82,15 +82,16 @@ passed. Full repository tests and Fast/Full CI were not run. This qualifies
 selected Linux x86-64 behavior only; all six release targets and unverified
 security behavior remain in the parity denominator.
 
-Installed Caveman, Ponytail, or Playwright tools remain fail-closed. Modex does
-not run `npx --no-install @playwright/mcp --version`,
-which both releases use to decide Playwright readiness.
-
-When both Node and `npx` are available, Modex remains fail-closed. The pinned
-release runs `npx --no-install @playwright/mcp --version` to decide Playwright
-readiness; that starts locally resolved package code. Modex does not run that
-user-local code during dry-run, so installed Playwright readiness remains a
-visible safety and parity gap.
+When Node and `npx` are on `PATH`, Modex now runs the same bounded
+`npx --no-install @playwright/mcp --version` readiness probe as both releases.
+This executes locally resolved package code. Synthetic native fixtures and
+isolated homes compare stable, prerelease, build metadata, multiple candidate
+versions, malformed output, stderr, nonzero exit, timeout, output ordering,
+and environment filtering across all three processes. Node itself is probed
+for Ponytail readiness as before. Malformed Node probes still fail closed, and
+complete path discovery, malformed UTF-8 probe output, descendant cleanup,
+and non-host platforms remain unqualified. Installed Caveman and Ponytail
+remain fail-closed.
 
 Separated and attached sensitive CLI flag values and secret-looking proxy
 environment values match both releases. A chained control with

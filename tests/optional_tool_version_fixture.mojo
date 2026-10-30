@@ -9,7 +9,8 @@ from std.time import sleep
 
 def main() raises:
     var arguments = argv()
-    if len(arguments) == 2 and arguments[1] == "--version":
+    var npx_probe = len(arguments) == 4 and arguments[1] == "--no-install" and arguments[2] == "@playwright/mcp" and arguments[3] == "--version"
+    if (len(arguments) == 2 and arguments[1] == "--version") or npx_probe:
         var marker = getenv("SYNTHETIC_PROBE_MARKER", "\0")
         if marker != "\0":
             with open(marker, "w") as file:
@@ -17,6 +18,8 @@ def main() raises:
         var home = getenv("HOME", "")
         var config = home + "/.rtk-version-fixture"
         var executable = String(arguments[0])
+        if npx_probe:
+            config = home + "/.npx-version-fixture"
         if executable.find("/outside/codebase-memory-mcp") >= 0:
             with open(home + "/.codebase-probe-invoked", "w") as file:
                 file.write("managed symlink target was executed")

@@ -748,15 +748,79 @@ def _dry_run_codebase_status() raises -> String:
     return "skipped (codebase-memory-mcp lacks shared daemon coordination; Prodex requires 0.9.1-rc.1 or newer. Update to the latest stable release (release-qualified reference: 0.12.1))"
 
 
+def _playwright_version_token(token: String) -> String:
+    var start = 0
+    var end = token.byte_length()
+    while start < end:
+        var byte = Int(token.as_bytes()[start])
+        if 48 <= byte <= 57 or 65 <= byte <= 90 or 97 <= byte <= 122 or byte in [43, 45, 46]: break
+        start += 1
+    while end > start:
+        var byte = Int(token.as_bytes()[end - 1])
+        if 48 <= byte <= 57 or 65 <= byte <= 90 or 97 <= byte <= 122 or byte in [43, 45, 46]: break
+        end -= 1
+    while start < end and token.as_bytes()[start] == 118: start += 1
+    var version = String(token[byte=start:end])
+    var plus = version.find("+")
+    var core_end = version.byte_length()
+    if plus >= 0:
+        if not _dry_run_semver_identifiers(String(version[byte=plus + 1:]), False): return String()
+        core_end = plus
+    var dash = version.find("-")
+    var prerelease = False
+    if dash >= 0 and dash < core_end:
+        if not _dry_run_semver_identifiers(String(version[byte=dash + 1:core_end]), True): return String()
+        core_end = dash
+        prerelease = True
+    var parts = String(version[byte=:core_end]).split(".")
+    if len(parts) != 3: return String()
+    var numbers = List[UInt64]()
+    for part in parts:
+        var text = String(part)
+        var number: UInt64
+        try:
+            number = unsigned_value(text)
+        except:
+            return String()
+        if String(number) != text: return String()
+        numbers.append(number)
+    var old = numbers[0] == UInt64(0) and numbers[1] == UInt64(0) and (numbers[2] < UInt64(79) or (numbers[2] == UInt64(79) and prerelease))
+    if old:
+        return "skipped (playwright-mcp " + version + " is too old; Prodex requires 0.0.79 or newer. Update playwright-mcp to the latest stable release (release-qualified reference: 0.0.83))"
+    return "resolved (activation deferred until launch)"
+
+
+def _dry_run_playwright_status(binary: String) -> String:
+    var unavailable = String("skipped (Playwright MCP is not installed or is currently unavailable; install/update @playwright/mcp 0.0.79 or newer (latest stable reference: 0.0.83))")
+    var probe: CapturedProcessOutput
+    try:
+        probe = capture_with_env(binary, [String("--no-install"), "@playwright/mcp", "--version"], _dry_run_probe_environment(), "playwright-mcp health check", 5000, 65536, argv0=binary)
+    except:
+        return unavailable^
+    if not probe.status.exit_code or probe.status.exit_code.value() != 0: return unavailable^
+    var line = _dry_run_probe_first_line(probe.stdout)
+    if not line: line = _dry_run_probe_first_line(probe.stderr)
+    var token = String()
+    for character in line.codepoints():
+        var code = Int(character)
+        if is_whitespace(code):
+            var status = _playwright_version_token(token)
+            if status: return status^
+            token = String()
+        else:
+            token += chr(code)
+    var status = _playwright_version_token(token)
+    return status^ if status else unavailable^
+
+
 def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String, String]:
     var present = _managed_tool_present("caveman")
     var node_found = _path_has_executable("node")
     var npx_found = _path_has_executable("npx")
-    present = present or (node_found and npx_found)
     present = present or _managed_tool_present("ponytail")
     if present:
         raise Error("Super dry-run cannot report installed optional tools yet")
-    var playwright_status = String("Node.js 18+ was not found on PATH")
+    var playwright_status = String("skipped (Node.js 18+ was not found on PATH)")
     var ponytail_status = String("Node.js was not found on PATH")
     if node_found:
         var node = String()
@@ -768,19 +832,23 @@ def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String, St
         var version = capture_with_env(node, [String("--version")], probe_environment, "Node.js version probe", argv0=node)
         if not version.status.exit_code or version.status.exit_code.value() != 0:
             raise Error("Super dry-run cannot report optional tools with an invalid Node.js probe")
-        var output = trim_text(String(from_utf8_lossy=Span(version.stdout)))
-        var version_text = String(output)
+        var version_text = trim_text(String(from_utf8_lossy=Span(version.stdout)))
         if version_text.startswith("v"):
             var stripped_version = String(version_text[byte=1:])
             version_text = stripped_version
-        var major_text = String(version_text.split(".")[0])
-        var major = UInt64(0)
         try:
-            major = unsigned_value(major_text)
+            _ = unsigned_value(String(version_text.split(".")[0]))
         except:
             raise Error("Super dry-run cannot report optional tools with an invalid Node.js version")
-        playwright_status = "npx was not found on PATH" if major >= 18 else "Node.js 18+ is required; found " + output
         ponytail_status = "Ponytail 4.9.0+ was not found under a managed optional-tool root; latest stable reference is 5.3.2"
+    if node_found and npx_found:
+        var npx = String()
+        for candidate in _path_candidates("npx", getenv("PATH", "\0")):
+            npx = _executable_path(candidate)
+            if npx: break
+        playwright_status = _dry_run_playwright_status(npx)
+    elif node_found:
+        playwright_status = "skipped (npx was not found on PATH)"
     return _dry_run_rtk_status(), _dry_run_codebase_status(), playwright_status^, ponytail_status^
 
 
@@ -791,12 +859,15 @@ def _print_dry_run_optional_tools(rtk_status: String, codebase_status: String, p
         print("  rtk: " + rtk_status)
     if codebase_status.startswith("resolved "):
         print("  codebase-memory-mcp: " + codebase_status)
+    if playwright_status.startswith("resolved "):
+        print("  playwright-mcp: " + playwright_status)
     print("  caveman: skipped (" + caveman_missing + ")")
     if not rtk_status.startswith("resolved "):
         print("  rtk: " + rtk_status)
     if not codebase_status.startswith("resolved "):
         print("  codebase-memory-mcp: " + codebase_status)
-    print("  playwright-mcp: skipped (" + playwright_status + ")")
+    if not playwright_status.startswith("resolved "):
+        print("  playwright-mcp: " + playwright_status)
     print("  ponytail: skipped (" + ponytail_status + ")")
 
 

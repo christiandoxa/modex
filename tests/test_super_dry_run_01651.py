@@ -503,6 +503,53 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 if label == "Modex":
                     self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
 
+    def test_playwright_probe_matches_release_reports(self):
+        versions = ("0.0.83", "playwright-mcp 0.0.79", "0.0.78", "0.0.79-rc.1",
+                    "0.0.79+build", "(vv0.0.83)", "broken 0.0.78 1.0.0",
+                    "01.2.3 0.0.83", "nonsense", "empty", "exit:7", "stderr:0.0.83")
+        for version in versions:
+            outputs = []
+            for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                         ("0.439.2", ORACLE, "prodex"),
+                                         ("Modex", MODEX, "modex")):
+                with self.subTest(version=version, binary=label):
+                    def prepare(root):
+                        write_node(root / "bin/node")
+                        write_optional_tool(root / "bin/npx")
+                        (root / "home/.npx-version-fixture").write_text(version)
+                        write_optional_tool(root / "bin/rtk")
+
+                    result, before, after = run_dry_run(
+                        binary, argv0, prepare,
+                        environment=lambda root: {"SYNTHETIC_PROBE_MARKER": str(root / "probe-environment-leaked")},
+                        extra_binaries=(NODE_FIXTURE, OPTIONAL_TOOL_FIXTURE),
+                    )
+                    self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                    self.assertEqual(after, before)
+                    outputs.append(result.stdout)
+            self.assertEqual(outputs[0], outputs[1])
+            self.assertEqual(outputs[0], outputs[2])
+
+    def test_playwright_probe_timeout_matches_releases(self):
+        outputs = []
+        for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                     ("0.439.2", ORACLE, "prodex"),
+                                     ("Modex", MODEX, "modex")):
+            with self.subTest(binary=label):
+                def prepare(root):
+                    write_node(root / "bin/node")
+                    write_optional_tool(root / "bin/npx")
+                    (root / "home/.npx-version-fixture").write_text("timeout")
+
+                result, before, after = run_dry_run(
+                    binary, argv0, prepare, extra_binaries=(NODE_FIXTURE, OPTIONAL_TOOL_FIXTURE), timeout=30,
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertEqual(after, before)
+                outputs.append(result.stdout)
+        self.assertEqual(outputs[0], outputs[1])
+        self.assertEqual(outputs[0], outputs[2])
+
     def test_managed_codebase_candidate_and_root_order_matches_both_releases(self):
         for selected_index in range(4):
             outputs = []
@@ -793,7 +840,6 @@ class SuperDryRun01651Tests(unittest.TestCase):
     def test_installed_optional_tools_fail_closed_without_launching_them(self):
         cases = (
             ("managed tool", lambda root: (root / "home/.local/share/prodex-optimizers/caveman/4.0.1").mkdir(parents=True)),
-            ("node and npx", lambda root: (write_node(root / "bin/node"), write_tool(root / "bin/npx", root / "npx-invoked"))),
         )
         for label, prepare_tool in cases:
             with self.subTest(tool=label):

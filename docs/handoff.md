@@ -4245,3 +4245,20 @@ Validation passed on Linux x86-64: production build, focused Mojo header
 driver, four selected-header/framing tests, and both pinned-release large-head
 tests. The test peers, credentials, homes, and ports are synthetic and
 isolated. See `docs/evidence/baseline-0.165.1/local-relay-http.md`.
+## DeepSeek Anthropic web-search tool aliases (2026-10-30)
+
+The official 0.439.2 bridge and historical 0.165.1 bridge both classify
+`web_search`, exact `web_search_preview`, and `web_search_preview_`-prefixed
+types as web search. Modex's request mapper had the same accepted set, but the
+Anthropic validator rejected the aliases before dispatch; the conflict
+fallback classifier also missed versioned aliases. Both Modex checks now use
+the shared accepted set while preserving existing option validation.
+
+Synthetic three-process comparisons cover those aliases, several version
+suffix shapes, two invalid near-prefix types, normalized provider request and
+response bodies, and conflicting domain filters on a versioned alias.
+Focused process methods, the production build, the 71-file dependency audit,
+the 50-native/154-Python test census, and `git diff --check` passed on Linux
+x86-64. This qualifies only the tested request shapes and leaves the six-release
+denominator unchanged. Details:
+`docs/evidence/baseline-0.165.1/anthropic-web-search-aliases.md`.

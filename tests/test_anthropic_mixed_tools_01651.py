@@ -2524,6 +2524,64 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                     self.assertNotIn("search_context_size", web_search)
                     self.assertEqual(result["state"]["leftovers"], [])
 
+    def test_web_search_tool_type_aliases_match_both_releases(self):
+        aliases = (
+            "web_search",
+            "web_search_preview",
+            "web_search_preview_2025_03_11",
+            "web_search_preview_20250311",
+            "web_search_preview_2025-03-11",
+            "web_search_preview_future",
+        )
+        for alias in aliases:
+            request = {
+                "model": "deepseek-chat",
+                "input": "synthetic aliased web query",
+                "stream": False,
+                "tools": [{"type": alias, "allowed_domains": ["example.test"]}],
+            }
+            with self.subTest(alias=alias):
+                results = [
+                    _run(binary, request, scenario="anthropic-buffered")
+                    for binary in (ORACLE_01651, ORACLE, MODEX)
+                ]
+                expected = results[0]
+                for result in results:
+                    self.assertEqual((result["exit_code"], result["status"]), (0, 200))
+                    self.assertEqual(len(result["upstream"]), 1)
+                    self.assertEqual(result["upstream"][0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual(result["upstream_body"], expected["upstream_body"])
+                    self.assertEqual(result["upstream_body"]["tools"][-1], {
+                        "name": "web_search",
+                        "type": "web_search_20250305",
+                        "allowed_domains": ["example.test"],
+                    })
+                    self.assertEqual(
+                        _normalize(json.loads(result["response_body"])),
+                        _normalize(json.loads(expected["response_body"])),
+                    )
+                    self.assertEqual(result["state"]["leftovers"], [])
+
+    def test_near_prefix_web_search_types_are_rejected_by_both_releases(self):
+        for alias in ("web_search_previewX2025_03_11", "web_search_preview-2025_03_11"):
+            request = {
+                "model": "deepseek-chat",
+                "input": "synthetic aliased web query",
+                "stream": False,
+                "tools": [{"type": alias}],
+            }
+            with self.subTest(alias=alias):
+                results = [
+                    _run(binary, request, scenario="anthropic-buffered")
+                    for binary in (ORACLE_01651, ORACLE, MODEX)
+                ]
+                expected = results[0]
+                for result in results:
+                    self.assertEqual((result["exit_code"], result["status"]), (1, 502))
+                    self.assertEqual(result["upstream"], [])
+                    self.assertEqual(result["response_body"], expected["response_body"])
+                    self.assertEqual(result["state"]["leftovers"], [])
+
     def test_streamed_web_search_options_match_both_releases(self):
         request = {
             "model": "deepseek-chat",
@@ -2602,6 +2660,16 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                 "stream": False,
                 "tools": [{
                     "type": "web_search_preview",
+                    "allowed_domains": [],
+                    "blocked_domains": [],
+                }],
+            },
+            {
+                "model": "deepseek-chat",
+                "input": "synthetic web query",
+                "stream": False,
+                "tools": [{
+                    "type": "web_search_preview_2025_03_11",
                     "allowed_domains": [],
                     "blocked_domains": [],
                 }],

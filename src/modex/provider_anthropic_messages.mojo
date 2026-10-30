@@ -71,7 +71,7 @@ def validate_deepseek_anthropic_request(source: String) raises:
             if kind == "function":
                 # The shared Responses tool mapper validates names, schemas, and strict mode.
                 continue
-            if kind != "web_search_preview":
+            if not _is_web_search_tool(kind):
                 raise Error("Anthropic Messages slice supports function and web_search_preview tools")
             web_count += 1
             var allowed_domains = doc.get(tool, "allowed_domains")
@@ -112,9 +112,13 @@ def anthropic_search_filters_conflict(source: String) raises -> Bool:
     var tools = doc.get(doc.root, "tools")
     if tools >= 0 and doc.nodes[tools].kind == JSON_ARRAY:
         for tool in doc.nodes[tools].children:
-            if doc.string(doc.get(tool, "type")) == "web_search_preview" and _has_both_domain_filters(doc, tool):
+            if _is_web_search_tool(doc.string(doc.get(tool, "type"))) and _has_both_domain_filters(doc, tool):
                 return True
     return False
+
+
+def _is_web_search_tool(kind: String) -> Bool:
+    return kind == "web_search" or kind == "web_search_preview" or kind.startswith("web_search_preview_")
 
 
 def anthropic_auto_chat_fallback_safe(reason: String) -> Bool:

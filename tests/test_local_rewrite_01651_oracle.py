@@ -627,6 +627,9 @@ try:
                 chunk = connection.recv(65536)
             except socket.timeout:
                 break
+            except ConnectionResetError:
+                result["connection_closed"] = True
+                break
             if not chunk:
                 result["connection_closed"] = True
                 break

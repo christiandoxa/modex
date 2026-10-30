@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The new malformed-trailer raw-wire regression initially failed locally on
+Modex because the probe discarded already received bytes when the peer reset
+the connection. The probe now retains those bytes and records the reset as a
+closed connection. Both new raw-wire comparisons and all five focused local
+admission tests passed after that repair. The ongoing `777cd3a` full run has
+reported a separate 0.439.2 chunked invalid-target subtest failure; its
+focused rerun passed, and the full run has not finished. Its cause remains
+unverified.
+
 Single-key streamed DeepSeek continuations expose an unfinished prefetch
 binding gap: both releases accept selected follow-ups while Modex returns 503.
 A candidate change reproduced the release behavior but also let a different

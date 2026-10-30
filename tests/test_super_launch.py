@@ -18,6 +18,12 @@ import unittest
 from test_cli import MODEX, ORACLE, ORACLE_SHA256
 from test_cli_01651 import ORACLE as ORACLE_01651, ORACLE_SHA256 as ORACLE_01651_SHA256
 
+PROVIDER_SECRET_ENV_KEYS = (
+    "OPENAI_API_KEYS", "OPENAI_API_KEY", "ANTHROPIC_API_KEYS", "ANTHROPIC_API_KEY",
+    "DEEPSEEK_API_KEYS", "DEEPSEEK_API_KEY", "GEMINI_API_KEYS", "GEMINI_API_KEY",
+    "GOOGLE_API_KEYS", "GOOGLE_API_KEY", "GITHUB_COPILOT_API_KEYS", "GITHUB_COPILOT_API_KEY",
+)
+
 CODEX = r'''
 import http.client, json, os, pathlib, signal, sys, time
 from urllib.parse import urlsplit
@@ -26,9 +32,15 @@ capture = pathlib.Path(os.environ["MODEX_LAUNCH_CAPTURE"])
 def save(value):
     value["script_argv0"] = sys.argv[0]
     with capture.open("a") as handle: handle.write(json.dumps(value) + "\n")
+provider_secret_env_names = (
+    "OPENAI_API_KEYS", "OPENAI_API_KEY", "ANTHROPIC_API_KEYS", "ANTHROPIC_API_KEY",
+    "DEEPSEEK_API_KEYS", "DEEPSEEK_API_KEY", "GEMINI_API_KEYS", "GEMINI_API_KEY",
+    "GOOGLE_API_KEYS", "GOOGLE_API_KEY", "GITHUB_COPILOT_API_KEYS", "GITHUB_COPILOT_API_KEY",
+)
 probe_environment = ("CODEX_HOME", "TEST_CODEX_LOG", "TEST_CODEX_LOG_APPEND",
                      "TEST_CODEX_ARGS_LOG", "TEST_CODEX_ARGS_LOG_APPEND", "TEST_CODEX_STDIN_LOG",
-                     "DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS", "PRODEX_RUNTIME_LOCAL_KEYS_JSON")
+                     *provider_secret_env_names, "PRODEX_RUNTIME_LOCAL_KEYS_JSON",
+                     "PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN")
 if args == ["--version"]:
     save({"kind":"probe", "args":args,
           "environment":{key:os.environ.get(key) for key in probe_environment}})
@@ -51,7 +63,8 @@ if args == ["app-server", "--help"]:
     print("Codex app-server")
     raise SystemExit(0)
 if "app-server" in args and "--stdio" in args:
-    save({"kind":"preflight", "pid":os.getpid(), "args":args})
+    save({"kind":"preflight", "pid":os.getpid(), "args":args,
+          "environment":{key:os.environ.get(key) for key in provider_secret_env_names}})
     for line in sys.stdin:
         request = json.loads(line)
         if "id" not in request: continue
@@ -87,6 +100,9 @@ if "app-server" in args and "--stdio" in args:
         if request["id"] == 4: time.sleep(30)
     raise SystemExit(0)
 home = pathlib.Path(os.environ["CODEX_HOME"])
+auth = json.loads((home/"auth.json").read_text())
+client_token = auth["OPENAI_API_KEY"]
+authorization = "Bearer " + client_token
 config = {}
 for index, arg in enumerate(args[:-1]):
     if arg == "-c":
@@ -98,10 +114,46 @@ children = pathlib.Path(f"/proc/{os.getppid()}/task/{os.getppid()}/children")
 save({"kind":"launch","pid":os.getpid(),"mode":home.stat().st_mode & 0o777,"args":args,"config":config,
       "catalog":json.loads(pathlib.Path(config["model_catalog_json"]).read_text()) if "model_catalog_json" in config else None,
       "runtime_config":(home/"config.toml").read_text() if (home/"config.toml").exists() else None,
-      "auth":json.loads((home/"auth.json").read_text()),"children":children.read_text().split(),
-      "environment":{key:os.environ.get(key) for key in ("CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT","PRODEX_RUNTIME_LOCAL_KEY","PRODEX_RUNTIME_LOCAL_KEYS_JSON","CODEX_SANDBOX_SENTINEL","DEEPSEEK_API_KEY","DEEPSEEK_API_KEYS")}})
+      "auth":auth,"children":children.read_text().split(),
+      "environment":{key:os.environ.get(key) for key in ("CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT","PRODEX_RUNTIME_LOCAL_KEY","PRODEX_RUNTIME_LOCAL_KEYS_JSON","PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN","CODEX_SANDBOX_SENTINEL",*provider_secret_env_names)}})
 (home/"sessions"/"synthetic-session.jsonl").write_text('{"synthetic":true}\n')
 scenario = os.environ["MODEX_LAUNCH_SCENARIO"]
+if scenario in ("client-auth-reject", "client-auth-stale"):
+    import socket
+    target = urlsplit(config["model_providers.prodex-deepseek.base_url"] + "/responses")
+    body = json.dumps({"model":"deepseek-chat","input":"synthetic auth probe"},separators=(",",":")).encode()
+    if scenario == "client-auth-stale":
+        stale_token = os.environ["MODEX_STALE_CLIENT_TOKEN"]
+        attempts = (("prior-launch", ["Content-Type: application/json",
+                                      "Authorization: Bearer " + stale_token], len(body), body),)
+    else:
+        attempts = (
+            ("missing", ["Content-Type: application/json"], len(body), body),
+            ("empty", ["Content-Type: application/json", "Authorization:"], len(body), body),
+            ("wrong", ["Content-Type: application/json", "Authorization: Bearer synthetic-wrong-client"], len(body), body),
+            ("duplicate", ["Content-Type: application/json", "Authorization: " + authorization,
+                           "Authorization: Bearer synthetic-wrong-client"], len(body), body),
+            ("stalled-body", ["Content-Type: application/json"], 1, b""),
+            ("stalled-body-expect", ["Content-Type: application/json", "Expect: 100-continue"], 1, b""),
+        )
+    results = []
+    for name, request_headers, content_length, request_body in attempts:
+        lines = [f"POST {target.path} HTTP/1.1", f"Host: {target.hostname}:{target.port}",
+                 *request_headers, f"Content-Length: {content_length}", "Connection: close", "", ""]
+        connection = socket.create_connection((target.hostname, target.port), timeout=5)
+        connection.sendall("\r\n".join(lines).encode() + request_body)
+        response_head = bytearray()
+        while b"\r\n\r\n" not in response_head:
+            chunk = connection.recv(4096)
+            if not chunk:
+                break
+            response_head.extend(chunk)
+        status = int(bytes(response_head).split(b" ", 2)[1]) if response_head else None
+        results.append({"name":name, "status":status})
+        connection.close()
+    save({"kind":"client-auth", "results":results})
+    print("synthetic-client-complete")
+    raise SystemExit(0)
 if scenario in ("kill-relay", "kill-relay-ignores-term"):
     def terminate(signum, frame):
         save({"kind":"terminated", "pid":os.getpid(), "signal":signum})
@@ -134,7 +186,7 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
         return int(bytes(received).split(b"\r\n", 1)[0].split()[1])
     body = json.dumps({"model":"deepseek-chat","input":"synthetic slow-partial probe"},separators=(",",":")).encode()
     request = (f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
-               f"Content-Type: application/json\r\nAuthorization: Bearer synthetic-codex-key\r\n"
+               f"Content-Type: application/json\r\nAuthorization: {authorization}\r\n"
                f"Content-Length: {len(body)}\r\nConnection: close\r\n\r\n").encode() + body
     if scenario in (
         "truncated-header-eof", "truncated-body-eof", "truncated-small-body-eof",
@@ -149,7 +201,7 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
             declared_length = 2048 if scenario == "truncated-body-eof" else 1024
             connection.sendall((f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
                                 "Content-Type: application/json\r\n"
-                                "Authorization: Bearer synthetic-codex-key\r\n"
+                                f"Authorization: {authorization}\r\n"
                                 f"Content-Length: {declared_length}\r\n"
                                 "Connection: close\r\n\r\n{").encode())
             connection.shutdown(socket.SHUT_WR)
@@ -167,7 +219,7 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
         else:
             connection.sendall((f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
                                 "Content-Type: application/json\r\n"
-                                "Authorization: Bearer synthetic-codex-key\r\n"
+                                f"Authorization: {authorization}\r\n"
                                 "Content-Length: 0\r\nConnection: close\r\n\r\n").encode())
         status = read_status(connection, 3)
         save({"kind":scenario, "status":status})
@@ -179,7 +231,7 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
         parts = [
             f"POST {path} HTTP/1.1\r\n".encode(),
             f"Host: {host}:{port}\r\nContent-Type: application/json\r\n".encode(),
-            b"Authorization: Bearer synthetic-codex-key\r\n",
+            f"Authorization: {authorization}\r\n".encode(),
             f"Content-Length: {len(body)}\r\nConnection: close\r\n\r".encode(),
             b"\n" + body,
         ]
@@ -208,7 +260,7 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
         body = json.dumps({"model":"deepseek-chat","input":"synthetic large-header probe"},separators=(",",":")).encode()
         def make_header(head_bytes):
             prefix = (f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n").encode()
-            suffix = (f"Content-Type: application/json\r\nAuthorization: Bearer synthetic-codex-key\r\n"
+            suffix = (f"Content-Type: application/json\r\nAuthorization: {authorization}\r\n"
                       f"Content-Length: {len(body)}\r\nConnection: close").encode()
             padding_bytes = head_bytes - len(prefix) - len(suffix)
             field_prefix = b"X-Pad: "
@@ -294,7 +346,8 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
         for index in range(partial_count):
             partial = socket.create_connection((host, port), timeout=5)
             partial.sendall((f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
-                             f"Content-Type: application/json\r\nContent-Length: 2048\r\n"
+                             f"Content-Type: application/json\r\nAuthorization: {authorization}\r\n"
+                             f"Content-Length: 2048\r\n"
                              f"Connection: close\r\nX-Slow-Body: {index}\r\n\r\n{{").encode())
             partials.append(partial)
             time.sleep(0.01)
@@ -344,7 +397,7 @@ if scenario in ("slow-partial", "slow-partial-body", "slow-partial-fragmented-he
         partials = []
         count = int(os.environ["MODEX_SLOW_PARTIAL_HEADER_COUNT"])
         head = (f"POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
-                f"Content-Type: application/json\r\nAuthorization: Bearer synthetic-codex-key\r\n"
+                f"Content-Type: application/json\r\nAuthorization: {authorization}\r\n"
                 f"Content-Length: {len(body)}\r\nConnection: keep-alive\r\n")
 
         response_buffer = bytearray()
@@ -448,7 +501,7 @@ target = urlsplit(config["model_providers.prodex-deepseek.base_url"] + ("/chat/c
 body = b"\x00synthetic\xff" if passthrough else json.dumps({"model":"deepseek-chat","input":"synthetic prompt","stream":scenario == "stream"},separators=(",",":")).encode()
 connection = http.client.HTTPConnection(target.hostname,target.port,timeout=10)
 connection.request("POST",target.path+("?"+target.query if target.query else ""),body,
-                   {"Content-Type":"application/x-synthetic" if passthrough else "application/json","Authorization":"Bearer synthetic-codex-key","Connection":"close"})
+                   {"Content-Type":"application/x-synthetic" if passthrough else "application/json","Authorization":authorization,"Connection":"close"})
 response=connection.getresponse()
 response_body=response.read()
 save({"kind":"response","status":response.status,"headers":{name.lower():value for name,value in response.getheaders()},"body":response_body.hex()})
@@ -465,7 +518,7 @@ if scenario in ("anthropic-buffered-tool-history", "anthropic-buffered-tool-hist
     second_body=json.dumps({"model":"deepseek-chat","input":second_input,"stream":False,"tools":[{"type":"web_search_preview"}]},separators=(",",":")).encode()
     second_connection=http.client.HTTPConnection(target.hostname,target.port,timeout=10)
     second_connection.request("POST",target.path+("?"+target.query if target.query else ""),second_body,
-                              {"Content-Type":"application/json","Authorization":"Bearer synthetic-codex-key","Connection":"close"})
+                              {"Content-Type":"application/json","Authorization":authorization,"Connection":"close"})
     second=second_connection.getresponse()
     second_body=second.read()
     save({"kind":"response","status":second.status,"headers":{name.lower():value for name,value in second.getheaders()},"body":second_body.hex()})
@@ -1293,7 +1346,9 @@ class SuperLaunchTests(unittest.TestCase):
         launch = next(record for record in records if record["kind"] == "launch")
         response = next(record for record in records if record["kind"] == "response")
         self.assertEqual(launch["mode"], 0o700)
-        self.assertEqual(launch["auth"]["OPENAI_API_KEY"], "prodex-runtime-provider")
+        token = launch["auth"]["OPENAI_API_KEY"]
+        self.assertRegex(token, r"^[0-9a-f]{64}$")
+        self.assertIsNone(launch["environment"]["PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN"])
         self.assertIsNone(launch["environment"]["PRODEX_RUNTIME_LOCAL_KEY"])
         self.assertIsNone(launch["environment"]["CODEX_SANDBOX_SENTINEL"])
         self.assertEqual(launch["environment"]["CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT"], "1")
@@ -1306,6 +1361,75 @@ class SuperLaunchTests(unittest.TestCase):
         self.assertEqual(state["leftovers"], [])
         self.assertEqual(state["session"], '{"synthetic":true}\n')
         self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+        self.assertNotIn(token.encode(), result.stdout + result.stderr)
+
+    def test_local_client_token_is_random_and_rejects_unauthorized_requests(self):
+        rejected, records, upstream, state = self.run_launch(scenario="client-auth-reject")
+        self.assertEqual((rejected.returncode, rejected.stdout), (0, b"synthetic-client-complete\n"), rejected.stderr)
+        self.assertEqual(upstream, [])
+        self.assertEqual(state["leftovers"], [])
+        launch = next(record for record in records if record["kind"] == "launch")
+        token = launch["auth"]["OPENAI_API_KEY"]
+        self.assertRegex(token, r"^[0-9a-f]{64}$")
+        self.assertIsNone(launch["environment"]["PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN"])
+        auth = next(record for record in records if record["kind"] == "client-auth")
+        self.assertEqual([(row["name"], row["status"]) for row in auth["results"]],
+                         [("missing", 401), ("empty", 401), ("wrong", 401), ("duplicate", 401),
+                          ("stalled-body", 401), ("stalled-body-expect", 401)])
+        self.assertNotIn(token.encode(), rejected.stdout + rejected.stderr)
+        for record in records:
+            if record["kind"] in ("probe", "launch"):
+                self.assertIsNone(record["environment"]["PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN"])
+
+        accepted, accepted_records, accepted_upstream, accepted_state = self.run_launch(scenario="buffered")
+        self.assertEqual((accepted.returncode, accepted.stdout), (0, b"synthetic-client-complete\n"), accepted.stderr)
+        accepted_launch = next(record for record in accepted_records if record["kind"] == "launch")
+        accepted_token = accepted_launch["auth"]["OPENAI_API_KEY"]
+        self.assertRegex(accepted_token, r"^[0-9a-f]{64}$")
+        self.assertNotEqual(token, accepted_token)
+        self.assertEqual(len(accepted_upstream), 1)
+        self.assertEqual(accepted_state["leftovers"], [])
+
+        stale, stale_records, stale_upstream, stale_state = self.run_launch(
+            scenario="client-auth-stale",
+            environment_overrides={"MODEX_STALE_CLIENT_TOKEN": token},
+        )
+        self.assertEqual((stale.returncode, stale.stdout), (0, b"synthetic-client-complete\n"), stale.stderr)
+        self.assertEqual(stale_upstream, [])
+        self.assertEqual(stale_state["leftovers"], [])
+        stale_launch = next(record for record in stale_records if record["kind"] == "launch")
+        stale_token = stale_launch["auth"]["OPENAI_API_KEY"]
+        self.assertRegex(stale_token, r"^[0-9a-f]{64}$")
+        self.assertNotEqual(token, stale_token)
+        stale_auth = next(record for record in stale_records if record["kind"] == "client-auth")
+        self.assertEqual(stale_auth["results"], [{"name": "prior-launch", "status": 401}])
+
+    def test_provider_secret_environment_is_scrubbed_from_codex_processes(self):
+        secrets = {
+            name: "synthetic-" + name.lower().replace("_", "-") + "-secret"
+            for name in PROVIDER_SECRET_ENV_KEYS
+        }
+        result, records, upstream, state = self.run_launch(
+            api_key="synthetic-explicit-provider-key",
+            environment_overrides=secrets,
+        )
+        self.assertEqual((result.returncode, result.stdout), (0, b"synthetic-client-complete\n"), result.stderr)
+        self.assertEqual(len(upstream), 1)
+        self.assertEqual(state["leftovers"], [])
+        probes = [record for record in records if record["kind"] == "probe"]
+        preflight = [record for record in records if record["kind"] == "preflight"]
+        launches = [record for record in records if record["kind"] == "launch"]
+        self.assertEqual((len(probes), len(preflight), len(launches)), (2, 1, 1))
+        for record in probes + preflight + launches:
+            for name in PROVIDER_SECRET_ENV_KEYS:
+                self.assertIsNone(record["environment"][name], (record["kind"], name))
+        serialized_records = json.dumps(records)
+        for secret in secrets.values():
+            self.assertNotIn(secret.encode(), result.stdout + result.stderr)
+            self.assertNotIn(secret, serialized_records)
+        authorization = next(value for name, value in upstream[0]["headers"].items()
+                             if name.lower() == "authorization")
+        self.assertEqual(authorization, "Bearer synthetic-explicit-provider-key")
 
     def test_deepseek_api_key_environment_resolution_and_child_scrubbing(self):
         cases = (
@@ -1554,7 +1678,8 @@ class SuperLaunchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="modex-relay-parent-") as directory:
             environment = {"HOME": directory, "PATH": "/usr/bin:/bin", "TMPDIR": directory,
                            "PRODEX_RUNTIME_LOCAL_UPSTREAM": "http://127.0.0.1:1/v1",
-                           "PRODEX_RUNTIME_LOCAL_KEY": "synthetic-provider-key"}
+                           "PRODEX_RUNTIME_LOCAL_KEY": "synthetic-provider-key",
+                           "PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN": "a" * 64}
             process = subprocess.Popen([str(MODEX), "__modex-local-rewrite"], env=environment,
                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             try:
@@ -1573,7 +1698,8 @@ class SuperLaunchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="modex-relay-overflow-parent-") as directory:
             environment = {"HOME": directory, "PATH": "/usr/bin:/bin", "TMPDIR": directory,
                            "PRODEX_RUNTIME_LOCAL_UPSTREAM": "http://127.0.0.1:1/v1",
-                           "PRODEX_RUNTIME_LOCAL_KEY": "synthetic-provider-key"}
+                           "PRODEX_RUNTIME_LOCAL_KEY": "synthetic-provider-key",
+                           "PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN": "a" * 64}
             process = subprocess.Popen([str(MODEX), "__modex-local-rewrite"], env=environment,
                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             clients = []

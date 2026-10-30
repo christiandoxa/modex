@@ -25,9 +25,10 @@ def main() raises:
     _ = deepseek_request_headers([], key)
     var route = deepseek_runtime_route()
     var listener = LoopbackHTTPListener(String(arguments[1]))
+    var client_token = String("a") * 64
     var output = RawFileDescriptor(1)
     var startup = "READY http://" + listener.address + "/v1"
     if parent_fd >= 0:
         startup += " WORKERS=" + String(local_rewrite_worker_count())
     output.write_bytes((startup + "\n").as_bytes())
-    serve_local_rewrite(listener, upstream, [key], route[0], route[1], route[2], parent_fd=parent_fd, web_search_mode=route[3])
+    serve_local_rewrite(listener, upstream, [key], client_token, route[0], route[1], route[2], parent_fd=parent_fd, web_search_mode=route[3])

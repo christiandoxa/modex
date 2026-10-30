@@ -19,6 +19,9 @@ from test_super_launch import CODEX
 from test_deepseek_continuation import observe_turns
 
 
+LOCAL_CLIENT_TOKEN = "a" * 64
+
+
 @contextmanager
 def production_relay(upstream_port):
     with tempfile.TemporaryDirectory(prefix="modex-error-sse-") as home:
@@ -26,7 +29,8 @@ def production_relay(upstream_port):
                        "PRODEX_HOME": home, "PRODEX_SHARED_CODEX_HOME": home,
                        "XDG_CONFIG_HOME": home, "XDG_CACHE_HOME": home,
                        "PRODEX_RUNTIME_LOCAL_UPSTREAM": f"http://127.0.0.1:{upstream_port}/v1",
-                       "PRODEX_RUNTIME_LOCAL_KEY": SYNTHETIC_API_KEY}
+                       "PRODEX_RUNTIME_LOCAL_KEY": SYNTHETIC_API_KEY,
+                       "PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN": LOCAL_CLIENT_TOKEN}
         process = subprocess.Popen([str(MODEX), "__modex-local-rewrite"], env=environment,
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
@@ -113,7 +117,8 @@ class RelayStreamTests(unittest.TestCase):
                             connection = HTTPConnection(*address, timeout=0.75)
                             try:
                                 connection.request("POST", path, json_bytes({"model": "deepseek-chat", "input": "synthetic", "stream": True}),
-                                                   {"Content-Type": "application/json"})
+                                                   {"Content-Type": "application/json",
+                                                    "Authorization": "Bearer " + LOCAL_CLIENT_TOKEN})
                                 response = connection.getresponse()
                                 self.assertEqual(response.status, status)
                                 headers = {name.lower(): value for name, value in response.getheaders()}

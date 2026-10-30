@@ -3,9 +3,10 @@
 For a streamed DeepSeek response whose ID appears only in the prefetched
 prefix, both pinned releases can replay stored conversation history using a
 different configured API key or a different unauthenticated local client.
-Modex retains its existing 503 rejection for that response ID. This conservative
-security difference is not parity and remains unapproved; an authenticated
-ownership boundary and reproduction are described in
+Modex retains its existing 503 rejection for an authenticated follow-up with
+that response ID. A different unauthenticated local client now receives 401
+before dispatch; the releases accept the tested client. These conservative
+security differences are not parity. The ownership gap and reproduction are described in
 `docs/evidence/baseline-0.165.1/streamed-continuation-prefetch.md`.
 
 The supported clean-home DeepSeek Super launch cannot be repeated in the same

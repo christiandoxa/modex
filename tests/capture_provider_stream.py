@@ -333,6 +333,7 @@ def fake_codex_executable(path):
         import http.client
         import json
         import os
+        from pathlib import Path
         import sys
         from urllib.parse import urlsplit
 
@@ -353,6 +354,7 @@ def fake_codex_executable(path):
         if base is None:
             raise SystemExit("missing generated local provider base URL")
         target = urlsplit(base.rstrip("/") + "/responses")
+        token = json.loads((Path(os.environ["CODEX_HOME"]) / "auth.json").read_text(encoding="utf-8"))["OPENAI_API_KEY"]
         connection = http.client.HTTPConnection(target.hostname, target.port, timeout=20)
         body = json.dumps({
             "model": "deepseek-chat",
@@ -362,7 +364,7 @@ def fake_codex_executable(path):
         connection.request("POST", target.path, body, {
             "Content-Type": "application/json",
             "Accept": "text/event-stream",
-            "Authorization": "Bearer synthetic-codex-key",
+            "Authorization": "Bearer " + token,
             "Connection": "close",
         })
         response = connection.getresponse()

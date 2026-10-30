@@ -75,6 +75,7 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
             def header(*fields):
                 return (
                     b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+                    b"Authorization: Bearer synthetic-codex-key\r\n"
                     + b"".join(field + b"\r\n" for field in fields)
                     + b"\r\n"
                 )
@@ -233,6 +234,7 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
     def test_websocket_body_wait_keeps_one_idle_and_partial_client(self):
         partial = (
             b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Authorization: Bearer synthetic-codex-key\r\n"
             b"Upgrade: websocket\r\nContent-Length: 1\r\n\r\n"
         )
         healthy = transport.request_bytes(( ("Connection", "close"), ))
@@ -832,7 +834,7 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
 
             non_token_method = {
                 "name": "non_token_method_admission_gap",
-                "request": b"G@T /v1/not-real HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n",
+            "request": b"G@T /v1/not-real HTTP/1.0\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\n\r\n",
                 "check_close": True,
                 "upstream": False,
             }

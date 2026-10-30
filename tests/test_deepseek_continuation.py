@@ -24,7 +24,7 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
         turn = dict(source_turn)
         path = turn.pop("_path", target.path)
         raw_body = turn.pop("_raw_body", None)
-        headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
+        headers = {"Content-Type": "application/json", "Authorization": authorization,
                    **turn.pop("_headers", {})}
         started = int(time.time())
         connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
@@ -45,7 +45,7 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
             turn = dict(source_turn)
             path = turn.pop("_path", target.path)
             raw_body = turn.pop("_raw_body", None)
-            headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
+            headers = {"Content-Type": "application/json", "Authorization": authorization,
                        **turn.pop("_headers", {})}
             connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
             body = raw_body.encode() if raw_body is not None else json.dumps(turn, separators=(",", ":")).encode()
@@ -60,7 +60,7 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
 for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()):
     path = turn.pop("_path", target.path)
     raw_body = turn.pop("_raw_body", None)
-    headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
+    headers = {"Content-Type": "application/json", "Authorization": authorization,
                **turn.pop("_headers", {})}
     if turn.pop("use_previous", False):
         turn["previous_response_id"] = previous
@@ -583,7 +583,8 @@ class DeepSeekContinuationTests(unittest.TestCase):
                     with self.subTest(binary=str(binary)):
                         posts, responses = observe_turns(binary, [first_turn, followup], [reply, buffered_reply(2)], api_keys=keys)
                         blocked = name in ("late_id", "session") or binary == MODEX
-                        self.assertEqual([row["status"] for row in responses], [200, 503 if blocked else 200])
+                        followup_status = 401 if name == "different_client" and binary == MODEX else 503 if blocked else 200
+                        self.assertEqual([row["status"] for row in responses], [200, followup_status])
                         self.assertEqual(len(posts), 1 if blocked else 2)
                         if not blocked:
                             messages = json.loads(posts[1]["body"])["messages"]

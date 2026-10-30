@@ -20,6 +20,7 @@ DRIVER = Path(os.environ.get(
     "MODEX_LOCAL_REWRITE_DRIVER", ROOT / "build/tests/local_rewrite_driver",
 ))
 SYNTHETIC_API_KEY = "synthetic-admission-key"
+LOCAL_CLIENT_AUTHORIZATION = "Bearer " + ("a" * 64)
 
 
 class LocalRewriteAdmissionTests(unittest.TestCase):
@@ -108,6 +109,7 @@ class LocalRewriteAdmissionTests(unittest.TestCase):
         blocked_body = (
             b"POST /v1/responses HTTP/1.1\r\n"
             b"Host: 127.0.0.1\r\nContent-Type: application/json\r\n"
+            b"Authorization: " + LOCAL_CLIENT_AUTHORIZATION.encode() + b"\r\n"
             b"Content-Length: 1\r\nConnection: close\r\n\r\n"
         )
         partial_head = b"GET /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nX-Pending: unfinished"
@@ -120,14 +122,14 @@ class LocalRewriteAdmissionTests(unittest.TestCase):
             # Let the listener admit all 128 partial headers before creating the overflow clients.
             time.sleep(0.4)
             first = transport.request_bytes(
-                headers=(("Connection", "close"),),
+                headers=(("Authorization", LOCAL_CLIENT_AUTHORIZATION), ("Connection", "close")),
                 body=b'{"model":"deepseek-chat","input":"synthetic admission first"}',
                 target=b"/v1/responses?admission=first",
             )
             overflow.append(self._connect(address, first))
             time.sleep(0.15)
             second = transport.request_bytes(
-                headers=(("Connection", "close"),),
+                headers=(("Authorization", LOCAL_CLIENT_AUTHORIZATION), ("Connection", "close")),
                 body=b'{"model":"deepseek-chat","input":"synthetic admission second"}',
                 target=b"/v1/responses?admission=second",
             )
@@ -218,7 +220,7 @@ class LocalRewriteAdmissionTests(unittest.TestCase):
                     partial_clients.append(self._connect(address, partial_head))
                 time.sleep(0.4)
                 request = transport.request_bytes(
-                    headers=(("Connection", "close"),),
+                    headers=(("Authorization", LOCAL_CLIENT_AUTHORIZATION), ("Connection", "close")),
                     body=b'{"model":"deepseek-chat","input":"synthetic healthy request"}',
                     target=b"/v1/responses?admission=healthy",
                 )
@@ -239,6 +241,66 @@ class LocalRewriteAdmissionTests(unittest.TestCase):
             finally:
                 self._close_relay(
                     process, parent_write, partial_clients + ([healthy] if healthy else []),
+                )
+
+    def test_unauthorized_partial_head_saturation_delays_authorized_request_until_release(self):
+        """Characterize a known auth-admission gap; this assertion is not parity."""
+        with tempfile.TemporaryDirectory(prefix="modex-admission-auth-saturation-") as temporary:
+            process, parent_write, address, worker_count = self._start_relay(temporary, "4")
+            initial_fds = self._process_fd_count(process)
+            partial_clients = []
+            healthy = None
+            try:
+                self.assertEqual(worker_count, 4)
+                partial_head = (
+                    b"GET /v1/responses HTTP/1.1\r\n"
+                    b"Host: 127.0.0.1\r\n"
+                    b"Authorization: Bearer " + ("b" * 64).encode() + b"\r\n"
+                    b"X-Pending: unfinished"
+                )
+                for _ in range(132):
+                    partial_clients.append(self._connect(address, partial_head))
+                self.assertEqual(
+                    self._wait_for_process_fd_count(process, initial_fds + 132),
+                    initial_fds + 132,
+                )
+
+                healthy_request = transport.request_bytes(
+                    headers=(
+                        ("Authorization", LOCAL_CLIENT_AUTHORIZATION),
+                        ("Connection", "close"),
+                    ),
+                    body=b'{"model":"deepseek-chat","input":"synthetic auth recovery"}',
+                    target=b"/v1/responses?admission=auth-recovery",
+                )
+                healthy = self._connect(address, healthy_request)
+                readable, _, _ = select.select([healthy], [], [], 0.5)
+                self.assertFalse(
+                    readable,
+                    "authorized request passed 128 parked + 4 overflow unauthorized partial heads",
+                )
+                self.assertEqual(self.upstream.snapshot_records(), [])
+
+                for client in partial_clients:
+                    client.sendall(b"\r\n\r\n")
+                self.assertEqual(
+                    [self._read_response(client) for client in partial_clients],
+                    [(401, b"")] * 132,
+                )
+                self.assertEqual(
+                    self._read_response(healthy), (200, transport.RESPONSES_RESPONSE),
+                )
+                records = self.upstream.snapshot_records()
+                self.assertEqual([row["path"] for row in records], ["/v1/chat/completions"])
+                self.assertEqual(
+                    records[0]["headers"]["authorization"],
+                    "Bearer " + SYNTHETIC_API_KEY,
+                )
+                self.assertIn(b"synthetic auth recovery", records[0]["body"])
+            finally:
+                self._close_relay(
+                    process, parent_write,
+                    partial_clients + ([healthy] if healthy else []),
                 )
 
     def test_two_overflow_clients_are_retained_and_served(self):
@@ -321,7 +383,7 @@ class LocalRewriteAdmissionTests(unittest.TestCase):
                     time.sleep(0.01)
                 self.assertGreaterEqual(self._closed_client_count(idle_clients), 4)
                 request = transport.request_bytes(
-                    headers=(("Connection", "close"),),
+                    headers=(("Authorization", LOCAL_CLIENT_AUTHORIZATION), ("Connection", "close")),
                     body=b'{"model":"deepseek-chat","input":"synthetic newcomer"}',
                 )
                 healthy = self._connect(address, request)

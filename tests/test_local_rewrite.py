@@ -31,6 +31,7 @@ BUFFERED_FIXTURE = ROOT / "tests/fixtures/provider-buffered/cases.json"
 ORACLE_SHA256 = "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a"
 BASELINE_COMMIT = "433aad44bb249d5c25a231a6b06c2fa522a39a1f"
 SYNTHETIC_API_KEY = "synthetic-provider-key"
+LOCAL_CLIENT_AUTHORIZATION = "Bearer " + ("a" * 64)
 
 sys.path.insert(0, str(ROOT / "tests"))
 from session_oracle import sandbox_command
@@ -256,7 +257,8 @@ def post_relay(address, body, *, path="/v1/responses", headers=None, timeout=5):
     connection = HTTPConnection(address[0], address[1], timeout=timeout)
     connection.request(
         "POST", path, body=body,
-        headers={"Content-Type": "application/json", **(headers or {})},
+        headers={"Content-Type": "application/json", "Authorization": LOCAL_CLIENT_AUTHORIZATION,
+                 **(headers or {})},
     )
     response = connection.getresponse()
     status = response.status
@@ -269,7 +271,8 @@ def post_relay(address, body, *, path="/v1/responses", headers=None, timeout=5):
 def post_declared_oversized_body(address, body_bytes):
     request = (
         b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
-        b"Content-Type: application/json\r\nConnection: close\r\n"
+        b"Content-Type: application/json\r\nAuthorization: "
+        + LOCAL_CLIENT_AUTHORIZATION.encode() + b"\r\nConnection: close\r\n"
         b"Content-Length: " + str(body_bytes).encode() + b"\r\n\r\n"
     )
     response = bytearray()
@@ -302,7 +305,8 @@ def post_then_half_close(address, body):
     connection = socket.create_connection(address, timeout=5)
     connection.sendall(
         b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
-        b"Content-Type: application/json\r\nConnection: close\r\n"
+        b"Content-Type: application/json\r\nAuthorization: "
+        + LOCAL_CLIENT_AUTHORIZATION.encode() + b"\r\nConnection: close\r\n"
         b"Content-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body
     )
     connection.shutdown(socket.SHUT_WR)
@@ -612,7 +616,8 @@ class LocalRewriteTests(unittest.TestCase):
                 connection = HTTPConnection(relay.address[0], relay.address[1], timeout=5)
                 connection.request(
                     "POST", "/v1/responses", body=json_bytes(request),
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json",
+                             "Authorization": LOCAL_CLIENT_AUTHORIZATION},
                 )
                 response = connection.getresponse()
                 self.assertEqual(response.status, 200)
@@ -787,6 +792,7 @@ class LocalRewriteTests(unittest.TestCase):
     def test_extra_request_line_token_keeps_the_capture_error_response(self):
         request = (
             b"POST /v1/responses HTTP/1.1 extra\r\nHost: 127.0.0.1\r\n"
+            b"Authorization: " + LOCAL_CLIENT_AUTHORIZATION.encode() + b"\r\n"
             b"Connection: close\r\n\r\n"
         )
         with serving([]) as server:
@@ -814,6 +820,7 @@ class LocalRewriteTests(unittest.TestCase):
                     request = (
                         b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
                         + b"".join(headers)
+                        + b"Authorization: " + LOCAL_CLIENT_AUTHORIZATION.encode() + b"\r\n"
                         + b"Content-Type: application/json\r\nContent-Length: "
                         + str(len(body)).encode() + b"\r\n\r\n" + body
                     )
@@ -828,7 +835,10 @@ class LocalRewriteTests(unittest.TestCase):
         with serving([]) as server:
             with RunningLocalRewrite(server.server_port) as relay:
                 connection = HTTPConnection(relay.address[0], relay.address[1], timeout=5)
-                connection.request("GET", "/v1/models")
+                connection.request(
+                    "GET", "/v1/models",
+                    headers={"Authorization": LOCAL_CLIENT_AUTHORIZATION},
+                )
                 response = connection.getresponse()
                 body = response.read()
                 self.assertEqual(response.status, 404)
@@ -875,7 +885,7 @@ class LocalRewriteTests(unittest.TestCase):
                     request_body,
                     path="/v1/chat/completions?trace=synthetic",
                     headers={
-                        "Authorization": "Bearer caller-secret",
+                        "Authorization": LOCAL_CLIENT_AUTHORIZATION,
                         "Connection": "X-Request-Hop, keep-alive",
                         "X-Request-Hop": "strip-me",
                         "chatgpt-account-id": "account-secret",
@@ -923,7 +933,8 @@ class LocalRewriteTests(unittest.TestCase):
                     "POST",
                     "/v1/chat/completions?trace=stream",
                     body=b'{"model":"deepseek-chat","stream":true}',
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json",
+                             "Authorization": LOCAL_CLIENT_AUTHORIZATION},
                 )
                 response = connection.getresponse()
                 self.assertEqual(response.status, 200)

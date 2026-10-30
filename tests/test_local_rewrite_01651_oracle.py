@@ -482,6 +482,43 @@ if "app-server" in args and "--stdio" in args:
         print(json.dumps({"id": request["id"], "result": result}), flush=True)
     raise SystemExit(0)
 
+def with_local_client_token(request):
+    marker = b"Bearer synthetic-codex-key"
+    if marker not in request:
+        return request
+    with open(os.path.join(os.environ["CODEX_HOME"], "auth.json"), encoding="utf-8") as source:
+        token = json.load(source)["OPENAI_API_KEY"].encode("ascii")
+    return request.replace(marker, b"Bearer " + token)
+
+def with_exact_request_head_bytes(request, header_bytes):
+    request = with_local_client_token(request)
+    header_end = request.find(b"\r\n\r\n")
+    if header_end < 0:
+        raise AssertionError("request has no complete HTTP header block")
+    delta = header_bytes - header_end
+    if delta == 0:
+        return request
+    candidates = []
+    line_start = request.find(b"\r\n") + 2
+    while line_start < header_end:
+        line_end = request.find(b"\r\n", line_start)
+        if line_end < 0 or line_end > header_end:
+            break
+        name, separator, value = request[line_start:line_end].partition(b":")
+        if separator and (name.lower() == b"x-pad" or name.lower().startswith(b"x-pad-")):
+            value_start = line_start + len(name) + 1
+            while value_start < line_end and request[value_start:value_start + 1] in (b" ", b"\t"):
+                value_start += 1
+            candidates.append((value_start, line_end))
+        line_start = line_end + 2
+    for value_start, value_end in candidates:
+        if delta > 0:
+            return request[:value_end] + b"x" * delta + request[value_end:]
+        remove = -delta
+        if remove <= value_end - value_start:
+            return request[:value_end - remove] + request[value_end:]
+    raise AssertionError("request has no padding field long enough to reach the requested head size")
+
 base = None
 for arg in args:
     match = re.search(r"model_providers\.prodex-deepseek\.base_url=(.*)", arg)
@@ -494,13 +531,16 @@ admission_stress = os.environ.get("PROBE_ADMISSION_STRESS") == "1"
 admission_baseline_resources = product_process_resources() if admission_stress else None
 connection = socket.create_connection((target.hostname, target.port), timeout=5)
 connection.settimeout(5)
-request_parts = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_REQUEST_PARTS_BASE64", "[]"))]
-sequential_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_SEQUENTIAL_REQUESTS_BASE64", "[]"))]
-pipelined_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUESTS_BASE64", "[]"))]
-concurrent_requests = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_CONCURRENT_REQUESTS_BASE64", "[]"))]
+actual_request_head_bytes = None
+actual_request_user_agents = []
+actual_request_pad_headers = []
+request_parts = [with_local_client_token(base64.b64decode(part)) for part in json.loads(os.environ.get("PROBE_REQUEST_PARTS_BASE64", "[]"))]
+sequential_requests = [with_local_client_token(base64.b64decode(part)) for part in json.loads(os.environ.get("PROBE_SEQUENTIAL_REQUESTS_BASE64", "[]"))]
+pipelined_requests = [with_local_client_token(base64.b64decode(part)) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUESTS_BASE64", "[]"))]
+concurrent_requests = [with_local_client_token(base64.b64decode(part)) for part in json.loads(os.environ.get("PROBE_CONCURRENT_REQUESTS_BASE64", "[]"))]
 parent_exit_active = os.environ.get("PROBE_PARENT_EXIT_ACTIVE") == "1"
 preconnected_idle = os.environ.get("PROBE_PRECONNECTED_IDLE") == "1"
-pipelined_request_parts = [base64.b64decode(part) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUEST_PARTS_BASE64", "[]"))]
+pipelined_request_parts = [with_local_client_token(base64.b64decode(part)) for part in json.loads(os.environ.get("PROBE_PIPELINED_REQUEST_PARTS_BASE64", "[]"))]
 pipelined_request_delay = int(os.environ.get("PROBE_PIPELINED_REQUEST_DELAY_MS", "0")) / 1000
 request_parts_sent = [0]
 first_request_part_finished = threading.Event()
@@ -535,9 +575,25 @@ else:
     request_file = os.environ.get("PROBE_REQUEST_FILE")
     if request_file:
         with open(request_file, "rb") as source:
-            request = source.read()
+            request = with_local_client_token(source.read())
     else:
-        request = base64.b64decode(os.environ["PROBE_REQUEST_BASE64"])
+        request = with_local_client_token(base64.b64decode(os.environ["PROBE_REQUEST_BASE64"]))
+    exact_request_head_bytes = os.environ.get("PROBE_EXACT_REQUEST_HEAD_BYTES")
+    if exact_request_head_bytes:
+        request = with_exact_request_head_bytes(request, int(exact_request_head_bytes))
+        actual_request_head_bytes = request.find(b"\r\n\r\n")
+        actual_request_user_agents = [
+            base64.b64encode(value.lstrip(b" \t")).decode("ascii")
+            for line in request[:actual_request_head_bytes].split(b"\r\n")[1:]
+            for name, separator, value in [line.partition(b":")]
+            if separator and name.lower() == b"user-agent"
+        ]
+        actual_request_pad_headers = [
+            [name.decode("ascii").lower(), base64.b64encode(value.lstrip(b" \t")).decode("ascii")]
+            for line in request[:actual_request_head_bytes].split(b"\r\n")[1:]
+            for name, separator, value in [line.partition(b":")]
+            if separator and name.lower().startswith(b"x-pad")
+        ]
     connection.sendall(request)
     request_parts_sent[0] = 1
     if half_close:
@@ -581,7 +637,7 @@ class RecordingHTTPResponse(http.client.HTTPResponse):
                 if len(status_line) > 1 and status_line[1] != b"100":
                     self.raw_response_head = block
 
-result = {"status": None, "reason": "", "response_line": "", "raw_response_head_base64": "", "headers": [], "body_base64": "", "wire_body_base64": "", "wire_body_probe_complete": False, "read_error": "", "connection_closed": False, "request_parts_sent_at_response": 0, "response_elapsed_ms": 0, "response_headers_elapsed_ms": 0, "first_body_byte_elapsed_ms": 0, "interim_statuses": []}
+result = {"status": None, "reason": "", "response_line": "", "raw_response_head_base64": "", "headers": [], "body_base64": "", "wire_body_base64": "", "wire_body_probe_complete": False, "read_error": "", "connection_closed": False, "request_parts_sent_at_response": 0, "response_elapsed_ms": 0, "response_headers_elapsed_ms": 0, "first_body_byte_elapsed_ms": 0, "interim_statuses": [], "request_head_bytes": actual_request_head_bytes, "request_user_agents_base64": actual_request_user_agents, "request_pad_headers_base64": actual_request_pad_headers}
 
 def read_expect_response():
     response_file = RecordingReader(connection.makefile("rb"))
@@ -614,7 +670,7 @@ def read_expect_response():
 try:
     request_method = os.environ.get("PROBE_REQUEST_METHOD")
     if os.environ.get("PROBE_RAW_RESPONSE") == "1":
-        raw_requests = pipelined_requests or [base64.b64decode(os.environ["PROBE_REQUEST_BASE64"])]
+        raw_requests = pipelined_requests or [with_local_client_token(base64.b64decode(os.environ["PROBE_REQUEST_BASE64"]))]
         connection.sendall(b"".join(raw_requests))
         request_parts_sent[0] = len(raw_requests)
         if half_close:
@@ -640,9 +696,9 @@ try:
         baseline_resources = admission_baseline_resources
         partial_count = int(os.environ.get("PROBE_ADMISSION_PARTIAL_COUNT", "136"))
         blocker_count = int(os.environ.get("PROBE_ADMISSION_BLOCKER_COUNT", "7"))
-        partial_request = base64.b64decode(os.environ["PROBE_ADMISSION_PARTIAL_REQUEST_BASE64"])
-        blocker_request = base64.b64decode(os.environ["PROBE_ADMISSION_BLOCKER_REQUEST_BASE64"])
-        healthy_request = base64.b64decode(os.environ["PROBE_ADMISSION_HEALTHY_REQUEST_BASE64"])
+        partial_request = with_local_client_token(base64.b64decode(os.environ["PROBE_ADMISSION_PARTIAL_REQUEST_BASE64"]))
+        blocker_request = with_local_client_token(base64.b64decode(os.environ["PROBE_ADMISSION_BLOCKER_REQUEST_BASE64"]))
+        healthy_request = with_local_client_token(base64.b64decode(os.environ["PROBE_ADMISSION_HEALTHY_REQUEST_BASE64"]))
         blockers = []
         partials = []
         healthy_result = {}
@@ -724,7 +780,7 @@ try:
     elif preconnected_idle:
         time.sleep(int(os.environ.get("PROBE_PRECONNECTED_SETTLE_MS", "100")) / 1000)
         baseline_resources = product_process_resources()
-        partial_request = base64.b64decode(os.environ["PROBE_PRECONNECTED_PARTIAL_REQUEST_BASE64"])
+        partial_request = with_local_client_token(base64.b64decode(os.environ["PROBE_PRECONNECTED_PARTIAL_REQUEST_BASE64"]))
         partial_count = int(os.environ.get("PROBE_PRECONNECTED_PARTIAL_COUNT", "136"))
         idle_count = int(os.environ.get("PROBE_PRECONNECTED_IDLE_COUNT", "0"))
         idle_clients = []
@@ -742,7 +798,7 @@ try:
         loaded_resources = product_process_resources()
         time.sleep(int(os.environ.get("PROBE_PRECONNECTED_RESOURCE_SAMPLE_MS", "1000")) / 1000)
         rested_resources = product_process_resources()
-        healthy_request = base64.b64decode(os.environ["PROBE_PRECONNECTED_HEALTHY_REQUEST_BASE64"])
+        healthy_request = with_local_client_token(base64.b64decode(os.environ["PROBE_PRECONNECTED_HEALTHY_REQUEST_BASE64"]))
         result.update({
             "preconnected_partial_count": len(partial_clients),
             "preconnected_idle_count": len(idle_clients),
@@ -764,9 +820,9 @@ try:
             "headers": response.getheaders(),
             "body_base64": base64.b64encode(body).decode("ascii"),
         })
-        complete_partial = base64.b64decode(
+        complete_partial = with_local_client_token(base64.b64decode(
             os.environ.get("PROBE_PRECONNECTED_COMPLETE_PARTIAL_BASE64", "")
-        )
+        ))
         if complete_partial and partial_clients:
             partial_clients[0].sendall(complete_partial)
             partial_response = http.client.HTTPResponse(partial_clients[0])
@@ -783,9 +839,9 @@ try:
         request_file = os.environ.get("PROBE_REQUEST_FILE")
         if request_file:
             with open(request_file, "rb") as source:
-                active_request = source.read()
+                active_request = with_local_client_token(source.read())
         else:
-            active_request = base64.b64decode(os.environ["PROBE_REQUEST_BASE64"])
+            active_request = with_local_client_token(base64.b64decode(os.environ["PROBE_REQUEST_BASE64"]))
         active_client.sendall(active_request)
         trigger = os.environ["PROBE_PARENT_EXIT_TRIGGER"]
         deadline = time.monotonic() + 5
@@ -910,9 +966,9 @@ try:
             })
         second_client_request = os.environ.get("PROBE_SECOND_CLIENT_REQUEST_BASE64", "")
         if second_client_request:
-            reused_partial_request = base64.b64decode(
+            reused_partial_request = with_local_client_token(base64.b64decode(
                 os.environ.get("PROBE_REUSED_PARTIAL_REQUEST_BASE64", "")
-            )
+            ))
             if reused_partial_request:
                 connection.sendall(reused_partial_request)
             second_client = socket.create_connection((target.hostname, target.port), timeout=5)
@@ -920,7 +976,7 @@ try:
             second_client_done = threading.Event()
             def read_second_client_response():
                 try:
-                    second_client.sendall(base64.b64decode(second_client_request))
+                    second_client.sendall(with_local_client_token(base64.b64decode(second_client_request)))
                     second_response = http.client.HTTPResponse(second_client)
                     second_response.begin()
                     second_body = second_response.read()
@@ -963,8 +1019,8 @@ try:
         fairness_extra_connections = int(os.environ.get("PROBE_FAIRNESS_EXTRA_CONNECTIONS", "0"))
         fairness_churn_count = int(os.environ.get("PROBE_FAIRNESS_CHURN_COUNT", "0"))
         if fairness_extra_connections or fairness_churn_count:
-            fairness_request = base64.b64decode(os.environ["PROBE_FAIRNESS_REQUEST_BASE64"])
-            fairness_churn_request = base64.b64decode(os.environ["PROBE_FAIRNESS_CHURN_REQUEST_BASE64"])
+            fairness_request = with_local_client_token(base64.b64decode(os.environ["PROBE_FAIRNESS_REQUEST_BASE64"]))
+            fairness_churn_request = with_local_client_token(base64.b64decode(os.environ["PROBE_FAIRNESS_CHURN_REQUEST_BASE64"]))
             fairness_connections = [connection]
             for _ in range(fairness_extra_connections):
                 parked = socket.create_connection((target.hostname, target.port), timeout=5)
@@ -1094,7 +1150,7 @@ try:
             connection.settimeout(5)
     saturation_count = int(os.environ.get("PROBE_SATURATION_EXTRA_CONNECTIONS", "0"))
     if saturation_count:
-        saturation_request = base64.b64decode(os.environ["PROBE_SATURATION_REQUEST_BASE64"])
+        saturation_request = with_local_client_token(base64.b64decode(os.environ["PROBE_SATURATION_REQUEST_BASE64"]))
         saturation_connections = []
         for _ in range(saturation_count):
             saturated = socket.create_connection((target.hostname, target.port), timeout=5)
@@ -1104,9 +1160,9 @@ try:
             saturated_response.begin()
             saturated_response.read()
             saturation_connections.append(saturated)
-        oldest_partial = base64.b64decode(
+        oldest_partial = with_local_client_token(base64.b64decode(
             os.environ.get("PROBE_SATURATION_OLDEST_PARTIAL_BASE64", "")
-        )
+        ))
         if oldest_partial:
             connection.sendall(oldest_partial)
         overflow = socket.create_connection((target.hostname, target.port), timeout=5)
@@ -1143,7 +1199,7 @@ followup_hex = os.environ.get("PROBE_FOLLOWUP_REQUEST_HEX", "")
 if followup_hex:
     followup_connection = socket.create_connection((target.hostname, target.port), timeout=5)
     followup_connection.settimeout(5)
-    followup_connection.sendall(bytes.fromhex(followup_hex))
+    followup_connection.sendall(with_local_client_token(bytes.fromhex(followup_hex)))
     followup_response = http.client.HTTPResponse(followup_connection)
     followup_response.begin()
     followup_body = followup_response.read()
@@ -1206,8 +1262,12 @@ def configured_modex_worker_capacity(worker_count):
 
 
 def request_bytes(headers=(), body=REQUEST_BODY, target=b"/v1/responses", method=b"POST", version=b"HTTP/1.1"):
+    client_authorization = []
+    if not any(name.lower() == "authorization" for name, _ in headers):
+        client_authorization.append(("Authorization", "Bearer synthetic-codex-key"))
     all_headers = [
         ("Host", "127.0.0.1"),
+        *client_authorization,
         *headers,
         ("Content-Type", "application/json"),
         ("Content-Length", str(len(body))),
@@ -1236,14 +1296,16 @@ def large_request_head_case(head_bytes, target=b"/v1/responses"):
 
 
 def large_user_agent_case(head_bytes=1024 * 1024):
-    empty = request_bytes(headers=(("User-Agent", ""),))
+    padding = ("X-Pad", "x" * 64)
+    empty = request_bytes(headers=(("User-Agent", ""), padding))
     value_bytes = head_bytes - empty.index(b"\r\n\r\n")
-    request = request_bytes(headers=(("User-Agent", "u" * value_bytes),))
+    request = request_bytes(headers=(("User-Agent", "u" * value_bytes), padding))
     if request.index(b"\r\n\r\n") != head_bytes:
         raise AssertionError(f"request head did not reach {head_bytes} bytes")
     return {
         "name": f"large_user_agent_{head_bytes}",
         "request": request,
+        "exact_request_head_bytes": head_bytes,
         "expected_status": 200,
         "expected_body": RESPONSES_RESPONSE,
         "upstream": True,
@@ -1281,6 +1343,7 @@ def many_small_header_case(head_bytes, count=4096, target=b"/v1/responses"):
     return {
         "name": f"many_small_request_headers_{head_bytes}",
         "request": request,
+        "exact_request_head_bytes": head_bytes,
         "expected_status": 200,
         "expected_body": PROVIDER_RESPONSE if target == b"/v1/chat/completions" else RESPONSES_RESPONSE,
         "compare_upstream_request": True,
@@ -1434,6 +1497,7 @@ def chunked_request_case(
         "name": name,
         "request": (
             b"POST " + target + b" HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Authorization: Bearer synthetic-codex-key\r\n"
             b"Content-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n"
             + chunked_body
         ),
@@ -1489,6 +1553,7 @@ def delayed_invalid_target_chunked_request_case(name, *, body, half_close=False,
     target = b"http://example.test/v1/responses"
     header = (
         b"POST " + target + b" HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+        b"Authorization: Bearer synthetic-codex-key\r\n"
         b"Transfer-Encoding: chunked\r\n\r\n"
     )
     return {
@@ -1727,7 +1792,7 @@ CASES = (
     },
     {
         "name": "http_1_2_request_line_is_malformed",
-        "request": b"POST /v1/responses HTTP/1.2\r\nHost: 127.0.0.1\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
+        "request": b"POST /v1/responses HTTP/1.2\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
         "expected_status": 400,
         "expected_reason": "Bad Request",
         "expected_response_line": "HTTP/1.1 400 Bad Request",
@@ -1765,7 +1830,7 @@ CASES = (
     },
     {
         "name": "http_0_9_expect_continue_uses_request_version",
-        "request": b"POST /v1/responses HTTP/0.9\r\nHost: 127.0.0.1\r\nConnection: close\r\nExpect: 100-continue\r\nContent-Length: " + str(len(REQUEST_BODY)).encode() + b"\r\n\r\n",
+        "request": b"POST /v1/responses HTTP/0.9\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nConnection: close\r\nExpect: 100-continue\r\nContent-Length: " + str(len(REQUEST_BODY)).encode() + b"\r\n\r\n",
         "body_after_continue": REQUEST_BODY,
         "expect_handshake": True,
         "expected_status": 200,
@@ -1784,7 +1849,7 @@ CASES = (
     },
     {
         "name": "http_0_9_truncated_declared_body_closes",
-        "request": b"POST /v1/responses HTTP/0.9\r\nHost: 127.0.0.1\r\nConnection: close\r\nContent-Length: 10\r\n\r\nx",
+        "request": b"POST /v1/responses HTTP/0.9\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nConnection: close\r\nContent-Length: 10\r\n\r\nx",
         "half_close": True,
         "expected_status": None,
         "expected_read_error": "RemoteDisconnected",
@@ -1793,7 +1858,7 @@ CASES = (
     },
     {
         "name": "malformed_request_line_missing_version",
-        "request": b"POST /v1/responses\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
+        "request": b"POST /v1/responses\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nConnection: close\r\n\r\n",
         "expected_status": 400,
         "expected_response_line": "HTTP/1.1 400 Bad Request",
         "expected_body": b"",
@@ -1801,14 +1866,14 @@ CASES = (
     },
     {
         "name": "malformed_request_line_extra_token",
-        "request": b"POST /v1/responses HTTP/1.1 extra\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
+        "request": b"POST /v1/responses HTTP/1.1 extra\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nConnection: close\r\n\r\n",
         "expected_status": 502,
         "expected_body": b"upstream request failed",
         "upstream": False,
     },
     {
         "name": "http_1_0_request_line_extra_token_keeps_request_version",
-        "request": b"POST /v1/responses HTTP/1.0 extra\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
+        "request": b"POST /v1/responses HTTP/1.0 extra\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nConnection: close\r\n\r\n",
         "expected_status": 502,
         "expected_reason": "Bad Gateway",
         "expected_response_line": "HTTP/1.0 502 Bad Gateway",
@@ -1819,7 +1884,7 @@ CASES = (
     },
     {
         "name": "duplicate_request_versions_keep_first_version",
-        "request": b"POST /v1/responses HTTP/1.1 HTTP/1.0\r\nHost: 127.0.0.1\r\nConnection: close\r\nContent-Length: " + str(len(REQUEST_BODY)).encode() + b"\r\n\r\n" + REQUEST_BODY,
+        "request": b"POST /v1/responses HTTP/1.1 HTTP/1.0\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nConnection: close\r\nContent-Length: " + str(len(REQUEST_BODY)).encode() + b"\r\n\r\n" + REQUEST_BODY,
         "expected_status": 200,
         "expected_reason": "OK",
         "expected_response_line": "HTTP/1.1 200 OK",
@@ -1833,7 +1898,7 @@ CASES = (
     },
     {
         "name": "malformed_request_target_spacing",
-        "request": b"POST /v1/responses bad HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
+        "request": b"POST /v1/responses bad HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nConnection: close\r\n\r\n",
         "expected_status": 400,
         "expected_body": b"",
         "upstream": False,
@@ -1939,7 +2004,7 @@ CASES = (
     fragmented_empty_chunked_request_case("fragmented_empty_chunked_terminator_accepted"),
     {
         "name": "truncated_declared_body",
-        "request": b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 10\r\n\r\nx",
+        "request": b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nContent-Length: 10\r\n\r\nx",
         "half_close": True,
         "expected_status": None,
         "expected_read_error": "RemoteDisconnected",
@@ -1948,7 +2013,7 @@ CASES = (
     },
     {
         "name": "websocket_truncated_declared_body",
-        "request": b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nUpgrade: websocket\r\nContent-Length: 10\r\n\r\nx",
+        "request": b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nUpgrade: websocket\r\nContent-Length: 10\r\n\r\nx",
         "half_close": True,
         "expected_status": None,
         "expected_read_error": "RemoteDisconnected",
@@ -1957,7 +2022,7 @@ CASES = (
     },
     {
         "name": "oversized_declared_body",
-        "request": b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: 67108865\r\n\r\n",
+        "request": b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nContent-Type: application/json\r\nContent-Length: 67108865\r\n\r\n",
         "expected_status": 413,
         "expected_reason": "Payload Too Large",
         "expected_body": b"proxied request body is too large",
@@ -2167,7 +2232,7 @@ CASES = (
         **raw_expectation_case(
             "unsupported_expect_precedes_request_line_suffix",
             b"POST /v1/responses HTTP/1.1 extra\r\nHost: 127.0.0.1\r\n"
-            b"Expect: 100-wait\r\nContent-Length: 0\r\n\r\n",
+            b"Authorization: Bearer synthetic-codex-key\r\nExpect: 100-wait\r\nContent-Length: 0\r\n\r\n",
         ),
         "expected_status": 417,
         "expected_reason": "Expectation Failed",
@@ -2178,7 +2243,7 @@ CASES = (
         **raw_expectation_case(
             "malformed_request_line_precedes_unsupported_expect",
             b"POST /v1/responses bad HTTP/1.1\r\nHost: 127.0.0.1\r\n"
-            b"Expect: 100-wait\r\nContent-Length: 0\r\n\r\n",
+            b"Authorization: Bearer synthetic-codex-key\r\nExpect: 100-wait\r\nContent-Length: 0\r\n\r\n",
         ),
         "expected_status": 400,
         "expected_reason": "Bad Request",
@@ -2213,7 +2278,8 @@ CASES = (
     {
         **raw_expectation_case(
             "valid_target_oversized_expect_precedes_continue",
-            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-continue\r\n"
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Authorization: Bearer synthetic-codex-key\r\nExpect: 100-continue\r\n"
             b"Content-Length: 67108865\r\n\r\n",
         ),
         "expected_status": 413,
@@ -2257,7 +2323,7 @@ CASES = (
     },
     {
         "name": "invalid_target_oversized_declared_body_precedes_body_limit",
-        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: 67108865\r\n\r\n",
+        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nContent-Type: application/json\r\nContent-Length: 67108865\r\n\r\n",
         "half_close": True,
         "expected_status": 400,
         "expected_reason": "Bad Request",
@@ -2266,7 +2332,7 @@ CASES = (
     },
     {
         "name": "invalid_target_oversized_expected_body_precedes_continue",
-        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-continue\r\nContent-Length: 67108865\r\n\r\n",
+        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nExpect: 100-continue\r\nContent-Length: 67108865\r\n\r\n",
         "half_close": True,
         "expect_handshake": True,
         "check_close": True,
@@ -2278,7 +2344,7 @@ CASES = (
     },
     {
         "name": "invalid_target_expected_body_precedes_continue",
-        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nExpect: 100-continue\r\nContent-Length: 10\r\n\r\n",
+        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nExpect: 100-continue\r\nContent-Length: 10\r\n\r\n",
         "half_close": True,
         "expected_status": 400,
         "expected_reason": "Bad Request",
@@ -2287,7 +2353,7 @@ CASES = (
     },
     {
         "name": "invalid_target_oversized_chunked_body_precedes_body_limit",
-        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nTransfer-Encoding: chunked\r\n\r\n4000001\r\n",
+        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nTransfer-Encoding: chunked\r\n\r\n4000001\r\n",
         "half_close": True,
         "expected_status": 400,
         "expected_reason": "Bad Request",
@@ -2296,7 +2362,7 @@ CASES = (
     },
     {
         "name": "invalid_target_truncated_body_closes_without_response",
-        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 10\r\n\r\nx",
+        "request": b"POST http://example.test/v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer synthetic-codex-key\r\nContent-Length: 10\r\n\r\nx",
         "half_close": True,
         "expected_status": None,
         "expected_read_error": "RemoteDisconnected",
@@ -2508,6 +2574,7 @@ def run_probe(binary: Path, case, upstream: Upstream):
             "PRODEX_CODEX_BIN": str(codex),
             "PROBE_REQUEST_BASE64": "" if request_file else base64.b64encode(case["request"]).decode("ascii"),
             "PROBE_REQUEST_FILE": str(request_file) if request_file else "",
+            "PROBE_EXACT_REQUEST_HEAD_BYTES": str(case.get("exact_request_head_bytes", "")),
             "PROBE_REQUEST_PARTS_BASE64": json.dumps(
                 [base64.b64encode(part).decode("ascii") for part in case.get("request_parts", [])],
                 separators=(",", ":"),
@@ -2704,23 +2771,42 @@ def assert_large_request_head_cases(test, oracle, modex):
                     ("modex", modex_response, modex_records, modex_status),
                 ):
                     test.assertEqual(response["process_exit"], 0, response["stderr"])
+                    if "exact_request_head_bytes" in case:
+                        test.assertEqual(
+                            response["request_head_bytes"],
+                            case["exact_request_head_bytes"],
+                            label,
+                        )
                     test.assertEqual(response["status"], status, label)
                     if status == 200:
                         test.assertEqual(response["body"], case["expected_body"], label)
                         test.assertEqual(len(records), 1, label)
-                        test.assertEqual(records[0]["pad_headers"], expected_pad_headers(case["request"]), label)
+                        if "exact_request_head_bytes" in case:
+                            expected_pad = {
+                                name: base64.b64decode(value)
+                                for name, value in response["request_pad_headers_base64"]
+                            }
+                        else:
+                            expected_pad = expected_pad_headers(case["request"])
+                        test.assertEqual(records[0]["pad_headers"], expected_pad, label)
                         if "expected_user_agent_count" in case or "expected_user_agent_count_by_label" in case:
-                            expected_user_agent = next(
-                                line.partition(b":")[2].strip()
-                                for line in case["request"].split(b"\r\n")
-                                if line.lower().startswith(b"user-agent:")
-                            )
+                            if "exact_request_head_bytes" in case:
+                                expected_user_agents = [
+                                    base64.b64decode(value)
+                                    for value in response["request_user_agents_base64"]
+                                ]
+                            else:
+                                expected_user_agents = [next(
+                                    line.partition(b":")[2].strip()
+                                    for line in case["request"].split(b"\r\n")
+                                    if line.lower().startswith(b"user-agent:")
+                                )]
                             expected_count = case.get("expected_user_agent_count_by_label", {}).get(
                                 label, case.get("expected_user_agent_count"),
                             )
                             test.assertEqual(
                                 records[0]["user_agent_values"],
-                                [expected_user_agent] * expected_count,
+                                expected_user_agents * expected_count,
                                 label,
                             )
                             if case["name"] == f"large_user_agent_{LOCAL_RELAY_REQUEST_HEADER_LIMIT}":
@@ -3312,6 +3398,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                     ),
                     "admission_blocker_request": (
                         b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+                        b"Authorization: Bearer synthetic-codex-key\r\n"
                         b"Content-Type: application/json\r\nContent-Length: 1\r\n"
                         b"Connection: close\r\n\r\n"
                     ),
@@ -4033,10 +4120,12 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
         second_body = b'{"model":"deepseek-chat","input":"pipeline-second"}'
         first = request_bytes(target=b"/v1/responses", body=first_body)
         bodyless_error = (
-            b"GET /v1/not-supported HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"
+            b"GET /v1/not-supported HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Authorization: Bearer synthetic-codex-key\r\n\r\n"
         )
         chunked = (
             b"POST /v1/chat/completions HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Authorization: Bearer synthetic-codex-key\r\n"
             b"Content-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n"
             + format(len(first_body), "X").encode("ascii") + b"\r\n"
             + first_body + b"\r\n0\r\n\r\n"

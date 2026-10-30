@@ -382,12 +382,13 @@ host = target.hostname.encode()
 request_bytes = (
     b"POST " + target.path.encode() + b" HTTP/1.1\\r\\nHost: " + host
     + b"\\r\\nContent-Type: application/json\\r\\n"
-    + b"Authorization: Bearer synthetic-client-key\\r\\nContent-Length: "
+    + b"Authorization: " + authorization.encode() + b"\\r\\nContent-Length: "
     + str(len(body)).encode() + b"\\r\\nConnection: keep-alive\\r\\n\\r\\n" + body
 )
 pending_tail = (
     b"GET " + target.path.encode() + b" HTTP/1.1\\r\\nHost: " + host
-    + b"\\r\\nConnection: keep-alive\\r\\nContent-Length: 0\\r\\nX-Pad: "
+    + b"\\r\\nConnection: keep-alive\\r\\nAuthorization: " + authorization.encode()
+    + b"\\r\\nContent-Length: 0\\r\\nX-Pad: "
     + b"x" * {pad_bytes} + b"\\r\\n\\r\\n"
 )
 failure_marker = b"event: response.failed\\r\\n"
@@ -464,7 +465,7 @@ connection = http.client.HTTPConnection(target.hostname, target.port, timeout=3)
 try:
     connection.request(
         "POST", target.path, json.dumps(turn, separators=(",", ":")).encode(),
-        {{"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key"}},
+        {{"Content-Type": "application/json", "Authorization": authorization}},
     )
     response = connection.getresponse()
     followup_status = response.status

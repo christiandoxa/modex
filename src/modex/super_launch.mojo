@@ -13,6 +13,7 @@ from std.sys import stderr
 from std.time import perf_counter, sleep
 
 from .app_server_rpc import run_super_hook_trust_preflight
+from .auth_token import new_local_client_token, valid_local_client_token
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument, quote_json
 from .log_redaction import redact_log_text
 from .loopback_server import LoopbackHTTPListener
@@ -288,7 +289,17 @@ def deepseek_model_catalog(launch_model: String, context_window: UInt64, compact
 
 
 def _child_environment(home: String) -> List[String]:
-    var excluded: List[String] = ["CODEX_HOME", "CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT", "NO_PROXY", "no_proxy", "LD_PRELOAD", "LD_AUDIT", "LD_LIBRARY_PATH", "LD_ORIGIN_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH", "DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS", "PRODEX_RUNTIME_LOCAL_UPSTREAM", "PRODEX_RUNTIME_LOCAL_KEY", "PRODEX_RUNTIME_LOCAL_KEYS_JSON", "PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE", "PRODEX_RUNTIME_LOCAL_STRICT_TOOLS", "PRODEX_RUNTIME_LOCAL_BETA_BASE_URL"]
+    var excluded: List[String] = [
+        "CODEX_HOME", "CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT", "NO_PROXY", "no_proxy",
+        "LD_PRELOAD", "LD_AUDIT", "LD_LIBRARY_PATH", "LD_ORIGIN_PATH",
+        "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH",
+        "OPENAI_API_KEYS", "OPENAI_API_KEY", "ANTHROPIC_API_KEYS", "ANTHROPIC_API_KEY",
+        "DEEPSEEK_API_KEYS", "DEEPSEEK_API_KEY", "GEMINI_API_KEYS", "GEMINI_API_KEY",
+        "GOOGLE_API_KEYS", "GOOGLE_API_KEY", "GITHUB_COPILOT_API_KEYS", "GITHUB_COPILOT_API_KEY",
+        "PRODEX_RUNTIME_LOCAL_UPSTREAM", "PRODEX_RUNTIME_LOCAL_KEY", "PRODEX_RUNTIME_LOCAL_KEYS_JSON",
+        "PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN", "PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE",
+        "PRODEX_RUNTIME_LOCAL_STRICT_TOOLS", "PRODEX_RUNTIME_LOCAL_BETA_BASE_URL",
+    ]
     var environment = inherited_environment(excluded)
     var clean = List[String]()
     for entry in environment:
@@ -338,6 +349,9 @@ def _child_exit_code(status: ProcessStatus) -> Int:
 def run_local_rewrite_child() raises:
     """Private self-process entrypoint; credentials stay out of argv and output."""
     var upstream = getenv("PRODEX_RUNTIME_LOCAL_UPSTREAM")
+    var client_token = getenv("PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN", "\0")
+    if client_token == "\0" or not valid_local_client_token(client_token):
+        raise Error("local provider client authorization token is missing or invalid")
     var api_keys = List[String]()
     var keys_json = getenv("PRODEX_RUNTIME_LOCAL_KEYS_JSON", "\0")
     if keys_json != "\0":
@@ -362,7 +376,7 @@ def run_local_rewrite_child() raises:
     var listener = LoopbackHTTPListener("127.0.0.1:0")
     var output = RawFileDescriptor(1)
     output.write_bytes((listener.address + "\n").as_bytes())
-    serve_local_rewrite(listener, upstream, api_keys, route[0], route[1], route[2], parent_fd=0, allow_local_file_access=True, web_search_mode=route[3])
+    serve_local_rewrite(listener, upstream, api_keys, client_token, route[0], route[1], route[2], parent_fd=0, allow_local_file_access=True, web_search_mode=route[3])
 
 
 def _ready(input_pipe: Pipe, mut child: Process) raises -> String:
@@ -1030,7 +1044,7 @@ def _codex_version_parts(value: String) -> List[UInt64]:
     return parts^
 
 
-def _exec(binary: String, child_path: String, argv0: String, home: String, model: String, upstream: String, api_keys: List[String], prompt: List[String], context_window: UInt64, compact_limit: UInt64, web_search_mode: String, strict_tools: Optional[String], beta_base_url: Optional[String], model_supplied: Bool) raises -> Int:
+def _exec(binary: String, child_path: String, argv0: String, home: String, model: String, upstream: String, api_keys: List[String], client_token: String, prompt: List[String], context_window: UInt64, compact_limit: UInt64, web_search_mode: String, strict_tools: Optional[String], beta_base_url: Optional[String], model_supplied: Bool) raises -> Int:
     _ = local_rewrite_worker_count()
     var environment = _child_environment(home)
     var probe_environment = _codex_probe_environment(environment)
@@ -1068,6 +1082,7 @@ def _exec(binary: String, child_path: String, argv0: String, home: String, model
         keys_json += quote_json(api_keys[index])
     keys_json += "]"
     relay_environment.append("PRODEX_RUNTIME_LOCAL_KEYS_JSON=" + keys_json)
+    relay_environment.append("PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN=" + client_token)
     relay_environment.append("PRODEX_RUNTIME_LOCAL_WEB_SEARCH_MODE=" + web_search_mode)
     if strict_tools:
         relay_environment.append("PRODEX_RUNTIME_LOCAL_STRICT_TOOLS=" + strict_tools.value())
@@ -1205,10 +1220,12 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
     _private_directory(shared)
     _private_directory(root + "/profiles")
     var selected_keys = _deepseek_api_keys(key, key_supplied)
+    var client_token = new_local_client_token()
     _deepseek_provider_panel(len(selected_keys))
     var home = root + "/profiles/.prodex-overlay-" + new_uuid7()
     mkdir(home, 0o700)
     try:
+        _private_directory(home)
         for name in [String("sessions"), String("archived_sessions"), String("attachments"), String("image_attachments")]:
             mkdir(shared + "/" + name, 0o700)
             symlink(shared + "/" + name, home + "/" + name)
@@ -1218,12 +1235,12 @@ def run_clean_deepseek_super(model: String, upstream: String, key: String, promp
         with open(home + "/config.toml", "w") as config:
             config.write(shared_config[0])
         with open(home + "/auth.json", "w") as auth:
-            auth.write("{\"OPENAI_API_KEY\":\"prodex-runtime-provider\",\"agent_identity\":null,\"auth_mode\":\"apikey\",\"last_refresh\":null,\"tokens\":null}")
+            auth.write("{\"OPENAI_API_KEY\":" + quote_json(client_token) + ",\"agent_identity\":null,\"auth_mode\":\"apikey\",\"last_refresh\":null,\"tokens\":null}")
         with open(home + "/prodex-deepseek-model-catalog.json", "w") as catalog:
             # Frozen exact-value lookup ignores numeric -c overrides when building the catalog.
             catalog.write(deepseek_model_catalog(catalog_model, catalog_context, catalog_compact))
         var codex = _codex_binary()
-        var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, selected_keys, prompt, launch_context, launch_compact, route[3], shared_config[2], shared_config[3], model_supplied)
+        var result = _exec(codex[0], codex[1], codex[2], home, launch_model, upstream, selected_keys, client_token, prompt, launch_context, launch_compact, route[3], shared_config[2], shared_config[3], model_supplied)
         _remove_overlay(home)
         return result
     except:

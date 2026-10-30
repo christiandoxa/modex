@@ -11,14 +11,17 @@ a bound session ID, all three processes return 503 on the follow-up.
 The frozen precommit reader stores the prefix separately and wraps only the
 remaining raw stream with its SSE binding observer. A local candidate made
 Modex follow that boundary for a single key and passed the selected history
-controls. It was not integrated: the Super relay does not authenticate inbound
-loopback clients, uses an unscoped conversation store, and writes a fixed
+controls. It was not integrated: the then-current Super relay did not authenticate
+inbound loopback clients, used an unscoped conversation store, and wrote a fixed
 `prodex-runtime-provider` token. With a synthetic different Authorization
 header and a known response ID, the candidate sent the first client's stored
 history to the provider. Published Modex rejected the same follow-up with 503
 and one provider POST. Both releases accepted the different synthetic client.
-An authenticated ownership boundary is required before enabling this path;
-a caller-supplied session ID or fixed token is not proof of ownership.
+The relay now requires a per-launch bearer token before provider dispatch;
+the different synthetic client receives 401 and no second POST. Same-UID
+processes able to read the private overlay or relay environment can obtain
+the token, and full history/provider-key ownership remains unverified. A
+caller-supplied session ID or fixed token is not proof of ownership.
 
 With two synthetic keys, both releases sent the follow-up and prior synthetic
 conversation history using the second key after the first key produced the

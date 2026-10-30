@@ -17,9 +17,20 @@ PROBE_ENVIRONMENT = (
     "TEST_CODEX_ARGS_LOG",
     "TEST_CODEX_ARGS_LOG_APPEND",
     "TEST_CODEX_STDIN_LOG",
+    "OPENAI_API_KEYS",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEYS",
+    "ANTHROPIC_API_KEY",
     "DEEPSEEK_API_KEY",
     "DEEPSEEK_API_KEYS",
+    "GEMINI_API_KEYS",
+    "GEMINI_API_KEY",
+    "GOOGLE_API_KEYS",
+    "GOOGLE_API_KEY",
+    "GITHUB_COPILOT_API_KEYS",
+    "GITHUB_COPILOT_API_KEY",
     "PRODEX_RUNTIME_LOCAL_KEYS_JSON",
+    "PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN",
 )
 NATIVE_CODEX = launch_support.MODEX.parent / "tests/codex_argv_child"
 SENTINEL_ENVIRONMENT = {
@@ -156,7 +167,9 @@ class ActiveSuperLaunchTests(unittest.TestCase):
                 if binary == active_cli.ORACLE:
                     expected_environment.update({
                         name: SENTINEL_ENVIRONMENT[name]
-                        for name in ("DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS", "PRODEX_RUNTIME_LOCAL_KEYS_JSON")
+                        for name in (*launch_support.PROVIDER_SECRET_ENV_KEYS,
+                                     "PRODEX_RUNTIME_LOCAL_KEYS_JSON",
+                                     "PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN")
                     })
                 self.assertEqual([record["environment"] for record in probes], [expected_environment] * 2)
                 self.assertEqual((upstream, state["leftovers"]), ([], []))

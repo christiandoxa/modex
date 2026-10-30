@@ -1,5 +1,24 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+DeepSeek Super now gives its local relay a fresh per-launch bearer token and
+scrubs the pinned provider-secret environment variables from Codex children.
+The relay rejects missing, empty, wrong, duplicate and stale tokens before
+waiting for a declared body or contacting the provider; header capture can
+already buffer bytes sent with the head. A real Codex 0.165.0
+loopback-only test passed with synthetic credentials. Both releases accept
+the tested unauthenticated client, so the 401 is an intentional security
+non-parity; single-key prefetched continuations still return 503. Same-user
+token access, incomplete-header starvation, multi-key ownership and all six
+release targets remain open. See
+`docs/evidence/baseline-0.165.1/super-local-client-auth.md`.
+
+The 426 local WebSocket fallback now sends a write-side shutdown before close
+on selected rejection paths. Focused Linux tests cover fragmented/coalesced
+pipelines, client half-close, and adjacent auth/framing controls. The 0.439.2
+and 0.165.1 processes can reuse one HTTP/1.1 fallback connection that Modex
+closes; that existing difference remains. The separate runtime-broker
+WebSocket path is still unimplemented.
+
 After repairing direct-relay authentication fixtures, slow-body probes,
 probe-environment expectations and exact on-wire header sizing, a new isolated
 full `make test` is running in `/tmp/modex-auth-full-repaired-1030` (make PID
@@ -33,7 +52,7 @@ fresh-process repeats. Neither test exercises Modex, whose profile-backed
 runtime WebSocket path remains unimplemented. See
 `docs/evidence/runtime-websocket-interrupt-oracle-01651-04392.md`.
 
-An updated, unpublished authentication draft is under active validation in
+The broader, unpublished continuation-and-ownership draft remains in
 `/tmp/modex-auth-integrate-1030`, based on `c386b71`; the earlier draft remains
 preserved in `/tmp/modex-integration-20261030`. A write-side shutdown before
 closing on non-ASCII headers passed the six-test header suite, including

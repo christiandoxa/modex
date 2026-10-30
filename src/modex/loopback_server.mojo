@@ -8,6 +8,7 @@ from std.net._sys.unix import (
     AF_INET, AF_INET6, F_GETFL, F_SETFL, MSG_DONTWAIT, MSG_NOSIGNAL, MSG_PEEK,
     O_NONBLOCK, SO_REUSEADDR, SOL_SOCKET, SOCK_STREAM, bind, listen, accept, getsockname,
     recv, send, setsockopt, sockaddr, sockaddr_in, sockaddr_in6, sockaddr_storage, socket,
+    shutdown, SHUT_WR,
 )
 from std.sys import Endian, size_of
 from std.sys._libc import FcntlCommands, FcntlFDFlags, close, fcntl
@@ -15,6 +16,7 @@ from std.sys._libc_errno import ErrNo, get_errno
 from std.time import perf_counter, sleep
 from std.time.time import _realtime_nanoseconds
 
+from .auth_token import constant_time_local_client_token_equal
 from .local_time import format_http_date
 
 comptime HTTP_HEADER_LIMIT = 65536
@@ -188,6 +190,12 @@ struct LoopbackHTTPConnection(Movable):
             self.fd = -1
         self.done = True
 
+    def close_gracefully(mut self):
+        # Send FIN first; unread pipelined bytes otherwise turn this rejection into a reset.
+        if self.fd >= 0:
+            _ = shutdown(self.fd, SHUT_WR)
+        self.close()
+
     def __deinit__(deinit self):
         self.close()
 
@@ -302,7 +310,7 @@ struct LoopbackHTTPConnection(Movable):
             return False
         raise Error("loopback HTTP peer check failed")
 
-    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False, defer_expectation_errors: Bool = False, preflight_body_limit_before_continue: Bool = False, use_request_version_for_continue: Bool = False, use_request_version_for_response: Bool = False, request_header_limit: Int = HTTP_HEADER_LIMIT, tiny_http_request_line_compat: Bool = False) raises -> LoopbackHTTPRequest:
+    def read_request(mut self, timeout_ms: UInt64, max_body_bytes: Int = HTTP_DEFAULT_BODY_LIMIT, allow_upgrade_headers: Bool = False, validate_request_target: Bool = False, reject_chunked_trailers: Bool = False, defer_expectation_errors: Bool = False, preflight_body_limit_before_continue: Bool = False, use_request_version_for_continue: Bool = False, use_request_version_for_response: Bool = False, request_header_limit: Int = HTTP_HEADER_LIMIT, tiny_http_request_line_compat: Bool = False, authorization_token: String = "") raises -> LoopbackHTTPRequest:
         if self.fd < 0 or self.done or self.request_read:
             raise Error("loopback HTTP connection is closed")
         self.request_head_parsed = False
@@ -385,6 +393,10 @@ struct LoopbackHTTPConnection(Movable):
         if reject_chunked_trailers and head.chunked and invalid_target:
             self.request_read = True
             return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
+        if authorization_token and not _authorization_matches_token(head.headers, authorization_token):
+            if invalid_target:
+                raise Error("invalid HTTP request target")
+            raise Error("local provider client authorization failed")
         if head.expect_continue:
             var continue_version = "HTTP/1.1"
             if use_request_version_for_continue:
@@ -428,7 +440,7 @@ struct LoopbackHTTPConnection(Movable):
         self.request_header_scan = 0
         return LoopbackHTTPRequest(head.method, head.target, head.headers.copy(), body^)
 
-    def respond(mut self, status: Int, headers: List[Tuple[String, String]], body: List[UInt8], timeout_ms: UInt64, include_bodyless_length: Bool = False, bodyless_chunked: Bool = False) raises:
+    def respond(mut self, status: Int, headers: List[Tuple[String, String]], body: List[UInt8], timeout_ms: UInt64, include_bodyless_length: Bool = False, bodyless_chunked: Bool = False, graceful_close: Bool = False) raises:
         try:
             # The 0.439.2 SSE passthrough writes a chunked header with no body.
             if bodyless_chunked and ((status != 204 and status != 304) or include_bodyless_length):
@@ -451,7 +463,7 @@ struct LoopbackHTTPConnection(Movable):
                 _send_all(self.fd, body, deadline)
             if bodyless_chunked:
                 _send_all(self.fd, _bytes("0\r\n\r\n"), deadline)
-            self._finish_response()
+            self._finish_response(graceful_close)
         except:
             self.close()
             raise
@@ -530,9 +542,12 @@ struct LoopbackHTTPConnection(Movable):
                 raise Error("loopback HTTP request read failed")
             sleep(0.001)
 
-    def _finish_response(mut self):
+    def _finish_response(mut self, graceful_close: Bool = False):
         if not self.keep_alive:
-            self.close()
+            if graceful_close:
+                self.close_gracefully()
+            else:
+                self.close()
             return
         self.streaming = False
         self.request_read = False
@@ -645,6 +660,20 @@ struct ParsedRequestHead(Movable):
     var chunked: Bool
     var expect_continue: Bool
     var unsupported_expectation: Bool
+
+
+def _authorization_matches_token(headers: List[Tuple[String, String]], token: String) -> Bool:
+    var found = False
+    var authorized = False
+    for name, value in headers:
+        if name.lower() != "authorization":
+            continue
+        if found:
+            return False
+        found = True
+        if value.byte_length() == token.byte_length() + 7 and value.lower().startswith("bearer "):
+            authorized = constant_time_local_client_token_equal(token, String(value[byte=7:]))
+    return found and authorized
 
 
 def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Bool, max_request_line_bytes: Int, defer_expectation_errors: Bool = False, tiny_http_request_line_compat: Bool = False, validate_request_target: Bool = False) raises -> ParsedRequestHead:

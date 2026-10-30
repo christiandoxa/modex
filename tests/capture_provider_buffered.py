@@ -191,7 +191,8 @@ class UpstreamHandler(BaseHTTPRequestHandler):
 def fake_codex(path):
     path.write_text(textwrap.dedent("""\
         #!__PYTHON__
-        import http.client, os, sys
+        import http.client, json, os, sys
+        from pathlib import Path
         from urllib.parse import urlsplit
         args = sys.argv[1:]
         if args == ["--version"]: print("codex-cli 0.153.2"); raise SystemExit(0)
@@ -202,9 +203,10 @@ def fake_codex(path):
                 base = args[i + 1].split("=", 1)[1].strip('"')
         if not base: raise SystemExit("missing local provider URL")
         target = urlsplit(base.rstrip("/") + "/responses")
+        token = json.loads((Path(os.environ["CODEX_HOME"]) / "auth.json").read_text(encoding="utf-8"))["OPENAI_API_KEY"]
         body = open(os.environ["PRODEX_REQUEST_PATH"], "rb").read()
         conn = http.client.HTTPConnection(target.hostname, target.port, timeout=20)
-        conn.request("POST", target.path, body, {"Content-Type":"application/json", "Accept":"application/json", "Authorization":"Bearer synthetic-codex-key", "Connection":"close"})
+        conn.request("POST", target.path, body, {"Content-Type":"application/json", "Accept":"application/json", "Authorization":"Bearer " + token, "Connection":"close"})
         response = conn.getresponse(); payload = response.read()
         open(os.environ["PRODEX_CAPTURE_PATH"], "wb").write(payload)
         open(os.environ["PRODEX_CAPTURE_PATH"] + ".json", "w").write(__import__("json").dumps({"status":response.status,"content_type":response.getheader("Content-Type")}))

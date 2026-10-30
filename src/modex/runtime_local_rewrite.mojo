@@ -25,6 +25,7 @@ from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_
 from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
 from .provider_request_params import request_format
+from .auth_token import valid_local_client_token
 from .runtime_binding import RuntimeBindings
 from .runtime_sse_binding_observer import RuntimeSSEBindingObserver
 
@@ -258,8 +259,8 @@ def _timeout(name: String, fallback: UInt64) raises -> UInt64:
     return value
 
 
-def _reply(mut connection: LoopbackHTTPConnection, status: Int, message: String) raises:
-    connection.respond(status, [("content-type", "text/plain; charset=utf-8")], _bytes(message), 30000)
+def _reply(mut connection: LoopbackHTTPConnection, status: Int, message: String, graceful_close: Bool = False) raises:
+    connection.respond(status, [("content-type", "text/plain; charset=utf-8")], _bytes(message), 30000, False, False, graceful_close)
 
 
 def _write_event(mut connection: LoopbackHTTPConnection, event: String) raises:
@@ -520,6 +521,7 @@ struct LocalRewriteSharedState(Movable):
     var path: String
     var messages_address: String
     var messages_path: String
+    var client_token: String
     var api_keys: List[String]
     var api_key_cursor: Int
     var connect_ms: UInt64
@@ -531,7 +533,8 @@ struct LocalRewriteSharedState(Movable):
     var beta_path: String
     var web_search_mode: String
 
-    def __init__(out self, api_keys: List[String], endpoint: String, address: String, path: String, messages_address: String, messages_path: String, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
+    def __init__(out self, api_keys: List[String], endpoint: String, address: String, path: String, messages_address: String, messages_path: String, client_token: String, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
+        if not valid_local_client_token(client_token): raise Error("local provider client token is invalid")
         self.lock = BlockingSpinLock()
         self.conversations = ProviderConversationStore()
         self.bindings = RuntimeBindings(api_keys[0], endpoint)
@@ -549,6 +552,7 @@ struct LocalRewriteSharedState(Movable):
         self.path = path
         self.messages_address = messages_address
         self.messages_path = messages_path
+        self.client_token = client_token
         self.connect_ms = connect_ms
         self.idle_ms = idle_ms
         self.lookahead_ms = lookahead_ms
@@ -980,12 +984,19 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
     var request = LoopbackHTTPRequest("", "", List[Tuple[String, String]](), List[UInt8]())
     var captured = False
     try:
-        request = connection.read_request(120000, allow_upgrade_headers=True, validate_request_target=True, reject_chunked_trailers=True, defer_expectation_errors=True, preflight_body_limit_before_continue=True, use_request_version_for_continue=True, use_request_version_for_response=True, request_header_limit=HTTP_MAX_REQUEST_HEADER_LIMIT, tiny_http_request_line_compat=True)
+        request = connection.read_request(120000, allow_upgrade_headers=True, validate_request_target=True, reject_chunked_trailers=True, defer_expectation_errors=True, preflight_body_limit_before_continue=True, use_request_version_for_continue=True, use_request_version_for_response=True, request_header_limit=HTTP_MAX_REQUEST_HEADER_LIMIT, tiny_http_request_line_compat=True, authorization_token=state_ptr[].client_token)
         captured = True
     except error:
         var message = String(error)
         var malformed_syntax = message == "malformed HTTP request line" or message == "unsupported HTTP request version" or message == "malformed HTTP request target spacing" or message == "malformed HTTP method" or message == "malformed HTTP request header" or message == "malformed HTTP header name" or message == "malformed HTTP header value"
-        if message == "invalid HTTP request target" or message == "malformed HTTP request target":
+        if message == "local provider client authorization failed":
+            try:
+                connection.keep_alive_enabled = False
+                connection.keep_alive = False
+                connection.respond(401, [("cache-control", "no-store")], List[UInt8](), 30000)
+            except:
+                pass
+        elif message == "invalid HTTP request target" or message == "malformed HTTP request target":
             try:
                 _invalid_request_target(connection)
             except:
@@ -997,7 +1008,7 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
                 pass
         elif message == "websocket upgrade fallback":
             try:
-                _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback")
+                _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback", True)
             except:
                 pass
         elif message == "truncated HTTP request":
@@ -1007,7 +1018,7 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
                 except:
                     pass
         elif message == "non-ASCII byte in HTTP header":
-            connection.close()
+            connection.close_gracefully()
         else:
             if malformed_syntax:
                 try:
@@ -1037,7 +1048,7 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
                         break
                 if websocket_upgrade:
                     connection.keep_alive = False
-                    _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback")
+                    _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback", True)
                 else:
                     _serve(connection, request, address, path, messages_address, messages_path, request_id, state_ptr, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
         except error:
@@ -1090,7 +1101,7 @@ def local_rewrite_worker_count() raises -> Int:
     return min(fallback, Int(min(requested, UInt64(LOCAL_REWRITE_MAX_WORKERS))))
 
 
-def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, api_keys: List[String], strict_tools: Bool, beta_address: String, beta_path: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False, web_search_mode: String = "auto") raises:
+def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String, api_keys: List[String], client_token: String, strict_tools: Bool, beta_address: String, beta_path: String, parent_fd: Int32 = -1, allow_local_file_access: Bool = False, web_search_mode: String = "auto") raises:
     var upstream = local_rewrite_upstream(upstream_url)
     var anthropic_upstream = local_rewrite_anthropic_messages_upstream(upstream_url)
     if not api_keys: raise Error("DeepSeek provider has no API keys configured")
@@ -1107,7 +1118,7 @@ def serve_local_rewrite(mut listener: LoopbackHTTPListener, upstream_url: String
         if flags < 0 or fcntl(parent_fd, F_SETFL, flags | O_NONBLOCK) < 0:
             raise Error("could not configure local provider parent channel")
     # Worker pointers are untracked, so keep their state at a stable address until join.
-    var state = OwnedPointer(LocalRewriteSharedState(api_keys, upstream_url, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode))
+    var state = OwnedPointer(LocalRewriteSharedState(api_keys, upstream_url, upstream[0], upstream[1], anthropic_upstream[0], anthropic_upstream[1], client_token, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode))
     var state_ptr = state.ptr().unsafe_origin_cast[MutUntrackedOrigin]()
     var worker_count = local_rewrite_worker_count()
     # shortcut: cap extra request heads to worker lanes; add an aggregate memory budget before increasing.

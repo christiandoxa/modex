@@ -20,7 +20,7 @@ CLIENT += r'''
 target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
 for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()):
     path = turn.pop("_path", "/v1/responses")
-    headers = {"Content-Type": "application/json", "Authorization": "Bearer synthetic-client-key",
+    headers = {"Content-Type": "application/json", "Authorization": authorization,
                **turn.pop("_headers", {})}
     connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
     connection.request("POST", path, json.dumps(turn, separators=(",", ":")).encode(), headers)

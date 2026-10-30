@@ -17,7 +17,7 @@ from std.utils.lock import BlockingScopedLock, BlockingSpinLock
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument
 from .loopback_http import HTTP_HEADER_LIMIT, HTTP_MAX_REQUEST_FIELD_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, LoopbackHTTPStream, _number, normalize_loopback_ipv4_host
 from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
-from .log_operational import valid_url_authority
+from .log_operational import decode_url_host, valid_url_authority
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_model_retry_available, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_api_key_response, deepseek_retryable_model_response
 from .provider_conversations import ProviderConversationStore
 from .provider_anthropic_messages import anthropic_auto_chat_fallback_safe, anthropic_search_filters_conflict, deepseek_anthropic_messages_body
@@ -54,7 +54,9 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
     else:
         var parts = address.split(":")
         if len(parts) < 1 or len(parts) > 2: raise Error("this Modex gateway requires a numeric loopback upstream")
-        var host = normalize_loopback_ipv4_host(String(parts[0]))
+        var decoded_host = decode_url_host(String(parts[0]))
+        if not decoded_host: raise Error("invalid loopback HTTP address")
+        var host = normalize_loopback_ipv4_host(decoded_host.value())
         var port = 80 if len(parts) == 1 or not parts[1] else _number(parts[1])
         if port < 1 or port > 65535: raise Error("invalid loopback HTTP port")
         address = host + ":" + String(port)

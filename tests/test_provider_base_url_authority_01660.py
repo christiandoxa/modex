@@ -18,6 +18,11 @@ LOOPBACK_ALIASES = (
     "0x7f000001",
     "2130706433",
     "127.0.0.1.",
+    "127%2e1",
+    "127.0.0.%31",
+    "%31%32%37.1",
+    "0x7f0000%30%31",
+    "%31%32%37%2e%30%2e%30%2e%31",
 )
 
 
@@ -64,25 +69,30 @@ class ProviderBaseUrlAuthority01660Tests(unittest.TestCase):
         })}
         turn = {"model": "deepseek-chat", "input": "synthetic search", "stream": False,
                 "tools": [{"type": "web_search_preview"}]}
-        observations = []
-        for binary in (ORACLE, MODEX):
-            upstream, responses = observe_turns(
-                binary, [turn], [reply], latest_version="0.166.0", base_host="127.1",
-            )
-            self.assertEqual([row["status"] for row in responses], [200])
-            self.assertEqual(len(upstream), 1)
-            request = upstream[0]
-            self.assertEqual(request["path"], "/anthropic/v1/messages")
-            self.assert_canonical_host(request)
-            self.assertEqual(request["headers"]["x-api-key"], SYNTHETIC_API_KEY)
-            observations.append((request["path"], request["body"]))
-        self.assertEqual(observations[0], observations[1])
+        for host in ("127.1", "127%2e1"):
+            observations = []
+            for binary in (ORACLE, MODEX):
+                with self.subTest(host=host, reference=binary == ORACLE):
+                    upstream, responses = observe_turns(
+                        binary, [turn], [reply], latest_version="0.166.0", base_host=host,
+                    )
+                    self.assertEqual([row["status"] for row in responses], [200])
+                    self.assertEqual(len(upstream), 1)
+                    request = upstream[0]
+                    self.assertEqual(request["path"], "/anthropic/v1/messages")
+                    self.assert_canonical_host(request)
+                    self.assertEqual(request["headers"]["x-api-key"], SYNTHETIC_API_KEY)
+                    observations.append((request["path"], request["body"]))
+            if len(observations) == 2:
+                self.assertEqual(observations[0], observations[1])
 
     def test_nonloopback_and_ambiguous_authorities_fail_before_request(self):
         for host in (
             "localhost", "127.1.example", "127.0.0.08", "127..1", "127.1.2.3.4",
             "0x", "0x100000000", "126.0.0.1", "128.0.0.1", "8.8.8.8",
-            "0x08080808", "167772161",
+            "0x08080808", "167772161", "128%2e0%2e0%2e1", "127.0.0.1%3a80",
+            "127%2f1", "127%5c1", "127%401", "127%252e1", "127%001", "127%0d1",
+            "127%7f1", "127%ff1", "127%xx1",
         ):
             with self.subTest(host=host):
                 try:

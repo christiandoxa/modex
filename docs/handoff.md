@@ -1,5 +1,12 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The DeepSeek URL boundary now accepts selected percent-encoded numeric
+loopback hosts such as `127%2e1`, matching 0.166.0 in Chat and Anthropic
+process comparisons. Decoded values still pass the numeric `127/8` check;
+encoded separators, controls, malformed escapes, hostnames and non-loopback
+destinations remain rejected. Other host spellings and release targets remain
+unqualified; see `docs/evidence/baseline-0.166.0/provider-percent-encoded-host.md`.
+
 The DeepSeek numeric-loopback HTTP relay now uses port 80 for omitted and empty
 ports and omits the default port from the Host header. A manual, isolated
 0.166.0 process comparison covers IPv4 and IPv6 loopback forms; native Gateway

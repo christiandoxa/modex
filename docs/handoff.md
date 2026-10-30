@@ -36,6 +36,9 @@ ownership race. Its first full `make test` stopped during native compilation:
 callers have been updated in the candidate and the suite must be rerun; the
 failed log is `/tmp/modex-ownership-full-1030.log` (SHA-256
 `5dfbc49f127a4321f9b09a77d1b5eff2577b6833bb5e285c40d9299da1ecf42f`).
+The corrected gateway test compiles and passes; a new full run is active in
+`/tmp/modex-ownership-rerun-1030.log`, with tracked diff SHA-256
+`2283d6eb5bc8b57df0a54a272fd3560dba62cf1ef9ead53ed0d49538d4450e54`.
 The untracked native binding test SHA-256 is
 `62be13c2d1a34a648d9ded15b74c31657fd093ea2091c048d4878fdeb29431b3`.
 An earlier candidate incorrectly allowed a buffered `previous_response_id`;

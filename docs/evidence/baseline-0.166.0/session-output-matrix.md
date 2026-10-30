@@ -3,11 +3,20 @@
 `tests/test_session_outputs_01660.py` runs the existing session-output fixture
 against the checksum-verified Prodex 0.166.0 Linux binary and Modex. Selected
 cases compare populated listings, filters, JSON metadata, archived children,
-malformed records, Unicode and timestamp/timezone output. One inherited
+malformed records, Unicode and timestamp/timezone output, and equal-timestamp
+report ordering. One inherited
 non-object-record check exercises Modex alone, and the terminal-control path
 test records an intentional safer difference; neither establishes parity.
 
-The 18 test methods passed on Linux x86-64 in a private user, mount and network
+The equal-timestamp case creates six synthetic records with identical timestamp
+keys, mixed ASCII and Unicode IDs, and duplicate IDs at distinct paths. Both
+processes order by ascending ID, then ascending path for duplicate IDs. The
+reference implements this in `session_report_order` in
+`crates/prodex-mojo-core/src/json/session_report.rs`; Modex uses the same keys
+in `SessionReport.__lt__` in `src/modex/sessions.mojo`. The real-process outputs
+match, so this probe required no production change.
+
+All 19 test methods passed on Linux x86-64 in a private user, mount and network
 namespace with isolated HOME and temporary storage, loopback only and no
 default routes. The shared fixture normalizes temporary root paths and the
 product name in resume commands. It checks output; it does not compare startup

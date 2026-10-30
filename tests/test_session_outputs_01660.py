@@ -56,6 +56,40 @@ class SessionOutputs01660Tests(test_sessions.SessionOutputTests):
                         self.assertEqual(reports[0]["updated_at"],
                                          timestamp or "1970-01-01 00:00:00 +00:00")
 
+    def test_equal_timestamp_reports_order_by_id_then_path(self):
+        rows = (
+            ("019a1234-5678-7123-8123-012345678903", "same", "same-late-path"),
+            ("019a1234-5678-7123-8123-012345678901", "same", "same-early-path"),
+            ("019a1234-5678-7123-8123-012345678902", "a", "ascii-first"),
+            ("019a1234-5678-7123-8123-012345678904", "z", "ascii-last"),
+            ("019a1234-5678-7123-8123-012345678905", "雪", "unicode-last"),
+            ("019a1234-5678-7123-8123-012345678906", "é", "unicode-middle"),
+        )
+
+        def change(root):
+            directory = root / "home/.codex/sessions/2026/10/24"
+            next(directory.glob("*.jsonl")).unlink()
+            for identifier_in_path, identifier, thread_name in rows:
+                path = directory / f"rollout-{identifier_in_path}.jsonl"
+                record = {
+                    "timestamp": "2026-10-24T02:00:00Z",
+                    "type": "session_meta",
+                    "payload": {"id": identifier, "thread_name": thread_name},
+                }
+                path.write_text(json.dumps(record, ensure_ascii=False) + "\n")
+
+        reports = self.assert_outputs(["session", "list", "--json"], change)
+        self.assertEqual(
+            [(report["id"], report["thread_name"]) for report in reports],
+            [("a", "ascii-first"), ("same", "same-early-path"),
+             ("same", "same-late-path"), ("z", "ascii-last"),
+             ("é", "unicode-middle"), ("雪", "unicode-last")],
+        )
+        self.assertEqual(
+            [Path(report["path"]).name for report in reports if report["id"] == "same"],
+            [f"rollout-{rows[1][0]}.jsonl", f"rollout-{rows[0][0]}.jsonl"],
+        )
+
     def test_invalid_utf8_json_diagnostics_and_jsonl_controls(self):
         sentinel = b"synthetic-private-session-content"
         cases = (

@@ -1,4 +1,4 @@
-"""Session-report production comparisons against the active 0.165.1 release."""
+"""Session-report production comparisons against historical 0.165.1."""
 
 import hashlib
 import json

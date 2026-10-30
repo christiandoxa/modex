@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "baseline_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
   "inventory_complete": false,
   "counting_policy": "Initial coarse contracts are not the final denominator. Each contract retains all applicable platform obligations. PASS requires reproducible evidence; compile-only, mock-only and unverified results never count. No full parity percentage until inventory completion.",
   "inventory_history": [
@@ -147,6 +147,10 @@
     {
       "date": "2026-10-29",
       "change": "Promote the frozen 0.439.2 reference at 72b77478a5198fc5da6b4d2253137f9cdbf43be9. Retain 0.165.1, 0.439.1, 0.439.5 and 0.439.0 observations with original provenance. Keep all 76 contracts and six platform obligations; promote no parity status."
+    },
+    {
+      "date": "2026-10-30",
+      "change": "Retargeted to official Prodex 0.166.0. Preserved prior contracts, traces, evidence and all six release targets; the inventory remains incomplete and no historical observation is promoted to current-target parity."
     }
   ],
   "contracts": [
@@ -4445,11 +4449,216 @@
       "blockers": [
         "Production implementation and real-process current-reference verification remain incomplete."
       ]
+    },
+    {
+      "id": "CODEX-01660-OFFLINE",
+      "domain": "compatibility",
+      "baseline": {
+        "path": "docs/release-notes/0.166.0.md",
+        "source_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
+        "trace_verified": false,
+        "target_trace_verified": false
+      },
+      "required_behavior": "Qualify Codex 0.166.0 compatibility using isolated offline replay and retain loopback TLS transport coverage.",
+      "input": "Isolated synthetic requests, state or release metadata",
+      "output": "Observed 0.166.0 behavior on the production path",
+      "failure_modes": "Preserve isolation and fail closed where ownership or security cannot be verified.",
+      "side_effects": "Only isolated fixture state and loopback endpoints.",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet verified against 0.166.0.",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.166.0/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "NOT_STARTED",
+        "aarch64-pc-windows-msvc": "NOT_STARTED"
+      },
+      "blockers": [
+        "Production integration and current-target differential evidence are incomplete."
+      ]
+    },
+    {
+      "id": "GUARDIAN-01660-AFFINITY",
+      "domain": "runtime",
+      "baseline": {
+        "path": "docs/release-notes/0.166.0.md",
+        "source_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
+        "trace_verified": false,
+        "target_trace_verified": false
+      },
+      "required_behavior": "Keep Guardian reviewer requests on the parent or stronger continuation profile, including quota failures, and retain applicable routing cookies.",
+      "input": "Isolated synthetic requests, state or release metadata",
+      "output": "Observed 0.166.0 behavior on the production path",
+      "failure_modes": "Preserve isolation and fail closed where ownership or security cannot be verified.",
+      "side_effects": "Only isolated fixture state and loopback endpoints.",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet verified against 0.166.0.",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.166.0/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "NOT_STARTED",
+        "aarch64-pc-windows-msvc": "NOT_STARTED"
+      },
+      "blockers": [
+        "Production integration and current-target differential evidence are incomplete."
+      ]
+    },
+    {
+      "id": "POLICY-CAPACITY-01660",
+      "domain": "runtime",
+      "baseline": {
+        "path": "docs/release-notes/0.166.0.md",
+        "source_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
+        "trace_verified": false,
+        "target_trace_verified": false
+      },
+      "required_behavior": "Forward upstream policy_capacity_unavailable HTTP 503 without classifying it as quota exhaustion or rotating accounts.",
+      "input": "Isolated synthetic requests, state or release metadata",
+      "output": "Observed 0.166.0 behavior on the production path",
+      "failure_modes": "Preserve isolation and fail closed where ownership or security cannot be verified.",
+      "side_effects": "Only isolated fixture state and loopback endpoints.",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet verified against 0.166.0.",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.166.0/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "NOT_STARTED",
+        "aarch64-pc-windows-msvc": "NOT_STARTED"
+      },
+      "blockers": [
+        "Production integration and current-target differential evidence are incomplete."
+      ]
+    },
+    {
+      "id": "GUARDIAN-01660-WEBSOCKET-PIN",
+      "domain": "runtime",
+      "baseline": {
+        "path": "docs/release-notes/0.166.0.md",
+        "source_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
+        "trace_verified": false,
+        "target_trace_verified": false
+      },
+      "required_behavior": "Reuse reviewer WebSocket connections only when the complete routing pin matches.",
+      "input": "Isolated synthetic requests, state or release metadata",
+      "output": "Observed 0.166.0 behavior on the production path",
+      "failure_modes": "Preserve isolation and fail closed where ownership or security cannot be verified.",
+      "side_effects": "Only isolated fixture state and loopback endpoints.",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet verified against 0.166.0.",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.166.0/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "NOT_STARTED",
+        "aarch64-pc-windows-msvc": "NOT_STARTED"
+      },
+      "blockers": [
+        "Production integration and current-target differential evidence are incomplete."
+      ]
+    },
+    {
+      "id": "RELEASE-METADATA-01660",
+      "domain": "release",
+      "baseline": {
+        "path": "docs/release-notes/0.166.0.md",
+        "source_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
+        "trace_verified": false,
+        "target_trace_verified": false
+      },
+      "required_behavior": "Preserve local tags absent remotely and render historical changelog entries consistently during release metadata synchronization.",
+      "input": "Isolated synthetic requests, state or release metadata",
+      "output": "Observed 0.166.0 behavior on the production path",
+      "failure_modes": "Preserve isolation and fail closed where ownership or security cannot be verified.",
+      "side_effects": "Only isolated fixture state and loopback endpoints.",
+      "platforms": [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ],
+      "prerequisites": [],
+      "implementation": "Not yet verified against 0.166.0.",
+      "tests": [],
+      "evidence": [
+        "docs/evidence/baseline-0.166.0/reference-verification.json"
+      ],
+      "status": "NOT_STARTED",
+      "platform_status": {
+        "x86_64-unknown-linux-gnu": "NOT_STARTED",
+        "aarch64-unknown-linux-gnu": "NOT_STARTED",
+        "x86_64-apple-darwin": "NOT_STARTED",
+        "aarch64-apple-darwin": "NOT_STARTED",
+        "x86_64-pc-windows-msvc": "NOT_STARTED",
+        "aarch64-pc-windows-msvc": "NOT_STARTED"
+      },
+      "blockers": [
+        "Production integration and current-target differential evidence are incomplete."
+      ]
     }
   ],
-  "previous_baseline_commit": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
-  "baseline_version": "0.439.2",
-  "evidence_policy": "Per-contract source traces and evidence retain their listed source commits. 0.165.1, 0.439.1, 0.439.5 and 0.439.0 observations do not by themselves establish 0.439.2 behavior; every contract and all six targets require current-target verification.",
+  "previous_baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+  "baseline_version": "0.166.0",
+  "evidence_policy": "Per-contract traces retain their listed source commits. Historical 0.165.1 and 0.439.x observations do not establish 0.166.0 behavior; every contract and all six targets require current-target verification.",
   "release_qualification": {
     "x86_64-unknown-linux-gnu": {
       "status": "BLOCKED",
@@ -4502,27 +4711,33 @@
   },
   "historical_baselines": [
     {
+      "version": "0.439.2",
+      "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
+      "evidence": "docs/evidence/baseline-0.439.2/reference-verification.json",
+      "role": "Historical regression only; not 0.166.0 evidence."
+    },
+    {
       "version": "0.439.5",
       "commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
       "evidence": "docs/evidence/baseline-0.439.5/reference-verification.json",
-      "role": "Historical comparisons retain their original provenance and do not establish 0.439.2 behavior."
+      "role": "Historical regression only; not 0.166.0 evidence."
     },
     {
       "version": "0.439.1",
       "commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
       "evidence": "docs/evidence/baseline-0.439.1/reference-verification.json",
-      "role": "Historical regression; never automatically counted as 0.439.2 behavior."
+      "role": "Historical regression only; not 0.166.0 evidence."
     },
     {
       "version": "0.439.0",
       "commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
-      "role": "Historical fixtures retain their original provenance."
+      "role": "Historical regression only; not 0.166.0 evidence."
     },
     {
       "version": "0.165.1",
       "commit": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
       "evidence": "docs/evidence/baseline-0.165.1/reference-verification.json",
-      "role": "Historical comparisons retain original provenance and do not establish 0.439.2 behavior."
+      "role": "Historical regression only; not 0.166.0 evidence."
     }
   ]
 }

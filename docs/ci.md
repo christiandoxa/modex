@@ -30,7 +30,7 @@ address that path. `make ci-parity` is expected to fail until parity is complete
 The original `make build`, `make unit`, and `make test` entrypoints remain
 available. Set `PYTHON` when the required interpreter is not `python3`.
 
-The reference helper obtains the frozen 0.439.2 active release and the
+The reference helper obtains the frozen 0.166.0 active release and the
 explicitly historical source snapshots outside the repository, verifies release and
 source identities, and accepts `MODEX_REFERENCE_CACHE` for its cache location.
 If a successful official tag lookup returns no refs, source acquisition may
@@ -38,14 +38,21 @@ fetch only the previously pinned commit and verifies its complete Git tree.
 Moved or malformed tags and lookup errors still fail. This recovers source
 only: oracle acquisition still requires the pinned release bytes, so missing
 release assets keep reference-dependent CI fail-closed.
-`PRODEX_ORACLE` selects the active 0.439.2 executable; its SHA-256 must match
-the pinned release. CI records active 0.439.2 checks before acquiring the
-0.165.1 and 0.439.5 historical oracles. Historical oracle tests use
-`PRODEX_ORACLE_01651` and `PRODEX_ORACLE_04395`. Full CI retains the pinned
-0.439.1 source snapshot for regression-only source checks. Missing required
+`PRODEX_ORACLE` selects the active 0.166.0 executable; its SHA-256 must match
+the pinned release. Historical oracle tests use `PRODEX_ORACLE_01651`,
+`PRODEX_ORACLE_04392`, and `PRODEX_ORACLE_04395`; their results are not
+0.166.0 acceptance evidence. Full CI retains the pinned 0.439.1 source
+snapshot for regression-only source checks. Missing required
 reference assets fail CI. Tests use synthetic credentials and loopback peers.
 Required sandbox or reference checks fail if their prerequisites are missing;
 a skip is not a pass.
+
+On 2026-10-30 the historical 0.439.2 tag lookup returned no ref and its
+official SHA256SUMS URL returned HTTP 404. A clean hosted runner without the
+previously verified historical bytes therefore cannot run that regression
+lane; acquisition fails closed. Active 0.166.0 tests run first, and the
+historical failure is reported separately as blocked. This does not make
+0.439.2 the active target or count the missing regression lane as passed.
 
 Native unit programs compile with bounded parallelism; set `MODEX_UNIT_JOBS`
 to override the default of four. Reuse requires a fingerprint of the Mojo

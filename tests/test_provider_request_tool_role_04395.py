@@ -68,7 +68,7 @@ class ProviderRequestToolRole04395Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if hashlib.sha256(ACTIVE_ORACLE.read_bytes()).hexdigest() != ACTIVE_ORACLE_SHA256:
-            raise AssertionError("The Prodex oracle does not match active release 0.439.2")
+            raise AssertionError("The Prodex oracle does not match historical release 0.439.2")
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("The Prodex oracle does not match the pinned release checksum")
         if not MODEX.is_file():

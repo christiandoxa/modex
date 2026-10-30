@@ -72,7 +72,7 @@ class PolicyCorpusTests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError("Build Modex first with make build")
         if not ORACLE.is_file():
-            raise AssertionError("Set PRODEX_ORACLE to the verified official 0.439.0 Linux binary")
+            raise AssertionError("Set PRODEX_ORACLE_04390 to the verified historical 0.439.0 Linux binary")
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("The Prodex oracle does not match the frozen release checksum")
         verify_checksums()

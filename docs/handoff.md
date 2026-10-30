@@ -1,4 +1,61 @@
-# Current work: Prodex 0.439.2 parity and CI
+# Current work: Prodex 0.166.0 parity and CI
+
+The active target is official Prodex 0.166.0 at
+`9f69e1835808f478f59f12a3ae3fa88027d896a4`. Its Linux x86-64 release and
+SHA256SUMS have been verified; see
+`docs/evidence/baseline-0.166.0/reference-verification.json`. The installed
+`prodex` reports 0.165.1 and is not the active test oracle. Versions 0.165.1
+and 0.439.x are historical controls only. The installed Codex CLI reports
+0.165.0; Codex 0.166.0 compatibility is not established by that installation.
+Existing 0.439.2 acceptance routing
+was caused by the README and baseline pin, `test_cli.py` defaulting
+`PRODEX_ORACLE` to 0.439.2, and CI aliasing the active oracle/source to 0.439.2
+variables. Historical tests and CI routing now use explicit versioned
+overrides. These observations cannot establish 0.166.0
+parity. All six release targets, Guardian routing and cookie affinity,
+WebSocket pin reuse, policy-capacity responses, offline replay and loopback
+TLS remain open. The previously running 0.439.2-based ownership suite was
+interrupted after the target change; its result is not a 0.166.0 qualification.
+
+An isolated Super launch showed that 0.166.0 sends `prodex-hook-trust` client
+version `0.166.0` to the synthetic Codex app server while the prior Modex
+build sent `0.439.2`. The production hook initializer now uses the active
+version. `test_active_baseline_01660.py` compares real 0.166.0 and Modex
+processes and retains isolated synthetic provider and Codex fixtures; the
+older 0.165.1 and 0.439.2 expectations remain explicitly historical. This
+qualifies only the tested initialize request, not Guardian, TLS, or overall
+Codex 0.166.0 compatibility.
+
+The official historical 0.439.2 tag currently resolves to no ref and its
+SHA256SUMS URL returned 404 on 2026-10-30. Previously verified local bytes
+remain available, but fresh hosted runners cannot acquire that historical
+oracle until its official asset or a verified cache is provisioned. The
+historical lane must fail closed rather than count a missing oracle as a pass.
+
+The 0.166.0 policy-capacity change is in the profile-backed Responses and
+standard/compact HTTP runtime. Modex does not yet implement those account
+profile paths, so their 503 passthrough and no-quota-rotation behavior remain
+unverified gaps. The separate DeepSeek API-key path behaves differently: real
+0.166.0 and Modex processes both retry a synthetic 503 with key B after key A;
+with one key both forward its body unchanged. The active-release tests in
+`test_policy_capacity_01660.py` retain that distinction and include an overload
+control. They do not establish profile-runtime policy parity.
+The five active identity and API-key tests also passed with both historical
+oracle overrides set to nonexistent paths, confirming those tests do not
+require a 0.165.1 or 0.439.2 binary.
+
+In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
+TLS/CONNECT smoke passed and observed the reviewer using its parent's routing
+cookie; six additional offline Guardian broker tests passed. Its local-only
+release-tag preservation test also passed with a
+temporary Git remote. These are upstream reference tests, not Modex parity:
+Modex currently lacks the profile broker, Guardian routing, WebSocket client,
+cookie store and release metadata synchronization path. An existing Modex
+local-rewrite process test returns 426 for the tested WebSocket upgrades and
+makes no upstream request. Commands and scope are in
+`docs/evidence/baseline-0.166.0/guardian-and-release.md`.
+
+# Historical work: Prodex 0.439.2 parity and CI
 
 The supported DeepSeek Super launch now translates rollout-budget token and
 reminder options before or after `exec` into Codex configuration. Synthetic
@@ -56,9 +113,11 @@ log is `/tmp/modex-ownership-rerun-1030.log` (SHA-256
 `18ac529e7b774e21379a48bc22127e46b3fe262a3f6f8e8400bfcde65a27dedc`)
 and it is not a pass. Its tracked diff SHA-256 was
 `2283d6eb5bc8b57df0a54a272fd3560dba62cf1ef9ead53ed0d49538d4450e54`.
-After integrating the corrected fixture and rollout-budget launch slice, a
-fresh full run is active at `/tmp/modex-ownership-combined-1030.log` on the
-same tracked ownership diff and untracked binding test; it is not yet a pass.
+After integrating the corrected fixture and rollout-budget launch slice, the
+full run at `/tmp/modex-ownership-combined-1030.log` was interrupted when the
+target changed to 0.166.0. Its partial log SHA-256 is
+`d0fae4b398fb4bdd99bfe170f38d1957a26aac99d3407c1bb478e342efb98fb9`;
+it is not a full pass or 0.166.0 evidence.
 The untracked native binding test SHA-256 is
 `62be13c2d1a34a648d9ded15b74c31657fd093ea2091c048d4878fdeb29431b3`.
 An earlier candidate incorrectly allowed a buffered `previous_response_id`;

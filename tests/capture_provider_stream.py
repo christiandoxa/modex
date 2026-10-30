@@ -16,7 +16,7 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 ORACLE = Path(os.environ.get(
-    "PRODEX_ORACLE",
+    "PRODEX_ORACLE_04390",
     str(Path.home() / ".cache/modex/oracles/0.439.0/prodex-x86_64-unknown-linux-gnu"),
 ))
 ORACLE_SHA256 = "2dec9565fd94eb59aeb83ae5e7cc4b772db130cbd45258d86a2104c8f4ba186a"

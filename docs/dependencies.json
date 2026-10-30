@@ -269,7 +269,7 @@
       "docs/evidence/checkpoint5-dependencies.txt"
     ]
   },
-  "runtime_recovery_foundation": "NativeRecoveryRetry and owned-thread/goal wire policy have native assertions and 407 pinned Mojo policy differential vectors. Accepted mutations do not become progress. Monitor, owned transport, affinity release, ambiguous outcome handling and mutation dispatch are unconnected; no live recovery PASS is claimed. Checkpoint 13 adds explicitly unconnected 0.439.2 quota signal eligibility and 1,600 current-pinned source comparisons; the old 407 wire-policy checks retain 0.439.1 provenance. No account pool, WebSocket, transport/recovery owner or new dependency is added.",
+  "runtime_recovery_foundation": "NativeRecoveryRetry and owned-thread/goal wire policy have native assertions and 407 pinned Mojo policy differential vectors. Accepted mutations do not become progress. Monitor, owned transport, affinity release, ambiguous outcome handling and mutation dispatch are unconnected; no live recovery PASS is claimed. Checkpoint 13 adds explicitly unconnected 0.439.2 quota signal eligibility and 1,600 then-current source comparisons; the old 407 wire-policy checks retain 0.439.1 provenance. Neither is 0.166.0 evidence. No account pool, WebSocket, transport/recovery owner or new dependency is added.",
   "native_super_evidence": [
     "docs/evidence/native-super-reference.json",
     "docs/evidence/native-super-data-plane.json",

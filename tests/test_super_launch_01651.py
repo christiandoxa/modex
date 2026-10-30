@@ -1,4 +1,4 @@
-"""Active 0.165.1 reference checks for the production Codex probes."""
+"""Historical 0.165.1 reference checks for production Codex probes."""
 
 import hashlib
 import os
@@ -49,7 +49,7 @@ class ActiveSuperLaunchTests(unittest.TestCase):
         if not active_cli.ORACLE.is_file() or hashlib.sha256(active_cli.ORACLE.read_bytes()).hexdigest() != active_cli.ORACLE_SHA256:
             raise AssertionError("PRODEX_ORACLE_01651 must identify the verified 0.165.1 Linux release")
         if not ORACLE_04392.is_file() or hashlib.sha256(ORACLE_04392.read_bytes()).hexdigest() != launch_support.ORACLE_SHA256:
-            raise AssertionError("PRODEX_ORACLE must identify the verified 0.439.2 Linux release")
+            raise AssertionError("PRODEX_ORACLE_04392 must identify the verified historical 0.439.2 release")
         if not launch_support.MODEX.is_file():
             raise AssertionError("Build Modex first with make build")
         if not NATIVE_CODEX.is_file() or NATIVE_CODEX.stat().st_mode & 0o111 == 0:

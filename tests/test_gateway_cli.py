@@ -1,4 +1,4 @@
-"""Differential checks for Gateway's frozen Clap argument behavior."""
+"""Historical 0.439.2 differential checks for Gateway's Clap arguments."""
 
 import hashlib
 import json
@@ -11,15 +11,15 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-from test_cli import ORACLE as ACTIVE_ORACLE, ORACLE_SHA256 as ACTIVE_ORACLE_SHA256
+from test_cli import ORACLE as HISTORICAL_ORACLE, ORACLE_SHA256 as HISTORICAL_ORACLE_SHA256
 
 BUILD_ROOT = Path(os.environ.get("BUILD_DIR", ROOT / "build"))
 MODEX = Path(os.environ.get("MODEX_GATEWAY_BINARY", BUILD_ROOT / "modex"))
-ORACLE = Path(os.environ.get("PRODEX_GATEWAY_ORACLE", ACTIVE_ORACLE))
-ORACLE_SHA256 = ACTIVE_ORACLE_SHA256
+ORACLE = Path(os.environ.get("PRODEX_GATEWAY_ORACLE_04392", HISTORICAL_ORACLE))
+ORACLE_SHA256 = HISTORICAL_ORACLE_SHA256
 MODEX_REFERENCE_VERSION = os.environ.get(
-    "MODEX_REFERENCE_VERSION",
-    json.loads((ROOT / "docs/baseline.json").read_text(encoding="utf-8"))["reference"]["tag"],
+    "MODEX_REFERENCE_VERSION_04392",
+    "0.439.2",
 )
 
 

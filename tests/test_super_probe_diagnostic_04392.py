@@ -15,7 +15,7 @@ class SuperProbeDiagnostic04392Tests(unittest.TestCase):
             or hashlib.sha256(test_cli.ORACLE.read_bytes()).hexdigest()
             != test_cli.ORACLE_SHA256
         ):
-            raise AssertionError("PRODEX_ORACLE must identify the verified 0.439.2 Linux release")
+            raise AssertionError("PRODEX_ORACLE_04392 must identify the verified historical 0.439.2 release")
         if not launch_support.MODEX.is_file():
             raise AssertionError("Build Modex first with make build")
 

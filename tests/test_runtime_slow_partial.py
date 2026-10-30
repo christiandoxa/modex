@@ -15,9 +15,7 @@ ORACLE_01651 = Path(os.environ.get(
 ))
 ORACLE_01651_SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
 ORACLE_04392 = Path(os.environ.get(
-    "PRODEX_ORACLE_04392", os.environ.get(
-        "PRODEX_ORACLE", REFERENCE_CACHE / "oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
-    ),
+    "PRODEX_ORACLE_04392", REFERENCE_CACHE / "oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
 ))
 ORACLE_04392_SHA256 = "a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e"
 

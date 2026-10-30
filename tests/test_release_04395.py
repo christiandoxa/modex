@@ -30,7 +30,7 @@ class Release04395Tests(unittest.TestCase):
                 self.assertEqual(initialize['params'], {
                     'capabilities': {'experimentalApi': True},
                     'clientInfo': {'name': 'prodex-hook-trust',
-                                   'version': '0.439.5' if binary == ORACLE else '0.439.2'},
+                                   'version': '0.439.5' if binary == ORACLE else '0.166.0'},
                 })
 
     def test_bodyless_chat_and_ordinary_response_lengths(self):

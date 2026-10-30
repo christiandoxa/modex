@@ -8,11 +8,11 @@ import test_super_launch
 
 
 class AppServerRpc04392Tests(unittest.TestCase):
-    def test_initialize_client_info_matches_release(self):
+    def test_initialize_client_info_records_historical_version_difference(self):
         if not MODEX.is_file():
             self.fail("Build Modex first with make build")
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-            self.fail("PRODEX_ORACLE must identify the verified 0.439.2 Linux release")
+            self.fail("PRODEX_ORACLE_04392 must identify the verified historical 0.439.2 release")
         observed = []
         for binary in (ORACLE, MODEX):
             result, records, upstream, state = test_super_launch.SuperLaunchTests().run_launch(
@@ -25,7 +25,10 @@ class AppServerRpc04392Tests(unittest.TestCase):
                         if record.get("kind") == "request" and record.get("method") == "initialize"]
             self.assertEqual(len(requests), 1)
             observed.append(requests[0])
-        self.assertEqual(observed, [{"name": "prodex-hook-trust", "version": "0.439.2"}] * 2)
+        self.assertEqual(observed, [
+            {"name": "prodex-hook-trust", "version": "0.439.2"},
+            {"name": "prodex-hook-trust", "version": "0.166.0"},
+        ])
 
 
 if __name__ == "__main__":

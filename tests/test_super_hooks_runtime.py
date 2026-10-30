@@ -1,5 +1,6 @@
 """Exercise the native Super hook-trust state machine against oracle captures."""
 
+import copy
 import json
 import os
 from pathlib import Path
@@ -80,6 +81,16 @@ def normalize(value, root):
     if isinstance(value, dict):
         return {normalize(key, root): normalize(item, root) for key, item in value.items()}
     return value
+
+
+def current_requests(app_server):
+    requests = [copy.deepcopy(event["request"]) for event in app_server["trace"]]
+    if requests and requests[0]["method"] == "initialize":
+        identity = requests[0]["params"]["clientInfo"]
+        if identity != {"name": "prodex-hook-trust", "version": "0.439.2"}:
+            raise AssertionError("historical fixture identity changed")
+        identity["version"] = "0.166.0"
+    return requests
 
 
 def driver_environment(root):
@@ -325,7 +336,7 @@ class SuperHooksRuntimeTests(unittest.TestCase):
                 else:
                     returncode, _, status, normalized_requests = run_driver(case)
                 app_server = next(item for item in case["child_invocations"] if item["mode"] == "app_server")
-                expected_requests = [entry["request"] for entry in app_server["trace"]]
+                expected_requests = current_requests(app_server)
                 self.assertEqual(normalized_requests, expected_requests)
                 self.assertEqual((returncode, status), EXPECTED[name])
 
@@ -346,7 +357,7 @@ class SuperHooksRuntimeTests(unittest.TestCase):
         case = self.cases["untrusted_hook_write"]
         returncode, status, requests = run_interactive_peer(case)
         app_server = next(item for item in case["child_invocations"] if item["mode"] == "app_server")
-        expected = [event["request"] for event in app_server["trace"]]
+        expected = current_requests(app_server)
         self.assertEqual(returncode, 0)
         self.assertEqual(status, "Trusted")
         self.assertEqual(requests, expected)
@@ -357,7 +368,7 @@ class SuperHooksRuntimeTests(unittest.TestCase):
         case = self.cases["untrusted_hook_write"]
         returncode, status, requests = run_interactive_peer(case, sandbox=True)
         app_server = next(item for item in case["child_invocations"] if item["mode"] == "app_server")
-        expected = [event["request"] for event in app_server["trace"]]
+        expected = current_requests(app_server)
         self.assertEqual(returncode, 0)
         self.assertEqual(status, "Trusted")
         self.assertEqual(requests, expected)
@@ -389,7 +400,7 @@ class SuperHooksRuntimeTests(unittest.TestCase):
             case, extra_frames=("not json", unrelated),
         )
         app_server = next(item for item in case["child_invocations"] if item["mode"] == "app_server")
-        expected = [event["request"] for event in app_server["trace"]]
+        expected = current_requests(app_server)
         self.assertEqual((returncode, status), EXPECTED["empty_hooks"])
         self.assertEqual(requests, expected)
 

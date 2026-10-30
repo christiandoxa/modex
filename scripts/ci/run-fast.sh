@@ -46,38 +46,54 @@ if [[ "${MODEX_CI_ARTIFACT_PRODUCER:-0}" == 1 ]]; then
     run_logged build-input-check "$PYTHON" scripts/ci/check-build-inputs.py
 fi
 run_logged focused-build make build unit
-if ! "$PYTHON" scripts/ci/reference.py oracle active >"$EVIDENCE_DIR/oracle-path-active.txt" 2>"$EVIDENCE_DIR/reference.log"; then
-    cat "$EVIDENCE_DIR/reference.log" >&2
+if ! "$PYTHON" scripts/ci/reference.py oracle active >"$EVIDENCE_DIR/oracle-path-active.txt" 2>"$EVIDENCE_DIR/reference-active.log"; then
+    cat "$EVIDENCE_DIR/reference-active.log" >&2
     exit 1
 fi
-cat "$EVIDENCE_DIR/reference.log"
-echo 'reference: PASS' | tee -a "$EVIDENCE_DIR/summary.txt"
-export PRODEX_ORACLE_04392="$(cat "$EVIDENCE_DIR/oracle-path-active.txt")"
-export PRODEX_ORACLE="$PRODEX_ORACLE_04392"
-export PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE_04392"
+cat "$EVIDENCE_DIR/reference-active.log"
+echo 'active reference oracle: PASS' | tee -a "$EVIDENCE_DIR/summary.txt"
+export PRODEX_ORACLE="$(cat "$EVIDENCE_DIR/oracle-path-active.txt")"
+export PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE"
 rm -- "$EVIDENCE_DIR/oracle-path-active.txt"
 if ! "$PYTHON" scripts/ci/reference.py source active >"$EVIDENCE_DIR/reference-source-active.txt" 2>"$EVIDENCE_DIR/reference-source-active.log"; then
     cat "$EVIDENCE_DIR/reference-source-active.log" >&2
     exit 1
 fi
 export MODEX_REFERENCE_DIR="$(cat "$EVIDENCE_DIR/reference-source-active.txt")"
-export MODEX_REFERENCE_04392_DIR="$MODEX_REFERENCE_DIR"
 cat "$EVIDENCE_DIR/reference-source-active.log"
 rm -- "$EVIDENCE_DIR/reference-source-active.txt"
-printf 'source_sha=%s\nreference_commit=%s\nmojo=%s\npython=%s\nreference_oracle_04392_sha256=%s\n' \
+run_logged focused-python-active env -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01660.py test_policy_capacity_01660.py test_ci_build_input_cleanliness.py test_ci_python_path_resolution.py test_ci_unit_build_cache.py
+if ! PRODEX_ORACLE_04392="${PRODEX_ORACLE_04392:-}" "$PYTHON" scripts/ci/reference.py oracle 0.439.2 >"$EVIDENCE_DIR/oracle-path-04392.txt" 2>"$EVIDENCE_DIR/reference-04392.log"; then
+    cat "$EVIDENCE_DIR/reference-04392.log" >&2
+    echo 'historical-04392-oracle: BLOCKED (required regression oracle unavailable; CI fails closed)' | tee -a "$EVIDENCE_DIR/summary.txt"
+    exit 1
+fi
+export PRODEX_ORACLE_04392="$(cat "$EVIDENCE_DIR/oracle-path-04392.txt")"
+export PRODEX_GATEWAY_ORACLE_04392="$PRODEX_ORACLE_04392"
+rm -- "$EVIDENCE_DIR/oracle-path-04392.txt"
+if ! "$PYTHON" scripts/ci/reference.py source 0.439.2 >"$EVIDENCE_DIR/reference-source-04392.txt" 2>"$EVIDENCE_DIR/reference-source-04392.log"; then
+    cat "$EVIDENCE_DIR/reference-source-04392.log" >&2
+    echo 'historical-04392-source: BLOCKED (required regression source unavailable; CI fails closed)' | tee -a "$EVIDENCE_DIR/summary.txt"
+    exit 1
+fi
+export MODEX_REFERENCE_04392_DIR="$(cat "$EVIDENCE_DIR/reference-source-04392.txt")"
+cat "$EVIDENCE_DIR/reference-source-04392.log"
+rm -- "$EVIDENCE_DIR/reference-source-04392.txt"
+printf 'source_sha=%s\nreference_commit=%s\nmojo=%s\npython=%s\nreference_oracle_sha256=%s\nreference_oracle_04392_sha256=%s\n' \
     "$(git rev-parse HEAD)" "$($PYTHON -c 'import json;print(json.load(open("docs/baseline.json"))["reference"]["commit"])')" \
     "$($MOJO --version)" "$($PYTHON --version 2>&1)" \
+    "$(sha256sum "$PRODEX_ORACLE" | cut -d ' ' -f1)" \
     "$(sha256sum "$PRODEX_ORACLE_04392" | cut -d ' ' -f1)" >"$EVIDENCE_DIR/identity.txt"
-run_logged focused-python-active "$PYTHON" scripts/ci/run-unittest.py test_anthropic_buffered_payload_04392.py test_anthropic_message_arrays_04392.py test_anthropic_text_stream_04392.py test_app_server_rpc_04392.py test_cli.py test_ci_build_input_cleanliness.py test_ci_python_path_resolution.py test_ci_unit_build_cache.py test_continuation_binding_04392.py test_deepseek_web_search_mode_04392.py test_gateway_cli.py test_local_rewrite_04392_oracle.py test_profile_cli.py test_provider_request_untyped_role_04392.py test_provider_tools_04392_characterization.py test_provider_requests.py test_runtime.py test_runtime_observer_04392.py test_runtime_observer_fuzz.py test_super_probe_diagnostic_04392.py
+run_logged historical-python-04392 "$PYTHON" scripts/ci/run-unittest.py test_anthropic_buffered_payload_04392.py test_anthropic_message_arrays_04392.py test_anthropic_text_stream_04392.py test_app_server_rpc_04392.py test_cli.py test_continuation_binding_04392.py test_deepseek_web_search_mode_04392.py test_gateway_cli.py test_local_rewrite_04392_oracle.py test_profile_cli.py test_provider_request_untyped_role_04392.py test_provider_tools_04392_characterization.py test_provider_requests.py test_runtime.py test_runtime_observer_04392.py test_runtime_observer_fuzz.py test_super_probe_diagnostic_04392.py
 run_logged focused-relay-python "$PYTHON" scripts/ci/run-unittest.py test_local_rewrite.py test_loopback_server.py
-if ! PRODEX_ORACLE="${PRODEX_ORACLE_01651:-}" "$PYTHON" scripts/ci/reference.py oracle 0.165.1 >"$EVIDENCE_DIR/oracle-path-01651.txt" 2>"$EVIDENCE_DIR/reference-01651.log"; then
+if ! "$PYTHON" scripts/ci/reference.py oracle 0.165.1 >"$EVIDENCE_DIR/oracle-path-01651.txt" 2>"$EVIDENCE_DIR/reference-01651.log"; then
     cat "$EVIDENCE_DIR/reference-01651.log" >&2
     exit 1
 fi
 export PRODEX_ORACLE_01651="$(cat "$EVIDENCE_DIR/oracle-path-01651.txt")"
 rm -- "$EVIDENCE_DIR/oracle-path-01651.txt"
-run_logged focused-python-active-cross-release-buffered-response-shapes env PRODEX_ORACLE_04392="$PRODEX_ORACLE_04392" PRODEX_ORACLE_01651="$PRODEX_ORACLE_01651" "$PYTHON" scripts/ci/run-unittest.py test_provider_buffered_response_shapes_01651_04392.py
-run_logged focused-python-active-cross-release "$PYTHON" scripts/ci/run-unittest.py test_runtime_proxy_websocket_04392_oracle.py test_anthropic_mixed_tools_01651.py test_anthropic_orphan_result_01651_04392.py test_anthropic_request_max_output_tokens_01651.py test_anthropic_request_unknown_fields_01651_04392.py test_anthropic_request_sampling_01651_04392.py test_anthropic_websearch_json_mode_01651_04392.py test_deepseek_web_search_mode_01651_04392.py test_deepseek_key_rotation_01651_04392.py test_deepseek_session_history_isolation_01651_04392.py test_provider_buffered_choice_01651_04392.py test_provider_request_prepare.py test_super_enum_values_01651_04392.py test_super_shared_config_01651_04392.py test_anthropic_stream_optional_metadata_shared.py test_provider_stream_repeated_search_04392.py test_provider_stream_cross_release_characterization.py test_loopback_header_whitespace.py test_log_stream_escaped_event_01651_04392.py test_log_upstream_selection_01651_04392.py test_log_token_selection_01651_04392.py test_log_plain_parser_01651_04392.py test_log_tty_fallback.py test_log_endpoint_projection_01651_04392.py test_log_redaction_01651_04392.py test_session_generated_stateless_matrix.py test_session_cli.py test_session_invalid_utf8_04392.py test_session_resume.py test_session_text.py test_super_concurrency_shared.py test_session_profile_04392.py test_super_subagent_model_shared.py test_terminal_dimensions.py
+run_logged historical-python-cross-release-buffered-response-shapes env PRODEX_ORACLE_04392="$PRODEX_ORACLE_04392" PRODEX_ORACLE_01651="$PRODEX_ORACLE_01651" "$PYTHON" scripts/ci/run-unittest.py test_provider_buffered_response_shapes_01651_04392.py
+run_logged historical-python-cross-release-01651-04392 "$PYTHON" scripts/ci/run-unittest.py test_runtime_proxy_websocket_04392_oracle.py test_anthropic_mixed_tools_01651.py test_anthropic_orphan_result_01651_04392.py test_anthropic_request_max_output_tokens_01651.py test_anthropic_request_unknown_fields_01651_04392.py test_anthropic_request_sampling_01651_04392.py test_anthropic_websearch_json_mode_01651_04392.py test_deepseek_web_search_mode_01651_04392.py test_deepseek_key_rotation_01651_04392.py test_deepseek_session_history_isolation_01651_04392.py test_provider_buffered_choice_01651_04392.py test_provider_request_prepare.py test_super_enum_values_01651_04392.py test_super_shared_config_01651_04392.py test_anthropic_stream_optional_metadata_shared.py test_provider_stream_repeated_search_04392.py test_provider_stream_cross_release_characterization.py test_loopback_header_whitespace.py test_log_stream_escaped_event_01651_04392.py test_log_upstream_selection_01651_04392.py test_log_token_selection_01651_04392.py test_log_plain_parser_01651_04392.py test_log_tty_fallback.py test_log_endpoint_projection_01651_04392.py test_log_redaction_01651_04392.py test_session_generated_stateless_matrix.py test_session_cli.py test_session_invalid_utf8_04392.py test_session_resume.py test_session_text.py test_super_concurrency_shared.py test_session_profile_04392.py test_super_subagent_model_shared.py test_terminal_dimensions.py
 run_logged historical-python-01651 env -u PRODEX_ORACLE -u PRODEX_GATEWAY_ORACLE "$PYTHON" scripts/ci/run-unittest.py test_cli_01651.py test_gateway_cli_01651.py test_gateway_launch_01651.py test_provider_stream_01651_characterization.py test_session_query_01651.py test_unicode_case_properties.py test_session_report_01651.py test_log_01651.py test_local_rewrite_01651_oracle.py test_runtime_proxy_websocket_01651_oracle.py test_app_server_rpc_01651.py test_super_model_toml_01651.py test_super_launch_01651.py test_super_dry_run_01651.py
 run_logged historical-profile-state-01651 env -u PRODEX_ORACLE -u PRODEX_GATEWAY_ORACLE "$PYTHON" scripts/ci/run-unittest.py test_profile_state_01651.py
 if ! "$PYTHON" scripts/ci/reference.py oracle 0.439.5 >"$EVIDENCE_DIR/oracle-path-04395.txt" 2>"$EVIDENCE_DIR/reference-04395.log"; then

@@ -2,7 +2,7 @@
 
 from std.collections import List
 
-from .cli import session_cli_error
+from .cli import session_cli_error, similar_names
 from .log_operational import valid_url_authority
 from .super_launch import run_clean_deepseek_super
 from .text import ascii_lower, trim_text, unsigned_value
@@ -148,6 +148,18 @@ def _clap_value(value: String) -> String:
     return output^
 
 
+def _enum_value_error(name: String, value: String, choices: List[String], runtime_error: String, clap_diagnostic: Bool) -> Error:
+    if not clap_diagnostic:
+        return Error(runtime_error)
+    if not value:
+        return _missing_value_error(name)
+    var message = "invalid value '" + _clap_value(value) + "' for '" + _value_label(name) + "'\n  [possible values: " + String(", ").join(choices) + "]"
+    var matches = similar_names(value, choices)
+    if matches:
+        message += "\n\n  tip: a similar value exists: '" + matches[len(matches) - 1] + "'"
+    return session_cli_error(message)
+
+
 def _validate_unsigned_value(name: String, value: String, parsed_value: String, clap_diagnostic: Bool) raises:
     try:
         _ = unsigned_value(parsed_value)
@@ -210,7 +222,7 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
             raise _typed_value_error(name, value, "maximum active sub-agents must be between 1 and 64", clap_diagnostic)
         return String(count)
     if name == "--cli" and value != "agy":
-        raise Error("only --cli agy is retained; use --provider gemini|copilot|kiro for other providers")
+        raise _enum_value_error(name, value, [String("agy")], "only --cli agy is retained; use --provider gemini|copilot|kiro for other providers", clap_diagnostic)
     if name == "--sub-agent-model" and not trim_text(value):
         raise _typed_value_error(name, value, "--sub-agent-model must be nonempty", clap_diagnostic)
     if name == "--sub-agent-model-reasoning-effort":
@@ -218,10 +230,16 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
         if effort not in ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]:
             raise _typed_value_error(name, _clap_value(value), "invalid sub-agent reasoning effort: expected none, minimal, low, medium, high, xhigh, max, or ultra, got " + _debug_quoted(effort), clap_diagnostic)
         return effort^
-    if name == "--web-search" and value not in ["disabled", "cached", "indexed", "live"]:
-        raise Error("invalid --web-search: supported values are disabled, cached, indexed, live")
-    if name == "--current-time-clock-source" and value not in ["system", "external"]:
-        raise Error("invalid --current-time-clock-source: supported values are system, external")
+    if name == "--web-search":
+        var mode = value if clap_diagnostic else ascii_lower(value)
+        if mode not in ["disabled", "cached", "indexed", "live"]:
+            raise _enum_value_error(name, value, [String("disabled"), "cached", "indexed", "live"], "expected disabled, cached, indexed, or live", clap_diagnostic)
+        return mode^
+    if name == "--current-time-clock-source":
+        var source = value if clap_diagnostic else ascii_lower(value)
+        if source not in ["system", "external"]:
+            raise _enum_value_error(name, value, [String("system"), "external"], "expected system or external", clap_diagnostic)
+        return source^
     if name in ["--context-window", "--auto-compact-token-limit", "--rollout-budget-tokens", "--current-time-reminder-interval"]:
         _validate_unsigned_value(name, value, value, clap_diagnostic)
     if name == "--rollout-budget-reminders":

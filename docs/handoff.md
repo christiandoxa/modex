@@ -4064,3 +4064,11 @@ three-process controls passed, the loopback parser passed 30 tests, and the
 HTTP/1.1 sequential and HTTP/1.1/0.9 pipeline checks passed. The full
 profile-backed WebSocket/WSS route remains unimplemented. See
 `docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md`.
+
+Super's `--cli`, `--web-search`, and `--current-time-clock-source` invalid
+pre-command values now use the release's Clap diagnostics, including tested
+suggestions and empty-value handling. Invalid post-command values use the
+release's runtime error, and supported case variants reach the existing guarded
+startup. Both pinned release processes and Modex pass selected synthetic
+argument comparisons; missing launch/state behavior and non-host targets remain
+gaps. See `docs/evidence/baseline-0.165.1/super-enum-values.md`.

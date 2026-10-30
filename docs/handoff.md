@@ -15,6 +15,12 @@ real-process tests. The 0.165.1 cases also cover empty, missing and numeric
 start payloads. Both focused test modules passed (31 tests); broader stream
 behavior remains unverified. See `test_anthropic_text_stream_04392.py` and
 `test_provider_stream_01651_characterization.py`.
+The historical note about missing or non-string stop fields is also stale:
+the tracked single-search tests compare these fields against both releases and
+pass. The exercised cases include missing or non-string stop reasons,
+non-string stop sequences and a missing message delta; other stream shapes
+remain unverified. See `test_provider_stream_01651_characterization.py` and
+`test_provider_tools_04392_characterization.py`.
 
 Published Modex still has a cross-key tool-history ownership gap. With two
 synthetic provider keys, a buffered response under key A containing a tool

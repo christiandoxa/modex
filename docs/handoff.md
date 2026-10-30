@@ -1,5 +1,25 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+An unpublished per-launch client-token prototype is in the dirty worktree
+`/tmp/modex-integration-20261030`; it is not part of the pushed product. It
+generates a random token in the private overlay, passes it to the relay and
+checks the header before reading a body or sending 100 Continue. Synthetic
+launch tests passed for valid, missing, wrong and duplicate credentials,
+stale launch tokens, stalled bodies and `Expect`. The existing streamed continuation restriction
+is unchanged. The production build, native relay driver and 72-source
+dependency audit passed for this draft. Same-user process compromise, partial
+header exhaustion and cross-platform randomness are not qualified.
+
+The draft is not ready to integrate: the non-ASCII-header-after-valid-pipeline
+test receives a TCP reset instead of the release's clean disconnect. The
+previous build passed the same focused test; with the prototype, whole-packet
+probes reset in three of three trials and delayed splits varied. A bounded
+nonblocking drain did not fix it and was removed. After fixture adaptation,
+the full focused raw HTTP production-path comparison passed on the rebuilt
+draft. Do not count this as
+provider ownership or continuation parity, and do not stage the draft until
+the regression and affected tests are resolved.
+
 The new malformed-trailer raw-wire regression initially failed locally on
 Modex because the probe discarded already received bytes when the peer reset
 the connection. The probe now retains those bytes and records the reset as a

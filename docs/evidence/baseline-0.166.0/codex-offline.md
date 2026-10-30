@@ -1,22 +1,98 @@
-# Codex 0.166.0 isolated loopback check
+# Codex 0.166.0 isolated 401 comparison
 
-The official OpenAI `rust-v0.166.0` Linux x86-64 musl archive
-`codex-x86_64-unknown-linux-musl.tar.gz` was downloaded separately from the
-installed Codex. Its SHA-256
-`a0bf572d2f93f056c6712a6da348e96078dc84f3885fd7be67807ef389cb3978`
-matches the GitHub release asset digest. The extracted executable SHA-256 is
-`b8a11fedf24b2dfb59a70c9e52b030f9a508dcd49cd2dd0d41956f4c785156b8`
-and it reports `codex-cli 0.166.0`. The installed Codex was not changed.
+## Pinned artifacts
 
-`tests/manual_real_codex_local_auth.py` passed with this executable and the
-Modex build from `94b514c2fe3992a9f2219b035746820f8fe17161`. It ran under
-`unshare -Urn` with only loopback enabled, no IPv4 or IPv6 default route,
-isolated HOME/config/storage, and synthetic provider credentials. The single
-provider request went to the synthetic loopback `/v1/chat/completions` peer;
-the test checked the per-launch local token, provider authorization and that
-neither secret appeared in output. No login or paid provider request occurred.
+- Codex `rust-v0.166.0` Linux x86-64 musl archive SHA-256:
+  `a0bf572d2f93f056c6712a6da348e96078dc84f3885fd7be67807ef389cb3978`.
+- Extracted Codex executable SHA-256:
+  `b8a11fedf24b2dfb59a70c9e52b030f9a508dcd49cd2dd0d41956f4c785156b8`.
+- Verified Codex binary used in the comparison: host source
+  `/tmp/modex-codex-rust-v0.166.0-artifact-1030/payload/codex-x86_64-unknown-linux-musl`.
+- Prodex 0.166.0 oracle executable SHA-256:
+  `349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d09735`.
+- Modex candidate source commit: `c425701cfdb27d1b3e815011c893d5244e423d56`.
+  Candidate executable SHA-256: `02795718e0788d8f59b6bcb6ae8f7a41ad4dbc6a33d493852e5256d735e06512`.
+- Integrated rerun used production sources matching
+  `53dd0a042f2a526516f2b72955c94f2d96aab1bf`, with executable SHA-256
+  `d76e89f50deb0dfa085c10d0976592f374c7543f017221bee0e25c05412ad922`.
 
-Reproduce with a separately verified Codex executable and Modex build:
+`tests/manual_real_codex_01660_route_comparison.py` verifies both executable
+hashes and versions, then launches real Codex through the local fixtures. Its
+preflight fails before any Codex or oracle process unless the rootless user
+namespace marker and mapping are present, `/tmp` is a user-owned tmpfs with
+private propagation, `HOME` and `TMPDIR` are directories inside it, the only
+interface is an already-up loopback, and IPv4/IPv6 have no default route.
+`HOME` and `TMPDIR` must be owned by the current user with mode `0700`. The run
+uses synthetic provider credentials and isolated config/storage. Neither
+login nor external provider traffic occurs.
+
+## Observed route and retained-state mismatch
+
+| Launcher | Upstream path | Codex exit | `auth.json` during exit | Overlay after exit |
+| --- | --- | ---: | --- | --- |
+| Prodex 0.166.0 oracle | `/anthropic/v1/messages` | 1 | Unchanged | Removed; no entries remained |
+| Modex candidate | `/v1/chat/completions` | 1 | Unchanged | Retained `auth.json`, `config.toml`, catalog, session state, SQLite databases, and SQLite WAL/SHM files |
+
+Both launchers passed the same normalized Codex arguments. Both returned the
+synthetic upstream 401 text without printing either synthetic key. The captured
+upstream paths differ. The earlier comparison's request-count/path assertions
+failed; this characterization records distinct observed paths and does not set
+an expected attempt count. It does not infer why routing differs. It also does
+not delete or alter either overlay's state.
+
+An attempted raw request capture saw a Codex `POST /v1/responses` with a
+43,284-byte `Content-Length`, split across `writev` iovecs. The decoder did not
+recover a complete JSON body, so the tool list and route-selection cause remain
+unverified. The failed capture is not evidence that a specific tool triggered
+the route.
+
+## Reproduce
+
+The namespace replaces `/tmp` with a private tmpfs. Set `CODEX_BINARY` to a
+path visible outside that mount. If the artifact source is under host `/tmp`,
+bind it before mounting tmpfs, as below. Keep the oracle at its verified path.
+
+```sh
+timeout 180s unshare -Urnm sh -c '
+  mount --make-rprivate / &&
+  mount --bind "$PWD" /mnt &&
+  mount --bind /tmp/modex-codex-rust-v0.166.0-artifact-1030/payload /opt &&
+  mount -t tmpfs -o mode=1777 tmpfs /tmp &&
+  ip link set lo up &&
+  mkdir -m 700 /tmp/home /tmp/work &&
+  cd /mnt &&
+  exec env -i HOME=/tmp/home TMPDIR=/tmp/work \
+    PATH=/home/doxa/.local/bin:/usr/local/bin:/usr/bin:/bin \
+    LANG=C.UTF-8 TERM=dumb NO_COLOR=1 \
+    MODEX_BINARY=/mnt/build/modex \
+    CODEX_BINARY=/opt/codex-x86_64-unknown-linux-musl \
+    NODE_BIN=/home/doxa/.local/share/upkit/node/active/bin \
+    PRODEX_ORACLE=/home/doxa/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu \
+    MODEX_REAL_CODEX_NETNS=1 PYTHONPATH=tests \
+    python3 tests/manual_real_codex_01660_route_comparison.py -v
+'
+```
+
+The test command must run only after the wrapper has mounted the private tmpfs,
+created `/tmp/home` and `/tmp/work`, and brought loopback up. It verifies that
+state before launching any Codex or oracle process. The focused run passed the
+Modex-only synthetic success case and the oracle/Modex 401 comparison. This is
+one Linux x86-64 Codex 0.166.0 characterization; other release targets and
+general routing parity remain unverified.
+The same two cases passed again against the integrated build in 25.538 seconds.
+
+## Historical Modex-only success observation
+
+The original real-client success check used Modex build
+`94b514c2fe3992a9f2219b035746820f8fe17161` with the same verified Codex 0.166.0
+executable. It ran under `unshare -Urn` with only loopback enabled and no IPv4
+or IPv6 default route. The one synthetic provider request went to
+`/v1/chat/completions`; the check verified the per-launch local token, provider
+authorization, and absence of either key in output. It made no login or paid
+provider request, and did not change the installed Codex.
+
+Reproduce the original Modex-only check with the preserved
+`tests/manual_real_codex_local_auth.py`:
 
 ```sh
 timeout 120s unshare -Urn env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin \
@@ -25,7 +101,6 @@ timeout 120s unshare -Urn env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin \
   PYTHONPATH=tests python3 tests/manual_real_codex_local_auth.py -v
 ```
 
-`iproute2` and user/network namespaces are required. Set
-`MODEX_EXPECTED_CODEX_VERSION=0.165.0` only for the historical client check.
-This single local-auth case does not establish general Codex 0.166.0,
-Guardian, WebSocket, profile-routing or platform parity.
+Set `MODEX_EXPECTED_CODEX_VERSION=0.165.0` only when running that historical
+client check. This original command predates the stricter private-tmpfs
+preflight used by the new pinned route comparison above.

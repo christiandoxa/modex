@@ -1326,7 +1326,9 @@ class SuperLaunchTests(unittest.TestCase):
                 records = [json.loads(line) for line in native_capture.read_text().splitlines()]
             saved = root / "shared/sessions/synthetic-session.jsonl"
             overlays = list((root / "state/profiles").glob("*"))
-            state = {"leftovers": [str(path) for path in overlays], "session": saved.read_text() if saved.exists() else None,
+            state = {"leftovers": [str(path) for path in overlays],
+                     "leftover_entries": [sorted(item.name for item in path.iterdir()) for path in overlays],
+                     "session": saved.read_text() if saved.exists() else None,
                      "repeat": repeated,
                      "history": (root / "shared/history.jsonl").read_text() if (root / "shared/history.jsonl").exists() else None,
                      "extra": [(path / "synthetic-user-state").read_text() for path in overlays if (path / "synthetic-user-state").exists()],

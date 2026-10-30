@@ -114,6 +114,13 @@ Modex through a synthetic loopback provider inside a network namespace with
 no default routes. Its release archive and executable hashes, isolation and
 reproduction command are in `docs/evidence/baseline-0.166.0/codex-offline.md`.
 This is one local-auth case, not general Codex or Guardian parity.
+An additional isolated real-Codex 401 comparison observes Prodex routing to
+Anthropic Messages and Modex to Chat Completions with the same normalized
+client arguments. Both clients exit with the synthetic error; Prodex removes
+its overlay while Modex preserves Codex-created state and `auth.json`. The
+raw request body was not recovered, so the route difference's cause is open.
+The characterization does not delete retained state; see the same evidence
+file for its scope and reproduction.
 
 `test_runtime_broker_startup_01660_oracle.py` records the broker gap with a
 synthetic profile: the 0.166.0 process publishes a private capability and
@@ -147,24 +154,27 @@ the original shell exit status was not retained. The log is
 `0ac6167a1ef120853367905442819d02cd91b58905fb08ece16455ee9430fff7`.
 This is evidence for that snapshot, not a full-suite result for later commits.
 
-A third full run starts from exact commit
+A third full run used exact commit
 `b04873c96f55db20151e2c284144824ec470c3aa` in
 `/tmp/modex-01660-full-b04873c`, with a cleared environment, private HOME and
 temporary directory, and explicit active and historical oracle paths. Its log
-is `/tmp/modex-01660-full-b04873c.log` (launcher PID 1751677). It is still
-running and is not a pass. It has reported a failure in
-`test_parent_eof_cancels_failed_open_stream_with_truncated_pipeline_body`;
-the same test passed when rerun alone under the same isolated HOME and oracle
-paths, and ten further repetitions passed in a loopback-only network
-namespace with private `/tmp` and synthetic HOME. The full run has not printed
-its failure traceback yet, so the cause is unresolved. The suite runs against
-that fixed snapshot, not later changes.
+is `/tmp/modex-01660-full-b04873c.log`, SHA-256
+`b9b4342a09a5ca931cb5d4380fc6c3f9b9a4a2d32a53d70bf1c0a7374e625a18`.
+It exited 2 after 1,195 tests in 3,343.608 seconds: four failures and one
+required-reference skip. For the Anthropic parent-EOF test, Modex's parent had
+already exited before the test could send SIGTERM, so the test did not prove
+cancellation. The same test passed alone with the same isolated HOME and
+oracle paths and ten further repetitions passed in a loopback-only namespace;
+the early exit remains unresolved. The run omitted the historical 0.439.1
+source override, so the strict runner correctly rejected its skipped recovery
+policy comparison. That comparison passed on rerun with the explicit pinned
+0.439.1 source path. This snapshot does not validate later changes.
 The same run also reported three historical optional-tool fixture failures.
 All three reproduce with an isolated `TMPDIR` because their output normalizer
 assumed `/tmp` directly. The fixture now uses Python's actual temporary
 directory prefix and preserves its path-disclosure checks. All three pass under
 a nested temporary directory, and the two managed-tool cases also pass with the default.
-The in-progress snapshot cannot validate this later correction.
+The completed snapshot cannot validate this later correction.
 
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing

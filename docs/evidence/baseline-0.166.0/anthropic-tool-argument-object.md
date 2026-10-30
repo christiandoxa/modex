@@ -22,3 +22,12 @@ absence of an upstream request on rejection. The custom-tool and provider-shape
 modules passed eight tests in a private loopback-only network namespace using
 synthetic credentials and isolated temporary state. This covers selected Linux
 x86-64 request shapes; other provider behavior and release targets remain open.
+
+For valid object arguments with unique keys, the translator also preserves
+their original JSON spelling and emits `tool_use` and `tool_result` fields in
+the observed reference order. Active process checks compare exact bytes for
+empty, sorted, unsorted and whitespace-containing objects. If an object at
+any depth contains duplicate decoded keys, Modex retains its prior last-key
+normalization; the reference forwards the duplicates. Tests cover both literal
+and escaped spellings of a duplicate nested key. That intentional difference
+avoids changing the existing duplicate-key boundary and remains a parity gap.

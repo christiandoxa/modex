@@ -185,6 +185,18 @@ def _field(doc: JsonDocument, key: String, fallback: String) raises -> String:
     return serialize_json(doc, value) if value >= 0 else fallback
 
 
+def _has_duplicate_object_keys(doc: JsonDocument) -> Bool:
+    for index in range(len(doc.nodes)):
+        if doc.nodes[index].kind != JSON_OBJECT:
+            continue
+        var seen = Dict[String, Bool]()
+        for name in doc.nodes[index].names:
+            if name in seen:
+                return True
+            seen[name] = True
+    return False
+
+
 def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
     var source = doc.get(doc.root, "messages")
     if source < 0 or doc.nodes[source].kind != JSON_ARRAY or len(doc.nodes[source].children) == 0:
@@ -213,7 +225,7 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
                 content_parts = List[String]()
             current_role = role
             has_message = True
-            tool_results.append('{"type":"tool_result","tool_use_id":' + tool_use_id + ',"content":' + serialize_json(doc, content) + "}")
+            tool_results.append('{"content":' + serialize_json(doc, content) + ',"tool_use_id":' + tool_use_id + ',"type":"tool_result"}')
             continue
         _only_fields(doc, item, ["role", "content", "tool_calls"], "message")
         if role == "developer": role = "system"
@@ -254,12 +266,12 @@ def _messages(doc: JsonDocument) raises -> Tuple[String, String]:
                 try:
                     var parsed_arguments = JsonDocument(doc.nodes[arguments].text)
                     arguments_are_object = parsed_arguments.nodes[parsed_arguments.root].kind == JSON_OBJECT
-                    parsed_arguments_json = serialize_json(parsed_arguments, parsed_arguments.root)
+                    parsed_arguments_json = serialize_json(parsed_arguments, parsed_arguments.root) if _has_duplicate_object_keys(parsed_arguments) else doc.nodes[arguments].text
                 except:
                     raise Error("Anthropic tool function arguments must be valid JSON")
                 if not arguments_are_object:
                     raise Error("Anthropic tool function arguments must be a JSON object")
-                content_parts.append('{"type":"tool_use","id":' + serialize_json(doc, call_id) + ',"name":' + serialize_json(doc, name) + ',"input":' + parsed_arguments_json + "}")
+                content_parts.append('{"id":' + serialize_json(doc, call_id) + ',"input":' + parsed_arguments_json + ',"name":' + serialize_json(doc, name) + ',"type":"tool_use"}')
     if not has_message:
         raise Error("Anthropic Messages slice requires a user or assistant message")
     messages.append(_message(current_role, tool_results, content_parts))

@@ -5,6 +5,9 @@ JSON object, matching the active release's pre-provider HTTP 400 for arrays,
 scalars and null. The separate OpenAI Chat route retains its observed behavior.
 Active process comparisons cover both Anthropic modes and Chat controls; see
 `docs/evidence/baseline-0.166.0/anthropic-tool-argument-object.md`.
+Valid function-history blocks also match tested wire bytes, including original
+argument whitespace and key order. Duplicate decoded keys remain normalized in
+Modex while the reference forwards them; that is a documented parity gap.
 
 Bodyless 204 and 304 DeepSeek SSE passthrough responses now advertise
 `Connection: close` along with chunked framing, matching the active release.

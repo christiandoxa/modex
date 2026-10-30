@@ -150,6 +150,53 @@ class AnthropicCustomToolCalls01660Tests(unittest.TestCase):
             self.assertEqual(len(observations), 2)
             self.assertEqual(observations[0], observations[1])
 
+    def test_function_history_block_bytes_match_active_release(self):
+        reply = {"status": 200, "content_type": "application/json", "body": json_bytes({
+            "id": "msg_synthetic", "type": "message", "role": "assistant", "model": "deepseek-chat",
+            "content": [{"type": "text", "text": "synthetic reply"}], "stop_reason": "end_turn",
+            "usage": {"input_tokens": 1, "output_tokens": 1},
+        })}
+        for arguments in ("{}", '{"a":1,"z":2}', '{"z":1,"a":2}', ' { "z": 1, "a": {"x": 2} } '):
+            turn = {"model": "deepseek-chat", "tools": [{"type": "web_search_preview"}], "input": [
+                {"type": "function_call", "call_id": "call_synthetic", "name": "lookup",
+                 "arguments": arguments},
+                {"type": "function_call_output", "call_id": "call_synthetic", "output": "synthetic result"},
+            ]}
+            for mode in ("auto", "anthropic"):
+                bodies = []
+                for binary in (ORACLE, MODEX):
+                    with self.subTest(mode=mode, arguments=arguments, reference=binary == ORACLE):
+                        posts, responses = observe_turns(
+                            binary, [turn], [reply], latest_version="0.166.0",
+                            shared_config=f'[deepseek]\nweb_search_mode = "{mode}"\n',
+                        )
+                        self.assertEqual([response["status"] for response in responses], [200])
+                        self.assertEqual([post["path"] for post in posts], ["/anthropic/v1/messages"])
+                        bodies.append(posts[0]["body"])
+                self.assertEqual(len(bodies), 2)
+                self.assertEqual(bodies[0], bodies[1])
+
+    def test_duplicate_tool_argument_keys_remain_normalized(self):
+        reply = {"status": 200, "content_type": "application/json", "body": json_bytes({
+            "id": "msg_synthetic", "type": "message", "role": "assistant", "model": "deepseek-chat",
+            "content": [{"type": "text", "text": "synthetic reply"}], "stop_reason": "end_turn",
+            "usage": {"input_tokens": 1, "output_tokens": 1},
+        })}
+        for arguments in ('{"outer":{"a":1,"a":2}}', '{"outer":{"a":1,"\\u0061":2}}'):
+            turn = {"model": "deepseek-chat", "tools": [{"type": "web_search_preview"}], "input": [
+                {"type": "function_call", "call_id": "call_synthetic", "name": "lookup",
+                 "arguments": arguments},
+                {"type": "function_call_output", "call_id": "call_synthetic", "output": "synthetic result"},
+            ]}
+            bodies = []
+            for binary in (ORACLE, MODEX):
+                posts, responses = observe_turns(binary, [turn], [reply], latest_version="0.166.0")
+                self.assertEqual([response["status"] for response in responses], [200])
+                self.assertEqual([post["path"] for post in posts], ["/anthropic/v1/messages"])
+                bodies.append(posts[0]["body"])
+            self.assertIn(arguments.encode(), bodies[0])
+            self.assertIn(b'"outer":{"a":2}', bodies[1])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -62,7 +62,7 @@ fi
 export MODEX_REFERENCE_DIR="$(cat "$EVIDENCE_DIR/reference-source-active.txt")"
 cat "$EVIDENCE_DIR/reference-source-active.log"
 rm -- "$EVIDENCE_DIR/reference-source-active.txt"
-run_logged focused-python-active env -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01660.py test_gateway_default_01660.py test_deepseek_reasoning_01660.py test_deepseek_stream_ids_01660.py test_policy_capacity_01660.py test_runtime_broker_startup_01660_oracle.py test_ci_build_input_cleanliness.py test_ci_python_path_resolution.py test_ci_unit_build_cache.py
+run_logged focused-python-active env -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01660.py test_gateway_default_01660.py test_anthropic_missing_message_content_01660.py test_deepseek_reasoning_01660.py test_deepseek_stream_ids_01660.py test_policy_capacity_01660.py test_runtime_broker_startup_01660_oracle.py test_ci_build_input_cleanliness.py test_ci_python_path_resolution.py test_ci_unit_build_cache.py
 if ! PRODEX_ORACLE_04392="${PRODEX_ORACLE_04392:-}" "$PYTHON" scripts/ci/reference.py oracle 0.439.2 >"$EVIDENCE_DIR/oracle-path-04392.txt" 2>"$EVIDENCE_DIR/reference-04392.log"; then
     cat "$EVIDENCE_DIR/reference-04392.log" >&2
     echo 'historical-04392-oracle: BLOCKED (required regression oracle unavailable; CI fails closed)' | tee -a "$EVIDENCE_DIR/summary.txt"

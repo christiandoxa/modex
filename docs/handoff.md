@@ -67,6 +67,13 @@ comparisons cover flat and nested effort, tool choice, continuation, and other
 effort controls. The historical comparison records the 0.439.2 divergence.
 These cases do not establish broader DeepSeek parity.
 
+In the Anthropic Messages route, untyped input items without text no longer
+fail preflight solely because `content` is absent. Pinned 0.166.0 process
+comparisons cover selected missing, empty, null and scalar content, mixed
+function calls and outputs, and typed invalid-item rejection before provider
+dispatch. Other input shapes and broader Anthropic parity remain open; see
+`docs/evidence/baseline-0.166.0/anthropic-missing-content.md`.
+
 DeepSeek streamed text-item IDs now combine a UUIDv7-derived prefix with the
 local sequence, matching the tested 0.166.0 decimal ID shape and low 32-bit
 sequence. Modex's prefix differs from the release's hash and can collide; the

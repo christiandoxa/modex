@@ -46,7 +46,7 @@ def validate_deepseek_anthropic_request(source: String) raises:
             if type_node >= 0 and role >= 0 and (doc.nodes[role].kind != JSON_STRING or (doc.nodes[role].text != "user" and doc.nodes[role].text != "assistant" and doc.nodes[role].text != "system" and doc.nodes[role].text != "developer")):
                 raise Error("Anthropic Messages slice supports only user, assistant, system, and developer message roles")
             var content = doc.get(item, "content")
-            if content < 0 or (type_node >= 0 and doc.nodes[content].kind != JSON_STRING and doc.nodes[content].kind != JSON_ARRAY and doc.nodes[content].kind != JSON_OBJECT):
+            if type_node >= 0 and (content < 0 or (doc.nodes[content].kind != JSON_STRING and doc.nodes[content].kind != JSON_ARRAY and doc.nodes[content].kind != JSON_OBJECT)):
                 raise Error("Anthropic Messages slice supports only text message content")
     else:
         raise Error("Anthropic Messages slice supports only string input or simple message arrays")

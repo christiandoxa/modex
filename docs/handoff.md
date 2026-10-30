@@ -3,11 +3,24 @@
 The DeepSeek Super conversation cache now scopes tool-history lookup by an
 explicit session ID. A synthetic active-oracle comparison shows that requests
 with different session IDs or only one session ID no longer import the other
-request's prompt in Modex, while 0.166.0 does. Missing IDs still share history,
-and client-supplied session IDs do not authenticate an owner. Both products
-reject the tested same-session follow-up with 503. This is a limited
+request's prompt in Modex, while 0.166.0 does. Missing IDs still share history
+within the same credential, and client-supplied session IDs do not authenticate
+an owner. Both products reject the tested same-session follow-up with 503. This is a limited
 security-preserving difference, not full ownership or continuation parity; see
 `docs/evidence/baseline-0.166.0/deepseek-session-tool-history.md`.
+
+Stored tool-call history is now also scoped by a process-local credential
+identity. Active 0.166.0 process tests cover buffered and streamed histories,
+duplicate keys, cross-key rejection, concurrent lookups, and suppression of a
+cross-key retry after cached history is selected. The active release forwards
+the tested history across keys. Cached-history retry on the native Anthropic
+route, eviction, restart, and adversarial session identifiers remain unverified;
+see `docs/evidence/baseline-0.166.0/deepseek-credential-history.md`.
+
+Doctor's `--json` and `--bundle` conflict diagnostics now follow the tested
+0.166.0 argument order. Ten isolated process comparisons and the native
+inspection check passed; doctor execution remains unqualified. See
+`docs/evidence/baseline-0.166.0/inspection-cli-conflict-order.md`.
 
 Logout help and selected parser precedence now match the active 0.166.0
 release in isolated process comparisons. Valid non-help logout requests still
@@ -607,15 +620,15 @@ instead return 502 without a provider POST. Five existing message-array tests
 passed against each release; other rich inputs remain unverified. See
 `test_anthropic_message_arrays_04392.py`.
 
-Published Modex still has a cross-key tool-history ownership gap. With two
-synthetic provider keys, a buffered response under key A containing a tool
+At the historical checkpoint, Modex had a cross-key tool-history ownership gap.
+With two synthetic provider keys, a buffered response under key A containing a tool
 call can be followed by a tool output without `previous_response_id`; the
 next provider request uses key B and includes key A's prior synthetic
 conversation. Both pinned release processes do the same. The per-launch
 client token does not separate provider-key ownership. A candidate in
 `$TASK_SCRATCH/ownership-final-1030` rejects this with 503 and one provider POST.
-It remains unpublished pending a full suite: 76 continuation, key-rotation and
-session-history tests passed, and an independent source review found no new
+That older candidate remained unpublished pending a full suite: 76 continuation,
+key-rotation and session-history tests passed, and an independent source review found no new
 ownership race. Its first full `make test` stopped during native compilation:
 `test_gateway_cli.mojo` still expected the old history return type. The test
 callers have been updated in the candidate and the suite must be rerun; the
@@ -638,10 +651,10 @@ An earlier candidate incorrectly allowed a buffered `previous_response_id`;
 that regression was fixed and the original assertion retained. A separate
 `realpath` failure occurred while a concurrent build replaced the test binary;
 an isolated rerun passed, but the cause has not been proven. The real-process test
-`test_deepseek_key_rotation_01651_04392.DeepSeekKeyRotationTests.test_published_cross_key_tool_history_gap_is_present`
-reproduces the exposure with a current Modex build and both pinned release
-oracles. It characterizes a known security gap, not a parity pass, and must be
-updated when the ownership fix is integrated.
+`test_deepseek_key_rotation_01651_04392.DeepSeekKeyRotationTests.test_published_cross_key_tool_history_gap_is_fixed_in_modex`
+now distinguishes the earlier releases from Modex, but has not been rerun
+against the unavailable 0.439.2 oracle. The later 0.166.0 checks and their
+remaining limits are described in the current-work section above.
 
 The 0.165.1 runtime-broker path was traced through bootstrap, profile auth,
 registry lifecycle and WebSocket transport. Mojo 1.2.0 compiler probes again

@@ -3,9 +3,9 @@
 This change closes the tested local relay leak where stored function-call
 history was included in a later tool-output request handled by another API key.
 The cache key now includes the session namespace and a process-local credential
-index; equal API-key entries resolve to the same index. Cache identifiers and
-logs do not contain API-key text. Missing and explicitly empty namespaces use
-distinct keys.
+index; equal API-key entries resolve to the same index. Cache identifiers do
+not contain API-key text. Missing and explicitly empty namespaces use distinct
+keys.
 
 The 0.166.0 control confirms the exposed behavior: a tool call stored after a
 request using key A is included in a later request using key B. Modex returns

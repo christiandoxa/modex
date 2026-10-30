@@ -21,7 +21,7 @@ REQUEST = {
 SEARCH_ID = "search_synthetic"
 
 
-def search_events(initial_input, fragments):
+def search_events(initial_input, fragments, stop_before_fragments=False):
     events = [
         {"type": "message_start", "message": {
             "id": "msg_synthetic", "role": "assistant", "model": "deepseek-chat",
@@ -32,12 +32,15 @@ def search_events(initial_input, fragments):
             "input": initial_input,
         }},
     ]
+    if stop_before_fragments:
+        events.append({"type": "content_block_stop", "index": 0})
     for fragment in fragments:
         events.append({"type": "content_block_delta", "index": 0, "delta": {
             "type": "input_json_delta", "partial_json": fragment,
         }})
+    if not stop_before_fragments:
+        events.append({"type": "content_block_stop", "index": 0})
     events.extend((
-        {"type": "content_block_stop", "index": 0},
         {"type": "content_block_start", "index": 1, "content_block": {
             "type": "web_search_tool_result", "tool_use_id": SEARCH_ID,
             "content": [{"type": "web_search_result", "url": "https://example.test/release",
@@ -109,17 +112,56 @@ class AnthropicStream01660Tests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError(f"Build Modex first: {MODEX}")
 
-    def test_search_query_fragments_and_duplicate_input_characterization(self):
+    def test_search_query_fragments_and_start_input_precedence(self):
         cases = (
-            ("single fragment", {}, ('{"query":"release"}',), ["release"], ["release"]),
-            ("split fragments", {}, ('{"que', 'ry":"release"}'), ["release"], ["release"]),
+            ("single fragment", {}, ('{"query":"release"}',), ["release"], False),
+            ("split fragments", {}, ('{"que', 'ry":"release"}'), ["release"], False),
             # The same complete query appears in the start input and delta input.
-            ("duplicate start and delta", {"query": "release"}, ('{"query":"release"}',),
-             ["release"], []),
+            ("duplicate start and delta", {"query": "release"},
+             ('{"query":"release"}',), ["release"], False),
+            ("start query wins over different delta", {"query": "start"},
+             ('{"query":"delta"}',), ["start"], False),
+            ("start query wins over split delta fragments", {"query": "start"},
+             ('{"query":', '"delta"}'), ["start"], False),
+            ("truncated delta retains input bounds", {"query": "start"},
+             ('{"query":',), [], False),
+            ("missing start query ignores delta object", {"other": "start"},
+             ('{"query":"delta"}',), [], False),
+            ("null start query ignores delta object", {"query": None},
+             ('{"query":"delta"}',), [], False),
+            ("non-string start query ignores delta object", {"query": 7},
+             ('{"query":"delta"}',), [], False),
+            ("start query wins over consecutive delta objects", {"query": "start"},
+             ('{"query":"first"}', '{"query":"second"}'), ["start"], False),
+            ("first delta object wins over consecutive objects", {},
+             ('{"query":"first"}', '{"query":"second"}'), ["first"], False),
+            ("first object handles nested braces and quoted delimiters", {},
+             (r'{"metadata":{"brace":"}\"{"},"query":"first"}',
+              '{"query":"second"}'), ["first"], False),
+            ("start query wins over malformed delta ending with brace", {"query": "start"},
+             ("not-json}",), ["start"], False),
+            ("string start input is ignored", "start",
+             ('{"query":"delta"}',), ["delta"], False),
+            ("array start input is ignored", ["start"],
+             ('{"query":"delta"}',), ["delta"], False),
+            ("null start input is ignored", None,
+             ('{"query":"delta"}',), ["delta"], False),
+            ("empty start fragment with trailing whitespace", {},
+             ('{"query":"release"} ',), [], False),
+            ("leading whitespace before delta object", {},
+             (' {"query":"release"}',), [], False),
+            ("surrounding whitespace around delta object", {},
+             (' {"query":"release"} ',), [], False),
+            ("whitespace inside delta object", {},
+             ('{ "query" : "release" }',), ["release"], False),
+            ("start and delta with trailing whitespace", {"query": "start"},
+             ('{"query":"delta"} ',), [], False),
+            ("delta after block stop", {}, ('{"query":"after stop"}',),
+             ["after stop"], True),
         )
-        for label, initial_input, fragments, reference_queries, modex_queries in cases:
+        for label, initial_input, fragments, expected_queries, stop_before_fragments in cases:
             with self.subTest(case=label):
-                events = search_events(initial_input, fragments)
+                events = search_events(initial_input, fragments, stop_before_fragments)
                 reference = oracle_run(events)
                 actual = _run(MODEX, REQUEST, scenario="anthropic-custom-events",
                               anthropic_events=events)
@@ -142,13 +184,12 @@ class AnthropicStream01660Tests(unittest.TestCase):
                 self.assertEqual(actual_headers["x-api-key"], "synthetic-provider-key")
                 self.assertEqual(reference["state"]["leftovers"], [])
                 self.assertEqual(actual["state"]["leftovers"], [])
-                self.assertEqual(completed_search_queries(reference), reference_queries)
-                self.assertEqual(completed_search_queries(actual), modex_queries)
-                if reference_queries == modex_queries:
-                    self.assertEqual(
-                        _normalized_events(actual["response_body"]),
-                        _normalized_events(reference["response_body"]),
-                    )
+                self.assertEqual(completed_search_queries(reference), expected_queries)
+                self.assertEqual(completed_search_queries(actual), expected_queries)
+                self.assertEqual(
+                    _normalized_events(actual["response_body"]),
+                    _normalized_events(reference["response_body"]),
+                )
 
 
 if __name__ == "__main__":

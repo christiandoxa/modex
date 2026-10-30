@@ -74,11 +74,13 @@ function calls and outputs, and typed invalid-item rejection before provider
 dispatch. Other input shapes and broader Anthropic parity remain open; see
 `docs/evidence/baseline-0.166.0/anthropic-missing-content.md`.
 
-Active-oracle Anthropic search streams match in selected empty-start, one- and
-two-fragment cases. A duplicate start-plus-delta input produces a different
-query list; its protocol validity is unqualified, and the mismatch remains
-open. The manual test requires an isolated network and private temporary
-storage; see `docs/evidence/baseline-0.166.0/anthropic-stream-query-fragments.md`.
+Active-oracle Anthropic search streams now match in the tested empty-start,
+fragmented and first-object cases. The comparison includes malformed suffixes
+ending in `}` and the release's first-object query behavior; incomplete suffixes
+and outer whitespace yield an empty query list. Multi-object protocol validity
+and broader Anthropic parity remain unqualified. The manual test requires an
+isolated network and private temporary storage; see
+`docs/evidence/baseline-0.166.0/anthropic-stream-query-fragments.md`.
 
 DeepSeek streamed text-item IDs now combine a UUIDv7-derived prefix with the
 local sequence, matching the tested 0.166.0 decimal ID shape and low 32-bit

@@ -351,7 +351,7 @@ struct DeepSeekChatState:
         if id_node >= 0 and doc.nodes[id_node].kind == JSON_STRING:
             id = doc.nodes[id_node].text
         var input = doc.get(block, "input")
-        var input_json = serialize_json(doc, input) if input >= 0 and len(doc.nodes[input].children) != 0 else String()
+        var input_json = serialize_json(doc, input) if input >= 0 and doc.nodes[input].kind == JSON_OBJECT and len(doc.nodes[input].children) != 0 else String()
         var search = AnthropicWebSearch(index, id, input_json, "[]", False)
         var item = _stream_anthropic_search_item(search, True)
         var position = self.anthropic_search_index(index)
@@ -617,13 +617,50 @@ def json_array(values: List[String]) -> String:
 
 def _stream_anthropic_search_item(search: AnthropicWebSearch, in_progress: Bool) -> String:
     var queries = String("[]")
-    try:
-        queries = _search_queries(search.input_json, True)
-    except:
-        pass
+    var input_length = search.input_json.byte_length()
+    if (
+        input_length >= 2
+        and search.input_json.as_bytes()[0] == 123
+        and search.input_json.as_bytes()[input_length - 1] == 125
+    ):
+        try:
+            queries = _search_queries(search.input_json, True)
+        except:
+            var first_object_end = _first_json_object_end(search.input_json)
+            if first_object_end > 0:
+                try:
+                    # shortcut: ignore suffix after first object like 0.166.0; validate it if protocol later requires rejection.
+                    queries = _search_queries(String(search.input_json[byte=0:first_object_end]), True)
+                except:
+                    pass
     return (
         '{"type":"web_search_call","id":' + quote_json(search.id)
         + ',"status":' + quote_json("in_progress" if in_progress else "completed")
         + ',"action":{"type":"search","queries":' + queries
         + ',"sources":' + search.sources + "}}"
     )
+
+
+def _first_json_object_end(value: String) -> Int:
+    var depth = 0
+    var in_string = False
+    var escaped = False
+    for index in range(value.byte_length()):
+        var byte = value.as_bytes()[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif byte == 92:
+                escaped = True
+            elif byte == 34:
+                in_string = False
+            continue
+        if byte == 34:
+            in_string = True
+        elif byte == 123:
+            depth += 1
+        elif byte == 125:
+            depth -= 1
+            if depth == 0:
+                return index + 1
+    return -1

@@ -1,6 +1,6 @@
 """Super option extraction and launch-boundary validation."""
 
-from std.collections import List
+from std.collections import List, Span
 
 from .cli import session_cli_error, similar_names
 from .log_operational import valid_url_authority
@@ -476,13 +476,54 @@ def _supported_exec_arguments(arguments: List[String]) -> Bool:
     return True
 
 
+def _rollout_budget_codex_arguments(options: SuperOptions) raises -> List[String]:
+    var arguments = List[String]()
+    if not options.has("--rollout-budget-tokens"):
+        return arguments^
+    var limit = unsigned_value(options.value("--rollout-budget-tokens"))
+    if limit <= 1:
+        return arguments^
+    var reminders = List[UInt64]()
+    for index in range(len(options.names)):
+        if options.names[index] == "--rollout-budget-reminders":
+            for value in options.values[index].split(","):
+                var reminder = unsigned_value(String(value))
+                if reminder > 0 and reminder < limit:
+                    reminders.append(reminder)
+    if not reminders:
+        for percent in [UInt64(75), UInt64(50), UInt64(25)]:
+            var reminder = UInt64.MAX // 100
+            if limit <= UInt64.MAX // percent:
+                reminder = limit * percent // 100
+            if reminder > 0 and reminder < limit:
+                reminders.append(reminder)
+        if not reminders:
+            reminders.append(limit - 1)
+    sort(Span(reminders), lambda (left: UInt64, right: UInt64) -> Bool: left > right)
+    var serialized = String()
+    var previous = UInt64.MAX
+    for reminder in reminders:
+        if reminder != previous:
+            if serialized:
+                serialized += ","
+            serialized += String(reminder)
+            previous = reminder
+    arguments.append("-c")
+    arguments.append("features.rollout_budget.enabled=true")
+    arguments.append("-c")
+    arguments.append("features.rollout_budget.limit_tokens=" + String(limit))
+    arguments.append("-c")
+    arguments.append("features.rollout_budget.reminder_at_remaining_tokens=[" + serialized + "]")
+    return arguments^
+
+
 def run_super(options: SuperOptions) raises -> Int:
     validate_super_options(options)
     var supported = options.value("--provider") == "deepseek" and options.has("--no-presidio") and options.has("--no-sub-agent") and options.has("--base-url")
     for name in options.names:
-        supported = supported and name in ["--provider", "--no-presidio", "--no-sub-agent", "--base-url", "--api-key", "--model", "--profile", "--skip-quota-check", "--context-window", "--auto-compact-token-limit", "--full-access", "--no-proxy", "--dry-run"]
+        supported = supported and name in ["--provider", "--no-presidio", "--no-sub-agent", "--base-url", "--api-key", "--model", "--profile", "--skip-quota-check", "--context-window", "--auto-compact-token-limit", "--full-access", "--no-proxy", "--dry-run", "--rollout-budget-tokens", "--rollout-budget-reminders"]
     if supported and _supported_exec_arguments(options.codex_args):
-        var prompt = List[String]()
+        var prompt = _rollout_budget_codex_arguments(options)
         for index in range(1, len(options.codex_args)):
             prompt.append(options.codex_args[index])
         var context_window = unsigned_value(options.value("--context-window")) if options.has("--context-window") else UInt64(0)

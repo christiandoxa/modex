@@ -10,7 +10,7 @@ import unittest
 
 from session_oracle import sandbox_command
 from test_cli_01651 import ORACLE as ORACLE_01651, ORACLE_SHA256 as ORACLE_01651_SHA256
-from test_super_launch import run_private_launch
+from test_super_launch import normalized_app_server_args, run_private_launch
 from test_cli import HISTORICAL_04391_ORACLE_SHA256, MODEX, ORACLE, ORACLE_SHA256, ROOT
 
 
@@ -194,7 +194,7 @@ class SuperCliTests(unittest.TestCase):
             ),
             MODEX.resolve(): ({"state/update-check.json"}, set()),
         }
-        for value in ("1,,2", "1,invalid,2"):
+        for value in ("", "1,,2", "1,invalid,2"):
             with self.subTest(value=value):
                 outputs = []
                 for binary in binaries:
@@ -217,31 +217,91 @@ class SuperCliTests(unittest.TestCase):
                 self.assertEqual(outputs[0], outputs[1])
                 self.assertEqual(outputs[1], outputs[2])
 
-        valid_arguments = (
-            "exec", "--rollout-budget-tokens", "100",
-            "--rollout-budget-reminders", "1,2", "synthetic prompt",
+        cases = (
+            ("limit zero", (),
+             ("exec", "--rollout-budget-tokens", "0", "--rollout-budget-reminders", "1,2", "synthetic prompt"), []),
+            ("limit one", (),
+             ("exec", "--rollout-budget-tokens", "1", "--rollout-budget-reminders", "1", "synthetic prompt"), []),
+            ("limit two", (),
+             ("exec", "--rollout-budget-tokens", "2", "--rollout-budget-reminders", "0,1,2", "synthetic prompt"),
+             ["features.rollout_budget.enabled=true", "features.rollout_budget.limit_tokens=2",
+              "features.rollout_budget.reminder_at_remaining_tokens=[1]"]),
+            ("u64 max default", (),
+             ("exec", "--rollout-budget-tokens", "18446744073709551615", "synthetic prompt"),
+             ["features.rollout_budget.enabled=true", "features.rollout_budget.limit_tokens=18446744073709551615",
+              "features.rollout_budget.reminder_at_remaining_tokens=[184467440737095516]"]),
+            ("u64 near max default", (),
+             ("exec", "--rollout-budget-tokens", "18446744073709551614", "synthetic prompt"),
+             ["features.rollout_budget.enabled=true", "features.rollout_budget.limit_tokens=18446744073709551614",
+              "features.rollout_budget.reminder_at_remaining_tokens=[184467440737095516]"]),
+            ("all filtered", (),
+             ("exec", "--rollout-budget-tokens", "100", "--rollout-budget-reminders", "0,100", "synthetic prompt"),
+             ["features.rollout_budget.enabled=true", "features.rollout_budget.limit_tokens=100",
+              "features.rollout_budget.reminder_at_remaining_tokens=[75,50,25]"]),
+            ("repeated reminders", (),
+             ("exec", "--rollout-budget-tokens", "10", "--rollout-budget-reminders", "1,2",
+              "--rollout-budget-reminders", "2,4", "synthetic prompt"),
+             ["features.rollout_budget.enabled=true", "features.rollout_budget.limit_tokens=10",
+              "features.rollout_budget.reminder_at_remaining_tokens=[4,2,1]"]),
+            ("repeated token limit", (),
+             ("exec", "--rollout-budget-tokens", "10", "--rollout-budget-tokens", "20", "synthetic prompt"),
+             ["features.rollout_budget.enabled=true", "features.rollout_budget.limit_tokens=20",
+              "features.rollout_budget.reminder_at_remaining_tokens=[15,10,5]"]),
+            ("pre-exec options", ("--rollout-budget-tokens", "100", "--rollout-budget-reminders", "1,2"),
+             ("exec", "--", "synthetic prompt"),
+             ["features.rollout_budget.enabled=true", "features.rollout_budget.limit_tokens=100",
+              "features.rollout_budget.reminder_at_remaining_tokens=[2,1]"]),
+            ("post-exec options", (),
+             ("exec", "--rollout-budget-tokens", "100", "--rollout-budget-reminders", "1,2", "synthetic prompt"),
+             ["features.rollout_budget.enabled=true", "features.rollout_budget.limit_tokens=100",
+              "features.rollout_budget.reminder_at_remaining_tokens=[2,1]"]),
+            ("user config order", (),
+             ("exec", "-c", "features.rollout_budget.enabled=false", "--rollout-budget-tokens", "100",
+              "--rollout-budget-reminders", "1,2", "-c", "features.rollout_budget.limit_tokens=9",
+              "--", "literal prompt", "--rollout-budget-tokens=4"),
+             ["features.rollout_budget.enabled=true", "features.rollout_budget.limit_tokens=100",
+              "features.rollout_budget.reminder_at_remaining_tokens=[2,1]",
+              "features.rollout_budget.enabled=false", "features.rollout_budget.limit_tokens=9"]),
+            ("reminders without limit", (),
+             ("exec", "--rollout-budget-reminders", "1,2", "synthetic prompt"), []),
         )
-        for binary in (ORACLE_01651, ORACLE):
-            result, records, upstream, state = run_private_launch(
-                binary, scenario="exit-seven", codex_arguments=valid_arguments,
-            )
-            launch = next(record for record in records if record["kind"] == "launch")
-            self.assertEqual((result.returncode, result.stdout), (7, b""))
-            self.assertIn(
-                'features.rollout_budget.reminder_at_remaining_tokens=[2,1]', launch["args"],
-            )
-            self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
-            self.assertEqual((upstream, state["leftovers"]), ([], []))
-
-        result, records, upstream, state = run_private_launch(
-            MODEX, scenario="exit-seven", codex_arguments=valid_arguments,
-        )
-        self.assertEqual((result.returncode, result.stdout), (1, b""))
-        self.assertIn(b"Super startup is not implemented", result.stderr)
-        self.assertNotIn(b"expected comma-separated unsigned integers", result.stderr)
-        self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
-        self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
-        self.assertEqual(state["managed"], ["state/update-check.json"])
+        for case, super_arguments, codex_arguments, expected_config in cases:
+            normalized_launches = []
+            for binary in binaries:
+                with self.subTest(case=case, binary=binary.name):
+                    result, records, upstream, state = run_private_launch(
+                        binary, scenario="exit-seven", super_arguments=super_arguments,
+                        codex_arguments=codex_arguments,
+                    )
+                    if case == "user config order" and binary == MODEX:
+                        self.assertEqual((result.returncode, result.stdout), (1, b""))
+                        self.assertIn(b"Super startup is not implemented", result.stderr)
+                        self.assertNotIn(b"expected comma-separated unsigned integers", result.stderr)
+                        self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                        self.assertEqual((records, upstream, state["leftovers"]), ([], [], []))
+                        self.assertEqual(state["managed"], ["state/update-check.json"])
+                        continue
+                    launch = next(record for record in records if record["kind"] == "launch")
+                    actual_config = [arg for arg in launch["args"] if arg.startswith("features.rollout_budget.")]
+                    normalized_args = normalized_app_server_args(launch["args"])
+                    self.assertEqual((result.returncode, result.stdout), (7, b""))
+                    self.assertEqual(actual_config, expected_config)
+                    self.assertNotIn("--rollout-budget-tokens", launch["args"])
+                    self.assertNotIn("--rollout-budget-reminders", launch["args"])
+                    self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                    self.assertEqual((upstream, state["leftovers"]), ([], []))
+                    if case == "user config order":
+                        self.assertEqual(normalized_args[-7:], [
+                            "-c", "features.rollout_budget.enabled=false", "-c",
+                            "features.rollout_budget.limit_tokens=9", "--", "literal prompt",
+                            "--rollout-budget-tokens=4",
+                        ])
+                    normalized_launches.append(normalized_args)
+            self.assertEqual(normalized_launches[0], normalized_launches[1])
+            if case == "user config order":
+                self.assertEqual(len(normalized_launches), 2)
+            else:
+                self.assertEqual(normalized_launches[1], normalized_launches[2])
 
     def test_unavailable_startup_fails_before_side_effects_and_keeps_keys_private(self):
         sentinel = "synthetic-key-never-print-this"

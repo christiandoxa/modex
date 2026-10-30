@@ -18,7 +18,7 @@ import unittest
 
 from session_oracle import sandbox_command
 import test_cli
-from test_cli import MODEX, ORACLE
+from test_cli import MODEX
 
 
 ORACLE_01651 = Path(os.environ.get(
@@ -26,6 +26,11 @@ ORACLE_01651 = Path(os.environ.get(
     Path.home() / ".cache/modex/oracles/0.165.1/prodex-x86_64-unknown-linux-gnu",
 ))
 ORACLE_01651_SHA256 = "dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51"
+ORACLE = Path(os.environ.get(
+    "PRODEX_ORACLE_04392",
+    Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
+    / "oracles/0.439.2/prodex-x86_64-unknown-linux-gnu",
+))
 MARKER = "fixture-terminal-marker"
 
 
@@ -144,9 +149,12 @@ def run_log(binary, mode, tty_names, *, no_color=True, controlling=False, live_r
 class LogTtyFallbackTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        test_cli.CliTests.setUpClass()
-        if not ORACLE_01651.is_file() or hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest() != ORACLE_01651_SHA256:
-            raise AssertionError("PRODEX_ORACLE_01651 must identify the verified 0.165.1 Linux release")
+        for binary, checksum in ((ORACLE_01651, ORACLE_01651_SHA256),
+                                 (ORACLE, test_cli.ORACLE_SHA256)):
+            if not binary.is_file() or hashlib.sha256(binary.read_bytes()).hexdigest() != checksum:
+                raise AssertionError(f"Invalid pinned Prodex oracle: {binary}")
+        if not MODEX.is_file():
+            raise AssertionError("Build Modex first")
 
     def test_plain_follower_matches_both_releases_for_non_tui_tty_combinations(self):
         combinations = (

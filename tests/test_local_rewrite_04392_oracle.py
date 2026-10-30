@@ -63,6 +63,216 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
         if missing:
             raise AssertionError(f"Local relay oracle cases are missing: {sorted(missing)}")
 
+    def test_websocket_body_capture_order_matches_both_releases(self):
+        if not transport.ORACLE.is_file():
+            raise AssertionError(f"Pinned Prodex 0.165.1 oracle is missing: {transport.ORACLE}")
+        if hashlib.sha256(transport.ORACLE.read_bytes()).hexdigest() != transport.ORACLE_SHA256:
+            raise AssertionError("Prodex oracle checksum does not match pinned 0.165.1")
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            def header(*fields):
+                return (
+                    b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+                    + b"".join(field + b"\r\n" for field in fields)
+                    + b"\r\n"
+                )
+
+            cases = []
+            for size in (0, 1, 1024, 1025):
+                request_head = header(
+                    b"Upgrade: websocket",
+                    b"Content-Length: " + str(size).encode("ascii"),
+                )
+                body = b"x" * size
+                complete = {
+                    "name": f"websocket_body_{size}_complete",
+                    "request": request_head + body,
+                    "request_parts": [request_head] if not body else [request_head, body],
+                    "request_part_delay_ms": 500 if body else 0,
+                }
+                cases.append((complete, 426, transport.WEBSOCKET_FALLBACK, "", [], 1 if size == 0 or size > 1024 else 2))
+                if size:
+                    partial = body[:-1]
+                    truncated = {
+                        "name": f"websocket_body_{size}_truncated",
+                        "request": request_head + partial,
+                        "request_parts": [request_head] if not partial else [request_head, partial],
+                        "half_close": True,
+                    }
+                    cases.append((
+                        truncated,
+                        426 if size > 1024 else None,
+                        transport.WEBSOCKET_FALLBACK if size > 1024 else b"",
+                        "" if size > 1024 else "RemoteDisconnected",
+                        [],
+                        None,
+                    ))
+
+            cases.append((
+                CASES["websocket_truncated_declared_body"], None, b"", "RemoteDisconnected", [], None,
+            ))
+            cases.extend((
+                ({
+                    "name": "websocket_expect_continue_without_connection_upgrade",
+                    "request": header(b"Upgrade: websocket", b"Expect: 100-continue", b"Content-Length: 1"),
+                    "expect_handshake": True,
+                }, 426, transport.WEBSOCKET_FALLBACK, "", [], None),
+                ({
+                    "name": "websocket_unsupported_expect_without_connection_upgrade",
+                    "request": header(b"Upgrade: websocket", b"Expect: 100-wait", b"Content-Length: 1"),
+                }, 417, b"", "", [], None),
+                ({
+                    "name": "websocket_chunked_without_connection_upgrade",
+                    "request": header(b"Upgrade: websocket", b"Transfer-Encoding: chunked"),
+                }, 426, transport.WEBSOCKET_FALLBACK, "", [], None),
+                ({
+                    "name": "websocket_connection_upgrade_truncated_body",
+                    "request": header(b"Connection: Upgrade", b"Upgrade: websocket", b"Content-Length: 1"),
+                    "half_close": True,
+                }, 426, transport.WEBSOCKET_FALLBACK, "", [], None),
+                ({
+                    "name": "websocket_conflicting_lengths_without_connection_upgrade",
+                    "request": header(b"Upgrade: websocket", b"Content-Length: 0", b"Content-Length: 1"),
+                }, 426, transport.WEBSOCKET_FALLBACK, "", [], None),
+                ({
+                    "name": "websocket_conflicting_framing_without_connection_upgrade",
+                    "request": header(b"Upgrade: websocket", b"Content-Length: 0", b"Transfer-Encoding: chunked"),
+                }, 426, transport.WEBSOCKET_FALLBACK, "", [], None),
+                ({
+                    "name": "websocket_connection_upgrade_substring",
+                    "request": header(b"Connection: preupgradepost", b"Upgrade: websocket", b"Content-Length: 1"),
+                    "half_close": True,
+                }, 426, transport.WEBSOCKET_FALLBACK, "", [], None),
+                ({
+                    "name": "websocket_connection_upgrade_comma_token",
+                    "request": header(b"Connection: keep-alive, Upgrade", b"Upgrade: websocket", b"Content-Length: 1"),
+                    "half_close": True,
+                }, 426, transport.WEBSOCKET_FALLBACK, "", [], None),
+                ({
+                    "name": "websocket_first_connection_field_does_not_upgrade",
+                    "request": header(
+                        b"Connection: keep-alive", b"Connection: Upgrade",
+                        b"Upgrade: websocket", b"Content-Length: 1",
+                    ),
+                    "half_close": True,
+                }, None, b"", "RemoteDisconnected", [], None),
+                ({
+                    "name": "websocket_first_connection_field_upgrades",
+                    "request": header(
+                        b"Connection: Upgrade", b"Connection: keep-alive",
+                        b"Upgrade: websocket", b"Content-Length: 1",
+                    ),
+                    "half_close": True,
+                }, 426, transport.WEBSOCKET_FALLBACK, "", [], None),
+            ))
+
+            for case, status, body, read_error, interim, sent_parts in cases:
+                for label, binary in (
+                    ("0.165.1", transport.ORACLE),
+                    ("0.439.2", ORACLE),
+                    ("Modex", transport.MODEX),
+                ):
+                    with self.subTest(case=case["name"], binary=label):
+                        response, records = transport.run_probe(binary, case, upstream)
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertEqual(response["status"], status)
+                        self.assertEqual(response["body"], body)
+                        self.assertEqual(response["read_error"], read_error)
+                        self.assertEqual(response["interim_statuses"], interim)
+                        self.assertEqual(records, [])
+                        if sent_parts is not None:
+                            self.assertEqual(response["request_parts_sent_at_response"], sent_parts)
+                        if status is None:
+                            self.assertEqual(response["raw_response_head"], b"")
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_positive_first_conflicting_websocket_length_stays_fail_closed(self):
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            request = (
+                b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+                b"Upgrade: websocket\r\nContent-Length: 2\r\nContent-Length: 1\r\n\r\nx"
+            )
+            case = {
+                "name": "websocket_positive_first_conflicting_length_half_close",
+                "request": request,
+                "half_close": True,
+            }
+            expected = {
+                "0.165.1": (None, b"", "RemoteDisconnected"),
+                "0.439.2": (None, b"", "RemoteDisconnected"),
+                "Modex": (426, transport.WEBSOCKET_FALLBACK, ""),
+            }
+            for label, binary in (
+                ("0.165.1", transport.ORACLE),
+                ("0.439.2", ORACLE),
+                ("Modex", transport.MODEX),
+            ):
+                with self.subTest(binary=label):
+                    response, records = transport.run_probe(binary, case, upstream)
+                    self.assertEqual(response["process_exit"], 0, response["stderr"])
+                    self.assertEqual(
+                        (response["status"], response["body"], response["read_error"]),
+                        expected[label],
+                    )
+                    if response["status"] is None:
+                        self.assertEqual(response["raw_response_head"], b"")
+                    self.assertEqual(records, [])
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_websocket_body_wait_keeps_one_idle_and_partial_client(self):
+        partial = (
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Upgrade: websocket\r\nContent-Length: 1\r\n\r\n"
+        )
+        healthy = transport.request_bytes(( ("Connection", "close"), ))
+        case = {
+            "name": "websocket_partial_body_keeps_idle_client",
+            "request": healthy,
+            "preconnected_idle": True,
+            "preconnected_partial_count": 1,
+            "preconnected_partial_request": partial,
+            "preconnected_healthy_request": healthy,
+            "preconnected_complete_partial": b"x",
+            "preconnected_settle_ms": 50,
+            "preconnected_flood_settle_ms": 100,
+            "preconnected_resource_sample_ms": 100,
+            "environment_overrides": {"PRODEX_RUNTIME_PROXY_WORKER_COUNT": "4"},
+        }
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for label, binary in (
+                ("0.165.1", transport.ORACLE),
+                ("0.439.2", ORACLE),
+                ("Modex", transport.MODEX),
+            ):
+                with self.subTest(binary=label):
+                    response, records = transport.run_probe(binary, case, upstream)
+                    self.assertEqual(response["process_exit"], 0, response["stderr"])
+                    self.assertEqual((response["status"], response["body"]), (200, transport.RESPONSES_RESPONSE))
+                    self.assertEqual(response["preconnected_partial_status"], 426)
+                    self.assertEqual(
+                    transport.base64.b64decode(response["preconnected_partial_body_base64"]),
+                        transport.WEBSOCKET_FALLBACK,
+                    )
+                    self.assertEqual(len(records), 1)
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
     def test_bodyless_invalid_target_expect_can_reuse_connection(self):
         upstream = transport.Upstream()
         worker = threading.Thread(target=upstream.serve_forever, daemon=True)

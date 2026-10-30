@@ -200,18 +200,36 @@ not appear in response or diagnostics. Invalid targets still take precedence
 with 400, and unsupported `Expect` still takes precedence with 417. An `h2c`
 upgrade retains the 502 error and does not reach the provider.
 
-For `Upgrade: websocket` without `Connection: Upgrade`, Modex now returns the
-same 426 classification as both releases while closing before reading the
-request body. With a fragmented conflicting-length request followed by a
-valid pipelined request, both releases return 426 then dispatch the second
-request for a 200; Modex returns 426 and closes without any upstream request.
-The status gap is fixed while the ambiguous connection remains fail-closed.
-This distinction is covered with both valid and conflicting-length fragmented
-heads against both checksummed releases and Modex. Invalid-target 400,
-unsupported-Expect 417, and non-WebSocket `h2c` 502 precedence are unchanged.
-Ambiguous framing without a recognized WebSocket upgrade remains fail-closed.
-See `test_fragmented_websocket_pipeline_stays_closed_without_connection_upgrade`
-in `tests/test_local_rewrite_01651_oracle.py`.
+For `Upgrade: websocket` without `Connection: Upgrade`, Modex returns the same
+426 classification as both releases. It now follows TinyHTTP's body-capture
+order: when the first `Content-Length` is 1–1,024, `Expect` is absent, and
+transfer encoding is absent, the body is read before the fallback. A complete
+body then gets 426; a truncated body that ends at EOF gets no response. Empty
+bodies, `Connection: Upgrade`, chunked requests, `Expect` requests, and fixed
+bodies over 1,024 bytes still reach the fallback before body capture. These
+cases are covered against the checksum-pinned 0.165.1 and 0.439.2 processes
+and Modex by
+`test_websocket_body_capture_order_matches_both_releases` in
+`tests/test_local_rewrite_04392_oracle.py`.
+
+One deliberate fail-closed difference remains for ambiguous framing: with no
+`Connection: Upgrade`, a positive first length followed by a smaller duplicate
+length and a truncated body makes both releases close without a response;
+Modex returns 426 before reading. It sends no upstream request. For a
+zero-first conflicting length, the three products return 426. Invalid-target
+400, unsupported-`Expect` 417, and non-WebSocket `h2c` 502 precedence remain
+covered. With a fragmented non-ambiguous upgrade followed by a valid pipelined
+request, both releases return 426 then dispatch the second request for 200;
+Modex returns 426 and closes without an upstream request. The local fallback
+also differs on this connection-reuse behavior.
+
+A low-load production control holds a one-byte no-Connection WebSocket body
+partial while a preconnected idle client receives a valid 200; completing the
+body then returns 426. Neither client is evicted in this control. It does not
+qualify saturated-pool behavior, so the known admission and saturation gaps
+remain open. This evidence qualifies Linux x86-64 only; all six release
+targets remain in the parity denominator. It does not implement the separate
+profile-backed runtime-proxy WebSocket path or WSS.
 
 This only secures the local rewrite fallback. It does not implement the
 separate profile-backed runtime-proxy WebSocket path or WSS; those remain

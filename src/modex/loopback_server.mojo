@@ -344,7 +344,7 @@ struct LoopbackHTTPConnection(Movable):
             # Drop this bodyless rejected head while preserving any pipelined request.
             self.input = self.input[header_end + 4:len(self.input):1]
             self.wire_bytes = len(self.input)
-        var upgrade_body = False
+        var connection_upgrade = False
         var saw_connection = False
         var websocket_upgrade = False
         if allow_upgrade_headers and defer_expectation_errors:
@@ -354,13 +354,22 @@ struct LoopbackHTTPConnection(Movable):
                 if name == "connection":
                     if not saw_connection:
                         saw_connection = True
-                        upgrade_body = "upgrade" in value
+                        connection_upgrade = "upgrade" in value
                 elif name == "upgrade" and value == "websocket":
                     websocket_upgrade = True
-            upgrade_body = upgrade_body and not websocket_upgrade
+        var upgrade_body = connection_upgrade and not websocket_upgrade
         if invalid_target and (head.expect_continue or head.length > max_body_bytes or (defer_expectation_errors and head.length > HTTP_DEFERRED_BODY_THRESHOLD)):
             raise Error("invalid HTTP request target")
-        if defer_expectation_errors and websocket_upgrade:
+        # TinyHTTP reads these bodies before handing the upgrade to the adapter.
+        var tiny_http_preloads_websocket_body = (
+            tiny_http_request_line_compat
+            and not connection_upgrade
+            and not head.expect_continue
+            and not head.chunked
+            and head.length > 0
+            and head.length <= HTTP_DEFERRED_BODY_THRESHOLD
+        )
+        if defer_expectation_errors and websocket_upgrade and not tiny_http_preloads_websocket_body:
             if invalid_target:
                 raise Error("invalid HTTP request target")
             # A WebSocket upgrade has no HTTP request body; reject before reading one.

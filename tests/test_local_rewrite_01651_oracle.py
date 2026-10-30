@@ -761,6 +761,16 @@ try:
             "headers": response.getheaders(),
             "body_base64": base64.b64encode(body).decode("ascii"),
         })
+        complete_partial = base64.b64decode(
+            os.environ.get("PROBE_PRECONNECTED_COMPLETE_PARTIAL_BASE64", "")
+        )
+        if complete_partial and partial_clients:
+            partial_clients[0].sendall(complete_partial)
+            partial_response = http.client.HTTPResponse(partial_clients[0])
+            partial_response.begin()
+            partial_body = partial_response.read()
+            result["preconnected_partial_status"] = partial_response.status
+            result["preconnected_partial_body_base64"] = base64.b64encode(partial_body).decode("ascii")
         for partial in partial_clients + idle_clients:
             partial.close()
     elif parent_exit_active:
@@ -2537,6 +2547,9 @@ def run_probe(binary: Path, case, upstream: Upstream):
             ).decode("ascii"),
             "PROBE_PRECONNECTED_HEALTHY_REQUEST_BASE64": base64.b64encode(
                 case.get("preconnected_healthy_request", b"")
+            ).decode("ascii"),
+            "PROBE_PRECONNECTED_COMPLETE_PARTIAL_BASE64": base64.b64encode(
+                case.get("preconnected_complete_partial", b"")
             ).decode("ascii"),
             "PROBE_PARENT_EXIT_TRIGGER": str(case.get("parent_exit_trigger", "")),
             "PROBE_PIPELINED_REQUEST_PARTS_BASE64": json.dumps(

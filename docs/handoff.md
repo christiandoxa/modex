@@ -4639,16 +4639,30 @@ release targets remain unqualified. See
 
 The local relay now returns the 426 WebSocket fallback whenever it sees the
 exact `Upgrade: websocket` field, matching both pinned releases even without
-`Connection: Upgrade`. It closes before reading the body. Fragmented valid and
-conflicting-length requests followed by a valid pipeline are checked against
-both release binaries and Modex. The releases return 426 then process the
-second request with 200 and one synthetic upstream dispatch; Modex returns
-426, closes, and makes no upstream request. This fixes the fallback status
-mismatch while keeping ambiguous framing fail-closed. Invalid target 400,
-unsupported `Expect` 417 and non-WebSocket `h2c` 502 precedence remain covered.
-Focused tests and `make build` pass on Linux x86-64. Connection reuse differs
-from the release and remains visible; WebSocket transport and all six release
-targets remain unqualified. See
+`Connection: Upgrade`. Modex follows TinyHTTP's body-capture order for a
+no-Connection request with a first `Content-Length` from 1 through 1,024, no
+`Expect`, and no transfer encoding: complete bodies then get 426, while
+truncated bodies ending at EOF get no response. Empty bodies,
+`Connection: Upgrade`, chunked framing, `Expect`, and lengths over 1,024 reach
+the fallback before body capture. Three-process tests cover complete and
+truncated lengths 0, 1, 1,024, and 1,025, plus the framing and `Connection`
+controls.
+
+One deliberate ambiguous-framing gap remains: a positive first
+`Content-Length` followed by a smaller duplicate makes both releases close on
+an incomplete body, while Modex returns 426 before reading it. The tested
+zero-first conflict returns 426 in all three products. For fragmented valid
+non-ambiguous requests followed by a valid pipeline request, the releases
+return 426 then process the second request with 200 and one synthetic upstream
+dispatch; Modex returns 426, closes, and makes no upstream request. A separate
+low-load production control holds a partial one-byte WebSocket body while a
+preconnected idle client receives 200, then completes the partial body for
+426; neither client is evicted. It does not establish saturated-pool fairness,
+which remains open. Invalid-target 400, unsupported `Expect` 417 and
+non-WebSocket `h2c` 502 precedence remain covered. Focused process tests and
+`make build` pass on Linux x86-64. Runtime-proxy WebSocket/WSS and all six
+release targets remain unqualified. See
+`docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md` and
 `docs/evidence/baseline-0.439.2/local-relay-websocket-framing.md`.
 
 ## DeepSeek same-origin redirect following (2026-10-30)

@@ -818,6 +818,21 @@ def _dry_run_playwright_status(binary: String) -> String:
     return status^ if status else unavailable^
 
 
+def _dry_run_ponytail_node_status(binary: String) -> String:
+    var probe: CapturedProcessOutput
+    try:
+        probe = capture_with_env(binary, [String("--version")], _dry_run_probe_environment(), "Node.js health check", 5000, 65536, argv0=binary)
+    except error:
+        if String(error).find("timed out") >= 0:
+            return "Node.js health check timed out after 5s"
+        return "Node.js health check failed"
+    if probe.status.exit_code and probe.status.exit_code.value() != 0:
+        return "Node.js health check exited with exit status: " + String(probe.status.exit_code.value())
+    if not probe.status.exit_code:
+        return "Node.js health check failed"
+    return "Ponytail 4.9.0+ was not found under a managed optional-tool root; latest stable reference is 5.3.2"
+
+
 def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String, String]:
     var present = _managed_tool_present("caveman")
     var node_found = _path_has_executable("node")
@@ -825,27 +840,10 @@ def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String, St
     present = present or _managed_tool_present("ponytail")
     if present:
         raise Error("Super dry-run cannot report installed optional tools yet")
+    var rtk_status = _dry_run_rtk_status()
+    var codebase_status = _dry_run_codebase_status()
     var playwright_status = String("skipped (Node.js 18+ was not found on PATH)")
     var ponytail_status = String("Node.js was not found on PATH")
-    if node_found:
-        var node = String()
-        for candidate in _path_candidates("node", getenv("PATH", "\0")):
-            node = _executable_path(candidate)
-            if node: break
-        var probe_environment = List[String](capacity=1)
-        probe_environment.append("PATH=" + getenv("PATH", ""))
-        var version = capture_with_env(node, [String("--version")], probe_environment, "Node.js version probe", argv0=node)
-        if not version.status.exit_code or version.status.exit_code.value() != 0:
-            raise Error("Super dry-run cannot report optional tools with an invalid Node.js probe")
-        var version_text = trim_text(String(from_utf8_lossy=Span(version.stdout)))
-        if version_text.startswith("v"):
-            var stripped_version = String(version_text[byte=1:])
-            version_text = stripped_version
-        try:
-            _ = unsigned_value(String(version_text.split(".")[0]))
-        except:
-            raise Error("Super dry-run cannot report optional tools with an invalid Node.js version")
-        ponytail_status = "Ponytail 4.9.0+ was not found under a managed optional-tool root; latest stable reference is 5.3.2"
     if node_found and npx_found:
         var npx = String()
         for candidate in _path_candidates("npx", getenv("PATH", "\0")):
@@ -854,7 +852,13 @@ def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String, St
         playwright_status = _dry_run_playwright_status(npx)
     elif node_found:
         playwright_status = "skipped (npx was not found on PATH)"
-    return _dry_run_rtk_status(), _dry_run_codebase_status(), playwright_status^, ponytail_status^
+    if node_found:
+        var node = String()
+        for candidate in _path_candidates("node", getenv("PATH", "\0")):
+            node = _executable_path(candidate)
+            if node: break
+        ponytail_status = _dry_run_ponytail_node_status(node)
+    return rtk_status^, codebase_status^, playwright_status^, ponytail_status^
 
 
 def _print_dry_run_optional_tools(rtk_status: String, codebase_status: String, playwright_status: String, ponytail_status: String):

@@ -75,8 +75,9 @@ verified. See `docs/evidence/baseline-0.165.1/super-exec-worktree-options.md`,
 DeepSeek Super dry-run supports the guarded exec path and selected missing-tool,
 Node-only, RTK, Codebase Memory, and selected Playwright environments. Managed
 Caveman or Ponytail installations still fail closed. Playwright readiness runs
-the locally resolved `npx --no-install` package probe; invalid Node probes,
-some path and output cases, and descendant cleanup remain unqualified.
+the locally resolved `npx --no-install` package probe; Node probe timeout and
+spawn diagnostics omit release paths, and some path cases and descendant
+cleanup remain unqualified.
 Managed Codebase Memory symlink escapes are rejected before
 execution and some errors use path-free diagnostics, differing from the releases.
 Populated profiles and recovery still fail closed. Modex also masks a chained

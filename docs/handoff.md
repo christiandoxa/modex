@@ -1,5 +1,23 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The isolated `b405bc2` full run finished with 40 failures and one error in
+1,100 Python tests after native checks, reproducing the update-cache fixture
+failures documented below. Its log is `/tmp/modex-full-b405bc2-20261030.log`
+(SHA-256 `df3972864371c99bfd1031d1ebedd7530da1bfe2ecb052c11d0db4cd1f1e3177`).
+The focused corrected-fixture reruns pass; this older run does not establish
+full-suite success on the current revision.
+
+## Ponytail Node readiness probe (2026-10-30)
+
+Super dry-run now reports the Node health probe's exit status in the Ponytail
+row, accepts any successful output as both pinned releases do, and uses the
+five-second bound and filtered probe environment. Three-process checks cover
+malformed, empty, stderr-only and invalid UTF-8 successful outputs, nonzero
+exit, with and without an available synthetic `npx`, plus timeout. Modex omits
+the timeout path printed by the releases. Managed Ponytail installation,
+descendant cleanup and non-host targets remain unqualified. See
+`docs/evidence/baseline-0.165.1/super-dry-run-01651.md`.
+
 The combined production build at `dd82b3b` passed. Focused real-process
 redaction, numerically equal relay-length and duplicate web-search checks
 passed on that build; the dependency audit, 50-native/155-Python test census,

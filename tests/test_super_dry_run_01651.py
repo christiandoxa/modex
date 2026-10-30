@@ -294,6 +294,50 @@ class SuperDryRun01651Tests(unittest.TestCase):
         self.assertEqual(outputs[0], outputs[1])
         self.assertEqual(outputs[0], outputs[2])
 
+    def test_ponytail_node_probe_accepts_success_and_reports_exit_status(self):
+        for version in ("nonsense", "v0.0.1", "empty", "stderr:v20.0.0", "invalid-stdout", "invalid-stderr", "exit:7"):
+            for with_npx in (False, True):
+                outputs = []
+                for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                             ("0.439.2", ORACLE, "prodex"),
+                                             ("Modex", MODEX, "modex")):
+                    with self.subTest(version=version, with_npx=with_npx, binary=label):
+                        def prepare(root):
+                            write_optional_tool(root / "bin/node")
+                            write_rtk_version(root, version)
+                            if with_npx:
+                                write_optional_tool(root / "bin/npx")
+                                (root / "home/.npx-version-fixture").write_text("0.0.83")
+
+                        result, before, after = run_dry_run(
+                            binary, argv0, prepare,
+                            environment=lambda root: {"SYNTHETIC_PROBE_MARKER": str(root / "probe-environment-leaked")},
+                            extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                        )
+                        self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                        self.assertEqual(after, before)
+                        outputs.append(result.stdout)
+                self.assertEqual(outputs[0], outputs[1])
+                self.assertEqual(outputs[0], outputs[2])
+
+    def test_ponytail_node_probe_timeout_is_bounded_and_redacted(self):
+        for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                     ("0.439.2", ORACLE, "prodex"),
+                                     ("Modex", MODEX, "modex")):
+            with self.subTest(binary=label):
+                def prepare(root):
+                    write_optional_tool(root / "bin/node")
+                    write_rtk_version(root, "timeout")
+
+                result, before, after = run_dry_run(
+                    binary, argv0, prepare, extra_binaries=(OPTIONAL_TOOL_FIXTURE,), timeout=30,
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertIn(b"health check timed out after 5s", result.stdout)
+                self.assertEqual(after, before)
+                if label == "Modex":
+                    self.assertNotIn(b"/tmp/modex-super-dry-run-", result.stdout)
+
     def test_proxy_environment_secret_and_path_controls_are_redacted(self):
         def environment(root):
             workspace = root / "workspace"

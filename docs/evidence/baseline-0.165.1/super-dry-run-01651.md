@@ -89,10 +89,13 @@ isolated homes compare stable, prerelease, build metadata, multiple candidate
 versions, malformed output, stderr, nonzero exit, timeout, output ordering,
 and environment filtering across all three processes. Invalid UTF-8 on either
 probe stream now reports unavailable, even when the other stream has a valid
-version. Node itself is probed for Ponytail readiness as before. Malformed Node
-probes still fail closed, and complete path discovery, descendant cleanup,
-and non-host platforms remain unqualified. Installed Caveman and Ponytail
-remain fail-closed.
+version. Ponytail readiness probes Node separately: both releases accept any
+successful output, including invalid UTF-8, and report a nonzero exit in the
+Ponytail row. Synthetic three-process tests cover those cases with and without
+`npx` and verify filtered probe environments. Node timeouts are bounded at five
+seconds; Modex omits the executable path printed by the releases. Complete path
+discovery, descendant cleanup, and non-host platforms remain unqualified.
+Installed Caveman and Ponytail remain fail-closed.
 
 Separated and attached sensitive CLI flag values and secret-looking proxy
 environment values match both releases. A chained control with

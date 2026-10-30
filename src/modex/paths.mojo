@@ -1,6 +1,7 @@
-from std.os import getenv, getuid, lstat, makedirs
+from std.os import getenv, getuid, lstat, makedirs, stat
 from std.os.path import exists, realpath
 from std.pathlib import Path, cwd
+from std.sys._libc_errno import ErrNo, get_errno
 
 
 def absolute_path(path: String) raises -> String:
@@ -11,6 +12,49 @@ def absolute_path(path: String) raises -> String:
 
 def app_root() raises -> String:
     return absolute_path(getenv("PRODEX_HOME", String(Path.home()) + "/.prodex"))
+
+
+def app_root_is_absent() raises -> Bool:
+    var configured_root = app_root()
+    var root_length = configured_root.byte_length()
+    while root_length > 1 and configured_root.as_bytes()[root_length - 1] == 47:
+        root_length -= 1
+    var root = String(configured_root)
+    if root_length < configured_root.byte_length():
+        root = String(configured_root[byte=0:root_length])
+    if root == "/":
+        return False
+    var parts = root.split("/")
+    var leaf = len(parts) - 1
+    while leaf > 0 and not parts[leaf]:
+        leaf -= 1
+    if leaf == 0:
+        return False
+    var parent = String("/")
+    for index in range(1, leaf):
+        var part = String(parts[index])
+        if not part:
+            continue
+        if parent != "/":
+            parent += "/"
+        parent += part
+    var resolved_parent: String
+    try:
+        resolved_parent = realpath(parent)
+        var parent_info = stat(resolved_parent)
+        if (parent_info.st_mode & 0o170000) != 0o040000:
+            return False
+    except:
+        return False
+    var entry = resolved_parent
+    if entry != "/":
+        entry += "/"
+    entry += String(parts[leaf])
+    try:
+        _ = lstat(entry)
+        return False
+    except:
+        return get_errno() == ErrNo.ENOENT
 
 
 def ensure_app_root() raises -> String:

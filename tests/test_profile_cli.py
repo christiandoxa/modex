@@ -237,23 +237,34 @@ class ProfileCliTests(unittest.TestCase):
             with self.subTest(arguments=arguments):
                 self.assert_parser_error_matches(arguments)
 
-    def test_profile_list_stays_unimplemented_instead_of_skipping_release_locks(self):
+    def test_profile_list_empty_store_without_creating_release_locks(self):
         baseline, baseline_paths = run_isolated(
             test_cli.ORACLE, ["profile", "list"], "prodex"
         )
         modex, modex_paths = run_isolated(test_cli.MODEX, ["profile", "list"], "modex")
-        self.assertEqual(baseline.returncode, 0)
+        self.assertEqual((baseline.returncode, baseline.stderr), (0, b""))
         self.assertIn(b"No profiles configured.", baseline.stdout)
+        self.assertEqual((modex.returncode, modex.stderr), (0, b""))
+        self.assertIn(b"No profiles configured.", modex.stdout)
         self.assertTrue(
             {
                 "home/.prodex/profile-lifecycle.json.lock",
-                "home/.prodex/runtime-housekeeping.lock",
                 "home/.prodex/update-check.lock",
             }.issubset(baseline_paths)
         )
-        self.assertEqual(modex.returncode, 1)
-        self.assertIn(b"has not implemented the requested command", modex.stderr)
         self.assertEqual(modex_paths, [])
+
+    def test_profile_list_with_existing_root_stays_fail_closed(self):
+        modex, paths = run_isolated(
+            test_cli.MODEX, ["profile", "list"], "modex", profile_fixture=True
+        )
+        self.assertEqual(
+            (modex.returncode, modex.stdout, modex.stderr),
+            (1, b"", b"Error: this Modex development build has not implemented the requested command\n"),
+        )
+        self.assertEqual(len(paths), 2)
+        self.assertIn("home/.prodex", paths)
+        self.assertTrue(any(path.startswith("home/.prodex/profile-lifecycle.json:") for path in paths))
 
     def test_stateful_profile_operations_stay_fail_closed_without_fake_locks(self):
         for arguments in (

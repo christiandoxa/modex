@@ -49,6 +49,30 @@ def observe(binary, argv0):
     return temporary, root, command, result, effects, store_absent_before
 
 
+def observe_modex_root(root, app_root):
+    command = sandbox_command(
+        MODEX,
+        root,
+        ["profile", "list"],
+        argv0="modex",
+        environment={"PRODEX_HOME": str(app_root)},
+    )
+    result = subprocess.run(
+        command,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=15,
+        check=False,
+    )
+    effects = {
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*")
+        if path not in (root / "home", root / "workspace")
+    }
+    return result, effects
+
+
 class ProfileListEmpty01660GapTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -59,7 +83,7 @@ class ProfileListEmpty01660GapTests(unittest.TestCase):
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError(f"The 0.166.0 oracle checksum is wrong: {ORACLE}")
 
-    def test_empty_store_panel_and_required_locks_expose_profile_list_gap(self):
+    def test_empty_store_panel_matches_without_modex_lock_writes(self):
         (
             reference_temporary, reference_root, reference_command,
             reference, reference_effects, reference_store_absent,
@@ -94,14 +118,47 @@ class ProfileListEmpty01660GapTests(unittest.TestCase):
             self.assertLessEqual(REQUIRED_REFERENCE_FILES, reference_effects)
             self.assertLessEqual(reference_effects, ALLOWED_REFERENCE_EFFECTS)
 
-            self.assertEqual(
-                (modex.returncode, modex.stdout, modex.stderr, modex_effects),
-                (1, b"", UNIMPLEMENTED, set()),
-            )
+            self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                             (reference.returncode, reference.stdout, b""))
+            self.assertEqual(modex_effects, set())
         finally:
             reference_temporary.cleanup()
             modex_temporary.cleanup()
 
+    def test_invalid_and_dangling_roots_do_not_render_empty_panel(self):
+        for root_kind in ("malformed-state", "dangling-symlink", "dangling-ancestor"):
+            with self.subTest(root_kind=root_kind), tempfile.TemporaryDirectory(
+                prefix="modex-profile-list-root-01660-"
+            ) as directory:
+                root = Path(directory)
+                home = root / "home"
+                home.mkdir(mode=0o700)
+                (root / "workspace").mkdir(mode=0o700)
+                app_root = home / ".prodex"
+                if root_kind == "malformed-state":
+                    app_root.mkdir(mode=0o700)
+                    state = app_root / "profile-lifecycle.json"
+                    state.write_bytes(b"{invalid state\n")
+                    expected_effects = {
+                        "home/.prodex",
+                        "home/.prodex/profile-lifecycle.json",
+                    }
+                elif root_kind == "dangling-symlink":
+                    app_root.symlink_to("missing-prodex-root")
+                    expected_effects = {"home/.prodex"}
+                else:
+                    dangling_ancestor = home / "link"
+                    dangling_ancestor.symlink_to("missing-ancestor")
+                    app_root = dangling_ancestor / "missing"
+                    expected_effects = {"home/link"}
+
+                configured_root = str(app_root) + "/" if root_kind == "dangling-symlink" else str(app_root)
+                result, effects = observe_modex_root(root, configured_root)
+                self.assertEqual((result.returncode, result.stdout, result.stderr),
+                                 (1, b"", UNIMPLEMENTED))
+                self.assertEqual(effects, expected_effects)
+                if root_kind == "malformed-state":
+                    self.assertEqual(state.read_bytes(), b"{invalid state\n")
 
 if __name__ == "__main__":
     unittest.main()

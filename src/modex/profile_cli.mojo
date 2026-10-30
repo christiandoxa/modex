@@ -3,6 +3,11 @@
 from std.collections import List
 
 from .cli import argument_name, session_cli_error, unrecognized_subcommand
+from .text import cli_width, section_header
+
+
+def profile_list_empty_panel() raises -> String:
+    return section_header("Profiles", cli_width()) + "\nStatus:         No profiles configured.\nCreate:         prodex profile add <name>\nImport:         prodex profile import-current\nImport Copilot: prodex profile import copilot\n"
 
 
 def _profile_executable(output: String, executable: String) -> String:

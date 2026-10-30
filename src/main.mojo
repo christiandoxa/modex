@@ -9,7 +9,8 @@ from modex.log_cli import log_help, log_short_help, parse_log_arguments
 from modex.logs import log_last
 from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
-from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_short_help, top_level_profile_use_help
+from modex.paths import app_root_is_absent
+from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_list_empty_panel, profile_short_help, top_level_profile_use_help
 from modex.root_help import logout_help, logout_usage, quota_help, quota_short_help, root_help, update_help
 from modex.sessions import inspect_sessions, resolve_session_id_from_store, session_resume_has_no_profile_source
 from modex.super_cli import parse_super_arguments, run_super
@@ -41,6 +42,15 @@ def main():
                 var output = profile_help(request.command, executable) if not request.short_help else profile_short_help(request.command, executable)
                 print(output, end="")
                 return
+            if request.command == "list":
+                try:
+                    if app_root_is_absent():
+                        print(profile_list_empty_panel(), end="")
+                        return
+                except error:
+                    print("Error:", error, file=stderr)
+                    exit(1)
+                    return
         except error:
             print(error, file=stderr, end="")
             exit(2)

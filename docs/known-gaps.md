@@ -6,10 +6,13 @@ unfinished, the inventory is incomplete, and all six release qualifications
 remain BLOCKED. Current-target observations are tracked in
 `docs/handoff.md` and `docs/evidence/baseline-0.166.0/`.
 
-For an absent profile store, Prodex 0.166.0 `profile list` renders the empty
-panel and creates lifecycle and update locks; Modex remains fail-closed without
-creating state. Housekeeping files may appear asynchronously. This is a
-characterized gap, not a completed profile-list slice. See
+For an absent app root, Modex now matches the Prodex 0.166.0 `profile list`
+empty panel and exit code without creating state. The release creates lifecycle
+and update locks, and housekeeping files may appear asynchronously; Modex does
+not match those effects. Existing roots, dangling ancestors, and lookup failures
+other than a missing final entry under an existing directory remain fail-closed.
+Populated listing, state recovery, locking and the full `PROFILE-LIST` contract
+remain unimplemented. See
 `docs/evidence/baseline-0.166.0/profile-list-empty-store.md`.
 
 For invalid UTF-8 in `.json` sessions, Modex escapes terminal controls in the

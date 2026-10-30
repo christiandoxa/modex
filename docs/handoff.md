@@ -639,10 +639,10 @@ mount namespace with a private user-owned `/tmp`. A plain `unshare -Urn`
 attempt failed Prodex's secret-location validation because host `/tmp`'s owner
 was unmapped; the passing setup retains that validation.
 
-For an absent profile store, 0.166.0 `profile list` renders the empty panel
-and acquires lifecycle and update locks; Modex remains fail-closed without
-creating state. Housekeeping files can appear asynchronously. This is a
-characterized gap, not a completed profile-list slice; see
+For an absent app root, Modex and 0.166.0 `profile list` render the same
+empty panel. Modex creates no state, while the release acquires lifecycle and
+update locks and may create housekeeping files asynchronously. Existing roots
+remain guarded; populated listing and lock side effects are incomplete. See
 `docs/evidence/baseline-0.166.0/profile-list-empty-store.md`.
 The release uses `flock` for the Linux lifecycle lock. A synthetic local-file
 test shows that POSIX record locks do not contend with it, and the pinned Mojo

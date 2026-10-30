@@ -1,5 +1,14 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The combined production build at `64e37c1` passed. Its focused three-process
+Anthropic alias checks passed, and the preceding combined relay build passed
+six header, framing, and large-field process tests. The integrated managed
+tool dry-run module passed all 23 tests; app-server checks passed after the
+fixture correction below. The 71-file dependency audit, 154-module test census,
+oracle routing, and workflow validation passed. Full runs on `c5609d0` and
+`b405bc2` were still active when this entry was written and predate these
+changes; they cannot qualify the combined revision.
+
 The full run on `c5609d0` reported six failures in historical app-server
 checks because its shared Super fixture seeded only the 0.439.2 update-cache
 filename. The 0.165.1 oracle instead uses `update-check-codex-aligned-v1.json`

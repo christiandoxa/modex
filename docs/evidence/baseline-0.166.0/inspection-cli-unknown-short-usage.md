@@ -14,8 +14,7 @@ both `info` options, both `status` options, and preserves long-option typo
 usage. The six-vector test passed after a Modex build and runs in both active
 Fast CI and Full CI lanes.
 
-Separate probes found a remaining status-value precedence gap:
-`status --interval bad --unknown --help` and
-`status --interval bad -- --interval --help` report the later unknown argument
-in Prodex, while Modex reports the invalid interval first. This behavior is
-not covered by the fix or claimed as parity.
+Follow-up comparisons now cover interval-error precedence for an unknown
+option and a literal operand after `--`. The exact cases and recognized-option
+controls are recorded in
+`docs/evidence/baseline-0.166.0/inspection-cli-interval-precedence.md`.

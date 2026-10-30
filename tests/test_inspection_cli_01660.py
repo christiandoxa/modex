@@ -49,6 +49,46 @@ class InspectionCli01660Tests(unittest.TestCase):
                                  (2, b"", expected_stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_status_interval_errors_follow_later_parse_errors(self):
+        cases = (
+            (("status", "--interval", "bad", "--unknown", "--help"),
+             b"error: unexpected argument '--unknown' found\n"),
+            (("status", "--interval", "bad", "--", "--interval", "--help"),
+             b"error: unexpected argument '--interval' found\n"),
+            (("status", "--interval", "bad", "--once", "--help"),
+             b"error: invalid value 'bad' for '--interval <SECONDS>': invalid digit found in string\n"),
+            (("status", "--interval", "bad", "--once=true"),
+             b"error: unexpected value 'true' for '--once' found; no more were expected\n"),
+            (("status", "--interval=bad", "--once=false"),
+             b"error: invalid value 'bad' for '--interval <SECONDS>': invalid digit found in string\n"),
+            (("status", "--interval=bad", "--help=bad"),
+             b"error: invalid value 'bad' for '--interval <SECONDS>': invalid digit found in string\n"),
+            (("status", "--interval=bad", "-x=bad"),
+             b"error: invalid value 'bad' for '--interval <SECONDS>': invalid digit found in string\n"),
+            (("status", "--interval=bad", "--", "--"),
+             b"error: invalid value 'bad' for '--interval <SECONDS>': invalid digit found in string\n"),
+            (("status", "--interval=0", "--unknown"),
+             b"error: invalid value '0' for '--interval <SECONDS>': 0 is not in 1..=60\n"),
+            (("status", "--interval", "0", "--unknown"),
+             b"error: unexpected argument '--unknown' found\n"),
+            (("status", "--interval", "bad", "--", "--"),
+             b"error: unexpected argument '--' found\n"),
+        )
+        for arguments, expected_error in cases:
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "prodex", "01660-interval-oracle"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "modex", "01660-interval-modex"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+                self.assertTrue(baseline.stderr.startswith(expected_error), baseline.stderr)
+                expected_stderr = baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex ")
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
 
 if __name__ == "__main__":
     unittest.main()

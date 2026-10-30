@@ -25,10 +25,12 @@ Active 0.166.0 process comparisons now cover unknown short options after valid
 these errors, matching the release; focused process cases also confirm current
 errors and long-option typo suggestions remain unchanged. See
 `docs/evidence/baseline-0.166.0/inspection-cli-unknown-short-usage.md`.
-A separate probe still finds an interval-error precedence mismatch for
-`status --interval bad --unknown --help` and
-`status --interval bad -- --interval --help`; those remain open and are not
-counted as parity.
+The active parser also matches 0.166.0 interval-error precedence: attached
+values fail immediately, while separated values can be superseded by a later
+unknown option or literal operand. Recognized-option controls preserve the
+earlier interval error. These isolated comparisons are documented in
+`docs/evidence/baseline-0.166.0/inspection-cli-interval-precedence.md`; they do
+not establish broader CLI or status parity.
 
 The 19 active-release process modules listed in `scripts/ci/run-fast.sh`
 passed 78 tests in 106.422 seconds against the verified 0.166.0 oracle on

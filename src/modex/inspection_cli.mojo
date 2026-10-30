@@ -84,16 +84,32 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
     var flags = inspection_flags(command)
     var seen = List[String]()
     var literal = False
+    var pending_interval_error = String()
     var index = 2
     while index < len(args):
         var argument = args[index]
-        if not literal and (argument == "--help" or (argument.startswith("-h") and not argument.startswith("--"))):
+        var help = not literal and (
+            argument == "--help" or (argument.startswith("-h") and not argument.startswith("--"))
+        )
+        var name = argument_name(argument)
+        var attached_value = (
+            name not in ["--interval", "--tail-bytes", "--bundle"] and "=" in argument
+        )
+        # Clap keeps separated values pending but validates attached values immediately.
+        if (
+            pending_interval_error
+            and not literal
+            and argument != "--"
+            and not attached_value
+            and (help or name in flags)
+        ):
+            raise session_cli_error(pending_interval_error)
+        if help:
             return True
         if not literal and argument == "--":
             literal = True
             index += 1
             continue
-        var name = argument_name(argument)
         if literal or name not in flags:
             raise inspection_unknown(argument, command, executable, seen, literal)
         if name not in ["--interval", "--tail-bytes", "--bundle"] and "=" in argument:
@@ -139,15 +155,22 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
                 value = args[index]
                 if value.startswith("-") and value != "-":
                     raise inspection_unknown(value, command, executable, seen)
-            var parsed: UInt64
+            var parsed: UInt64 = 0
+            var interval_error = String()
             try:
                 parsed = unsigned_value(value)
             except error:
-                raise session_cli_error("invalid value '" + value + "' for '--interval <SECONDS>': " + String(error))
-            if parsed < 1 or parsed > 60:
-                raise session_cli_error("invalid value '" + value + "' for '--interval <SECONDS>': " + String(parsed) + " is not in 1..=60")
+                interval_error = "invalid value '" + value + "' for '--interval <SECONDS>': " + String(error)
+            if not interval_error and (parsed < 1 or parsed > 60):
+                interval_error = "invalid value '" + value + "' for '--interval <SECONDS>': " + String(parsed) + " is not in 1..=60"
+            if interval_error:
+                if "=" in argument:
+                    raise session_cli_error(interval_error)
+                pending_interval_error = interval_error
         seen.append(name)
         index += 1
+    if pending_interval_error:
+        raise session_cli_error(pending_interval_error)
     if command == "doctor":
         var missing = List[String]()
         if ("--json" in seen or "--suggest-policy" in seen) and "--runtime" not in seen:

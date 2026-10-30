@@ -222,9 +222,11 @@ comparisons are recorded in
 `docs/evidence/baseline-0.165.1/anthropic-chat-fallback-fields.md`.
 JSON-object and JSON-schema output with web search follows the release's Chat
 fallback in `auto` mode; explicit `anthropic` mode rejects that combination with 400.
+Untyped scalar message content now reaches native Anthropic as JSON text for
+selected buffered and streamed inputs; explicitly typed scalar content remains
+rejected. See `docs/evidence/baseline-0.165.1/anthropic-untyped-scalar-input.md`.
 Oracle controls record additional coercion and metadata behavior; complete
-request translation remains unverified. Empty and system-only arrays also
-return different errors.
+request translation remains unverified.
 
 Buffered and SSE response conversion retains guarded unsupported shapes.
 Selected buffered thinking blocks, web-search sources, mixed tool output and

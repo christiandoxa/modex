@@ -289,7 +289,8 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
         _validate_unsigned_value(name, value, value, clap_diagnostic)
     if name == "--rollout-budget-reminders":
         for threshold in value.split(","):
-            _validate_unsigned_value(name, value, String(threshold), clap_diagnostic)
+            var element = String(threshold)
+            _validate_unsigned_value(name, element, element, clap_diagnostic)
     return value
 
 

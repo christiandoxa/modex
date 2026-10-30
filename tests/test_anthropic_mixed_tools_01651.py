@@ -3080,5 +3080,68 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
                     self.assertEqual(search["action"]["sources"][0]["url"], "https://example.test/source")
 
 
+    def test_untyped_scalars_reach_native_messages(self):
+        cases = ((None, "null"), (False, "false"), (True, "true"),
+                 (0, "0"), (123, "123"), (1.5, "1.5"))
+        for stream in (False, True):
+            for value, text in cases:
+                with self.subTest(stream=stream, value=value):
+                    request = {"model": "deepseek-chat", "input": [{"role": "user", "content": value}],
+                               "stream": stream, "tools": [{"type": "web_search_preview"}]}
+                    scenario = "anthropic-stream" if stream else "anthropic-buffered"
+                    captures = [_run(binary, request, scenario=scenario)
+                                for binary in (ORACLE_01651, ORACLE, MODEX)]
+                    for capture in captures:
+                        self.assertEqual((capture["exit_code"], capture["status"]), (0, 200))
+                        self.assertEqual(len(capture["upstream"]), 1)
+                        self.assertEqual(capture["upstream"][0]["path"], "/anthropic/v1/messages")
+                        self.assertEqual(capture["upstream_body"]["messages"][0]["content"],
+                                         [{"type": "text", "text": text}])
+                        self.assertEqual(capture["state"]["leftovers"], [])
+                    self.assertEqual(captures[1]["upstream_body"], captures[0]["upstream_body"])
+                    self.assertEqual(captures[2]["upstream_body"], captures[0]["upstream_body"])
+                    if stream:
+                        self.assertEqual(_normalized_events(captures[1]["response_body"]),
+                                         _normalized_events(captures[0]["response_body"]))
+                        self.assertEqual(_normalized_events(captures[2]["response_body"]),
+                                         _normalized_events(captures[0]["response_body"]))
+                    else:
+                        responses = [json.loads(capture["response_body"]) for capture in captures]
+                        for response in responses:
+                            response.pop("created_at", None)
+                        self.assertEqual(responses[1:], responses[:1] * 2)
+
+    def test_typed_scalars_stay_rejected(self):
+        for value in (None, False, 0, 1.5):
+            with self.subTest(value=value):
+                request = {"model": "deepseek-chat",
+                           "input": [{"type": "message", "role": "user", "content": value}],
+                           "stream": False, "tools": [{"type": "web_search_preview"}]}
+                captures = [_run(binary, request, scenario="anthropic-buffered")
+                            for binary in (ORACLE_01651, ORACLE, MODEX)]
+                for capture in captures:
+                    self.assertEqual((capture["exit_code"], capture["status"]), (1, 502))
+                    self.assertEqual(capture["upstream"], [])
+                    self.assertEqual(capture["state"]["leftovers"], [])
+                self.assertEqual(captures[1]["response_body"], captures[0]["response_body"])
+                self.assertEqual(captures[2]["response_body"], captures[0]["response_body"])
+
+    def test_untyped_scalar_roles_in_forced_anthropic_mode(self):
+        for item in ({"role": "assistant", "content": 42},
+                     {"role": "system", "content": None},
+                     {"role": "developer", "content": False}):
+            with self.subTest(item=item):
+                request = {"model": "deepseek-chat", "input": [item, {"role": "user", "content": "follow-up"}],
+                           "stream": False, "tools": [{"type": "web_search_preview"}]}
+                captures = [_run(binary, request, scenario="anthropic-buffered", mode_override="anthropic")
+                            for binary in (ORACLE_01651, ORACLE, MODEX)]
+                for capture in captures:
+                    self.assertEqual((capture["exit_code"], capture["status"]), (0, 200))
+                    self.assertEqual(len(capture["upstream"]), 1)
+                    self.assertEqual(capture["state"]["leftovers"], [])
+                self.assertEqual(captures[1]["upstream_body"], captures[0]["upstream_body"])
+                self.assertEqual(captures[2]["upstream_body"], captures[0]["upstream_body"])
+
+
 if __name__ == "__main__":
     unittest.main()

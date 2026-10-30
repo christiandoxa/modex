@@ -136,6 +136,28 @@ class SuperCliTests(unittest.TestCase):
                 self.assertEqual(outputs[1], outputs[2])
                 self.assertEqual(outputs[0][0], expected_exit)
 
+    def test_rollout_budget_reminders_identify_the_invalid_element(self):
+        self.assertEqual(hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest(), ORACLE_01651_SHA256)
+        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        cases = (("1,,2", ""), (",1", ""), ("1,", ""), ("1,invalid,2", "invalid"))
+        for value, invalid_element in cases:
+            outputs = []
+            for binary in (ORACLE_01651, ORACLE, MODEX):
+                with self.subTest(value=value, binary=binary.name):
+                    result, mutated = isolated_super(binary, [
+                        "super", "--rollout-budget-tokens", "100",
+                        "--rollout-budget-reminders", value, "--help",
+                    ])
+                    self.assertFalse(mutated)
+                    self.assertEqual((result.returncode, result.stdout), (2, b""))
+                    self.assertIn(
+                        b"invalid value '" + invalid_element.encode() + b"' for '--rollout-budget-reminders <TOKENS>'",
+                        result.stderr,
+                    )
+                    outputs.append((result.returncode, result.stdout, result.stderr))
+            self.assertEqual(outputs[0], outputs[1])
+            self.assertEqual(outputs[1], outputs[2])
+
     def test_positional_rollout_weight_errors_match_releases_before_child_start(self):
         self.assertEqual(hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest(), ORACLE_01651_SHA256)
         self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)

@@ -1,5 +1,23 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+For pre-command `--rollout-budget-reminders` lists, invalid comma-separated
+elements now appear individually in the diagnostic, matching both 0.165.1
+and 0.439.2. Four malformed lists were compared through real isolated CLI
+processes; the full eight-test Super CLI module passed on the combined build.
+See `docs/evidence/baseline-0.165.1/super-rollout-reminder-element-errors.md`.
+Other Super parsing and post-`exec` behavior remain incomplete.
+
+Untyped null, boolean and numeric Responses message content now reaches the
+native Anthropic web-search route as JSON text, as in both the 0.165.1 and
+0.439.2 release processes. The earlier Modex binary returned 502 for all twelve
+buffered and streamed controls; explicitly typed scalar messages remain 502
+with no provider POST. Three focused scalar methods, three existing array and
+role controls, the combined production build, 71-source dependency audit and test
+census passed on Linux x86-64 with isolated synthetic peers. Forced Anthropic
+mode also matched for selected assistant, system and developer scalar content.
+See `docs/evidence/baseline-0.165.1/anthropic-untyped-scalar-input.md`.
+Broader provider semantics, security and all six release targets remain open.
+
 An unpublished per-launch client-token prototype is in the dirty worktree
 `/tmp/modex-integration-20261030`; it is not part of the pushed product. It
 generates a random token in the private overlay, passes it to the relay and

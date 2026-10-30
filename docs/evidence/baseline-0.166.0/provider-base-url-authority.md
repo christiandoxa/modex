@@ -32,6 +32,7 @@ synthetic provider key and loopback fixture. Prodex and Modex both returned
 
 - `127.1`
 - `127.0.1`
+- `127.0x.1` (an empty hexadecimal component resolves to zero)
 - `127.0.0.01`
 - `127.000.000.001`
 - `0177.0.0.1`
@@ -70,6 +71,8 @@ Prodex state.
   `test_loopback_http_stream.py` passed together: 65 tests in 40.223 seconds.
 - `test_ci_oracle_routing.py` and `test_ci_test_census.py` passed: 29 tests in
   1.899 seconds.
+- A later isolated rerun of the authority matrix passed with `127.0x.1` added;
+  the separate preceding 65-test run did not include that alias.
 - The active authority comparison is included in both Fast and Full CI lanes.
 
 ## Limits

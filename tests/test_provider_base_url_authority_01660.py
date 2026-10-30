@@ -11,6 +11,7 @@ from test_local_rewrite import SYNTHETIC_API_KEY, json_bytes
 LOOPBACK_ALIASES = (
     "127.1",
     "127.0.1",
+    "127.0x.1",
     "127.0.0.01",
     "127.000.000.001",
     "0177.0.0.1",

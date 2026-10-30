@@ -199,7 +199,8 @@ filtering, timestamps and timezones; it does not qualify startup side effects
 or profile recovery. See `docs/evidence/baseline-0.166.0/session-output-matrix.md`.
 Session inspection now falls back to epoch zero for a file mtime before the Unix
 epoch, matching the active release when no record timestamp overrides it.
-The isolated comparison and remaining limits are in
+The isolated comparison covers 18 combinations of file formats, boundary
+timestamps, and record timestamp precedence; remaining limits are in
 `docs/evidence/baseline-0.166.0/session-pre-epoch-mtime.md`.
 
 DeepSeek `low` reasoning effort now remains `low` in both request paths,

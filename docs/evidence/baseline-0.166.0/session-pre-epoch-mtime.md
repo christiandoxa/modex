@@ -18,6 +18,10 @@ Prodex returned `1970-01-01 00:00:00 +00:00` and Modex returned
 `1969-12-31 23:59:59 +00:00`; after the fix the new regression and all 15
 methods in `test_session_outputs_01660` pass on Linux x86-64. Its inherited
 non-object-followup safety control is Modex-only, not differential evidence.
+The regression also compares `.json`, `.jsonl`, and `.jsonl.zst` files at
+one second and one nanosecond before epoch and at epoch itself. For each it
+checks both the fallback and an explicit record timestamp; the fixture verifies
+that the filesystem retained the requested nanosecond mtime.
 
 Reproduce after building Modex:
 

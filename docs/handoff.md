@@ -4328,3 +4328,14 @@ production build, 71-file dependency audit, 50-native/154-Python census, and
 response shapes; all six release targets and broader Anthropic parity remain
 unqualified. See
 `docs/evidence/baseline-0.165.1/anthropic-orphan-result.md`.
+## Super rollout float diagnostics (2026-10-30)
+
+The Super parser now matches 0.165.1 and frozen 0.439.2 diagnostics for the two
+rollout weight options. It preserves Rust `f64` spellings and rejects malformed
+exponents, whitespace, Unicode digits, suffixes, hex floats, and trailing
+bytes. A 54-value-per-option differential matrix had no mismatch. The focused
+synthetic three-process tests confirm invalid post-tail values stop before any
+Codex child or provider request, with the key redacted. Only Linux x86-64 CLI
+diagnostics are qualified; rollout weight launch effects and other targets
+remain open. See
+`docs/evidence/baseline-0.165.1/super-rollout-float-diagnostics.md`.

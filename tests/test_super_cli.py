@@ -9,6 +9,8 @@ import time
 import unittest
 
 from session_oracle import sandbox_command
+from test_cli_01651 import ORACLE as ORACLE_01651, ORACLE_SHA256 as ORACLE_01651_SHA256
+from test_super_launch import run_private_launch
 from test_cli import HISTORICAL_04391_ORACLE_SHA256, MODEX, ORACLE, ORACLE_SHA256, ROOT
 
 
@@ -82,6 +84,47 @@ class SuperCliTests(unittest.TestCase):
                 self.assertEqual((native.returncode, native.stdout, native.stderr), expected)
                 self.assertFalse(mutated)
                 self.assertNotIn("synthetic-secret".encode(), native.stderr)
+
+    def test_rollout_weight_float_diagnostics_match_both_releases(self):
+        self.assertEqual(hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest(), ORACLE_01651_SHA256)
+        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        valid = ("NaN", "-NaN", "+inf", "-infinity", "1e9999", "1e999999999999999999999999999999", "1e-9999", "9" * 1200, "+0", "-0", "1.e1", ".1e2")
+        invalid = ("", ".", "in", "infinite", "1e", "1e+", " 1 ", "\t1", "1\n", "1 2", "1_0", "1f", "0x1p0", "1.0tail", "١", "１２", "−0", "\u00a01\u00a0")
+        binaries = (ORACLE_01651, ORACLE, MODEX)
+        for option in ("--rollout-budget-sampling-weight", "--rollout-budget-prefill-weight"):
+            for value, expected_exit in [(item, 0) for item in valid] + [(item, 2) for item in invalid]:
+                outputs = []
+                for binary in binaries:
+                    with self.subTest(option=option, value=value, binary=binary.name):
+                        result, mutated = isolated_super(binary, ["super", option, value, "--help"])
+                        self.assertFalse(mutated)
+                        stdout = result.stdout
+                        if binary != MODEX:
+                            for command in ("super", "run", "doctor", "login"):
+                                stdout = stdout.replace(b"prodex " + command.encode(), b"modex " + command.encode())
+                        outputs.append((result.returncode, stdout, result.stderr))
+                self.assertEqual(outputs[0], outputs[1])
+                self.assertEqual(outputs[1], outputs[2])
+                self.assertEqual(outputs[0][0], expected_exit)
+
+    def test_positional_rollout_weight_errors_match_releases_before_child_start(self):
+        self.assertEqual(hashlib.sha256(ORACLE_01651.read_bytes()).hexdigest(), ORACLE_01651_SHA256)
+        self.assertEqual(hashlib.sha256(ORACLE.read_bytes()).hexdigest(), ORACLE_SHA256)
+        binaries = (ORACLE_01651, ORACLE, MODEX)
+        for option in ("--rollout-budget-sampling-weight", "--rollout-budget-prefill-weight"):
+            for value in ("", "in", "infinite", "1e", " 1 ", "1f", "0x1p0", "1.0tail", "١", "\u00a01\u00a0"):
+                outputs = []
+                for binary in binaries:
+                    with self.subTest(option=option, value=value, binary=binary.name):
+                        result, records, upstream, state = run_private_launch(
+                            binary, scenario="exit-seven", codex_arguments=("exec", option, value),
+                        )
+                        self.assertEqual(result.returncode, 1, result.stderr)
+                        self.assertEqual((result.stdout, records, upstream, state["leftovers"]), (b"", [], [], []))
+                        self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
+                        outputs.append((result.returncode, result.stdout, result.stderr))
+                self.assertEqual(outputs[0], outputs[1])
+                self.assertEqual(outputs[1], outputs[2])
 
     def test_unavailable_startup_fails_before_side_effects_and_keeps_keys_private(self):
         sentinel = "synthetic-key-never-print-this"

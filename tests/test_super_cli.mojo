@@ -3,7 +3,7 @@
 from std.collections import List
 from std.testing import assert_equal, assert_true
 
-from modex.super_cli import SuperOptions, parse_super_arguments, validate_super_options
+from modex.super_cli import SuperOptions, _valid_float_value, parse_super_arguments, validate_super_options
 
 
 def rejects(args: List[String], expected: String) raises:
@@ -27,6 +27,18 @@ def main() raises:
     assert_equal(options.codex_args[2], "--api-key")
     assert_equal(options.codex_args[3], "literal-key")
     validate_super_options(options)
+    for name in ["--rollout-budget-sampling-weight", "--rollout-budget-prefill-weight"]:
+        for value in ["+0", "-0", "NaN", "+infinity", "1e9999", "1e999999999999999999999999999999", "1e-9999", "1.", ".1"]:
+            options = parse_super_arguments([String("modex"), "super", name, value], "modex")
+            assert_equal(options.value(name), value)
+        for value in ["infinite", "in", "1f", "0x1p0", "1.0tail"]:
+            var error = "error: invalid value '" + value + "' for '" + name + " <WEIGHT>': invalid float literal\n\nFor more information, try '--help'.\n"
+            rejects([String("modex"), "super", name, value], error)
+        rejects([String("modex"), "super", name, ""], "error: invalid value '' for '" + name + " <WEIGHT>': cannot parse float from empty string\n\nFor more information, try '--help'.\n")
+        for value in ["1e", "1f", "in", "0x1p0"]:
+            rejects([String("modex"), "super", "exec", name, value], "invalid float literal")
+        var nul_value = String("1") + chr(0)
+        assert_true(not _valid_float_value(nul_value))
     options = parse_super_arguments([String("modex"), "super", "--profile", "initial", "019c9e3d-45a0-7ad0-a6ee-b194ac2d44f9", "--profile", "tail", "--no-auto-rotate", "--auto-rotate"], "modex")
     assert_equal(options.value("--profile"), "initial")
     assert_true(options.has("--auto-rotate"))

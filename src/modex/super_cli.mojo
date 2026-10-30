@@ -167,6 +167,46 @@ def _validate_unsigned_value(name: String, value: String, parsed_value: String, 
         raise _typed_value_error(name, value, String(error), clap_diagnostic)
 
 
+def _valid_float_value(value: String) -> Bool:
+    var bytes = value.as_bytes()
+    var end = len(bytes)
+    if end == 0:
+        return False
+    var index = 0
+    if bytes[0] == 43 or bytes[0] == 45:
+        index = 1
+        if index == end:
+            return False
+    var special = ascii_lower(value)
+    if index == 1:
+        var signless = String(special[byte=1:])
+        special = signless^
+    if special in ["nan", "inf", "infinity"]:
+        return True
+    var digits = 0
+    while index < end and Byte(48) <= bytes[index] and bytes[index] <= Byte(57):
+        index += 1
+        digits += 1
+    if index < end and bytes[index] == 46:
+        index += 1
+        var fraction_start = index
+        while index < end and Byte(48) <= bytes[index] and bytes[index] <= Byte(57):
+            index += 1
+        digits += index - fraction_start
+    if digits == 0:
+        return False
+    if index < end and (bytes[index] == 69 or bytes[index] == 101):
+        index += 1
+        if index < end and (bytes[index] == 43 or bytes[index] == 45):
+            index += 1
+        var exponent_start = index
+        while index < end and Byte(48) <= bytes[index] and bytes[index] <= Byte(57):
+            index += 1
+        if index == exponent_start:
+            return False
+    return index == end
+
+
 def _valid_http_url(value: String) -> Bool:
     var scheme_end = value.find("://")
     if scheme_end < 0 or value.find("?") >= 0 or value.find("#") >= 0:
@@ -240,6 +280,11 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
         if source not in ["system", "external"]:
             raise _enum_value_error(name, value, [String("system"), "external"], "expected system or external", clap_diagnostic)
         return source^
+    if name in ["--rollout-budget-sampling-weight", "--rollout-budget-prefill-weight"]:
+        if not value:
+            raise _typed_value_error(name, value, "cannot parse float from empty string", clap_diagnostic)
+        if not _valid_float_value(value):
+            raise _typed_value_error(name, value, "invalid float literal", clap_diagnostic)
     if name in ["--context-window", "--auto-compact-token-limit", "--rollout-budget-tokens", "--current-time-reminder-interval"]:
         _validate_unsigned_value(name, value, value, clap_diagnostic)
     if name == "--rollout-budget-reminders":

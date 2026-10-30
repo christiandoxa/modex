@@ -198,6 +198,10 @@ Gateway now reaches its no-profile preflight, so that fixture's expected
 unimplemented-provider error was stale. The fixture now explicitly selects an
 unsupported provider and still checks that a synthetic key is not echoed; its
 two focused CLI tests pass. The running snapshot predates this correction.
+It also reported a historical dry-run assertion that assumed which of two
+existing-state guards would be encountered first. The test now accepts either
+fail-closed diagnostic while still requiring unchanged state; the valid and
+invalid state controls pass. This snapshot predates that correction too.
 
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing

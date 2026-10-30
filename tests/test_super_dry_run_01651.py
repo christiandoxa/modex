@@ -953,7 +953,11 @@ class SuperDryRun01651Tests(unittest.TestCase):
 
         result, before, after = run_dry_run(MODEX, "modex", prepare)
         self.assertEqual(result.returncode, 1)
-        self.assertIn(b"requires an empty profiles directory", result.stderr)
+        self.assertTrue(
+            b"requires an empty profiles directory" in result.stderr
+            or b"cannot reconcile existing application state" in result.stderr,
+            result.stderr,
+        )
         self.assertEqual(after, before)
 
     def test_installed_optional_tools_fail_closed_without_launching_them(self):

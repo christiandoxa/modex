@@ -36,6 +36,17 @@ tests, and both helper shards. It failed closed because required historical
 0.439.2 and 0.439.5 oracles were unavailable. This does not qualify full CI,
 the missing historical lanes, or later commits.
 
+Hosted Fast CI run `41123086672` on `17e0eab1a227e16e443eb6f90ed29c0de1884861`
+failed during `focused-build make unit`: the Gateway native test still called
+`_history` with its old three-argument signature and expected a string, while
+the helper now requires a credential index and returns history ownership flags.
+`tests/test_gateway_cli.mojo` now checks explicit credential scopes, same-key
+history, cross-key rejection and namespace isolation. The targeted Gateway and
+ProviderConversation native tests compile and pass. Full `make unit` also
+passes all native targets at `e37a256b87cb92720fd8ccede27124d186c40f03` with
+Mojo 1.2.0. The hosted compile failure was a stale test callsite; this does not
+clear the missing historical-oracle lanes or establish hosted CI success.
+
 Earlier hosted Fast CI run `41103940113` on `3fbf27876a53c45ffb544eb33b82d520a9571970`
 passed its build and native checks, 102 active 0.166.0 Python tests, 52
 independent relay tests, 121 historical 0.165.1 tests, eight width-memory tests,

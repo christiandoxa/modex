@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The isolated full `make test` on `2e7dcc8` finished with two failures in
+1,117 Python tests after native checks. Both failures were stale expectations
+for duplicate passthrough `Content-Type` headers; their corrected fixtures and
+focused reruns are recorded below. The log is
+`/tmp/modex-full-2e7dcc8-20261030.log` (SHA-256
+`c14d7a4a26abb9c6dbe95922a54ccbf8004a62b3d812f71b93584ca51b42d1ad`).
+This failed historical run does not qualify the current revision.
+
 The `2e7dcc8` full run also reported a stale Super passthrough assertion: the
 synthetic upstream converted duplicate headers to a dictionary and expected
 only the caller's `Content-Type`. It now records all values and asserts the

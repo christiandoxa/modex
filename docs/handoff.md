@@ -4311,3 +4311,20 @@ the 50-native/154-Python test census, and `git diff --check` passed on Linux
 x86-64. This qualifies only the tested request shapes and leaves the six-release
 denominator unchanged. Details:
 `docs/evidence/baseline-0.165.1/anthropic-web-search-aliases.md`.
+
+## Buffered Anthropic search result identifiers (2026-10-30)
+
+Buffered `web_search_tool_result` blocks with missing, null, or non-string
+`tool_use_id` values are now ignored like Prodex 0.165.1 and 0.439.2. Before
+the fix, Modex returned 502 for a numeric result ID after a valid search, while
+both releases returned the still-pending search without sources. The production
+mapper now checks the identifier's JSON type before matching it, so missing or
+null values cannot attach to a search with the valid empty-string ID. A
+three-process loopback test covers numeric, missing and null IDs, the empty-ID
+negative control, and a matching string-ID positive control. The focused
+identifier, result-source, result-content, and orphan suites passed; the
+production build, 71-file dependency audit, 50-native/154-Python census, and
+`git diff --check` passed on Linux x86-64. This qualifies only these buffered
+response shapes; all six release targets and broader Anthropic parity remain
+unqualified. See
+`docs/evidence/baseline-0.165.1/anthropic-orphan-result.md`.

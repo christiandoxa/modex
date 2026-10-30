@@ -2216,6 +2216,47 @@ class AnthropicMixedTool01651Tests(unittest.TestCase):
             self.assertEqual(normalized[1:], normalized[:1] * 2)
             self.assertEqual(request_bodies[1:], request_bodies[:1] * 2)
 
+    def test_nonstring_buffered_search_result_ids_are_ignored(self):
+        source = {"type": "web_search_result", "url": "https://example.test/matched",
+                  "title": "Matched"}
+        cases = (
+            ("numeric result id", "search_id", {"tool_use_id": 7}, [], False),
+            ("missing result id with empty search id", "", {}, [], True),
+            ("null result id with empty search id", "", {"tool_use_id": None}, [], False),
+            ("matching string id", "search_id", {"tool_use_id": "search_id"}, [
+                {"type": "url", "url": "https://example.test/matched", "title": "Matched"},
+            ], False),
+        )
+        request = _request(stream=False)
+        for label, search_id, result_fields, expected_sources, include_function in cases:
+            with self.subTest(case=label):
+                content = [
+                    {"type": "server_tool_use", "id": search_id, "name": "web_search",
+                     "input": {"query": "synthetic query"}},
+                    {"type": "web_search_tool_result", **result_fields, "content": [source]},
+                ]
+                if include_function:
+                    content.append({"type": "tool_use", "id": "call_test", "name": "lookup",
+                                    "input": {"query": "synthetic query"}})
+                reply = _buffered_reply(content, stop_reason="tool_use" if include_function else "end_turn")
+                request_bodies = []
+                responses = []
+                for binary in (ORACLE_01651, ORACLE, MODEX):
+                    posts, records = observe_turns(binary, [request], [reply])
+                    self.assertEqual(len(posts), 1, binary)
+                    self.assertEqual(posts[0]["path"], "/anthropic/v1/messages", binary)
+                    self.assertEqual(len(records), 1, binary)
+                    self.assertEqual(records[0]["status"], 200, binary)
+                    request_bodies.append(json.loads(posts[0]["body"]))
+                    response = _normalize(json.loads(bytes.fromhex(records[0]["body"])))
+                    responses.append(response)
+                    search = next(item for item in response["output"]
+                                  if item["type"] == "web_search_call")
+                    self.assertEqual(search["action"]["queries"], ["synthetic query"])
+                    self.assertEqual(search["action"]["sources"], expected_sources)
+                self.assertEqual(request_bodies[1:], request_bodies[:1] * 2)
+                self.assertEqual(responses[1:], responses[:1] * 2)
+
     def test_search_result_content_shapes_match_both_releases(self):
         cases = (
             ("missing", False, None),

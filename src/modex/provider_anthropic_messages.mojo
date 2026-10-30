@@ -366,10 +366,11 @@ def anthropic_buffered_response(source: String, created_at: UInt64, request_meta
                 else:
                     output.append("$break$")
             elif kind == "web_search_tool_result":
-                var search_id = doc.string(doc.get(block, "tool_use_id"))
-                var search_position = latest_search_by_id.get(search_id)
-                if search_position:
-                    searches[search_position.value()].sources = _search_sources(doc, block)
+                var result_id = doc.get(block, "tool_use_id")
+                if result_id >= 0 and doc.nodes[result_id].kind == JSON_STRING:
+                    var search_position = latest_search_by_id.get(doc.nodes[result_id].text)
+                    if search_position:
+                        searches[search_position.value()].sources = _search_sources(doc, block)
                 output.append("$break$")
     var items = List[String]()
     var output_index = 0
@@ -519,10 +520,7 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
                 if doc.string(doc.get(block, "type")) != "server_tool_use" or doc.string(name) != "web_search" or id < 0 or doc.nodes[id].kind != JSON_STRING:
                     raise Error("Anthropic web-search tool use is invalid")
             elif kind == "web_search_tool_result":
-                var id = doc.get(block, "tool_use_id")
-                if id < 0 or doc.nodes[id].kind != JSON_STRING:
-                    raise Error("Anthropic web-search result requires a tool_use_id")
-                _ = _search_sources(doc, block)
+                pass
             elif kind == "thinking":
                 pass
             else:
@@ -544,10 +542,7 @@ def _validate_anthropic_buffered_response(doc: JsonDocument) raises:
             if doc.string(name) != "web_search":
                 raise Error("unsupported Anthropic server tool")
         elif kind == "web_search_tool_result":
-            var result_id = doc.get(block, "tool_use_id")
-            if result_id < 0 or doc.nodes[result_id].kind != JSON_STRING:
-                raise Error("Anthropic web-search result requires a tool_use_id")
-            _ = _search_sources(doc, block)
+            pass
         elif kind != "thinking":
             raise Error("Anthropic Messages content has an unsupported block")
 

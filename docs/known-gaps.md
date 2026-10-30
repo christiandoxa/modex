@@ -228,8 +228,10 @@ before POST, while whitespace-only input is accepted. See
 `docs/evidence/anthropic-web-search-04392.md` and
 `docs/evidence/baseline-0.165.1/anthropic-response-shapes.md`.
 An orphan buffered `web_search_tool_result`, following text or as the only
-content block, is also ignored as in both pinned releases; these remain selected
-response shapes only. See
+content block, is also ignored as in both pinned releases. Missing, null, and
+non-string `tool_use_id` values are ignored before matching, including when a
+search has the valid empty-string ID; only a string ID matching a search can
+attach result sources. These remain selected response shapes only. See
 `docs/evidence/baseline-0.165.1/anthropic-orphan-result.md`.
 Selected Anthropic function-tool streams and split JSON fragments now match
 0.165.1, including selected duplicate and orphan stops, reopened indices and

@@ -25,3 +25,11 @@ returned 426 without an upstream request. Modex does not yet implement the
 profile broker, Guardian pin and cookie handling, upstream WebSocket reuse, or
 release-metadata synchronization. These behaviors remain unverified gaps on
 all six targets.
+
+The separate real-process broker startup characterization
+`tests/test_runtime_broker_startup_01660_oracle.py` passed with isolated
+synthetic profiles and a loopback upstream. It also passed under `unshare
+-Urnm` with loopback enabled and a private user-owned directory bind-mounted
+as `/tmp`. A plain `unshare -Urn` attempt failed Prodex's secret-location
+validation because the host `/tmp` owner was unmapped; the passing setup
+does not bypass that validation.

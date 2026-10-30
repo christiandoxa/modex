@@ -1,6 +1,7 @@
 """Process checks against the official 0.166.0 active release."""
 
 import hashlib
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -123,6 +124,66 @@ class ActiveBaseline01660Tests(unittest.TestCase):
             "home/.prodex/update-check.lock",
         ])
         self.assertEqual(modex_created, [])
+
+
+    def test_custom_tool_input_matches_active_provider_request_shape(self):
+        from test_deepseek_continuation import buffered_reply, observe_turns
+
+        missing = object()
+        custom_values = [
+            ("object", {"query": "synthetic"}, '{"query":"synthetic"}', {}),
+            ("missing", missing, "", {}),
+            ("null", None, "null", {}),
+            ("string", "raw patch", "raw patch", {}),
+            ("array", [1, "雪"], '[1,"雪"]', {}),
+            ("number", 7, "7", {}),
+            ("boolean", False, "false", {}),
+            ("unicode-escaping", 'café 🌋 "quote"\nline\\tail',
+             'café 🌋 "quote"\nline\\tail', {}),
+            ("input-precedence", "input wins", "input wins", {
+                "arguments": {"selected": "top-level"},
+                "function": {"arguments": {"selected": "nested"}},
+            }),
+        ]
+        paths = [("native", {}), ("fallback", {"safety_identifier": "synthetic-user"})]
+        turns = []
+        expected_custom_inputs = []
+        for path_name, request_fields in paths:
+            for name, item_input, expected_input, extra_fields in custom_values:
+                call_id = "call_" + path_name + "_" + name
+                item = {"type": "custom_tool_call", "call_id": call_id, "name": "apply_patch", **extra_fields}
+                if item_input is not missing:
+                    item["input"] = item_input
+                output = {"type": "custom_tool_call_output", "call_id": call_id, "output": "synthetic result"}
+                turns.append({"model": "deepseek-chat", "input": [item, output], **request_fields})
+                expected_custom_inputs.append(expected_input)
+        expected_function_arguments = []
+        for path_name, request_fields in paths:
+            call_id = "call_" + path_name + "_function_precedence"
+            item = {
+                "type": "function_call", "call_id": call_id, "name": "lookup",
+                "input": {"selected": "input"}, "arguments": {"selected": "arguments"},
+                "function": {"arguments": {"selected": "nested"}},
+            }
+            output = {"type": "function_call_output", "call_id": call_id, "output": "synthetic result"}
+            turns.append({"model": "deepseek-chat", "input": [item, output], **request_fields})
+            expected_function_arguments.append({"selected": "arguments"})
+        observed = []
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, turns, [buffered_reply(index) for index in range(len(turns))],
+                )
+                self.assertEqual([row["status"] for row in responses], [200] * len(turns))
+                self.assertEqual(len(upstream), len(turns))
+                bodies = [json.loads(row["body"]) for row in upstream]
+                calls = [body["messages"][0]["tool_calls"][0] for body in bodies]
+                arguments = [json.loads(call["function"]["arguments"]) for call in calls]
+                self.assertEqual([item["input"] for item in arguments[:len(expected_custom_inputs)]],
+                                 expected_custom_inputs)
+                self.assertEqual(arguments[len(expected_custom_inputs):], expected_function_arguments)
+                observed.append(bodies)
+        self.assertEqual(*observed)
 
 
 if __name__ == "__main__":

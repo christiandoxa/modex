@@ -1,4 +1,4 @@
-"""Exercise the real Codex 0.165.0 client with isolated local Modex fixtures."""
+"""Exercise real Codex with isolated local Modex fixtures and no external route."""
 
 import json
 import os
@@ -13,6 +13,7 @@ import unittest
 MODEX = Path(os.environ.get("MODEX_BINARY", ""))
 CODEX = Path(os.environ.get("CODEX_BINARY", ""))
 NODE_BIN = Path(os.environ.get("NODE_BIN", "/home/doxa/.local/share/upkit/node/active/bin"))
+EXPECTED_VERSION = os.environ.get("MODEX_EXPECTED_CODEX_VERSION", "0.166.0")
 
 
 class RealCodexLocalAuthTests(unittest.TestCase):
@@ -21,7 +22,7 @@ class RealCodexLocalAuthTests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError("Set MODEX_BINARY to the candidate Modex executable")
         if not CODEX.is_file():
-            raise AssertionError("Set CODEX_BINARY to the installed Codex 0.165.0 CLI")
+            raise AssertionError("Set CODEX_BINARY to the pinned Codex CLI")
         if os.environ.get("MODEX_REAL_CODEX_NETNS") != "1":
             raise AssertionError("Run under unshare -Urn to disable external network access")
 
@@ -38,6 +39,10 @@ class RealCodexLocalAuthTests(unittest.TestCase):
                                 capture_output=True).stdout.strip()
         if routes:
             raise AssertionError(f"network namespace has a default route: {routes}")
+        routes_v6 = subprocess.run([ip, "-6", "route", "show", "default"], check=True, text=True,
+                                   capture_output=True).stdout.strip()
+        if routes_v6:
+            raise AssertionError(f"network namespace has an IPv6 default route: {routes_v6}")
 
         cls.root = tempfile.TemporaryDirectory(prefix="modex-real-codex-auth-", dir="/tmp")
         cls.root_path = Path(cls.root.name)
@@ -51,8 +56,9 @@ class RealCodexLocalAuthTests(unittest.TestCase):
         }
         version = subprocess.run([str(CODEX), "--version"], env=version_env,
                                  capture_output=True, text=True, timeout=10)
-        if version.returncode != 0 or "codex-cli 0.165.0" not in version.stdout + version.stderr:
-            raise AssertionError(f"expected Codex 0.165.0: {version.stdout!r} {version.stderr!r}")
+        version_line = re.compile(r"(?m)^codex-cli " + re.escape(EXPECTED_VERSION) + r"$")
+        if version.returncode != 0 or not version_line.search(version.stdout + version.stderr):
+            raise AssertionError(f"expected Codex {EXPECTED_VERSION}: {version.stdout!r} {version.stderr!r}")
 
     @classmethod
     def tearDownClass(cls):

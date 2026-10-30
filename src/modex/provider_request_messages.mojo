@@ -245,8 +245,10 @@ def _map_item(doc: JsonDocument, item: Int, mut mapped: List[String]):
         if not name: name = _first_string(doc, doc.get(item, "function"), ["name"])
         if kind == "custom_tool_call":
             var input = doc.get(item, "input")
-            var raw = "" if input < 0 else serialize_json(doc, input)
-            var call = '{"id":' + quote_json(call_id) + ',"type":"function","function":{"name":' + quote_json(name) + ',"arguments":' + quote_json('{"input":' + raw + "}") + "}"
+            var input_text = String()
+            if input >= 0:
+                input_text = doc.nodes[input].text if doc.nodes[input].kind == JSON_STRING else serialize_json(doc, input)
+            var call = '{"id":' + quote_json(call_id) + ',"type":"function","function":{"name":' + quote_json(name) + ',"arguments":' + quote_json('{"input":' + quote_json(input_text) + "}") + "}"
             var signature = _thought_signature(doc, item)
             if signature: call += ',"gemini_thought_signature":' + quote_json(signature)
             mapped.append('{"role":"assistant","content":"","tool_calls":[' + call + "}]}")

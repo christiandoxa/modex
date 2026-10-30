@@ -30,6 +30,12 @@ diagnostics without creating state. For `super exec --model --help`, the
 release instead proceeds to a no-profile error and creates housekeeping
 files, while Modex stops at its unimplemented startup guard; this is a
 recorded difference, not a parity pass.
+For DeepSeek `custom_tool_call`, both production request paths now encode the
+input as a string inside the function arguments, using compact JSON text for
+non-string values and an empty string for a missing input. The active 0.166.0
+process comparison covers both paths, Unicode, escaping and argument
+precedence; ordinary function calls retain their tested precedence. Broader
+tool conversion remains unverified.
 
 The official historical 0.439.2 tag currently resolves to no ref and its
 SHA256SUMS URL returned 404 on 2026-10-30. Previously verified local bytes
@@ -49,11 +55,28 @@ The five active identity and API-key tests also passed with both historical
 oracle overrides set to nonexistent paths, confirming those tests do not
 require a 0.165.1 or 0.439.2 binary.
 
+The official Codex 0.166.0 Linux binary passed the real local-auth test against
+Modex through a synthetic loopback provider inside a network namespace with
+no default routes. Its release archive and executable hashes, isolation and
+reproduction command are in `docs/evidence/baseline-0.166.0/codex-offline.md`.
+This is one local-auth case, not general Codex or Guardian parity.
+
+`test_runtime_broker_startup_01660_oracle.py` records the broker gap with a
+synthetic profile: the 0.166.0 process publishes a private capability and
+loopback registry, while Modex exits with its unimplemented-command error and
+publishes neither. This is a characterization, not parity. The test passed
+with isolated state and a loopback upstream, including under a network and
+mount namespace with a private user-owned `/tmp`. A plain `unshare -Urn`
+attempt failed Prodex's secret-location validation because host `/tmp`'s owner
+was unmapped; the passing setup retains that validation.
+
 A full isolated `make test` is running against exact Modex commit
 `94b514c2fe3992a9f2219b035746820f8fe17161`, with the verified 0.166.0 oracle
 as `PRODEX_ORACLE` and separate versioned historical oracles. Its log is
 `/tmp/modex-01660-full-94b514c.log` (make PID 771360); it has not finished and
-is not a pass. The installed Prodex and Codex executables are not replaced.
+is not a pass. It has reported a CI-cleanliness test error and a historical
+private-temp fixture failure; their causes are under review. The installed
+Prodex and Codex executables are not replaced.
 
 In an isolated checkout of the pinned 0.166.0 source, its Guardian loopback
 TLS/CONNECT smoke passed and observed the reviewer using its parent's routing

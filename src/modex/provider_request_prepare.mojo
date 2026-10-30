@@ -332,7 +332,12 @@ def _native_item(doc: JsonDocument, item: Int) raises -> String:
         if args < 0: args = doc.get(doc.get(item, "function"), "arguments")
         var argument = "{}" if args < 0 else (doc.nodes[args].text if doc.nodes[args].kind == JSON_STRING else serialize_json(doc, args))
         var call = '{"id":' + quote_json(id) + ',"type":"function","function":{"name":' + quote_json(name) + ',"arguments":' + quote_json(argument) + "}}"
-        if kind == "custom_tool_call": call = '{"id":' + quote_json(id) + ',"type":"function","function":{"name":' + quote_json(name) + ',"arguments":' + quote_json('{"input":' + ("" if args < 0 else serialize_json(doc, args)) + "}") + "}}"
+        if kind == "custom_tool_call":
+            var custom_input = doc.get(item, "input")
+            var input_text = String()
+            if custom_input >= 0:
+                input_text = doc.nodes[custom_input].text if doc.nodes[custom_input].kind == JSON_STRING else serialize_json(doc, custom_input)
+            call = '{"id":' + quote_json(id) + ',"type":"function","function":{"name":' + quote_json(name) + ',"arguments":' + quote_json('{"input":' + quote_json(input_text) + "}") + "}}"
         var signature = _signature(doc, item)
         if signature: call = String(call[byte=:call.byte_length() - 1]) + ',"gemini_thought_signature":' + quote_json(signature) + "}"
         var result = '{"role":"assistant","content":"","tool_calls":[' + call + "]}"

@@ -350,8 +350,61 @@ class LocalRewrite04392OracleTests(unittest.TestCase):
                         self.assertEqual(response["status"], 400)
                         self.assertEqual(response["body"], transport.INVALID_REQUEST_TARGET_BODY)
                         self.assertEqual(response["interim_statuses"], [])
-                        self.assertEqual(response["connection_closed"], label == "Modex")
+                        if name == "chunked_body" and label == "0.439.2":
+                            # HTTPResponse may buffer the trailing empty 400 before the close sample.
+                            pass
+                        else:
+                            self.assertEqual(response["connection_closed"], label == "Modex")
                         self.assertEqual(records, [])
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_chunked_invalid_target_release_wire_has_bounded_second_400(self):
+        upstream = transport.Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        request = (
+            b"POST http://example.test/v1/responses HTTP/1.1\r\n"
+            b"Host: 127.0.0.1\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n"
+        )
+        case = {
+            "name": "chunked_body",
+            "request": request,
+            "raw_response": True,
+            "raw_response_timeout_ms": 2500,
+            "process_timeout": 15,
+        }
+        try:
+            response, records = transport.run_probe(ORACLE, case, upstream)
+            wire = response["wire_body"]
+            self.assertEqual(response["process_exit"], 0, response["stderr"])
+            self.assertLessEqual(len(wire), 1024)
+            self.assertTrue(response["connection_closed"])
+            self.assertEqual(records, [])
+            messages = []
+            offset = 0
+            while offset < len(wire):
+                head_end = wire.find(b"\r\n\r\n", offset)
+                self.assertGreaterEqual(head_end, 0, wire[offset:])
+                head = wire[offset:head_end]
+                headers = {
+                    name.lower(): value.strip()
+                    for name, value in (
+                        line.split(b":", 1) for line in head.split(b"\r\n")[1:]
+                    )
+                }
+                length = int(headers[b"content-length"])
+                body_start = head_end + 4
+                body_end = body_start + length
+                self.assertLessEqual(body_end, len(wire))
+                messages.append((head.split(b"\r\n", 1)[0], wire[body_start:body_end]))
+                offset = body_end
+            self.assertEqual(messages, [
+                (b"HTTP/1.1 400 Bad Request", transport.INVALID_REQUEST_TARGET_BODY),
+                (b"HTTP/1.1 400 Bad Request", b""),
+            ])
         finally:
             upstream.shutdown()
             upstream.server_close()

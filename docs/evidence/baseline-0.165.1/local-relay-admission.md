@@ -114,3 +114,60 @@ The later polling trial reduces the measured scan CPU but leaves these
 admission outcomes unchanged. Repeated latency, EOF, fairness, and resource
 measurements are in
 `docs/evidence/baseline-0.165.1/local-relay-polling-20261030.md`.
+
+## Origin/main process characterization (2026-10-30)
+
+A follow-up on `origin/main` commit `1274046` kept the production admission
+policy unchanged. With two workers, two body-blocked requests, 128 partial
+headers, and two ready overflow requests, the relay process held exactly 132
+client descriptors above its startup count. Closing the parent pipe exited the
+process and closed the overflow clients. The test is
+`test_parent_eof_closes_a_retained_overflow_client`.
+
+The real-process idle-flood test offered 132 idle clients with two workers. The
+relay kept its parked set at 128, closed at least four older idle sockets, and
+still returned HTTP 200 to a subsequent healthy request; accepting that request
+closed one more idle client. This characterizes the existing eviction boundary
+and confirms that new requests can progress by releasing an accepted idle
+socket. It does not establish fairness under sustained request churn.
+
+At the worker ceiling of 12, the nominal retained request-head slots are 128
+parked, 12 overflow, and 12 worker-owned requests. Multiplying 152 slots by the
+2 MiB request-head limit gives a derived 304 MiB request-head ceiling if all
+slots reach that limit. It is not a measured RSS or aggregate-memory bound and
+excludes body buffers and runtime overhead.
+
+The focused run passed all five `test_local_rewrite_admission` tests in 4.795
+seconds, including the exact 132-descriptor parent-EOF case and the 132-idle
+newcomer case. Six release admission, EOF, shutdown, and framing tests passed
+in 43.967 seconds. In the seven-blocker/136-partial-header comparison, both
+releases served the healthy requests before release; Modex waited about 3,003
+ms and then served them. These results keep the selected saturation gap visible.
+
+The raw malformed-trailer fixture passed across 0.165.1, 0.439.2, and Modex.
+Both releases emitted two bounded 400 responses, with an empty second body;
+Modex emitted one. The wire capture is capped at 1,024 bytes and waits at most
+2,500 ms. For the related bodyless chunked invalid-target case, eight raw
+0.439.2 probes emitted the same pair of 400s and then EOF. Ten normal
+`HTTPResponse` probes returned the exact first 400 body with no upstream record
+and sampled the connection as open. That close sample can read bytes buffered
+for the trailing 400, so the raw-wire assertion records the release behavior
+while the normal test keeps status, body, interim-response, and upstream checks
+strict.
+
+Reproduce after building Modex and the local relay driver:
+
+```sh
+PYTHONPATH=tests MODEX_BINARY="$PWD/build/modex" \
+MODEX_LOCAL_REWRITE_DRIVER="$PWD/build/tests/local_rewrite_driver" \
+python3 -m unittest -v test_local_rewrite_admission
+
+PYTHONPATH=tests MODEX_BINARY="$PWD/build/modex" python3 -m unittest -v \
+  test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_invalid_target_malformed_trailer_release_wire_has_bounded_second_400 \
+  test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_bodyless_invalid_target_expect_can_reuse_connection \
+  test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_chunked_invalid_target_release_wire_has_bounded_second_400
+```
+
+These are Linux x86-64 process checks with synthetic credentials and loopback
+upstreams. They do not qualify the 2 MiB boundary under saturation, timeout
+expiry, aggregate memory use, sustained fairness, or other compiler targets.

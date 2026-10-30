@@ -146,6 +146,36 @@ class LocalRewriteAdmissionTests(unittest.TestCase):
             raise
 
     @staticmethod
+    def _process_fd_count(process):
+        return len(os.listdir(f"/proc/{process.pid}/fd"))
+
+    def _wait_for_process_fd_count(self, process, expected, timeout=3):
+        deadline = time.monotonic() + timeout
+        last = None
+        while time.monotonic() < deadline:
+            last = self._process_fd_count(process)
+            if last == expected:
+                return last
+            if process.poll() is not None:
+                break
+            time.sleep(0.01)
+        self.assertEqual(last, expected, f"relay process FD count did not reach {expected}")
+        return last
+
+    @staticmethod
+    def _closed_client_count(clients):
+        closed = 0
+        readable, _, _ = select.select(clients, [], [], 0)
+        for client in readable:
+            try:
+                data = client.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
+            except OSError:
+                closed += 1
+            else:
+                closed += data == b""
+        return closed
+
+    @staticmethod
     def _close_clients(clients):
         for client in clients:
             try:
@@ -242,11 +272,17 @@ class LocalRewriteAdmissionTests(unittest.TestCase):
 
     def test_parent_eof_closes_a_retained_overflow_client(self):
         with tempfile.TemporaryDirectory(prefix="modex-admission-parent-eof-") as temporary:
-            process, parent_write, address, worker_count = self._start_relay(temporary)
+            process, parent_write, address, worker_count = self._start_relay(temporary, "2")
+            initial_fds = self._process_fd_count(process)
             clients = []
             try:
+                self.assertEqual(worker_count, 2)
                 blockers, parked, overflow = self._saturate(address, worker_count)
                 clients = blockers + parked + overflow
+                self.assertEqual(
+                    self._wait_for_process_fd_count(process, initial_fds + 132),
+                    initial_fds + 132,
+                )
                 os.close(parent_write)
                 parent_write = -1
                 self._close_clients(blockers)
@@ -269,6 +305,33 @@ class LocalRewriteAdmissionTests(unittest.TestCase):
                         process.wait(timeout=3)
                     if process.stdout:
                         process.stdout.close()
+
+    def test_ready_newcomer_is_served_after_132_idle_client_flood(self):
+        with tempfile.TemporaryDirectory(prefix="modex-admission-idle-cap-") as temporary:
+            process, parent_write, address, worker_count = self._start_relay(temporary, "2")
+            initial_fds = self._process_fd_count(process)
+            idle_clients = []
+            healthy = None
+            try:
+                self.assertEqual(worker_count, 2)
+                idle_clients = [self._connect(address, b"") for _ in range(132)]
+                self._wait_for_process_fd_count(process, initial_fds + 128)
+                deadline = time.monotonic() + 3
+                while self._closed_client_count(idle_clients) < 4 and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                self.assertGreaterEqual(self._closed_client_count(idle_clients), 4)
+                request = transport.request_bytes(
+                    headers=(("Connection", "close"),),
+                    body=b'{"model":"deepseek-chat","input":"synthetic newcomer"}',
+                )
+                healthy = self._connect(address, request)
+                self.assertEqual(self._read_response(healthy), (200, transport.RESPONSES_RESPONSE))
+                self.assertGreaterEqual(self._closed_client_count(idle_clients), 5)
+                self.assertEqual(len(self.upstream.snapshot_records()), 1)
+            finally:
+                self._close_relay(
+                    process, parent_write, idle_clients + ([healthy] if healthy else []),
+                )
 
     def test_worker_count_stays_within_scheduler_capacity(self):
         values = ("1", "+1", "12", "64", "65", "18446744073709551615")

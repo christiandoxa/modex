@@ -135,10 +135,16 @@ comparisons show that this preserves preconnected idle sockets under request
 floods; the bounded Modex listener may evict one to admit newer clients. Modex
 also delays a healthy connection when its 128 parked and worker-sized overflow
 queues are full of partial headers, while both releases serve it. Resource
-samples now walk the product process tree, but they are single Linux samples
-and do not account for per-connection retained bytes. Large-head capture,
-parent EOF, and timeout controls have not been repeated together under this
-backlog. See
+samples now walk the product process tree, but they are single Linux samples.
+Real-process coverage also checks parent EOF with 128 partial headers, two
+overflow requests, and two worker-owned requests, plus a 132-idle-client flood
+where the relay closes older idle sockets to keep a new healthy request
+available. At the 12-worker ceiling, the nominal retained-head slots are 128
+parked, 12 overflow, and 12 worker-owned requests. The 2 MiB per-request head
+limit gives a derived 304 MiB request-head ceiling if every slot reaches that
+limit; this is not a measured RSS bound or an aggregate memory limit and excludes
+body buffers and runtime overhead. Large-head capture, parent EOF, and timeout
+controls have not been combined in one load. See
 `docs/evidence/baseline-0.165.1/local-relay-admission.md`.
 
 The local rewrite adapter's 426 WebSocket fallback matches its selected

@@ -1002,6 +1002,27 @@ gap and fail-closed ambiguous-framing behavior visible; no platform status is
 promoted. See
 `docs/evidence/baseline-0.165.1/local-relay-admission.md`.
 
+A final test-only recheck on `origin/main` (`1274046`) kept the production
+eviction policy unchanged. Real-process coverage offered 132 idle clients and
+confirmed that Modex closes old idle sockets to keep a new healthy request
+available. A two-worker parent-EOF case filled 132 client descriptors with two
+body-blocked requests, 128 partial headers, and two overflow requests, then
+verified shutdown cleanup. At the 12-worker ceiling, 128 parked, 12 overflow,
+and 12 worker-owned slots with a 2 MiB head limit yield a derived 304 MiB
+request-head estimate; this is not an aggregate RSS bound. The seven-blocker
+release comparison still shows Modex waiting about 3,003 ms for held clients
+while both releases serve healthy requests before release.
+
+The release fixture now checks raw wire output for the malformed-trailer
+invalid-target case and the bodyless chunked invalid-target case. The 0.439.2
+chunked case sends two bounded 400 responses before EOF; Python's normal
+`HTTPResponse` close sample can observe bytes from that second response instead
+of EOF, so only that observational assertion was removed. Status, first body,
+interim responses, and the zero-upstream assertion remain exact. Test output and
+limits are recorded in
+`docs/evidence/baseline-0.165.1/local-relay-admission.md` and
+`docs/evidence/baseline-0.165.1/local-relay-admission-tests.txt`.
+
 DeepSeek Super now preserves a safely checked shared `config.toml` in the
 isolated child home. The three DeepSeek runtime settings take precedence over
 environment values, and string-valued catalog context/compaction settings

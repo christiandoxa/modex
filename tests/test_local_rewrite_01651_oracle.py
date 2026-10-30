@@ -1910,7 +1910,7 @@ CASES = (
         target=b"http://example.test/v1/responses",
         trailer=b"X-Trace synthetic\r\n",
         check_close=True,
-        expected_connection_closed={"oracle": False, "modex": True},
+        expected_connection_closed={"oracle": (False, True), "modex": True},
     ),
     delayed_invalid_target_chunked_request_case(
         "invalid_target_precedes_delayed_chunked_trailer",
@@ -3148,7 +3148,9 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                             )
                         if case.get("check_close"):
                             expected_close = case.get("expected_connection_closed", {}).get(label, True)
-                            if expected_close is not None:
+                            if isinstance(expected_close, tuple):
+                                self.assertIn(response["connection_closed"], expected_close, label)
+                            elif expected_close is not None:
                                 self.assertEqual(response["connection_closed"], expected_close, label)
                         if "expected_followup_status" in case:
                             self.assertEqual(response["followup_status"], case["expected_followup_status"], label)
@@ -3190,6 +3192,60 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                             normalize_response_body(case, oracle_response["body"]),
                             normalize_response_body(case, modex_response["body"]),
                         )
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_invalid_target_malformed_trailer_release_wire_has_bounded_second_400(self):
+        if hashlib.sha256(ORACLE_04392.read_bytes()).hexdigest() != ORACLE_04392_SHA256:
+            raise AssertionError("Prodex oracle checksum does not match pinned 0.439.2")
+        case = dict(next(
+            case for case in CASES
+            if case["name"] == "invalid_target_precedes_malformed_chunked_trailer"
+        ))
+        case["raw_response"] = True
+        case["raw_response_timeout_ms"] = 2500
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for label, binary, response_count in (
+                ("0.165.1", ORACLE, 2),
+                ("0.439.2", ORACLE_04392, 2),
+                ("Modex", MODEX, 1),
+            ):
+                with self.subTest(binary=label):
+                    response, records = run_probe(binary, case, upstream)
+                    wire = response["wire_body"]
+                    self.assertEqual(response["process_exit"], 0, response["stderr"])
+                    self.assertLessEqual(len(wire), 1024)
+                    self.assertEqual(len(records), 0)
+                    messages = []
+                    offset = 0
+                    while offset < len(wire):
+                        head_end = wire.find(b"\r\n\r\n", offset)
+                        self.assertGreaterEqual(head_end, 0, wire[offset:])
+                        head = wire[offset:head_end]
+                        headers = {
+                            name.lower(): value.strip()
+                            for name, value in (
+                                line.split(b":", 1) for line in head.split(b"\r\n")[1:]
+                            )
+                        }
+                        length = int(headers[b"content-length"])
+                        body_start = head_end + 4
+                        body_end = body_start + length
+                        self.assertLessEqual(body_end, len(wire))
+                        messages.append((head.split(b"\r\n", 1)[0], wire[body_start:body_end]))
+                        offset = body_end
+                    self.assertEqual(len(messages), response_count)
+                    self.assertEqual(messages[0], (
+                        b"HTTP/1.1 400 Bad Request",
+                        INVALID_REQUEST_TARGET_BODY,
+                    ))
+                    if response_count == 2:
+                        self.assertEqual(messages[1], (b"HTTP/1.1 400 Bad Request", b""))
         finally:
             upstream.shutdown()
             upstream.server_close()

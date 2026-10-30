@@ -24,3 +24,38 @@ admission-case[full_partial_backlog_without_idle_slots/0.439.2] before_release=T
 admission[full_partial_backlog_without_idle_slots/0.439.2] pids=1 rss_delta_kib=4484 fd_delta=288 cpu_seconds_over_1.0s=0.010
 admission-case[full_partial_backlog_without_idle_slots/Modex] before_release=False client_fds_ready=True statuses=200,200 upstream_requests=2
 admission[full_partial_backlog_without_idle_slots/Modex] pids=2 rss_delta_kib=588 fd_delta=143 cpu_seconds_over_1.0s=0.290
+
+Origin/main characterization (2026-10-30, synthetic credentials and upstream):
+test_healthy_request_dispatches_while_128_headers_are_partial ... ok
+test_parent_eof_closes_a_retained_overflow_client ... ok
+test_ready_newcomer_is_served_after_132_idle_client_flood ... ok
+test_two_overflow_clients_are_retained_and_served ... ok
+test_worker_count_stays_within_scheduler_capacity ... ok
+Ran 5 tests in 4.795s (OK).
+
+The parent-EOF test used two workers and observed exactly 132 process FDs above
+startup: two body-blocked worker sockets, 128 parked partial headers, and two
+overflow requests. Parent EOF exited the relay and closed the retained clients.
+The idle-flood test offered 132 idle clients, observed the 128 parked cap and at
+least four closed older clients, then got HTTP 200 for a new healthy request;
+the newcomer caused one further idle close.
+
+Raw release controls:
+test_invalid_target_malformed_trailer_release_wire_has_bounded_second_400 ... ok
+test_bodyless_invalid_target_expect_can_reuse_connection ... ok
+test_chunked_invalid_target_release_wire_has_bounded_second_400 ... ok
+Ran 3 tests in 6.661s (OK; each test file was run separately).
+
+The malformed-trailer wire test caps capture at 1,024 bytes and waits at most
+2,500 ms. Releases emitted two 400 responses (first body is the invalid-target
+JSON, second body empty); Modex emitted one and made no upstream request. For
+the 0.439.2 chunked-body control, eight raw probes captured the same two 400s
+then EOF, while ten normal HTTPResponse probes returned the exact first 400 and
+sampled the socket as open. The checked-in raw case preserves the wire result;
+the normal test omits only this release close sample and still asserts status,
+body, no interim response, and zero upstream requests.
+
+Six additional admission/EOF/shutdown/framing comparisons passed in 43.967s.
+Both releases served healthy requests before release in the seven-blocker and
+136-partial-header case; Modex served them after the held clients closed,
+approximately 3,003 ms later. This remains a documented saturation mismatch.

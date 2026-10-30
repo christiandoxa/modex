@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The combined production build at `fa01212` passed, as did eight focused
+three-process redirect tests, five native deadline/cancellation and passthrough
+tests, and the native transport units. The dependency audit, 50-native/155-
+Python census, oracle routing and workflow validation passed. A full `make
+test` is running in `/tmp/modex-full-fa01212-20261030`, with log
+`/tmp/modex-full-fa01212-20261030.log`; no full-suite result is claimed yet.
+Cross-origin redirects, HTTPS and general URL behavior remain unqualified.
+
 The isolated `dd82b3b` full suite finished with two failures in 1,127 Python
 tests after native checks. Both are the stale passthrough header assertions
 corrected and rerun below. Its log is `/tmp/modex-full-dd82b3b-20261030.log`

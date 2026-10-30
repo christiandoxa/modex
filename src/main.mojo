@@ -193,6 +193,27 @@ def main():
             var executable = String(executable_parts[len(executable_parts) - 1])
             print("error: unrecognized subcommand '" + String(args[3]) + "'\n\nUsage: " + executable + " log [OPTIONS] [MODE]\n\nFor more information, try '--help'.\n", file=stderr, end="")
             exit(2)
+    if len(args) >= 3 and args[1] == "help":
+        # Hidden release commands are valid root help targets too.
+        var known_commands: List[String] = [
+            "profile", "use", "current", "info", "status", "log", "session", "doctor",
+            "login", "logout", "update", "quota", "redeem", "ping", "run", "super", "s",
+            "gateway", "help", "__super-expose", "__runtime-broker", "__mcp-jsonl-bridge",
+            "__sub-agent-exec", "--help", "-h", "--version", "-V",
+        ]
+        if args[2] not in known_commands:
+            var executable_parts = args[0].split("/")
+            var executable = String(executable_parts[len(executable_parts) - 1])
+            print(
+                session_cli_error(
+                    "unrecognized subcommand '" + args[2] + "'",
+                    executable + " <COMMAND>",
+                ),
+                file=stderr,
+                end="",
+            )
+            exit(2)
+            return
     if len(args) >= 2 and (args[1] == "--version" or args[1] == "-V"):
         print("modex 0.1.0-dev")
         return

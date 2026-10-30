@@ -45,6 +45,14 @@ oracle was available for this run. This is an unavailable historical input,
 not a failure of the fixed active capture script. Help captures are discovery
 evidence only and do not establish parity.
 
+Unknown top-level `help` operands now match isolated 0.166.0 process
+comparisons, including the exit code, diagnostic, custom executable name, and
+no-state behavior. The production dispatcher leaves all declared visible and
+hidden root commands on their existing paths. Evidence and the focused command
+are in `docs/evidence/baseline-0.166.0/root-help-unknown-command.md` and
+`tests/test_root_help_errors_01660.py`; this does not qualify valid but
+unimplemented help targets or broader CLI parity.
+
 Set `TASK_SCRATCH` to a private temporary directory when reproducing commands.
 Paths under `$TASK_SCRATCH` are generalized per-run locations; no host-specific
 scratch path is part of the handoff.

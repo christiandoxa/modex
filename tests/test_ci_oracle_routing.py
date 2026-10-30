@@ -154,6 +154,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_provider_passthrough_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_provider_shapes_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_anthropic_stream_01660.py", script[active_suite:script.index("\n", active_suite)])
+        self.assertIn("test_root_help_errors_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_super_cli_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_runtime_broker_startup_01660_oracle.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_profile_list_empty_01660.py", script[active_suite:script.index("\n", active_suite)])
@@ -276,6 +277,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_provider_passthrough_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_provider_shapes_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_anthropic_stream_01660.py", script[active_suite:script.index("\n", active_suite)])
+        self.assertIn("test_root_help_errors_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn("test_super_cli_01660.py", script[active_suite:script.index("\n", active_suite)])
         self.assertIn(
             'run_logged historical-python-cross-release-buffered-response-shapes env PRODEX_ORACLE_04392="$PRODEX_ORACLE_04392" PRODEX_ORACLE_01651="$PRODEX_ORACLE_01651" "$PYTHON" scripts/ci/run-unittest.py test_provider_buffered_response_shapes_01651_04392.py',

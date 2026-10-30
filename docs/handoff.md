@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The combined production build at `d536403` passed. Its focused Node readiness,
+WebSocket framing-precedence, and DeepSeek metadata-stream process checks
+passed; the combined Node/session regression passed eight methods, and the
+full dry-run module passed 27. The dependency audit, 50-native/155-Python
+census, oracle routing, and workflow validation passed. Full runs on `2e7dcc8`
+and `dd82b3b` were still active when this was recorded and predate these
+changes; no current full-suite pass is claimed.
+
 The isolated `b405bc2` full run finished with 40 failures and one error in
 1,100 Python tests after native checks, reproducing the update-cache fixture
 failures documented below. Its log is `/tmp/modex-full-b405bc2-20261030.log`

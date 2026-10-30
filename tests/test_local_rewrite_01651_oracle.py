@@ -2847,7 +2847,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             b"Content-Length: 0\r\nContent-Length: 100\r\n\r\n",
         )
         missing_connection_upgrade_case = raw_expectation_case(
-            "websocket_header_without_connection_upgrade_stays_fail_closed",
+            "websocket_header_without_connection_upgrade_uses_fallback",
             b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
             b"Upgrade: websocket\r\nContent-Length: 0\r\n"
             b"Content-Length: 100\r\n\r\n",
@@ -2908,7 +2908,7 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
             (missing_connection_upgrade_case, {
                 "0.165.1": (426, WEBSOCKET_FALLBACK),
                 "0.439.2": (426, WEBSOCKET_FALLBACK),
-                "Modex": (502, b"gateway request capture failed"),
+                "Modex": (426, WEBSOCKET_FALLBACK),
             }),
             (non_websocket_upgrade_case, {
                 "0.165.1": (502, b"upstream request failed"),
@@ -2983,6 +2983,78 @@ class LocalRewrite01651OracleTests(unittest.TestCase):
                 self.assertEqual(observed["0.165.1"], observed["0.439.2"])
                 if expected["Modex"] == expected["0.165.1"]:
                     self.assertEqual(observed["Modex"], observed["0.165.1"])
+        finally:
+            upstream.shutdown()
+            upstream.server_close()
+            worker.join(timeout=2)
+
+    def test_fragmented_websocket_pipeline_stays_closed_without_connection_upgrade(self):
+        valid_websocket = request_bytes((("Upgrade", "websocket"),))
+        ambiguous_websocket = (
+            b"POST /v1/responses HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Upgrade: websocket\r\nAuthorization: Bearer synthetic-websocket-key\r\n"
+            b"Content-Length: 0\r\nContent-Length: 100\r\n\r\n"
+        )
+        followup = request_bytes((("Connection", "close"),), body=REQUEST_BODY)
+        valid_split = valid_websocket.index(b"Upgrade: websocket") + len(b"Upgrade: websocket") - 3
+        ambiguous_split = ambiguous_websocket.index(b"Content-Length: 0") + len(b"Content-Length: 0")
+        cases = (
+            (
+                "valid_websocket_pipeline_without_connection_upgrade",
+                valid_websocket,
+                [valid_websocket[:valid_split], valid_websocket[valid_split:] + followup],
+            ),
+            (
+                "ambiguous_websocket_pipeline_without_connection_upgrade",
+                ambiguous_websocket,
+                [ambiguous_websocket[:ambiguous_split], ambiguous_websocket[ambiguous_split:] + followup],
+            ),
+        )
+        upstream = Upstream()
+        worker = threading.Thread(target=upstream.serve_forever, daemon=True)
+        worker.start()
+        try:
+            for name, first_request, parts in cases:
+                case = {
+                    "name": name,
+                    "request": first_request + followup,
+                    "pipelined_requests": [first_request, followup],
+                    "pipelined_request_parts": parts,
+                    "pipelined_request_delay_ms": 10,
+                    "pipelined_response_count": 2,
+                    "check_close": True,
+                    "process_timeout": 15,
+                }
+                for label, binary in (
+                    ("0.165.1", ORACLE),
+                    ("0.439.2", ORACLE_04392),
+                    ("Modex", MODEX),
+                ):
+                    with self.subTest(case=name, product=label):
+                        response, records = run_probe(binary, case, upstream)
+                        self.assertEqual(response["process_exit"], 0, response["stderr"])
+                        self.assertNotIn(b"synthetic-websocket-key", response["stdout"])
+                        self.assertNotIn(b"synthetic-websocket-key", response["stderr"])
+                        if label == "Modex":
+                            self.assertEqual(
+                                [(item["status"], item["body"]) for item in response["pipelined_responses"]],
+                                [(426, WEBSOCKET_FALLBACK)],
+                            )
+                            self.assertEqual(response["read_error"], "RemoteDisconnected")
+                            self.assertEqual(records, [])
+                        else:
+                            self.assertEqual(
+                                (response["status"], response["body"]),
+                                (426, WEBSOCKET_FALLBACK),
+                                label,
+                            )
+                            self.assertEqual(response["read_error"], "")
+                            self.assertEqual(
+                                [(item["status"], item["body"]) for item in response["pipelined_responses"]],
+                                [(426, WEBSOCKET_FALLBACK), (200, RESPONSES_RESPONSE)],
+                            )
+                            self.assertEqual(len(records), 1)
+                            self.assertEqual(records[0]["path"], "/v1/chat/completions")
         finally:
             upstream.shutdown()
             upstream.server_close()

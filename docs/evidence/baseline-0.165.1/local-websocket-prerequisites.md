@@ -200,12 +200,18 @@ not appear in response or diagnostics. Invalid targets still take precedence
 with 400, and unsupported `Expect` still takes precedence with 417. An `h2c`
 upgrade retains the 502 error and does not reach the provider.
 
-For `Upgrade: websocket` without `Connection: Upgrade`, both releases return
-426 and leave the socket open; Modex rejects the ambiguous framing with 502 and
-closes it. This stricter rejection preserves the framing boundary. Ambiguous
-framing without a recognized WebSocket upgrade remains fail-closed. See
-`test_websocket_upgrade_rejects_before_reading_declared_body` in
-`tests/test_local_rewrite_01651_oracle.py`.
+For `Upgrade: websocket` without `Connection: Upgrade`, Modex now returns the
+same 426 classification as both releases while closing before reading the
+request body. With a fragmented conflicting-length request followed by a
+valid pipelined request, both releases return 426 then dispatch the second
+request for a 200; Modex returns 426 and closes without any upstream request.
+The status gap is fixed while the ambiguous connection remains fail-closed.
+This distinction is covered with both valid and conflicting-length fragmented
+heads against both checksummed releases and Modex. Invalid-target 400,
+unsupported-Expect 417, and non-WebSocket `h2c` 502 precedence are unchanged.
+Ambiguous framing without a recognized WebSocket upgrade remains fail-closed.
+See `test_fragmented_websocket_pipeline_stays_closed_without_connection_upgrade`
+in `tests/test_local_rewrite_01651_oracle.py`.
 
 This only secures the local rewrite fallback. It does not implement the
 separate profile-backed runtime-proxy WebSocket path or WSS; those remain

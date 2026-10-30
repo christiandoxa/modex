@@ -29,16 +29,27 @@ upgrade remains outside the WebSocket fallback and does not dispatch upstream;
 both releases return 502 `upstream request failed`, while Modex returns 502
 `gateway request capture failed`.
 
-When `Upgrade: websocket` lacks `Connection: Upgrade`, both releases still
-return 426 and leave the TCP connection open. Modex returns 502 and closes the
-connection because the request framing is ambiguous and the upgrade is
-incomplete. Other ambiguous framing stays fail-closed.
+The local rewrite now classifies an exact `Upgrade: websocket` header as the
+426 fallback even when `Connection: Upgrade` is absent. The fallback closes
+Modex's client connection before reading any declared body, preserving its
+bounded trust boundary. For a fragmented `Content-Length: 0` followed by
+`Content-Length: 100` request pipelined with a valid request, both releases
+return 426 and then process the queued request as 200, reaching the synthetic
+upstream once. Modex returns 426, closes the connection, and makes no upstream
+request. A fragmented non-ambiguous WebSocket request has the same outcomes.
+The status classification now matches, while connection reuse and pipeline
+dispatch remain intentionally different. Invalid targets still take
+precedence with 400, unsupported expectations with 417, and non-WebSocket
+`h2c` framing remains 502 with no provider dispatch. Ambiguous framing without
+a recognized WebSocket upgrade stays fail-closed.
 
 Reproduce on Linux x86-64 after `make build`:
 
 ```sh
 MODEX_BINARY="$PWD/build/modex" PYTHONPATH=tests python3 -m unittest -v \
   test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_websocket_upgrade_rejects_before_reading_declared_body \
+  test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_fragmented_websocket_pipeline_stays_closed_without_connection_upgrade \
+  test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_fragmented_websocket_pipeline_stays_closed_without_connection_upgrade \
   test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_identical_expectation_duplicates_match_and_ambiguous_framing_stays_fail_closed
 ```
 

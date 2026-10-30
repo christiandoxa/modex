@@ -4503,3 +4503,19 @@ partial client eviction rule changed. Other malformed framing and all six
 release targets remain unqualified. See
 `docs/evidence/baseline-0.165.1/local-websocket-prerequisites.md` and
 `docs/evidence/baseline-0.439.2/local-relay-websocket-framing.md`.
+
+## Local relay WebSocket fallback classification (2026-10-30)
+
+The local relay now returns the 426 WebSocket fallback whenever it sees the
+exact `Upgrade: websocket` field, matching both pinned releases even without
+`Connection: Upgrade`. It closes before reading the body. Fragmented valid and
+conflicting-length requests followed by a valid pipeline are checked against
+both release binaries and Modex. The releases return 426 then process the
+second request with 200 and one synthetic upstream dispatch; Modex returns
+426, closes, and makes no upstream request. This fixes the fallback status
+mismatch while keeping ambiguous framing fail-closed. Invalid target 400,
+unsupported `Expect` 417 and non-WebSocket `h2c` 502 precedence remain covered.
+Focused tests and `make build` pass on Linux x86-64. Connection reuse differs
+from the release and remains visible; WebSocket transport and all six release
+targets remain unqualified. See
+`docs/evidence/baseline-0.439.2/local-relay-websocket-framing.md`.

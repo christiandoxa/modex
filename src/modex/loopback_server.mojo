@@ -347,7 +347,6 @@ struct LoopbackHTTPConnection(Movable):
         var upgrade_body = False
         var saw_connection = False
         var websocket_upgrade = False
-        var websocket_connection_upgrade = False
         if allow_upgrade_headers and defer_expectation_errors:
             for header in head.headers:
                 var name = String(header[0]).lower()
@@ -356,15 +355,12 @@ struct LoopbackHTTPConnection(Movable):
                     if not saw_connection:
                         saw_connection = True
                         upgrade_body = "upgrade" in value
-                    for token in value.split(","):
-                        if String(token).strip(" \t") == "upgrade":
-                            websocket_connection_upgrade = True
                 elif name == "upgrade" and value == "websocket":
                     websocket_upgrade = True
             upgrade_body = upgrade_body and not websocket_upgrade
         if invalid_target and (head.expect_continue or head.length > max_body_bytes or (defer_expectation_errors and head.length > HTTP_DEFERRED_BODY_THRESHOLD)):
             raise Error("invalid HTTP request target")
-        if defer_expectation_errors and websocket_upgrade and websocket_connection_upgrade:
+        if defer_expectation_errors and websocket_upgrade:
             if invalid_target:
                 raise Error("invalid HTTP request target")
             # A WebSocket upgrade has no HTTP request body; reject before reading one.
@@ -810,7 +806,7 @@ def _parse_request_head(bytes: List[UInt8], end: Int, allow_upgrade_headers: Boo
                 if not request_target_valid(String(request_line[1])):
                     raise Error("invalid HTTP request target")
             # Reject this unsupported route before reading its ambiguous body.
-            if allow_upgrade_headers and not malformed_suffix and not malformed_target and has_websocket_upgrade and has_connection_upgrade:
+            if allow_upgrade_headers and not malformed_suffix and not malformed_target and has_websocket_upgrade:
                 raise Error("websocket upgrade fallback")
             raise Error(deferred_error)
         if malformed_suffix:

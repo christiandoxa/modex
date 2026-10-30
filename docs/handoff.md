@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The full run on `c5609d0` reported six failures in historical app-server
+checks because its shared Super fixture seeded only the 0.439.2 update-cache
+filename. The 0.165.1 oracle instead uses `update-check-codex-aligned-v1.json`
+and printed a real update notice, changing stderr. The fixture now seeds the
+release-specific cache with a synthetic current version; all six 0.165.1 and
+0.439.2 app-server test methods pass in a focused rerun. Both full runs started
+before this fixture correction, so neither can qualify the corrected revision.
+
 ## Super missing Codex values (2026-10-30)
 
 Missing `--add-dir`, `--enable`, and `--disable` values now reach the Codex

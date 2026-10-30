@@ -760,7 +760,11 @@ class SuperLaunchTests(unittest.TestCase):
             root = Path(directory)
             for name in ("home", "state", "shared", "work"):
                 (root / name).mkdir(mode=0o700)
-            (root / "state/update-check.json").write_text(json.dumps({"source": "GitHub", "latest_version": "0.439.2", "checked_at": int(time.time())}))
+            update_cache = json.dumps({"source": "GitHub", "latest_version": "0.165.1", "checked_at": int(time.time())})
+            (root / "state/update-check.json").write_text(update_cache)
+            from test_cli_01651 import ORACLE as ORACLE_01651
+            if Path(binary).resolve() == ORACLE_01651.resolve():
+                (root / "state/update-check-codex-aligned-v1.json").write_text(update_cache)
             codex = root / "codex"
             if codex_binary is None:
                 codex.write_text("#!" + sys.executable + "\n" + CODEX)

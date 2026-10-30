@@ -185,3 +185,86 @@ class AnthropicMissingMessageContent01660Tests(unittest.TestCase):
                     self.assertEqual(actual["response_body"], reference["response_body"])
                     self.assertEqual(reference["state"]["leftovers"], [])
                     self.assertEqual(actual["state"]["leftovers"], [])
+
+    def test_message_arrays_coalesce_roles_and_preserve_text_parts(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": [
+                {"type": "message", "role": "system", "content": "first policy"},
+                {"role": "user", "content": [
+                    {"type": "input_text", "text": "alpha"},
+                    {"type": "output_text", "text": "beta"},
+                ]},
+                {"role": "developer", "content": "second policy"},
+                {"type": "message", "role": "user", "content": "follow-up query"},
+                {"role": "assistant", "content": "first answer"},
+                {"role": "assistant", "content": "continued answer"},
+            ],
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        expected_body = {
+            "max_tokens": 4096,
+            "messages": [
+                {"role": "user", "content": [
+                    {"type": "text", "text": "alpha\nbeta"},
+                    {"type": "text", "text": "follow-up query"},
+                ]},
+                {"role": "assistant", "content": [
+                    {"type": "text", "text": "first answer"},
+                    {"type": "text", "text": "continued answer"},
+                ]},
+            ],
+            "model": "deepseek-chat",
+            "stream": False,
+            "system": "first policy\n\nsecond policy",
+            "tools": [{"name": "web_search", "type": "web_search_20250305"}],
+        }
+        for mode in ("auto", "anthropic"):
+            with self.subTest(mode=mode):
+                reference = _run(
+                    ORACLE_01660, request, scenario="anthropic-buffered", mode_override=mode,
+                )
+                actual = _run(
+                    MODEX, request, scenario="anthropic-buffered", mode_override=mode,
+                )
+                for result in (reference, actual):
+                    self.assertEqual((result["exit_code"], result["status"]), (0, 200))
+                    self.assertEqual(len(result["upstream"]), 1)
+                    self.assertEqual(result["upstream"][0]["path"], "/anthropic/v1/messages")
+                    headers = {
+                        name.lower(): value for name, value in result["upstream"][0]["headers"].items()
+                    }
+                    self.assertEqual(headers["x-api-key"], "synthetic-provider-key")
+                    self.assertNotIn("authorization", headers)
+                    self.assertEqual(result["upstream_body"], expected_body)
+                    self.assertEqual(result["state"]["leftovers"], [])
+                expected = json.loads(reference["response_body"])
+                observed = json.loads(actual["response_body"])
+                expected.pop("created_at")
+                observed.pop("created_at")
+                self.assertEqual(observed, expected)
+
+    def test_rich_anthropic_message_content_is_rejected_before_provider_post(self):
+        request = {
+            "model": "deepseek-chat",
+            "input": [{"type": "message", "role": "user", "content": [
+                {"type": "input_text", "text": "synthetic text"},
+                {"type": "input_image", "image_url": "https://example.test/image.png"},
+            ]}],
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        for mode in ("auto", "anthropic"):
+            with self.subTest(mode=mode):
+                reference = _run(
+                    ORACLE_01660, request, scenario="anthropic-buffered", mode_override=mode,
+                )
+                actual = _run(
+                    MODEX, request, scenario="anthropic-buffered", mode_override=mode,
+                )
+                for result in (reference, actual):
+                    self.assertEqual((result["exit_code"], result["status"]), (1, 502))
+                    self.assertEqual(result["upstream"], [])
+                    self.assertEqual(result["state"]["leftovers"], [])
+                self.assertEqual(actual["response_body"], reference["response_body"])

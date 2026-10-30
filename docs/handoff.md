@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The shared synthetic upstream fixture polls for shutdown every 50 ms instead
+of the Python default 500 ms. Eight empty fixture lifetimes took 4.012 seconds
+before and 0.408 seconds after on this host. The three-process redirect status
+matrix and buffered/streaming invalid-UTF-8 comparisons passed with the new
+interval; this test-only change does not establish additional product parity.
+The two older full-suite runs remain in progress on their original revisions.
+
 The combined production build at `fa01212` passed, as did eight focused
 three-process redirect tests, five native deadline/cancellation and passthrough
 tests, and the native transport units. The dependency audit, 50-native/155-

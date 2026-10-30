@@ -129,7 +129,7 @@ class UpstreamHandler(BaseHTTPRequestHandler):
 @contextmanager
 def serving(responses):
     server = Upstream(responses)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True)
     thread.start()
     try:
         yield server

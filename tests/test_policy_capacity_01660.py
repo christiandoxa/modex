@@ -78,3 +78,73 @@ class PolicyCapacityUnavailable01660ApiKeyPathTests(unittest.TestCase):
                     [KEY_A, KEY_B],
                 )
                 self.assertEqual([response["status"] for response in responses], [200])
+
+    def test_anthropic_messages_policy_capacity_503_retries_next_api_key(self):
+        request = [{
+            "model": "deepseek-chat",
+            "input": "synthetic Anthropic policy capacity",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }]
+        policy = {
+            "status": 503,
+            "content_type": "application/json",
+            "body": b'{"error":{"code":"policy_capacity_unavailable","message":"synthetic policy"}}',
+        }
+        success = {
+            "status": 200,
+            "content_type": "application/json",
+            "body": (
+                b'{"id":"msg_synthetic","type":"message","role":"assistant",'
+                b'"model":"deepseek-chat","content":[{"type":"text","text":"synthetic reply"}],'
+                b'"stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}'
+            ),
+        }
+
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary,
+                    request,
+                    [policy, success],
+                    api_keys=KEYS,
+                    latest_version="0.166.0",
+                )
+                self.assertEqual([post["path"] for post in upstream], [
+                    "/anthropic/v1/messages", "/anthropic/v1/messages",
+                ])
+                headers = [post["headers"] for post in upstream]
+                self.assertEqual([header["x-api-key"] for header in headers], [
+                    "synthetic-key-a", "synthetic-key-b",
+                ])
+                self.assertTrue(all(header["anthropic-version"] == "2023-06-01" for header in headers))
+                self.assertTrue(all("authorization" not in header for header in headers))
+                self.assertEqual(upstream[0]["body"], upstream[1]["body"])
+                self.assertEqual([response["status"] for response in responses], [200])
+                self.assertIn(b"synthetic reply", bytes.fromhex(responses[0]["body"]))
+
+    def test_anthropic_messages_single_api_key_forwards_policy_503_unchanged(self):
+        request = [{
+            "model": "deepseek-chat",
+            "input": "synthetic Anthropic single-key capacity",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }]
+        body = b'{"error":{"code":"policy_capacity_unavailable","message":"synthetic policy"}}'
+
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary,
+                    request,
+                    [{"status": 503, "content_type": "application/json", "body": body}],
+                    api_keys="synthetic-key-a",
+                    latest_version="0.166.0",
+                )
+                self.assertEqual(len(upstream), 1)
+                self.assertEqual(upstream[0]["path"], "/anthropic/v1/messages")
+                self.assertEqual(upstream[0]["headers"]["x-api-key"], "synthetic-key-a")
+                self.assertEqual(upstream[0]["headers"]["anthropic-version"], "2023-06-01")
+                self.assertNotIn("authorization", upstream[0]["headers"])
+                self.assertEqual([response["status"] for response in responses], [503])
+                self.assertEqual(bytes.fromhex(responses[0]["body"]), body)

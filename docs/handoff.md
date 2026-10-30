@@ -2849,7 +2849,8 @@ ignored as in the 0.165.1 release. No contract status is promoted. Profile list
 still fails closed because the release acquires interprocess locks and repairs
 state; omitting those steps would race concurrent profile operations.
 
-Next: continue recapturing behavior from 0.165.1. WebSocket transport work
+At that historical checkpoint, the next step was to recapture 0.165.1 behavior.
+The active target is now 0.166.0. WebSocket transport work
 must first establish the profile-backed runtime broker and lifecycle in the
 actual Modex Super path; keep the local rewrite 426 unchanged. WSS/DNS remain
 stdlib blockers. Retain all six targets and do not promote historical PASS

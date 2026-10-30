@@ -32,6 +32,10 @@ class RootHelpErrors01660Tests(unittest.TestCase):
             (("help", "statuz", "ignored"), "prodex", "modex"),
             (("help", "--unknown"), "prodex", "modex"),
             (("help", "--"), "prodex", "modex"),
+            (("help", "--help"), "prodex", "modex"),
+            (("help", "-h"), "prodex", "modex"),
+            (("help", "--version"), "prodex", "modex"),
+            (("help", "-V"), "prodex", "modex"),
             (("help", "statusz"), "custom-prodex", "custom-modex"),
         )
         for arguments, oracle_argv0, modex_argv0 in cases:
@@ -56,6 +60,20 @@ class RootHelpErrors01660Tests(unittest.TestCase):
                                  (2, b"", expected_baseline))
                 self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
                                  (2, b"", expected_modex))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_help_help_matches_release_without_mutations(self):
+        for arguments in (("help", "help"), ("help", "help", "status"),
+                          ("help", "help", "--help")):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "synthetic", "01660-help-help-oracle"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "synthetic", "01660-help-help-modex"
+                )
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (baseline.returncode, baseline.stdout, baseline.stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
 

@@ -194,16 +194,23 @@ def main():
             print("error: unrecognized subcommand '" + String(args[3]) + "'\n\nUsage: " + executable + " log [OPTIONS] [MODE]\n\nFor more information, try '--help'.\n", file=stderr, end="")
             exit(2)
     if len(args) >= 3 and args[1] == "help":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        if args[2] == "help":
+            if len(args) == 3:
+                print("Print this message or the help of the given subcommand(s)\n\nUsage: " + executable + " help [COMMAND]...\n\nArguments:\n  [COMMAND]...  Print help for the subcommand(s)\n", end="")
+            else:
+                print("error: unrecognized subcommand '" + args[3] + "'\n\nUsage: " + executable + " help [COMMAND]...\n", file=stderr, end="")
+                exit(2)
+            return
         # Hidden release commands are valid root help targets too.
         var known_commands: List[String] = [
             "profile", "use", "current", "info", "status", "log", "session", "doctor",
             "login", "logout", "update", "quota", "redeem", "ping", "run", "super", "s",
             "gateway", "help", "__super-expose", "__runtime-broker", "__mcp-jsonl-bridge",
-            "__sub-agent-exec", "--help", "-h", "--version", "-V",
+            "__sub-agent-exec",
         ]
         if args[2] not in known_commands:
-            var executable_parts = args[0].split("/")
-            var executable = String(executable_parts[len(executable_parts) - 1])
             print(
                 session_cli_error(
                     "unrecognized subcommand '" + args[2] + "'",

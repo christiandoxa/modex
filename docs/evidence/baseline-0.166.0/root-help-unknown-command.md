@@ -25,6 +25,11 @@ unimplemented-command diagnostic for unknown `help` operands. The production
 dispatcher now preserves declared root command names and returns the oracle's
 unknown-subcommand diagnostic for the remaining operands. It reuses the
 existing error formatter and adds no production imports or dependencies.
+The active process also treats `--help`, `-h`, `--version`, and `-V` as
+unknown operands after `help`; those forms now receive the same exit-2
+diagnostic. `help help` renders the help-subcommand usage, while a further
+operand produces its own exit-2 diagnostic without the root help hint. These
+additional forms are compared in the same isolated test.
 
 Reproduce with a built Modex binary and the verified oracle:
 

@@ -52,6 +52,8 @@ hidden root commands on their existing paths. Evidence and the focused command
 are in `docs/evidence/baseline-0.166.0/root-help-unknown-command.md` and
 `tests/test_root_help_errors_01660.py`; this does not qualify valid but
 unimplemented help targets or broader CLI parity.
+The same isolated test covers flag-shaped operands and the `help help` route,
+including the release's different nested-error usage.
 
 Set `TASK_SCRATCH` to a private temporary directory when reproducing commands.
 Paths under `$TASK_SCRATCH` are generalized per-run locations; no host-specific

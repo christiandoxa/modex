@@ -44,6 +44,17 @@ real Codex or contact an external provider.
 This evidence covers scheme casing for one numeric-loopback DeepSeek route on
 Linux x86-64. It does not qualify TLS or other release targets.
 
+## Spaces in loopback upstream paths
+
+The production Super path now percent-encodes ASCII spaces in the path portion
+of numeric-loopback HTTP base URLs. The 0.166.0 process sends `hello%20world`
+for `hello world`; previously Modex rejected the launch before contacting its
+synthetic provider. The active process comparison also covers spaces at path
+segment boundaries, UTF-8, and already encoded `%20`. The native URL checks
+retain rejection of whitespace in the authority and C0/DEL bytes, credentials,
+non-loopback destinations and HTTPS. This only qualifies the tested HTTP
+loopback route; it does not establish provider transport or TLS parity.
+
 ## Reproduction
 
 After `make build`, set `PRODEX_ORACLE_SOURCE` to the verified 0.166.0 binary

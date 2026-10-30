@@ -139,6 +139,7 @@ def main() raises:
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/e\u0301")[1], "/v1/e%CC%81/chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/\"<>`{}^|[]")[1], "/v1/%22%3C%3E%60%7B%7D^|[]/chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/%22%7B%7D")[1], "/v1/%22%7B%7D/chat/completions")
+    assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/ spaced /é")[1], "/v1/%20spaced%20/%C3%A9/chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/left\\right")[1], "/v1/left/right/chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/trailing\\/")[1], "/v1/trailing//chat/completions")
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/%5Cescaped")[1], "/v1/%5Cescaped/chat/completions")
@@ -161,7 +162,7 @@ def main() raises:
     ]:
         assert_equal(local_rewrite_upstream("http://127.0.0.1:1234" + path)[1], target)
     assert_equal(local_rewrite_upstream("http://[::1]:1234/../../other"), (String("[::1]:1234"), String("/other/chat/completions")))
-    for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://localhost:1", "http://127.0.0.1:0", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://user:secret@127.0.0.1:1/v1/../other", "http://user%3Asecret%40127.0.0.1:1/v1/../other", "http://127.0.0.1:1/v1/../other?secret", "http://127.0.0.1:1/v1/../other#fragment", "http://127.0.0.1:1\\v1/../other"]:
+    for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://localhost:1", "http://127.0.0.1:0", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://user:secret@127.0.0.1:1/v1/../other", "http://user%3Asecret%40127.0.0.1:1/v1/../other", "http://127.0.0.1:1/v1/../other?secret", "http://127.0.0.1:1/v1/../other#fragment", "http://127.0.0.1:1\\v1/../other", "http://127.0.0.1 :1/v1", "http://127.0.0.1: 1/v1", "http://127.0.0.1:1/v1/line\nbreak", "http://127.0.0.1:1/v1/\x7f"]:
         var rejected = False
         try:
             _ = local_rewrite_upstream(url)

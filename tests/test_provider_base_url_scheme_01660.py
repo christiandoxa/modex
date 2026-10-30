@@ -34,3 +34,23 @@ class ProviderBaseUrlScheme01660Tests(unittest.TestCase):
             observations.append(upstream[0]["body"])
 
         self.assertEqual(observations[0], observations[1])
+
+    def test_spaces_in_loopback_upstream_paths_are_percent_encoded(self):
+        cases = (
+            ("/v1/hello world", "/v1/hello%20world/chat/completions"),
+            ("/v1/ spaced /path", "/v1/%20spaced%20/path/chat/completions"),
+            ("/v1/é space/", "/v1/%C3%A9%20space/chat/completions"),
+            ("/v1/already%20encoded", "/v1/already%20encoded/chat/completions"),
+        )
+        for base_path, expected_path in cases:
+            for binary in (ORACLE, MODEX):
+                with self.subTest(base_path=base_path, reference=binary == ORACLE):
+                    upstream, responses = observe_turns(
+                        binary,
+                        [{"model": "deepseek-chat", "input": "synthetic path"}],
+                        [buffered_reply()], base_path=base_path, latest_version="0.166.0",
+                    )
+                    self.assertEqual([response["status"] for response in responses], [200])
+                    self.assertEqual([request["path"] for request in upstream], [expected_path])
+                    self.assertEqual(upstream[0]["headers"]["authorization"],
+                                     "Bearer synthetic-provider-key")

@@ -9,6 +9,12 @@ oracles were unavailable; their dependent lanes were blocked and the 0.439.2
 source lane was skipped. Neither historical lane is counted as passed. This is
 evidence for the recorded commit, not full CI or parity qualification.
 
+DeepSeek Super now percent-encodes ASCII spaces in numeric-loopback upstream
+path segments, matching the verified 0.166.0 process for synthetic paths.
+Authority whitespace, C0/DEL controls, credentials and non-loopback destinations
+remain rejected. The active process and native URL checks are described in
+`docs/evidence/baseline-0.166.0/provider-base-url-scheme.md`.
+
 The DeepSeek loopback provider now accepts case-insensitive `http` URL schemes,
 matching the verified 0.166.0 release for a synthetic `HTTP://` request. Its
 existing numeric-loopback and credential-free restrictions remain in place.

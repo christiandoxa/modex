@@ -41,7 +41,7 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
     if not url.lower().startswith("http://") or "@" in url or "?" in url or "#" in url:
         raise Error("this Modex gateway requires a credential-free numeric loopback HTTP upstream URL")
     for byte in url.as_bytes():
-        if byte <= 32 or byte == 127:
+        if byte < 32 or byte == 127:
             raise Error("invalid --base-url")
     var remaining = String(url[byte=7:])
     var slash = remaining.find("/")
@@ -106,8 +106,8 @@ def _normalize_upstream_path(target: String) -> String:
     var encoded = String()
     comptime HEX = StaticString("0123456789ABCDEF")
     for byte in path.as_bytes():
-        # Frozen URL path encoding also escapes "<>`{}; existing escapes stay intact.
-        if byte >= 128 or Int(byte) in [34, 60, 62, 96, 123, 125]:
+        # Frozen URL path encoding escapes spaces and "<>`{}; existing escapes stay intact.
+        if byte >= 128 or Int(byte) in [32, 34, 60, 62, 96, 123, 125]:
             encoded += "%" + HEX[byte=Int(byte) // 16] + HEX[byte=Int(byte) % 16]
         else:
             encoded += chr(Int(byte))

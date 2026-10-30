@@ -1,5 +1,16 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Two pinned runtime-broker WebSocket processes now have separate synthetic
+interrupt characterizations. In the tested 0.165.1 case a foreign-session
+interrupt closes the submitting connection without reaching the owner; a
+same-session interrupt and its real acknowledgement are forwarded on the
+owning socket. In the 0.439.2 case, the tested foreign interrupt waits for
+the submitter's response to finish and is then forwarded on its existing
+socket. The seven oracle-only tests passed; each new case also passed three
+fresh-process repeats. Neither test exercises Modex, whose profile-backed
+runtime WebSocket path remains unimplemented. See
+`docs/evidence/runtime-websocket-interrupt-oracle-01651-04392.md`.
+
 An updated, unpublished authentication draft is under active validation in
 `/tmp/modex-auth-integrate-1030`, based on `c386b71`; the earlier draft remains
 preserved in `/tmp/modex-integration-20261030`. A write-side shutdown before

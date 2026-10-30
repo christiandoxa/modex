@@ -470,6 +470,61 @@ census (50 native, 139 Python) passed with no dependency changes. The synthetic
 Codex peer, provider, credentials, homes and ports were isolated; no real
 provider or account was used.
 
+## Translated Responses large User-Agent follow-up (2026-10-30)
+
+This supersedes the earlier 1 MiB + 1-byte `/v1/responses` rejection recorded
+above; the 2 MiB inbound request-head bound remains a deliberate difference.
+
+Both pinned TinyHTTP versions still have no aggregate request-head cap.
+`client.rs::read_next_line` appends bytes into a `Vec` through CRLF, and
+`client.rs::read` keeps appending parsed fields until the blank line. The
+read-only source snapshots are Prodex 0.165.1 at
+`10ae15b5d1806302b60f051e4e6fec788044f4c2` and Prodex 0.439.2 at
+`72b77478a5198fc5da6b4d2253137f9cdbf43be9`. The checksum-pinned Linux
+executables used by the tests are 0.165.1
+`dd5a4354e067cbbb44e00a2fd1f59843aeb267d17db116e37896d5e305279a51` and
+0.439.2 `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`.
+Neither reference source tree was modified.
+
+The translated `/v1/responses` path now uses the existing 2 MiB per-field
+maximum. Its outbound request-head cap is 4 MiB + 2,048 bytes: a bounded 2 MiB
+inbound head can duplicate the first `User-Agent` before forwarding the
+original fields, adding at most one more copy of the inbound head plus the
+generated request line and provider headers. Modex still rejects inbound
+request heads above 2 MiB before upstream dispatch; shared parser/direct stream
+defaults remain 65,536 bytes. These are wire-size bounds, not a peak heap
+measurement: parsing and serialization hold additional copies. Body, timeout,
+header syntax/control validation, and cancellation limits were not changed.
+
+The real-process test `test_large_request_heads_use_bounded_linear_capture`
+uses isolated synthetic Codex and upstream peers with both pinned executables
+and Modex:
+
+| Request | Prodex 0.165.1 | Prodex 0.439.2 | Modex |
+| --- | --- | --- | --- |
+| `/v1/responses`, 1,048,577-byte `User-Agent` | 200; two upstream copies | 200; two copies | 200; two copies |
+| `/v1/responses`, request head exactly 2 MiB with large `User-Agent` | 200; two copies | 200; two copies | 200; two copies |
+| `/v1/responses`, request head 2 MiB + 1 byte with large `User-Agent` | 200; dispatch | 200; dispatch | 502; no dispatch |
+
+For the exact-2-MiB case, the captured outbound head is asserted to exceed the
+former 2 MiB + 2,048-byte cap and stay within the new 4 MiB + 2,048-byte cap;
+the test also compares both complete `User-Agent` values byte-for-byte.
+
+The last row preserves Modex's explicit inbound resource bound and leaves the
+release's unbounded-head behavior as a visible compatibility gap. The existing
+many-field matrix also retains exact-2-MiB success and 2-MiB+1-byte rejection
+controls. `rtk make build` and both focused process-test methods passed on
+Linux x86-64 (2 tests, 27.812 seconds). The broader relay/framing suite and
+other release targets were not rerun by this follow-up. The 71-file production
+import audit and `git diff --check` passed. Reproduce the process tests after
+`rtk make build` with:
+
+```sh
+PYTHONPATH=tests MODEX_BINARY="$PWD/build/modex" python3 -m unittest -v \
+  test_local_rewrite_01651_oracle.LocalRewrite01651OracleTests.test_large_request_heads_use_bounded_linear_capture \
+  test_local_rewrite_04392_oracle.LocalRewrite04392OracleTests.test_large_request_heads_use_bounded_linear_capture
+```
+
 ## Non-ASCII request-head bytes
 
 The 0.165.1 and 0.439.2 TinyHTTP sources convert each completed request line to

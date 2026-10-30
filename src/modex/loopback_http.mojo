@@ -16,10 +16,9 @@ from std.sys._libc_errno import ErrNo, get_errno
 from std.time import perf_counter, sleep
 
 comptime HTTP_HEADER_LIMIT = 65536
-comptime HTTP_REQUEST_FIELD_LIMIT = 1024 * 1024
 comptime HTTP_MAX_REQUEST_FIELD_LIMIT = 2 * 1024 * 1024
-# Leave room for a copied User-Agent plus generated provider headers.
-comptime HTTP_OUTBOUND_REQUEST_HEADER_LIMIT = HTTP_REQUEST_FIELD_LIMIT * 2 + 2048
+# Inbound headers fit within 2 MiB; copying the first User-Agent can double that.
+comptime HTTP_OUTBOUND_REQUEST_HEADER_LIMIT = HTTP_MAX_REQUEST_FIELD_LIMIT * 2 + 2048
 
 
 def _number(text: StringSlice) raises -> Int:

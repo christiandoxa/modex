@@ -15,7 +15,7 @@ from std.time.time import _realtime_nanoseconds
 from std.utils.lock import BlockingScopedLock, BlockingSpinLock
 
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument
-from .loopback_http import HTTP_HEADER_LIMIT, HTTP_MAX_REQUEST_FIELD_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, HTTP_REQUEST_FIELD_LIMIT, LoopbackHTTPStream, _number
+from .loopback_http import HTTP_HEADER_LIMIT, HTTP_MAX_REQUEST_FIELD_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, LoopbackHTTPStream, _number
 from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
 from .log_operational import valid_url_authority
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_model_retry_available, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_api_key_response, deepseek_retryable_model_response
@@ -859,7 +859,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     try:
         var exchange_address = messages_address if web else (beta_address if strict_tools else address)
         var exchange_path = messages_path if web else (beta_path if strict_tools else path)
-        exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[0])
+        exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[0])
     except error:
         if web and (String(error) == "Anthropic Messages slice requires a user or assistant message" or String(error) == "Anthropic tool function arguments must be valid JSON"):
             connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
@@ -875,7 +875,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                 try:
                     var exchange_address = messages_address if web else (beta_address if strict_tools else address)
                     var exchange_path = messages_path if web else (beta_path if strict_tools else path)
-                    exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[model_index])
+                    exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[model_index])
                 except error:
                     if web and (String(error) == "Anthropic Messages slice requires a user or assistant message" or String(error) == "Anthropic tool function arguments must be valid JSON"):
                         connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)

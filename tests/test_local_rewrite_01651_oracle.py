@@ -287,7 +287,7 @@ class LargeHeaderUpstreamHandler(socketserver.BaseRequestHandler):
             if not chunk:
                 return
             wire.extend(chunk)
-            if len(wire) > 3 * 1024 * 1024:
+            if len(wire) > 5 * 1024 * 1024:
                 raise AssertionError("synthetic upstream request head exceeded its bound")
         head, _, body = bytes(wire).partition(b"\r\n\r\n")
         lines = head.split(b"\r\n")
@@ -2637,7 +2637,9 @@ def assert_large_request_head_cases(test, oracle, modex):
             (large_request_head_case(131072, target=b"/v1/chat/completions"), 200, 200),
             (large_user_agent_case(), 200, 200),
             (large_user_agent_value_case(1024 * 1024), 200, 200),
-            (large_user_agent_value_case(1024 * 1024 + 1), 200, 502),
+            (large_user_agent_value_case(1024 * 1024 + 1), 200, 200),
+            (large_user_agent_case(LOCAL_RELAY_REQUEST_HEADER_LIMIT), 200, 200),
+            (large_user_agent_case(LOCAL_RELAY_REQUEST_HEADER_LIMIT + 1), 200, 502),
             (
                 {
                     **large_user_agent_value_case(
@@ -2683,6 +2685,9 @@ def assert_large_request_head_cases(test, oracle, modex):
                                 [expected_user_agent] * expected_count,
                                 label,
                             )
+                            if case["name"] == f"large_user_agent_{LOCAL_RELAY_REQUEST_HEADER_LIMIT}":
+                                test.assertGreater(records[0]["head_bytes"], 2 * 1024 * 1024 + 2048, label)
+                                test.assertLessEqual(records[0]["head_bytes"], 4 * 1024 * 1024 + 2048, label)
                         if case["name"].startswith("large_request_head_"):
                             expected_pad = case["request"].split(b"X-Pad: ", 1)[1].split(b"\r\n", 1)[0]
                             test.assertEqual(len(records[0]["headers"]["x-pad"]), len(expected_pad), label)

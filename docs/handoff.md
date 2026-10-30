@@ -27,6 +27,22 @@ oracle routing, and workflow validation passed. Full runs on `c5609d0` and
 `b405bc2` were still active when this entry was written and predate these
 changes; they cannot qualify the combined revision.
 
+## Translated Responses large-header follow-up (2026-10-30)
+
+The production `/v1/responses` route now forwards a 1 MiB + 1-byte
+`User-Agent` through both pinned releases and Modex, including the two copied
+outbound values. A large field in an exact 2 MiB request head also reaches the
+synthetic upstream with both copies. Modex retains a 2 MiB inbound request-head
+cap and returns 502 without dispatch at 2 MiB + 1 byte; both releases dispatch
+that control. Its outbound serialized-header bound is now 4 MiB + 2,048 bytes,
+derived from the 2 MiB inbound bound plus one copied `User-Agent` and generated
+headers. These are wire bounds; peak heap from parser/serialization copies was
+not measured. Direct stream defaults remain 65,536 bytes. The two focused
+real-process methods passed against checksum-pinned 0.165.1 and 0.439.2.
+See `docs/evidence/baseline-0.165.1/local-relay-http.md`. Larger unbounded
+release heads, other outbound field distributions that reach the fixed cap,
+and non-host behavior remain open.
+
 The full run on `c5609d0` reported six failures in historical app-server
 checks because its shared Super fixture seeded only the 0.439.2 update-cache
 filename. The 0.165.1 oracle instead uses `update-check-codex-aligned-v1.json`

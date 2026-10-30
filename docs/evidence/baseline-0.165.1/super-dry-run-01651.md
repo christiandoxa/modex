@@ -87,9 +87,10 @@ When Node and `npx` are on `PATH`, Modex now runs the same bounded
 This executes locally resolved package code. Synthetic native fixtures and
 isolated homes compare stable, prerelease, build metadata, multiple candidate
 versions, malformed output, stderr, nonzero exit, timeout, output ordering,
-and environment filtering across all three processes. Node itself is probed
-for Ponytail readiness as before. Malformed Node probes still fail closed, and
-complete path discovery, malformed UTF-8 probe output, descendant cleanup,
+and environment filtering across all three processes. Invalid UTF-8 on either
+probe stream now reports unavailable, even when the other stream has a valid
+version. Node itself is probed for Ponytail readiness as before. Malformed Node
+probes still fail closed, and complete path discovery, descendant cleanup,
 and non-host platforms remain unqualified. Installed Caveman and Ponytail
 remain fail-closed.
 

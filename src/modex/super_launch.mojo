@@ -798,6 +798,11 @@ def _dry_run_playwright_status(binary: String) -> String:
     except:
         return unavailable^
     if not probe.status.exit_code or probe.status.exit_code.value() != 0: return unavailable^
+    try:
+        _ = String(from_utf8=Span(probe.stdout))
+        _ = String(from_utf8=Span(probe.stderr))
+    except:
+        return unavailable^
     var line = _dry_run_probe_first_line(probe.stdout)
     if not line: line = _dry_run_probe_first_line(probe.stderr)
     var token = String()

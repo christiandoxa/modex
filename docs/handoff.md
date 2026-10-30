@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+Playwright dry-run readiness now rejects invalid UTF-8 on either captured probe
+stream, matching both pinned releases even when the other stream contains a
+valid version. A synthetic three-process regression and the 25-test dry-run
+module passed. The production build, dependency audit, test census, and
+workflow validation passed on Linux x86-64. Other optional-tool paths and
+security behavior remain unqualified; all six targets remain in scope.
+
 The integrated production build at `2e7dcc8` and native Super parser test
 passed. Focused three-process float and Anthropic result-ID tests passed;
 both large-header release comparisons passed on the preceding combined relay

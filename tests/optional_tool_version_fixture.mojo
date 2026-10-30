@@ -1,6 +1,7 @@
 """Native synthetic RTK executable for isolated Super dry-run checks."""
 
 from std.collections import List, Span
+from std.io import RawFileDescriptor
 from std.os import getenv
 from std.os.path import exists
 from std.sys import argv, exit, stderr
@@ -38,6 +39,17 @@ def main() raises:
             version = String(from_utf8=Span(bytes))
         if version == "timeout":
             sleep(6.0)
+        elif version == "invalid-stdout" or version == "invalid-stderr":
+            var bad: List[UInt8] = [UInt8(255)]
+            if version == "invalid-stderr":
+                print("0.0.83")
+                var output = RawFileDescriptor(2)
+                output.write_bytes(Span(bad))
+            else:
+                var output = RawFileDescriptor(1)
+                output.write_bytes(Span(bad))
+                print("0.0.83", file=stderr)
+            return
         elif version == "exit:7":
             print("synthetic failed version probe")
             exit(7)

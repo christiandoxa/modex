@@ -506,7 +506,8 @@ class SuperDryRun01651Tests(unittest.TestCase):
     def test_playwright_probe_matches_release_reports(self):
         versions = ("0.0.83", "playwright-mcp 0.0.79", "0.0.78", "0.0.79-rc.1",
                     "0.0.79+build", "(vv0.0.83)", "broken 0.0.78 1.0.0",
-                    "01.2.3 0.0.83", "nonsense", "empty", "exit:7", "stderr:0.0.83")
+                    "01.2.3 0.0.83", "nonsense", "empty", "exit:7", "stderr:0.0.83",
+                    "invalid-stdout", "invalid-stderr")
         for version in versions:
             outputs = []
             for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),

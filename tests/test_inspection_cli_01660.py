@@ -2,6 +2,7 @@
 
 import hashlib
 import itertools
+import json
 import os
 from pathlib import Path
 import unittest
@@ -170,6 +171,29 @@ class InspectionCli01660Tests(unittest.TestCase):
                 self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
                                  (2, b"", expected_stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_doctor_runtime_json_redacted_passes_parser_but_runtime_is_guarded(self):
+        cases = tuple(itertools.permutations(("--runtime", "--json", "--redacted")))
+        self.assertEqual(len(cases), 6)
+        # isolated_run uses an empty HOME and a network-isolated sandbox for both binaries.
+        for index, options in enumerate(cases):
+            arguments = ["doctor", *options]
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, arguments, "prodex", f"01660-doctor-acceptance-oracle-{index}"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, arguments, "modex", f"01660-doctor-acceptance-modex-{index}"
+                )
+
+                self.assertEqual((baseline.returncode, baseline.stderr), (0, b""))
+                self.assertIn("binding_state", json.loads(baseline.stdout))
+                self.assertTrue(all(path.startswith("home/.prodex") for path in baseline_created))
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (1, b"", b"Error: this Modex development build has not implemented the requested command\n"),
+                )
+                self.assertEqual(modex_created, [])
 
 
 if __name__ == "__main__":

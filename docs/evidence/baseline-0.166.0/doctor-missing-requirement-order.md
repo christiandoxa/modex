@@ -24,22 +24,24 @@ and this build match all 20. The 533065d build mismatched 9/18 matrix cases and
 both controls matched. Each tested command returns exit 2 with no output files
 under the existing isolated sandbox, synthetic HOME, and workspace.
 
-Open parser gap: Prodex accepts `doctor --runtime --json --redacted` because
-the missing `--bundle` requirement is waived when it conflicts with `--json`.
-Modex still rejects that invocation for missing `--bundle`. This records
-argument acceptance only; Modex's doctor runtime mode remains unimplemented.
-The acceptance observation came from an isolated synthetic-home probe without
-`--quota`; no further runtime or quota probe was run.
+`test_doctor_runtime_json_redacted_passes_parser_but_runtime_is_guarded` checks
+all six permutations of `--runtime`, `--json`, and `--redacted` against the
+oracle and Modex in Bubblewrap with a cleared environment, synthetic
+HOME/workspace, and no network. Prodex accepts each command and writes only
+under synthetic HOME. Modex now passes argument validation, then returns its
+existing exit-1 unimplemented-command guard without writing files. This closes
+the parser gap only; Doctor runtime parity remains unimplemented.
 
 ## Checks
 
-- `make BUILD_DIR=/tmp/modex-doctor-diagnostics-533-build build` passed with Mojo 1.2.0.
+- `make BUILD_DIR=/tmp/modex-doctor-acceptance-build build` passed with Mojo 1.2.0.
 - Both differential matrices, the two runtime controls, and all five tests in
-  `test_inspection_cli_01660` passed.
-- Active doctor help and invalid-argument checks plus `test_doctor_install_01660`
-  passed with the inspection suite: 14 tests total.
-- `python3 scripts/ci/check-product-dependencies.py` passed; production imports
-  remain limited to Mojo standard-library and internal modules.
+  `test_inspection_cli_01660` passed, along with the new acceptance/guard test
+  (six module tests total).
+- `test_active_baseline_01660.ActiveBaseline01660Tests.test_doctor_execution_stays_guarded_without_help`
+  passed.
+- `python3 scripts/ci/check-product-dependencies.py` passed; 74 Mojo files use
+  only standard-library and internal imports.
 
 Reproduce the focused comparison after building Modex and providing verified
 local binary paths:
@@ -48,7 +50,8 @@ local binary paths:
 MODEX_BINARY=/path/to/modex \
 PRODEX_ORACLE=/path/to/prodex-0.166.0 \
 PYTHONPATH=tests python3 -m unittest \
-  test_inspection_cli_01660
+  test_inspection_cli_01660 \
+  test_active_baseline_01660.ActiveBaseline01660Tests.test_doctor_execution_stays_guarded_without_help
 ```
 
 This covers the tested parse diagnostics only. It does not establish parity for

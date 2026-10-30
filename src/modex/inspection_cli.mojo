@@ -209,7 +209,9 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
         var missing = List[String]()
         for name in seen:
             var requirement = _doctor_requirement(name)
-            if requirement and requirement not in seen and requirement not in missing:
+            # Clap waives this conflict only after --json's --runtime requirement is met.
+            var blocked_by_json = requirement == "--bundle" and "--json" in seen and "--runtime" in seen
+            if requirement and requirement not in seen and not blocked_by_json and requirement not in missing:
                 missing.append(requirement)
 
         if "--json" in seen and "--bundle" in seen:

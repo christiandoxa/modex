@@ -1,5 +1,13 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The in-progress authentication-snapshot full suite has reported multiple
+failing subtests, including large relay headers, WebSocket body handling,
+direct relay startup, slow partial requests and Super probe environments.
+The snapshot predates later fixture repairs. Their causes and any production
+regressions are under investigation; no full pass is claimed. An earlier
+status update overlooked indented failure lines; use the full log rather than
+only failure summaries when polling the run.
+
 Two pinned runtime-broker WebSocket processes now have separate synthetic
 interrupt characterizations. In the tested 0.165.1 case a foreign-session
 interrupt closes the submitting connection without reaching the owner; a

@@ -274,6 +274,11 @@ and acquires lifecycle and update locks; Modex remains fail-closed without
 creating state. Housekeeping files can appear asynchronously. This is a
 characterized gap, not a completed profile-list slice; see
 `docs/evidence/baseline-0.166.0/profile-list-empty-store.md`.
+The release uses `flock` for the Linux lifecycle lock. A synthetic local-file
+test shows that POSIX record locks do not contend with it, and the pinned Mojo
+standard library exposes no compatible whole-file lock interface. This is a
+lock-interface characterization, not lifecycle parity; see
+`docs/evidence/baseline-0.166.0/lifecycle-lock-stdlib-gap.md`.
 The top-level `use` help and selected argument diagnostics now match the
 active release without state changes; profile selection remains guarded. See
 `docs/evidence/baseline-0.166.0/profile-use-help.md`.

@@ -1,5 +1,12 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The historical note below about nonempty Anthropic text block starts is stale:
+current Modex ignores their initial contents, matching both pinned releases in
+real-process tests. The 0.165.1 cases also cover empty, missing and numeric
+start payloads. Both focused test modules passed (31 tests); broader stream
+behavior remains unverified. See `test_anthropic_text_stream_04392.py` and
+`test_provider_stream_01651_characterization.py`.
+
 Published Modex still has a cross-key tool-history ownership gap. With two
 synthetic provider keys, a buffered response under key A containing a tool
 call can be followed by a tool output without `previous_response_id`; the

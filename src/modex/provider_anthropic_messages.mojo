@@ -68,11 +68,11 @@ def validate_deepseek_anthropic_request(source: String) raises:
             if doc.nodes[tool].kind != JSON_OBJECT:
                 raise Error("Anthropic Messages tool must be an object")
             var kind = doc.string(doc.get(tool, "type"))
-            if kind == "function":
+            if kind == "function" or kind == "namespace":
                 # The shared Responses tool mapper validates names, schemas, and strict mode.
                 continue
             if not _is_web_search_tool(kind):
-                raise Error("Anthropic Messages slice supports function and web_search_preview tools")
+                raise Error("Anthropic Messages slice supports function, namespace, and web_search_preview tools")
             # Prodex uses the first recognized web-search tool's options.
             if web_count > 0: continue
             web_count += 1

@@ -18,6 +18,38 @@ class AnthropicMissingMessageContent01660Tests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError(f"Modex binary has not been built: {MODEX}")
 
+    def test_namespace_tools_reach_anthropic_with_validation(self):
+        base = {"model": "deepseek-chat", "input": "synthetic query", "stream": False}
+        namespace = {"type": "namespace", "name": "agents", "tools": [
+            {"type": "function", "name": "run", "description": "Run a task",
+             "parameters": {"type": "object"}},
+        ]}
+        request = {**base, "tools": [{"type": "web_search_preview"}, namespace]}
+        for mode in ("auto", "anthropic"):
+            with self.subTest(mode=mode):
+                reference = _run(ORACLE_01660, request, scenario="anthropic-buffered", mode_override=mode)
+                actual = _run(MODEX, request, scenario="anthropic-buffered", mode_override=mode)
+                self.assertEqual((reference["exit_code"], reference["status"]), (0, 200))
+                self.assertEqual((actual["exit_code"], actual["status"]), (0, 200))
+                self.assertEqual(len(reference["upstream"]), 1)
+                self.assertEqual(len(actual["upstream"]), 1)
+                self.assertEqual(actual["upstream"][0]["path"], "/anthropic/v1/messages")
+                self.assertEqual(actual["upstream_body"], reference["upstream_body"])
+
+        for child in ({"type": "function", "name": "run", "description": 7},
+                      {"type": "function", "name": "run", "strict": "true"},
+                      {"type": "function"}, {"type": "other", "name": "run"}):
+            invalid = {**base, "tools": [{"type": "web_search_preview"},
+                       {**namespace, "tools": [child]}]}
+            with self.subTest(invalid=child):
+                reference = _run(ORACLE_01660, invalid, scenario="anthropic-buffered", mode_override="anthropic")
+                actual = _run(MODEX, invalid, scenario="anthropic-buffered", mode_override="anthropic")
+                self.assertEqual((reference["exit_code"], reference["status"]), (1, 502))
+                self.assertEqual((actual["exit_code"], actual["status"]), (1, 502))
+                self.assertEqual(reference["upstream"], [])
+                self.assertEqual(actual["upstream"], [])
+                self.assertEqual(actual["response_body"], reference["response_body"])
+
     def test_missing_content_messages_are_skipped_in_native_anthropic_mode(self):
         cases = {
             "assistant before user": [

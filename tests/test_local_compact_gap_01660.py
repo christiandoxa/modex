@@ -200,6 +200,17 @@ class LocalCompactGap01660Tests(unittest.TestCase):
             {"model": "deepseek-chat", "input": [{"type": "message", "content": "x"}],
              "_path": "/v1/responses/compact",
              "_headers": {"Authorization": "Bearer synthetic-invalid-token"}},
+            {"model": "deepseek-chat", "input": ["root alias query"],
+             "_path": "/responses/compact?synthetic=1"},
+            {"model": "deepseek-chat", "input": ["root alias GET"],
+             "_path": "/responses/compact", "_method": "GET"},
+            {"model": "deepseek-chat", "input": ["root alias adjacent path"],
+             "_path": "/responses/compact/extra"},
+            {"model": "deepseek-chat", "input": [{"type": "message", "content": "x"}],
+             "_path": "/responses/compact",
+             "_headers": {"Authorization": "Bearer synthetic-invalid-token"}},
+            {"model": "deepseek-chat", "input": ["malformed compact path"],
+             "_path": "/v1//responses/compact"},
         ]
         observed = {}
         for binary in (ORACLE, MODEX):
@@ -221,6 +232,11 @@ class LocalCompactGap01660Tests(unittest.TestCase):
         self.assertEqual(modex_responses[3]["status"], 401)
         # The active release lacks this Modex client-token boundary.
         self.assertEqual(baseline_responses[3]["status"], 200)
+        for baseline, modex in zip(baseline_responses[4:7], modex_responses[4:7]):
+            self.assertEqual((modex["status"], modex["body"]),
+                             (baseline["status"], baseline["body"]))
+        self.assertEqual([row["status"] for row in modex_responses[4:]], [200, 200, 404, 401, 400])
+        self.assertEqual(baseline_responses[7]["status"], 200)
 
 
 if __name__ == "__main__":

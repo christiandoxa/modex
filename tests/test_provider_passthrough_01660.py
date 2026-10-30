@@ -300,6 +300,79 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                 self.assertEqual(headers["x-ratelimit-remaining"], "0")
                 self.assertEqual(headers["Content-Length"], str(len(body)))
 
+    def test_root_provider_aliases_match_active_route_plan(self):
+        turns = [
+            {"model": "deepseek-chat", "input": "synthetic root responses POST",
+             "_path": "/responses"},
+            {"model": "deepseek-chat", "input": "synthetic root responses GET",
+             "_method": "GET", "_path": "/responses?trace=synthetic"},
+            {"model": "deepseek-chat", "messages": [{"role": "user", "content": "synthetic root chat POST"}],
+             "_path": "/chat/completions?trace=synthetic"},
+            {"model": "deepseek-chat", "messages": [{"role": "user", "content": "synthetic root chat GET"}],
+             "_method": "GET", "_path": "/chat/completions"},
+            {"model": "deepseek-chat", "input": "synthetic trailing slash",
+             "_path": "/responses/"},
+            {"model": "deepseek-chat", "input": "synthetic tenant prefix",
+             "_path": "/tenant/responses"},
+            {"model": "deepseek-chat", "input": "synthetic malformed path",
+             "_path": "/v1//responses"},
+        ]
+        replies = [buffered_reply(index, created=42 + index) for index in range(4)]
+        observed = {}
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, turns, replies, latest_version="0.166.0",
+                )
+                self.assertEqual(len(upstream), 4)
+                self.assertEqual([row["status"] for row in responses], [200, 200, 200, 200, 404, 404, 400])
+                observed[binary] = (
+                    [(row["method"], row["path"], row["body"]) for row in upstream],
+                    [(row["status"], bytes.fromhex(row["body"])) for row in responses],
+                )
+
+        expected = [
+            ("POST", "/v1/chat/completions"),
+            ("GET", "/v1/chat/completions"),
+            ("POST", "/v1/chat/completions?trace=synthetic"),
+            ("GET", "/v1/chat/completions"),
+        ]
+        for binary in (ORACLE, MODEX):
+            upstream, responses = observed[binary]
+            self.assertEqual([(method, path) for method, path, _ in upstream], expected)
+            self.assertEqual([status for status, _ in responses], [200, 200, 200, 200, 404, 404, 400])
+        self.assertEqual(observed[ORACLE][0], observed[MODEX][0])
+        self.assertEqual(observed[ORACLE][1][:4], observed[MODEX][1][:4])
+
+    def test_root_responses_alias_keeps_client_auth_and_continuation_ownership(self):
+        invalid = [{"model": "deepseek-chat", "input": "synthetic invalid client token",
+                    "_path": "/responses",
+                    "_headers": {"Authorization": "Bearer synthetic-invalid-token"}}]
+        oracle_upstream, oracle_responses = observe_turns(
+            ORACLE, invalid, [buffered_reply()], latest_version="0.166.0",
+        )
+        modex_upstream, modex_responses = observe_turns(
+            MODEX, invalid, [buffered_reply()], latest_version="0.166.0",
+        )
+        self.assertEqual([row["status"] for row in oracle_responses], [200])
+        self.assertEqual(len(oracle_upstream), 1)
+        self.assertEqual([row["status"] for row in modex_responses], [401])
+        self.assertEqual(modex_upstream, [])
+
+        turns = [
+            {"model": "deepseek-chat", "input": "synthetic first bound turn",
+             "session_id": "synthetic-bound-session", "_path": "/v1/responses"},
+            {"model": "deepseek-chat", "input": "synthetic root alias follow-up",
+             "session_id": "synthetic-bound-session", "use_previous": True,
+             "_path": "/responses"},
+        ]
+        replies = [buffered_reply(0, created=42), buffered_reply(1, created=43)]
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binding_binary=str(binary)):
+                upstream, responses = observe_turns(binary, turns, replies, latest_version="0.166.0")
+                self.assertEqual([row["status"] for row in responses], [200, 503])
+                self.assertEqual(len(upstream), 1, "bound follow-up must remain blocked before provider dispatch")
+
     def test_duplicate_content_type_uses_last_value_and_keeps_header_order(self):
         expected = [
             ["x-before", "synthetic-before"],

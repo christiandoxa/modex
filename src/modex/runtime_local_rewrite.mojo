@@ -1124,6 +1124,10 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
                         connection.keep_alive = False
                     _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback", not reusable)
                 else:
+                    var route = String(request.target.split("?", maxsplit=1)[0])
+                    if route in ["/responses", "/responses/compact", "/chat/completions"]:
+                        var query = request.target.find("?")
+                        request.target = "/v1" + route + (String(request.target[byte=query:]) if query >= 0 else String())
                     _serve(connection, request, address, path, messages_address, messages_path, request_id, state_ptr, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)
         except error:
             var message = String(error)

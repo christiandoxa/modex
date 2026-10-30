@@ -1,5 +1,11 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The isolated `dd82b3b` full suite finished with two failures in 1,127 Python
+tests after native checks. Both are the stale passthrough header assertions
+corrected and rerun below. Its log is `/tmp/modex-full-dd82b3b-20261030.log`
+(SHA-256 `c6c4c395492e00588cbbd626680079b3683b95cddf9e96cc8a6f841b55aaae31`).
+This failed historical run does not qualify the current revision.
+
 The combined production build at `46600f4` passed. Focused Node and `npx`
 precedence, session diagnostics, WebSocket pipeline, endpoint projection,
 Super URL validation, and DeepSeek beta URL controls passed on the preceding

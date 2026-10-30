@@ -197,6 +197,10 @@ housekeeping in Modex. These are characterized gaps, not parity passes; see
 An additional active-release comparison covers selected session output,
 filtering, timestamps and timezones; it does not qualify startup side effects
 or profile recovery. See `docs/evidence/baseline-0.166.0/session-output-matrix.md`.
+Session inspection now falls back to epoch zero for a file mtime before the Unix
+epoch, matching the active release when no record timestamp overrides it.
+The isolated comparison and remaining limits are in
+`docs/evidence/baseline-0.166.0/session-pre-epoch-mtime.md`.
 
 DeepSeek `low` reasoning effort now remains `low` in both request paths,
 matching 0.166.0 rather than the 0.439.2 mapping to `high`. Isolated process

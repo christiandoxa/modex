@@ -521,7 +521,8 @@ def read_session(path: String) raises -> Optional[SessionReport]:
     var suffix = 10 if compressed else 5 if path.endswith(".json") else 6
     var identifier = String(filename[byte=:filename.byte_length() - suffix])
     var display_path = String(from_utf8_lossy=path.as_bytes())
-    var report = SessionReport(identifier^, "", "", "", "", Optional[String](), "", display_path^, stat(path).st_mtimespec.tv_sec)
+    # Prodex uses epoch zero when a file mtime predates Unix epoch.
+    var report = SessionReport(identifier^, "", "", "", "", Optional[String](), "", display_path^, max(stat(path).st_mtimespec.tv_sec, 0))
     var started = False
     if compressed:
         var decoder = ZstdReader(checked_session_file(path))

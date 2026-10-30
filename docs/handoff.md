@@ -123,6 +123,14 @@ its overlay while Modex preserves Codex-created state and `auth.json`. The
 raw request body was not recovered, so the route difference's cause is open.
 The characterization does not delete retained state; see the same evidence
 file for its scope and reproduction.
+An unpublished catalog draft in `/tmp/modex-codex-route-fix` matches selected
+0.166.0 catalog rows, including filtering retired IDs. Its three focused
+process tests passed, but the real Codex `deepseek-chat` success case then
+returned 502 before any synthetic provider POST; the internal adapter error
+is not yet identified. With `deepseek-v4-pro` or no wrapper model, the worker
+observed a successful Chat Completions request. The draft remains unpublished:
+diagnose the 502, preserve the launch guards, rerun the real-client and
+historical regressions, and document the results before integrating it.
 
 `test_runtime_broker_startup_01660_oracle.py` records the broker gap with a
 synthetic profile: the 0.166.0 process publishes a private capability and

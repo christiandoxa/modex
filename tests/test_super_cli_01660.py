@@ -1,6 +1,7 @@
 """Check Super's Gemini CLI/provider guard against the Prodex 0.166.0 release."""
 
 import hashlib
+import itertools
 from pathlib import Path
 import subprocess
 import tempfile
@@ -99,6 +100,31 @@ class SuperCli01660Tests(unittest.TestCase):
                 self.assertEqual(baseline.returncode, expected_exit)
                 self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
                                  (baseline.returncode, baseline.stdout, expected_error))
+
+    def test_constraint_diagnostics_with_other_options_match_active_baseline(self):
+        constraints = (
+            ("--sub-agent", "--no-sub-agent"),
+            ("--provider", "deepseek", "--url", "http://127.0.0.1:8131"),
+            ("--api-key", "synthetic-key"),
+            ("--context-window", "1024"),
+            ("--auto-compact-token-limit", "512"),
+        )
+        extras = ((), ("--no-presidio",), ("--model", "synthetic-model"),
+                  ("--profile", "synthetic-profile"), ("--cli", "agy"))
+        for constraint, extra in itertools.product(constraints, extras):
+            orders = (("super", *extra, *constraint),)
+            if extra:
+                orders += (("super", *constraint, *extra),)
+            for arguments in orders:
+                with self.subTest(arguments=arguments):
+                    baseline, baseline_mutated = isolated_run(ORACLE, arguments)
+                    modex, modex_mutated = isolated_run(MODEX, arguments)
+                    self.assertEqual(baseline.returncode, 2)
+                    self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                     (baseline.returncode, baseline.stdout,
+                                      normalize_super_cli_executable(baseline.stderr)))
+                    self.assertFalse(baseline_mutated)
+                    self.assertFalse(modex_mutated)
 
     def test_invalid_provider_and_url_still_precede_the_agy_guard(self):
         cases = (

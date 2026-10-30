@@ -5,6 +5,11 @@ missing required 0.439.2 reference; dependent lanes remain blocked and the
 overall result still fails closed. Synthetic routing tests cover missing oracle,
 missing source, and all references available. Actual hosted CI still requires
 the verified historical assets; this change does not establish a CI pass.
+In a clean checkout of `d16dd4855498517924f4fa1cb8a657352afec9d5`,
+`make build unit` passed, and the exact active Fast CI Python lane passed 56
+tests under a private user, mount and network namespace with only loopback and
+no default routes. The runner retained no log file. This is evidence for that
+checkout and active lane only, not a full-suite or hosted CI result.
 
 `tests/capture_cli.py` now verifies the pinned 0.166.0 baseline, release
 identity and oracle checksum before capturing. It writes
@@ -62,7 +67,9 @@ For `--cli agy`, selected missing or non-Gemini providers now receive the
 0.166.0 provider guard after existing option validation. Isolated comparisons
 cover four launch forms and selected error-precedence controls. Shared Super
 parsing now also matches selected 0.166.0 conflict and required-option
-diagnostics before and after `exec`. Other combinations remain unqualified,
+diagnostics before and after `exec`. A further isolated matrix covers 45
+constraint/option-order combinations without state mutations. Other
+combinations remain unqualified,
 and the valid Gemini launcher remains unimplemented; see
 `tests/test_super_cli_01660.py`.
 Plain provider URL validation runs after help parsing but still before startup;

@@ -142,6 +142,13 @@ sequence. Modex's prefix differs from the release's hash and can collide; the
 comparison covers selected request and event consistency, not exact random
 values or global uniqueness. See
 `docs/evidence/baseline-0.166.0/deepseek-stream-item-ids.md`.
+An additional isolated 0.166.0 matrix compares eight translated provider
+request bodies and seven streamed response shapes through both real processes;
+the translated bodies match exactly and event JSON matches after normalizing
+only the generated text-item ID. The focused test is
+`tests/test_provider_shapes_01660.py`; evidence is in
+`docs/evidence/baseline-0.166.0/provider-shape-matrix.md`. These cases found no
+new production mismatch and do not establish broader provider parity.
 One synthetic streamed function call split over two argument deltas, followed
 by a usage-only chunk, also matches the 0.166.0 process. This manual isolated
 check is scoped to that case; see

@@ -6,11 +6,13 @@ instead emits a terminal `response.failed` event. Missing-choices and invalid
 JSON controls match. This fail-closed difference remains a parity gap; see
 `docs/evidence/baseline-0.166.0/malformed-sse-nonobject.md`.
 
-The production CLI now supports the exact `doctor --install` path with bounded
-local prerequisite probes and a plain Install Checks panel. Active 0.166.0
-process tests cover synthetic present/missing tools, probe limits, and no state
-creation. Probe environments exclude provider secrets; output and paths are
-redacted and terminal controls escaped. TTY rendering, Caveman integrity
+The production CLI supports `doctor --install`, including one optional valid
+`--tail-bytes` value, with bounded local prerequisite probes and a plain Install
+Checks panel. Active 0.166.0 process tests cover accepted argument orderings,
+invalid and duplicate flags, synthetic present/missing tools, probe limits, and
+no state creation. False-valued boolean flag usage text still differs. Probe
+environments exclude provider secrets; output and paths are redacted and
+terminal controls escaped. TTY rendering, Caveman integrity
 validation, descendant cleanup and other doctor modes remain incomplete or
 different; see `docs/evidence/baseline-0.166.0/doctor-install.md`.
 

@@ -102,12 +102,12 @@ def without_panel_fields(output, excluded):
     return b"\n".join(rows) + (b"\n" if output.endswith(b"\n") else b"")
 
 
-def run_doctor(binary, root, environment):
+def run_doctor(binary, root, environment, arguments=("--install",)):
     system_tools = (Path("/bin/sh").resolve(), Path("/bin/cat").resolve())
     command = sandbox_command(
         binary,
         root,
-        ["doctor", "--install"],
+        ["doctor", *arguments],
         environment=environment,
         extra_binaries=system_tools,
     )
@@ -266,6 +266,85 @@ class DoctorInstall01660Tests(unittest.TestCase):
             self.assertFalse((home / ".prodex").exists())
             self.assertFalse((home / ".codex").exists())
             self.assertEqual(list(home.iterdir()), [])
+
+    def test_ignored_tail_bytes_preserves_install_only_mode(self):
+        cases = (
+            ("attached before install", ("--tail-bytes=0", "--install")),
+            ("separated after install", ("--install", "--tail-bytes", "17")),
+        )
+        for label, arguments in cases:
+            with self.subTest(arguments=label), tempfile.TemporaryDirectory(
+                prefix="modex-doctor-install-tail-bytes-01660-"
+            ) as raw:
+                root = Path(raw)
+                home = root / "home"
+                workspace = root / "workspace"
+                home.mkdir(mode=0o700)
+                workspace.mkdir()
+                environment = {
+                    "HOME": str(home),
+                    "PATH": "",
+                    "TERM": "dumb",
+                    "NO_COLOR": "1",
+                    "TZ": "UTC",
+                    "PRODEX_TERM_COLUMNS": "80",
+                }
+
+                baseline_plain = run_doctor(ORACLE, root, environment)
+                baseline_combined = run_doctor(ORACLE, root, environment, arguments)
+                modex_plain = run_doctor(MODEX, root, environment)
+                modex_combined = run_doctor(MODEX, root, environment, arguments)
+
+                self.assertEqual((baseline_plain.returncode, baseline_combined.returncode), (0, 0))
+                self.assertEqual((modex_plain.returncode, modex_combined.returncode), (0, 0))
+                self.assertEqual(
+                    (baseline_combined.stdout, baseline_combined.stderr),
+                    (baseline_plain.stdout, baseline_plain.stderr),
+                )
+                self.assertEqual(
+                    (modex_combined.stdout, modex_combined.stderr),
+                    (modex_plain.stdout, modex_plain.stderr),
+                )
+                self.assertEqual(
+                    (modex_combined.stdout, modex_combined.stderr),
+                    (baseline_combined.stdout, baseline_combined.stderr),
+                )
+                self.assertEqual(list(home.iterdir()), [])
+
+    def test_duplicate_install_and_false_boolean_values_remain_invalid(self):
+        cases = (
+            (("--install", "--install"), b"cannot be used multiple times"),
+            (("--install", "--runtime=false"), b"unexpected value 'false' for '--runtime'"),
+            (("--install", "--quota=false"), b"unexpected value 'false' for '--quota'"),
+            (("--install", "--tail-bytes"), b"a value is required for '--tail-bytes <BYTES>'"),
+            (("--install", "--tail-bytes=-1"), b"invalid value '-1'"),
+            (("--install", "--tail-bytes=12", "--tail-bytes=13"), b"cannot be used multiple times"),
+        )
+        for arguments, diagnostic in cases:
+            with self.subTest(arguments=arguments), tempfile.TemporaryDirectory(
+                prefix="modex-doctor-install-invalid-01660-"
+            ) as raw:
+                root = Path(raw)
+                home = root / "home"
+                workspace = root / "workspace"
+                home.mkdir(mode=0o700)
+                workspace.mkdir()
+                environment = {
+                    "HOME": str(home),
+                    "PATH": "",
+                    "TERM": "dumb",
+                    "NO_COLOR": "1",
+                    "TZ": "UTC",
+                }
+                baseline = run_doctor(ORACLE, root, environment, arguments)
+                modex = run_doctor(MODEX, root, environment, arguments)
+                self.assertEqual((baseline.returncode, modex.returncode), (2, 2))
+                self.assertEqual((baseline.stdout, modex.stdout), (b"", b""))
+                self.assertIn(diagnostic, baseline.stderr)
+                self.assertIn(diagnostic, modex.stderr)
+                if "--runtime=false" not in arguments and "--quota=false" not in arguments:
+                    self.assertEqual(modex.stderr, baseline.stderr)
+                self.assertEqual(list(home.iterdir()), [])
 
     def test_skipped_codex_wrapper_is_not_executed(self):
         with tempfile.TemporaryDirectory(prefix="modex-doctor-install-wrapper-01660-") as raw:

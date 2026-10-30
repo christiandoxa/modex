@@ -221,3 +221,24 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
                 error_usage += " --json"
             raise session_cli_error(message, error_usage)
     return False
+
+
+def doctor_install_requested(args: List[String]) -> Bool:
+    if len(args) < 3 or args[1] != "doctor":
+        return False
+    var install = False
+    var index = 2
+    while index < len(args):
+        var argument = args[index]
+        if argument == "--install":
+            if install:
+                return False
+            install = True
+        elif argument == "--tail-bytes":
+            index += 1
+        elif argument.startswith("--tail-bytes="):
+            pass
+        else:
+            return False
+        index += 1
+    return install

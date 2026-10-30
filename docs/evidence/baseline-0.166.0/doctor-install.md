@@ -56,3 +56,11 @@ uses 120 columns.
 The fixture also confirms that Modex detects a managed Caveman directory. It
 reports that candidate as `degraded` because Caveman manifest, version, and
 digest validation is not implemented. Other `doctor` operations remain guarded.
+
+Prodex 0.166.0 accepts valid `--tail-bytes` values with `--install` in either
+order and keeps the install-only panel unchanged; the argument is ignored by
+that report mode. Modex supports one `--install` plus an optional validated
+`--tail-bytes` value. The oracle rejects repeated `--install`, missing or
+invalid tail-byte values, duplicate tail-byte options, and false-valued
+`--runtime`/`--quota` flags before running probes. Modex rejects the same
+cases; its usage line differs for the false-valued boolean cases.

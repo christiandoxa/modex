@@ -4,7 +4,7 @@ from std.sys import argv, exit, stderr
 from modex.cli import argument_name, logout_help_requested, parse_session_options, parse_update_help_arguments, quota_help_requested, session_cli_error, session_help
 from modex.doctor_install import run_doctor_install
 from modex.gateway_cli import GatewayOptions, gateway_help, parse_gateway_arguments, run_gateway
-from modex.inspection_cli import inspection_help, inspection_help_requested, inspection_usage
+from modex.inspection_cli import doctor_install_requested, inspection_help, inspection_help_requested, inspection_usage
 from modex.log_cli import log_help, log_short_help, parse_log_arguments
 from modex.logs import log_last
 from modex.log_upstream_follow import follow_upstream
@@ -268,7 +268,7 @@ def main():
         except error:
             print(error, file=stderr, end="")
             exit(2)
-    if len(args) == 3 and args[1] == "doctor" and args[2] == "--install":
+    if doctor_install_requested(args):
         try:
             run_doctor_install()
         except error:

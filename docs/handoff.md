@@ -1,5 +1,18 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+After repairing direct-relay authentication fixtures, slow-body probes,
+probe-environment expectations and exact on-wire header sizing, a new isolated
+full `make test` is running in `/tmp/modex-auth-full-repaired-1030` (make PID
+3771723; log `/tmp/modex-auth-full-repaired-1030.log`). Its base is `af5344e`,
+with tracked patch SHA-256
+`b4ba84dfa49774df9dc9805a2815ec19e3be5295f9e4cec0142b5e86dbbeaa55`
+and `src/modex/auth_token.mojo` SHA-256
+`4bfc5234c572703350fb459d6cc494e2db92d07a7895bff085838f772dc05eea`.
+It predates any further production correction. A fragmented WebSocket fallback
+still reproducibly resets rather than cleanly closes after the expected 426;
+that assertion remains strict and a production fix is under investigation.
+The new full run has not finished and is not a pass.
+
 The authentication-snapshot full suite finished with 28 failures and one error
 in 1,167 tests. Failures include large relay headers, WebSocket body handling,
 direct relay startup, slow partial requests and Super probe environments. The

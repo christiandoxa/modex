@@ -31,10 +31,12 @@ client token does not separate provider-key ownership. A candidate in
 `/tmp/modex-ownership-final-1030` rejects this with 503 and one provider POST.
 It remains unpublished pending a full suite: 76 continuation, key-rotation and
 session-history tests passed, and an independent source review found no new
-ownership race. Its full `make test` is running with log
-`/tmp/modex-ownership-full-1030.log`; tracked diff SHA-256 is
-`c868da3e5b04772b38c26bf0139b21d94dd6184356b7bc3ae765de22a4cec77c`
-and the untracked native binding test SHA-256 is
+ownership race. Its first full `make test` stopped during native compilation:
+`test_gateway_cli.mojo` still expected the old history return type. The test
+callers have been updated in the candidate and the suite must be rerun; the
+failed log is `/tmp/modex-ownership-full-1030.log` (SHA-256
+`5dfbc49f127a4321f9b09a77d1b5eff2577b6833bb5e285c40d9299da1ecf42f`).
+The untracked native binding test SHA-256 is
 `62be13c2d1a34a648d9ded15b74c31657fd093ea2091c048d4878fdeb29431b3`.
 An earlier candidate incorrectly allowed a buffered `previous_response_id`;
 that regression was fixed and the original assertion retained. A separate

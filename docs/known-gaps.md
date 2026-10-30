@@ -624,17 +624,20 @@ events. Its combined descriptor selection matches the release's exact 16/16
 paths in a tied-mtime fixture under the same cap; path discovery and adjacent
 transcript duplicate behavior are covered by actual process comparisons.
 URL display and JSON number normalization have additional corpus coverage;
-complete URL/parser equivalence is still unverified. Live broker/direct sources
-and interactive terminal views remain unfinished. The stream and upstream
-followers use the release's plain path when stdin and stdout do not select a
-TUI, including stderr-only TTY and `NO_COLOR` cases. When stdin and stdout are
-terminals and `NO_COLOR` is absent, Modex retains an explicit unsupported-TUI
-error. When explicit runtime disk recording is enabled, file following skips
+custom-scheme empty paths and file-URL backslashes now match both pinned
+releases, while complete URL/parser equivalence remains unverified. Live
+broker/direct sources and interactive terminal views remain unfinished. The
+official Mojo 1.2 standard library has no terminal raw-mode, terminal-size
+query, or signal-handler API, so the interactive TUI guard remains. The stream
+and upstream followers use the release's plain path when stdin and stdout do
+not select a TUI, including stderr-only TTY and `NO_COLOR` cases. When stdin
+and stdout are terminals and `NO_COLOR` is absent, Modex retains an explicit
+unsupported-TUI error. When explicit runtime disk recording is enabled, file following skips
 live registry discovery as in the release. Otherwise a live-source registry
-still fails explicitly. Further follow
-failure/race cases and non-host platforms remain unverified. Evidence:
-`docs/evidence/upstream-follow-tests.txt` and
-`docs/evidence/baseline-0.165.1/log-terminal-fallback.md`.
+still fails explicitly. Further follow failure/race cases and non-host
+platforms remain unverified. Evidence: `docs/evidence/upstream-follow-tests.txt`,
+`docs/evidence/baseline-0.165.1/log-terminal-fallback.md`, and
+`docs/evidence/baseline-0.165.1/log-endpoint-url-projection.md`.
 
 Live-source admission also requires the frozen registry store's exclusive
 `.json.lock`, backup recovery and legacy-artifact handling before reading a

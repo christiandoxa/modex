@@ -86,6 +86,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_anthropic_request_unknown_fields_01651_04392.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_cli.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_log_tty_fallback.py", script[cross_release:script.index("\n", cross_release)])
+        self.assertIn("test_log_endpoint_projection_01651_04392.py", script[cross_release:script.index("\n", cross_release)])
         historical_suite = script.index("run_logged historical-python-01651")
         historical_tests = script[historical_suite:script.index("\n", historical_suite)]
         self.assertNotIn("test_anthropic_mixed_tools_01651.py", historical_tests)
@@ -133,6 +134,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_anthropic_request_unknown_fields_01651_04392.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_session_cli.py", script[cross_release:script.index("\n", cross_release)])
         self.assertIn("test_log_tty_fallback.py", script[cross_release:script.index("\n", cross_release)])
+        self.assertIn("test_log_endpoint_projection_01651_04392.py", script[cross_release:script.index("\n", cross_release)])
         historical_suite = script.index("run_logged historical-python-01651")
         historical_tests = script[historical_suite:script.index("\n", historical_suite)]
         self.assertNotIn("test_anthropic_mixed_tools_01651.py", historical_tests)

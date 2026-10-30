@@ -54,7 +54,7 @@ def session_context_record(timestamp="2026-10-24T01:00:07Z"):
 
 class StreamProcess:
     def __init__(self, binary, mode, root, session_bytes, runtime_bytes, *, arguments=None,
-                 prepare=None, nofile=None, environment=None):
+                 prepare=None, nofile=None, environment=None, argv0=None):
         self.root = root
         (root / "home").mkdir(mode=0o700)
         (root / "workspace").mkdir()
@@ -74,7 +74,7 @@ class StreamProcess:
             binary,
             root,
             arguments,
-            argv0="prodex" if binary == ORACLE else "modex",
+            argv0=argv0 if argv0 is not None else ("prodex" if binary == ORACLE else "modex"),
             environment={"TZ": "UTC", "PRODEX_RUNTIME_LOG_DIR": str(self.runtime),
                          **(environment or {})},
         )

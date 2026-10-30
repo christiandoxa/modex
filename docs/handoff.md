@@ -45,6 +45,16 @@ remain fail-closed. This is Linux x86-64 behavior evidence only; parity statuses
 and the six-target denominator are unchanged. See
 `docs/evidence/baseline-0.165.1/log-terminal-fallback.md`.
 
+## Operational endpoint URL projection (2026-10-30)
+
+The operational stream now renders empty paths on non-special custom URLs as
+`upstream`, and normalizes file-URL backslashes before dot-segment removal.
+Three-process tests cover both pinned releases and Modex for both cases. The
+existing operational event corpus and plain runtime parser tests also pass.
+Complete URL parser equivalence remains open. The standard-library TUI API
+limitation and exact outputs are in
+`docs/evidence/baseline-0.165.1/log-endpoint-url-projection.md`.
+
 The isolated full `make test` run on `0023b4669e547e27bc4d660786f791c33546d79c`
 completed successfully: production and native checks passed and 1,050 Python
 tests passed in 3,356.477 seconds. The local log is

@@ -36,6 +36,19 @@ the cursor, and exit cleanly after `q`. Modex exits with its explicit
 unsupported-TUI error. A synthetic live runtime registry continues to fail
 closed before following the file fixture.
 
+## Mojo 1.2 TUI API audit
+
+The official Mojo standard library source is tag `mojo/v1.2.0` at commit
+`527d069ee11a41ac5320af1f9402db0a66b2b868`. `std.os` exports `isatty`; the
+`RawFileDescriptor` API provides blocking reads/writes and `isatty`. The public
+standard library has no termios raw-mode setup/restoration, terminal-size
+`ioctl`, or signal-handler API. `std.os.Process.interrupt()` sends SIGINT to a
+managed child; it does not handle signals in Modex. The benchmark progress
+helper reads `COLUMNS` and `LINES` instead of querying terminal dimensions.
+Calling libc `tcgetattr`, `tcsetattr`, `ioctl`, or `sigaction` through
+`external_call` would add native bindings, which the project rules prohibit.
+The guard therefore remains in place.
+
 ## Verification
 
 - `make build` passed.

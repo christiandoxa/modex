@@ -180,6 +180,8 @@ def safe_endpoint(value: String) -> String:
         return "upstream"
     var scheme = String(value[byte=:colon]).lower()
     var rest = String(value[byte=colon + 1:])
+    if scheme == "file":
+        rest = rest.replace("\\", "/")
     var path: String
     if scheme == "http" or scheme == "https" or scheme == "ftp" or scheme == "ws" or scheme == "wss":
         var special = rest.replace("\\", "/")
@@ -219,9 +221,9 @@ def safe_endpoint(value: String) -> String:
             var query = authority.find("?")
             var fragment = authority.find("#")
             if (query >= 0 and (authority_end < 0 or query < authority_end)) or (fragment >= 0 and (authority_end < 0 or fragment < authority_end)):
-                return "/"
+                return "upstream"
             if authority_end < 0:
-                return "/" if authority else "upstream"
+                return "upstream"
             if authority_end == 0:
                 return "upstream"
             path = String(authority[byte=authority_end:])

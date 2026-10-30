@@ -47,11 +47,15 @@ closed without a response for both releases and Modex. Dependency audit,
 test census, oracle routing, workflow validation and parity JSON validation
 passed. Independent reviews covered relay framing and the Super option guard.
 
-The `7bad09f` full run has reported six gated precommit subtest failures; it
-predates the gated fixture correction below. The isolated full `make test`
-on `777cd3a` finished with the failure described above. The
-earlier `2cf20df` and `fa01212` runs finished with the failures recorded above;
-`7bad09f` remains active. Runtime-proxy WebSocket/WSS, ambiguous-header and connection-reuse
+The isolated `7bad09f` full run finished with nine failures in 1,151 Python
+tests: six gated precommit subtests, two 0.165.1 raw HTTP cases, and the
+0.439.2 chunked connection-close assertion described above. It predates the
+gated-fixture, WebSocket and raw-wire follow-ups; the malformed-trailer raw
+case remains a separately observed mismatch. Its log is
+`/tmp/modex-full-7bad09f-20261030.log` (SHA-256
+`007b11cb07fa91c70340dfdc4cd2e8076ec561b719d9374e24227da2f654bb47`).
+The earlier `2cf20df` and `fa01212` runs finished with the failures recorded
+above. Runtime-proxy WebSocket/WSS, ambiguous-header and connection-reuse
 differences, security qualification, and all six release targets remain open.
 
 The `fa01212` full run has reported failures in fragmented and gated

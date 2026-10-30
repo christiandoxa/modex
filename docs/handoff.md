@@ -1,5 +1,21 @@
 # Current work: Prodex 0.439.2 parity and CI
 
+The combined build at `777cd3a` passed. Its native buffered-provider unit,
+six buffered response process checks, five relay upgrade/framing process
+checks, and five Super dry-run/launch/key-isolation checks passed. A direct
+three-process rerun of the previously failing truncated WebSocket body also
+closed without a response for both releases and Modex. Dependency audit,
+test census, oracle routing, workflow validation and parity JSON validation
+passed. Independent reviews covered relay framing and the Super option guard.
+
+The `7bad09f` full run has reported six gated precommit subtest failures; it
+predates the gated fixture correction below. A new isolated full `make test`
+on `777cd3a` is running in `/tmp/modex-full-777cd3a-20261030`, with log
+`/tmp/modex-full-777cd3a-20261030.log`; no full-suite pass is claimed. The
+earlier `2cf20df`, `fa01212`, and `7bad09f` runs remain active on their own
+revisions. Runtime-proxy WebSocket/WSS, ambiguous-header and connection-reuse
+differences, security qualification, and all six release targets remain open.
+
 The `fa01212` full run has reported failures in fragmented and gated
 precommit fixtures. The integrated fragmented fixture already gained the
 response list required by redirect handling; the gated fixture lacked it as

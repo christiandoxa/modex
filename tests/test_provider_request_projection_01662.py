@@ -91,6 +91,30 @@ class ProviderRequestProjection01662Tests(unittest.TestCase):
                                  [row["body"] for row in upstream]))
         self.assertEqual(observations[1], observations[0])
 
+    def test_function_call_argument_alias_precedence(self):
+        cases = (
+            {"arguments": None, "input": "fallback"},
+            {"arguments": 7, "input": "fallback"},
+            {"arguments": {}, "input": "fallback"},
+            {"input": None, "function": {"arguments": "nested"}},
+            {"function": {"arguments": "nested"}},
+            {"arguments": "", "input": "fallback"},
+        )
+        for index, fields in enumerate(cases):
+            with self.subTest(fields=fields):
+                request = {"model": "deepseek-chat", "input": [{
+                    "type": "function_call", "call_id": "call_synthetic",
+                    "name": "lookup", **fields,
+                }]}
+                observations = []
+                for binary in (ORACLE, MODEX):
+                    upstream, responses = observe_turns(
+                        binary, [request], [buffered_reply(index)], latest_version="0.166.2",
+                    )
+                    observations.append(([row["status"] for row in responses],
+                                         [row["body"] for row in upstream]))
+                self.assertEqual(observations[1], observations[0])
+
 
 if __name__ == "__main__":
     unittest.main()

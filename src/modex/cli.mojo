@@ -83,33 +83,50 @@ def parse_sub_agent_exec_arguments(args: List[String], executable: String) raise
 
         var name = argument_name(argument)
         if not literal and (name == "--config" or name == "--task-file"):
+            var option = "--config <PATH>" if name == "--config" else String("--task-file <PATH>")
+            var already_seen = config_seen if name == "--config" else task_file_seen
             var value_missing = False
             var consume_next = False
             var defer_to_next = False
             if argument.startswith(name + "="):
+                if already_seen:
+                    raise session_cli_error("the argument '" + option + "' cannot be used multiple times", usage)
                 value_missing = argument.byte_length() == name.byte_length() + 1
             elif index + 1 >= len(args):
                 value_missing = True
             else:
                 var next = String(args[index + 1])
                 if next == "":
+                    if already_seen:
+                        raise session_cli_error("the argument '" + option + "' cannot be used multiple times", usage)
                     value_missing = True
                 elif next == "-":
+                    if already_seen:
+                        raise session_cli_error("the argument '" + option + "' cannot be used multiple times", usage)
                     consume_next = True
-                elif next == "--" or next == "--config" or next == "--task-file" or next == "--help" or next.startswith("--help="):
+                elif next.startswith("--help="):
+                    var help_usage = usage + " --help"
+                    if config_seen or task_file_seen:
+                        help_usage = executable + " __sub-agent-exec --help <--config <PATH>|--task-file <PATH>>"
+                    raise session_cli_error(
+                        "unexpected value '" + String(next[byte=7:]) + "' for '--help' found; no more were expected",
+                        help_usage,
+                    )
+                elif next == "--" or next == "--config" or next == "--task-file" or next == "--help":
                     value_missing = True
                 elif next.startswith("-h") and not next.startswith("--"):
                     value_missing = True
                 elif next.startswith("-"):
                     defer_to_next = True
                 else:
+                    if already_seen:
+                        raise session_cli_error("the argument '" + option + "' cannot be used multiple times", usage)
                     consume_next = True
 
             if defer_to_next:
                 index += 1
                 continue
 
-            var option = "--config <PATH>" if name == "--config" else String("--task-file <PATH>")
             if value_missing:
                 raise session_cli_error("a value is required for '" + option + "' but none was supplied")
             if consume_next:

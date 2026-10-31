@@ -14,10 +14,13 @@ oracle matches its official `SHA256SUMS` entry:
 `tests/test_sub_agent_exec_diagnostics_01662.py` compares isolated real
 processes for missing required options, missing values, duplicate options,
 unknown options (including the `--config` suggestion), positionals, `--`, empty
-option values, and left-to-right short-help clusters. Malformed arguments now
-produce the release's exit-2 diagnostics without creating state in either
-isolated home. Syntactically valid arguments still stop at Modex's existing
-execution guard; delegated sub-agent execution remains unimplemented.
+option values, and left-to-right short-help clusters. Additional cases confirm
+that explicit empty values on repeated `--config` and `--task-file` options
+report duplicates, and malformed `--help=value` following a pending path value
+retains the release's error precedence and usage. Malformed arguments produce
+the release's exit-2 diagnostics without creating state in either isolated
+home. Syntactically valid arguments still stop at Modex's existing execution
+guard; delegated sub-agent execution remains unimplemented.
 
 Verification on Linux x86-64: the Mojo 1.2.0 (2016d0cd) production build
 and the focused differential and help regression tests passed with the

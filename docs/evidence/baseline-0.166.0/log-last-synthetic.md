@@ -28,3 +28,24 @@ This qualifies only the tested Linux x86-64 snapshot projection and redaction
 case. It does not qualify live logging, other record shapes, profile lifecycle,
 the six release targets, or overall runtime parity. No credentials or provider
 requests are used.
+
+## Candidate window
+
+In these fixtures, `log last` selects 32 recently modified session files or 32
+runtime log files. `ActiveBaseline01660Tests.test_log_last_ignores_session_event_outside_32_candidate_window`
+and `ActiveBaseline01660Tests.test_log_last_ignores_runtime_event_outside_32_candidate_window`
+compare real processes against the verified oracle. Each private fixture has
+33 ordered files, with its only readable event in the oldest file; both
+processes return empty JSON output. Each test then moves that event into the
+window and confirms the expected event is emitted. These cases qualify the two
+file-window boundaries on Linux x86-64 only.
+
+Reproduce after building Modex:
+
+```sh
+MODEX_BINARY="$PWD/build/modex" \
+PRODEX_ORACLE="$HOME/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu" \
+PYTHONPATH=tests python3 -m unittest \
+  test_active_baseline_01660.ActiveBaseline01660Tests.test_log_last_ignores_session_event_outside_32_candidate_window \
+  test_active_baseline_01660.ActiveBaseline01660Tests.test_log_last_ignores_runtime_event_outside_32_candidate_window
+```

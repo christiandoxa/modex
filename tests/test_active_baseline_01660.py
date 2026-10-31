@@ -195,6 +195,109 @@ class ActiveBaseline01660Tests(unittest.TestCase):
              "source": "user", "text": "ascending-path"},
         )
 
+    def test_log_last_ignores_session_event_outside_32_candidate_window(self):
+        outputs = []
+        positive_outputs = []
+        for binary in (ORACLE, MODEX):
+            with tempfile.TemporaryDirectory(prefix="modex-active-session-window-") as directory:
+                root = Path(directory)
+                (root / "home").mkdir(mode=0o700)
+                (root / "workspace").mkdir()
+                sessions = root / "home/.codex/sessions/2026/10/24"
+                sessions.mkdir(parents=True)
+                for index in range(33):
+                    event = {
+                        "timestamp": "2026-10-24T01:02:04Z",
+                        "type": "event_msg",
+                        "payload": {
+                            "type": "user_message" if index == 0 else "unrecognized_event",
+                            "message": "outside-session-window" if index == 0 else "ignored",
+                        },
+                    }
+                    path = sessions / f"rollout-{index:02d}.jsonl"
+                    path.write_text(json.dumps(event) + "\n")
+                    modified_ns = 1_800_000_000_000_000_000 + index * 1_000_000_000
+                    os.utime(path, ns=(modified_ns, modified_ns))
+
+                command = sandbox_command(
+                    binary, root, ["log", "last", "--json"],
+                    argv0="prodex" if binary == ORACLE else "modex",
+                    environment={"TZ": "UTC"},
+                )
+                result = subprocess.run(
+                    command, stdin=subprocess.DEVNULL, capture_output=True,
+                    timeout=10, check=False,
+                )
+                self.assertEqual((result.returncode, result.stdout, result.stderr), (0, b"", b""))
+                outputs.append(result.stdout)
+
+                event_path = sessions / "rollout-00.jsonl"
+                modified_ns = 1_800_000_033_000_000_000
+                os.utime(event_path, ns=(modified_ns, modified_ns))
+                positive = subprocess.run(
+                    command, stdin=subprocess.DEVNULL, capture_output=True,
+                    timeout=10, check=False,
+                )
+                self.assertEqual((positive.returncode, positive.stderr), (0, b""))
+                self.assertEqual(json.loads(positive.stdout), {
+                    "timestamp": "2026-10-24 01:02:04.000 +00:00",
+                    "source": "user",
+                    "text": "outside-session-window",
+                })
+                positive_outputs.append(positive.stdout)
+
+        self.assertEqual(outputs, [b"", b""])
+        self.assertEqual(positive_outputs[0], positive_outputs[1])
+
+    def test_log_last_ignores_runtime_event_outside_32_candidate_window(self):
+        outputs = []
+        positive_outputs = []
+        for binary in (ORACLE, MODEX):
+            with tempfile.TemporaryDirectory(prefix="modex-active-runtime-window-") as directory:
+                root = Path(directory)
+                (root / "home").mkdir(mode=0o700)
+                (root / "workspace").mkdir()
+                runtime = root / "runtime"
+                runtime.mkdir()
+                for index in range(33):
+                    event = {
+                        "timestamp": "2026-10-24T01:02:04Z",
+                        "event": "token_usage" if index == 0 else "unrecognized_event",
+                        "fields": {"input_tokens": "1"} if index == 0 else {},
+                    }
+                    path = runtime / f"prodex-runtime-{index:02d}.log"
+                    path.write_text(json.dumps(event) + "\n")
+                    modified_ns = 1_800_000_000_000_000_000 + index * 1_000_000_000
+                    os.utime(path, ns=(modified_ns, modified_ns))
+
+                command = sandbox_command(
+                    binary, root, ["log", "last", "--json"],
+                    argv0="prodex" if binary == ORACLE else "modex",
+                    environment={"TZ": "UTC", "PRODEX_RUNTIME_LOG_DIR": str(runtime)},
+                )
+                result = subprocess.run(
+                    command, stdin=subprocess.DEVNULL, capture_output=True,
+                    timeout=10, check=False,
+                )
+                self.assertEqual((result.returncode, result.stdout, result.stderr), (0, b"", b""))
+                outputs.append(result.stdout)
+
+                event_path = runtime / "prodex-runtime-00.log"
+                modified_ns = 1_800_000_033_000_000_000
+                os.utime(event_path, ns=(modified_ns, modified_ns))
+                positive = subprocess.run(
+                    command, stdin=subprocess.DEVNULL, capture_output=True,
+                    timeout=10, check=False,
+                )
+                self.assertEqual((positive.returncode, positive.stderr), (0, b""))
+                event = json.loads(positive.stdout)
+                self.assertEqual(event["event"], "token_usage")
+                self.assertEqual(event["input_tokens"], 1)
+                positive_outputs.append(positive.stdout)
+
+        self.assertEqual(outputs, [b"", b""])
+        self.assertEqual(positive_outputs[0], positive_outputs[1])
+
     def test_log_last_keeps_ambiguous_unicode_secret_tail_masked(self):
         from test_logs import session_fixture
 

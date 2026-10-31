@@ -33,8 +33,10 @@ upstream peer. It uses no account login or provider traffic.
 
 The original wrapper's separate `unshare -Urn` step failed to write its UID map
 on hosted CI. The wrapper now uses Bubblewrap directly and retains the test's
-namespace and route preflight. The revised wrapper passed locally; hosted CI
-verification is pending.
+namespace and route preflight. The revised wrapper passed locally and in hosted
+Fast CI run `41217269302`. That run later failed closed because the required
+historical 0.439.2 and 0.439.5 references were unavailable; it was not a full
+CI pass.
 
 On the integration worktree based at `1f80094`, `make build` passed with the
 existing unused-variable warnings. The wrapped oracle comparison passed one

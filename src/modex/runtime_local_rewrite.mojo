@@ -46,7 +46,7 @@ def _url_path_start(value: String) -> Int:
 
 
 def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
-    if not url.lower().startswith("http://") or "@" in url or "?" in url or "#" in url:
+    if not url.lower().startswith("http://") or "?" in url or "#" in url:
         raise Error("this Modex gateway requires a credential-free numeric loopback HTTP upstream URL")
     for byte in url.as_bytes():
         if byte < 32 or byte == 127:
@@ -55,6 +55,8 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
     var slash = _url_path_start(remaining)
     var address = String(remaining[byte=:slash]) if slash >= 0 else remaining
     var path = String(remaining[byte=slash:]) if slash >= 0 else String()
+    if address.find("@") >= 0 or path.find("\\@") >= 0:
+        raise Error("this Modex gateway requires a credential-free numeric loopback HTTP upstream URL")
     if address.startswith("["):
         var close = address.find("]")
         if close < 0 or not ipv6_loopback_literal(String(address[byte=1:close])):
@@ -251,6 +253,8 @@ def deepseek_runtime_route(configured_mode: Optional[String] = None, configured_
     if not configured_beta and beta_value == "\x00":
         raise Error("strict tools require PRODEX_DEEPSEEK_BETA_BASE_URL to be a numeric loopback HTTP URL")
     _validate_deepseek_beta_url(beta_value, beta_name)
+    if beta_value.find("@") >= 0:
+        raise Error(beta_name + " must be a credential-free numeric loopback HTTP URL")
     var route = (String(), String())
     try:
         route = local_rewrite_upstream(beta_value)

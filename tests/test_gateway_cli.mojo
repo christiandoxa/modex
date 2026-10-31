@@ -156,6 +156,14 @@ def main() raises:
         assert_true(rejected_beta_url)
     for url in ["http://127.0.0.1/v1", "http://127.1:/v1", "http://127.1:80/v1"]:
         assert_equal(local_rewrite_upstream(url), (String("127.0.0.1:80"), String("/v1/chat/completions")))
+    assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/a@b"), (String("127.0.0.1:1234"), String("/v1/a@b/chat/completions")))
+    for url in ["http://user@127.0.0.1:1234/v1", "http://user%40name@127.0.0.1:1234/v1", "http://127.0.0.1%40attacker:1234/v1"]:
+        var credentialed_url_rejected = False
+        try:
+            _ = local_rewrite_upstream(url)
+        except:
+            credentialed_url_rejected = True
+        assert_true(credentialed_url_rejected)
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234\\v1"), (String("127.0.0.1:1234"), String("/v1/chat/completions")))
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234\\v1/../other")[1], "/other/chat/completions")
     assert_equal(local_rewrite_upstream("http://127%2e1:1234/v1")[0], "127.0.0.1:1234")

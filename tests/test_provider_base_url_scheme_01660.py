@@ -158,6 +158,41 @@ class ProviderBaseUrlScheme01660Tests(unittest.TestCase):
                     self.assertEqual(upstream[0]["headers"]["authorization"],
                                      "Bearer synthetic-provider-key")
 
+    def test_at_sign_in_path_matches_release_without_weakening_authority_guards(self):
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary,
+                    [{"model": "deepseek-chat", "input": "synthetic at-sign path"}],
+                    [buffered_reply()], latest_version="0.166.0", base_path="/v1/a@b",
+                )
+                self.assertEqual([row["status"] for row in responses], [200])
+                self.assertEqual([row["path"] for row in upstream], ["/v1/a@b/chat/completions"])
+                self.assertEqual(upstream[0]["headers"]["authorization"],
+                                 "Bearer synthetic-provider-key")
+
+        for host, path in (
+            ("synthetic-user@127.0.0.1", "/v1"),
+            ("synthetic-user%40name@127.0.0.1", "/v1"),
+            ("127.0.0.1%40attacker", "/v1"),
+            ("127.0.0.1", "\\@attacker/v1"),
+        ):
+            with self.subTest(rejected_host=host, rejected_path=path):
+                try:
+                    observe_turns(
+                        MODEX,
+                        [{"model": "deepseek-chat", "input": "synthetic rejected userinfo"}],
+                        [buffered_reply()], latest_version="0.166.0", base_host=host,
+                        base_path=path,
+                    )
+                except AssertionError as error:
+                    status, _, stderr, _, upstream = error.args[0]
+                    self.assertNotEqual(status, 0)
+                    self.assertTrue(stderr)
+                    self.assertEqual(upstream, [])
+                else:
+                    self.fail(f"Modex accepted credentialed host {host!r}")
+
     def test_spaces_in_anthropic_messages_upstream_paths_are_percent_encoded(self):
         reply = {"status": 200, "content_type": "application/json", "body": (
             b'{"id":"msg_synthetic","type":"message","role":"assistant",'

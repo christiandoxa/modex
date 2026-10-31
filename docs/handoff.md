@@ -24,6 +24,14 @@ CLI parser evidence. File-backed/live log behavior, secure app-root repair,
 and the other five targets remain unqualified. See
 `docs/evidence/baseline-0.166.2/log-cli-diagnostics.md`.
 
+`session current` diagnostics now defer an empty split `--cwd ""` error to a
+following unknown flag or positional, and to malformed attached flag values,
+matching the pinned 0.166.2 CLI. Valid following options and other empty/missing
+path controls still report the missing path before session inspection. Eleven
+isolated process cases also match the pinned 0.165.1 historical release and
+leave the synthetic home unchanged. See
+`docs/evidence/baseline-0.166.2/session-current-cwd-precedence.md`.
+
 The connected quota help parser now matches selected offline 0.166.2
 diagnostics: malformed `--help=value` precedes a pending split value, and
 errors after accepted options retain the release's full option-group usage.

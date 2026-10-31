@@ -1099,6 +1099,25 @@ def parse_session_options(args: List[String]) raises -> SessionOptions:
                     raise session_cli_error("a value is required for '" + option_label(name) + "' but none was supplied")
                 value = args[index]
             if name == "--cwd" and not value:
+                if len(pieces) == 1 and index + 1 < len(args):
+                    var following = String(args[index + 1])
+                    if following == "--":
+                        if index + 2 < len(args):
+                            raise unknown_argument(args[index + 2], usage, command, seen, True)
+                    elif argument_name(following) != "-h":
+                        var following_name = argument_name(following)
+                        var following_parts = following.split("=", maxsplit=1)
+                        if following == "-" or not following.startswith("-") or following_name not in flags:
+                            raise unknown_argument(following, usage, command, seen)
+                        if not takes_value(following_name, command) and len(following_parts) == 2:
+                            raise value_error(
+                                usage,
+                                command,
+                                following_name,
+                                String(following_parts[1]),
+                                seen,
+                                attached_value_seen,
+                            )
                 raise session_cli_error("a value is required for '--cwd <PATH>' but none was supplied")
         if name in seen:
             raise session_cli_error("the argument '" + option_label(name) + "' cannot be used multiple times", usage + " [OPTIONS]")

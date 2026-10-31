@@ -114,6 +114,11 @@ type and body, without replaying the upstream request. This is one guarded
 process path, not full provider or rotation parity; see
 `docs/evidence/baseline-0.166.2/policy-capacity-synthetic-codex.md`.
 
+Two synthetic streamed-item identity comparisons, including concurrent
+requests, pass against the 0.166.2 oracle. These do not establish general
+streaming, connection ownership, or provider parity; see
+`docs/evidence/baseline-0.166.2/deepseek-stream-item-ids.md`.
+
 # Historical work: Prodex 0.166.1 parity and CI
 
 The historical reference was Prodex 0.166.1 at

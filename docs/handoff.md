@@ -50,7 +50,9 @@ unsupported-command guard; no bridge execution was added. See
 Pinned 0.166.2 differential coverage for `session list` and `session current`
 confirms matching compressed archived-parent discovery, nested child ancestry,
 compound `.jsonl.zst.json` filename handling, `--parent-only` filtering, and
-`--resume-command` ID output.
+`--resume-command` ID output. It also covers typed metadata fallback across
+session ID, title, cwd, provider, and parent fields through list, current, and
+parent-only outputs.
 The existing inspection path had no demonstrated mismatch, so this slice adds
 an active regression instead of an unneeded production refactor. The test is
 registered in the active fast and full CI suites. Native TUI root-resume

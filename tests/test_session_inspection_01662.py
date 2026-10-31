@@ -62,6 +62,30 @@ def install_fixture(root):
     )
 
 
+def install_typed_metadata_conflict(root):
+    path = next((root / "home/.codex/sessions").rglob("*.jsonl"))
+    record = {
+        "timestamp": "2026-10-24T00:00:00Z",
+        "type": "session_meta",
+        "id": "root-id",
+        "payload": {
+            "id": 7,
+            "session_id": "metadata-fallback",
+            "thread_name": False,
+            "title": "Fallback thread",
+            "cwd": None,
+            "metadata": {
+                "cwd": str(root / "workspace"),
+                "model_provider": "fallback-provider",
+            },
+            "model_provider": [],
+            "source": {"subagent": {"thread_spawn": {"parent_thread_id": 23}}},
+            "parent_thread_id": "fallback-parent",
+        },
+    }
+    path.write_text(json.dumps(record) + "\n", encoding="utf-8")
+
+
 class SessionInspection01662Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -107,6 +131,36 @@ class SessionInspection01662Tests(unittest.TestCase):
             baseline,
             (f"prodex run {CHILD_ID}\nprodex run {COMPOUND_ID}\nprodex run {PARENT_ID}\n").encode(),
         )
+
+    def test_wrong_type_metadata_values_fall_through_to_string_fields(self):
+        baseline, modex = compare_outputs(
+            ["session", "list", "--json"],
+            install_typed_metadata_conflict,
+            reference=ORACLE,
+        )
+        self.assertEqual(modex, baseline)
+        self.assertEqual(len(baseline), 1)
+        self.assertEqual(baseline[0]["id"], "metadata-fallback")
+        self.assertEqual(baseline[0]["thread_name"], "Fallback thread")
+        self.assertEqual(baseline[0]["cwd"], "<FIXTURE_ROOT>/workspace")
+        self.assertEqual(baseline[0]["model_provider"], "fallback-provider")
+        self.assertEqual(baseline[0]["parent_thread_id"], "fallback-parent")
+
+        baseline, modex = compare_outputs(
+            ["session", "current", "--json"],
+            install_typed_metadata_conflict,
+            reference=ORACLE,
+        )
+        self.assertEqual(modex, baseline)
+        self.assertEqual([report["id"] for report in baseline], ["metadata-fallback"])
+
+        baseline, modex = compare_outputs(
+            ["session", "list", "--json", "--parent-only"],
+            install_typed_metadata_conflict,
+            reference=ORACLE,
+        )
+        self.assertEqual(modex, baseline)
+        self.assertEqual(baseline, [])
 
     def test_compressed_checksum_matches_at_8k_read_boundary(self):
         checksum_error = (

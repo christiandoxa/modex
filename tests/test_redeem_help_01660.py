@@ -110,6 +110,49 @@ class RedeemHelp01660Tests(unittest.TestCase):
         )
         self.assertEqual((modex.returncode, modex.stdout, modex.stderr), (2, b"", expected))
 
+    def test_short_flag_clusters_match_clap_before_help_without_state(self):
+        cases = (("-yh", 0), ("-hy", 0), ("-hfoo", 0), ("-yyh", 2), ("-yfoo", 2))
+        for cluster, status in cases:
+            arguments = ("redeem", cluster, "--help")
+            with self.subTest(cluster=cluster):
+                results = []
+                for binary, argv0 in ((ORACLE, "prodex"), (MODEX, "modex")):
+                    with tempfile.TemporaryDirectory(prefix="modex-redeem-cluster-01660-") as directory:
+                        result, created = run(binary, Path(directory), arguments, argv0)
+                        self.assertEqual(created, set())
+                        results.append(result)
+
+                baseline, modex = results
+                expected_stdout = baseline.stdout.replace(
+                    b"Usage: prodex ", b"Usage: modex ", 1
+                )
+                expected_stderr = baseline.stderr.replace(
+                    b"Usage: prodex ", b"Usage: modex ", 1
+                )
+                self.assertEqual(baseline.returncode, status)
+                if status == 0:
+                    self.assertTrue(baseline.stdout.startswith(b"Redeem one reset credit"))
+                    self.assertEqual(baseline.stderr, b"")
+                else:
+                    self.assertEqual(baseline.stdout, b"")
+                    if cluster == "-yyh":
+                        self.assertEqual(
+                            baseline.stderr,
+                            b"error: the argument '--yes' cannot be used multiple times\n\n"
+                            b"Usage: prodex redeem [OPTIONS] <PROFILE>\n\n"
+                            b"For more information, try '--help'.\n",
+                        )
+                    else:
+                        self.assertEqual(
+                            baseline.stderr,
+                            b"error: unexpected argument '-f' found\n\n"
+                            b"  tip: to pass '-f' as a value, use '-- -f'\n\n"
+                            b"Usage: prodex redeem [OPTIONS] <PROFILE>\n\n"
+                            b"For more information, try '--help'.\n",
+                        )
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (status, expected_stdout, expected_stderr))
+
     def test_help_alias_rejects_extra_operand(self):
         arguments = ("help", "redeem", "extra")
         results = []

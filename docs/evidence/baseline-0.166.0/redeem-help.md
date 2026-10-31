@@ -16,6 +16,10 @@ used. It also compares the unknown-option-before-help diagnostic. A Modex-only
 control confirms stateful redemption remains fail-closed without creating
 state or reaching a provider.
 
+Short-option clusters `-yh`, `-hy`, `-hfoo`, `-yyh`, and `-yfoo` are also
+compared before help. The tests check both help and duplicate/unknown option
+diagnostics with no state creation.
+
 Reproduce after building with Mojo 1.2.0:
 
 ```sh

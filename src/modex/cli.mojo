@@ -171,17 +171,22 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
 
 def redeem_help_requested(args: List[String], executable: String) raises -> Bool:
     var profile_seen = False
+    var yes_seen = False
     var index = 2
     while index < len(args):
         var argument = String(args[index])
-        if argument == "--help" or argument == "-h": return True
-        if argument.startswith("-h") and not argument.startswith("--"):
-            var help_cluster = True
-            for character in argument[byte=1:].codepoints():
-                if Int(character) != 104: help_cluster = False
-            if help_cluster: return True
+        if argument == "--help": return True
         if argument == "--": return False
-        if argument == "--yes" or argument == "-y" or argument == "--no-proxy":
+        if argument == "--yes":
+            if yes_seen:
+                raise session_cli_error(
+                    "the argument '--yes' cannot be used multiple times",
+                    executable + " redeem [OPTIONS] <PROFILE>",
+                )
+            yes_seen = True
+            index += 1
+            continue
+        if argument == "--no-proxy":
             index += 1
             continue
         if argument == "--base-url":
@@ -194,6 +199,25 @@ def redeem_help_requested(args: List[String], executable: String) raises -> Bool
             index += 1
             continue
         if argument.startswith("--help="): return False
+        if argument.startswith("-") and not argument.startswith("--") and argument != "-":
+            for character in argument[byte=1:].codepoints():
+                var code = Int(character)
+                if code == 104: return True
+                if code == 121:
+                    if yes_seen:
+                        raise session_cli_error(
+                            "the argument '--yes' cannot be used multiple times",
+                            executable + " redeem [OPTIONS] <PROFILE>",
+                        )
+                    yes_seen = True
+                else:
+                    var name = String("-") + String(chr(code))
+                    var message = String("unexpected argument '") + name + "' found"
+                    if not profile_seen:
+                        message += "\n\n  tip: to pass '" + name + "' as a value, use '-- " + name + "'"
+                    raise session_cli_error(message, executable + " redeem [OPTIONS] <PROFILE>")
+            index += 1
+            continue
         if argument.startswith("-"):
             var name = argument_name(argument)
             var message = "unexpected argument '" + name + "' found"

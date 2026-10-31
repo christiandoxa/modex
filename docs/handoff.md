@@ -5,8 +5,8 @@ paths while continuing to reject authority credentials and ambiguous backslash
 forms. Strict beta policy remains unchanged; see
 `docs/evidence/baseline-0.166.0/provider-path-at-sign.md`.
 
-Selected redeem help routes match 0.166.0 in isolated process checks. Reset
-credit execution remains guarded; see
+Selected redeem help routes and short-option clusters match 0.166.0 in
+isolated process checks. Reset credit execution remains guarded; see
 `docs/evidence/baseline-0.166.0/redeem-help.md`.
 
 Same-endpoint redirects now recognize the tested equivalent numeric IPv4 and

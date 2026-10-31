@@ -15,6 +15,17 @@ the executable basename in `Usage:`. A focused same-`argv0` oracle test covers
 help evidence only; see
 `docs/evidence/baseline-0.166.2/static-help-command-names.md`.
 
+The connected `redeem` parser now matches selected offline 0.166.2 diagnostics
+for missing `<PROFILE>`, missing `--base-url` values, repeated options,
+malformed switch/help values, unknown flags, and extra positionals. Seventeen
+real-process cases compare exact status and stderr with no filesystem changes;
+the historical redeem help and short-cluster suite also passes. Valid redeem
+execution remains guarded; account lookup, lifecycle locks, and any redeem
+request were not exercised. This is selected Linux x86-64 parser evidence, not
+redeem or six-target parity. See
+`docs/evidence/baseline-0.166.2/redeem-diagnostics.md` and
+`tests/test_redeem_diagnostics_01662.py`.
+
 An empty existing `PRODEX_HOME` still exposes a `profile list` mismatch:
 Prodex prints the empty-profile panel after acquiring the lifecycle lock and
 checking/recovering state, while Modex keeps the unsupported-command guard and

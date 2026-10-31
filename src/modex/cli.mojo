@@ -454,64 +454,149 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
     return help_index < len(args)
 
 
+def redeem_error_usage(executable: String, options: List[String], profile_seen: Bool) -> String:
+    var usage = executable + " redeem"
+    for option in options:
+        usage += " " + option
+    if not options and not profile_seen:
+        return usage + " [OPTIONS] <PROFILE>"
+    return usage + " <PROFILE>"
+
+
 def redeem_help_requested(args: List[String], executable: String) raises -> Bool:
+    var seen = List[String]()
+    var usage_options = List[String]()
     var profile_seen = False
-    var yes_seen = False
+    var literal = False
+    var help_lists_options = False
     var index = 2
     while index < len(args):
         var argument = String(args[index])
-        if argument == "--help": return True
-        if argument == "--": return False
-        if argument == "--yes":
-            if yes_seen:
-                raise session_cli_error(
-                    "the argument '--yes' cannot be used multiple times",
-                    executable + " redeem [OPTIONS] <PROFILE>",
-                )
-            yes_seen = True
+        if not literal and argument == "--help":
+            return True
+        if not literal and argument.startswith("--help="):
+            var help_usage = executable + " redeem --help <PROFILE>"
+            if help_lists_options:
+                help_usage = executable + " redeem --help <PROFILE|--yes|--base-url <URL>|--no-proxy>"
+            raise session_cli_error(
+                "unexpected value '" + String(argument[byte=7:]) + "' for '--help' found; no more were expected",
+                help_usage,
+            )
+        if not literal and argument == "--":
+            literal = True
             index += 1
             continue
-        if argument == "--no-proxy":
-            index += 1
-            continue
-        if argument == "--base-url":
-            if index + 1 >= len(args) or String(args[index + 1]).startswith("-"):
-                return False
-            index += 2
-            continue
-        if argument.startswith("--base-url="):
-            if argument == "--base-url=": return False
-            index += 1
-            continue
-        if argument.startswith("--help="): return False
-        if argument.startswith("-") and not argument.startswith("--") and argument != "-":
-            for character in argument[byte=1:].codepoints():
-                var code = Int(character)
-                if code == 104: return True
-                if code == 121:
-                    if yes_seen:
+
+        if not literal and argument.startswith("-") and argument != "-":
+            var pieces = argument.split("=", maxsplit=1)
+            var name = argument_name(argument)
+            if not argument.startswith("--"):
+                for character in argument[byte=1:].codepoints():
+                    var code = Int(character)
+                    if code == 104:
+                        return True
+                    if code != 121:
+                        var unknown = String("-") + String(chr(code))
+                        var message = "unexpected argument '" + unknown + "' found"
+                        message += "\n\n  tip: to pass '" + unknown + "' as a value, use '-- " + unknown + "'"
+                        raise session_cli_error(message, executable + " redeem [OPTIONS] <PROFILE>")
+                    if "--yes" in seen:
                         raise session_cli_error(
                             "the argument '--yes' cannot be used multiple times",
                             executable + " redeem [OPTIONS] <PROFILE>",
                         )
-                    yes_seen = True
-                else:
-                    var name = String("-") + String(chr(code))
-                    var message = String("unexpected argument '") + name + "' found"
-                    if not profile_seen:
-                        message += "\n\n  tip: to pass '" + name + "' as a value, use '-- " + name + "'"
-                    raise session_cli_error(message, executable + " redeem [OPTIONS] <PROFILE>")
-            index += 1
-            continue
-        if argument.startswith("-"):
-            var name = argument_name(argument)
+                    seen.append("--yes")
+                    usage_options.append("--yes")
+                    help_lists_options = True
+                index += 1
+                continue
+
+            if name == "--yes" or name == "--no-proxy":
+                var label = name
+                if len(pieces) == 2:
+                    raise session_cli_error(
+                        "unexpected value '" + String(pieces[1]) + "' for '" + name + "' found; no more were expected",
+                        executable + " redeem " + name + " <PROFILE>",
+                    )
+                if name in seen:
+                    raise session_cli_error(
+                        "the argument '" + name + "' cannot be used multiple times",
+                        executable + " redeem [OPTIONS] <PROFILE>",
+                    )
+                seen.append(name)
+                usage_options.append(label)
+                if name == "--yes" or name == "--no-proxy":
+                    help_lists_options = True
+                index += 1
+                continue
+            if name == "--base-url":
+                var consumes_next = False
+                if len(pieces) == 1:
+                    if index + 1 >= len(args):
+                        raise session_cli_error("a value is required for '--base-url <URL>' but none was supplied")
+                    var next = String(args[index + 1])
+                    if next.startswith("--help="):
+                        var help_usage = executable + " redeem --help <PROFILE>"
+                        if help_lists_options:
+                            help_usage = executable + " redeem --help <PROFILE|--yes|--base-url <URL>|--no-proxy>"
+                        raise session_cli_error(
+                            "unexpected value '" + String(next[byte=7:]) + "' for '--help' found; no more were expected",
+                            help_usage,
+                        )
+                    if next == "--yes" or next == "--no-proxy" or next == "--base-url" or next == "--help" or next == "-h" or next.startswith("-h") or next.startswith("-y"):
+                        raise session_cli_error("a value is required for '--base-url <URL>' but none was supplied")
+                    var next_name = argument_name(next)
+                    var next_pieces = next.split("=", maxsplit=1)
+                    if next_name == "--base-url":
+                        raise session_cli_error("a value is required for '--base-url <URL>' but none was supplied")
+                    if len(next_pieces) == 2 and (next_name == "--yes" or next_name == "--no-proxy"):
+                        var switch_usage = executable + " redeem " + next_name + " <PROFILE>"
+                        if help_lists_options:
+                            switch_usage = executable + " redeem <PROFILE|--yes|--base-url <URL>|--no-proxy>"
+                        raise session_cli_error(
+                            "unexpected value '" + String(next_pieces[1]) + "' for '" + next_name + "' found; no more were expected",
+                            switch_usage,
+                        )
+                    if next.startswith("-") and next != "-":
+                        var unknown = argument_name(next)
+                        var message = "unexpected argument '" + unknown + "' found"
+                        message += "\n\n  tip: to pass '" + unknown + "' as a value, use '-- " + unknown + "'"
+                        raise session_cli_error(message, redeem_error_usage(executable, usage_options, profile_seen))
+                    consumes_next = True
+                if name in seen:
+                    raise session_cli_error(
+                        "the argument '--base-url <URL>' cannot be used multiple times",
+                        executable + " redeem [OPTIONS] <PROFILE>",
+                    )
+                seen.append(name)
+                usage_options.append("--base-url <URL>")
+                help_lists_options = len(pieces) == 2 or help_lists_options
+                if consumes_next:
+                    index += 1
+                index += 1
+                continue
+
             var message = "unexpected argument '" + name + "' found"
-            if not profile_seen:
-                message += "\n\n  tip: to pass '" + name + "' as a value, use '-- " + name + "'"
-            raise session_cli_error(message, executable + " redeem [OPTIONS] <PROFILE>")
-        if profile_seen: return False
+            message += "\n\n  tip: to pass '" + name + "' as a value, use '-- " + name + "'"
+            raise session_cli_error(message, redeem_error_usage(executable, usage_options, profile_seen))
+
+        if profile_seen:
+            raise session_cli_error(
+                "unexpected argument '" + argument + "' found",
+                executable + " redeem [OPTIONS] <PROFILE>",
+            )
         profile_seen = True
         index += 1
+
+    if not profile_seen:
+        var usage = executable + " redeem"
+        for option in usage_options:
+            usage += " " + option
+        usage += " <PROFILE>"
+        raise session_cli_error(
+            "the following required arguments were not provided:\n  <PROFILE>",
+            usage,
+        )
     return False
 
 

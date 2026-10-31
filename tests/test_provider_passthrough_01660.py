@@ -339,6 +339,8 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         final = buffered_reply(88)
         equivalent_origins = (
             ("127.0.0.1", False, "http://127.1:{upstream_port}/v1/short", "/v1/short"),
+            ("127.0.0.1", False, "http://127%2e0%2e0%2e1:{upstream_port}/v1/encoded-dotted", "/v1/encoded-dotted"),
+            ("127.0.0.1", False, "http://127%2e1:{upstream_port}/v1/encoded-short", "/v1/encoded-short"),
             ("[::1]", True, "http://[0:0:0:0:0:0:0:1]:{upstream_port}/v1/expanded", "/v1/expanded"),
         )
         for base_host, ipv6, location, final_path in equivalent_origins:
@@ -385,6 +387,30 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                 self.assertEqual(responses[0]["status"], 302)
                 headers = {name.lower(): value for name, value in responses[0]["headers"].items()}
                 self.assertEqual(headers["location"], location.replace("{upstream_port}", upstream[0]["headers"]["host"].split(":")[-1]))
+                self.assertEqual(bytes.fromhex(responses[0]["body"]), b"not followed")
+
+        encoded_rejected_origins = (
+            "http://127%2e0%2e0%2e1:1/v1/other-port",
+            "http://127%2e0%2e0%2e1%3a{upstream_port}/v1/encoded-port-delimiter",
+            "http://127%2e0%2e0%2e1%2f@127.0.0.1:{upstream_port}/v1/encoded-path-delimiter",
+            "http://127%2e0%2e0%2e1%5c@127.0.0.1:{upstream_port}/v1/encoded-backslash",
+            "http://127%2e0%2e0%2e1%40attacker:{upstream_port}/v1/encoded-userinfo",
+            "http://127%2e0%2e0%2e1%ZZ:{upstream_port}/v1/malformed-host-escape",
+            "http://127%252e0%252e0%252e1:{upstream_port}/v1/double-encoded-host",
+            "http://8%2e8%2e8%2e8:{upstream_port}/v1/encoded-non-loopback",
+        )
+        for location in encoded_rejected_origins:
+            redirect = {"status": 302, "content_type": "text/plain", "body": b"not followed",
+                        "response_headers": [("Location", location), ("Content-Type", "text/plain")]}
+            with self.subTest(rejected_encoded_location=location):
+                upstream, responses = observe_turns(
+                    MODEX, request, [redirect], latest_version="0.166.0",
+                    base_host="127.0.0.1",
+                )
+                self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                    ("POST", "/v1/chat/completions"),
+                ])
+                self.assertEqual(responses[0]["status"], 302)
                 self.assertEqual(bytes.fromhex(responses[0]["body"]), b"not followed")
 
         expanded_origin = "http://[0:0:0:0:0:0:0:1]:{upstream_port}/v1/redirect-cycle"

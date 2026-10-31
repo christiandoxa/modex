@@ -10,8 +10,8 @@ isolated process checks. Reset credit execution remains guarded; see
 `docs/evidence/baseline-0.166.0/redeem-help.md`.
 
 Same-endpoint redirects now recognize the tested equivalent numeric IPv4 and
-IPv6 loopback spellings while retaining strict origin and port checks. Encoded
-host forms remain unqualified; see
+IPv6 loopback spellings, including percent-encoded IPv4 dots, while retaining
+strict origin and port checks. Other host forms remain unqualified; see
 `docs/evidence/baseline-0.166.0/provider-redirect-authority.md`.
 
 The local relay accepts the tested backslash path separator used by the

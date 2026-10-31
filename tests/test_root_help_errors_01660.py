@@ -76,6 +76,76 @@ class RootHelpErrors01660Tests(unittest.TestCase):
                                  (baseline.returncode, baseline.stdout, baseline.stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_run_help_routes_match_release_without_starting_runtime(self):
+        cases = (
+            (("run", "--help"), "prodex", "modex"),
+            (("run", "-h"), "prodex", "modex"),
+            (("run", "--help", "--unknown"), "prodex", "modex"),
+            (("run", "--full-access", "--help"), "prodex", "modex"),
+            (("help", "run"), "prodex", "modex"),
+            (("run", "--help"), "custom-prodex", "custom-modex"),
+        )
+        for arguments, oracle_argv0, modex_argv0 in cases:
+            with self.subTest(arguments=arguments, argv0=oracle_argv0):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), oracle_argv0, "01660-run-help-oracle"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), modex_argv0, "01660-run-help-modex"
+                )
+                expected_stdout = baseline.stdout.replace(
+                    b"Usage: " + oracle_argv0.encode() + b" run",
+                    b"Usage: " + modex_argv0.encode() + b" run", 1,
+                )
+                self.assertEqual((baseline.returncode, baseline.stderr), (0, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (0, expected_stdout, b""))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        baseline, baseline_created = isolated_run(
+            ORACLE, ["run", "--help=bad"], "prodex", "01660-run-help-value-oracle"
+        )
+        modex, modex_created = isolated_run(
+            MODEX, ["run", "--help=bad"], "modex", "01660-run-help-value-modex"
+        )
+        expected_stderr = baseline.stderr.replace(
+            b"Usage: prodex run", b"Usage: modex run", 1
+        )
+        self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+        self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                         (2, b"", expected_stderr))
+        self.assertEqual((baseline_created, modex_created), ([], []))
+
+        baseline, baseline_created = isolated_run(
+            ORACLE, ["help", "run", "--help"], "prodex", "01660-run-help-error-oracle"
+        )
+        modex, modex_created = isolated_run(
+            MODEX, ["help", "run", "--help"], "modex", "01660-run-help-error-modex"
+        )
+        expected_stderr = baseline.stderr.replace(
+            b"Usage: prodex run", b"Usage: modex run", 1
+        )
+        self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+        self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                         (2, b"", expected_stderr))
+        self.assertEqual((baseline_created, modex_created), ([], []))
+
+        modex, created = isolated_run(MODEX, ["run"], "modex", "01660-run-guard")
+        self.assertEqual(
+            (modex.returncode, modex.stdout, modex.stderr),
+            (1, b"", b"Error: this Modex development build has not implemented the requested command\n"),
+        )
+        self.assertEqual(created, [])
+
+        modex, created = isolated_run(
+            MODEX, ["run", "-hfoo"], "modex", "01660-run-help-short-cluster-guard"
+        )
+        self.assertEqual(
+            (modex.returncode, modex.stdout, modex.stderr),
+            (1, b"", b"Error: this Modex development build has not implemented the requested command\n"),
+        )
+        self.assertEqual(created, [])
+
     def test_ping_group_help_matches_without_mutations(self):
         cases = (
             (("ping", "--help"), "prodex", "modex", 0),

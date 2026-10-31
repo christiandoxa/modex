@@ -1,5 +1,9 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Selected `run` help routes now match the 0.166.0 oracle in isolated checks.
+Other help placements and actual `run` execution remain unimplemented; see
+`docs/evidence/baseline-0.166.0/run-help.md`.
+
 Selected Super invalid-reasoning diagnostics now escape tested zero-width and
 bidirectional controls as 0.166.0 does. Full Unicode debug formatting remains
 unqualified; see `docs/evidence/baseline-0.166.0/super-cli-validation.md`.

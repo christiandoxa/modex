@@ -11,7 +11,7 @@ from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
 from modex.paths import app_root_is_absent
 from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_list_empty_panel, profile_short_help, top_level_profile_use_help
-from modex.root_help import login_help, logout_help, logout_usage, ping_help, ping_openai_help, quota_help, quota_short_help, redeem_help, root_help, update_help
+from modex.root_help import login_help, logout_help, logout_usage, ping_help, ping_openai_help, quota_help, quota_short_help, redeem_help, root_help, run_help, update_help
 from modex.sessions import inspect_sessions, resolve_session_id_from_store, session_resume_has_no_profile_source
 from modex.super_cli import parse_super_arguments, run_super
 from modex.super_help import super_help
@@ -226,6 +226,15 @@ def main():
         print(session_cli_error("unrecognized subcommand '" + args[3] + "'", executable + " quota [OPTIONS]"), file=stderr, end="")
         exit(2)
         return
+    if len(args) >= 3 and args[1] == "help" and args[2] == "run":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        if len(args) == 3:
+            print(run_help(executable), end="")
+            return
+        print(session_cli_error("unrecognized subcommand '" + args[3] + "'", executable + " run [OPTIONS] [CODEX_ARG]..."), file=stderr, end="")
+        exit(2)
+        return
     if len(args) >= 2 and args[1] == "update":
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])
@@ -259,6 +268,27 @@ def main():
             print(error, file=stderr, end="")
             exit(2)
             return
+    if len(args) >= 2 and args[1] == "run":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        if len(args) >= 3:
+            var help_argument = String(args[2])
+            if help_argument.startswith("--help="):
+                print(session_cli_error(
+                    "unexpected value '" + String(help_argument[byte=7:]) + "' for '--help' found; no more were expected",
+                    executable + " run --help [CODEX_ARG]...",
+                ), file=stderr, end="")
+                exit(2)
+                return
+            # shortcut: handles direct help and --full-access before help; widen when run argument parsing is implemented.
+            if help_argument == "--help" or help_argument == "-h":
+                print(run_help(executable), end="")
+                return
+            if len(args) >= 4 and help_argument == "--full-access" and (
+                args[3] == "--help" or args[3] == "-h"
+            ):
+                print(run_help(executable), end="")
+                return
     if len(args) >= 3 and args[1] == "help" and (args[2] == "super" or args[2] == "s"):
         var parts = args[0].split("/")
         var executable = String(parts[len(parts) - 1])

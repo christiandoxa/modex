@@ -135,8 +135,6 @@ Notes:
   Additional Codex args are appended unchanged after Prodex's generated options.
   The expose URL is an ephemeral full-Super bearer capability. Anyone with the complete URL can control the configured workspace session; this is not OAuth or multi-user authentication. Use `--no-tunnel` or select Local only for loopback access.
 """)
-    for command in ["super", "run", "doctor", "login"]:
-        output = output.replace("prodex " + command, executable + " " + command)
     output = output.replace("Usage: prodex ", "Usage: " + executable + " ")
     return output^
 

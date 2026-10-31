@@ -8,6 +8,13 @@ implementation and isolated differential evidence. Session ownership and
 fail-closed ancestry checks must be preserved. All six platform qualifications
 remain open; earlier evidence does not establish 0.166.2 parity.
 
+Static help bodies for root, session, doctor, quota, Super, and `s` now retain
+the active release's literal `prodex` command examples and prose while keeping
+the executable basename in `Usage:`. A focused same-`argv0` oracle test covers
+34 standard/custom-name help comparisons with no state mutation. This is CLI
+help evidence only; see
+`docs/evidence/baseline-0.166.2/static-help-command-names.md`.
+
 An empty existing `PRODEX_HOME` still exposes a `profile list` mismatch:
 Prodex prints the empty-profile panel after acquiring the lifecycle lock and
 checking/recovering state, while Modex keeps the unsupported-command guard and

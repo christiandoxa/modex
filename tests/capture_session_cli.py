@@ -92,8 +92,6 @@ def map_executable(text):
     for line in text.splitlines(keepends=True):
         if line.startswith("Usage: prodex "):
             line = "Usage: modex " + line[len("Usage: prodex "):]
-        elif line.startswith("  prodex session "):
-            line = "  modex session " + line[len("  prodex session "):]
         lines.append(line)
     return "".join(lines)
 

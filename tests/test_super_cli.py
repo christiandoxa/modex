@@ -42,8 +42,6 @@ class SuperCliTests(unittest.TestCase):
                 baseline, _ = isolated_super(ORACLE, arguments)
                 native, mutated = isolated_super(MODEX, arguments)
                 expected = baseline.stdout.decode()
-                for command in ("super", "run", "doctor", "login"):
-                    expected = expected.replace("prodex " + command, "modex " + command)
                 self.assertEqual((native.returncode, native.stdout.decode(), native.stderr),
                                  (baseline.returncode, expected, baseline.stderr))
                 self.assertFalse(mutated)

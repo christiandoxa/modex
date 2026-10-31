@@ -11,21 +11,7 @@ from test_cli import MODEX, ORACLE
 
 
 def map_executable(output):
-    result = []
-    section = ""
-    for line in output.splitlines(keepends=True):
-        if line.startswith(b"Usage: prodex "):
-            line = line.replace(b"Usage: prodex ", b"Usage: modex ", 1)
-        elif line == b"Tips:\n":
-            section = "tips"
-        elif line == b"Examples:\n":
-            section = "examples"
-        elif line in (b"Commands:\n", b"Options:\n"):
-            section = ""
-        if section in ("tips", "examples"):
-            line = line.replace(b"prodex", b"modex")
-        result.append(line)
-    return b"".join(result)
+    return output.replace(b"Usage: prodex ", b"Usage: modex ", 1)
 
 
 def isolated_run(binary, arguments, argv0, label):

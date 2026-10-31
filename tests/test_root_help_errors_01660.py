@@ -346,7 +346,7 @@ class RootHelpErrors01660Tests(unittest.TestCase):
                     b"Usage: " + oracle_argv0.encode() + b" ",
                     b"Usage: " + modex_argv0.encode() + b" ",
                     1,
-                ).replace(b"prodex quota", b"modex quota")
+                )
                 self.assertEqual((baseline.returncode, baseline.stderr), (0, b""))
                 self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
                                  (0, expected_stdout, b""))

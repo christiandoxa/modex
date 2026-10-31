@@ -1,0 +1,25 @@
+# Hidden MCP bridge help precedence
+
+Prodex 0.166.2 declares hidden `__mcp-jsonl-bridge` with a required
+`<COMMAND>` positional and trailing `[ARGS]...` that accepts hyphen-prefixed
+values. Before a command is selected, Clap processes `-h` in short-flag
+clusters as help; help returns before later arguments are checked, while an
+unknown option that appears first is an error.
+
+Modex now matches the tested pre-command cases: `-hh`, `-hx`, and
+`--help --bogus` print help; `-xh` and `--bogus --help` report the earlier
+unknown option; `--help=bad` retains its value error. Unknown long options
+with attached values and Unicode short options also match. The parser stops when
+it reaches a positional command, so no bridge process is started. A synthetic
+positional-command control confirms the existing unsupported-command guard
+still returns before creating state.
+
+`tests/test_mcp_jsonl_bridge_help_precedence_01662.py` compares the production
+binary and checksum-verified 0.166.2 Linux oracle in isolated Bubblewrap
+processes. All eight help/parser cases match exact status, stdout, and stderr;
+all cases leave their synthetic homes and workspaces unchanged.
+
+Validation on Linux x86-64: `make build`, both focused test methods, the
+production dependency audit, and `git diff --check` passed. This qualifies only
+the listed pre-command parser cases on this target. Bridge process execution
+and the other five platform targets remain unqualified.

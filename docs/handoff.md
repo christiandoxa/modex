@@ -21,6 +21,12 @@ without creating state. This is a static help slice only; expose runtime and
 launcher execution remain unsupported and the six-target denominator is
 unchanged. See `docs/evidence/baseline-0.166.2/super-expose-help.md`.
 
+The hidden `__mcp-jsonl-bridge` pre-command parser now matches tested 0.166.2
+help short-cluster and ordering behavior, including errors when an unknown
+option precedes help. Positional commands still stop at Modex's existing
+unsupported-command guard; no bridge execution was added. See
+`docs/evidence/baseline-0.166.2/mcp-jsonl-bridge-help-precedence.md`.
+
 Pinned 0.166.2 differential coverage for `session list` and `session current`
 confirms matching compressed archived-parent discovery, nested child ancestry,
 compound `.jsonl.zst.json` filename handling, `--parent-only` filtering, and

@@ -2,7 +2,7 @@
 
 from std.collections import Array, List, Optional, Span
 from std.io import RawFileDescriptor
-from std.memory import OwnedPointer
+from std.memory import OwnedPointer, Pointer
 from std.net._sys.unix import AF_UNIX, F_GETFL, F_SETFL, O_NONBLOCK, SHUT_RDWR, SOCK_STREAM, shutdown, socketpair
 from std.atomic import Atomic
 from std.runtime import parallelism_level
@@ -15,7 +15,7 @@ from std.time.time import _realtime_nanoseconds
 from std.utils.lock import BlockingScopedLock, BlockingSpinLock
 
 from .json import JSON_ARRAY, JSON_STRING, JsonDocument, quote_json
-from .loopback_http import HTTP_HEADER_LIMIT, HTTP_MAX_REQUEST_FIELD_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, LoopbackHTTPStream, _number, normalize_loopback_ipv4_host
+from .loopback_http import HTTP_HEADER_LIMIT, HTTP_MAX_REQUEST_FIELD_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, LoopbackHTTPConnectionPool, LoopbackHTTPStream, _number, normalize_loopback_ipv4_host
 from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
 from .log_operational import decode_url_host, ipv6_loopback_literal, valid_url_authority
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_model_retry_available, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_api_key_response, deepseek_retryable_model_response
@@ -400,7 +400,15 @@ def _binding_response_id(body: String) -> String:
         return ""
 
 
-def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: LoopbackHTTPStream, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], api_key_index: Int, prebuffered_body: List[UInt8]) raises:
+def _release_stream_to_pool(mut stream: LoopbackHTTPStream, pool: Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]], address: String, credential_scope: Int, idle_timeout_ms: UInt64):
+    if pool and credential_scope >= 0:
+        var fd = stream.take_reusable_fd()
+        if fd >= 0:
+            pool.value()[].put(fd, address, credential_scope, stream.pool_auth_scheme, idle_timeout_ms)
+    stream.close()
+
+
+def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: LoopbackHTTPStream, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], api_key_index: Int, prebuffered_body: List[UInt8], pool: Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]] = Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]](), pool_address: String = "", pool_credential_scope: Int = -1, pool_idle_timeout_ms: UInt64 = 0) raises:
     var streaming = 200 <= stream.status < 400 and stream.status != 204 and stream.status != 304 and deepseek_event_stream(stream.headers)
     if not streaming and (stream.status < 200 or stream.status >= 300):
         stream.max_body_bytes = DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES
@@ -431,6 +439,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
                 pass
         # TinyHTTP's buffered path retains Content-Length: 0 for bodyless replies.
         var sse = deepseek_event_stream(stream.headers)
+        _release_stream_to_pool(stream, pool, pool_address, pool_credential_scope, pool_idle_timeout_ms)
         connection.respond(stream.status, response_headers, body, 30000, not sse, sse and (stream.status == 204 or stream.status == 304))
         return
     try:
@@ -457,6 +466,7 @@ def _passthrough_response(mut connection: LoopbackHTTPConnection, mut stream: Lo
                     state_ptr[].remember_binding(0, response_id, api_key_index)
             except:
                 pass
+        _release_stream_to_pool(stream, pool, pool_address, pool_credential_scope, pool_idle_timeout_ms)
         connection.finish_stream(30000, include_head_terminal_chunk=True)
     except:
         stream.close()
@@ -572,6 +582,7 @@ def _history(doc: JsonDocument, store: ProviderConversationStore, namespace: Opt
 
 struct LocalRewriteSharedState(Movable):
     var lock: BlockingSpinLock
+    var upstream_pool: LoopbackHTTPConnectionPool
     var conversations: ProviderConversationStore
     var bindings: RuntimeBindings
     var sequence: UInt64
@@ -601,6 +612,7 @@ struct LocalRewriteSharedState(Movable):
     def __init__(out self, api_keys: List[String], endpoint: String, address: String, path: String, messages_address: String, messages_path: String, client_token: String, connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
         if not valid_local_client_token(client_token): raise Error("local provider client token is invalid")
         self.lock = BlockingSpinLock()
+        self.upstream_pool = LoopbackHTTPConnectionPool()
         self.conversations = ProviderConversationStore()
         self.bindings = RuntimeBindings(api_keys[0], endpoint)
         # shortcut: audited Mojo APIs expose no PID/thread-ID getters; add the full seed if official APIs do.
@@ -778,10 +790,14 @@ struct LocalRewriteSharedState(Movable):
         while completed:
             var connection = completed.pop()
             connection.close()
+        self.upstream_pool.close()
 
 
 def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, messages_address: String, messages_path: String, request_id: UInt64, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
+    var upstream_pool = Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]](
+        Pointer(to=state_ptr[].upstream_pool).unsafe_origin_cast[MutUntrackedOrigin]()
+    )
     var model_route = _deepseek_models_route(target)
     var models_route = model_route[0]
     var model_id = model_route[1]
@@ -826,6 +842,8 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                 request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT,
                 cancel_fd=state_ptr[].cancel_read_fd,
                 anthropic_messages=True,
+                pool=upstream_pool,
+                pool_credential_scope=state_ptr[].credential_scope_index(api_key_index),
             )
         except:
             _reply(connection, 502, "upstream request failed")
@@ -850,6 +868,8 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                         request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT,
                         cancel_fd=state_ptr[].cancel_read_fd,
                         anthropic_messages=True,
+                        pool=upstream_pool,
+                        pool_credential_scope=state_ptr[].credential_scope_index(api_key_index),
                     )
                 except:
                     _reply(connection, 502, "upstream request failed")
@@ -861,10 +881,17 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                     _reply(connection, 502, "upstream request failed")
                     return
                 if deepseek_retryable_api_key_response(stream.status, prebuffered_error, attempt_index, key_count):
-                    stream.close()
+                    _release_stream_to_pool(
+                        stream, upstream_pool, messages_address,
+                        state_ptr[].credential_scope_index(api_key_index), idle_ms,
+                    )
                     continue
             break
-        _passthrough_response(connection, stream, state_ptr, api_key_index, prebuffered_error)
+        _passthrough_response(
+            connection, stream, state_ptr, api_key_index, prebuffered_error,
+            upstream_pool, messages_address,
+            state_ptr[].credential_scope_index(api_key_index), idle_ms,
+        )
         return
     if target != "/v1/chat/completions" and target != "/v1/responses" and not models_route:
         _route_error(connection)
@@ -910,6 +937,8 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                 request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT,
                 request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT,
                 cancel_fd=state_ptr[].cancel_read_fd,
+                pool=upstream_pool,
+                pool_credential_scope=state_ptr[].credential_scope_index(key_index),
             )
         except:
             _reply(connection, 502, "upstream request failed")
@@ -933,6 +962,8 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                         request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT,
                         request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT,
                         cancel_fd=state_ptr[].cancel_read_fd,
+                        pool=upstream_pool,
+                        pool_credential_scope=state_ptr[].credential_scope_index(key_index),
                     )
                 except:
                     _reply(connection, 502, "upstream request failed")
@@ -944,12 +975,19 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                     _reply(connection, 502, "upstream request failed")
                     return
                 if deepseek_retryable_api_key_response(stream.status, prebuffered_error, attempt_index, attempt_count):
-                    stream.close()
+                    _release_stream_to_pool(
+                        stream, upstream_pool, address,
+                        state_ptr[].credential_scope_index(key_index), idle_ms,
+                    )
                     continue
             break
         if 200 <= stream.status < 400:
             state_ptr[].remember_request(previous, turn, session, key_index)
-        _passthrough_response(connection, stream, state_ptr, key_index, prebuffered_error)
+        _passthrough_response(
+            connection, stream, state_ptr, key_index, prebuffered_error,
+            upstream_pool, address,
+            state_ptr[].credential_scope_index(key_index), idle_ms,
+        )
         return
     var history: String
     var namespace = Optional[String]()
@@ -1031,10 +1069,10 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     var native_first_event_retries = 0
     var terminal_attempt = False
     var exit_credentials = False
+    var exchange_address = messages_address if web else (beta_address if strict_tools else address)
+    var exchange_path = messages_path if web else (beta_path if strict_tools else path)
     try:
-        var exchange_address = messages_address if web else (beta_address if strict_tools else address)
-        var exchange_path = messages_path if web else (beta_path if strict_tools else path)
-        exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[0])
+        exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[0], upstream_pool=upstream_pool, pool_credential_scope=state_ptr[].credential_scope_index(key_index))
     except error:
         if web and anthropic_request_incompatible(String(error)):
             connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
@@ -1048,9 +1086,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             prebuffered_error = List[UInt8]()
             if attempt_index > 0 or model_index > 0:
                 try:
-                    var exchange_address = messages_address if web else (beta_address if strict_tools else address)
-                    var exchange_path = messages_path if web else (beta_path if strict_tools else path)
-                    exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[model_index])
+                    exchange = DeepSeekExchange(exchange_address, exchange_path, state_ptr[].api_key_at(key_index), source, request_id, "resp_deepseek_" + new_uuid7(), UInt64(now // 1000000000), request.headers, history, strict_tools=strict_tools, web_search_mode=web_search_mode, connect_timeout_ms=connect_ms, request_timeout_ms=120000, idle_timeout_ms=idle_ms, downstream_fd=connection.fd, previous_response_found=previous_found, native_messages=web, request_method=request.method, request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT, ignore_web_search=fallback_web_search, cancel_fd=state_ptr[].cancel_read_fd, model_override=model_attempts[model_index], upstream_pool=upstream_pool, pool_credential_scope=state_ptr[].credential_scope_index(key_index))
                 except error:
                     if web and anthropic_request_incompatible(String(error)):
                         connection.respond(400, [("content-type", "application/json; charset=utf-8")], _bytes('{"error":{"code":"invalid_request","message":"request is incompatible with DeepSeek native Anthropic web-search translation","type":"invalid_request_error"}}'), 30000)
@@ -1105,7 +1141,11 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         state_ptr[].remember_request(previous, turn, session, key_index)
     if not exchange.successful():
         # Frozen dispatch keeps non-2xx quota headers raw, without Codex projection.
-        _passthrough_response(connection, exchange.http, state_ptr, key_index, prebuffered_error)
+        _passthrough_response(
+            connection, exchange.http, state_ptr, key_index, prebuffered_error,
+            upstream_pool, exchange_address,
+            state_ptr[].credential_scope_index(key_index), idle_ms,
+        )
         return
     if not deepseek_event_stream(exchange.headers()):
         var body: String

@@ -1,9 +1,9 @@
 """Bounded loopback HTTP/1 GET and streaming POST through official POSIX wrappers."""
 
 from std.bit import byte_swap
-from std.collections import Array, List, Span
+from std.collections import Array, List, Optional, Span
 from std.net._sys.inet import in6_addr, in_addr
-from std.memory import MaybeUninit
+from std.memory import MaybeUninit, Pointer
 from std.net._sys.unix import (
     AF_INET, AF_INET6, F_GETFL, F_SETFL, MSG_DONTWAIT, MSG_NOSIGNAL, MSG_PEEK,
     O_NONBLOCK, SO_ERROR, SOL_SOCKET, SOCK_STREAM, connect, getsockopt,
@@ -14,12 +14,101 @@ from std.sys import Endian, size_of
 from std.sys._libc import FcntlCommands, FcntlFDFlags, close, fcntl
 from std.sys._libc_errno import ErrNo, get_errno
 from std.time import perf_counter, sleep
+from std.utils.lock import BlockingScopedLock, BlockingSpinLock
 from .log_operational import url_numeric_host_compatibility
 
 comptime HTTP_HEADER_LIMIT = 65536
 comptime HTTP_MAX_REQUEST_FIELD_LIMIT = 2 * 1024 * 1024
 # Inbound headers fit within 2 MiB; copying the first User-Agent can double that.
 comptime HTTP_OUTBOUND_REQUEST_HEADER_LIMIT = HTTP_MAX_REQUEST_FIELD_LIMIT * 2 + 2048
+# shortcut: expiry is lazy at checkout; add background eviction if idle-FD lifetime must be enforced.
+comptime HTTP_POOL_MAX_IDLE_MS = 30000
+comptime HTTP_POOL_AUTH_BEARER = 0
+comptime HTTP_POOL_AUTH_X_API_KEY = 1
+
+
+struct LoopbackHTTPConnectionPool(Movable):
+    var lock: BlockingSpinLock
+    var fd: Int32
+    var address: String
+    var credential_scope: Int
+    var auth_scheme: Int
+    var expires_at: Float64
+    var stopped: Bool
+
+    def __init__(out self):
+        self.lock = BlockingSpinLock()
+        self.fd = -1
+        self.address = String()
+        self.credential_scope = -1
+        self.auth_scheme = -1
+        self.expires_at = 0.0
+        self.stopped = False
+
+    def take(mut self, address: String, credential_scope: Int, auth_scheme: Int, idle_timeout_ms: UInt64) -> Int32:
+        var selected: Int32 = -1
+        var discarded: Int32 = -1
+        with BlockingScopedLock(self.lock):
+            if self.fd >= 0:
+                if not self.stopped and self.address == address and self.credential_scope == credential_scope and self.auth_scheme == auth_scheme and perf_counter() < self.expires_at:
+                    var byte: UInt8 = 0
+                    var result = recv(self.fd, Pointer(to=byte), 1, MSG_PEEK | MSG_DONTWAIT)
+                    if result < 0 and get_errno() == ErrNo.EAGAIN:
+                        selected = self.fd
+                        self.fd = -1
+                    else:
+                        discarded = self.fd
+                        self.fd = -1
+                else:
+                    discarded = self.fd
+                    self.fd = -1
+                self.address = String()
+                self.credential_scope = -1
+                self.auth_scheme = -1
+                self.expires_at = 0.0
+        if discarded >= 0:
+            _ = close(discarded)
+        return selected
+
+    def put(mut self, fd: Int32, address: String, credential_scope: Int, auth_scheme: Int, idle_timeout_ms: UInt64):
+        if fd < 0:
+            return
+        var byte: UInt8 = 0
+        var result = recv(fd, Pointer(to=byte), 1, MSG_PEEK | MSG_DONTWAIT)
+        if result >= 0 or get_errno() != ErrNo.EAGAIN:
+            _ = close(fd)
+            return
+        var discarded: Int32 = -1
+        with BlockingScopedLock(self.lock):
+            if self.stopped:
+                discarded = fd
+            else:
+                discarded = self.fd
+                self.fd = fd
+                self.address = address
+                self.credential_scope = credential_scope
+                self.auth_scheme = auth_scheme
+                var lifetime_ms = min(idle_timeout_ms, UInt64(HTTP_POOL_MAX_IDLE_MS))
+                self.expires_at = perf_counter() + Float64(lifetime_ms) / 1000.0
+        if discarded >= 0:
+            _ = close(discarded)
+
+    def close(mut self):
+        var discarded: Int32 = -1
+        with BlockingScopedLock(self.lock):
+            self.stopped = True
+            discarded = self.fd
+            self.fd = -1
+            self.address = String()
+            self.credential_scope = -1
+            self.auth_scheme = -1
+            self.expires_at = 0.0
+        if discarded >= 0:
+            _ = close(discarded)
+
+    def __deinit__(deinit self):
+        if self.fd >= 0:
+            _ = close(self.fd)
 
 
 def _number(text: StringSlice) raises -> Int:
@@ -731,7 +820,10 @@ struct LoopbackHTTPStream(Movable):
     var max_wire_bytes: Int
     var max_body_bytes: Int
     var request_method: String
+    var pool_auth_scheme: Int
     var length: Int
+    var pool_eligible: Bool
+    var response_persistent: Bool
     var request_deadline: Float64
     var idle_timeout_ms: UInt64
     var idle_deadline: Float64
@@ -755,6 +847,9 @@ struct LoopbackHTTPStream(Movable):
         cancel_fd: Int32 = -1,
         request_connection_close: Bool = True,
         include_content_length: Bool = True,
+        pool: Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]] = Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]](),
+        pool_credential_scope: Int = -1,
+        pool_auth_scheme: Int = HTTP_POOL_AUTH_BEARER,
     ) raises:
         self.fd = -1
         self.downstream_fd = downstream_fd
@@ -774,7 +869,10 @@ struct LoopbackHTTPStream(Movable):
         self.max_wire_bytes = 0
         self.max_body_bytes = -1 if allow_unbounded_body else max_body_bytes
         self.request_method = request_method
+        self.pool_auth_scheme = pool_auth_scheme
         self.length = -1
+        self.pool_eligible = pool and not request_connection_close and pool_credential_scope >= 0
+        self.response_persistent = False
         self.request_deadline = 0.0
         self.idle_timeout_ms = idle_timeout_ms
         self.idle_deadline = 0.0
@@ -824,18 +922,25 @@ struct LoopbackHTTPStream(Movable):
         if connect_deadline > self.request_deadline:
             connect_deadline = self.request_deadline
         self.max_wire_bytes = -1 if allow_unbounded_body else HTTP_HEADER_LIMIT * 2 + 65536 + max_body_bytes * 8
-        self.fd = _open_loopback_socket(ipv6)
+        var pooled_fd: Int32 = -1
+        if self.pool_eligible:
+            pooled_fd = pool.value()[].take(address, pool_credential_scope, pool_auth_scheme, idle_timeout_ms)
+        if pooled_fd >= 0:
+            self.fd = pooled_fd
+        else:
+            self.fd = _open_loopback_socket(ipv6)
         try:
-            var result: Int32
-            if ipv6:
-                var addr_bytes = Array[UInt8, 16](fill=0)
-                addr_bytes[15] = 1
-                var peer6 = sockaddr_in6(port=_port_bytes(port), addr=in6_addr(s6_addr=addr_bytes^), flowinfo=0, scope_id=0)
-                result = connect(self.fd, Pointer(to=peer6).unsafe_bitcast[sockaddr](), UInt32(size_of[sockaddr_in6]()))
-            else:
-                var peer = sockaddr_in(port=_port_bytes(port), addr=in_addr(s_addr=_network32(ip)))
-                result = connect(self.fd, Pointer(to=peer).unsafe_bitcast[sockaddr](), UInt32(size_of[sockaddr_in]()))
-            _finish_loopback_connect(self.fd, result, connect_deadline, self.downstream_fd, self.cancel_fd)
+            if pooled_fd < 0:
+                var result: Int32
+                if ipv6:
+                    var addr_bytes = Array[UInt8, 16](fill=0)
+                    addr_bytes[15] = 1
+                    var peer6 = sockaddr_in6(port=_port_bytes(port), addr=in6_addr(s6_addr=addr_bytes^), flowinfo=0, scope_id=0)
+                    result = connect(self.fd, Pointer(to=peer6).unsafe_bitcast[sockaddr](), UInt32(size_of[sockaddr_in6]()))
+                else:
+                    var peer = sockaddr_in(port=_port_bytes(port), addr=in_addr(s_addr=_network32(ip)))
+                    result = connect(self.fd, Pointer(to=peer).unsafe_bitcast[sockaddr](), UInt32(size_of[sockaddr_in]()))
+                _finish_loopback_connect(self.fd, result, connect_deadline, self.downstream_fd, self.cancel_fd)
             _send_all(self.fd, request, self.request_deadline, self.downstream_fd, self.cancel_fd)
             _send_all(self.fd, body, self.request_deadline, self.downstream_fd, self.cancel_fd)
             while self.phase == 0:
@@ -849,6 +954,18 @@ struct LoopbackHTTPStream(Movable):
             _ = close(self.fd)
             self.fd = -1
         self.done = True
+
+    def take_reusable_fd(mut self) -> Int32:
+        if self.fd < 0 or not self.done or not self.pool_eligible or not self.response_persistent or len(self.buffer) > 0:
+            return -1
+        var byte: UInt8 = 0
+        var result = recv(self.fd, Pointer(to=byte), 1, MSG_PEEK | MSG_DONTWAIT)
+        if result >= 0 or get_errno() != ErrNo.EAGAIN:
+            self.close()
+            return -1
+        var reusable = self.fd
+        self.fd = -1
+        return reusable
 
     def __deinit__(deinit self):
         self.close()
@@ -919,10 +1036,24 @@ struct LoopbackHTTPStream(Movable):
         if self.max_body_bytes >= 0 and self.length > self.max_body_bytes:
             raise Error("oversized HTTP response body")
         var lines = _ascii(self.buffer, 0, end).split("\r\n")
+        var is_http_11 = lines[0].startswith("HTTP/1.1 ")
         self.headers = List[Tuple[String, String]]()
         for i in range(1, len(lines)):
             var colon = lines[i].find(":")
             self.headers.append((String(lines[i][byte=0:colon]), String(lines[i][byte=colon + 1:].strip(" \t"))))
+        var response_closes = False
+        var response_keeps_alive = False
+        for name, value in self.headers:
+            if name.lower() == "connection":
+                for token in value.split(","):
+                    var normalized = token.strip(" \t").lower()
+                    if normalized == "close": response_closes = True
+                    elif normalized == "keep-alive": response_keeps_alive = True
+        self.response_persistent = (is_http_11 or response_keeps_alive) and not response_closes
+        self.response_persistent = self.response_persistent and (
+            self.request_method == "HEAD" or parsed[0] == 204 or parsed[0] == 304
+            or parsed[1] >= 0 or parsed[2]
+        )
         _drop_prefix(self.buffer, end + 4)
         self.header_scan = 0
         if self.request_method == "HEAD" or parsed[0] == 204 or parsed[0] == 304:
@@ -1061,7 +1192,8 @@ struct LoopbackHTTPStream(Movable):
                     self._receive()
                 elif self.phase == 6:
                     self.done = True
-                    self.close()
+                    if not self.pool_eligible:
+                        self.close()
                     return List[UInt8]()
         except error:
             if String(error) != "loopback HTTP lookahead elapsed":

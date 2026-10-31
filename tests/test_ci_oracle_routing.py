@@ -52,6 +52,23 @@ def test_uses_04392_cli_fixture(test_name):
 
 
 class CIOracleRoutingTests(unittest.TestCase):
+    def test_upstream_pool_suite_runs_only_through_loopback_namespace_lane(self):
+        test_source = (ROOT / "tests/test_provider_upstream_pool_01662.py").read_text(encoding="utf-8")
+        wrapper = (ROOT / "scripts/ci/run_provider_upstream_pool_01662.py").read_text(encoding="utf-8")
+        self.assertIn("require_isolated_environment()", test_source)
+        self.assertIn('"MODEX_REAL_CODEX_NETNS": "1"', wrapper)
+        self.assertIn("bwrap_command(", wrapper)
+        self.assertIn('"test_provider_upstream_pool_01662.py"', wrapper)
+
+        for script_path in (ROOT / "scripts/ci/run-fast.sh", ROOT / "scripts/ci/run-full.sh"):
+            with self.subTest(script=script_path.name):
+                script = script_path.read_text(encoding="utf-8")
+                active_tests = unittest_files_for_lane(script, "focused-python-active")
+                self.assertNotIn("test_provider_upstream_pool_01662.py", active_tests)
+                sandbox_lane = script.index("run_logged active-provider-upstream-pool-loopback-01662")
+                active_lane = script.index("run_logged focused-python-active")
+                self.assertLess(active_lane, sandbox_lane)
+
     def test_provider_framing_suite_uses_active_oracle_and_active_ci_lane(self):
         environment = {
             **os.environ,

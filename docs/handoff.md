@@ -8,6 +8,20 @@ implementation and isolated differential evidence. Session ownership and
 fail-closed ancestry checks must be preserved. All six platform qualifications
 remain open; earlier evidence does not establish 0.166.2 parity.
 
+The local provider runtime now retains at most one idle upstream socket per
+runtime, scoped by validated loopback endpoint, credential, and authentication
+scheme. It reuses only
+fully consumed, self-delimited buffered or passthrough responses; translated
+SSE remains unpooled when HTTP framing may be incomplete. Fourteen isolated cases
+cover key rotation, authentication schemes, native Messages redirects,
+concurrent checkout, incomplete framing, cancellation, redirect ownership,
+stale peers, and shutdown. The idle timeout, capped at 30
+seconds, is a lazy reuse cutoff; an idle descriptor is closed on the next
+checkout, eviction, or shutdown. A peer may close after the checkout probe;
+failed requests are not replayed. This is selected Linux x86-64 evidence, not
+full provider or six-target parity. See
+`docs/evidence/baseline-0.166.2/provider-upstream-pool.md`.
+
 DeepSeek chat streaming now retains the last nonempty string
 `system_fingerprint` and ignores empty or non-string updates, matching the
 pinned provider-core projection. A clean `07dc37f` build reproduced the

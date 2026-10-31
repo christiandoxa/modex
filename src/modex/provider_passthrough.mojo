@@ -1,8 +1,9 @@
 """Native DeepSeek API passthrough transport."""
 
-from std.collections import List
+from std.collections import List, Optional
+from std.memory import Pointer
 
-from .loopback_http import HTTP_HEADER_LIMIT, LoopbackHTTPStream
+from .loopback_http import HTTP_HEADER_LIMIT, HTTP_POOL_AUTH_BEARER, HTTP_POOL_AUTH_X_API_KEY, LoopbackHTTPConnectionPool, LoopbackHTTPStream
 from .provider_deepseek_transport import deepseek_event_stream, deepseek_open_redirectable_stream, deepseek_request_headers
 
 
@@ -31,6 +32,8 @@ def deepseek_passthrough_stream(
     request_field_limit: Int = HTTP_HEADER_LIMIT,
     cancel_fd: Int32 = -1,
     anthropic_messages: Bool = False,
+    pool: Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]] = Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]](),
+    pool_credential_scope: Int = -1,
 ) raises -> LoopbackHTTPStream:
     var include_content_length = len(body) > 0
     var stream = deepseek_open_redirectable_stream(
@@ -50,6 +53,9 @@ def deepseek_passthrough_stream(
         cancel_fd,
         False,
         include_content_length,
+        pool,
+        pool_credential_scope,
+        HTTP_POOL_AUTH_X_API_KEY if anthropic_messages else HTTP_POOL_AUTH_BEARER,
     )
     # The frozen passthrough streams SSE on 2xx/3xx, and buffers non-SSE.
     # Keep >=400 rejection in the send path, before response dispatch; a

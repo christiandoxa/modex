@@ -1,12 +1,13 @@
 """Native loopback DeepSeek POST and incremental Responses SSE exchange."""
 
-from std.collections import Dict, List, Span
+from std.collections import Dict, List, Optional, Span
+from std.memory import Pointer
 from std.time import perf_counter
 
 from .json import JSON_ARRAY, JSON_OBJECT, JSON_STRING, JsonDocument, serialize_json
 from .provider_chat_buffered import deepseek_buffered_assistant_messages, deepseek_buffered_response
 from .provider_anthropic_messages import anthropic_buffered_assistant_messages, anthropic_buffered_response, deepseek_anthropic_messages_body, validate_deepseek_anthropic_request
-from .loopback_http import HTTP_HEADER_LIMIT, LoopbackHTTPStream, _http_token_byte, _number, normalize_loopback_ipv4_host
+from .loopback_http import HTTP_HEADER_LIMIT, HTTP_POOL_AUTH_BEARER, HTTP_POOL_AUTH_X_API_KEY, LoopbackHTTPConnectionPool, LoopbackHTTPStream, _http_token_byte, _number, normalize_loopback_ipv4_host
 from .log_operational import decode_url_host, ipv6_loopback_literal
 from .provider_chat_reader import DeepSeekChatReader
 from .provider_sse_wire import ProviderSSEFramer
@@ -475,6 +476,9 @@ def deepseek_open_redirectable_stream(
     cancel_fd: Int32,
     request_connection_close: Bool = True,
     include_content_length: Bool = True,
+    pool: Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]] = Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]](),
+    pool_credential_scope: Int = -1,
+    pool_auth_scheme: Int = HTTP_POOL_AUTH_BEARER,
 ) raises -> LoopbackHTTPStream:
     var outgoing_headers = headers.copy()
     var outgoing_body = body^
@@ -486,7 +490,7 @@ def deepseek_open_redirectable_stream(
         request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd,
         allow_unbounded_body, outgoing_method, request_header_limit,
         request_field_limit, cancel_fd, request_connection_close,
-        outgoing_content_length,
+        outgoing_content_length, pool, pool_credential_scope, pool_auth_scheme,
     )
     var request_deadline = stream.request_deadline
     var followed_redirects = 0
@@ -518,7 +522,7 @@ def deepseek_open_redirectable_stream(
             remaining_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd,
             allow_unbounded_body, outgoing_method, request_header_limit,
             request_field_limit, cancel_fd, request_connection_close,
-            outgoing_content_length,
+            outgoing_content_length, pool, pool_credential_scope, pool_auth_scheme,
         )
         followed_redirects += 1
     return stream^
@@ -541,8 +545,12 @@ struct DeepSeekExchange(Movable):
     var downstream_body_incomplete: Bool
 
     var native_messages: Bool
+    var upstream_pool: Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]]
+    var pool_address: String
+    var pool_credential_scope: Int
+    var pool_idle_timeout_ms: UInt64
 
-    def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, downstream_fd: Int32 = -1, previous_response_found: Bool = False, native_messages: Bool = False, request_method: String = "POST", request_header_limit: Int = HTTP_HEADER_LIMIT, request_field_limit: Int = HTTP_HEADER_LIMIT, ignore_web_search: Bool = False, cancel_fd: Int32 = -1, model_override: String = "") raises:
+    def __init__(out self, address: String, path: String, api_key: String, request: String, request_id: UInt64, response_id: String, created_at: UInt64, headers: List[Tuple[String, String]] = List[Tuple[String, String]](), history: String = "[]", strict_tools: Bool = False, web_search_mode: String = "auto", connect_timeout_ms: UInt64 = 1000, request_timeout_ms: UInt64 = 1000, idle_timeout_ms: UInt64 = 1000, max_body_bytes: Int = 4194304, line_max_bytes: Int = 4194304, event_max_bytes: Int = 4194304, accumulated_max_bytes: Int = 4194304, downstream_fd: Int32 = -1, previous_response_found: Bool = False, native_messages: Bool = False, request_method: String = "POST", request_header_limit: Int = HTTP_HEADER_LIMIT, request_field_limit: Int = HTTP_HEADER_LIMIT, ignore_web_search: Bool = False, cancel_fd: Int32 = -1, model_override: String = "", upstream_pool: Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]] = Optional[Pointer[LoopbackHTTPConnectionPool, MutUntrackedOrigin]](), pool_credential_scope: Int = -1) raises:
         if native_messages: validate_deepseek_anthropic_request(request)
         var prepared = JsonDocument(translate_deepseek_request(request, history, strict_tools, web_search_mode, previous_response_found, ignore_web_search, model_override))
         if max_body_bytes < 0 or max_body_bytes > 4 * 1024 * 1024:
@@ -562,6 +570,10 @@ struct DeepSeekExchange(Movable):
         self.done = False
         self.cancelled = False
         self.downstream_body_incomplete = False
+        self.upstream_pool = upstream_pool
+        self.pool_address = address
+        self.pool_credential_scope = pool_credential_scope
+        self.pool_idle_timeout_ms = idle_timeout_ms
         var bytes = List[UInt8]()
         for byte in self.body.as_bytes():
             bytes.append(byte)
@@ -570,6 +582,10 @@ struct DeepSeekExchange(Movable):
             address, path, outgoing_headers, bytes^, connect_timeout_ms, request_timeout_ms,
             idle_timeout_ms, max_body_bytes, downstream_fd, True, request_method,
             request_header_limit, request_field_limit, cancel_fd,
+            request_connection_close=not (upstream_pool and pool_credential_scope >= 0),
+            pool=upstream_pool,
+            pool_credential_scope=pool_credential_scope,
+            pool_auth_scheme=HTTP_POOL_AUTH_X_API_KEY if native_messages else HTTP_POOL_AUTH_BEARER,
         )
 
     def status(self) -> Int:
@@ -586,13 +602,20 @@ struct DeepSeekExchange(Movable):
             self.cancelled = True
         self._finish()
 
-    def _finish(mut self):
+    def _finish(mut self, allow_reuse: Bool = False):
         self.done = True
         self.pending.clear()
         self.pending_offset = 0
+        if allow_reuse and self.upstream_pool and self.pool_credential_scope >= 0:
+            var reusable_fd = self.http.take_reusable_fd()
+            if reusable_fd >= 0:
+                self.upstream_pool.value()[].put(
+                    reusable_fd, self.pool_address, self.pool_credential_scope,
+                    self.http.pool_auth_scheme, self.pool_idle_timeout_ms,
+                )
         self.http.close()
 
-    def read_body(mut self) raises -> List[UInt8]:
+    def read_body(mut self, allow_reuse: Bool = False) raises -> List[UInt8]:
         if self.read_mode == 2:
             self._finish()
             raise Error("DeepSeek response body was already handed to the event reader")
@@ -606,17 +629,17 @@ struct DeepSeekExchange(Movable):
                 output.extend(chunk^)
                 if self.http.done:
                     self.done = True
-            self._finish()
+            self._finish(allow_reuse)
             return output^
         except:
-            self._finish()
+            self._finish(False)
             raise
 
     def read_error_body(mut self) raises -> List[UInt8]:
         if self.successful():
             raise Error("DeepSeek successful response cannot be buffered as an error")
         var output = self.http.read_buffered()
-        self._finish()
+        self._finish(True)
         return output^
 
     def prefetch(mut self, timeout_ms: UInt64) raises -> Int:
@@ -762,7 +785,7 @@ struct DeepSeekExchange(Movable):
         if deepseek_event_stream(self.http.headers):
             self._finish()
             raise Error("DeepSeek buffered reader requires a non-event-stream response")
-        var bytes = self.read_body()
+        var bytes = self.read_body(True)
         var source: String
         try:
             source = String(from_utf8=Span(bytes))

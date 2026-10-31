@@ -72,6 +72,31 @@ class McpJsonlBridgeHelpPrecedence01662Tests(unittest.TestCase):
                 )
                 self.assertEqual(created, [])
 
+    def test_missing_bridge_command_matches_required_argument_error(self):
+        for tail in ((), ("--",)):
+            with self.subTest(tail=tail):
+                baseline, baseline_created = isolated_run(
+                    ORACLE,
+                    ["__mcp-jsonl-bridge", *tail],
+                    "prodex",
+                    "01662-mcp-bridge-missing-command-oracle",
+                )
+                modex, modex_created = isolated_run(
+                    MODEX,
+                    ["__mcp-jsonl-bridge", *tail],
+                    "modex",
+                    "01662-mcp-bridge-missing-command-modex",
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+                expected_stderr = baseline.stderr.replace(
+                    b"Usage: prodex ", b"Usage: modex ", 1
+                )
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (baseline.returncode, b"", expected_stderr),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
 
 if __name__ == "__main__":
     unittest.main()

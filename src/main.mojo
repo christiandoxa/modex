@@ -538,7 +538,7 @@ def main():
             print(error, file=stderr, end="")
             exit(2)
             return
-    if len(args) >= 3 and args[1] == "__mcp-jsonl-bridge":
+    if len(args) >= 2 and args[1] == "__mcp-jsonl-bridge":
         var parts = args[0].split("/")
         var executable = String(parts[len(parts) - 1])
         try:

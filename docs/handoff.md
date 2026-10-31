@@ -54,8 +54,10 @@ added. See
 
 The hidden `__mcp-jsonl-bridge` pre-command parser now matches tested 0.166.2
 help short-cluster and ordering behavior, including errors when an unknown
-option precedes help. Positional commands still stop at Modex's existing
-unsupported-command guard; no bridge execution was added. See
+option precedes help. Invocations with no `<COMMAND>`, including a lone `--`,
+now return the release's missing-required-argument diagnostic. Positional
+commands still stop at Modex's existing unsupported-command guard; no bridge
+execution was added. See
 `docs/evidence/baseline-0.166.2/mcp-jsonl-bridge-help-precedence.md`.
 
 Pinned 0.166.2 differential coverage for `session list` and `session current`

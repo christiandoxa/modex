@@ -152,6 +152,8 @@ def parse_sub_agent_exec_arguments(args: List[String], executable: String) raise
 
 def mcp_jsonl_bridge_help_requested(args: List[String], executable: String) raises -> Bool:
     var usage = executable + " __mcp-jsonl-bridge <COMMAND> [ARGS]..."
+    if len(args) == 2 or (len(args) == 3 and args[2] == "--"):
+        raise session_cli_error("the following required arguments were not provided:\n  <COMMAND>", usage)
     var index = 2
     while index < len(args):
         var argument = String(args[index])

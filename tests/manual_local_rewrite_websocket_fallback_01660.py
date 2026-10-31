@@ -57,6 +57,8 @@ class LocalRewriteWebSocketFallback01660Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         require_isolated_environment()
+        if os.environ.get("PRODEX_ORACLE_01660") != os.environ.get("PRODEX_ORACLE"):
+            raise AssertionError("the mounted Prodex oracle must reach the 0.166.0 override")
         inputs = [
             ("workspace", active.ROOT),
             ("Modex", MODEX),

@@ -152,6 +152,7 @@ def main():
         "MODEX_REAL_CODEX_NETNS": "1",
         "MODEX_BINARY": str(modex),
         "PRODEX_ORACLE": str(oracle),
+        "PRODEX_ORACLE_01660": str(oracle),
         "PYTHONPATH": os.pathsep.join((str(ROOT / "tests"), str(ROOT))),
     }
     if toolchain is not None:

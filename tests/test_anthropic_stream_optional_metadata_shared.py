@@ -107,8 +107,9 @@ def _observe_turns_with_read_errors(
             '        if not piece: break\n'
             '        payload.extend(piece)\n'
             '    body_error = "client_closed_after_failure"\n'
-            '    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),\n'
-            '          "body": bytes(payload).hex(), "body_error": body_error, "started": started, "finished": int(time.time())})'
+            '    response_headers = response.getheaders()\n'
+            '    save({"kind": "response", "status": response.status, "headers": dict(response_headers),\n'
+            '          "header_list": response_headers, "body": bytes(payload).hex(), "body_error": body_error, "started": started, "finished": int(time.time())})'
         )
     else:
         read_and_save = (
@@ -121,13 +122,16 @@ def _observe_turns_with_read_errors(
             '            payload.extend(piece)\n'
             '    except Exception as error:\n'
             '        body_error = type(error).__name__ + ": " + str(error)\n'
-            '    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),\n'
-            '          "body": bytes(payload).hex(), "body_error": body_error, "started": started, "finished": int(time.time())})'
+            '    response_headers = response.getheaders()\n'
+            '    save({"kind": "response", "status": response.status, "headers": dict(response_headers),\n'
+            '          "header_list": response_headers, "body": bytes(payload).hex(), "body_error": body_error, "started": started, "finished": int(time.time())})'
         )
     client_loop = client_loop.replace(
         'payload = response.read()\n'
-        '    save({"kind": "response", "status": response.status, "headers": dict(response.getheaders()),\n'
-        '          "body": payload.hex(), "started": started, "finished": int(time.time())})',
+        '    response_headers = response.getheaders()\n'
+        '    save({"kind": "response", "status": response.status, "headers": dict(response_headers),\n'
+        '          "header_list": response_headers, "body": payload.hex(),\n'
+        '          "started": started, "finished": int(time.time())})',
         read_and_save,
         1,
     )
@@ -1121,15 +1125,16 @@ class AnthropicOptionalMetadataSharedTests(unittest.TestCase):
             ("0.165.1", ORACLE_01651), ("0.439.2", ORACLE_04392), ("Modex", MODEX),
         ):
             with self.subTest(binary=label):
-                result = _observe_parent_shutdown(binary, request, reply, pipeline_body_bytes=1024)
+                result = _observe_parent_shutdown(
+                    binary, request, reply, pipeline_body_bytes=1024,
+                    hold_client_until_shutdown=True,
+                )
                 self.assertTrue(result["held"], (label, result))
                 self.assertFalse(result["parent_timed_out"], (label, result))
-                self.assertIn(result["parent_returncode"], (0, -signal.SIGTERM), (label, result))
-                if result["shutdown_sent"]:
-                    self.assertTrue(result["parent_alive_before_shutdown"], (label, result))
-                    self.assertEqual(result["parent_returncode"], -signal.SIGTERM, (label, result))
-                else:
-                    self.assertEqual(result["parent_returncode"], 0, (label, result))
+                self.assertTrue(result["client_waiting_for_shutdown"], (label, result))
+                self.assertTrue(result["parent_alive_before_shutdown"], (label, result))
+                self.assertTrue(result["shutdown_sent"], (label, result))
+                self.assertEqual(result["parent_returncode"], -signal.SIGTERM, (label, result))
                 self.assertEqual(result["children_alive_after_2s"], [], (label, result))
                 self.assertEqual(
                     [(row["bytes"], row["write_open"]) for row in result["pipelined_records"]],

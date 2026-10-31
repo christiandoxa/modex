@@ -103,6 +103,7 @@ class AnthropicParentShutdown01660Tests(unittest.TestCase):
         ):
             observations[label] = _observe_parent_shutdown(
                 binary, request, reply, pipeline_body_bytes=1024,
+                hold_client_until_shutdown=True,
             )
 
         summary = {
@@ -111,6 +112,7 @@ class AnthropicParentShutdown01660Tests(unittest.TestCase):
                 "parent_returncode": result["parent_returncode"],
                 "parent_alive_before_shutdown": result["parent_alive_before_shutdown"],
                 "shutdown_sent": result["shutdown_sent"],
+                "client_waiting_for_shutdown": result["client_waiting_for_shutdown"],
                 "parent_timed_out": result["parent_timed_out"],
                 "children_alive_after_2s": result["children_alive_after_2s"],
                 "pipelined_records": result["pipelined_records"],
@@ -122,12 +124,10 @@ class AnthropicParentShutdown01660Tests(unittest.TestCase):
             with self.subTest(binary=label):
                 self.assertTrue(result["held"], (label, summary))
                 self.assertFalse(result["parent_timed_out"], (label, summary))
-                self.assertIn(result["parent_returncode"], (0, -signal.SIGTERM), (label, summary))
-                if result["shutdown_sent"]:
-                    self.assertTrue(result["parent_alive_before_shutdown"], (label, summary))
-                    self.assertEqual(result["parent_returncode"], -signal.SIGTERM, (label, summary))
-                else:
-                    self.assertEqual(result["parent_returncode"], 0, (label, summary))
+                self.assertTrue(result["client_waiting_for_shutdown"], (label, summary))
+                self.assertTrue(result["parent_alive_before_shutdown"], (label, summary))
+                self.assertTrue(result["shutdown_sent"], (label, summary))
+                self.assertEqual(result["parent_returncode"], -signal.SIGTERM, (label, summary))
                 self.assertEqual(result["children_alive_after_2s"], [], (label, summary))
                 self.assertEqual(
                     [(row["bytes"], row["write_open"]) for row in result["pipelined_records"]],

@@ -73,6 +73,7 @@ print("synthetic-continuation-complete")
 
 def _observe_parent_shutdown(
     binary, request, reply, pipeline_body_bytes=1048576, pipeline_head_bytes=None,
+    hold_client_until_shutdown=False,
 ):
     client = CLIENT
     loop_marker = '\nfor turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"]).read_text()):\n'
@@ -91,6 +92,10 @@ def _observe_parent_shutdown(
         '        if not piece: break\n'
         '        payload.extend(piece)\n'
         '    save({"kind":"held","body":bytes(payload).hex()})\n'
+        '    release = os.environ.get("MODEX_PARENT_SHUTDOWN_RELEASE")\n'
+        '    if release:\n'
+        '        save({"kind":"shutdown_hold"})\n'
+        '        while not pathlib.Path(release).exists(): time.sleep(0.01)\n'
         '    try:\n'
         '        while True:\n'
         '            piece = response.read1(4096)\n'
@@ -132,6 +137,7 @@ def _observe_parent_shutdown(
         root = Path(temporary)
         for name in ("home", "state", "shared", "work"):
             (root / name).mkdir(mode=0o700)
+        release_path = root / "release-client" if hold_client_until_shutdown else None
         (root / "state/update-check.json").write_text(
             '{"source":"GitHub","latest_version":"0.439.2","checked_at":4102444800}'
         )
@@ -154,6 +160,8 @@ def _observe_parent_shutdown(
             "XDG_CACHE_HOME": str(root / "home"),
             "XDG_DATA_HOME": str(root / "home"),
         }
+        if release_path is not None:
+            environment["MODEX_PARENT_SHUTDOWN_RELEASE"] = str(release_path)
         with serving([reply]) as upstream:
             process = subprocess.Popen(
                 [
@@ -185,6 +193,7 @@ def _observe_parent_shutdown(
                         pass
 
             held = False
+            client_waiting_for_shutdown = False
             shutdown_sent = False
             parent_alive_before_shutdown = False
             parent_timed_out = False
@@ -199,7 +208,12 @@ def _observe_parent_shutdown(
                         ] if capture.exists() else []
                     except json.JSONDecodeError:
                         rows = []
-                    if any(row.get("kind") == "held" for row in rows):
+                    client_waiting_for_shutdown = any(
+                        row.get("kind") == "shutdown_hold" for row in rows
+                    )
+                    if any(row.get("kind") == "held" for row in rows) and (
+                        not hold_client_until_shutdown or client_waiting_for_shutdown
+                    ):
                         held = True
                         break
                     time.sleep(0.02)
@@ -212,6 +226,9 @@ def _observe_parent_shutdown(
                             shutdown_sent = True
                         except ProcessLookupError:
                             pass
+                        finally:
+                            if release_path is not None:
+                                release_path.touch()
                 try:
                     process.wait(timeout=5)
                 except subprocess.TimeoutExpired:
@@ -249,6 +266,7 @@ def _observe_parent_shutdown(
                 return {
                     "parent_returncode": process.returncode,
                     "shutdown_sent": shutdown_sent,
+                    "client_waiting_for_shutdown": client_waiting_for_shutdown,
                     "parent_alive_before_shutdown": parent_alive_before_shutdown,
                     "parent_timed_out": parent_timed_out,
                     "children_alive_after_2s": [pid for pid, _ in alive_children],
@@ -261,6 +279,8 @@ def _observe_parent_shutdown(
                     "responses": [row for row in rows if row.get("kind") == "response"],
                 }
             finally:
+                if release_path is not None:
+                    release_path.touch(exist_ok=True)
                 if process.poll() is None:
                     process.kill()
                     process.wait(timeout=2)

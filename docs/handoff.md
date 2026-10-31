@@ -1,5 +1,11 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Hosted Fast CI run `41150466289` on `b41e117` passed 172 active 0.166.0
+tests, 121 historical 0.165.1 tests, and independent checks. It failed closed
+because the required historical 0.439.2 and 0.439.5 oracle assets were
+unavailable. This is not a complete CI or parity pass and does not validate
+later commits.
+
 The loopback relay sends CONNECT requests in authority form, including the
 default port, and rejects successful CONNECT responses before tunnel data can
 be forwarded. The reference returns a bodyless 200 in the tested case; Modex's

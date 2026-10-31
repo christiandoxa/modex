@@ -8,6 +8,16 @@ implementation and isolated differential evidence. Session ownership and
 fail-closed ancestry checks must be preserved. All six platform qualifications
 remain open; earlier evidence does not establish 0.166.2 parity.
 
+DeepSeek chat streaming now retains the last nonempty string
+`system_fingerprint` and ignores empty or non-string updates, matching the
+pinned provider-core projection. A clean `07dc37f` build reproduced the
+previous mismatch; five active real-process controls now pass in the provider
+shape suite, including empty alone, empty after nonempty, nonempty after empty,
+and numeric/array values. The active buffered metadata cases and malformed
+stream safeguard also pass unchanged. Fast and Full CI already run the active
+provider shape and buffered metadata modules. See
+`docs/evidence/baseline-0.166.2/provider-stream-fingerprint.md`.
+
 Invalid Super provider and reasoning-effort diagnostics now escape seven
 additional Unicode scalars observed in the active release: U+00A0, U+202F,
 U+0378, U+2063, U+FE0F, U+E000, and U+FFF9. Eighteen isolated value/caller

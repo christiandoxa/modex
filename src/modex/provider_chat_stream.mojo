@@ -427,7 +427,7 @@ struct DeepSeekChatState:
         if created:
             self.created_at = created.value()
         var fingerprint = optional_string(doc, doc.root, "system_fingerprint")
-        if fingerprint and fingerprint.value():
+        if fingerprint and fingerprint.value().byte_length() > 0:
             self.fingerprint = fingerprint.value()
         var usage = doc.get(doc.root, "usage")
         if usage >= 0:

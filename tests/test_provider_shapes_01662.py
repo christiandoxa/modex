@@ -38,6 +38,80 @@ class ProviderShapes01662Tests(historical.ProviderShapes01660Tests):
         self.assertEqual(responses[0]["status"], 200)
         return historical._stream_events(bytes.fromhex(responses[0]["body"]))
 
+    def test_chat_stream_fingerprint_ignores_empty_and_nonstring_updates(self):
+        chunks = (
+            (
+                {"id": "chatcmpl_empty_fingerprint", "created": 42,
+                 "system_fingerprint": "", "choices": []},
+                {"choices": [{"index": 0, "delta": {"content": "synthetic"},
+                               "finish_reason": None}]},
+                {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
+            ),
+            (
+                {"id": "chatcmpl_fingerprint_reset", "created": 42,
+                 "system_fingerprint": "fp_synthetic", "choices": []},
+                {"system_fingerprint": "", "choices": [
+                    {"index": 0, "delta": {"content": "synthetic"},
+                     "finish_reason": None},
+                ]},
+                {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
+            ),
+            (
+                {"id": "chatcmpl_fingerprint_set", "created": 42,
+                 "system_fingerprint": "", "choices": []},
+                {"system_fingerprint": "fp_later", "choices": [
+                    {"index": 0, "delta": {"content": "synthetic"},
+                     "finish_reason": None},
+                ]},
+                {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
+            ),
+            (
+                {"id": "chatcmpl_fingerprint_nonstring", "created": 42,
+                 "system_fingerprint": 7, "choices": []},
+                {"system_fingerprint": ["ignored"], "choices": [
+                    {"index": 0, "delta": {"content": "synthetic"},
+                     "finish_reason": None},
+                ]},
+                {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
+            ),
+            (
+                {"id": "chatcmpl_fingerprint_nonstring_update", "created": 42,
+                 "system_fingerprint": "fp_synthetic", "choices": []},
+                {"system_fingerprint": 7, "choices": [
+                    {"index": 0, "delta": {"content": "synthetic"},
+                     "finish_reason": None},
+                ]},
+                {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
+            ),
+        )
+        turns = [
+            {"model": "deepseek-chat", "input": "synthetic fingerprint", "stream": True}
+            for _ in chunks
+        ]
+        replies = [historical._stream_reply(list(case)) for case in chunks]
+        observations = []
+        for binary in (ORACLE, MODEX):
+            upstream, responses = historical.observe_turns(
+                binary, turns, replies, latest_version="0.166.2",
+            )
+            self.assertEqual([row["status"] for row in responses], [200] * len(chunks))
+            self.assertEqual(len(upstream), len(chunks))
+            self.assertEqual([row["path"] for row in upstream],
+                             ["/v1/chat/completions"] * len(chunks))
+            events = [
+                historical._stream_events(bytes.fromhex(row["body"]))
+                for row in responses
+            ]
+            observations.append(events)
+        self.assertEqual(observations[1], observations[0])
+        metadata = [events[-1]["response"].get("metadata", {}).get("deepseek", {})
+                    for events in observations[0]]
+        self.assertNotIn("system_fingerprint", metadata[0])
+        self.assertEqual(metadata[1]["system_fingerprint"], "fp_synthetic")
+        self.assertEqual(metadata[2]["system_fingerprint"], "fp_later")
+        self.assertNotIn("system_fingerprint", metadata[3])
+        self.assertEqual(metadata[4]["system_fingerprint"], "fp_synthetic")
+
     def test_chunked_sse_can_exceed_four_mib_total_with_bounded_frames(self):
         limit = 4 * 1024 * 1024
         comments = (b":" + b"x" * (64 * 1024 - 1) + b"\n\n") * 65

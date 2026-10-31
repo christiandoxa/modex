@@ -8,6 +8,13 @@ implementation and isolated differential evidence. Session ownership and
 fail-closed ancestry checks must be preserved. All six platform qualifications
 remain open; earlier evidence does not establish 0.166.2 parity.
 
+On 2026-11-01, locally recovered official historical 0.439.2 and 0.439.5
+workflow artifacts matched their pinned hashes. Selected historical lanes
+passed across isolated invocations, but nested Bubblewrap prevented one combined
+run. The expiring artifacts do not provide a durable credential-free hosted CI
+source; the historical gates remain fail-closed. See
+`docs/evidence/historical-artifact-regressions-20261101.md`.
+
 Managed Ponytail integrity validation remains unavailable. A proposed
 read-only implementation was not integrated because the available directory
 and process APIs did not establish bounded listing or descendant cleanup, and

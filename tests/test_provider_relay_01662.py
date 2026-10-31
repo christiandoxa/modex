@@ -3,9 +3,11 @@
 import hashlib
 import textwrap
 import unittest
+from unittest.mock import patch
 
 from test_active_baseline_01662 import MODEX, ORACLE, ORACLE_SHA256
 from test_deepseek_continuation import observe_turns
+from test_local_rewrite import SYNTHETIC_API_KEY, UpstreamHandler
 from test_super_launch import CODEX
 import test_provider_passthrough_01660 as historical
 
@@ -126,6 +128,105 @@ class ProviderRelay01662Tests(unittest.TestCase):
 
     def test_responses_empty_204_sse_and_bodyless_controls_match_active_wire(self):
         historical.ProviderBufferedMetadata01660Tests.test_responses_empty_204_sse_and_bodyless_controls_match_active_wire(self)
+
+    def test_upstream_content_length_is_omitted_for_all_empty_requests(self):
+        body = b"synthetic request body"
+        turns = [
+            {"_method": "GET", "_path": "/v1/chat/completions"},
+            {"_method": "HEAD", "_path": "/v1/chat/completions"},
+            {"_method": "GET", "_path": "/v1/chat/completions", "_raw_body": body.decode("ascii")},
+            {"_method": "HEAD", "_path": "/v1/chat/completions", "_raw_body": body.decode("ascii")},
+            {"_method": "POST", "_path": "/v1/chat/completions", "_raw_body": ""},
+            {"_method": "POST", "_path": "/v1/chat/completions", "_raw_body": body.decode("ascii")},
+            {"_method": "PUT", "_path": "/v1/chat/completions", "_raw_body": ""},
+            {"_method": "HEAD", "_path": "/v1/models"},
+        ]
+        expected_requests = [
+            ("GET", "/v1/chat/completions", b""),
+            ("HEAD", "/v1/chat/completions", b""),
+            ("GET", "/v1/chat/completions", body),
+            ("HEAD", "/v1/chat/completions", body),
+            ("POST", "/v1/chat/completions", b""),
+            ("POST", "/v1/chat/completions", body),
+            ("PUT", "/v1/chat/completions", b""),
+            ("HEAD", "/v1/models", b""),
+        ]
+        reply = {"status": 200, "content_type": "application/json", "body": b'{"synthetic":true}'}
+        with patch.object(UpstreamHandler, "do_PUT", UpstreamHandler.do_POST, create=True):
+            for binary in (ORACLE, MODEX):
+                with self.subTest(binary=str(binary)):
+                    upstream, responses = observe_turns(
+                        binary, [dict(turn) for turn in turns], [reply.copy() for _ in turns],
+                        latest_version="0.166.2",
+                    )
+                    self.assertEqual(len(upstream), len(expected_requests))
+                    self.assertEqual(len(responses), len(turns))
+                    self.assertEqual([response["status"] for response in responses], [200] * len(turns))
+                    actual = [
+                        (row["method"], row["path"], row["body"], row["headers"].get("content-length"))
+                        for row in upstream
+                    ]
+                    self.assertEqual([request[:3] for request in actual], expected_requests)
+                    expected_lengths = [None, None, str(len(body)), str(len(body)), None, str(len(body)), None, None]
+                    self.assertEqual([request[3] for request in actual], expected_lengths)
+                    self.assertEqual(
+                        [row["headers"]["authorization"] for row in upstream],
+                        ["Bearer synthetic-provider-key"] * len(expected_requests),
+                    )
+
+    def test_native_messages_content_length_is_omitted_for_all_empty_methods(self):
+        body = b"synthetic request body"
+        turns = [
+            {"_method": "GET", "_path": "/v1/messages"},
+            {"_method": "HEAD", "_path": "/v1/messages"},
+            {"_method": "POST", "_path": "/v1/messages", "_raw_body": ""},
+            {"_method": "PUT", "_path": "/v1/messages", "_raw_body": ""},
+            *[
+                {"_method": method, "_path": "/v1/messages", "_raw_body": body.decode("ascii")}
+                for method in ("GET", "HEAD", "POST", "PUT")
+            ],
+        ]
+        expected = [
+            (method, "/anthropic/v1/messages", b"") for method in ("GET", "HEAD", "POST", "PUT")
+        ] + [
+            (method, "/anthropic/v1/messages", body) for method in ("GET", "HEAD", "POST", "PUT")
+        ]
+        reply = {"status": 200, "content_type": "application/json", "body": b"{}"}
+        with patch.object(UpstreamHandler, "do_PUT", UpstreamHandler.do_POST, create=True):
+            for binary in (ORACLE, MODEX):
+                with self.subTest(binary=str(binary)):
+                    upstream, responses = observe_turns(
+                        binary, [dict(turn) for turn in turns], [reply.copy() for _ in turns],
+                        latest_version="0.166.2",
+                    )
+                    self.assertEqual(len(upstream), len(expected))
+                    self.assertEqual([response["status"] for response in responses], [200] * len(turns))
+                    actual = [
+                        (row["method"], row["path"], row["body"], row["headers"].get("content-length"))
+                        for row in upstream
+                    ]
+                    self.assertEqual([request[:3] for request in actual], expected)
+                    self.assertEqual(
+                        [request[3] for request in actual],
+                        [None] * 4 + [str(len(body))] * 4,
+                    )
+                    self.assertEqual(
+                        [row["headers"]["x-api-key"] for row in upstream],
+                        [SYNTHETIC_API_KEY] * len(expected),
+                    )
+                    self.assertTrue(all("authorization" not in row["headers"] for row in upstream))
+
+    def test_bodyless_get_and_head_still_reject_invalid_local_credentials(self):
+        turns = [
+            {"_method": "GET", "_path": "/v1/chat/completions",
+             "_headers": {"Authorization": "Bearer synthetic-invalid-token"}},
+            {"_method": "HEAD", "_path": "/v1/chat/completions",
+             "_headers": {"Authorization": "Bearer synthetic-invalid-token"}},
+        ]
+        upstream, responses = observe_turns(MODEX, turns, [], latest_version="0.166.2")
+        self.assertEqual(upstream, [])
+        self.assertEqual([response["status"] for response in responses], [401, 401])
+        self.assertEqual([bytes.fromhex(response["body"]) for response in responses], [b"", b""])
 
     def test_model_catalog_forwarding_preserves_custom_base_path_and_query(self):
         body = b'{"synthetic":true}'

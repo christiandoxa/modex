@@ -32,7 +32,7 @@ def deepseek_passthrough_stream(
     cancel_fd: Int32 = -1,
     anthropic_messages: Bool = False,
 ) raises -> LoopbackHTTPStream:
-    var include_content_length = not anthropic_messages or len(body) > 0 or (request_method != "GET" and request_method != "HEAD")
+    var include_content_length = len(body) > 0
     var stream = deepseek_open_redirectable_stream(
         address,
         path,

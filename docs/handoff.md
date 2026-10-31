@@ -240,6 +240,20 @@ three return matching statuses and bodies without reaching the provider. This
 closes only these Linux x86-64 header differences; broader provider coverage and
 all six target qualifications remain open.
 
+Upstream request framing for the selected provider routes now matches the
+0.166.2 oracle: empty GET, HEAD, POST, and PUT requests omit
+`Content-Length`, while nonempty requests carry the exact byte length. The
+production Chat comparison covers empty GET/HEAD/POST/PUT, nonempty
+GET/HEAD/POST, and `HEAD /v1/models`; native Messages covers empty and
+nonempty GET/HEAD/POST/PUT. Synthetic provider credentials remain route
+specific (bearer for Chat, `x-api-key` without `Authorization` for Messages),
+and invalid local credentials on GET/HEAD return 401 without dispatch. The
+production build and all nine focused relay tests passed on Linux x86-64 in a
+private loopback-only network namespace. This evidence qualifies only those
+routes and request shapes; other provider behavior, unverified security
+behavior, and all six target qualifications remain open. See
+`docs/evidence/baseline-0.166.2/provider-relay-routes-bodyless.md`.
+
 The production relay now includes the 0.166.2 `Server` and `Date` fields on a
 valid `100 Continue` response. A bounded real Super/client exchange waits for
 that interim response before sending its synthetic provider request body; both

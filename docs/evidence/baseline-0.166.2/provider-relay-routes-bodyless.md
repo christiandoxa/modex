@@ -12,6 +12,25 @@ access are not used. It also checks raw local-error wires for an unsupported
 route (404), invalid request target (400), and malformed Responses request
 (502).
 
+The production upstream request writer now matches the release's
+`Content-Length` behavior for empty requests: it omits the field for empty
+GET, HEAD, POST, and PUT requests. The Chat Completions comparison exercises
+empty GET/HEAD/POST/PUT, nonempty GET/HEAD/POST, and `HEAD /v1/models`; the
+native Messages comparison exercises empty and nonempty GET/HEAD/POST/PUT.
+Nonempty requests carry their exact byte length. The Chat route forwards a
+synthetic bearer credential, while native Messages forwards the synthetic
+`x-api-key` and no `Authorization` header. A local credential control confirms
+that invalid credentials on bodyless GET/HEAD still produce 401 without
+upstream dispatch.
+
+On 2026-10-31, `make build` succeeded and all nine tests in
+`test_provider_relay_01662.py` passed against Modex and the checksum-pinned
+oracle. The run used synthetic loopback peers in a fresh private network
+namespace with only loopback enabled and no default IPv4 or IPv6 route. This
+adds Linux x86-64 evidence for the listed routes, methods, and body shapes;
+other provider behavior, security behavior, platforms, and all six release
+targets remain unqualified.
+
 On 2026-10-31, the original four comparisons passed inside Bubblewrap's private
 filesystem namespace, sharing a fresh outer `unshare -Urn` network namespace
 with only loopback enabled and no default IPv4 or IPv6 route. Modex was built

@@ -7,6 +7,7 @@ from std.os.path import realpath
 from .log_redaction import redact_log_text
 from .paths import app_root, shared_root
 from .process_spawn import CapturedProcessOutput, capture_with_env
+from .sha256 import hash_file
 from .sessions import escape_terminal_controls
 from .super_launch import (
     _dry_run_probe_environment,
@@ -109,7 +110,20 @@ def _doctor_first_line(bytes: List[UInt8]) -> String:
     return String()
 
 
-def _doctor_probe_binary(binary: String, command: String, args: List[String], success: String = "", include_codex_home: Bool = False) -> String:
+def _doctor_installed_status(path: String, version: String) -> String:
+    var digest: String
+    try:
+        # shortcut: installed-tool digests are capped at 512 MiB; raise after a larger managed binary is observed.
+        digest = hash_file(path)
+    except:
+        return "invalid"
+    return (
+        "installed, version=" + version + ", path="
+        + escape_terminal_controls(redact_log_text(path)) + ", digest=" + digest
+    )
+
+
+def _doctor_probe_binary(binary: String, command: String, args: List[String], success: String = "", include_codex_home: Bool = False, reported_path: String = "") -> String:
     if not binary:
         return "missing (" + escape_terminal_controls(redact_log_text("failed to start " + command)) + ")"
     var output: CapturedProcessOutput
@@ -124,19 +138,35 @@ def _doctor_probe_binary(binary: String, command: String, args: List[String], su
             argv0=command,
         )
     except error:
+        if reported_path:
+            return "invalid"
         var message = String(error)
         if message.find("process spawn failed with errno") >= 0:
             message = "failed to start " + command
         return "missing (" + escape_terminal_controls(redact_log_text(message)) + ")"
     if not output.status.exit_code or output.status.exit_code.value() != 0:
+        if reported_path:
+            return "invalid"
         return "warn (exit " + _doctor_exit_status(output) + ")"
     if success:
         return success
+    if reported_path:
+        try:
+            _ = String(from_utf8=Span(output.stdout))
+            _ = String(from_utf8=Span(output.stderr))
+        except:
+            return "invalid"
     var line = _doctor_first_line(output.stdout)
     if not line:
         line = _doctor_first_line(output.stderr)
     if not line:
+        if reported_path:
+            return "invalid"
         line = "available"
+    if reported_path:
+        if not _optional_tool_version_status(line, True).startswith("resolved "):
+            return "invalid"
+        return _doctor_installed_status(reported_path, line)
     return "ok (" + line + ")"
 
 
@@ -170,10 +200,14 @@ def _doctor_optional_command_status(command: String, args: List[String]) -> Stri
             var binary = _managed_optimizer_binary(root, candidate)
             if not binary:
                 return "invalid"
+            if command == "rtk":
+                return _doctor_probe_binary(binary, command, args, reported_path=binary)
             return _doctor_probe_binary(binary, command, args)
     var binary = _doctor_resolve(command)
     if not binary:
         return "missing"
+    if command == "rtk":
+        return _doctor_probe_binary(binary, command, args, reported_path=binary)
     return _doctor_probe_binary(binary, command, args)
 
 
@@ -235,9 +269,11 @@ def _doctor_playwright_status() -> String:
     if not line:
         return "missing"
     var version_status = _optional_tool_version_status(line, False)
+    if not version_status:
+        return "missing"
     if not version_status.startswith("resolved "):
-        return version_status if version_status else "missing (unrecognized Playwright MCP version)"
-    return "ok (" + line + ")"
+        return "invalid"
+    return _doctor_installed_status(npx, line)
 
 
 def _doctor_ponytail_status() -> String:

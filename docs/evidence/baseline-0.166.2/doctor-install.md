@@ -17,6 +17,25 @@ directory; and the Playwright check invokes `npx --version` before its
 `ponytail` symlink is observed but never executed. Modex redacts the synthetic
 Authorization value and ANSI controls from probe output.
 
+For a private managed RTK binary and a valid Playwright MCP package found by
+the no-install npx probe, Modex now matches Prodex's installed version, binary
+path, and SHA-256 digest fields. The exact panel comparison covers both a
+managed-root RTK and an RTK found on the synthetic `PATH`; a separate fixture
+keeps a decoy RTK in the working directory and confirms it is not executed.
+Synthetic path and version strings containing a credential-like value and an
+ANSI control compare with the oracle after Modex escapes the control. Digests
+use the existing 512 MiB file-size limit; larger binaries are reported invalid.
+
+RTK candidates with an unrecognized version line, an unsupported old version,
+invalid UTF-8, no output, or a nonzero probe exit remain `invalid`, matching the
+release. A recognized but too-old Playwright MCP version reports `invalid`,
+while an unrecognized version reports `missing`, matching the release. A
+separate Codebase mismatch remains open: a synthetic managed
+`codebase-memory-mcp` executable that prints `codebase-memory-mcp 0.12.1` is
+reported as `ok` by Modex, while Prodex reports `invalid` because the release
+also checks daemon coordination. Modex does not claim that coordination is
+healthy; the `ok` result is a known false-green gap.
+
 One status difference remains visible: for `PRODEX_OPTIMIZERS_HOME=""`,
 Prodex reports `rtk: invalid` while Modex reports `rtk: missing`. Both avoid
 executing the working-directory fixture. The regression is asserted explicitly
@@ -24,7 +43,6 @@ and does not count as exact parity.
 
 `tests/test_doctor_install_01662.py` is included in the active Fast and Full
 test lanes. The historical 0.166.1 `doctor --install` suite remains separately
-pinned and unchanged. This evidence covers only the listed synthetic,
-read-only inventory cases on Linux x86-64; it does not qualify other doctor
-modes, configured profiles, installed tools, or the other five release
-targets.
+pinned. This evidence covers only the listed synthetic, read-only inventory
+cases on Linux x86-64; it does not qualify other doctor modes, configured
+profiles, other installed tools, or the other five release targets.

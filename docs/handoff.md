@@ -69,11 +69,19 @@ remain unimplemented or unverified; see
 `docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
 
 `doctor --install` now has active 0.166.2 process coverage for the empty-tool
-inventory, no-install Playwright probing, and managed-root path safety under
-synthetic homes and network isolation. The inventory matches exactly; an empty
-`PRODEX_OPTIMIZERS_HOME` still reports `invalid` in Prodex and `missing` in
-Modex, while neither probes the working directory. This does not establish
-full doctor parity; see `docs/evidence/baseline-0.166.2/doctor-install.md`.
+inventory, no-install Playwright probing, managed-root path safety, and
+installed RTK/Playwright version-path-digest reporting under synthetic homes
+and network isolation. Exact panel comparisons cover managed and PATH RTK
+installations; a working-directory decoy remains unexecuted. Modex escapes
+terminal controls and redacts synthetic credential-like values in version and
+path output. An empty `PRODEX_OPTIMIZERS_HOME` still reports `invalid` in
+Prodex and `missing` in Modex, while neither executes the working-directory
+fixture. Codebase Memory version-only probes remain a documented mismatch:
+Modex says `ok` without the daemon coordination check that makes the oracle say
+`invalid`, a known false-green gap. Old Playwright MCP versions now report
+`invalid` and unrecognized versions report `missing`, matching 0.166.2. This
+does not establish full doctor parity; see
+`docs/evidence/baseline-0.166.2/doctor-install.md`.
 
 The 0.166.2 `session list --profile main` comparison also confirms that the
 release recovers a corrupt primary `state.json` from a valid private

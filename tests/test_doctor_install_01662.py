@@ -101,6 +101,214 @@ class DoctorInstall01662Tests(unittest.TestCase):
                 results.append((result.returncode, normalized(root, result.stdout), result.stderr))
         self.assertEqual(results[0], results[1])
 
+    def test_rtk_and_playwright_install_details_match_without_cwd_probe(self):
+        for placement in ("managed", "path"):
+            with self.subTest(placement=placement), tempfile.TemporaryDirectory(
+                prefix="doctor-install-details-01662-"
+            ) as raw:
+                root = Path(raw)
+                home = root / "home"
+                workspace = root / "workspace"
+                bindir = root / "bin"
+                managed = root / "managed-tools"
+                for directory in (home, workspace, bindir, managed):
+                    directory.mkdir(mode=0o700)
+
+                rtk_marker = root / "selected-rtk-executed"
+                cwd_marker = root / "cwd-rtk-executed"
+                probe_log = root / "npx-arguments.log"
+                target = managed if placement == "managed" else bindir
+                add_probe(
+                    target,
+                    "rtk",
+                    f"printf 'executed\\n' > {shlex.quote(str(rtk_marker))}\n"
+                    "printf 'rtk 1.0.0\\n'\n",
+                )
+                add_probe(
+                    workspace,
+                    "rtk",
+                    f"printf 'executed\\n' > {shlex.quote(str(cwd_marker))}\n"
+                    "printf 'rtk cwd\\n'\n",
+                )
+                add_probe(bindir, "node", "printf 'v18.0.0\\n'\n")
+                add_probe(
+                    bindir,
+                    "npx",
+                    f"printf '%s\\n' \"$*\" >> {shlex.quote(str(probe_log))}\n"
+                    "if [ \"$*\" = '--version' ]; then printf '%s\\n' 'npx 10.9.0'; exit 0; fi\n"
+                    "if [ \"$*\" = '--no-install @playwright/mcp --version' ]; then "
+                    "printf '%s\\n' '@playwright/mcp 0.0.83'; exit 0; fi\n"
+                    "exit 64\n",
+                )
+                env = environment(root, bindir)
+                env["PRODEX_OPTIMIZERS_HOME"] = str(managed)
+                before = paths(root)
+
+                reference = run_doctor(ORACLE, root, env)
+                self.assertEqual((reference.returncode, reference.stderr), (0, b""))
+                self.assertTrue(panel_value(reference.stdout, "rtk").startswith(b"installed, version="))
+                self.assertTrue(
+                    panel_value(reference.stdout, "playwright-mcp").startswith(b"installed, version=")
+                )
+                self.assertTrue(rtk_marker.exists())
+                self.assertFalse(cwd_marker.exists())
+                self.assertEqual(
+                    probe_log.read_text(encoding="utf-8").splitlines(),
+                    ["--version", "--no-install @playwright/mcp --version"],
+                )
+                expected = normalized(root, reference.stdout)
+                rtk_marker.unlink()
+                probe_log.unlink()
+
+                actual = run_doctor(MODEX, root, env)
+                self.assertEqual((actual.returncode, actual.stderr), (0, b""))
+                self.assertEqual(normalized(root, actual.stdout), expected)
+                self.assertTrue(rtk_marker.exists())
+                self.assertFalse(cwd_marker.exists())
+                self.assertEqual(
+                    probe_log.read_text(encoding="utf-8").splitlines(),
+                    ["--version", "--no-install @playwright/mcp --version"],
+                )
+                rtk_marker.unlink()
+                probe_log.unlink()
+                self.assertEqual(paths(root), before)
+                self.assertFalse((home / ".codex").exists())
+
+    def test_invalid_playwright_versions_match_reference(self):
+        cases = (
+            ("old", "@playwright/mcp 0.0.78", b"invalid"),
+            (
+                "unrecognized",
+                "Authorization: Bearer synthetic-playwright-token \\033[31mnot-a-version\\033[0m",
+                b"missing",
+            ),
+        )
+        for name, package_output, expected_status in cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                prefix="doctor-install-playwright-version-01662-"
+            ) as raw:
+                root = Path(raw)
+                home = root / "home"
+                workspace = root / "workspace"
+                bindir = root / "bin"
+                managed = root / "managed-tools"
+                for directory in (home, workspace, bindir, managed):
+                    directory.mkdir(mode=0o700)
+                probe_log = root / "npx-arguments.log"
+                add_probe(bindir, "node", "printf 'v18.0.0\\n'\n")
+                add_probe(
+                    bindir,
+                    "npx",
+                    f"printf '%s\\n' \"$*\" >> {shlex.quote(str(probe_log))}\n"
+                    "if [ \"$*\" = '--version' ]; then printf '%s\\n' 'npx 10.9.0'; exit 0; fi\n"
+                    "if [ \"$*\" = '--no-install @playwright/mcp --version' ]; then "
+                    f"printf '%s\\n' '{package_output}'; exit 0; fi\n"
+                    "exit 64\n",
+                )
+                env = environment(root, bindir)
+                env["PRODEX_OPTIMIZERS_HOME"] = str(managed)
+                before = paths(root)
+
+                reference = run_doctor(ORACLE, root, env)
+                self.assertEqual((reference.returncode, reference.stderr), (0, b""))
+                self.assertEqual(panel_value(reference.stdout, "playwright-mcp"), expected_status)
+                self.assertEqual(
+                    probe_log.read_text(encoding="utf-8").splitlines(),
+                    ["--version", "--no-install @playwright/mcp --version"],
+                )
+                expected = normalized(root, reference.stdout)
+                probe_log.unlink()
+
+                actual = run_doctor(MODEX, root, env)
+                self.assertEqual((actual.returncode, actual.stderr), (0, b""))
+                self.assertEqual(panel_value(actual.stdout, "playwright-mcp"), expected_status)
+                self.assertEqual(normalized(root, actual.stdout), expected)
+                self.assertEqual(
+                    probe_log.read_text(encoding="utf-8").splitlines(),
+                    ["--version", "--no-install @playwright/mcp --version"],
+                )
+                probe_log.unlink()
+                self.assertEqual(paths(root), before)
+                self.assertFalse((home / ".codex").exists())
+
+    def test_invalid_managed_rtk_version_output_matches_reference(self):
+        cases = (
+            ("unrecognized", "printf '%s\\n' 'nonsense version output'\n"),
+            ("ready", "printf '%s\\n' 'ready'\n"),
+            ("too-old", "printf '%s\\n' 'rtk 0.45.0'\n"),
+            ("invalid-utf8", "printf '\\377\\n'\n"),
+            ("nonzero", "printf '%s\\n' 'rtk 1.0.0'\nexit 7\n"),
+            ("empty", "exit 0\n"),
+        )
+        for name, body in cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                prefix="doctor-install-invalid-rtk-01662-"
+            ) as raw:
+                root = Path(raw)
+                home = root / "home"
+                workspace = root / "workspace"
+                empty_path = root / "empty-path"
+                managed = root / "managed-tools"
+                for directory in (home, workspace, empty_path, managed):
+                    directory.mkdir(mode=0o700)
+                marker = root / "managed-rtk-executed"
+                add_probe(
+                    managed,
+                    "rtk",
+                    f"printf 'executed\\n' > {shlex.quote(str(marker))}\n" + body,
+                )
+                env = environment(root, empty_path)
+                env["PRODEX_OPTIMIZERS_HOME"] = str(managed)
+                before = paths(root)
+
+                reference = run_doctor(ORACLE, root, env)
+                self.assertEqual((reference.returncode, reference.stderr), (0, b""))
+                self.assertEqual(panel_value(reference.stdout, "rtk"), b"invalid")
+                self.assertTrue(marker.exists())
+                marker.unlink()
+
+                actual = run_doctor(MODEX, root, env)
+                self.assertEqual((actual.returncode, actual.stderr), (0, b""))
+                self.assertEqual(panel_value(actual.stdout, "rtk"), b"invalid")
+                self.assertEqual(normalized(root, actual.stdout), normalized(root, reference.stdout))
+                self.assertTrue(marker.exists())
+                marker.unlink()
+                self.assertEqual(paths(root), before)
+
+    def test_installed_path_and_version_escape_controls_and_redact_secrets(self):
+        with tempfile.TemporaryDirectory(prefix="doctor-install-redaction-01662-") as raw:
+            root = Path(raw)
+            home = root / "home"
+            workspace = root / "workspace"
+            empty_path = root / "empty-path"
+            managed = root / "managed-\x1b[31m-Authorization: Bearer synthetic-doctor-path-token"
+            for directory in (home, workspace, empty_path, managed):
+                directory.mkdir(mode=0o700)
+            add_probe(
+                managed,
+                "rtk",
+                "printf 'rtk 1.0.0 Authorization: Bearer synthetic-doctor-version-token "
+                "\\033[31m\\n'\n",
+            )
+            env = environment(root, empty_path)
+            env["PRODEX_OPTIMIZERS_HOME"] = str(managed)
+            env["PRODEX_TERM_COLUMNS"] = "4096"
+            before = paths(root)
+
+            reference = run_doctor(ORACLE, root, env)
+            self.assertEqual((reference.returncode, reference.stderr), (0, b""))
+            actual = run_doctor(MODEX, root, env)
+            self.assertEqual((actual.returncode, actual.stderr), (0, b""))
+            expected = normalized(root, reference.stdout).replace(b"\x1b", b"\\x1b")
+            output = normalized(root, actual.stdout)
+            self.assertEqual(output, expected)
+            self.assertNotIn(b"synthetic-doctor-path-token", output)
+            self.assertNotIn(b"synthetic-doctor-version-token", output)
+            self.assertNotIn(b"\x1b", output)
+            self.assertIn(b"Authorization: Bearer <redacted>", output)
+            self.assertIn(b"\\x1b[31m", output)
+            self.assertEqual(paths(root), before)
+
     def test_empty_xdg_data_home_does_not_probe_root_level_tool_path(self):
         results = []
         for binary in (ORACLE, MODEX):

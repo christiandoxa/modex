@@ -8,6 +8,16 @@ implementation and isolated differential evidence. Session ownership and
 fail-closed ancestry checks must be preserved. All six platform qualifications
 remain open; earlier evidence does not establish 0.166.2 parity.
 
+An empty existing `PRODEX_HOME` still exposes a `profile list` mismatch:
+Prodex prints the empty-profile panel after acquiring the lifecycle lock and
+checking/recovering state, while Modex keeps the unsupported-command guard and
+leaves the root untouched. The release creates lifecycle and update-check
+locks; asynchronous housekeeping files may also appear. The lifecycle lock
+cannot be safely matched with Mojo 1.2.0's standard library, so no production
+shortcut was added. A checksum-pinned isolated regression records the output
+and filesystem effects; see
+`docs/evidence/baseline-0.166.2/profile-list-existing-empty-root.md`.
+
 An isolated synthetic comparison confirms that Prodex resolves a parent-owned
 V2 worker to its root and fails closed when the parent is missing. Modex still
 stops at its unsupported Super startup guard before native resume. Root and V1

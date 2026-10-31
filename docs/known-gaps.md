@@ -20,6 +20,13 @@ Populated listing, state recovery, locking and the full `PROFILE-LIST` contract
 remain unimplemented. See
 `docs/evidence/baseline-0.166.0/profile-list-empty-store.md`.
 
+Against the active 0.166.2 release, an existing but empty `PRODEX_HOME` also
+prints the empty-profile panel after Prodex acquires its lifecycle lock and
+loads or recovers profile state; Modex remains fail-closed and does not touch
+the directory. The lock prerequisite is unavailable in Mojo 1.2.0's standard
+library, so this mismatch remains open. See
+`docs/evidence/baseline-0.166.2/profile-list-existing-empty-root.md`.
+
 For `current`, Modex now matches the no-active panel only when the app root is
 absent under the same guard. The release creates the lifecycle and update
 locks, with possible asynchronous housekeeping files; Modex creates none.

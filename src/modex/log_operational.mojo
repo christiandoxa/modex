@@ -469,6 +469,21 @@ def valid_ipv6_literal(host: String) -> Bool:
     return groups < 8 if compressed else groups == 8
 
 
+def ipv6_loopback_literal(host: String) -> Bool:
+    if not valid_ipv6_literal(host): return False
+    var separator = host.rfind(":")
+    if separator < 0: return False
+    for byte in host[byte=:separator].as_bytes():
+        if byte != 48 and byte != 58: return False
+    var last = String(host[byte=separator + 1:])
+    if last == "0.0.0.1": return True
+    if not last or last.byte_length() > 4: return False
+    for index in range(last.byte_length()):
+        if Int(last.as_bytes()[index]) != (49 if index == last.byte_length() - 1 else 48):
+            return False
+    return True
+
+
 def valid_scheme(value: String, colon: Int) -> Bool:
     var first = Int(value.as_bytes()[0])
     if not ((65 <= first <= 90) or (97 <= first <= 122)):

@@ -6,7 +6,8 @@ from std.time import perf_counter
 from .json import JSON_ARRAY, JSON_OBJECT, JSON_STRING, JsonDocument, serialize_json
 from .provider_chat_buffered import deepseek_buffered_assistant_messages, deepseek_buffered_response
 from .provider_anthropic_messages import anthropic_buffered_assistant_messages, anthropic_buffered_response, deepseek_anthropic_messages_body, validate_deepseek_anthropic_request
-from .loopback_http import HTTP_HEADER_LIMIT, LoopbackHTTPStream, _http_token_byte
+from .loopback_http import HTTP_HEADER_LIMIT, LoopbackHTTPStream, _http_token_byte, _number, normalize_loopback_ipv4_host
+from .log_operational import ipv6_loopback_literal
 from .provider_chat_reader import DeepSeekChatReader
 from .provider_sse_wire import ProviderSSEFramer
 from .provider_request import translate_deepseek_request
@@ -305,10 +306,35 @@ def _deepseek_redirect_location(headers: List[Tuple[String, String]]) -> String:
     return String()
 
 
+def _deepseek_canonical_redirect_authority(authority: String) raises -> String:
+    var host: String
+    var port = 80
+    if authority.startswith("["):
+        var close = authority.find("]")
+        if close < 0: raise Error("invalid redirect authority")
+        var address = String(authority[byte=1:close])
+        if not ipv6_loopback_literal(address): raise Error("redirect is not same-origin loopback")
+        host = "[::1]"
+        if close + 1 < authority.byte_length():
+            if authority.as_bytes()[close + 1] != 58: raise Error("invalid redirect authority")
+            if close + 2 < authority.byte_length(): port = _number(authority[byte=close + 2:])
+    else:
+        var colon = authority.rfind(":")
+        if colon >= 0:
+            if String(authority[byte=:colon]).find(":") >= 0: raise Error("invalid redirect authority")
+            host = normalize_loopback_ipv4_host(String(authority[byte=:colon]))
+            if colon + 1 < authority.byte_length(): port = _number(authority[byte=colon + 1:])
+        else:
+            host = normalize_loopback_ipv4_host(authority)
+    if port < 1 or port > 65535: raise Error("invalid redirect authority")
+    return host + ":" + String(port)
+
+
 def _deepseek_same_redirect_authority(authority: String, address: String) -> Bool:
-    var target = authority.lower()
-    var origin = address.lower()
-    return target == origin or (origin == "127.0.0.1:80" and target == "127.0.0.1") or (origin == "[::1]:80" and target == "[::1]")
+    try:
+        return _deepseek_canonical_redirect_authority(authority) == _deepseek_canonical_redirect_authority(address)
+    except:
+        return False
 
 
 def _deepseek_encode_redirect_component(value: String) -> String:

@@ -1,5 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Same-endpoint redirects now recognize the tested equivalent numeric IPv4 and
+IPv6 loopback spellings while retaining strict origin and port checks. Encoded
+host forms remain unqualified; see
+`docs/evidence/baseline-0.166.0/provider-redirect-authority.md`.
+
 The local relay accepts the tested backslash path separator used by the
 0.166.0 HTTP URL parser while retaining numeric-loopback and credential checks.
 Chat, Messages, and strict-beta cases are documented in

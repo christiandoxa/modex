@@ -334,6 +334,73 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                 self.assertEqual(headers["x-ratelimit-remaining"], "0")
                 self.assertEqual(headers["Content-Length"], str(len(body)))
 
+    def test_redirect_authorities_canonicalize_same_loopback_endpoint_only(self):
+        request = [{"model": "deepseek-chat", "input": "synthetic canonical redirect"}]
+        final = buffered_reply(88)
+        equivalent_origins = (
+            ("127.0.0.1", False, "http://127.1:{upstream_port}/v1/short", "/v1/short"),
+            ("[::1]", True, "http://[0:0:0:0:0:0:0:1]:{upstream_port}/v1/expanded", "/v1/expanded"),
+        )
+        for base_host, ipv6, location, final_path in equivalent_origins:
+            redirect = {"status": 302, "content_type": "text/plain", "body": b"discarded",
+                        "response_headers": [("Location", location), ("Content-Type", "text/plain")]}
+            for binary in (ORACLE, MODEX):
+                with self.subTest(binary=str(binary), base_host=base_host):
+                    upstream, responses = observe_turns(
+                        binary, request, [redirect, final], latest_version="0.166.0",
+                        base_host=base_host, upstream_ipv6=ipv6,
+                    )
+                    self.assertEqual([response["status"] for response in responses], [200])
+                    self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                        ("POST", "/v1/chat/completions"), ("GET", final_path),
+                    ])
+                    self.assertEqual(upstream[0]["headers"]["host"], upstream[1]["headers"]["host"])
+                    self.assertEqual(upstream[1]["headers"]["authorization"],
+                                     "Bearer " + SYNTHETIC_API_KEY)
+                    self.assertEqual(json.loads(bytes.fromhex(responses[0]["body"]))["id"],
+                                     "synthetic-chat-88")
+
+        rejected_origins = (
+            "http://[::2]:{upstream_port}/v1/other-ip",
+            "http://[::]:{upstream_port}/v1/unspecified-ip",
+            "http://[::0]:{upstream_port}/v1/zero-ip",
+            "http://[::0000]:{upstream_port}/v1/zero-ip-padded",
+            "http://[::1]:1/v1/other-port",
+            "http://synthetic@[::1]:{upstream_port}/v1/userinfo",
+            "https://[::1]:{upstream_port}/v1/https",
+            "http://[::1]%3A{upstream_port}/v1/encoded-authority-delimiter",
+            "http://[::g]:{upstream_port}/v1/malformed-ip",
+        )
+        for location in rejected_origins:
+            redirect = {"status": 302, "content_type": "text/plain", "body": b"not followed",
+                        "response_headers": [("Location", location), ("Content-Type", "text/plain")]}
+            with self.subTest(rejected_location=location):
+                upstream, responses = observe_turns(
+                    MODEX, request, [redirect], latest_version="0.166.0",
+                    base_host="[::1]", upstream_ipv6=True,
+                )
+                self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                    ("POST", "/v1/chat/completions"),
+                ])
+                self.assertEqual(responses[0]["status"], 302)
+                headers = {name.lower(): value for name, value in responses[0]["headers"].items()}
+                self.assertEqual(headers["location"], location.replace("{upstream_port}", upstream[0]["headers"]["host"].split(":")[-1]))
+                self.assertEqual(bytes.fromhex(responses[0]["body"]), b"not followed")
+
+        expanded_origin = "http://[0:0:0:0:0:0:0:1]:{upstream_port}/v1/redirect-cycle"
+        redirects = [{"status": 307, "content_type": "text/plain", "body": b"",
+                      "response_headers": [("Location", expanded_origin), ("Content-Type", "text/plain")]}
+                     for _ in range(11)]
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary), bounded=True):
+                upstream, responses = observe_turns(
+                    binary, request, redirects, latest_version="0.166.0",
+                    base_host="[::1]", upstream_ipv6=True,
+                )
+                self.assertEqual(len(upstream), 11)
+                self.assertEqual([response["status"] for response in responses], [502])
+                self.assertEqual(bytes.fromhex(responses[0]["body"]), b"upstream request failed")
+
     def test_root_provider_aliases_match_active_route_plan(self):
         turns = [
             {"model": "deepseek-chat", "input": "synthetic root responses POST",

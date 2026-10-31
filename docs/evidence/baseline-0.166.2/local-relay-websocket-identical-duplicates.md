@@ -24,12 +24,17 @@ body bytes. The change does not relax body framing, client authorization, or
 connection ownership checks.
 
 `scripts/ci/run_local_relay_websocket_fallback_01662.py` runs the comparison in
-a rootless user and network namespace with only loopback enabled and no default
-IPv4 or IPv6 route. Bubblewrap keeps PID, IPC, UTS and other supported
-namespaces isolated while sharing that private network namespace; it mounts the
-workspace, binary and oracle read-only and provides a private tmpfs. The test
+a Bubblewrap-created rootless user and network namespace with only loopback
+enabled and no default IPv4 or IPv6 route. Bubblewrap also isolates PID, IPC,
+UTS and other supported namespaces, mounts the workspace, binary and oracle
+read-only, and provides a private tmpfs. The test
 uses synthetic HOME/XDG directories, synthetic credentials, and a loopback
 upstream peer. It uses no account login or provider traffic.
+
+The original wrapper's separate `unshare -Urn` step failed to write its UID map
+on hosted CI. The wrapper now uses Bubblewrap directly and retains the test's
+namespace and route preflight. The revised wrapper passed locally; hosted CI
+verification is pending.
 
 On the integration worktree based at `1f80094`, `make build` passed with the
 existing unused-variable warnings. The wrapped oracle comparison passed one

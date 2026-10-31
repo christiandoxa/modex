@@ -27,32 +27,9 @@ def main():
     if not bwrap.is_file() or not os.access(bwrap, os.X_OK):
         raise SystemExit(f"bubblewrap is not executable: {bwrap}")
 
-    if os.environ.get("MODEX_LOCAL_RELAY_NETNS_READY") != "1":
-        unshare = shutil.which("unshare")
-        if not unshare:
-            raise SystemExit("unshare is required for the loopback-only network namespace")
-        environment = dict(os.environ)
-        environment["MODEX_LOCAL_RELAY_NETNS_READY"] = "1"
-        return subprocess.run(
-            [unshare, "-Urn", python, Path(__file__).resolve(strict=True)],
-            env=environment,
-            check=False,
-        ).returncode
-
-    ip = shutil.which("ip")
-    if not ip:
-        raise SystemExit("iproute2 is required")
-    subprocess.run([ip, "link", "set", "lo", "up"], check=True)
-    links = subprocess.run(
-        [ip, "-o", "link", "show"], check=True, capture_output=True, text=True,
-    ).stdout.splitlines()
-    if len(links) != 1 or "lo" not in links[0] or "UP" not in links[0]:
-        raise SystemExit(f"expected only loopback up: {links!r}")
-    for args in ([ip, "route", "show", "default"],
-                 [ip, "-6", "route", "show", "default"]):
-        if subprocess.run(args, check=True, capture_output=True, text=True).stdout.strip():
-            raise SystemExit("private network namespace has a default route")
-
+    # Let the preflighted Bubblewrap binary create the rootless, loopback-only
+    # namespace. The active test preflight verifies loopback and no default
+    # routes; direct `unshare -U` map creation is denied on the hosted runner.
     driver = r'''import os, shutil, subprocess, sys
 raise SystemExit(subprocess.run(
     [sys.executable, "scripts/ci/run-unittest.py",
@@ -73,7 +50,6 @@ raise SystemExit(subprocess.run(
         environment=environment,
         bind_paths=[modex, oracle, bwrap, *sandbox.python_runtime_paths()],
     )
-    command.insert(command.index("--unshare-all") + 1, "--share-net")
     return subprocess.run(command, check=False).returncode
 
 

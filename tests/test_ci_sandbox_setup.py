@@ -36,6 +36,24 @@ class UbuntuSandboxSetupTests(unittest.TestCase):
         self.assertIn('"--unshare-all"', source)
         self.assertIn('"--ro-bind"', source)
 
+    def test_active_websocket_probe_uses_private_bwrap_network_namespace(self):
+        runner = (ROOT / "scripts/ci/run_local_relay_websocket_fallback_01662.py").read_text(
+            encoding="utf-8"
+        )
+        sandbox = (ROOT / "scripts/ci/run_websocket_fallback_01660.py").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("sandbox.bwrap_command(", runner)
+        self.assertIn('"MODEX_REAL_CODEX_NETNS": "1"', runner)
+        self.assertNotIn('shutil.which("unshare")', runner)
+        self.assertNotIn("MODEX_LOCAL_RELAY_NETNS_READY", runner)
+        self.assertNotIn('"--share-net"', runner)
+        self.assertIn('"--unshare-all"', sandbox)
+        self.assertIn('"--tmpfs", "/tmp"', sandbox)
+        self.assertIn('"--uid", "0"', sandbox)
+        self.assertIn('"--gid", "0"', sandbox)
+
 
 if __name__ == "__main__":
     unittest.main()

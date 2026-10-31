@@ -474,6 +474,47 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                 self.assertEqual([row["status"] for row in responses], [502])
                 self.assertEqual(bytes.fromhex(responses[0]["body"]), b"upstream request failed")
 
+    def test_redirect_path_query_spaces_encode_without_weakening_authority_guards(self):
+        request = [{"model": "deepseek-chat", "messages": [],
+                    "_path": "/v1/chat/completions"}]
+        redirect = {"status": 302, "content_type": "text/plain", "body": b"discarded",
+                    "response_headers": [("Location", "http://127.0.0.1:{upstream_port}/v1/redirect path?label=two words")]}
+        reply = {"status": 200, "content_type": "application/json",
+                 "body": b'{"id":"synthetic-redirect"}'}
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, request, [redirect, reply], latest_version="0.166.0",
+                )
+                self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                    ("POST", "/v1/chat/completions"),
+                    ("GET", "/v1/redirect%20path?label=two%20words"),
+                ])
+                self.assertEqual([row["headers"]["authorization"] for row in upstream],
+                                 ["Bearer " + SYNTHETIC_API_KEY] * 2)
+                self.assertEqual([response["status"] for response in responses], [200])
+
+        rejected_locations = (
+            ("authority-space", "http://127.0.0.1 :{upstream_port}/v1/unsafe", (ORACLE, MODEX), 302),
+            ("scheme-space", "http ://127.0.0.1:{upstream_port}/v1/unsafe", (MODEX,), 302),
+            ("userinfo-space", "http://synthetic user@127.0.0.1:{upstream_port}/v1/unsafe", (MODEX,), 302),
+            ("control-tab", "/v1/redirect\tpath", (MODEX,), 302),
+            ("control-cr", "/v1/redirect\rpath", (MODEX,), 502),
+            ("control-lf", "/v1/redirect\npath", (MODEX,), 502),
+        )
+        for label, location, binaries, expected_status in rejected_locations:
+            reply = {"status": 302, "content_type": "text/plain", "body": b"discarded",
+                     "response_headers": [("Location", location)]}
+            for binary in binaries:
+                with self.subTest(binary=str(binary), rejected_location=label):
+                    upstream, responses = observe_turns(
+                        binary, request, [reply], latest_version="0.166.0",
+                    )
+                    self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                        ("POST", "/v1/chat/completions"),
+                    ])
+                    self.assertEqual([response["status"] for response in responses], [expected_status])
+
     def test_root_provider_aliases_match_active_route_plan(self):
         turns = [
             {"model": "deepseek-chat", "input": "synthetic root responses POST",

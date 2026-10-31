@@ -386,7 +386,7 @@ def _deepseek_redirect_target(address: String, current: String, location: String
         var without_fragment = String(reference[byte=:fragment])
         reference = without_fragment^
     for byte in reference.as_bytes():
-        if byte <= 32 or byte == 127 or byte == 92:
+        if byte < 32 or byte == 127 or byte == 92:
             return False, String()
 
     var reference_lower = reference.lower()
@@ -399,6 +399,8 @@ def _deepseek_redirect_target(address: String, current: String, location: String
             if found >= 0 and found < authority_end:
                 authority_end = found
         var authority = String(reference[byte=authority_start:authority_end])
+        if authority.find(" ") >= 0:
+            return False, String()
         if not _deepseek_same_redirect_authority(authority, address):
             return False, String()
         suffix = String(reference[byte=authority_end:])

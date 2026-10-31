@@ -9,10 +9,11 @@ Selected `ping` and `ping openai` help routes and argument errors match
 0.166.0 in isolated process checks. Ping execution is still unimplemented; see
 `docs/evidence/baseline-0.166.0/ping-help.md`.
 
-The local DeepSeek relay now supports the exact root aliases `/responses`,
-`/responses/compact`, and `/chat/completions` seen in 0.166.0, preserving its
-existing client authentication and continuation guard. Other active routes
-remain unsupported; see `docs/evidence/baseline-0.166.0/local-relay-root-route-aliases.md`.
+The local DeepSeek relay supports the exact root aliases `/responses`,
+`/responses/compact`, and `/chat/completions`, plus the tested model catalog
+routes seen in 0.166.0. Client authentication and continuation guards remain
+in place. Other active routes remain unsupported; see
+`docs/evidence/baseline-0.166.0/local-relay-root-route-aliases.md`.
 
 Hosted Fast CI run `41145337204` failed one active Doctor test because a long
 private scratch path wrapped a redaction marker across display lines. The test

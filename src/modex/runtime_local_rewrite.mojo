@@ -14,7 +14,7 @@ from std.time import perf_counter, sleep
 from std.time.time import _realtime_nanoseconds
 from std.utils.lock import BlockingScopedLock, BlockingSpinLock
 
-from .json import JSON_ARRAY, JSON_STRING, JsonDocument
+from .json import JSON_ARRAY, JSON_STRING, JsonDocument, quote_json
 from .loopback_http import HTTP_HEADER_LIMIT, HTTP_MAX_REQUEST_FIELD_LIMIT, HTTP_OUTBOUND_REQUEST_HEADER_LIMIT, LoopbackHTTPStream, _number, normalize_loopback_ipv4_host
 from .loopback_server import HTTP_MAX_REQUEST_HEADER_LIMIT, LoopbackHTTPConnection, LoopbackHTTPListener, LoopbackHTTPRequest, request_target_valid
 from .log_operational import decode_url_host, valid_ipv6_literal, valid_url_authority
@@ -316,6 +316,44 @@ def _invalid_request_target(mut connection: LoopbackHTTPConnection) raises:
         ("content-type", "application/json"), ("cache-control", "no-store"),
         ("x-content-type-options", "nosniff"),
     ], _bytes('{"error":{"code":"invalid_request_target","message":"request target is invalid"}}'), 30000)
+
+
+# The provider bridge API catalog has a different schema from the Super launch catalog.
+def _deepseek_model_json(model_id: String) -> String:
+    if model_id == "deepseek-v4-pro" or model_id == "auto" or model_id == "pro":
+        return '{"aliases":["pro","auto"],"context_window":1048576,"default_output_reserve_tokens":null,"default_reasoning_effort":"high","description":"DeepSeek Pro alias routed through provider fallback.","display_name":"DeepSeek V4 Pro","embedding_compatible":null,"endpoints":["responses","responses/compact","chat-completions","messages","models"],"feature_flags":{"audio":false,"json_schema":false,"reasoning":true,"tools":true,"vision":false,"web_search":true},"id":"deepseek-v4-pro","input_cost_per_million_microusd":null,"max_output_tokens":393216,"object":"model","output_cost_per_million_microusd":null,"owned_by":"deepseek","pricing_known":false,"provider":"deepseek","reasoning_reserve_tokens":null,"supported_reasoning_efforts":["none","low","high","max"]}'
+    if model_id == "deepseek-flash" or model_id == "flash":
+        return '{"aliases":["flash"],"context_window":1048576,"default_output_reserve_tokens":null,"default_reasoning_effort":"high","description":"Current DeepSeek Flash model, accessed through the native text/tool Responses adapter.","display_name":"DeepSeek V4.1 Flash","embedding_compatible":null,"endpoints":["responses","responses/compact","chat-completions","messages","models"],"feature_flags":{"audio":false,"json_schema":false,"reasoning":true,"tools":true,"vision":false,"web_search":true},"id":"deepseek-flash","input_cost_per_million_microusd":null,"max_output_tokens":393216,"object":"model","output_cost_per_million_microusd":null,"owned_by":"deepseek","pricing_known":false,"provider":"deepseek","reasoning_reserve_tokens":null,"supported_reasoning_efforts":["none","low","high","max"]}'
+    if model_id == "deepseek-v4-flash":
+        return '{"aliases":[],"context_window":1048576,"default_output_reserve_tokens":null,"default_reasoning_effort":"high","description":"Upstream compatibility ID routed to DeepSeek V4.1 Flash; prefer deepseek-flash for new selections.","display_name":"DeepSeek V4 Flash","embedding_compatible":null,"endpoints":["responses","responses/compact","chat-completions","messages","models"],"feature_flags":{"audio":false,"json_schema":false,"reasoning":true,"tools":true,"vision":false,"web_search":true},"id":"deepseek-v4-flash","input_cost_per_million_microusd":null,"max_output_tokens":393216,"object":"model","output_cost_per_million_microusd":null,"owned_by":"deepseek","pricing_known":false,"provider":"deepseek","reasoning_reserve_tokens":null,"supported_reasoning_efforts":["none","low","high","max"]}'
+    return ""
+
+
+def _deepseek_models_json() -> String:
+    return '{"data":[' + _deepseek_model_json("deepseek-v4-pro") + ',' + _deepseek_model_json("deepseek-flash") + ',' + _deepseek_model_json("deepseek-v4-flash") + '],"object":"list"}'
+
+
+def _deepseek_models_route(target: String) -> Tuple[Bool, String]:
+    if target == "/models" or target == "/v1/models":
+        return (True, String())
+    if target.startswith("/models/") and target.byte_length() > 8:
+        return (True, String(target[byte=8:]))
+    if target.startswith("/v1/models/") and target.byte_length() > 11:
+        return (True, String(target[byte=11:]))
+    return (False, String())
+
+
+def _deepseek_models_upstream_path(base_path: String, target: String) -> String:
+    var prefix = String(base_path[byte=:base_path.byte_length() - 17])
+    var route = String(target.split("?", maxsplit=1)[0])
+    if route.startswith("/v1/"):
+        var versionless_route = String(route[byte=3:])
+        route = versionless_route^
+    var result = prefix + route
+    var query = target.find("?")
+    if query >= 0:
+        result += String(target[byte=query:])
+    return result
 
 
 def _response_headers(headers: List[Tuple[String, String]], collapse_duplicate_content_type: Bool) -> List[Tuple[String, String]]:
@@ -747,6 +785,17 @@ struct LocalRewriteSharedState(Movable):
 
 def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest, address: String, path: String, messages_address: String, messages_path: String, request_id: UInt64, state_ptr: Pointer[LocalRewriteSharedState, MutUntrackedOrigin], connect_ms: UInt64, idle_ms: UInt64, lookahead_ms: UInt64, allow_local_file_access: Bool, strict_tools: Bool, beta_address: String, beta_path: String, web_search_mode: String) raises:
     var target = String(request.target.split("?", maxsplit=1)[0])
+    var model_route = _deepseek_models_route(target)
+    var models_route = model_route[0]
+    var model_id = model_route[1]
+    if models_route and request.method == "GET":
+        var body = _deepseek_models_json() if not model_id else _deepseek_model_json(model_id)
+        var status = 200
+        if model_id and not body:
+            status = 404
+            body = '{"error":{"code":"model_not_found","message":' + quote_json("model '" + model_id + "' is not available for deepseek") + ',"type":"invalid_request_error"}}'
+        connection.respond(status, [("content-type", "application/json; charset=utf-8")], _bytes(body), 30000)
+        return
     if target == "/v1/responses/compact":
         var summary = local_compact_summary(request.body)
         var body = local_compact_response_body(summary)
@@ -758,7 +807,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             ("x-prodex-compact-reason", "local-policy"),
         ], _bytes(body), 30000)
         return
-    if target != "/v1/chat/completions" and target != "/v1/responses":
+    if target != "/v1/chat/completions" and target != "/v1/responses" and not models_route:
         _route_error(connection)
         return
     var source = String()
@@ -781,13 +830,16 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
     var attempt_count = key_count
     var key_start = state_ptr[].next_api_key_start()
     var key_index = key_start
-    if target == "/v1/chat/completions":
+    if target == "/v1/chat/completions" or models_route:
+        var upstream_path = deepseek_chat_completions_path(path, request.target)
+        if models_route:
+            upstream_path = _deepseek_models_upstream_path(path, request.target)
         var stream: LoopbackHTTPStream
         var prebuffered_error = List[UInt8]()
         try:
             stream = deepseek_chat_completions_stream(
                 address,
-                deepseek_chat_completions_path(path, request.target),
+                upstream_path,
                 state_ptr[].api_key_at(key_index),
                 request.headers.copy(),
                 request.body.copy(),
@@ -810,7 +862,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
                 try:
                     stream = deepseek_chat_completions_stream(
                         address,
-                        deepseek_chat_completions_path(path, request.target),
+                        upstream_path,
                         state_ptr[].api_key_at(key_index),
                         request.headers.copy(),
                         request.body.copy(),

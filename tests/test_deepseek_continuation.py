@@ -29,7 +29,10 @@ if os.environ.get("MODEX_CONTINUATION_CONCURRENT") == "1":
                    **turn.pop("_headers", {})}
         started = int(time.time())
         connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
-        body = raw_body.encode() if raw_body is not None else json.dumps(turn, separators=(",", ":")).encode()
+        body = raw_body.encode() if raw_body is not None else (
+            None if method in ("GET", "HEAD") and not turn
+            else json.dumps(turn, separators=(",", ":")).encode()
+        )
         connection.request(method, path, body, headers)
         response = connection.getresponse()
         payload = response.read()
@@ -67,7 +70,10 @@ for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"])
         turn["previous_response_id"] = previous
     started = int(time.time())
     connection = http.client.HTTPConnection(target.hostname, target.port, timeout=15)
-    body = raw_body.encode() if raw_body is not None else json.dumps(turn, separators=(",", ":")).encode()
+    body = raw_body.encode() if raw_body is not None else (
+        None if method in ("GET", "HEAD") and not turn
+        else json.dumps(turn, separators=(",", ":")).encode()
+    )
     connection.request(method, path, body, headers)
     response = connection.getresponse()
     payload = response.read()
@@ -82,8 +88,8 @@ for turn in json.loads(pathlib.Path(os.environ["MODEX_CONTINUATION_TURNS_FILE"])
                 if line.startswith(b"data: "):
                     event = json.loads(line[6:])
                     previous = event.get("response", {}).get("id", previous)
-        else:
-            previous = json.loads(payload)["id"]
+        elif payload:
+            previous = json.loads(payload).get("id", previous)
 print("synthetic-continuation-complete")
 '''
 

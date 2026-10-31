@@ -127,6 +127,7 @@ class UpstreamHandler(BaseHTTPRequestHandler):
         pass
 
     do_GET = do_POST
+    do_HEAD = do_POST
 
 
 @contextmanager
@@ -837,12 +838,24 @@ class LocalRewriteTests(unittest.TestCase):
                         self.assertEqual(response_body, expected)
         self.assertEqual(server.records, [])
 
-    def test_unsupported_route_returns_json_without_upstream_request(self):
+    def test_models_route_returns_catalog_and_keeps_unknown_routes_unsupported(self):
         with serving([]) as server:
             with RunningLocalRewrite(server.server_port) as relay:
                 connection = HTTPConnection(relay.address[0], relay.address[1], timeout=5)
                 connection.request(
-                    "GET", "/v1/models",
+                    "GET", "/v1/models?trace=synthetic",
+                    headers={"Authorization": LOCAL_CLIENT_AUTHORIZATION},
+                )
+                response = connection.getresponse()
+                body = response.read()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(response.getheader("Content-Type"), "application/json; charset=utf-8")
+                self.assertEqual(
+                    [model["id"] for model in json.loads(body)["data"]],
+                    ["deepseek-v4-pro", "deepseek-flash", "deepseek-v4-flash"],
+                )
+                connection.request(
+                    "GET", "/not-models",
                     headers={"Authorization": LOCAL_CLIENT_AUTHORIZATION},
                 )
                 response = connection.getresponse()

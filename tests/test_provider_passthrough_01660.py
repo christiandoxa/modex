@@ -344,6 +344,79 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         self.assertEqual(observed[ORACLE][0], observed[MODEX][0])
         self.assertEqual(observed[ORACLE][1][:4], observed[MODEX][1][:4])
 
+    def test_models_catalog_aliases_methods_queries_and_errors_match_active_release(self):
+        post_body = b'{ "synthetic": true }'
+        post_error = b'{"error":{"message":"synthetic quota","type":"rate_limit_error"}}'
+        head_error = b'{"error":{"message":"synthetic unavailable","type":"server_error"}}'
+        turns = [
+            {"_method": "GET", "_path": "/models?trace=root"},
+            {"_method": "GET", "_path": "/v1/models?trace=v1"},
+            {"_method": "GET", "_path": "/models/auto?trace=alias"},
+            {"_method": "GET", "_path": "/v1/models/deepseek-v4-flash?trace=valid"},
+            {"_method": "GET", "_path": "/v1/models/no-such-model?trace=missing"},
+            {"_method": "POST", "_path": "/models?trace=post", "_raw_body": post_body.decode()},
+            {"_method": "HEAD", "_path": "/v1/models?trace=head"},
+            {"_method": "HEAD", "_path": "/models?trace=success"},
+        ]
+        replies = [
+            {"status": 429, "content_type": "application/json", "body": post_error},
+            {"status": 503, "content_type": "application/json", "body": head_error},
+            {"status": 200, "content_type": "application/json", "body": b""},
+        ]
+        observed = {}
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, [dict(turn) for turn in turns], replies, latest_version="0.166.0",
+                )
+                self.assertEqual([row["status"] for row in responses], [200, 200, 200, 200, 404, 429, 503, 200])
+                self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                    ("POST", "/v1/models?trace=post"),
+                    ("HEAD", "/v1/models?trace=head"),
+                    ("HEAD", "/v1/models?trace=success"),
+                ])
+                self.assertEqual(upstream[0]["body"], post_body)
+                self.assertEqual(upstream[1]["body"], b"")
+                self.assertEqual(upstream[2]["body"], b"")
+                for request in upstream:
+                    self.assertEqual(request["headers"]["authorization"], "Bearer " + SYNTHETIC_API_KEY)
+                self.assertEqual(bytes.fromhex(responses[5]["body"]), post_error)
+                self.assertEqual(bytes.fromhex(responses[6]["body"]), b"")
+                self.assertEqual(bytes.fromhex(responses[7]["body"]), b"")
+                list_body = json.loads(bytes.fromhex(responses[0]["body"]))
+                versioned_list_body = json.loads(bytes.fromhex(responses[1]["body"]))
+                self.assertEqual(list_body, versioned_list_body)
+                self.assertEqual([model["id"] for model in list_body["data"]], [
+                    "deepseek-v4-pro", "deepseek-flash", "deepseek-v4-flash",
+                ])
+                alias = json.loads(bytes.fromhex(responses[2]["body"]))
+                self.assertEqual(alias, list_body["data"][0])
+                valid = json.loads(bytes.fromhex(responses[3]["body"]))
+                self.assertEqual(valid, list_body["data"][2])
+                missing = json.loads(bytes.fromhex(responses[4]["body"]))
+                self.assertEqual(missing["error"]["code"], "model_not_found")
+                observed[binary] = (
+                    [request["path"] for request in upstream],
+                    [json.loads(bytes.fromhex(row["body"])) if row["status"] < 400 and row["body"] else bytes.fromhex(row["body"])
+                     for row in responses],
+                )
+        self.assertEqual(observed[ORACLE], observed[MODEX])
+
+    def test_models_route_keeps_modex_local_client_authentication(self):
+        turn = [{"_method": "GET", "_path": "/models",
+                 "_headers": {"Authorization": "Bearer synthetic-invalid-token"}}]
+        oracle_upstream, oracle_responses = observe_turns(
+            ORACLE, turn, [], latest_version="0.166.0",
+        )
+        modex_upstream, modex_responses = observe_turns(
+            MODEX, turn, [], latest_version="0.166.0",
+        )
+        self.assertEqual(oracle_upstream, [])
+        self.assertEqual(modex_upstream, [])
+        self.assertEqual(oracle_responses[0]["status"], 200)
+        self.assertEqual(modex_responses[0]["status"], 401)
+        self.assertEqual(bytes.fromhex(modex_responses[0]["body"]), b"")
+
     def test_root_responses_alias_keeps_client_auth_and_continuation_ownership(self):
         invalid = [{"model": "deepseek-chat", "input": "synthetic invalid client token",
                     "_path": "/responses",

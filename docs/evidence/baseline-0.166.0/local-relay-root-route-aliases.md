@@ -48,16 +48,57 @@ data was used.
 
 This evidence covers the listed DeepSeek local-relay routes on Linux x86-64.
 
+## DeepSeek model catalog routes
+
+The pinned route planner also accepts `/models`, `/v1/models`, and their
+single-model forms. The provider bridge handles GET locally with a three-row
+catalog (`deepseek-v4-pro`, `deepseek-flash`, `deepseek-v4-flash`); aliases
+such as `auto`, `pro`, and `flash` resolve to their canonical model row, and
+unknown IDs return `model_not_found`. Query strings do not affect route
+selection. Other methods, including POST and HEAD, go to the configured
+provider path; root and `/v1` paths resolve against the same configured base
+path.
+
+Modex now returns that catalog from the native local relay and supports the
+same single-model lookups. POST bodies, query bytes, upstream method and
+error responses use the existing bounded passthrough transport. The separate
+Super launch catalog is not reused because it is launch-model-dependent and
+has a different Codex schema. Modex keeps its local client-token guard: an
+invalid token gets 401 without provider dispatch, while the pinned Prodex
+oracle serves the catalog. This stricter authentication difference remains.
+
+`test_provider_passthrough_01660.py` compares both paths and the complete
+catalog with production processes over synthetic loopback. Its POST and HEAD
+fixtures verify forwarded methods, provider authorization, query/body
+preservation, 429/503 propagation, and HEAD's empty response body. The test
+also compares valid alias/canonical model rows, missing-ID error JSON, and the
+invalid-token control. All test state, HOME, and credentials are synthetic;
+no provider traffic or personal data is used.
+
+- `make BUILD_DIR=/tmp/modex-models-route-build build` passed with Mojo 1.2.0.
+- `test_provider_passthrough_01660.py` passed: 12 tests in 25.469 seconds
+  inside the `run_websocket_fallback_01660.py` bubblewrap helper, with private
+  `/tmp`, read-only worktree/build/oracle inputs, loopback only, and no default
+  route.
+- The model-route test in `test_local_rewrite.py` also passed in that private
+  loopback sandbox. Its wider run had one failure in the existing empty-port
+  strict-beta URL case. A separate clean `fa2d525` worktree and build reproduced
+  the same failure for `http://127.0.0.1:/beta`, confirming it predates this
+  slice.
+- `make ci-dependencies` passed: all 74 production Mojo files use only
+  standard-library or internal imports.
+
 ## Remaining route gaps
+
+For the tested CONNECT model request, the release sends authority-form while
+Modex's shared outbound transport sends origin-form. Both connect only to the
+configured loopback upstream; this method-format difference remains open.
 
 A separate active-process inventory observed that Prodex accepts `/messages`
 and `/v1/messages`, forwarding both to the synthetic `/anthropic/v1/messages`
-upstream, and returns its built-in catalog for `/models` and `/v1/models`.
-Modex still returns 404 for those four paths. Both processes returned 404 for
-the tested `/embeddings` and `/v1/embeddings` requests. The tested unavailable
-model path also has different 404 bodies: Prodex reports `model_not_found`,
-while Modex reports `unsupported_provider_route`. These paths require separate
-handlers and are not part of this alias fix.
+upstream; Modex still returns 404 for both message paths. Both processes
+returned 404 for the tested `/embeddings` and `/v1/embeddings` requests. These
+paths require separate handlers and are not part of this alias fix.
 
 This evidence does not establish behavior for other release targets or full
 provider parity; the six-release denominator is unchanged.

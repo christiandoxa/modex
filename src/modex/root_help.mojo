@@ -10,6 +10,10 @@ def mcp_jsonl_bridge_help(executable: String) -> String:
     return "Usage: " + executable + " __mcp-jsonl-bridge <COMMAND> [ARGS]...\n\nArguments:\n  <COMMAND>  JSON-lines MCP server command to bridge to Codex stdio framing\n  [ARGS]...  Arguments passed to the JSON-lines MCP server\n\nOptions:\n  -h, --help  Print help\n"
 
 
+def sub_agent_exec_help(executable: String) -> String:
+    return "Usage: " + executable + " __sub-agent-exec --config <PATH> --task-file <PATH>\n\nOptions:\n      --config <PATH>     Temporary, secret-free child launch configuration\n      --task-file <PATH>  File containing the exact delegated task\n  -h, --help              Print help\n"
+
+
 def run_help(executable: String) -> String:
     return String("""Run codex through prodex with quota preflight and eligible pre-commit rotation.
 

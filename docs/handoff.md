@@ -18,6 +18,10 @@ preferred launcher, legacy fallback, and explicit override; Kiro runtime
 compatibility remains unimplemented.
 Managed Ponytail integrity validation and removal of generated legacy Caveman
 overlay content remain incomplete. This evidence does not establish parity.
+The hidden `__sub-agent-exec` help route now matches the active 0.166.1
+inventory for direct `--help`/`-h` and `help __sub-agent-exec` invocations; the
+helper's runtime remains unimplemented. See
+`docs/evidence/baseline-0.166.1/sub-agent-exec-help.md`.
 
 The active 0.166.1 real-process repeat-launch check confirms that the release
 starts the synthetic Codex child twice and preserves shared history and session

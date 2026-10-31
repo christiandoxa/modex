@@ -172,6 +172,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_doctor_install_01661.py", active_tests)
         self.assertIn("test_playwright_node_01661.py", active_tests)
         self.assertIn("test_caveman_retirement_01661.py", active_tests)
+        self.assertIn("test_sub_agent_exec_help_01661.py", active_tests)
         self.assertIn("test_super_repeat_launch_01661.py", active_tests)
         self.assertFalse(any("01660" in test for test in unittest_files_for_lane(script, "focused-python-active")))
         self.assertLess(active_suite, historical_01660)
@@ -315,6 +316,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_doctor_install_01661.py", active_tests)
         self.assertIn("test_playwright_node_01661.py", active_tests)
         self.assertIn("test_caveman_retirement_01661.py", active_tests)
+        self.assertIn("test_sub_agent_exec_help_01661.py", active_tests)
         self.assertIn("test_super_repeat_launch_01661.py", active_tests)
         self.assertFalse(any("01660" in test for test in unittest_files_for_lane(script, "focused-python-active")))
         self.assertLess(active_suite, historical_01660)
@@ -624,7 +626,7 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "  esac\n"
                 "  exit 0\n"
                 "fi\n"
-                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && (\" $* \" == *' test_active_baseline_01661.py '* || \" $* \" == *' test_doctor_install_01661.py '* || \" $* \" == *' test_playwright_node_01661.py '* || \" $* \" == *' test_caveman_retirement_01661.py '*) ]]; then\n"
+                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && (\" $* \" == *' test_active_baseline_01661.py '* || \" $* \" == *' test_doctor_install_01661.py '* || \" $* \" == *' test_playwright_node_01661.py '* || \" $* \" == *' test_caveman_retirement_01661.py '* || \" $* \" == *' test_sub_agent_exec_help_01661.py '*) ]]; then\n"
                 "  printf 'active-test\\t%s\\t%s\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE-}\" \"${PRODEX_ORACLE_01660-}\" \"${PRODEX_GATEWAY_ORACLE-}\" \"${PRODEX_GATEWAY_ORACLE_01660-}\" \"${MODEX_REFERENCE_DIR-}\" >>\"$FAKE_LOG\"\n"
                 "fi\n"
                 "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_active_baseline_01660.py '* ]]; then\n"

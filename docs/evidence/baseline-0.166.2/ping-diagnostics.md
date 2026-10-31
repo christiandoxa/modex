@@ -67,12 +67,16 @@ results cover only the listed offline ping diagnostics and do not establish
 full URL, IDNA, ping operation, or cross-target parity.
 
 The validator reuses Modex's authority checks but does not implement full
-WHATWG URL or UTS #46 processing. Known remaining IDNA mismatches are recorded
-in `test_unimplemented_uts46_host_validation_remains_visible`: Prodex rejects
-LRM, bidi, private-use, noncharacter, tag, C1, and joiner host probes before
-model validation, while Modex reaches the model error. This does not establish
-full host or IDNA parity. The ping operation remains guarded and makes no
-provider request.
+WHATWG URL or UTS #46 processing. A follow-up closes the selected
+0.166.2 mismatches for bidi marks/format controls, C1 controls, the probed
+unassigned scalar, private-use characters, noncharacters, tag characters, and
+interlinear annotation characters. Invalid ASCII-neighbor ZWNJ/ZWJ contexts
+are rejected while the oracle-accepted Indic virama-ZWJ and Persian ZWNJ
+controls still reach model validation. The same comparison includes a
+percent-encoded bidi mark and the existing `bücher.example` positive control.
+These are selected scalar and context probes, not complete UTS #46, WHATWG URL,
+or IDNA parity; other unassigned code points and contextual joiner cases remain
+unqualified. The ping operation remains guarded and makes no provider request.
 
 Probe constraints for any future implementation: Reqwest accepts empty
 userinfo markers (`https://@example.test/` and `https://:@example.test/`) but

@@ -518,12 +518,35 @@ def ping_url_host_error(host_port: String) -> String:
         if not decoded:
             return "invalid international domain name"
         host = decoded.value()
+    if ping_url_host_has_invalid_idna_scalar(host):
+        return "invalid international domain name"
     if not valid_url_host(host):
         return "invalid international domain name"
     host = url_numeric_host_compatibility(host)
     if host_ends_in_number(host) and not valid_ipv4_host(host):
         return "invalid IPv4 address"
     return ""
+
+
+def ping_url_host_has_invalid_idna_scalar(host: String) -> Bool:
+    var codepoints = List[Int]()
+    for character in host.codepoints():
+        codepoints.append(Int(character))
+    for index in range(len(codepoints)):
+        var code = codepoints[index]
+        if (0x80 <= code <= 0x9F or code == 0x0378 or code == 0x061C or
+            code == 0x200E or code == 0x200F or 0x202A <= code <= 0x202E or
+            0x2066 <= code <= 0x2069 or
+            0xE000 <= code <= 0xF8FF or 0xF0000 <= code <= 0xFFFFD or
+            0x100000 <= code <= 0x10FFFD or 0xE0000 <= code <= 0xE007F or
+            0xFDD0 <= code <= 0xFDEF or (code & 0xFFFE) == 0xFFFE or
+            0xFFF9 <= code <= 0xFFFB):
+            return True
+        # A valid ContextJ character cannot follow ASCII; retain non-ASCII
+        # virama and Arabic joining contexts for the existing host validator.
+        if (code == 0x200C or code == 0x200D) and (index == 0 or codepoints[index - 1] < 0x80):
+            return True
+    return False
 
 
 def login_help_requested(args: List[String], executable: String) raises -> Bool:

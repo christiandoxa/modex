@@ -116,7 +116,7 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
     var seen = List[String]()
     var literal = False
     var doctor_group = False
-    var pending_interval_error = String()
+    var pending_value_error = String()
     var index = 2
     while index < len(args):
         var argument = args[index]
@@ -129,13 +129,13 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
         )
         # Clap keeps separated values pending but validates attached values immediately.
         if (
-            pending_interval_error
+            pending_value_error
             and not literal
             and argument != "--"
             and not attached_value
             and (help or name in flags)
         ):
-            raise session_cli_error(pending_interval_error)
+            raise session_cli_error(pending_value_error)
         if help:
             return True
         if not literal and argument == "--":
@@ -173,7 +173,10 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
             try:
                 parsed = unsigned_value(value)
             except error:
-                raise session_cli_error("invalid value '" + value + "' for '--tail-bytes <BYTES>': " + String(error))
+                var value_error = "invalid value '" + value + "' for '--tail-bytes <BYTES>': " + String(error)
+                if "=" in argument:
+                    raise session_cli_error(value_error)
+                pending_value_error = value_error
         elif name == "--interval":
             var value: String
             if "=" in argument:
@@ -198,13 +201,13 @@ def inspection_help_requested(args: List[String], executable: String) raises -> 
             if interval_error:
                 if "=" in argument:
                     raise session_cli_error(interval_error)
-                pending_interval_error = interval_error
+                pending_value_error = interval_error
         if command == "doctor" and (name not in ["--tail-bytes", "--bundle"] or "=" in argument):
             doctor_group = True
         seen.append(name)
         index += 1
-    if pending_interval_error:
-        raise session_cli_error(pending_interval_error)
+    if pending_value_error:
+        raise session_cli_error(pending_value_error)
     if command == "doctor":
         var missing = List[String]()
         for name in seen:

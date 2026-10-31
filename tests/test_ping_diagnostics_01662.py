@@ -266,7 +266,7 @@ class PingDiagnostics01662Tests(unittest.TestCase):
                                  (1, b"", expected_reference))
                 self.assertEqual((reference_changes, actual_changes), ([], []))
 
-    def test_unimplemented_uts46_host_validation_remains_visible(self):
+    def test_selected_uts46_host_validation_matches_without_mutation(self):
         base_error = (
             b"Error: ping upstream base URL must be an http(s) URL with host and no "
             b"credentials, query, or fragment: invalid international domain name\n"
@@ -279,7 +279,11 @@ class PingDiagnostics01662Tests(unittest.TestCase):
             ("noncharacter", "https://a\ufdd0b.example/v1"),
             ("tag", "https://a\U000e0001b.example/v1"),
             ("C1 control", "https://a\u0080b.example/v1"),
-            ("joiner", "https://a\u200cb.example/v1"),
+            ("invalid ZWNJ context", "https://a\u200cb.example/v1"),
+            ("invalid ZWJ context", "https://a\u200db.example/v1"),
+            ("unassigned scalar", "https://a\u0378b.example/v1"),
+            ("interlinear annotation", "https://a\ufff9b.example/v1"),
+            ("percent-encoded bidi mark", "https://a%E2%80%8Eb.example/v1"),
         )
         for label, base_url in cases:
             arguments = ["ping", "openai", "--base-url", base_url, "--model", ""]
@@ -293,7 +297,29 @@ class PingDiagnostics01662Tests(unittest.TestCase):
                 self.assertEqual((reference.returncode, reference.stdout, reference.stderr),
                                  (1, b"", base_error))
                 self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
+                                 (reference.returncode, reference.stdout, reference.stderr))
+                self.assertEqual((reference_changes, actual_changes), ([], []))
+
+        valid_contexts = (
+            ("Indic virama ZWJ", "https://\u0915\u094d\u200d\u0937.example/v1"),
+            ("Persian ZWNJ", "https://\u0646\u0627\u0645\u0647\u200c\u0627\u06cc.example/v1"),
+            ("valid IDNA label", "https://b\u00fccher.example/v1"),
+            *((f"ignored U+{codepoint:04X}", f"https://a{chr(codepoint)}b.example/v1")
+              for codepoint in range(0x206A, 0x2070)),
+        )
+        for label, base_url in valid_contexts:
+            arguments = ["ping", "openai", "--base-url", base_url, "--model", ""]
+            with self.subTest(label=label):
+                reference, reference_changes = isolated_run(
+                    ORACLE, arguments, "prodex", "ping-idna-valid-oracle"
+                )
+                actual, actual_changes = isolated_run(
+                    MODEX, arguments, "modex", "ping-idna-valid-modex"
+                )
+                self.assertEqual((reference.returncode, reference.stdout, reference.stderr),
                                  (1, b"", model_error))
+                self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
+                                 (reference.returncode, reference.stdout, reference.stderr))
                 self.assertEqual((reference_changes, actual_changes), ([], []))
 
 

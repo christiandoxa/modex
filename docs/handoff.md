@@ -19,6 +19,16 @@ Fast and Full active-baseline suites. See
 `docs/evidence/baseline-0.166.2/super-debug-escaping.md` and
 `tests/test_super_debug_escaping_01662.py`.
 
+The `doctor` parser now defers invalid separated `--tail-bytes` values while
+parsing later arguments, matching 0.166.2 precedence for unknown options,
+positionals, and malformed attached help. Exact help, a later recognized
+option, and invalid attached values retain their observed ordering. Nine
+isolated process cases exit before Doctor execution and leave no files. The
+regression is registered in both Fast and Full active-baseline suites; see
+`docs/evidence/baseline-0.166.2/doctor-tail-bytes-precedence.md` and
+`tests/test_doctor_tail_bytes_precedence_01662.py`. Stateful Doctor operations
+remain guarded, and this is not full Doctor or six-target parity.
+
 The connected session parser now matches selected 0.166.2 error precedence
 when a malformed attached switch/help value or unknown argument immediately
 follows a duplicate value option. Unknown-argument usage retains earlier
@@ -234,11 +244,14 @@ slash and backslash normalization, common IPv4/IPv6 authorities, and a valid
 IDNA domain. The 0.166.2 ping suite and `rtk make build` passed on Linux
 x86-64; exact cases and the pinned oracle digest are recorded in
 `docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
-Full UTS #46 validation remains open: selected LRM, bidi, private-use,
-noncharacter, tag, C1, and joiner host probes still reach model validation in
-Modex while Prodex rejects them. The operation remains guarded; all probes use
-synthetic homes and make no provider request. Exact cases are recorded in
-`docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
+Full UTS #46 validation remains open. Selected active-release mismatches for
+bidi marks/format controls, C1, one unassigned scalar, private-use,
+noncharacters, tags, and interlinear annotation characters now match the
+release. Invalid ASCII-neighbor ZWNJ/ZWJ contexts also match while the tested
+Indic virama-ZWJ and Persian ZWNJ contexts remain accepted. Other unassigned
+scalars and contextual joiner cases remain unqualified. The operation remains
+guarded; all probes use synthetic homes and make no provider request. Exact
+cases are recorded in `docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
 
 `doctor --install` now has active 0.166.2 process coverage for the empty-tool
 inventory, no-install Playwright probing, managed-root path safety, and

@@ -127,12 +127,13 @@ guard; tokens following `--` remain parser errors, and no broker startup was
 added. See
 `docs/evidence/baseline-0.166.2/runtime-broker-help-precedence.md`.
 
-The hidden `__mcp-jsonl-bridge` pre-command parser now matches tested 0.166.2
-help short-cluster and ordering behavior, including errors when an unknown
-option precedes help. Invocations with no `<COMMAND>`, including a lone `--`,
-now return the release's missing-required-argument diagnostic. Positional
-commands still stop at Modex's existing unsupported-command guard; no bridge
-execution was added. See
+The hidden `__mcp-jsonl-bridge` parser now matches tested 0.166.2 help
+precedence both before and after `<COMMAND>`: exact `--help`, `-h`-only short
+clusters, and malformed attached help values are handled before the bridge
+starts. Unknown options before the command still error first; after the
+command, child arguments and a literal `--` stop help scanning. Invocations
+with no `<COMMAND>`, including a lone `--`, retain the missing-required-
+argument diagnostic. The bridge remains behind Modex's execution guard. See
 `docs/evidence/baseline-0.166.2/mcp-jsonl-bridge-help-precedence.md`.
 
 The connected hidden `__sub-agent-exec` parser now matches selected 0.166.2

@@ -173,11 +173,23 @@ def parse_sub_agent_exec_arguments(args: List[String], executable: String) raise
     return False
 
 
+def mcp_bridge_short_help_cluster(argument: String) -> Bool:
+    if not argument.startswith("-h"):
+        return False
+    var index = 0
+    for character in argument.codepoints():
+        if index >= 2 and Int(character) != 0x68:
+            return False
+        index += 1
+    return True
+
+
 def mcp_jsonl_bridge_help_requested(args: List[String], executable: String) raises -> Bool:
     var usage = executable + " __mcp-jsonl-bridge <COMMAND> [ARGS]..."
     if len(args) == 2 or (len(args) == 3 and args[2] == "--"):
         raise session_cli_error("the following required arguments were not provided:\n  <COMMAND>", usage)
     var index = 2
+    var command_seen = False
     while index < len(args):
         var argument = String(args[index])
         if argument == "--":
@@ -190,9 +202,15 @@ def mcp_jsonl_bridge_help_requested(args: List[String], executable: String) rais
                 usage.replace(" <COMMAND> [ARGS]...", " --help <COMMAND> [ARGS]..."),
             )
         if argument.startswith("-h") and not argument.startswith("--"):
-            return True
-        if argument == "-" or not argument.startswith("-"):
+            if not command_seen or mcp_bridge_short_help_cluster(argument):
+                return True
             return False
+        if command_seen:
+            return False
+        if argument == "-" or not argument.startswith("-"):
+            command_seen = True
+            index += 1
+            continue
         var name = argument_name(argument)
         raise session_cli_error(
             "unexpected argument '" + name + "' found\n\n  tip: to pass '" + name + "' as a value, use '-- " + name + "'",

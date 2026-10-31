@@ -57,8 +57,45 @@ class McpJsonlBridgeHelpPrecedence01662Tests(unittest.TestCase):
                                  (status, expected_modex_stdout, expected_stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_post_command_help_precedence_matches_without_starting_server(self):
+        expected_help = (ROOT / "docs/evidence/baseline-0.166.2/help/__mcp-jsonl-bridge.txt").read_bytes()
+        cases = (
+            (("__mcp-jsonl-bridge", "synthetic-command", "--help"), 0),
+            (("__mcp-jsonl-bridge", "synthetic-command", "-h"), 0),
+            (("__mcp-jsonl-bridge", "synthetic-command", "-hh"), 0),
+            (("__mcp-jsonl-bridge", "synthetic-command", "--help", "--bogus"), 0),
+            (("__mcp-jsonl-bridge", "synthetic-command", "--help=bad"), 2),
+            (("__mcp-jsonl-bridge", "synthetic-command", "--help=bad", "--bogus"), 2),
+        )
+        for arguments, status in cases:
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "prodex", "01662-mcp-bridge-post-command-oracle"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "modex", "01662-mcp-bridge-post-command-modex"
+                )
+                expected_stdout = expected_help if status == 0 else b""
+                expected_modex_stdout = expected_help.replace(
+                    b"Usage: prodex ", b"Usage: modex ", 1
+                ) if status == 0 else b""
+                expected_stderr = baseline.stderr.replace(
+                    b"Usage: prodex ", b"Usage: modex ", 1
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout), (status, expected_stdout))
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (status, expected_modex_stdout, expected_stderr),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
     def test_positional_bridge_command_stays_guarded(self):
-        for tail in (("synthetic-command",), ("-",), ("synthetic-command", "--help")):
+        for tail in (
+            ("synthetic-command",),
+            ("-",),
+            ("synthetic-command", "--bogus", "--help"),
+            ("synthetic-command", "--", "--help"),
+        ):
             with self.subTest(tail=tail):
                 modex, created = isolated_run(
                     MODEX,
@@ -71,6 +108,33 @@ class McpJsonlBridgeHelpPrecedence01662Tests(unittest.TestCase):
                     (1, b"", b"Error: this Modex development build has not implemented the requested command\n"),
                 )
                 self.assertEqual(created, [])
+
+    def test_child_args_stop_help_scan_and_keep_bridge_guard(self):
+        for tail in (
+            ("synthetic-command", "--bogus", "--help"),
+            ("synthetic-command", "--", "--help"),
+            ("synthetic-command", "-hx"),
+        ):
+            with self.subTest(tail=tail):
+                baseline, baseline_created = isolated_run(
+                    ORACLE,
+                    ["__mcp-jsonl-bridge", *tail],
+                    "prodex",
+                    "01662-mcp-bridge-child-args-oracle",
+                )
+                modex, modex_created = isolated_run(
+                    MODEX,
+                    ["__mcp-jsonl-bridge", *tail],
+                    "modex",
+                    "01662-mcp-bridge-child-args-modex",
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout), (1, b""))
+                self.assertIn(b"failed to start MCP server synthetic-command", baseline.stderr)
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (1, b"", b"Error: this Modex development build has not implemented the requested command\n"),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
 
     def test_missing_bridge_command_matches_required_argument_error(self):
         for tail in ((), ("--",)):

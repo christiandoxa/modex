@@ -88,11 +88,55 @@ no provider traffic or personal data is used.
 - `make ci-dependencies` passed: all 74 production Mojo files use only
   standard-library or internal imports.
 
-## Remaining route gaps
+## CONNECT request-target and tunnel boundary
 
-For the tested CONNECT model request, the release sends authority-form while
-Modex's shared outbound transport sends origin-form. Both connect only to the
-configured loopback upstream; this method-format difference remains open.
+The pinned `local_rewrite_deepseek_send.rs` passes the inbound method and
+configured upstream URL to `local_rewrite_transport.rs`, which calls
+`reqwest`'s request builder. For CONNECT, Prodex therefore sends the upstream
+authority as the request target. Modex's shared `_stream_request` previously
+used the configured origin-form path for every method.
+
+The shared Modex request builder now uses the already validated upstream
+authority with its explicit port as the target for the exact `CONNECT`
+method, while the `Host` header keeps its existing default-port formatting.
+Native Mojo checks cover IPv4 and IPv6 port 80. Synthetic 418 process
+comparisons confirm the same authority-form target at the loopback
+upstream for `/models`, `/v1/chat/completions`, `/v1/messages`, and
+`/v1/responses`; both products return the fixture's status and body. An invalid
+local token on the Modex model route still returns 401 before provider
+dispatch.
+
+CONNECT tunnel responses remain unsupported. A synthetic 200 response on the
+model route becomes a bodyless 200 in Prodex, while Modex returns 502 before
+reading a CONNECT tunnel body. A raw synthetic 200 with no Content-Length or
+Transfer-Encoding and immediate tunnel bytes confirms that Modex closes the
+upstream socket, returns 502, and forwards none of those bytes. A synthetic
+Codex client captures the complete downstream response through EOF; the 502
+body matches its Content-Length, and the tunnel sentinel is absent from the
+entire wire. On the
+translated Responses route both products return 502 for the framed 200 control,
+with Modex failing closed at the transport boundary. A synthetic 101 upgrade
+also returns 502 in Modex. The relay does not attach an upgraded socket or
+enable bidirectional tunneling. Authority-form matching is limited to the
+numeric loopback URL that passed the existing validation and connection
+checks.
+
+`test_provider_passthrough_01660.py` covers these route and response cases
+with real processes, a synthetic provider, isolated homes, read-only binary
+and workspace mounts, and bubblewrap network isolation with loopback only.
+This qualifies the selected Linux x86-64 request-target and fail-closed cases,
+not successful CONNECT tunneling or other release targets.
+
+- `make build` passed with Mojo 1.2.0.
+- `make unit UNIT_BUILD_PROGRAMS=test_provider_deepseek_transport UNIT_RUNS=test_provider_deepseek_transport`
+  passed the native IPv4 and IPv6 default-port request checks.
+- `test_provider_passthrough_01660.py` passed all 15 tests in 31.008 seconds
+  inside bubblewrap with a private `/tmp`, isolated HOME, read-only workspace,
+  binary and oracle, and loopback-only networking.
+- `make ci-dependencies` passed: all 74 Mojo files use only standard-library
+  or internal imports; `git diff --check` passed.
+
+## Remaining route gaps
 
 The Messages route is covered separately in `local-relay-messages-routes.md`.
 Both processes returned 404 for the tested `/embeddings` and `/v1/embeddings`

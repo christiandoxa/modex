@@ -671,7 +671,7 @@ def _valid_request_field(name: String, value: String) raises:
         raise Error("caller-controlled HTTP framing header is forbidden")
 
 
-def _stream_request(path: String, headers: List[Tuple[String, String]], host: String, body_length: Int, request_method: String = "POST", request_header_limit: Int = HTTP_HEADER_LIMIT, request_field_limit: Int = HTTP_HEADER_LIMIT, request_connection_close: Bool = True, include_content_length: Bool = True) raises -> List[UInt8]:
+def _stream_request(path: String, headers: List[Tuple[String, String]], host: String, connect_authority: String, body_length: Int, request_method: String = "POST", request_header_limit: Int = HTTP_HEADER_LIMIT, request_field_limit: Int = HTTP_HEADER_LIMIT, request_connection_close: Bool = True, include_content_length: Bool = True) raises -> List[UInt8]:
     # Reuse GET's target validation without changing its established request bytes.
     _ = _request(path, "X", "", host)
     if not request_method:
@@ -682,7 +682,8 @@ def _stream_request(path: String, headers: List[Tuple[String, String]], host: St
     if request_header_limit < 2 or request_header_limit > HTTP_OUTBOUND_REQUEST_HEADER_LIMIT or request_field_limit < 0 or request_field_limit > HTTP_MAX_REQUEST_FIELD_LIMIT or request_field_limit > request_header_limit:
         raise Error("invalid or unsupported HTTP request header limit")
     var lines = List[String]()
-    lines.append(request_method + " " + path + " HTTP/1.1")
+    var request_target = connect_authority if request_method == "CONNECT" else path
+    lines.append(request_method + " " + request_target + " HTTP/1.1")
     lines.append("Host: " + host)
     if request_connection_close:
         lines.append("Connection: close")
@@ -785,6 +786,7 @@ struct LoopbackHTTPStream(Movable):
         var request_address: String
         var port: Int
         var host = String()
+        var connect_authority: String
         var ip: UInt32 = 0
         if ipv6:
             var close_bracket = address.find("]")
@@ -809,9 +811,11 @@ struct LoopbackHTTPStream(Movable):
             raise Error("invalid loopback HTTP port")
         if ipv6:
             request_address = _request_authority("[::1]", port)
+            connect_authority = "[::1]:" + String(port)
         else:
             request_address = _request_authority(host, port)
-        var request = _stream_request(path, headers, request_address, len(body), request_method, request_header_limit, request_field_limit, request_connection_close, include_content_length)
+            connect_authority = host + ":" + String(port)
+        var request = _stream_request(path, headers, request_address, connect_authority, len(body), request_method, request_header_limit, request_field_limit, request_connection_close, include_content_length)
         _check_downstream_peer(self.downstream_fd)
         _check_cancellation(self.cancel_fd)
         var started = perf_counter()
@@ -908,6 +912,8 @@ struct LoopbackHTTPStream(Movable):
             self.header_scan = 0
             return
         self.status = parsed[0]
+        if self.request_method == "CONNECT" and self.status >= 200 and self.status < 300:
+            raise Error("HTTP CONNECT tunneling is unsupported")
         # A 304 length describes the representation; bodyless statuses consume no bytes.
         self.length = 0 if self.request_method == "HEAD" or self.status == 204 or self.status == 304 else parsed[1]
         if self.max_body_bytes >= 0 and self.length > self.max_body_bytes:

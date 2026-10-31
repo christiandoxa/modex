@@ -3,7 +3,7 @@ from std.sys import argv
 from std.testing import assert_equal, assert_true
 
 from modex.json import JsonDocument, serialize_json
-from modex.loopback_http import LoopbackHTTPStream
+from modex.loopback_http import LoopbackHTTPStream, _stream_request
 from modex.provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_model_retry_available, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_model_response
 from modex.provider_rate_limits import _reset_epoch, deepseek_codex_rate_limit_headers
 
@@ -25,6 +25,28 @@ def byte_values(value: String) -> List[UInt8]:
     for byte in value.as_bytes():
         output.append(byte)
     return output^
+
+
+def connect_authority_form() raises:
+    var headers = List[Tuple[String, String]]()
+    assert_equal(
+        _stream_request(
+            "/v1/models", headers, "127.0.0.1", "127.0.0.1:80", 0, "CONNECT",
+        ),
+        byte_values(
+            "CONNECT 127.0.0.1:80 HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            "Connection: close\r\nContent-Length: 0\r\n\r\n"
+        ),
+    )
+    assert_equal(
+        _stream_request(
+            "/v1/models", headers, "[::1]", "[::1]:80", 0, "CONNECT",
+        ),
+        byte_values(
+            "CONNECT [::1]:80 HTTP/1.1\r\nHost: [::1]\r\n"
+            "Connection: close\r\nContent-Length: 0\r\n\r\n"
+        ),
+    )
 
 
 def model_attempts() raises:
@@ -250,6 +272,7 @@ def main() raises:
     check(headers, "x-prodex-internal", ["forward"])
     check(headers, "sec-websocket", ["forward"])
 
+    connect_authority_form()
     model_attempts()
     model_retry_classification()
 

@@ -5,12 +5,14 @@ import json
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from test_active_baseline_01660 import MODEX, ORACLE, ORACLE_SHA256
 from test_deepseek_continuation import buffered_reply, observe_turns
-from test_local_rewrite import SYNTHETIC_API_KEY, serving
+from test_local_rewrite import SYNTHETIC_API_KEY, UpstreamHandler, serving
 from test_super_launch import CODEX
 
 
@@ -99,6 +101,37 @@ raise SystemExit(0)
 '''
 
 
+CONNECT_WIRE_CLIENT = CODEX[:CODEX.index("passthrough = scenario")] + r'''
+import socket
+target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
+request = (
+    f"CONNECT /models HTTP/1.1\r\nHost: {target.hostname}:{target.port}\r\n"
+    f"Authorization: {authorization}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+).encode()
+connection = socket.create_connection((target.hostname, target.port), timeout=10)
+connection.settimeout(float(os.environ["MODEX_WIRE_READ_TIMEOUT_SECONDS"]))
+connection.sendall(request)
+wire = bytearray()
+eof = False
+timed_out = False
+while True:
+    try:
+        chunk = connection.recv(65536)
+    except TimeoutError:
+        timed_out = True
+        break
+    if not chunk:
+        eof = True
+        break
+    wire.extend(chunk)
+connection.close()
+save({"kind": "wire-response", "wire": bytes(wire).hex(), "eof": eof,
+      "timed_out": timed_out})
+print("synthetic-wire-complete")
+raise SystemExit(0)
+'''
+
+
 def observe_same_connection(binary, status):
     replies = [
         {"status": status, "content_type": "text/event-stream", "body": b"", "chunked": True},
@@ -141,7 +174,8 @@ def observe_same_connection(binary, status):
         return records, probes[0]
 
 
-def observe_response_wire(binary, reply, *, request_close=False, pipeline_second=False):
+def observe_response_wire(binary, reply, *, request_close=False, pipeline_second=False,
+                          client_script=WIRE_CLIENT):
     with tempfile.TemporaryDirectory(prefix="modex-response-wire-01660-") as directory:
         root = Path(directory)
         for name in ("home", "state", "shared", "work"):
@@ -151,7 +185,7 @@ def observe_response_wire(binary, reply, *, request_close=False, pipeline_second
                         "checked_at": 4102444800}, separators=(",", ":"))
         )
         codex = root / "codex"
-        codex.write_text("#!" + sys.executable + "\n" + WIRE_CLIENT, encoding="utf-8")
+        codex.write_text("#!" + sys.executable + "\n" + client_script, encoding="utf-8")
         codex.chmod(0o700)
         capture = root / "capture.jsonl"
         environment = {
@@ -416,6 +450,127 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         self.assertEqual(oracle_responses[0]["status"], 200)
         self.assertEqual(modex_responses[0]["status"], 401)
         self.assertEqual(bytes.fromhex(modex_responses[0]["body"]), b"")
+
+    def test_connect_routes_use_upstream_authority_form(self):
+        reply = {"status": 418, "content_type": "application/json",
+                 "body": b'{"error":"synthetic CONNECT control"}'}
+        turns = (
+            {"_method": "CONNECT", "_path": "/models", "_raw_body": ""},
+            {"_method": "CONNECT", "_path": "/v1/chat/completions", "_raw_body":
+             '{"model":"deepseek-chat","messages":[]}'},
+            {"_method": "CONNECT", "_path": "/v1/messages", "_raw_body":
+             '{"model":"deepseek-chat","messages":[]}'},
+            {"_method": "CONNECT", "_path": "/v1/responses", "_raw_body":
+             '{"model":"deepseek-chat","input":"synthetic"}'},
+        )
+        for binary in (ORACLE, MODEX):
+            for turn in turns:
+                with self.subTest(binary=str(binary), route=turn["_path"]):
+                    with patch.object(UpstreamHandler, "do_CONNECT", UpstreamHandler.do_POST, create=True):
+                        upstream, responses = observe_turns(
+                            binary, [turn], [reply], latest_version="0.166.0",
+                        )
+                    self.assertEqual(len(upstream), 1)
+                    self.assertEqual(upstream[0]["method"], "CONNECT")
+                    self.assertEqual(upstream[0]["path"], upstream[0]["headers"]["host"])
+                    self.assertTrue(upstream[0]["path"].startswith("127.0.0.1:"))
+                    self.assertEqual(responses[0]["status"], 418)
+                    self.assertEqual(bytes.fromhex(responses[0]["body"]), reply["body"])
+
+        denied_upstream, denied_responses = observe_turns(
+            MODEX,
+            [{"_method": "CONNECT", "_path": "/models", "_raw_body": "",
+              "_headers": {"Authorization": "Bearer synthetic-invalid-token"}}],
+            [], latest_version="0.166.0",
+        )
+        self.assertEqual(denied_upstream, [])
+        self.assertEqual(denied_responses[0]["status"], 401)
+
+    def test_connect_success_and_upgrade_responses_do_not_establish_tunnels(self):
+        success = {"status": 200, "content_type": "application/octet-stream",
+                   "body": b"synthetic tunnel bytes"}
+        turns = (
+            {"_method": "CONNECT", "_path": "/models", "_raw_body": ""},
+            {"_method": "CONNECT", "_path": "/v1/responses", "_raw_body":
+             '{"model":"deepseek-chat","input":"synthetic"}'},
+        )
+        expected = {
+            (ORACLE, "/models"): (200, b""),
+            (MODEX, "/models"): (502, b"upstream request failed"),
+            (ORACLE, "/v1/responses"): (502, b"provider response could not be processed"),
+            (MODEX, "/v1/responses"): (502, b"upstream request failed"),
+        }
+        for binary in (ORACLE, MODEX):
+            for turn in turns:
+                with self.subTest(binary=str(binary), route=turn["_path"]):
+                    with patch.object(UpstreamHandler, "do_CONNECT", UpstreamHandler.do_POST, create=True):
+                        upstream, responses = observe_turns(
+                            binary, [turn], [success], latest_version="0.166.0",
+                        )
+                    self.assertEqual(len(upstream), 1)
+                    self.assertEqual(upstream[0]["method"], "CONNECT")
+                    self.assertEqual(upstream[0]["path"], upstream[0]["headers"]["host"])
+                    self.assertEqual(
+                        (responses[0]["status"], bytes.fromhex(responses[0]["body"])),
+                        expected[(binary, turn["_path"])]
+                    )
+
+        upgrade = {"status": 101, "content_type": "application/octet-stream",
+                   "body": b"synthetic upgrade bytes"}
+        turn = [{"_method": "CONNECT", "_path": "/models", "_raw_body": ""}]
+        with patch.object(UpstreamHandler, "do_CONNECT", UpstreamHandler.do_POST, create=True):
+            upgrade_upstream, upgrade_responses = observe_turns(
+                MODEX, turn, [upgrade], latest_version="0.166.0",
+            )
+        self.assertEqual(len(upgrade_upstream), 1)
+        self.assertEqual(upgrade_responses[0]["status"], 502)
+        self.assertEqual(bytes.fromhex(upgrade_responses[0]["body"]), b"upstream request failed")
+
+    def test_raw_connect_tunnel_bytes_are_discarded_and_upstream_fd_closes(self):
+        upstream_closed = threading.Event()
+        upstream_timed_out = threading.Event()
+
+        def raw_connect_response(handler):
+            length = int(handler.headers.get("Content-Length", "0"))
+            handler.server.records.append({
+                "method": handler.command,
+                "path": handler.path,
+                "headers": {name.lower(): value for name, value in handler.headers.items()},
+                "body": handler.rfile.read(length),
+            })
+            handler.connection.sendall(
+                b"HTTP/1.1 200 Connection Established\r\n\r\n"
+                b"synthetic tunnel bytes"
+            )
+            handler.connection.settimeout(1)
+            try:
+                if handler.connection.recv(1) == b"":
+                    upstream_closed.set()
+            except TimeoutError:
+                upstream_timed_out.set()
+            except OSError:
+                upstream_closed.set()
+            handler.close_connection = True
+
+        with patch.object(UpstreamHandler, "do_CONNECT", raw_connect_response, create=True):
+            upstream, wire, eof, timed_out = observe_response_wire(
+                MODEX,
+                {"status": 200, "content_type": "application/octet-stream",
+                 "body": b"synthetic tunnel bytes"},
+                client_script=CONNECT_WIRE_CLIENT,
+            )
+
+        self.assertTrue(upstream_closed.wait(1), "a rejected CONNECT response must close upstream")
+        self.assertFalse(upstream_timed_out.is_set(), "the relay left the tunnel socket open")
+        self.assertEqual(upstream[0]["method"], "CONNECT")
+        self.assertEqual(upstream[0]["path"], upstream[0]["headers"]["host"])
+        self.assertTrue(eof, "the downstream response must close after the CONNECT rejection")
+        self.assertFalse(timed_out, "the downstream response stayed open after the CONNECT rejection")
+        status, headers, body = parse_raw_response(wire)
+        self.assertEqual(status, 502)
+        self.assertEqual(headers["content-length"], str(len(b"upstream request failed")))
+        self.assertEqual(body, b"upstream request failed")
+        self.assertNotIn(b"synthetic tunnel bytes", wire)
 
     def test_root_responses_alias_keeps_client_auth_and_continuation_ownership(self):
         invalid = [{"model": "deepseek-chat", "input": "synthetic invalid client token",

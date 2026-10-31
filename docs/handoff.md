@@ -1,5 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The loopback relay sends CONNECT requests in authority form, including the
+default port, and rejects successful CONNECT responses before tunnel data can
+be forwarded. The reference returns a bodyless 200 in the tested case; Modex's
+fail-closed 502 is documented in `docs/evidence/baseline-0.166.0/local-relay-root-route-aliases.md`.
+
 Quota now validates selected malformed invocations before reaching the existing
 unimplemented runtime guard. Valid synthetic options still reach that guard;
 see `docs/evidence/baseline-0.166.0/quota-help.md`.

@@ -8,6 +8,7 @@
   },
   "modex": {
     "source_commit": "7a1616541625ad4f097b6f27984d20faea359af9",
+    "rewritten_history_equivalent_commit": "d378fc734a9adda97af872ff171d3a60250bc95e",
     "binary_sha256": "1909dabc89216abc41ad16591d1d6b80960a75f02eac9df3174cdc3c2931a35e",
     "compiler": "Mojo 1.2.0 (2016d0cd)",
     "target": "x86_64-unknown-linux-gnu"

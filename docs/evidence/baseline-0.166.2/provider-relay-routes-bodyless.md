@@ -17,6 +17,11 @@ from `d69f6b332f7e187019c1972f06a9f7007e68a5ac`. The focused comparison took
 provider-relay parity; other routes, transport behavior, platforms, and the
 six-target denominator remain unqualified.
 
+The cited hash preserves the source provenance recorded when this capture was
+made. After the Modex history rewrite, its equivalent commit is
+`f7bfcaf0ac5441266225a9b7c9880c664427f918`; the two commits have identical
+trees, subjects, and timestamps.
+
 To reproduce from the repository root, export the verified active oracle and
 the built Modex path, then run the existing WebSocket fallback sandbox helper
 inside a fresh network namespace. The inline driver below selects this test

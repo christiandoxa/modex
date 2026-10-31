@@ -23,6 +23,11 @@ python3 tests/manual_session_root_01662.py
 
 On 2026-10-31, the harness compared the local Prodex 0.166.2 binary (SHA-256 `e31b8e281583d12b8db1abc5bc9185c4d297d7c40954770ca19dbb8e83567f00`) with Modex built from `c27389af279945075b59f3e756a0b9529c16773f`. The cases use synthetic root/worker IDs, isolated HOME and Prodex/Codex roots, bubblewrap network isolation, no credentials, and no Codex executable. Every command exited before launching Codex and left the entire fixture tree unchanged.
 
+The cited hash preserves the source provenance recorded when this capture was
+made. After the Modex history rewrite, its equivalent commit is
+`a8cb2c6047015d1fa6e4d64817a654fe33ce87d5`; the two commits have identical
+trees, subjects, and timestamps.
+
 The complete captured outputs are in `session-root-resume-capture.json`. That
 capture did not record the Modex binary digest, so its stated source provenance
 cannot be independently verified from the capture alone. New harness reports

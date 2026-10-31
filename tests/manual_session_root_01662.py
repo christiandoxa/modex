@@ -148,7 +148,10 @@ def main():
             "source_commit": ORACLE_SOURCE_COMMIT,
             "binary_sha256": ORACLE_SHA256,
         },
-        "modex_binary": "provided Modex binary",
+        "modex_binary": {
+            "description": "provided Modex binary",
+            "sha256": hashlib.sha256(MODEX.read_bytes()).hexdigest(),
+        },
         "isolation": "bubblewrap network namespace, synthetic HOME/Prodex/Codex roots, read-only fixture snapshots, no Codex binary or credentials",
         "cases": {},
     }

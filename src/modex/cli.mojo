@@ -683,9 +683,12 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
             short_profile_value = True
 
         if not takes_value and len(pieces) == 2:
+            var error_usage = usage + " " + quota_option_label(canonical)
+            if seen:
+                error_usage = usage + " <" + quota_option_group() + ">"
             raise session_cli_error(
                 "unexpected value '" + String(pieces[1]) + "' for '" + canonical + "' found; no more were expected",
-                usage + " " + quota_option_label(canonical),
+                error_usage,
             )
         if takes_value:
             if len(pieces) == 2 or short_profile_value:
@@ -693,6 +696,8 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
             else:
                 index += 1
                 if index >= help_index:
+                    if has_help_value:
+                        raise quota_help_value_error(help_value, executable, seen)
                     raise session_cli_error(
                         "a value is required for '" + quota_option_label(canonical) + "' but none was supplied"
                     )
@@ -712,11 +717,22 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
         index += 1
 
     if has_help_value:
-        raise session_cli_error(
-            "unexpected value '" + help_value + "' for '--help' found; no more were expected",
-            usage + " --help",
-        )
+        raise quota_help_value_error(help_value, executable, seen)
     return help_mode
+
+
+def quota_help_value_error(value: String, executable: String, seen: List[String]) -> Error:
+    var usage = executable + " quota --help"
+    if seen:
+        usage += " <" + quota_option_group() + ">"
+    return session_cli_error(
+        "unexpected value '" + value + "' for '--help' found; no more were expected",
+        usage,
+    )
+
+
+def quota_option_group() -> String:
+    return "--profile <NAME>|--all|--auth <AUTH>|--provider <PROVIDER>|--detail|--raw|--watch|--once|--base-url <URL>"
 
 
 def quota_option_label(name: String) -> String:

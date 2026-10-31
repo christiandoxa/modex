@@ -15,6 +15,17 @@ the executable basename in `Usage:`. A focused same-`argv0` oracle test covers
 help evidence only; see
 `docs/evidence/baseline-0.166.2/static-help-command-names.md`.
 
+The connected quota help parser now matches selected offline 0.166.2
+diagnostics: malformed `--help=value` precedes a pending split value, and
+errors after accepted options retain the release's full option-group usage.
+Invalid attached values still take precedence. Six parser cases and three help
+controls run in isolated, network-free homes with no filesystem changes; a
+historical 0.439.2 help guard covers the three quota help routes. Quota
+execution remains guarded. `quota --profile=` still reaches a stateful
+Prodex lookup that creates lifecycle/housekeeping locks, so Modex does not
+fake that result or bypass those locks. See
+`docs/evidence/baseline-0.166.2/quota-cli-diagnostics.md`.
+
 The connected `redeem` parser now matches selected offline 0.166.2 diagnostics
 for missing `<PROFILE>`, missing `--base-url` values, repeated options,
 malformed switch/help values, unknown flags, and extra positionals. Seventeen

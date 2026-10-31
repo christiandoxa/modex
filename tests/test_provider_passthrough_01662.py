@@ -22,6 +22,7 @@ PARITY_METHODS = frozenset({
     "test_models_route_keeps_modex_local_client_authentication",
     "test_raw_connect_tunnel_bytes_are_discarded_and_upstream_fd_closes",
     "test_redirect_authorities_canonicalize_same_loopback_endpoint_only",
+    "test_redirect_location_utf8_controls_preserve_first_header_and_origin_guards",
     "test_redirect_path_query_spaces_encode_without_weakening_authority_guards",
     "test_redirect_query_apostrophe_encoding_preserves_path_and_escapes",
     "test_responses_empty_204_sse_and_bodyless_controls_match_active_wire",

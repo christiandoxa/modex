@@ -588,6 +588,147 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                                  ["Bearer " + SYNTHETIC_API_KEY] * 2)
                 self.assertEqual([response["status"] for response in responses], [200])
 
+    def test_redirect_location_utf8_controls_preserve_first_header_and_origin_guards(self):
+        redirect_body = b"synthetic redirect body"
+        buffered_body = b'{"id":"synthetic-final","object":"chat.completion","choices":[]}'
+        streamed_body = b'data: {"id":"synthetic-stream-final","choices":[]}\n\n'
+
+        def observe(binary, location_headers, *, stream=False):
+            turn = {"model": "deepseek-chat", "messages": [], "stream": stream,
+                    "_path": "/v1/chat/completions"}
+            redirect = {"status": 302, "content_type": "text/plain", "body": redirect_body,
+                        "response_headers": location_headers}
+            final = {"status": 200,
+                     "content_type": "text/event-stream" if stream else "application/json",
+                     "body": streamed_body if stream else buffered_body,
+                     "chunked": stream}
+            return observe_turns(binary, [turn], [redirect, final], latest_version=TEST_VERSION)
+
+        invalid_locations = (
+            ("invalid UTF-8 buffered Location", [("Location", "/v1/rédir?q=café")], False),
+            ("invalid UTF-8 streaming Location", [("Location", "/v1/rédir?q=café")], True),
+            ("invalid first Location does not fall through", [
+                ("Location", "/v1/rédir"), ("Location", "/v1/valid-second"),
+            ], False),
+        )
+        for label, location_headers, stream in invalid_locations:
+            for binary in (ORACLE, MODEX):
+                with self.subTest(case=label, binary=str(binary)):
+                    upstream, responses = observe(binary, location_headers, stream=stream)
+                    self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                        ("POST", "/v1/chat/completions"),
+                    ])
+                    self.assertEqual(upstream[0]["headers"]["authorization"],
+                                     "Bearer " + SYNTHETIC_API_KEY)
+                    self.assertEqual([row["status"] for row in responses], [302])
+                    self.assertEqual(bytes.fromhex(responses[0]["body"]), redirect_body)
+
+        sse_redirect_body = b'data: {"id":"synthetic-redirect-stream","choices":[]}\n\n'
+        sse_redirect = {
+            "status": 302,
+            "content_type": "text/event-stream",
+            "body": sse_redirect_body,
+            "chunked": True,
+            "response_headers": [
+                ("Location", "/v1/rédir?q=café"),
+                ("Content-Type", "text/event-stream"),
+            ],
+        }
+        sse_turn = {"model": "deepseek-chat", "messages": [], "stream": True,
+                    "_path": "/v1/chat/completions"}
+        for binary in (ORACLE, MODEX):
+            with self.subTest(case="invalid UTF-8 SSE 302 Location", binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, [sse_turn], [sse_redirect], latest_version=TEST_VERSION,
+                )
+                self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                    ("POST", "/v1/chat/completions"),
+                ])
+                self.assertEqual(upstream[0]["headers"]["authorization"],
+                                 "Bearer " + SYNTHETIC_API_KEY)
+                self.assertEqual([row["status"] for row in responses], [302])
+                self.assertEqual(bytes.fromhex(responses[0]["body"]), sse_redirect_body)
+                response_headers = {name.lower(): value for name, value in responses[0]["headers"].items()}
+                self.assertEqual(response_headers.get("content-type"), "text/event-stream")
+                self.assertEqual(response_headers.get("transfer-encoding"), "chunked")
+
+        valid_locations = (
+            ("ASCII same-origin buffered", [("Location", "http://127.0.0.1:{upstream_port}/v1/ascii?trace=ok")],
+             "/v1/ascii?trace=ok", False),
+            ("percent-encoded Unicode streaming", [("Location", "/v1/r%C3%A9dir?q=caf%C3%A9")],
+             "/v1/r%C3%A9dir?q=caf%C3%A9", True),
+            # The test server emits these Latin-1 characters as valid raw UTF-8 bytes C3 A9.
+            ("raw UTF-8 streaming", [("Location", "/v1/rÃ©dir?q=cafÃ©")],
+             "/v1/r%C3%A9dir?q=caf%C3%A9", True),
+            # EF BF BD is valid UTF-8 here; it must not be confused with lossy replacement.
+            ("literal replacement scalar buffered", [("Location", "/v1/ï¿½")],
+             "/v1/%EF%BF%BD", False),
+        )
+        for label, location_headers, expected_path, stream in valid_locations:
+            for binary in (ORACLE, MODEX):
+                with self.subTest(case=label, binary=str(binary)):
+                    upstream, responses = observe(binary, location_headers, stream=stream)
+                    self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                        ("POST", "/v1/chat/completions"), ("GET", expected_path),
+                    ])
+                    self.assertEqual([row["headers"]["authorization"] for row in upstream], [
+                        "Bearer " + SYNTHETIC_API_KEY,
+                        "Bearer " + SYNTHETIC_API_KEY,
+                    ])
+                    self.assertEqual([row["status"] for row in responses], [200])
+                    self.assertEqual(bytes.fromhex(responses[0]["body"]),
+                                     streamed_body if stream else buffered_body)
+
+        valid_then_invalid = [
+            ("Location", "http://127.0.0.1:{upstream_port}/v1/first-valid"),
+            ("Location", "/v1/second-invalid-é"),
+        ]
+        for binary in (ORACLE, MODEX):
+            with self.subTest(case="valid first Location wins", binary=str(binary)):
+                upstream, responses = observe(binary, valid_then_invalid)
+                self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                    ("POST", "/v1/chat/completions"), ("GET", "/v1/first-valid"),
+                ])
+                self.assertEqual([row["status"] for row in responses], [200])
+
+        with serving([{"status": 200, "content_type": "application/json",
+                       "body": b'{"id":"synthetic-foreign"}'}]) as foreign:
+            same_origin_then_foreign = [
+                ("Location", "http://127.0.0.1:{upstream_port}/v1/first-origin"),
+                ("Location", f"http://127.0.0.1:{foreign.server_port}/v1/second-origin"),
+            ]
+            for binary in (ORACLE, MODEX):
+                with self.subTest(case="first same-origin Location wins", binary=str(binary)):
+                    upstream, responses = observe(binary, same_origin_then_foreign)
+                    self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                        ("POST", "/v1/chat/completions"), ("GET", "/v1/first-origin"),
+                    ])
+                    self.assertEqual(foreign.records, [])
+                    self.assertEqual([row["status"] for row in responses], [200])
+
+            cross_origin_then_same_origin = [
+                ("Location", f"http://127.0.0.1:{foreign.server_port}/v1/cross-origin"),
+                ("Location", "http://127.0.0.1:{upstream_port}/v1/second-origin"),
+            ]
+            upstream, responses = observe(ORACLE, cross_origin_then_same_origin)
+            self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                ("POST", "/v1/chat/completions"),
+            ])
+            self.assertEqual(len(foreign.records), 1)
+            self.assertEqual((foreign.records[0]["method"], foreign.records[0]["path"]),
+                             ("GET", "/v1/cross-origin"))
+            self.assertNotIn("authorization", foreign.records[0]["headers"])
+            self.assertEqual([row["status"] for row in responses], [200])
+            foreign.records.clear()
+
+            upstream, responses = observe(MODEX, cross_origin_then_same_origin)
+            self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                ("POST", "/v1/chat/completions"),
+            ])
+            self.assertEqual(foreign.records, [], "Modex must not send credentials to another origin")
+            self.assertEqual([row["status"] for row in responses], [302])
+            self.assertEqual(bytes.fromhex(responses[0]["body"]), redirect_body)
+
     def test_root_provider_aliases_match_active_route_plan(self):
         turns = [
             {"model": "deepseek-chat", "input": "synthetic root responses POST",

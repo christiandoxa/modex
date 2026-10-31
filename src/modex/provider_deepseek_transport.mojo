@@ -501,7 +501,7 @@ def deepseek_open_redirectable_stream(
     var followed_redirects = 0
     while _deepseek_redirect_status(stream.status):
         var location = _deepseek_redirect_location(stream.headers)
-        if not location[0]:
+        if not location[0] or not stream.first_location_value_utf8_valid:
             break
         var redirect = _deepseek_redirect_target(address, redirect_path, location[1])
         if not redirect[0]:

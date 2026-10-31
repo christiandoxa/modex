@@ -407,6 +407,39 @@ def _ascii(bytes: List[UInt8], start: Int, stop: Int) -> String:
     return String(from_utf8_lossy=Span(out))
 
 
+def _valid_utf8_range(bytes: List[UInt8], start: Int, stop: Int) -> Bool:
+    var value = List[UInt8]()
+    for i in range(start, stop):
+        value.append(bytes[i])
+    try:
+        var decoded = String(from_utf8=Span(value))
+        return decoded.byte_length() == len(value)
+    except:
+        return False
+
+
+def _first_location_value_valid_utf8(bytes: List[UInt8], header_end: Int) -> Bool:
+    var line_start = 0
+    var status_line = True
+    while line_start < header_end:
+        var line_end = line_start
+        while line_end + 1 <= header_end + 1 and not (
+            bytes[line_end] == 13 and bytes[line_end + 1] == 10
+        ):
+            line_end += 1
+        if line_end > header_end:
+            return True
+        if not status_line:
+            var colon = line_start
+            while colon < line_end and bytes[colon] != 58:
+                colon += 1
+            if colon < line_end and _ascii(bytes, line_start, colon).lower() == "location":
+                return _valid_utf8_range(bytes, colon + 1, line_end)
+        status_line = False
+        line_start = line_end + 2
+    return True
+
+
 def _response_head(bytes: List[UInt8], end: Int) raises -> Tuple[Int, Int, Bool]:
     var lines = _ascii(bytes, 0, end).split("\r\n")
     if len(lines) == 0 or (not lines[0].startswith("HTTP/1.0 ") and not lines[0].startswith("HTTP/1.1 ")):
@@ -807,6 +840,7 @@ struct LoopbackHTTPStream(Movable):
     var cancel_fd: Int32
     var status: Int
     var headers: List[Tuple[String, String]]
+    var first_location_value_utf8_valid: Bool
     var done: Bool
     var buffer: List[UInt8]
     var phase: Int
@@ -856,6 +890,7 @@ struct LoopbackHTTPStream(Movable):
         self.cancel_fd = cancel_fd
         self.status = 0
         self.headers = List[Tuple[String, String]]()
+        self.first_location_value_utf8_valid = True
         self.done = False
         self.buffer = List[UInt8]()
         self.phase = 0
@@ -1038,6 +1073,7 @@ struct LoopbackHTTPStream(Movable):
         var lines = _ascii(self.buffer, 0, end).split("\r\n")
         var is_http_11 = lines[0].startswith("HTTP/1.1 ")
         self.headers = List[Tuple[String, String]]()
+        self.first_location_value_utf8_valid = _first_location_value_valid_utf8(self.buffer, end)
         for i in range(1, len(lines)):
             var colon = lines[i].find(":")
             self.headers.append((String(lines[i][byte=0:colon]), String(lines[i][byte=colon + 1:].strip(" \t"))))

@@ -404,15 +404,25 @@ combo retry controls. The test reuses the historical corpus with the active
 oracle and does not qualify untested provider behavior; see
 `docs/evidence/baseline-0.166.2/provider-shapes.md`.
 
-Twenty selected passthrough and redirect cases from the historical provider
+Twenty-one selected passthrough and redirect cases from the historical provider
 suite now run against the verified 0.166.2 oracle in both Fast and Full CI.
 The wrapper asserts its exact inherited test set and switches its synthetic
 update-check marker to 0.166.2 while leaving the historical suite's default
 unchanged. The malformed-SSE oracle mismatch is excluded from parity here;
 the active provider-shapes test separately requires bounded Modex failure and
-records the oracle's open downstream stream. These comparisons found no
-production mismatch and do not establish full provider or six-target parity.
-See `docs/evidence/baseline-0.166.2/provider-passthrough.md`.
+records the oracle's open downstream stream. The 20 existing parity methods do
+not establish full provider or six-target parity. The added redirect control
+reproduced one narrower gap: the response parser stores `Location` values
+lossily, so a malformed UTF-8 first value was
+followed as a path containing U+FFFD while Prodex retained the original 302.
+Modex now records UTF-8 validity from the raw first `Location` bytes and does
+not follow that response. Valid raw UTF-8 (including U+FFFD), percent-encoded
+Unicode, ASCII same-origin redirects, and duplicate-first selection remain
+covered. A separate different-port loopback control confirms Modex refuses a
+cross-origin redirect and sends no synthetic credential there; the release
+follows that redirect but strips its Bearer header, so this safety difference
+is characterized rather than counted as parity. See
+`docs/evidence/baseline-0.166.2/provider-passthrough.md`.
 
 Focused raw-peer comparisons also match for close-delimited JSON, a 103
 informational response before a final response, chunked framing with a trailer,

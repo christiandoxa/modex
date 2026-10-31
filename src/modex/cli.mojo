@@ -552,15 +552,19 @@ def ping_url_host_has_invalid_idna_scalar(host: String) -> Bool:
 def login_help_requested(args: List[String], executable: String) raises -> Bool:
     var usage = executable + " login [OPTIONS] [PROFILE_OR_LOGIN_ARG]..."
     var profile_seen = False
+    var profile_attached = False
     var index = 2
     while index < len(args):
         var argument = args[index]
         if argument == "--help":
             return True
         if argument.startswith("--help="):
+            var help_usage = executable + " login --help [PROFILE_OR_LOGIN_ARG]..."
+            if profile_attached:
+                help_usage = executable + " login --help <--profile <NAME>|PROFILE_OR_LOGIN_ARG>"
             raise session_cli_error(
                 "unexpected value '" + String(argument[byte=7:]) + "' for '--help' found; no more were expected",
-                executable + " login --help [PROFILE_OR_LOGIN_ARG]...",
+                help_usage,
             )
         if argument.startswith("-h") and not argument.startswith("--"):
             var help_cluster = True
@@ -572,18 +576,16 @@ def login_help_requested(args: List[String], executable: String) raises -> Bool:
         if argument == "--":
             return False
         if argument == "--profile" or argument == "-p":
-            if profile_seen:
-                raise session_cli_error(
-                    "the argument '--profile <NAME>' cannot be used multiple times",
-                    usage,
-                )
             if index + 1 >= len(args):
                 raise session_cli_error("a value is required for '--profile <NAME>' but none was supplied")
             var next = String(args[index + 1])
             if next.startswith("--help="):
+                var help_usage = executable + " login --help [PROFILE_OR_LOGIN_ARG]..."
+                if profile_seen:
+                    help_usage = executable + " login --help <--profile <NAME>|PROFILE_OR_LOGIN_ARG>"
                 raise session_cli_error(
                     "unexpected value '" + String(next[byte=7:]) + "' for '--help' found; no more were expected",
-                    executable + " login --help [PROFILE_OR_LOGIN_ARG]...",
+                    help_usage,
                 )
             var help_cluster = next.startswith("-h") and not next.startswith("--")
             if help_cluster:
@@ -591,6 +593,11 @@ def login_help_requested(args: List[String], executable: String) raises -> Bool:
                     if Int(character) != 104: help_cluster = False
             if next in ["--", "--profile", "--help", "-p"] or next.startswith("--profile=") or help_cluster:
                 raise session_cli_error("a value is required for '--profile <NAME>' but none was supplied")
+            if profile_seen:
+                raise session_cli_error(
+                    "the argument '--profile <NAME>' cannot be used multiple times",
+                    usage,
+                )
             profile_seen = True
             index += 2
             continue
@@ -601,6 +608,7 @@ def login_help_requested(args: List[String], executable: String) raises -> Bool:
                     usage,
                 )
             profile_seen = True
+            profile_attached = True
             index += 1
             continue
         return False

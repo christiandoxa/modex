@@ -138,7 +138,18 @@ the release applies UTS #46 mapping and normalization first. Isolated oracle
 comparisons show that ignored characters between Virama and ZWJ, and canonical
 reordering of combining marks, can make a raw-predecessor check reject valid
 URLs. Full mapping, normalization, and broader ContextJ behavior remain open;
-the existing ZWNJ behavior and security checks are unchanged.
+NFC composition can also change the character preceding ZWJ. The encoded
+A-label `xn--11b2er09f` is another confirmed gap: 0.166.2 rejects it while
+Modex accepts its host. The existing ZWNJ behavior and security checks are
+unchanged.
+
+## Active 0.166.2 login profile diagnostics (2026-11-01)
+
+When a repeated split `--profile` or `-p` lacks its value, login now reports
+the missing value before the duplicate, as the 0.166.2 process does. Isolated
+error comparisons also cover attached forms, malformed help, and valued
+duplicates without running login or changing state. Account operations and
+other platforms remain unqualified.
 
 `session current` diagnostics now defer an empty split `--cwd ""` error to a
 following unknown flag or positional, and to malformed attached flag values,

@@ -49,6 +49,33 @@ Options:
 """).replace("Usage: prodex ", "Usage: " + executable + " ")
 
 
+def redeem_help(executable: String) -> String:
+    return String("""Redeem one reset credit manually for a named OpenAI/Codex profile.
+
+Usage: prodex redeem [OPTIONS] <PROFILE>
+
+Arguments:
+  <PROFILE>  OpenAI/Codex profile whose reset credit should be redeemed
+
+Options:
+  -y, --yes             Skip the near-reset confirmation prompt
+      --base-url <URL>  Override the ChatGPT backend base URL used for the redeem request
+      --no-proxy        Bypass proxy environment variables for the upstream redeem request
+  -h, --help            Print help
+
+Examples:
+  prodex redeem main
+  prodex redeem user_example.com
+  prodex redeem main --yes
+  prodex redeem main --base-url https://chatgpt.com/backend-api
+
+Notes:
+  Manual redeem sends one explicit reset-credit consume request for the named OpenAI/Codex profile.
+  If the 5h or weekly quota window resets within 1 hour, prodex asks before consuming a credit; pass `--yes` to skip that prompt.
+  The backend decides whether a credit can be applied and may return nothing-to-reset, no-credit, or already-redeemed.
+""").replace("Usage: prodex ", "Usage: " + executable + " ")
+
+
 def quota_help(executable: String) -> String:
     return String("""Inspect live quota for one profile or the whole profile pool.
 

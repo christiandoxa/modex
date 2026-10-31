@@ -169,6 +169,43 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
     return True
 
 
+def redeem_help_requested(args: List[String], executable: String) raises -> Bool:
+    var profile_seen = False
+    var index = 2
+    while index < len(args):
+        var argument = String(args[index])
+        if argument == "--help" or argument == "-h": return True
+        if argument.startswith("-h") and not argument.startswith("--"):
+            var help_cluster = True
+            for character in argument[byte=1:].codepoints():
+                if Int(character) != 104: help_cluster = False
+            if help_cluster: return True
+        if argument == "--": return False
+        if argument == "--yes" or argument == "-y" or argument == "--no-proxy":
+            index += 1
+            continue
+        if argument == "--base-url":
+            if index + 1 >= len(args) or String(args[index + 1]).startswith("-"):
+                return False
+            index += 2
+            continue
+        if argument.startswith("--base-url="):
+            if argument == "--base-url=": return False
+            index += 1
+            continue
+        if argument.startswith("--help="): return False
+        if argument.startswith("-"):
+            var name = argument_name(argument)
+            var message = "unexpected argument '" + name + "' found"
+            if not profile_seen:
+                message += "\n\n  tip: to pass '" + name + "' as a value, use '-- " + name + "'"
+            raise session_cli_error(message, executable + " redeem [OPTIONS] <PROFILE>")
+        if profile_seen: return False
+        profile_seen = True
+        index += 1
+    return False
+
+
 def quota_help_requested(args: List[String], executable: String) raises -> String:
     var usage = executable + " quota"
     var help_index = -1

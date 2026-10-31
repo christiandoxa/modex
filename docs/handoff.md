@@ -1,5 +1,9 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Selected redeem help routes match 0.166.0 in isolated process checks. Reset
+credit execution remains guarded; see
+`docs/evidence/baseline-0.166.0/redeem-help.md`.
+
 Same-endpoint redirects now recognize the tested equivalent numeric IPv4 and
 IPv6 loopback spellings while retaining strict origin and port checks. Encoded
 host forms remain unqualified; see

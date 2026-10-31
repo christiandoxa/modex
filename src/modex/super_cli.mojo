@@ -2,7 +2,7 @@
 
 from std.collections import List, Span
 
-from .cli import session_cli_error, similar_names
+from .cli import argument_name, session_cli_error, similar_names
 from .log_operational import valid_url_authority
 from .super_launch import run_clean_deepseek_super
 from .text import ascii_lower, trim_text, unsigned_value
@@ -68,6 +68,118 @@ def _missing_value_error(name: String) -> Error:
     elif name == "--current-time-clock-source":
         message += "\n  [possible values: system, external]"
     return session_cli_error(message)
+
+
+def _expose_value_option(name: String) -> Bool:
+    return name in ["--listen", "--openai-tunnel-id", "--name"] or _value_option(name)
+
+
+def _expose_switch_option(name: String) -> Bool:
+    return name in ["--no-tunnel", "--tunnel"] or _switch_option(name)
+
+
+def _expose_value_label(name: String) -> String:
+    if name == "--listen": return name + " <ADDR>"
+    if name == "--openai-tunnel-id": return name + " <ID>"
+    if name == "--name": return name + " <NAME>"
+    return _value_label(name)
+
+
+def _expose_repeatable_option(name: String) -> Bool:
+    return name in ["--tool", "--require-tool", "--rollout-budget-reminders"]
+
+
+def _expose_error_usage(executable: String, seen: List[String]) -> String:
+    var usage = executable + " __super-expose"
+    if not seen:
+        return usage + " [OPTIONS] [MODE] [CODEX_ARG]..."
+    var rendered = List[String]()
+    for name in seen:
+        if name not in rendered:
+            rendered.append(name)
+            usage += " " + _expose_value_label(name)
+    return usage + " [MODE] [CODEX_ARG]..."
+
+
+def _expose_unknown_argument(argument: String, usage: String) -> Error:
+    var unknown = argument_name(argument)
+    return session_cli_error(
+        "unexpected argument '" + unknown + "' found\n\n  tip: to pass '" + unknown + "' as a value, use '-- " + unknown + "'",
+        usage,
+    )
+
+
+def parse_super_expose_diagnostics(args: List[String], executable: String, start: Int) raises -> Bool:
+    """Match pre-MODE expose CLI errors without entering the guarded launcher."""
+    var seen = List[String]()
+    var generic_usage = executable + " __super-expose [OPTIONS] [MODE] [CODEX_ARG]..."
+    var index = start
+    while index < len(args):
+        var argument = String(args[index])
+        if argument == "--":
+            return False
+        if argument == "--help" or (argument.startswith("-h") and not argument.startswith("--")):
+            return True
+        if argument.startswith("--help="):
+            var rendered_help = List[String]()
+            for name in seen:
+                if not _expose_repeatable_option(name):
+                    rendered_help.append(name)
+            rendered_help.append("--help")
+            raise session_cli_error(
+                "unexpected value '" + String(argument[byte=7:]) + "' for '--help' found; no more were expected",
+                _expose_error_usage(executable, rendered_help),
+            )
+
+        var name = _name(argument)
+        var short_profile_value = False
+        if argument == "-p":
+            name = "--profile"
+        elif argument.startswith("-p") and not argument.startswith("--") and argument.byte_length() > 2:
+            name = "--profile"
+            short_profile_value = True
+
+        var takes_value = _expose_value_option(name)
+        var switch = _expose_switch_option(name)
+        if not takes_value and not switch:
+            if argument.startswith("-") and argument != "-":
+                raise _expose_unknown_argument(argument, _expose_error_usage(executable, seen))
+            return False
+
+        var attached = argument.startswith(name + "=") or argument.startswith("-p=") or short_profile_value
+        if switch and attached:
+            var value = String(argument.split("=", maxsplit=1)[1]) if "=" in argument else String(argument[byte=2:])
+            var value_seen = seen.copy()
+            value_seen.append(name)
+            raise session_cli_error(
+                "unexpected value '" + value + "' for '" + name + "' found; no more were expected",
+                _expose_error_usage(executable, value_seen),
+            )
+        if takes_value and not attached:
+            if index + 1 >= len(args):
+                if name in ["--listen", "--openai-tunnel-id", "--name"]:
+                    raise session_cli_error("a value is required for '" + _expose_value_label(name) + "' but none was supplied")
+                raise _missing_value_error(name)
+            var next = String(args[index + 1])
+            var next_name = _name(next)
+            if next == "-p" or (next.startswith("-p") and not next.startswith("--") and next.byte_length() > 2):
+                next_name = "--profile"
+            var next_is_help = next == "--help" or next.startswith("--help=") or (next.startswith("-h") and not next.startswith("--"))
+            if next == "--" or next_is_help or _expose_value_option(next_name) or _expose_switch_option(next_name):
+                if name in ["--listen", "--openai-tunnel-id", "--name"]:
+                    raise session_cli_error("a value is required for '" + _expose_value_label(name) + "' but none was supplied")
+                raise _missing_value_error(name)
+            if next.startswith("-") and next != "-":
+                raise _expose_unknown_argument(next, _expose_error_usage(executable, seen))
+            index += 1
+        if name in seen and not _expose_repeatable_option(name):
+            raise session_cli_error(
+                "the argument '" + _expose_value_label(name) + "' cannot be used multiple times",
+                generic_usage,
+            )
+        seen.append(name)
+        index += 1
+    return False
 
 
 def _typed_value_error(name: String, value: String, reason: String, clap_diagnostic: Bool) -> Error:

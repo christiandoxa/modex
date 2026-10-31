@@ -17,8 +17,11 @@ implement `ping openai`, validate other argument combinations, or establish
 full ping parity.
 
 Arguments after `--` are reported literally, including values such as
-`--foo=x`. Empty `--model` values (`--model ""` and `--model=`) reach a later
-Prodex validation step and return `Error: --model must be nonempty and contain
-no control characters` with exit 1. Modex remains behind its generic operation
-guard for these inputs, so this semantic validation is a recorded mismatch,
-not part of the parser slice.
+`--foo=x`. After option syntax succeeds, empty and whitespace-only `--model`
+values and C0, DEL, or C1 control characters return Prodex's
+`Error: --model must be nonempty and contain no control characters` with exit
+1. Help and option-syntax errors keep their earlier precedence. Nonempty model
+values without control characters still reach Modex's guarded operation error;
+the operation remains unimplemented and no provider request or state change is
+made. `tests/test_ping_diagnostics_01662.py` covers both boundaries against the
+pinned oracle.

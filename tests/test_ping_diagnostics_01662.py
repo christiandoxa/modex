@@ -4,7 +4,7 @@ import hashlib
 import unittest
 
 from test_active_baseline_01662 import MODEX, ORACLE, ORACLE_SHA256
-from test_root_help import isolated_run
+from test_root_help import isolated_run, map_executable
 
 
 class PingDiagnostics01662Tests(unittest.TestCase):
@@ -77,21 +77,66 @@ class PingDiagnostics01662Tests(unittest.TestCase):
                 self.assertEqual((reference_changes, actual_changes), ([], []))
 
 
-    def test_empty_model_semantic_validation_remains_outside_guarded_slice(self):
+    def test_empty_whitespace_and_control_models_match_release(self):
         expected = (1, b"", b"Error: --model must be nonempty and contain no control characters\n")
-        guard = (1, b"", b"Error: this Modex development build has not implemented the requested command\n")
-        for tail in (("--model", ""), ("--model=",)):
+        invalid_values = (
+            ("empty separated", ("--model", "")),
+            ("empty attached", ("--model=",)),
+            ("space only", ("--model", " ")),
+            ("unicode whitespace only", ("--model", "\u2000\u00a0")),
+            ("attached whitespace only", ("--model= \u2028",)),
+            ("tab", ("--model", "\t")),
+            ("embedded newline", ("--model=gpt-4\nmini",)),
+            ("C0", ("--model", "\x1f")),
+            ("DEL", ("--model", "\x7f")),
+            ("C1 minimum", ("--model", "\u0080")),
+            ("C1 NEL", ("--model", "\u0085")),
+            ("C1 maximum", ("--model", "\u009f")),
+        )
+        for label, tail in invalid_values:
             arguments = ["ping", "openai", *tail]
-            with self.subTest(arguments=arguments):
+            with self.subTest(label=label, arguments=arguments):
                 reference, reference_changes = isolated_run(ORACLE, arguments, "modex", "ping-oracle")
                 actual, actual_changes = isolated_run(MODEX, arguments, "modex", "ping-modex")
                 self.assertEqual((reference.returncode, reference.stdout, reference.stderr), expected)
-                self.assertEqual((actual.returncode, actual.stdout, actual.stderr), guard)
+                self.assertEqual((actual.returncode, actual.stdout, actual.stderr), expected)
                 self.assertEqual((reference_changes, actual_changes), ([], []))
+
+    def test_model_help_and_syntax_precedence_remain_unchanged(self):
+        arguments = ["ping", "openai", "--model", "", "--help"]
+        reference, reference_changes = isolated_run(
+            ORACLE, arguments, "prodex", "ping-model-help-oracle"
+        )
+        actual, actual_changes = isolated_run(
+            MODEX, arguments, "modex", "ping-model-help-modex"
+        )
+        self.assertEqual((reference.returncode, reference.stderr), (0, b""))
+        self.assertEqual(
+            (actual.returncode, actual.stdout, actual.stderr),
+            (reference.returncode, map_executable(reference.stdout), reference.stderr),
+        )
+        self.assertEqual((reference_changes, actual_changes), ([], []))
+
+        reference, reference_changes = isolated_run(
+            ORACLE, ["ping", "openai", "--model", "", "--bad"], "prodex", "ping-model-syntax-oracle"
+        )
+        actual, actual_changes = isolated_run(
+            MODEX, ["ping", "openai", "--model", "", "--bad"], "modex", "ping-model-syntax-modex"
+        )
+        self.assertEqual((reference.returncode, actual.returncode), (2, 2))
+        self.assertEqual((actual.stdout, actual.stderr), (reference.stdout, map_executable(reference.stderr)))
+        self.assertEqual((reference_changes, actual_changes), ([], []))
 
 
     def test_valid_probe_options_remain_guarded(self):
-        for tail in ((), ("--json",), ("--profile", "synthetic-profile")):
+        for tail in (
+            (),
+            ("--json",),
+            ("--profile", "synthetic-profile"),
+            ("--model", "gpt-4.1"),
+            ("--model", "gpt\u2028mini"),
+            ("--model", "\u200bgpt-4.1"),
+        ):
             result, changes = isolated_run(MODEX, ["ping", "openai", *tail], "modex", "ping-guard")
             self.assertEqual((result.returncode, result.stdout, result.stderr),
                              (1, b"", b"Error: this Modex development build has not implemented the requested command\n"))

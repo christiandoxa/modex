@@ -1558,10 +1558,13 @@
       "prerequisites": [
         "OpenAI/Codex endpoint"
       ],
-      "implementation": null,
-      "tests": [],
+      "implementation": "src/main.mojo; src/modex/cli.mojo",
+      "tests": [
+        "tests/test_ping_diagnostics_01662.py"
+      ],
       "evidence": [
-        "docs/evidence/baseline-0.439.2/reference-verification.json"
+        "docs/evidence/baseline-0.439.2/reference-verification.json",
+        "docs/evidence/baseline-0.166.2/ping-diagnostics.md"
       ],
       "status": "NOT_STARTED",
       "platform_status": {
@@ -1573,6 +1576,7 @@
         "aarch64-pc-windows-msvc": "BLOCKED"
       },
       "blockers": [
+        "Valid ping operations remain behind Modex's unsupported-operation guard; the active 0.166.2 evidence covers only argument validation.",
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json."
       ]
     },

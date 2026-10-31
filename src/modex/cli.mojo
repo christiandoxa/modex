@@ -1,7 +1,7 @@
 from std.collections import List, Optional
 
 from .sessions import SessionOptions
-from .text import unsigned_value
+from .text import trim_text, unsigned_value
 
 
 def session_help(command: String, executable: String = "modex") -> String:
@@ -312,6 +312,32 @@ def parse_ping_openai_options(args: List[String], executable: String) raises -> 
             if index == 3:
                 return False
             raise _ping_unknown_argument(argument, usage, seen)
+        index += 1
+    return False
+
+
+def ping_openai_model_invalid(args: List[String]) -> Bool:
+    """Reject invalid model text after option syntax has been accepted."""
+    var index = 3
+    while index < len(args):
+        var argument = String(args[index])
+        var model = String()
+        var found = False
+        if argument == "--model":
+            if index + 1 < len(args):
+                model = String(args[index + 1])
+                found = True
+        elif argument.startswith("--model="):
+            model = String(argument[byte=8:])
+            found = True
+        if found:
+            if not trim_text(model):
+                return True
+            for character in model.codepoints():
+                var code = Int(character)
+                if code <= 31 or 127 <= code <= 159:
+                    return True
+            return False
         index += 1
     return False
 

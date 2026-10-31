@@ -60,12 +60,12 @@ selection remains unimplemented behind the guarded Super launcher; see
 Offline `ping` group diagnostics now match 0.166.2 for a missing subcommand,
 unknown flags, and invalid subcommands, with no filesystem mutation in
 synthetic homes. First invalid `ping openai` arguments, missing option values,
-and duplicate options also match. Valid probe invocations remain behind the
-unimplemented-operation guard. Empty `--model` values still reach Modex's
-generic guard instead of Prodex's `--model must be nonempty and contain no
-control characters` validation; the exact oracle/Modex mismatch is retained in
-the focused test. The actual ping operation and other argument combinations
-remain unimplemented or unverified; see
+and duplicate options also match. Empty and whitespace-only model values and
+C0, DEL, or C1 controls now receive the release's semantic validation error
+before runtime dispatch. Help and parser-error precedence remain covered, and
+nonempty control-free values still reach the guard without creating state or
+making a provider request. The actual ping operation and other argument
+combinations remain unimplemented or unverified; see
 `docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
 
 `doctor --install` now has active 0.166.2 process coverage for the empty-tool

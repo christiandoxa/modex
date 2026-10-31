@@ -307,6 +307,59 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                         self.assertEqual(sent["x-codex-turn-state"], f"synthetic-client-turn-{index}")
                         self.assertFalse(any(name.startswith("x-prodex-internal-") for name in sent))
 
+    def test_streamed_passthrough_metadata_matches_active_release(self):
+        values = ["synthetic-stream-ascii", "synthetic\tstream-metadata",
+                  "synthetic-\x80", "synthetic-\xff", "synthetic-é"]
+        routes = (
+            ("Chat", "/v1/chat/completions",
+             {"model": "deepseek-chat", "messages": [], "stream": True},
+             b'data: {"id":"synthetic-chat-stream","model":"deepseek-chat","choices":[{"index":0,"delta":{"content":"synthetic"},"finish_reason":null}]}\n\n',
+             "authorization", "Bearer " + SYNTHETIC_API_KEY),
+            ("Messages", "/v1/messages",
+             {"model": "deepseek-chat", "max_tokens": 32,
+              "messages": [{"role": "user", "content": "synthetic"}], "stream": True},
+             b'data: {"type":"message_start","message":{"id":"synthetic-message"}}\n\n',
+             "x-api-key", SYNTHETIC_API_KEY),
+        )
+        for route_name, path, request, body, auth_name, auth_value in routes:
+            turns = [
+                {**request, "_path": path,
+                 "_headers": {"x-codex-turn-state": f"synthetic-client-turn-{index}"}}
+                for index in range(len(values))
+            ]
+            replies = [
+                {"status": 200, "content_type": "text/event-stream", "body": body,
+                 "chunked": True,
+                 "response_headers": [("Content-Type", "text/event-stream"),
+                                      ("x-codex-turn-state", value),
+                                      ("x-request-id", "synthetic-stream-request")]}
+                for value in values
+            ]
+            observed = {}
+            for binary in (ORACLE, MODEX):
+                with self.subTest(route=route_name, binary=str(binary)):
+                    upstream, responses = observe_turns(
+                        binary, turns, replies, latest_version="0.166.0",
+                    )
+                    self.assertEqual(len(upstream), len(values))
+                    self.assertEqual([row["method"] for row in upstream], ["POST"] * len(values))
+                    self.assertEqual([response["status"] for response in responses], [200] * len(values))
+                    selected = []
+                    for index, response in enumerate(responses):
+                        headers = {name.lower(): value for name, value in response["headers"].items()}
+                        expected_state = values[index] if index < 2 else None
+                        actual_state = headers.get("x-codex-turn-state")
+                        self.assertEqual(actual_state, expected_state)
+                        self.assertEqual(headers["x-request-id"], "synthetic-stream-request")
+                        self.assertEqual(bytes.fromhex(response["body"]), body)
+                        self.assertEqual(upstream[index]["headers"][auth_name], auth_value)
+                        self.assertEqual(upstream[index]["headers"]["x-codex-turn-state"],
+                                         f"synthetic-client-turn-{index}")
+                        selected.append((response["status"], actual_state,
+                                         headers["x-request-id"], bytes.fromhex(response["body"])))
+                    observed[binary] = selected
+            self.assertEqual(observed[ORACLE], observed[MODEX])
+
     def test_503_passthrough_header_names_match_active_release(self):
         body = b"synthetic policy capacity"
         request = [{"model": "deepseek-chat", "messages": [],

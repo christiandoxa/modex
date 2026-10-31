@@ -662,6 +662,13 @@ bodies, hop-header filtering and one upstream POST per request. The earlier
 non-ASCII mismatch capture remains historical; this focused comparison does
 not qualify streaming metadata or broader provider parity. See
 `docs/evidence/baseline-0.166.0/provider-buffered-metadata.md`.
+Streaming Chat Completions and native Messages passthrough now have a
+real-process comparison for those same turn-state byte classes. Both products
+preserve ASCII/HTAB values, omit non-ASCII values, retain the synthetic request
+ID, and forward each SSE body byte-for-byte with one POST. Generated `Date`
+values are excluded from comparison. Other streaming headers and response
+shapes remain unqualified; see
+`docs/evidence/baseline-0.166.0/provider-streaming-metadata.md`.
 The passthrough path now also lowercases validated forwarded header names,
 matching a synthetic 0.166.0 503 response on the wire. Header names are
 case-insensitive; status, body, values and generated framing remain covered

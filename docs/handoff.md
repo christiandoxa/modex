@@ -130,6 +130,16 @@ including attached `=value` text. Four synthetic, isolated diagnostics match
 the 0.166.2 process without state changes; the historical 0.165.1 parser
 regression also passes. Actual updates and other platforms are not qualified.
 
+## Active 0.166.2 IDNA ZWJ investigation (2026-11-01)
+
+The current ping URL validator accepts some invalid non-virama ZWJ contexts
+that 0.166.2 rejects. A proposed Unicode 17 Virama-table check was withheld:
+the release applies UTS #46 mapping and normalization first. Isolated oracle
+comparisons show that ignored characters between Virama and ZWJ, and canonical
+reordering of combining marks, can make a raw-predecessor check reject valid
+URLs. Full mapping, normalization, and broader ContextJ behavior remain open;
+the existing ZWNJ behavior and security checks are unchanged.
+
 `session current` diagnostics now defer an empty split `--cwd ""` error to a
 following unknown flag or positional, and to malformed attached flag values,
 matching the pinned 0.166.2 CLI. Valid following options and other empty/missing

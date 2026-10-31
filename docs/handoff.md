@@ -1,5 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The `current` command now renders the tested no-active-profile panel for an
+absent app root under the conservative owner/mode guard. Existing roots remain
+guarded; release lock and housekeeping side effects are not reproduced. See
+`docs/evidence/baseline-0.166.0/current-empty-profile.md`.
+
 Selected `ping` and `ping openai` help routes and argument errors match
 0.166.0 in isolated process checks. Ping execution is still unimplemented; see
 `docs/evidence/baseline-0.166.0/ping-help.md`.

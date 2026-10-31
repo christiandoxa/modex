@@ -16,6 +16,7 @@ from modex.sessions import inspect_sessions, resolve_session_id_from_store, sess
 from modex.super_cli import parse_super_arguments, run_super
 from modex.super_help import super_help
 from modex.super_launch import run_local_rewrite_child
+from modex.text import cli_width, status_panel
 
 
 def main():
@@ -342,6 +343,15 @@ def main():
             print("Error:", error, file=stderr)
             exit(1)
         return
+    if len(args) >= 2 and args[1] == "current":
+        try:
+            if app_root_is_absent():
+                print(status_panel("Active Profile", "No active profile.", cli_width()) + "\n", end="")
+                return
+        except error:
+            print("Error:", error, file=stderr)
+            exit(1)
+            return
     if len(args) >= 2 and args[1] == "log":
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])

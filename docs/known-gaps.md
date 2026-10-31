@@ -18,6 +18,14 @@ Populated listing, state recovery, locking and the full `PROFILE-LIST` contract
 remain unimplemented. See
 `docs/evidence/baseline-0.166.0/profile-list-empty-store.md`.
 
+For `current`, Modex now matches the no-active panel only when the app root is
+absent under the same guard. The release creates the lifecycle and update
+locks, with possible asynchronous housekeeping files; Modex creates none.
+Existing, dangling, or inaccessible roots stay fail-closed. This branch does
+not establish full `PROFILE-CURRENT` parity; populated inspection, recovery,
+locking, and the remaining target platforms are open. See
+`docs/evidence/baseline-0.166.0/current-empty-profile.md`.
+
 For invalid UTF-8 in `.json` sessions, Modex escapes terminal controls in the
 reported path while 0.166.0 emits them raw. The malformed input remains rejected;
 this safety difference is not parity. See

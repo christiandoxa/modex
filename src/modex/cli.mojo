@@ -250,15 +250,34 @@ def _ping_unknown_argument(argument: String, usage: String, seen: List[String]) 
     var flag = argument.startswith("-") and argument != "-"
     var unknown = argument_name(argument) if flag else argument
     var message = "unexpected argument '" + unknown + "' found"
+    var suggestion = String()
     if flag and unknown.startswith("--"):
-        var choices: List[String] = ["profile", "model", "effort", "base-url", "no-proxy", "json"]
+        var choices: List[String] = ["profile", "model", "effort", "base-url", "no-proxy", "json", "help"]
         var candidates = similar_names(String(unknown[byte=2:]), choices)
         if candidates:
-            message += "\n\n  tip: a similar argument exists: '--" + candidates[len(candidates) - 1] + "'"
+            suggestion = "--" + candidates[len(candidates) - 1]
+            message += "\n\n  tip: a similar argument exists: '" + suggestion + "'"
     var error_usage = usage + " [OPTIONS]"
     if flag:
         error_usage = _ping_option_error_usage(usage, seen)
+    if suggestion:
+        error_usage = usage
+        for prior in seen:
+            error_usage += " " + _ping_option_label(prior)
+        error_usage += " " + _ping_option_label(suggestion)
     return session_cli_error(message, error_usage)
+
+
+def ping_group_unknown_argument(argument: String, executable: String) -> Error:
+    var unknown = argument_name(argument)
+    var message = "unexpected argument '" + unknown + "' found"
+    var usage = executable + " ping <COMMAND>"
+    if unknown.startswith("--"):
+        var matches = similar_names(String(unknown[byte=2:]), [String("help")])
+        if matches:
+            message += "\n\n  tip: a similar argument exists: '--help'"
+            usage = executable + " ping --help <COMMAND>"
+    return session_cli_error(message, usage)
 
 
 def parse_ping_openai_options(args: List[String], executable: String) raises -> Bool:
@@ -333,9 +352,6 @@ def parse_ping_openai_options(args: List[String], executable: String) raises -> 
                 )
             seen.append(option)
         else:
-            # Keep the existing first-argument diagnostic path authoritative.
-            if index == 3:
-                return False
             raise _ping_unknown_argument(argument, usage, seen)
         index += 1
     return False

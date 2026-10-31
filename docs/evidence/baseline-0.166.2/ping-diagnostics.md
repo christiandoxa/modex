@@ -6,6 +6,15 @@ For `ping` without a subcommand (including a trailing `--`), both now print the
 same group help to stderr and exit 2. Unknown long and short flags and unrecognized subcommands (including
 suggestion and `--` cases) produce the same error, usage, and exit status. Neither process created state in the test.
 
+The first differential sweep had missed truncated long help flags. Modex now
+matches the release for `ping --h`, `--h=value`, `--he`, `--hel`, and `--hlp`,
+including the `--help` suggestion and its `ping --help <COMMAND>` usage.
+`ping openai` now emits the same suggestion and usage for those forms, while
+keeping previously accepted options in usage and reporting syntax errors
+before model-value validation. Negative controls such as `--z` still receive
+no suggestion. All comparisons use isolated synthetic homes and leave them
+unchanged.
+
 For `ping openai`, first unknown options and positional arguments also match;
 missing values for `--profile`/`-p`, `--model`, `--effort`, and `--base-url`
 match, as do duplicate value options and duplicate `--json`/`--no-proxy` flags.

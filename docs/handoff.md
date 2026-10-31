@@ -181,8 +181,11 @@ the other five release targets. `SESSION-LIST` remains `IN_PROGRESS`.
 
 Offline `ping` group diagnostics now match 0.166.2 for a missing subcommand,
 unknown flags, and invalid subcommands, with no filesystem mutation in
-synthetic homes. First invalid `ping openai` arguments, missing option values,
-and duplicate options also match. A synthetic differential found an unresolved
+synthetic homes. A follow-up differential added truncated `--help` spellings
+at both the group and `openai` level; Modex now returns the release's suggestion
+and `--help` usage while preserving accepted options and error precedence.
+First invalid `ping openai` arguments, missing option values, and duplicate
+options also match. A synthetic differential found an unresolved
 semantic precedence gap: `ping openai --base-url ftp://example.test/v1 --model
 ''` reports Prodex's base-URL error, while Modex reports its model error.
 Further oracle probes show why a local approximation is unsafe: Reqwest accepts

@@ -19,6 +19,9 @@ class PingDiagnostics01662Tests(unittest.TestCase):
         for arguments in (("ping",), ("ping", "--"), ("ping", "--bogus"),
                           ("ping", "--bogus=value"), ("ping", "-xyz"), ("ping", "nope"),
                           ("ping", "banana"), ("ping", "opena"), ("ping", "-"),
+                          ("ping", "--h"), ("ping", "--h=value"), ("ping", "--he"),
+                          ("ping", "--hel"), ("ping", "--hlp"), ("ping", "--z"),
+                          ("ping", "--o"),
                           ("ping", "--", "bogus"), ("ping", "--", "--help")):
             with self.subTest(arguments=arguments):
                 reference, reference_changes = isolated_run(ORACLE, list(arguments), "modex", "ping-oracle")
@@ -32,11 +35,26 @@ class PingDiagnostics01662Tests(unittest.TestCase):
     def test_openai_unknown_arguments_match_without_mutation(self):
         for tail in (("--bogus",), ("--bogus=value",), ("-xyz",), ("unexpected",),
                      ("--bogus", "--help"), ("--", "unexpected"),
-                     ("--", "--foo=x"), ("--", "--json")):
+                     ("--", "--foo=x"), ("--", "--json"),
+                     ("--h",), ("--h=value",), ("--he",), ("--hel",),
+                     ("--hlp",), ("--jso",), ("--no-prox",), ("--z",)):
             arguments = ["ping", "openai", *tail]
             with self.subTest(arguments=arguments):
                 reference, reference_changes = isolated_run(ORACLE, arguments, "modex", "ping-oracle")
                 actual, actual_changes = isolated_run(MODEX, arguments, "modex", "ping-modex")
+                self.assertEqual((reference.returncode, reference.stdout), (2, b""))
+                self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
+                                 (reference.returncode, reference.stdout, reference.stderr))
+                self.assertEqual((reference_changes, actual_changes), ([], []))
+
+    def test_help_suggestion_follows_accepted_option_and_precedes_model_validation(self):
+        for tail in (("--json", "--h"), ("--profile", "synthetic", "--he"),
+                     ("--json", "--profile", "synthetic", "--hlp"),
+                     ("--model", "", "--hlp")):
+            arguments = ["ping", "openai", *tail]
+            with self.subTest(arguments=arguments):
+                reference, reference_changes = isolated_run(ORACLE, arguments, "modex", "ping-help-near-oracle")
+                actual, actual_changes = isolated_run(MODEX, arguments, "modex", "ping-help-near-modex")
                 self.assertEqual((reference.returncode, reference.stdout), (2, b""))
                 self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
                                  (reference.returncode, reference.stdout, reference.stderr))

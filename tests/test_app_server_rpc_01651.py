@@ -46,7 +46,7 @@ class AppServerRpc01651Tests(unittest.TestCase):
             client_info(baseline_records),
             {"name": "prodex-hook-trust", "version": "0.165.1"},
         )
-        self.assertEqual(client_info(modex_records), {"name": "prodex-hook-trust", "version": "0.166.0"})
+        self.assertEqual(client_info(modex_records), {"name": "prodex-hook-trust", "version": "0.166.1"})
 
     def test_closed_app_server_stdin_reports_reference_broken_pipe(self):
         suite = test_super_launch.SuperLaunchTests()

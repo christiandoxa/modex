@@ -14,14 +14,37 @@ standalone release runs and retained `x86_64-unknown-linux-gnu` artifacts:
 Both downloaded `prodex` files matched the independently pinned binary
 digests already recorded in the baseline evidence. The existing reference
 helper accepted them through the versioned `PRODEX_ORACLE_04392` and
-`PRODEX_ORACLE_04395` overrides. The historical `test_session_04395_slice`
-module then passed both tests with isolated synthetic state; one test records
-an intentional safer Modex behavior, not a parity pass. No binary was added
-to the repository.
+`PRODEX_ORACLE_04395` overrides. The historical 0.439.2 CLI module passed 13
+tests, the 0.439.5 provider catalog module passed one test, and
+`test_session_04395_slice` passed two tests with isolated synthetic state;
+one session test records an intentional safer Modex behavior, not a parity
+pass. No binary was added to the repository.
+
+To recover the same artifacts using an authenticated GitHub CLI, first set
+`MODEX_HISTORICAL_ORACLES` to a private directory outside the repository, then
+run the following. The reference helper checks each binary against its
+existing pinned digest before it can be used as an oracle.
+
+```sh
+set -eu
+: "${MODEX_HISTORICAL_ORACLES:?Set a private directory outside the repository}"
+mkdir -p "$MODEX_HISTORICAL_ORACLES/0.439.2" "$MODEX_HISTORICAL_ORACLES/0.439.5"
+gh run download 40300566491 --repo christiandoxa/prodex \
+  --name x86_64-unknown-linux-gnu --dir "$MODEX_HISTORICAL_ORACLES/0.439.2"
+gh run download 40533648780 --repo christiandoxa/prodex \
+  --name x86_64-unknown-linux-gnu --dir "$MODEX_HISTORICAL_ORACLES/0.439.5"
+export PRODEX_ORACLE_04392="$MODEX_HISTORICAL_ORACLES/0.439.2/prodex"
+export PRODEX_ORACLE_04395="$MODEX_HISTORICAL_ORACLES/0.439.5/prodex"
+python3 scripts/ci/reference.py oracle 0.439.2
+python3 scripts/ci/reference.py oracle 0.439.5
+chmod 755 "$PRODEX_ORACLE_04392" "$PRODEX_ORACLE_04395"
+```
 
 The artifact download API returned HTTP 401 without authentication. The
 successful downloads used an authenticated read of the official workflow
 artifacts; a clean hosted Modex runner has not been shown to have access to
-them. Artifacts can expire. Until an authorized, available source supplies
+them. The repository's workflow policy currently forbids `secrets.` references,
+so these credentials cannot be added to CI without changing that policy.
+Artifacts can expire. Until an authorized, available source supplies
 the exact pinned bytes, hosted historical lanes remain blocked and CI fails
 closed. Do not treat an unavailable artifact or a substituted build as a pass.

@@ -51,3 +51,9 @@ follows one; compatibility and safe traversal need to be resolved together.
 The selected ID was observed in the
 prototype status line and the argument helper was unit-checked, but spawned
 argv and managed launch behavior remain unverified.
+
+In the pinned Mojo 1.2.0 standard library, `std.os.listdir` returns a complete
+list and its Linux implementation collects entries before returning. The
+available path-based file and stat APIs do not provide the descriptor-relative
+directory traversal needed to anchor this scan. A new native binding is outside
+the project constraints; no bounded, race-safe replacement has been verified.

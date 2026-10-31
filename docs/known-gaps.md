@@ -27,6 +27,13 @@ the directory. The lock prerequisite is unavailable in Mojo 1.2.0's standard
 library, so this mismatch remains open. See
 `docs/evidence/baseline-0.166.2/profile-list-existing-empty-root.md`.
 
+Prodex 0.166.2 changes an existing owned `.prodex` directory from mode `0755`
+to `0700` before `log last --json`; Modex reports a repair error and preserves
+the directory mode. Mojo 1.2.0's official standard library has no `chmod`
+operation, and dropping the guard would expose private state. This confirmed
+Linux x86-64 gap remains fail-closed; see
+`docs/evidence/baseline-0.166.2/secure-app-root-permission-repair.md`.
+
 For `current`, Modex now matches the no-active panel only when the app root is
 absent under the same guard. The release creates the lifecycle and update
 locks, with possible asynchronous housekeeping files; Modex creates none.

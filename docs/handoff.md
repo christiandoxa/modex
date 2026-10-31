@@ -163,6 +163,17 @@ checksum-pinned regression captures this mismatch in
 `tests/test_session_state_recovery_01662.py`; recovery remains unimplemented.
 See `docs/evidence/baseline-0.166.2/session-state-recovery.md`.
 
+Prodex 0.166.2 also repairs an existing owned `.prodex` directory from mode
+`0755` to `0700` during `log last --json`; the marker file and directory
+contents remain unchanged. Modex returns its secure-root repair error and
+leaves mode `0755` because Mojo 1.2.0 exposes neither `std.os.chmod` nor
+`Path.chmod`. Allowing the operation without repairing permissions would
+expose private state, while native bindings and external helpers are forbidden.
+The focused synthetic test reproduces this Linux x86-64 mismatch, and the
+standard-library compile probes and safety rationale are recorded in
+`docs/evidence/baseline-0.166.2/secure-app-root-permission-repair.md`. No
+production shortcut was added.
+
 Offline `logout` diagnostics now match 0.166.2 for the tested malformed
 options and excess arguments. Valid logout calls remain guarded and no account
 operation was tested; see `docs/evidence/baseline-0.166.2/logout-diagnostics.md`.

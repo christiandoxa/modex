@@ -71,7 +71,7 @@ def parse_log_arguments(args: List[String], executable: String) raises -> Tuple[
         elif not literal and arg.startswith("-") and arg != "-":
             if arg.startswith("--"):
                 var option = String(arg.split("=", maxsplit=1)[0])
-                var choices: List[String] = ["json"]
+                var choices: List[String] = ["help", "json"]
                 var candidates = similar_names(String(option[byte=2:]), choices)
                 var suggestion = String()
                 if candidates:
@@ -82,7 +82,15 @@ def parse_log_arguments(args: List[String], executable: String) raises -> Tuple[
                 else:
                     message += "\n\n  tip: to pass '" + option + "' as a value, use '-- " + option + "'"
                 var usage = executable + " log [OPTIONS] [MODE]"
-                if suggestion:
+                if suggestion == "--help":
+                    usage = executable + " log --help [MODE]"
+                    if mode:
+                        usage = executable + " log --help <MODE>"
+                    if seen_json:
+                        usage = executable + " log --json --help [MODE]"
+                        if mode:
+                            usage = executable + " log --json --help <MODE>"
+                elif suggestion:
                     usage = executable + " log --json [MODE]"
                     if mode:
                         usage = executable + " log --json <MODE>"

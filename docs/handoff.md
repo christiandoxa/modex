@@ -15,6 +15,15 @@ the executable basename in `Usage:`. A focused same-`argv0` oracle test covers
 help evidence only; see
 `docs/evidence/baseline-0.166.2/static-help-command-names.md`.
 
+The connected `log` parser now matches selected 0.166.2 help and diagnostic
+cases. In particular, abbreviated `--h=...` is suggested as `--help`, and the
+usage line retains accepted `--json` and mode options. Thirteen isolated
+process cases cover full/short help, `last` and `upstream`, near-match and
+unknown-option controls, and attached values; none creates state. This is only
+CLI parser evidence. File-backed/live log behavior, secure app-root repair,
+and the other five targets remain unqualified. See
+`docs/evidence/baseline-0.166.2/log-cli-diagnostics.md`.
+
 The connected quota help parser now matches selected offline 0.166.2
 diagnostics: malformed `--help=value` precedes a pending split value, and
 errors after accepted options retain the release's full option-group usage.

@@ -1,6 +1,7 @@
 """Run the synthetic provider-shape corpus against Prodex 0.166.2."""
 
 import hashlib
+import json
 
 from test_active_baseline_01662 import MODEX, ORACLE, ORACLE_SHA256
 import test_provider_passthrough_01660 as passthrough
@@ -111,6 +112,166 @@ class ProviderShapes01662Tests(historical.ProviderShapes01660Tests):
         self.assertEqual(metadata[2]["system_fingerprint"], "fp_later")
         self.assertNotIn("system_fingerprint", metadata[3])
         self.assertEqual(metadata[4]["system_fingerprint"], "fp_synthetic")
+
+    def test_streamed_tool_namespace_checks_only_the_last_double_hyphen(self):
+        cases = (
+            ("last valid pair", "left--middle--local", "left--middle", "local"),
+            ("invalid last pair", "left--middle--", None, "left--middle--"),
+            ("empty namespace", "--local", None, "--local"),
+            ("empty local name", "namespace--", None, "namespace--"),
+            ("MCP fallback", "mcp__srv__foo--bar--", "mcp__srv", "foo--bar--"),
+        )
+        for case_name, name, namespace, local_name in cases:
+            with self.subTest(case=case_name):
+                tool_call = {
+                    "id": "call_synthetic_namespace",
+                    "type": "function",
+                    "function": {"name": name, "arguments": "{}"},
+                }
+                buffered_reply = {
+                    "id": "chatcmpl_synthetic_namespace",
+                    "model": "deepseek-chat",
+                    "choices": [{
+                        "index": 0,
+                        "message": {"role": "assistant", "tool_calls": [tool_call]},
+                        "finish_reason": "tool_calls",
+                    }],
+                }
+                stream_reply = historical._stream_reply([
+                    {
+                        "id": "chatcmpl_synthetic_namespace",
+                        "created": 42,
+                        "model": "deepseek-chat",
+                        "choices": [{
+                            "index": 0,
+                            "delta": {"tool_calls": [{
+                                "index": 0,
+                                "id": "call_synthetic_namespace",
+                                "type": "function",
+                                "function": {"name": name, "arguments": "{}"},
+                            }]},
+                            "finish_reason": None,
+                        }],
+                    },
+                    {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]},
+                ])
+                observations = {}
+                for label, binary in (("oracle", ORACLE), ("modex", MODEX)):
+                    observed = {}
+                    for mode, turn, reply in (
+                        ("buffered", {"model": "deepseek-chat", "input": "synthetic namespace"}, {
+                            "status": 200,
+                            "content_type": "application/json",
+                            "body": historical.json_bytes(buffered_reply),
+                        }),
+                        ("streamed", {"model": "deepseek-chat", "input": "synthetic namespace", "stream": True}, stream_reply),
+                    ):
+                        upstream, responses = historical.observe_turns(
+                            binary, [turn], [reply], latest_version="0.166.2",
+                        )
+                        self.assertEqual(len(upstream), 1)
+                        self.assertEqual(upstream[0]["path"], "/v1/chat/completions")
+                        self.assertEqual(
+                            upstream[0]["headers"].get("authorization"),
+                            "Bearer " + passthrough.SYNTHETIC_API_KEY,
+                        )
+                        self.assertEqual([response["status"] for response in responses], [200])
+                        body = bytes.fromhex(responses[0]["body"])
+                        if mode == "buffered":
+                            response = json.loads(body)
+                            observed[mode] = response["output"]
+                        else:
+                            events = historical._stream_events(body)
+                            items = [
+                                (event["type"], event["item"])
+                                for event in events
+                                if event.get("type") in (
+                                    "response.output_item.added",
+                                    "response.output_item.done",
+                                )
+                            ]
+                            self.assertEqual(
+                                [event_type for event_type, _ in items],
+                                ["response.output_item.added", "response.output_item.done"],
+                            )
+                            observed[mode] = items
+                    observations[label] = observed
+                self.assertEqual(observations["modex"]["buffered"], observations["oracle"]["buffered"])
+                self.assertEqual(observations["modex"]["streamed"], observations["oracle"]["streamed"])
+                expected_stream_item = {
+                    "call_id": "call_synthetic_namespace",
+                    "name": local_name,
+                    "type": "function_call",
+                }
+                if namespace is not None:
+                    expected_stream_item["namespace"] = namespace
+                self.assertEqual(observations["oracle"]["streamed"][0][1], expected_stream_item)
+                self.assertEqual(
+                    observations["oracle"]["streamed"][1][1],
+                    {**expected_stream_item, "arguments": "{}"},
+                )
+
+    def test_anthropic_buffered_tool_namespace_matches_active_release(self):
+        cases = (
+            ("invalid final pair", "a--b--", None, "a--b--"),
+            ("MCP fallback", "mcp__srv__foo--bar--", "mcp__srv", "foo--bar--"),
+            ("valid split", "left--middle--local", "left--middle", "local"),
+            ("whitespace valid split", " left -- right ", " left ", " right "),
+            ("whitespace invalid pair", "left--middle-- ", None, "left--middle-- "),
+            ("whitespace MCP fallback", "mcp__srv__foo--bar-- ", "mcp__srv", "foo--bar-- "),
+        )
+        request = {
+            "model": "deepseek-chat",
+            "input": "synthetic Anthropic namespace probe",
+            "stream": False,
+            "tools": [{"type": "web_search_preview"}],
+        }
+        for case_name, name, namespace, local_name in cases:
+            with self.subTest(case=case_name):
+                reply = {
+                    "status": 200,
+                    "content_type": "application/json",
+                    "body": historical.json_bytes({
+                        "id": "msg_synthetic_namespace",
+                        "type": "message",
+                        "role": "assistant",
+                        "content": [{
+                            "type": "tool_use",
+                            "id": "toolu_synthetic_namespace",
+                            "name": name,
+                            "input": {},
+                        }],
+                        "model": "claude-test",
+                        "stop_reason": "tool_use",
+                        "usage": {"input_tokens": 2, "output_tokens": 1},
+                    }),
+                }
+                observations = {}
+                for label, binary in (("oracle", ORACLE), ("modex", MODEX)):
+                    upstream, responses = historical.observe_turns(
+                        binary, [request], [reply], latest_version="0.166.2",
+                    )
+                    self.assertEqual(len(upstream), 1)
+                    self.assertEqual(upstream[0]["path"], "/anthropic/v1/messages")
+                    self.assertEqual(
+                        upstream[0]["headers"].get("x-api-key"),
+                        passthrough.SYNTHETIC_API_KEY,
+                    )
+                    self.assertEqual([response["status"] for response in responses], [200])
+                    body = json.loads(bytes.fromhex(responses[0]["body"]))
+                    output = [item for item in body["output"] if item.get("type") == "function_call"]
+                    self.assertEqual(len(output), 1)
+                    expected = {
+                        "type": "function_call",
+                        "call_id": "toolu_synthetic_namespace",
+                        "name": local_name,
+                        "arguments": "{}",
+                    }
+                    if namespace is not None:
+                        expected["namespace"] = namespace
+                    self.assertEqual(output[0], expected)
+                    observations[label] = (upstream[0]["body"], output[0])
+                self.assertEqual(observations["modex"], observations["oracle"])
 
     def test_chunked_sse_can_exceed_four_mib_total_with_bounded_frames(self):
         limit = 4 * 1024 * 1024

@@ -100,12 +100,15 @@ def wrap_tool_arguments(name: String, arguments: String) raises -> String:
 
 
 def _split_name(name: String) -> Tuple[String, String]:
-    for offset in range(name.byte_length() - 2, -1, -1):
+    var split = -1
+    for offset in range(max(name.byte_length() - 1, 0)):
         if name.as_bytes()[offset] == 45 and name.as_bytes()[offset + 1] == 45:
-            var prefix = String(name[byte=:offset])
-            var suffix = String(name[byte=offset + 2:])
-            if trim_text(prefix) and trim_text(suffix):
-                return (prefix, suffix)
+            split = offset
+    if split >= 0:
+        var prefix = String(name[byte=:split])
+        var suffix = String(name[byte=split + 2:])
+        if trim_text(prefix) and trim_text(suffix):
+            return (prefix, suffix)
     if name.startswith("mcp__"):
         var split = name.rfind("__")
         if split > 0 and split + 2 < name.byte_length():

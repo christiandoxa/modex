@@ -15,8 +15,9 @@ itself, nonempty followed by empty (retain the nonempty value), empty followed
 by nonempty (accept the later value), and numeric/array values both alone and
 after a nonempty value (ignore them without clearing state).
 
-All nine methods in `test_provider_shapes_01662.py` and the buffered metadata
-method in `test_provider_metadata_01662.py` passed on 2026-10-31. The run used
+All ten methods in `test_provider_shapes_01662.py` passed on 2026-10-31; the
+buffered metadata method in `test_provider_metadata_01662.py` also passed in
+the earlier isolated run. The run used
 the established Bubblewrap helper with a private `/tmp` tmpfs, isolated 0700
 HOME/TMPDIR/XDG/state directories, read-only workspace/oracle/Modex mounts,
 only loopback up, and no IPv4 or IPv6 default route. Buffered metadata cases

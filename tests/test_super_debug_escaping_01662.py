@@ -18,12 +18,14 @@ class SuperDebugEscaping01662Tests(unittest.TestCase):
     def test_selected_debug_escapes_match_both_super_diagnostics(self):
         characters = (
             (0x00A0, br"\u{a0}"),
-            (0x202F, br"\u{202f}"),
             (0x0378, br"\u{378}"),
-            (0x2063, br"\u{2063}"),
             (0xFE0F, br"\u{fe0f}"),
             (0xE000, br"\u{e000}"),
             (0xFFF9, br"\u{fff9}"),
+            *((codepoint, f"\\u{{{codepoint:x}}}".encode())
+              for codepoint in range(0x2028, 0x2030)),
+            *((codepoint, f"\\u{{{codepoint:x}}}".encode())
+              for codepoint in range(0x2060, 0x2070)),
             (0x200E, br"\u{200e}"),
             (0x00E9, "é".encode()),
         )

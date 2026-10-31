@@ -21,11 +21,15 @@ provider shape and buffered metadata modules. See
 Invalid Super provider and reasoning-effort diagnostics now escape seven
 additional Unicode scalars observed in the active release: U+00A0, U+202F,
 U+0378, U+2063, U+FE0F, U+E000, and U+FFF9. Eighteen isolated value/caller
-comparisons match exact 0.166.2 output and create no state; U+200E and printable
-`é` preserve existing behavior. This is selected Linux x86-64 parser evidence,
-not full Rust Unicode `Debug`, Super runtime, or six-target parity. The curated
-printability list remains incomplete. The regression is registered in both
-Fast and Full active-baseline suites. See
+comparisons initially matched exact 0.166.2 output and created no state. A
+follow-up now escapes every scalar in U+2028–U+202F and U+2060–U+206F, fixing
+the remaining raw bidi, separator, and invisible-format values found in those
+ranges. The active regression covers 31 values across both parser callers
+(62 process comparisons); U+200E and printable `é` preserve existing behavior.
+This is selected Linux x86-64 parser evidence, not full Rust Unicode `Debug`,
+Super runtime, or six-target parity. The curated printability list remains
+incomplete. The regression is registered in both Fast and Full active-baseline
+suites. See
 `docs/evidence/baseline-0.166.2/super-debug-escaping.md` and
 `tests/test_super_debug_escaping_01662.py`.
 
@@ -6482,3 +6486,22 @@ route, Bubblewrap namespace isolation and private tmpfs, synthetic credentials
 and a loopback upstream. CI routing, dependency import audit and test census
 passed. See
 `docs/evidence/baseline-0.166.2/local-relay-websocket-identical-duplicates.md`.
+
+## Active 0.166.2 streamed tool namespace fallback (2026-10-31)
+
+The shared streamed tool-name splitter now follows the frozen decoder's
+delimiter precedence. Prodex validates only the final `--` pair, then tries
+the MCP `mcp__...__tool` fallback. Modex previously continued to an earlier
+valid hyphen pair when the final pair had an empty side. On the real 0.166.2
+process, `a--b--` therefore stayed whole in Prodex but was split in Modex;
+`mcp__srv__foo--bar--` also differed because Prodex used its MCP fallback.
+The fix checks that same final-pair result before fallback.
+
+All eleven methods in `test_provider_shapes_01662.py` passed in the isolated
+loopback-only Bubblewrap namespace, including buffered controls, streamed
+added/done item checks, and six Anthropic Messages tool-name comparisons with
+synthetic authorization. Production build, native chat-item checks, dependency
+import audit, Python syntax check, and diff check passed. This qualifies only
+the selected cases on Linux x86-64; broader provider behavior and all six
+release targets remain unqualified. See
+`docs/evidence/baseline-0.166.2/provider-stream-namespace-fallback.md`.

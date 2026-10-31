@@ -70,6 +70,7 @@ class CIOracleRoutingTests(unittest.TestCase):
                 script = script_path.read_text(encoding="utf-8")
                 active_tests = unittest_files_for_lane(script, "focused-python-active")
                 self.assertIn("test_provider_framing_01662.py", active_tests)
+                self.assertIn("test_provider_relay_01662.py", active_tests)
                 for line in script.splitlines():
                     if line.lstrip().startswith("run_logged historical-") and "scripts/ci/run-unittest.py" in line:
                         self.assertNotIn("test_provider_framing_01662.py", line)

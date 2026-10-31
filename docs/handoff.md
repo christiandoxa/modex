@@ -106,6 +106,13 @@ MCP versions report `invalid` and unrecognized versions report `missing`,
 matching 0.166.2. These cases do not establish full doctor parity; see
 `docs/evidence/baseline-0.166.2/doctor-install.md`.
 
+The selected provider relay catalog routes, same-connection reuse after
+bodyless SSE 204/304 responses, and raw bodyless 204/304/205 Responses framing
+match the checksum-pinned 0.166.2 Linux oracle through synthetic loopback
+peers inside a private network namespace. This adds focused wire regressions;
+provider coverage remains incomplete and all six target qualifications stay
+open. See `docs/evidence/baseline-0.166.2/provider-relay-routes-bodyless.md`.
+
 The 0.166.2 `session list --profile main` comparison also confirms that the
 release recovers a corrupt primary `state.json` from a valid private
 `state.json.last-good`, rewrites both state files, and returns the bound

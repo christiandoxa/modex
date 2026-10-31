@@ -5534,11 +5534,17 @@ are inferred from source, not verified artifact resource boundaries. It has
 one serial owner, without the baseline shared Mutex/worker concurrency.
 
 The incoming native request limit is 64 MiB; larger positive u64 baseline
-configuration values remain unsupported. Arbitrary-length SSE still differs
-because of the earlier total 4 MiB cap. Graceful FIN cancellation, signals,
-first-event retry, full backpressure/admission/concurrency, route/provider
-coverage, TLS/DNS/proxies and non-host execution remain unfinished. Fallback
-clock/UUID timing is not yet exact for delayed buffered responses.
+configuration values remain unsupported. The prior claim of a total 4 MiB cap
+on provider SSE was stale: the active `DeepSeekExchange` reads HTTP responses
+incrementally, while the parser retains 4 MiB per line, event, and accumulated
+JSON. Active-oracle process tests now match a 4.26 MiB chunked comment stream
+and exact/one-byte-over line and event boundaries. This bounds input framing,
+not output/history state, which can still scale with generated content; see
+`docs/evidence/baseline-0.166.2/provider-stream-bounds.md`. Graceful FIN
+cancellation, signals, first-event retry, full backpressure/admission/
+concurrency, route/provider coverage, TLS/DNS/proxies and non-host execution
+remain unfinished. Fallback clock/UUID timing is not yet exact for delayed
+buffered responses.
 
 Next active-path work: Super's `force_runtime_proxy=false` and Smart Context
 enable local rewrite, but overlays and Codex app-server hook trust must finish

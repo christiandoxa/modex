@@ -967,6 +967,30 @@ def unknown_argument(argument: String, usage: String, command: String, seen: Lis
     return session_cli_error(detail, formatted)
 
 
+def duplicate_value_following_error(args: List[String], index: Int, command: String, usage: String, seen: List[String], duplicate_name: String) raises:
+    if index >= len(args):
+        return
+    var argument = String(args[index])
+    var prior = List[String]()
+    for previous in seen:
+        if previous != duplicate_name: prior.append(previous)
+    if argument == "--":
+        if index + 1 < len(args):
+            raise unknown_argument(args[index + 1], usage, command, prior, True)
+        return
+    if argument == "--help":
+        return
+    var flag = argument.startswith("-") and argument != "-"
+    var name = argument_name(argument) if flag else argument
+    if name == "-h":
+        return
+    if not flag or name not in session_flags(command):
+        raise unknown_argument(argument, usage, command, prior, not flag)
+    var pieces = argument.split("=", maxsplit=1)
+    if not takes_value(name, command) and len(pieces) == 2:
+        raise value_error(usage, command, name, String(pieces[1]), seen, True)
+
+
 def unrecognized_subcommand(command: String, usage: String, commands: List[String]) -> Error:
     var detail = String("unrecognized subcommand '") + command + "'"
     var matches = similar_names(command, commands)
@@ -1120,6 +1144,8 @@ def parse_session_options(args: List[String]) raises -> SessionOptions:
                             )
                 raise session_cli_error("a value is required for '--cwd <PATH>' but none was supplied")
         if name in seen:
+            if takes_value(name, command):
+                duplicate_value_following_error(args, index + 1, command, usage, seen, name)
             raise session_cli_error("the argument '" + option_label(name) + "' cannot be used multiple times", usage + " [OPTIONS]")
         seen.append(name)
         if value_option and len(pieces) == 2:

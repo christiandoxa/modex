@@ -8,6 +8,16 @@ implementation and isolated differential evidence. Session ownership and
 fail-closed ancestry checks must be preserved. All six platform qualifications
 remain open; earlier evidence does not establish 0.166.2 parity.
 
+The connected session parser now matches selected 0.166.2 error precedence
+when a malformed attached switch/help value or unknown argument immediately
+follows a duplicate value option. Unknown-argument usage retains earlier
+accepted options and omits only the duplicate. Fifteen exact process cases use isolated
+synthetic homes and confirm no filesystem changes; later malformed switches,
+valid options, missing/typed values, and repeated-switch controls preserve the
+release's selected diagnostics. This is parser evidence only, not full CLI or
+session parity. See
+`docs/evidence/baseline-0.166.2/session-duplicate-precedence.md`.
+
 Static help bodies for root, session, doctor, quota, Super, and `s` now retain
 the active release's literal `prodex` command examples and prose while keeping
 the executable basename in `Usage:`. A focused same-`argv0` oracle test covers

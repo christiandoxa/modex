@@ -1,9 +1,11 @@
 """Pin upstream pool ownership across loopback redirects in Prodex 0.166.2."""
 
 from contextlib import contextmanager
+import gzip
 import hashlib
 import json
 from pathlib import Path
+import random
 import select
 import socket
 import socketserver
@@ -22,6 +24,32 @@ ROOT = Path(__file__).resolve().parents[1]
 SYNTHETIC_API_KEY = "synthetic-provider-key"
 TEST_VERSION = "0.166.2"
 CODEX_PREFIX = launch_support.CODEX[:launch_support.CODEX.index("passthrough = scenario")]
+
+
+def _accept_encoding_client(extra_headers):
+    return CODEX_PREFIX + f'''\
+import http.client, socket
+target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
+body = json.dumps({{"model":"deepseek-chat","messages":[]}},separators=(",", ":")).encode()
+headers = {extra_headers!r}
+head = (f"POST /v1/chat/completions HTTP/1.1\\r\\nHost: {{target.hostname}}:{{target.port}}\\r\\n"
+        "Content-Type: application/json\\r\\nAuthorization: " + authorization + "\\r\\n"
+        + "".join(f"{{name}}: {{value}}\\r\\n" for name, value in headers)
+        + f"Content-Length: {{len(body)}}\\r\\n\\r\\n").encode()
+connection = socket.create_connection((target.hostname, target.port), timeout=8)
+connection.settimeout(8)
+connection.sendall(head + body)
+response = http.client.HTTPResponse(connection)
+response.begin()
+payload = response.read()
+save({{"kind":"provider-encoding", "status":response.status,
+      "headers":response.getheaders(), "body":payload.hex()}})
+connection.close()
+print("synthetic-provider-encoding-complete")
+raise SystemExit(0)
+'''
+
+
 POOL_CLIENT = CODEX_PREFIX + r'''
 import http.client, socket
 target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
@@ -382,12 +410,17 @@ class RawPeerHandler(socketserver.BaseRequestHandler):
                 if not request_line:
                     return
                 headers = {}
+                accept_encoding_values = []
                 while True:
                     line = reader.readline()
                     if line in (b"\r\n", b""):
                         break
                     name, value = line.split(b":", 1)
-                    headers[name.strip().lower()] = value.strip()
+                    normalized_name = name.strip().lower()
+                    normalized_value = value.strip()
+                    headers[normalized_name] = normalized_value
+                    if normalized_name == b"accept-encoding":
+                        accept_encoding_values.append(normalized_value)
                 if line == b"":
                     return
                 length = int(headers.get(b"content-length", b"0"))
@@ -408,6 +441,7 @@ class RawPeerHandler(socketserver.BaseRequestHandler):
                         "method": method,
                         "path": path,
                         "headers": headers,
+                        "accept_encoding_values": accept_encoding_values,
                         "body": body,
                         "client_port": self.client_address[1],
                     })
@@ -512,6 +546,20 @@ def _run(binary, upstream_port, *, client_script=POOL_CLIENT, client_kind="pool-
         return clients[0]
 
 
+def _run_accept_encoding(binary, request_headers, replies, *, api_keys=None):
+    upstream = RawPeer(replies)
+    with serving(upstream):
+        capture = _run(
+            binary,
+            upstream.server_address[1],
+            client_script=_accept_encoding_client(request_headers),
+            client_kind="provider-encoding",
+            api_keys=api_keys,
+        )
+        records = list(upstream.records)
+    return capture, records
+
+
 class ProviderUpstreamPoolOwnership01662Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -521,6 +569,149 @@ class ProviderUpstreamPoolOwnership01662Tests(unittest.TestCase):
             raise AssertionError("Build Modex first")
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("PRODEX_ORACLE must identify the verified Prodex 0.166.2 release")
+
+    def test_passthrough_forwards_requested_accept_encoding_values_in_order(self):
+        cases = (
+            (
+                "ordered-values",
+                [("Accept-Encoding", "gzip"), ("Accept-Encoding", "br"), ("Connection", "close")],
+                [b"identity", b"gzip", b"br"],
+            ),
+            (
+                "connection-nominated",
+                [("Accept-Encoding", "gzip"), ("Accept-Encoding", "br"),
+                 ("Connection", "Accept-Encoding"), ("Connection", "close")],
+                [b"identity"],
+            ),
+        )
+        for name, request_headers, expected_values in cases:
+            for binary in (ORACLE, MODEX):
+                with self.subTest(case=name, binary=str(binary)):
+                    capture, records = _run_accept_encoding(
+                        binary,
+                        request_headers,
+                        [_response(200, JSON_REPLY, (("Content-Type", "application/json"),))],
+                    )
+                    response_headers = {key.lower(): value for key, value in capture["headers"]}
+                    self.assertEqual(capture["status"], 200)
+                    self.assertEqual(bytes.fromhex(capture["body"]), JSON_REPLY)
+                    self.assertEqual(response_headers.get("content-type"), "application/json")
+                    self.assertEqual(len(records), 1)
+                    sent = records[0]
+                    self.assertEqual((sent["method"], sent["path"]), ("POST", "/v1/chat/completions"))
+                    self.assertEqual(sent["accept_encoding_values"], expected_values)
+                    self.assertEqual(sent["headers"].get(b"authorization"),
+                                     b"Bearer " + SYNTHETIC_API_KEY.encode())
+                    self.assertEqual(sent["headers"].get(b"content-length"), str(len(sent["body"])).encode())
+                    self.assertEqual(sent["body"], b'{"model":"deepseek-chat","messages":[]}')
+                    self.assertNotIn(b"connection", sent["headers"],
+                                     "Connection and its nominated fields are hop-by-hop")
+
+    def test_passthrough_preserves_buffered_and_gzip_sse_bodies_without_expanding_them(self):
+        sse = b'data: {"id":"synthetic-gzip-sse","choices":[]}\n\ndata: [DONE]\n\n'
+        buffered_gzip = gzip.compress(JSON_REPLY, mtime=0)
+        sse_gzip = gzip.compress(sse, mtime=0)
+        random_body = random.Random(1662).randbytes(4 * 1024 * 1024 + 1)
+        over_cap_gzip = gzip.compress(random_body, mtime=0)
+        self.assertGreater(len(over_cap_gzip), 4 * 1024 * 1024)
+        cases = (
+            ("buffered", "application/json", buffered_gzip, 200, buffered_gzip),
+            ("gzip-sse", "text/event-stream", sse_gzip, 200, sse_gzip),
+            ("encoded-over-cap", "application/json", over_cap_gzip, 502,
+             b"provider response could not be processed"),
+        )
+        for name, content_type, upstream_body, expected_status, expected_body in cases:
+            for binary in (ORACLE, MODEX):
+                with self.subTest(case=name, binary=str(binary)):
+                    capture, records = _run_accept_encoding(
+                        binary,
+                        [("Accept-Encoding", "gzip"), ("Connection", "close")],
+                        [_response(200, upstream_body, (
+                            ("Content-Type", content_type), ("Content-Encoding", "gzip"),
+                        ))],
+                    )
+                    response_headers = {key.lower(): value for key, value in capture["headers"]}
+                    self.assertEqual(capture["status"], expected_status)
+                    self.assertEqual(bytes.fromhex(capture["body"]), expected_body)
+                    self.assertEqual(len(records), 1)
+                    self.assertEqual(records[0]["accept_encoding_values"], [b"identity", b"gzip"])
+                    self.assertEqual(records[0]["headers"].get(b"authorization"),
+                                     b"Bearer " + SYNTHETIC_API_KEY.encode())
+                    if expected_status == 200:
+                        self.assertEqual(response_headers.get("content-encoding"), "gzip")
+                        self.assertEqual(response_headers.get("content-type"), content_type)
+                        self.assertEqual(gzip.decompress(bytes.fromhex(capture["body"])),
+                                         JSON_REPLY if name == "buffered" else sse)
+                        if name == "gzip-sse":
+                            self.assertEqual(response_headers.get("transfer-encoding"), "chunked")
+                            self.assertNotIn("content-length", response_headers)
+                        else:
+                            self.assertEqual(response_headers.get("content-length"), str(len(buffered_gzip)))
+                            self.assertNotIn("transfer-encoding", response_headers)
+                    else:
+                        self.assertEqual(response_headers.get("content-type"), "text/plain; charset=utf-8")
+                        self.assertNotIn("content-encoding", response_headers)
+
+    def test_compressed_error_statuses_keep_retry_and_content_encoding(self):
+        encoded_error = gzip.compress(
+            b'{"error":{"code":"invalid_api_key","message":"synthetic"}}', mtime=0,
+        )
+        success = b'{"id":"synthetic-retry-ok","model":"deepseek-chat","choices":[]}'
+        cases = (
+            (401, [b"synthetic-key-a", b"synthetic-key-b"], 200, success),
+            (429, [b"synthetic-key-a"], 429, encoded_error),
+            (503, [b"synthetic-key-a", b"synthetic-key-b"], 200, success),
+        )
+        for status, expected_keys, expected_status, expected_body in cases:
+            replies = [_response(status, encoded_error, (
+                ("Content-Type", "application/json"), ("Content-Encoding", "gzip"),
+            ))]
+            if status != 429:
+                replies.append(_response(200, success, (("Content-Type", "application/json"),)))
+            for binary in (ORACLE, MODEX):
+                with self.subTest(status=status, binary=str(binary)):
+                    capture, records = _run_accept_encoding(
+                        binary,
+                        [("Accept-Encoding", "gzip"), ("Connection", "close")],
+                        replies,
+                        api_keys="synthetic-key-a,synthetic-key-b",
+                    )
+                    response_headers = {key.lower(): value for key, value in capture["headers"]}
+                    self.assertEqual(capture["status"], expected_status)
+                    self.assertEqual(bytes.fromhex(capture["body"]), expected_body)
+                    self.assertEqual([row["headers"].get(b"authorization") for row in records],
+                                     [b"Bearer " + key for key in expected_keys])
+                    self.assertEqual([row["accept_encoding_values"] for row in records],
+                                     [[b"identity", b"gzip"]] * len(expected_keys))
+                    self.assertEqual(len(records), len(expected_keys))
+                    if binary == MODEX and len(records) == 2:
+                        self.assertNotEqual(records[0]["client_port"], records[1]["client_port"],
+                                            "Modex keeps rotated credentials in separate socket scopes")
+                    if status == 429:
+                        self.assertEqual(response_headers.get("content-encoding"), "gzip")
+                    else:
+                        self.assertNotIn("content-encoding", response_headers)
+
+    def test_responses_continuation_control_is_unchanged_with_gzip_request_encoding(self):
+        from test_deepseek_continuation import buffered_reply, observe_turns
+
+        turns = [
+            {"model": "deepseek-chat", "input": "synthetic first",
+             "_headers": {"Accept-Encoding": "gzip"}},
+            {"model": "deepseek-chat", "input": "synthetic continuation", "use_previous": True,
+             "_headers": {"Accept-Encoding": "gzip"}},
+        ]
+        replies = [buffered_reply(0), buffered_reply(1)]
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, turns, replies, api_keys="synthetic-key-a,synthetic-key-b",
+                    latest_version=TEST_VERSION,
+                )
+                self.assertEqual([row["status"] for row in responses], [200, 503])
+                self.assertEqual(len(upstream), 1, "unavailable bound continuation must not reach upstream")
+                self.assertEqual(upstream[0]["headers"].get("authorization"), "Bearer synthetic-key-a")
+                self.assertEqual(upstream[0]["headers"].get("accept-encoding"), "gzip")
 
     def test_canonical_loopback_alias_keeps_pool_on_original_endpoint(self):
         for binary in (ORACLE, MODEX):

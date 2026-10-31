@@ -308,6 +308,16 @@ def main() raises:
     check(passthrough, "accept-encoding", ["identity"])
     check(passthrough, "accept", ["text/event-stream, application/json"])
     check(passthrough, "user-agent", ["synthetic-agent", "synthetic-agent", "synthetic-second"])
+    var caller_encoding: List[Tuple[String, String]] = [
+        ("Accept-Encoding", "gzip"), ("Accept-Encoding", "br"),
+    ]
+    check(deepseek_request_headers(caller_encoding, "synthetic", passthrough=True),
+          "accept-encoding", ["identity", "gzip", "br"])
+    var nominated_encoding: List[Tuple[String, String]] = [
+        ("Connection", "Accept-Encoding"), ("Accept-Encoding", "gzip"),
+    ]
+    check(deepseek_request_headers(nominated_encoding, "synthetic", passthrough=True),
+          "accept-encoding", ["identity"])
     var native_messages = deepseek_request_headers(anthropic_headers, "synthetic-provider-key", anthropic_messages=True)
     check(native_messages, "x-api-key", ["synthetic-provider-key"])
     check(native_messages, "anthropic-version", ["2023-06-01"])

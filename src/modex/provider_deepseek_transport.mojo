@@ -281,8 +281,6 @@ def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: Stri
             skip = skip or normalized == local_name
         if anthropic_messages and normalized in ["x-api-key", "anthropic-version"]:
             skip = True
-        if passthrough and normalized == "accept-encoding":
-            skip = True
         if not skip:
             output.append((name, value))
     return output^

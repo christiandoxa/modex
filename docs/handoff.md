@@ -6597,3 +6597,23 @@ loopback peers. Production build, full Mojo unit suite, dependency audit, and
 test census pass on Linux x86-64. Other provider behavior and all five other
 release targets remain unqualified. See
 `docs/evidence/baseline-0.166.2/deepseek-alias-fallback.md`.
+
+## Active 0.166.2 passthrough Accept-Encoding (2026-11-01)
+
+Native Chat Completions passthrough now preserves caller `Accept-Encoding`
+fields in their original order after the existing `identity` field, matching
+the active 0.166.2 process. Fields nominated by `Connection` remain filtered.
+Real-process loopback checks passed for duplicate values, buffered gzip bytes,
+gzip SSE bytes and framing, encoded response-body rejection above the existing 4 MiB cap,
+gzip 429 passthrough, and 401/503 retry to the next synthetic key. The existing
+passthrough cap/framing module also passed after its request-header fixture was
+updated to expect the forwarded gzip value.
+
+Credential socket behavior remains a deliberate recorded difference: for the
+tested compressed 401/503 retries the frozen process sends key A and then key B
+over the same upstream socket, while Modex opens a new socket to keep credential
+scopes isolated. Do not count socket reuse as parity or weaken Modex's pool
+isolation check to match this baseline behavior. This slice is qualified only
+on Linux x86-64; the other five release targets and broader provider behavior
+remain unqualified. See
+`docs/evidence/baseline-0.166.2/provider-accept-encoding.md`.

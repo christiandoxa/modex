@@ -36,7 +36,7 @@ def check(payload, status=200, chunked=False, fragmented=False, truncated=False)
                         headers.setdefault(name.lower(), []).append(value.strip())
                     assert headers[b"authorization"] == [b"Bearer fake-upstream"]
                     assert headers[b"content-type"] == [b"application/json", b"application/custom+json"]
-                    assert headers[b"accept-encoding"] == [b"identity"]
+                    assert headers[b"accept-encoding"] == [b"identity", b"gzip"]
                     assert headers[b"accept"] == [b"text/event-stream, application/json"]
                     assert b"connection" not in headers
                     assert b"x-private" not in headers

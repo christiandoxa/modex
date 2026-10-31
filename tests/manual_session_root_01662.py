@@ -7,6 +7,7 @@ binary. This is a mismatch capture, not a parity assertion.
 import hashlib
 import json
 import os
+import sqlite3
 from pathlib import Path
 import subprocess
 import tempfile
@@ -48,14 +49,16 @@ def snapshot(root):
     return result
 
 
-def make_fixture(base, *, child_version="v2", child_parent=ROOT_ID):
+def make_fixture(
+    base, *, child_version="v2", child_parent=ROOT_ID, session_subdirectory="sessions"
+):
     home = base / "home"
     prodex_home = base / "prodex-home"
     shared = base / "codex-home"
     workspace = base / "workspace"
     for path in (home, prodex_home, shared, workspace):
         path.mkdir(mode=0o700 if path != workspace else 0o755)
-    session_dir = shared / "sessions/2026/10/31"
+    session_dir = shared / session_subdirectory / "2026/10/31"
     session_dir.mkdir(parents=True)
 
     def write_session(session_id, parent, version):
@@ -92,6 +95,20 @@ def make_fixture(base, *, child_version="v2", child_parent=ROOT_ID):
     return environment, shared, child
 
 
+def install_state_db_index(shared, root_file, child_file):
+    database = sqlite3.connect(shared / "state_01662_fixture.sqlite")
+    try:
+        database.execute("CREATE TABLE threads (id TEXT, rollout_path TEXT)")
+        for session_id, path in ((ROOT_ID, root_file), (CHILD_ID, child_file)):
+            database.execute(
+                "INSERT INTO threads (id, rollout_path) VALUES (?, ?)",
+                (session_id, path.relative_to(shared).as_posix()),
+            )
+        database.commit()
+    finally:
+        database.close()
+
+
 def run(binary, base, environment, arguments):
     before = snapshot(base)
     command = sandbox_command(binary, base, arguments, timezone="UTC", environment=environment)
@@ -116,10 +133,14 @@ def main():
         raise SystemExit("PRODEX_ORACLE_01662 must match the official 0.166.2 SHA-256")
 
     cases = (
-        ("v2-child", "v2", ROOT_ID, CHILD_ID, f"Prodex launch: resuming parent-owned sub-agent through root session {ROOT_ID}...\n"),
-        ("root", "v2", None, ROOT_ID, ""),
-        ("v1-child", "v1", ROOT_ID, CHILD_ID, ""),
-        ("missing-parent", "v2", MISSING_PARENT_ID, CHILD_ID, ""),
+        ("v2-child", "v2", ROOT_ID, CHILD_ID, "sessions"),
+        ("root", "v2", None, ROOT_ID, "sessions"),
+        ("v1-child", "v1", ROOT_ID, CHILD_ID, "sessions"),
+        ("missing-parent", "v2", MISSING_PARENT_ID, CHILD_ID, "sessions"),
+        ("db-indexed-v2-child", "v2", ROOT_ID, CHILD_ID, "indexed"),
+    )
+    expected_root_status = (
+        f"Prodex launch: resuming parent-owned sub-agent through root session {ROOT_ID}...\n"
     )
     report = {
         "reference": {
@@ -128,14 +149,17 @@ def main():
             "binary_sha256": ORACLE_SHA256,
         },
         "modex_binary": "provided Modex binary",
-        "isolation": "bubblewrap network namespace, synthetic HOME/Prodex/Codex roots, no Codex binary or credentials",
+        "isolation": "bubblewrap network namespace, synthetic HOME/Prodex/Codex roots, read-only fixture snapshots, no Codex binary or credentials",
         "cases": {},
     }
-    for name, child_version, parent, target_id, expected_status in cases:
+    for name, child_version, parent, target_id, session_subdirectory in cases:
         with tempfile.TemporaryDirectory(prefix="modex-session-root-01662-") as directory:
             base = Path(directory)
             environment, shared, child_file = make_fixture(
-                base, child_version=child_version, child_parent=parent
+                base,
+                child_version=child_version,
+                child_parent=parent,
+                session_subdirectory=session_subdirectory,
             )
             # The root case has no worker record; use the requested root as its target.
             if name == "root":
@@ -151,11 +175,14 @@ def main():
                     json.dumps({"type": "session_meta", "payload": root_payload}) + "\n",
                     encoding="utf-8",
                 )
+            if name == "db-indexed-v2-child":
+                root_file = next(shared.rglob(f"*{ROOT_ID}.jsonl"))
+                install_state_db_index(shared, root_file, child_file)
             arguments = ["s", "--dry-run", "--no-presidio", "--no-sub-agent", target_id]
             oracle = run(ORACLE, base, environment, arguments)
             modex = run(MODEX, base, environment, arguments)
-            if name == "v2-child":
-                if not oracle["stderr"].startswith(expected_status + NO_PROFILE):
+            if name in ("v2-child", "db-indexed-v2-child"):
+                if not oracle["stderr"].startswith(expected_root_status + NO_PROFILE):
                     raise AssertionError(f"unexpected Prodex V2 child behavior: {oracle}")
                 if modex["stderr"] != UNSUPPORTED:
                     raise AssertionError(f"unexpected current Modex behavior: {modex}")

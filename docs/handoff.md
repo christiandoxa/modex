@@ -25,6 +25,13 @@ controls and all fixture files were preserved; this is a documented mismatch,
 not a completed resume implementation. See
 `docs/evidence/baseline-0.166.2/session-root-resume.md`.
 
+A fifth fixture places the V2 root and child outside `sessions/` and
+`archived_sessions/`, then indexes them through a synthetic `state_*.sqlite`
+`threads` table. Prodex follows the index with a read-only query and resolves
+the root; Modex remains at the Super guard. The whole fixture tree, including
+the SQLite file, remains unchanged. This state database fallback is an additional
+visible session-root gap under the Mojo standard-library-only constraint.
+
 The hidden `__super-expose` help and public `super expose` / `s expose` help
 routes now match the 0.166.2 Linux oracle, including custom executable names.
 Tested malformed pre-MODE option diagnostics also match without creating state.

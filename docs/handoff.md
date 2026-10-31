@@ -19,6 +19,15 @@ compatibility remains unimplemented.
 Managed Ponytail integrity validation and removal of generated legacy Caveman
 overlay content remain incomplete. This evidence does not establish parity.
 
+The active 0.166.1 real-process repeat-launch check confirms that the release
+starts the synthetic Codex child twice and preserves shared history and session
+data. Modex starts it once, then fails closed on the second invocation while
+leaving that data intact and cleaning the temporary overlay. This remains a
+parity gap. The guard stays in place because the release coordinates child
+execution and session maintenance with advisory locks that Mojo 1.2.0 does not
+expose; append-only history by itself would not make shared session access
+safe. See `docs/evidence/baseline-0.166.1/super-repeat-launch.md`.
+
 # Historical work: Prodex 0.166.0 parity and CI
 
 The official historical release workflow artifacts for 0.439.2 and 0.439.5

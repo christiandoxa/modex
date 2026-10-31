@@ -62,7 +62,7 @@ fi
 export MODEX_REFERENCE_DIR="$(cat "$EVIDENCE_DIR/reference-source-active.txt")"
 cat "$EVIDENCE_DIR/reference-source-active.log"
 rm -- "$EVIDENCE_DIR/reference-source-active.txt"
-run_logged focused-python-active env -u PRODEX_ORACLE_01660 -u PRODEX_GATEWAY_ORACLE_01660 -u MODEX_REFERENCE_01660_DIR -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01661.py test_hook_identity_01661.py test_doctor_install_01661.py test_kiro_cli_2370_01661.py test_playwright_node_01661.py test_caveman_retirement_01661.py test_ci_build_input_cleanliness.py test_ci_python_path_resolution.py test_ci_unit_build_cache.py
+run_logged focused-python-active env -u PRODEX_ORACLE_01660 -u PRODEX_GATEWAY_ORACLE_01660 -u MODEX_REFERENCE_01660_DIR -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01661.py test_hook_identity_01661.py test_doctor_install_01661.py test_kiro_cli_2370_01661.py test_playwright_node_01661.py test_caveman_retirement_01661.py test_super_repeat_launch_01661.py test_ci_build_input_cleanliness.py test_ci_python_path_resolution.py test_ci_unit_build_cache.py
 if ! "$PYTHON" scripts/ci/reference.py oracle 0.166.0 >"$EVIDENCE_DIR/oracle-path-01660.txt" 2>"$EVIDENCE_DIR/reference-01660.log"; then
     cat "$EVIDENCE_DIR/reference-01660.log" >&2
     exit 1

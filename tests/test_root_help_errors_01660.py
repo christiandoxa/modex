@@ -76,6 +76,46 @@ class RootHelpErrors01660Tests(unittest.TestCase):
                                  (baseline.returncode, baseline.stdout, baseline.stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_hidden_runtime_broker_help_matches_without_mutations(self):
+        cases = (
+            (("help", "__runtime-broker"), "prodex", "modex", 0),
+            (("__runtime-broker", "--help"), "prodex", "modex", 0),
+            (("__runtime-broker", "-h"), "custom-prodex", "custom-modex", 0),
+            (("help", "__runtime-broker", "extra"), "prodex", "modex", 2),
+            (("__runtime-broker", "--help=bad"), "prodex", "modex", 2),
+        )
+        for arguments, oracle_argv0, modex_argv0, expected_status in cases:
+            with self.subTest(arguments=arguments, argv0=oracle_argv0):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), oracle_argv0, "01660-runtime-broker-oracle"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), modex_argv0, "01660-runtime-broker-modex"
+                )
+                expected_stdout = baseline.stdout.replace(
+                    b"Usage: " + oracle_argv0.encode() + b" ",
+                    b"Usage: " + modex_argv0.encode() + b" ",
+                    1,
+                )
+                expected_stderr = baseline.stderr.replace(
+                    b"Usage: " + oracle_argv0.encode() + b" ",
+                    b"Usage: " + modex_argv0.encode() + b" ",
+                    1,
+                )
+                self.assertEqual(baseline.returncode, expected_status)
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (expected_status, expected_stdout, expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        modex, created = isolated_run(
+            MODEX, ["__runtime-broker"], "modex", "01660-runtime-broker-guard"
+        )
+        self.assertEqual(
+            (modex.returncode, modex.stdout, modex.stderr),
+            (1, b"", b"Error: this Modex development build has not implemented the requested command\n"),
+        )
+        self.assertEqual(created, [])
+
     def test_run_help_routes_match_release_without_starting_runtime(self):
         cases = (
             (("run", "--help"), "prodex", "modex"),

@@ -2,6 +2,10 @@ def update_help(executable: String) -> String:
     return "Update Prodex from the latest verified GitHub release binary.\n\nUsage: " + executable + " update\n\nOptions:\n  -h, --help  Print help\n"
 
 
+def runtime_broker_help(executable: String) -> String:
+    return "Usage: " + executable + " __runtime-broker\n\nOptions:\n  -h, --help  Print help\n"
+
+
 def run_help(executable: String) -> String:
     return String("""Run codex through prodex with quota preflight and eligible pre-commit rotation.
 

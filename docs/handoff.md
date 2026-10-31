@@ -1,5 +1,9 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Selected hidden `__runtime-broker` help routes now match 0.166.0; runtime
+broker startup remains unimplemented. See
+`docs/evidence/baseline-0.166.0/runtime-broker-help.md`.
+
 Hosted Fast CI run `41158255923` on `76209c9` passed 195 active 0.166.0
 tests, 53 independent relay tests, 121 historical 0.165.1 tests, and the
 helper and width checks. It failed closed because required historical 0.439.2

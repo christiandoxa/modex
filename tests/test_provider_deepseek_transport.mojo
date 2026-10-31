@@ -55,6 +55,23 @@ def model_attempts() raises:
         deepseek_request_model_attempts(request),
         List[String](copy=["deepseek-flash", "pro", "custom"]),
     )
+    for alias in [String("auto"), "pro"]:
+        request = JsonDocument('{"model":"' + alias + '"}')
+        assert_equal(
+            deepseek_request_model_attempts(request),
+            List[String](copy=["deepseek-v4-pro", "deepseek-flash"]),
+        )
+    request = JsonDocument('{"model":"flash"}')
+    assert_equal(
+        deepseek_request_model_attempts(request),
+        List[String](copy=["deepseek-flash", "deepseek-v4-pro"]),
+    )
+    request = JsonDocument('{"model":"default"}')
+    assert_equal(deepseek_request_model_attempts(request), List[String](copy=[""]))
+    request = JsonDocument('{"model":""}')
+    assert_equal(deepseek_request_model_attempts(request), List[String](copy=[""]))
+    request = JsonDocument("{}")
+    assert_equal(deepseek_request_model_attempts(request), List[String](copy=[""]))
     request = JsonDocument('{"model":"deepseek-chat"}')
     assert_equal(deepseek_request_model_attempts(request), List[String](copy=[""]))
     request = JsonDocument('{"model":"combo:,,,"}')

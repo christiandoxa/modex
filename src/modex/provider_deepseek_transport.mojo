@@ -168,6 +168,11 @@ def deepseek_request_model_attempts(document: JsonDocument) raises -> List[Strin
     if model_node < 0 or document.nodes[model_node].kind != JSON_STRING:
         return List[String](copy=[""])
     var model = trim_text(document.string(model_node))
+    var alias = model.lower()
+    if alias in ["auto", "pro"]:
+        return List[String](copy=["deepseek-v4-pro", "deepseek-flash"])
+    if alias == "flash":
+        return List[String](copy=["deepseek-flash", "deepseek-v4-pro"])
     if not model.startswith("combo:"):
         return List[String](copy=[""])
     var candidates = List[String]()

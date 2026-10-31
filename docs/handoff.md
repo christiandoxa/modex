@@ -6539,3 +6539,21 @@ classification; it does not qualify successful startup, filesystem
 lock/housekeeping parity, profile recovery, other gateway providers, or the
 other five targets. See
 `docs/evidence/baseline-0.166.2/gateway-config-classification.md`.
+
+## Active 0.166.2 DeepSeek alias fallback (2026-11-01)
+
+DeepSeek model retries now follow the active process for `flash`, `auto`, and
+`pro` after retryable errors; concrete model IDs remain single-candidate.
+Active-process comparisons show `default` is forwarded literally and an empty
+model resolves to `deepseek-v4-pro` without a retry candidate in this runtime
+path. A 404 retries the next model, generic 400 does not, and both generic and
+`policy_capacity_unavailable` 503 errors try the remaining model before rotating
+to the next key. Buffered and streamed requests
+retain the same policy. Native Anthropic SSE allows one retryable first-event
+retry total: overloaded responses advance to the next model on key A, then stop
+without using key B. Eight real-process tests passed against the active oracle
+and Modex in a private Bubblewrap namespace with synthetic credentials and
+loopback peers. Production build, full Mojo unit suite, dependency audit, and
+test census pass on Linux x86-64. Other provider behavior and all five other
+release targets remain unqualified. See
+`docs/evidence/baseline-0.166.2/deepseek-alias-fallback.md`.

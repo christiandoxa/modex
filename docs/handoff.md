@@ -18,6 +18,17 @@ shortcut was added. A checksum-pinned isolated regression records the output
 and filesystem effects; see
 `docs/evidence/baseline-0.166.2/profile-list-existing-empty-root.md`.
 
+Clean-home `info --json` remains guarded: the 0.166.2 dashboard includes live
+process/log observations and runtime settings, and creates an update-check
+lock even without profiles. A fixed empty-state report would not be faithful.
+The release's no-profile `status --once` also panics in its runway renderer;
+the capture requires lifecycle, housekeeping, and update-check locks, while
+`runtime-housekeeping.last-run` may appear asynchronously. This is a minimum
+effects assertion, not a complete filesystem inventory. Modex keeps its
+existing fail-closed guard instead of reproducing the crash. Pinned isolated
+characterization and help controls are in
+`docs/evidence/baseline-0.166.2/info-status-offline.md`.
+
 Profile parser usage diagnostics now match 0.166.2 after recognized options
 and positionals: a later unexpected flag includes the accepted prefix in the
 usage line. Fifteen isolated inputs cover add, export, import, remove, and use,

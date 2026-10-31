@@ -213,6 +213,7 @@ class CIOracleRoutingTests(unittest.TestCase):
 
         self.assertIn("test_session_state_recovery_01662.py", active_tests)
         self.assertIn("test_profile_list_existing_empty_root_01662.py", active_tests)
+        self.assertIn("test_info_status_offline_01662.py", active_tests)
         self.assertIn("test_provider_metadata_01662.py", active_tests)
         self.assertIn("test_provider_shapes_01662.py", active_tests)
         self.assertIn("test_provider_policy_codex_01662.py", active_tests)
@@ -382,6 +383,7 @@ class CIOracleRoutingTests(unittest.TestCase):
 
         self.assertIn("test_session_state_recovery_01662.py", active_tests)
         self.assertIn("test_profile_list_existing_empty_root_01662.py", active_tests)
+        self.assertIn("test_info_status_offline_01662.py", active_tests)
         self.assertIn("test_provider_metadata_01662.py", active_tests)
         self.assertIn("test_provider_shapes_01662.py", active_tests)
         self.assertIn("test_provider_policy_codex_01662.py", active_tests)
@@ -707,7 +709,7 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "  esac\n"
                 "  exit 0\n"
                 "fi\n"
-                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && (\" $* \" == *' test_active_baseline_01662.py '* || \" $* \" == *' test_hook_identity_01662.py '* || \" $* \" == *' test_sub_agent_exec_help_01662.py '* || \" $* \" == *' test_sub_agent_exec_diagnostics_01662.py '* || \" $* \" == *' test_session_inspection_01662.py '* || \" $* \" == *' test_session_state_recovery_01662.py '* || \" $* \" == *' test_profile_list_existing_empty_root_01662.py '* || \" $* \" == *' test_doctor_install_01662.py '*) ]]; then\n"
+                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && (\" $* \" == *' test_active_baseline_01662.py '* || \" $* \" == *' test_hook_identity_01662.py '* || \" $* \" == *' test_sub_agent_exec_help_01662.py '* || \" $* \" == *' test_sub_agent_exec_diagnostics_01662.py '* || \" $* \" == *' test_session_inspection_01662.py '* || \" $* \" == *' test_session_state_recovery_01662.py '* || \" $* \" == *' test_profile_list_existing_empty_root_01662.py '* || \" $* \" == *' test_info_status_offline_01662.py '* || \" $* \" == *' test_doctor_install_01662.py '*) ]]; then\n"
                 "  printf 'active-test\\t%s\\t%s\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE-}\" \"${PRODEX_ORACLE_01660-}\" \"${PRODEX_GATEWAY_ORACLE-}\" \"${PRODEX_GATEWAY_ORACLE_01660-}\" \"${MODEX_REFERENCE_DIR-}\" >>\"$FAKE_LOG\"\n"
                 "fi\n"
                 "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_active_baseline_01661.py '* ]]; then\n"

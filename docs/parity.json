@@ -3,6 +3,7 @@
   "baseline_commit": "b1201b5244ff85fce7fc54c3f7607f2e3bdcf4a7",
   "inventory_complete": false,
   "counting_policy": "Initial coarse contracts are not the final denominator. Each contract retains all applicable platform obligations. PASS requires reproducible evidence; compile-only, mock-only and unverified results never count. No full parity percentage until inventory completion.",
+  "history_scope": "The inventory history records the target and evidence as they stood at each checkpoint. Earlier targets and evidence references remain historical; only Prodex 0.166.2 at baseline_commit is the active parity target. A historical trace or comparison does not establish 0.166.2 behavior without target-specific verification.",
   "inventory_history": [
     {
       "date": "2026-10-24",

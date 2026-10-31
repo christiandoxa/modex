@@ -95,7 +95,7 @@ def parse_log_arguments(args: List[String], executable: String) raises -> Tuple[
                     if mode:
                         usage = executable + " log --json <MODE>"
                 elif mode:
-                    usage = executable + " log <MODE>"
+                    usage = executable + " log --json <MODE>" if seen_json else executable + " log <MODE>"
                 elif seen_json:
                     usage = executable + " log --json [MODE]"
                 raise log_error(message, usage)

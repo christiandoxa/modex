@@ -22,6 +22,8 @@ CASES = (
     ("JSON near-match control", ["log", "last", "--j=x"], 2),
     ("unknown option control", ["log", "last", "--unknown=x"], 2),
     ("unknown mode", ["log", "not-a-mode"], 2),
+    ("unknown option after JSON and mode", ["log", "--json", "last", "--unknown=x"], 2),
+    ("unknown option after mode and JSON", ["log", "last", "--json", "--unknown=x"], 2),
     ("attached help value", ["log", "--help=x"], 2),
     ("attached JSON value", ["log", "--json=x"], 2),
 )

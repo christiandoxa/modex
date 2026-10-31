@@ -6617,3 +6617,11 @@ isolation check to match this baseline behavior. This slice is qualified only
 on Linux x86-64; the other five release targets and broader provider behavior
 remain unqualified. See
 `docs/evidence/baseline-0.166.2/provider-accept-encoding.md`.
+
+## Active 0.166.2 log diagnostic prefix (2026-11-01)
+
+An unknown option after both a log mode and `--json` now includes the accepted
+JSON flag in usage, in either argument order. Fifteen isolated Linux x86-64
+diagnostic cases match the verified 0.166.2 process; this does not establish
+broader log or platform parity. See
+`docs/evidence/baseline-0.166.2/log-cli-diagnostics.md`.

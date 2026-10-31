@@ -794,9 +794,12 @@ def redeem_help_requested(args: List[String], executable: String) raises -> Bool
             if name == "--yes" or name == "--no-proxy":
                 var label = name
                 if len(pieces) == 2:
+                    var switch_usage = executable + " redeem " + name + " <PROFILE>"
+                    if help_lists_options:
+                        switch_usage = executable + " redeem <PROFILE|--yes|--base-url <URL>|--no-proxy>"
                     raise session_cli_error(
                         "unexpected value '" + String(pieces[1]) + "' for '" + name + "' found; no more were expected",
-                        executable + " redeem " + name + " <PROFILE>",
+                        switch_usage,
                     )
                 if name in seen:
                     raise session_cli_error(

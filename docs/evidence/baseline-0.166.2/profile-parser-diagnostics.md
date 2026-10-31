@@ -12,17 +12,21 @@ argument labels. Modex previously replaced those details with the generic
 `[OPTIONS]` usage. The parser now constructs the reported usage from the parsed
 prefix; repeated `--profile` filters in export appear once, matching Clap.
 
-Fifteen isolated inputs cover `add`, `export`, `import`, `remove`, and `use`,
-including options before and after a positional. They also cover unknown flags
-where a preceding value-taking option has no value; that incomplete option is
-omitted from the usage line. An extra positional control continues to use the
-command-level usage. All diagnostics and exit codes match after mapping the
-executable name. Both processes leave the synthetic home and workspace
-unchanged. These inputs fail before profile operations run; this does not
-qualify successful profile management, lifecycle locks, or the other five
-release targets.
+Twenty-nine isolated inputs cover `add`, `export`, `import`, `import-current`,
+`remove`, and `use`, including options before and after a positional. They also
+cover unknown flags where a preceding value-taking option has no value; that
+incomplete option is omitted from the usage line. An extra positional control
+continues to use the command-level usage. Ten attached-value cases cover every
+profile boolean switch: the attached-value error takes precedence over a
+duplicate-switch error. Four prefix controls check that its usage line expands
+to the full option group after an accepted boolean switch, while an accepted
+value option or positional retains the narrower usage. All diagnostics and
+exit codes match after mapping the executable name. Both processes leave the
+synthetic home and workspace unchanged. These inputs fail before profile
+operations run; this does not qualify successful profile management,
+lifecycle locks, or the other five release targets.
 
-Verified on 2026-10-31 with:
+Verified on 2026-11-01 with:
 
 ```sh
 make build

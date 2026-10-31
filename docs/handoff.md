@@ -106,7 +106,7 @@ help evidence only; see
 
 The connected `log` parser now matches selected 0.166.2 help and diagnostic
 cases. In particular, abbreviated `--h=...` is suggested as `--help`, and the
-usage line retains accepted `--json` and mode options. Thirteen isolated
+usage line retains accepted `--json` and mode options. Fifteen isolated
 process cases cover full/short help, `last` and `upstream`, near-match and
 unknown-option controls, and attached values; none creates state. This is only
 CLI parser evidence. File-backed/live log behavior, secure app-root repair,
@@ -187,7 +187,7 @@ does not fake that result or bypass those locks. See
 
 The connected `redeem` parser now matches selected offline 0.166.2 diagnostics
 for missing `<PROFILE>`, missing `--base-url` values, repeated options,
-malformed switch/help values, unknown flags, and extra positionals. Seventeen
+malformed switch/help values, unknown flags, and extra positionals. Twenty-two
 real-process cases compare exact status and stderr with no filesystem changes;
 the historical redeem help and short-cluster suite also passes. Valid redeem
 execution remains guarded; account lookup, lifecycle locks, and any redeem
@@ -217,12 +217,14 @@ existing fail-closed guard instead of reproducing the crash. Pinned isolated
 characterization and help controls are in
 `docs/evidence/baseline-0.166.2/info-status-offline.md`.
 
-Profile parser usage diagnostics now match 0.166.2 after recognized options
-and positionals: a later unexpected flag includes the accepted prefix in the
-usage line. Fifteen isolated inputs cover add, export, import, remove, and use,
-including incomplete option values, with no filesystem changes. This qualifies
-parser failures only; successful profile operations and their lifecycle
-behavior remain outside this slice. See
+Profile parser diagnostics now match 0.166.2 for recognized option prefixes
+and malformed attached values on all ten boolean switches. The attached-value
+error takes precedence over duplicate-switch errors, and its usage line retains
+the observed difference between a preceding switch and value/positional. A
+total of 29 isolated process inputs cover add, export, import, import-current,
+remove, and use with no filesystem changes. This qualifies parser failures only;
+successful profile operations and their lifecycle behavior remain outside this
+slice. See
 `docs/evidence/baseline-0.166.2/profile-parser-diagnostics.md`.
 
 Profile-bound `session list` now has a separate 15-case active 0.166.2 lane.

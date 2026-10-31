@@ -81,6 +81,36 @@ class ProfileDiagnostics01662Tests(unittest.TestCase):
                 self.assertEqual(baseline_effects, ["home", "workspace"])
                 self.assertEqual(modex_effects, baseline_effects)
 
+    def test_attached_boolean_values_precede_duplicate_errors(self):
+        cases = (
+            ("add", "--copy-current", "--copy-current=true"),
+            ("add", "--activate", "--activate=true"),
+            ("add", "--insecure", "--insecure=true"),
+            ("export", "--password-protect", "--password-protect=true"),
+            ("export", "--no-password", "--no-password=true"),
+            ("import", "--activate", "--activate=true"),
+            ("import", "--insecure", "--insecure=true"),
+            ("import-current", "--insecure", "--insecure=true"),
+            ("remove", "--all", "--all=true"),
+            ("remove", "--delete-home", "--delete-home=true"),
+            # Non-switch prefixes retain the narrower usage line from Clap.
+            ("add", "--codex-home", "/synthetic/home", "--activate=true"),
+            ("import", "--name", "synthetic", "--activate=true"),
+            ("remove", "synthetic", "--all=true"),
+            ("export", "--profile", "synthetic", "--password-protect=true"),
+        )
+        for arguments in cases:
+            with self.subTest(arguments=arguments):
+                command = ["profile", *arguments]
+                baseline, baseline_effects = observe(ORACLE, command, "prodex")
+                modex, modex_effects = observe(MODEX, command, "modex")
+                mapped_stderr = baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex ")
+                self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", mapped_stderr))
+                self.assertEqual(baseline_effects, ["home", "workspace"])
+                self.assertEqual(modex_effects, baseline_effects)
+
 
 if __name__ == "__main__":
     unittest.main()

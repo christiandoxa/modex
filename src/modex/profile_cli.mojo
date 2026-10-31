@@ -350,6 +350,23 @@ def _profile_duplicate(name: String, command: String, executable: String) -> Err
     return session_cli_error("the argument '" + _profile_option_label(name) + "' cannot be used multiple times", _profile_usage(command, executable))
 
 
+def _profile_switch_value_usage(name: String, command: String, executable: String, seen: List[String]) -> String:
+    var usage = executable + " profile " + command
+    for previous in seen:
+        if not _profile_switch_option(command, previous): continue
+        if command == "add": return usage + " <NAME|--codex-home <PATH>|--copy-from <PATH>|--copy-current|--activate|--insecure>"
+        if command == "export": return usage + " <--profile <NAME>|PATH|--password-protect|--no-password>"
+        if command == "import": return usage + " <PATH_OR_SOURCE|--name <NAME>|--activate|--insecure>"
+        if command == "import-current": return usage + " <NAME|--insecure>"
+        if command == "remove": return usage + " <NAME|--all|--delete-home>"
+    usage += " " + name
+    if command == "add": usage += " <NAME>"
+    elif command == "import": usage += " <PATH_OR_SOURCE>"
+    elif command == "import-current" or command == "remove": usage += " [NAME]"
+    elif command == "export": usage += " [PATH]"
+    return usage
+
+
 def _profile_missing_required(command: String, executable: String, seen: List[String], positional: String) -> Error:
     var usage = executable + " profile " + command
     if seen:
@@ -472,6 +489,10 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
             raise _profile_unexpected_argument(argument, command, executable, False, seen, len(positionals))
         var record_option = True
         if takes_value or switch:
+            if switch and has_inline_value:
+                var unexpected_value = String(argument.split("=", maxsplit=1)[1])
+                var usage = _profile_switch_value_usage(name, command, executable, seen)
+                raise session_cli_error("unexpected value '" + unexpected_value + "' for '" + name + "' found; no more were expected", usage)
             if name in seen and not (command == "export" and name == "--profile"):
                 raise _profile_duplicate(name, command, executable)
             if takes_value:
@@ -494,12 +515,6 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
                             raise _profile_missing_value(name)
                     else:
                         record_option = False
-            elif has_inline_value:
-                var unexpected_value = String(argument.split("=", maxsplit=1)[1])
-                var usage = executable + " profile " + command + " " + name
-                if command == "add": usage += " <NAME>"
-                elif command == "remove": usage += " [NAME]"
-                raise session_cli_error("unexpected value '" + unexpected_value + "' for '" + name + "' found; no more were expected", usage)
             if record_option:
                 seen.append(name)
         else:

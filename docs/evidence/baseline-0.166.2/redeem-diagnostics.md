@@ -6,7 +6,8 @@ argument parser with the checksum-pinned Linux x86-64 Prodex 0.166.2 binary
 It covers missing profile and URL values, repeated switches, malformed switch
 and help values, option-value precedence, unknown arguments, and extra
 positionals. Every tested failure returns exit status 2 and leaves the isolated
-home unchanged.
+home unchanged. Attached boolean values after accepted options use the grouped
+usage where observed, with split URL and bare-option controls.
 
 Reproduce with:
 

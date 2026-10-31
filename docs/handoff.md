@@ -8,6 +8,16 @@ implementation and isolated differential evidence. Session ownership and
 fail-closed ancestry checks must be preserved. All six platform qualifications
 remain open; earlier evidence does not establish 0.166.2 parity.
 
+Live broker log reading remains guarded. An isolated 0.166.2 prototype
+rejected five synthetic invalid-identity or capability fixtures, but its
+snapshot/cursor output did not match the release. Independent review also
+found that it did not securely bind the verified process identity to the
+connected listener and could retain secret-bearing registry data. The
+prototype was not integrated; the guard remains until those checks and
+capability cleanup are proven, alongside a passing differential. This is not
+live-log parity evidence. The synthetic fixture is in
+`tests/capture_log_live.py`.
+
 The local provider runtime now retains at most one idle upstream socket per
 runtime, scoped by validated loopback endpoint, credential, and authentication
 scheme. It reuses only

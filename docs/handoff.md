@@ -82,6 +82,16 @@ registered in the active fast and full CI suites. Native TUI root-resume
 selection remains unimplemented behind the guarded Super launcher; see
 `docs/evidence/baseline-0.166.2/session-inspection-list.md`.
 
+The existing real-process session report suite now also runs against the active
+0.166.2 oracle: 13 report tests compare release and Modex output, and one
+Modex-only safe-handling check is not counted as parity evidence. Coverage
+includes stateless report output, filters, ordering, metadata fallback,
+timestamps, and timezone formatting through `session list` and `session
+current`. The suite passed on Linux x86-64; this does not cover profile-backed
+state/recovery, guarded resume, startup side effects, interactive terminal
+behavior, or the other five release targets. See
+`docs/evidence/baseline-0.166.2/session-report-projection.md`.
+
 The checksum-verified 0.166.2 binary and Modex match on synthetic compressed
 session inputs with 8,191, 8,192, and 8,193 decoded bytes. The first two report
 the checksum failure; the 8,193-byte input returns an empty list. The capture
@@ -238,10 +248,11 @@ not. For a normal real root, a real-oracle process test puts
 escaping command symlinks on PATH and in the root; both Prodex 0.166.1 and
 Modex report them invalid without running the marker executables.
 
-Two explicit-root edge cases differ safely from Prodex: an empty
-`PRODEX_OPTIMIZERS_HOME` makes the release report `invalid` without executing a
-cwd `./rtk`, while Modex skips the blank root and reports `missing`; a
-trailing-slash override pointing at a symlink makes the release run the target
+At the time of these historical checks, two explicit-root edge cases differed
+safely from Prodex. An empty `PRODEX_OPTIMIZERS_HOME` made the release report
+`invalid` without executing a cwd `./rtk`, while Modex skipped the blank root
+and reported `missing`. The current behavior is covered in the 0.166.2 section
+above. A trailing-slash override pointing at a symlink makes the release run the target
 RTK and report it installed, while Modex rejects the symlink root and does not
 run the target. Prodex also follows and runs explicit symlink roots ending in
 `/.` and `/..`; Modex detects the symlink component before canonicalization

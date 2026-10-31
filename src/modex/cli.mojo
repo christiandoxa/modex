@@ -63,6 +63,7 @@ def parse_sub_agent_exec_arguments(args: List[String], executable: String) raise
     var usage = executable + " __sub-agent-exec --config <PATH> --task-file <PATH>"
     var config_seen = False
     var task_file_seen = False
+    var usage_group = False
     var literal = False
     var index = 2
     while index < len(args):
@@ -70,9 +71,12 @@ def parse_sub_agent_exec_arguments(args: List[String], executable: String) raise
         if not literal and argument == "--help":
             return True
         if not literal and argument.startswith("--help="):
+            var help_usage = usage + " --help"
+            if usage_group:
+                help_usage = executable + " __sub-agent-exec --help <--config <PATH>|--task-file <PATH>>"
             raise session_cli_error(
                 "unexpected value '" + String(argument[byte=7:]) + "' for '--help' found; no more were expected",
-                usage + " --help",
+                help_usage,
             )
         if not literal and argument.startswith("-h") and not argument.startswith("--"):
             return True
@@ -112,7 +116,7 @@ def parse_sub_agent_exec_arguments(args: List[String], executable: String) raise
                         "unexpected value '" + String(next[byte=7:]) + "' for '--help' found; no more were expected",
                         help_usage,
                     )
-                elif next == "--" or next == "--config" or next == "--task-file" or next == "--help":
+                elif next == "--" or next == "--config" or next == "--task-file" or next == "--help" or next.startswith("--config=") or next.startswith("--task-file="):
                     value_missing = True
                 elif next.startswith("-h") and not next.startswith("--"):
                     value_missing = True
@@ -131,6 +135,8 @@ def parse_sub_agent_exec_arguments(args: List[String], executable: String) raise
                 raise session_cli_error("a value is required for '" + option + "' but none was supplied")
             if consume_next:
                 index += 1
+            if argument.startswith(name + "="):
+                usage_group = True
             if name == "--config":
                 if config_seen:
                     raise session_cli_error("the argument '" + option + "' cannot be used multiple times", usage)

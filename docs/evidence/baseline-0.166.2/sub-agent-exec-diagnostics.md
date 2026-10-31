@@ -17,11 +17,18 @@ unknown options (including the `--config` suggestion), positionals, `--`, empty
 option values, and left-to-right short-help clusters. Additional cases confirm
 that explicit empty values on repeated `--config` and `--task-file` options
 report duplicates, and malformed `--help=value` following a pending path value
-retains the release's error precedence and usage. Malformed arguments produce
-the release's exit-2 diagnostics without creating state in either isolated
-home. Syntactically valid arguments still stop at Modex's existing execution
-guard; delegated sub-agent execution remains unimplemented.
+retains the release's error precedence and usage. Six more cases compare
+pending split values followed by attached `--config=value` or
+`--task-file=value` options, plus malformed help after an accepted attached
+task-file value and an attached-config usage control. These preserve the
+release's missing-value diagnostic and grouped help usage; accepted split
+values keep their existing usage form.
+Malformed arguments produce the release's exit-2 diagnostics without creating
+state in either isolated home. Syntactically valid arguments still stop at
+Modex's existing execution guard; delegated sub-agent execution remains
+unimplemented.
 
 Verification on Linux x86-64: the Mojo 1.2.0 (2016d0cd) production build
 and the focused differential and help regression tests passed with the
-checksum-verified oracle and isolated synthetic homes.
+checksum-verified oracle and isolated synthetic homes. The active fast and full
+CI suites already include `tests/test_sub_agent_exec_diagnostics_01662.py`.

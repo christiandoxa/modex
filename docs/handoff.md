@@ -137,10 +137,13 @@ execution was added. See
 
 The connected hidden `__sub-agent-exec` parser now matches selected 0.166.2
 precedence for explicit empty values on repeated `--config` and `--task-file`
-options, and for malformed `--help=value` after a pending path value. Nine
-additional isolated real-process cases cover those outcomes and preserve the
-existing no-state behavior. Valid helper syntax still reaches the execution
-guard; delegated sub-agent execution remains unimplemented. See
+options, malformed `--help=value` after a pending path value, and attached
+recognized switches after a pending split value. Six added isolated
+real-process cases confirm that the latter report the pending value error,
+while malformed help after an accepted attached task-file option retains the
+grouped usage. The tests preserve the existing no-state behavior. Valid helper
+syntax still reaches the execution guard; delegated sub-agent execution remains
+unimplemented. See
 `docs/evidence/baseline-0.166.2/sub-agent-exec-diagnostics.md`.
 
 Pinned 0.166.2 differential coverage for `session list` and `session current`

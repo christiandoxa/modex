@@ -48,6 +48,18 @@ class SubAgentExecDiagnostics01662Tests(unittest.TestCase):
             (("--config", "one", "--config", "--help=bad"), "prodex", "modex", (b"error: unexpected value 'bad' for '--help' found; no more were expected",)),
             (("--task-file", "one", "--task-file", "--help=bad"), "prodex", "modex", (b"error: unexpected value 'bad' for '--help' found; no more were expected",)),
             (("--config", "one", "--task-file", "--help=bad"), "prodex", "modex", (b"error: unexpected value 'bad' for '--help' found; no more were expected",)),
+            (("--config=synthetic-config", "--help=bad"), "prodex", "modex", (
+                b"error: unexpected value 'bad' for '--help' found; no more were expected",
+                b"Usage: prodex __sub-agent-exec --help <--config <PATH>|--task-file <PATH>>",
+            )),
+            (("--config", "synthetic-config", "--config", "--config=other"), "prodex", "modex", (b"error: a value is required for '--config <PATH>' but none was supplied",)),
+            (("--config", "synthetic-config", "--config", "--task-file=other"), "prodex", "modex", (b"error: a value is required for '--config <PATH>' but none was supplied",)),
+            (("--config", "synthetic-config", "--task-file", "--config=other"), "prodex", "modex", (b"error: a value is required for '--task-file <PATH>' but none was supplied",)),
+            (("--config", "synthetic-config", "--task-file", "--task-file=other"), "prodex", "modex", (b"error: a value is required for '--task-file <PATH>' but none was supplied",)),
+            (("--config", "synthetic-config", "--task-file=other", "--help=bad"), "prodex", "modex", (
+                b"error: unexpected value 'bad' for '--help' found; no more were expected",
+                b"Usage: prodex __sub-agent-exec --help <--config <PATH>|--task-file <PATH>>",
+            )),
             (("extra",), "prodex", "modex", (b"error: unexpected argument 'extra' found",)),
             (("--", "extra"), "prodex", "modex", (b"error: unexpected argument 'extra' found",)),
             (("--help=bad",), "prodex", "modex", (b"error: unexpected value 'bad' for '--help' found; no more were expected",)),

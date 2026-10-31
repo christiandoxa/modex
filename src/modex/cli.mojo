@@ -1,6 +1,6 @@
 from std.collections import List, Optional
 
-from .log_operational import valid_scheme
+from .log_operational import decode_url_host, host_ends_in_number, url_numeric_host_compatibility, valid_ipv4_host, valid_scheme, valid_url_authority, valid_url_host
 from .sessions import SessionOptions
 from .text import trim_text, unsigned_value
 
@@ -402,7 +402,7 @@ def ping_openai_model_invalid(args: List[String]) -> Bool:
     return False
 
 
-# shortcut: only classifies URL schemes, use a standard parser when Mojo's standard library provides one.
+# shortcut: matches scheme, authority and policy checks only; use a standard URL parser when Mojo's stdlib provides one.
 def ping_openai_base_url_error(args: List[String]) -> String:
     var index = 3
     while index < len(args):
@@ -433,8 +433,89 @@ def ping_openai_base_url_error(args: List[String]) -> String:
                         return message
                 return message + ": relative URL without a base"
             var scheme = String(normalized[byte=:colon]).lower()
-            return message if scheme != "http" and scheme != "https" else ""
+            if scheme != "http" and scheme != "https":
+                return message
+
+            var rest = String(normalized[byte=colon + 1:]).replace("\\", "/")
+            var authority_start = 0
+            while authority_start < rest.byte_length() and rest.as_bytes()[authority_start] == 47:
+                authority_start += 1
+            var authority_end = rest.byte_length()
+            for delimiter in ["/", "?", "#"]:
+                var found_delimiter = rest.find(delimiter, authority_start)
+                if found_delimiter >= 0 and found_delimiter < authority_end:
+                    authority_end = found_delimiter
+            var authority = String(rest[byte=authority_start:authority_end])
+            var at = -1
+            for position in range(authority.byte_length()):
+                if authority.as_bytes()[position] == 64:
+                    at = position
+            var userinfo = String(authority[byte=:at]) if at >= 0 else String()
+            var host_port = String(authority[byte=at + 1:]) if at >= 0 else authority
+
+            if ping_url_host_empty(host_port):
+                return message + ": empty host"
+            if ping_url_port_invalid(host_port):
+                return message + ": invalid port number"
+            var host_error = ping_url_host_error(host_port)
+            if host_error:
+                return message + ": " + host_error
+            if not valid_url_authority(host_port):
+                return message
+            if (at >= 0 and userinfo and userinfo != ":") or normalized.find("?") >= 0 or normalized.find("#") >= 0:
+                return message
+            return ""
         index += 1
+    return ""
+
+
+def ping_url_host_empty(host_port: String) -> Bool:
+    if not host_port:
+        return True
+    if host_port.startswith("["):
+        return False
+    var separator = host_port.find(":")
+    return not String(host_port[byte=:separator]) if separator >= 0 else False
+
+
+def ping_url_port_invalid(host_port: String) -> Bool:
+    var start = -1
+    if host_port.startswith("["):
+        var close = host_port.find("]")
+        if close >= 0 and close + 1 < host_port.byte_length() and host_port.as_bytes()[close + 1] == 58:
+            start = close + 2
+    else:
+        var separator = host_port.find(":")
+        if separator >= 0:
+            start = separator + 1
+    if start < 0 or start >= host_port.byte_length():
+        return False
+    var port = 0
+    for index in range(start, host_port.byte_length()):
+        var byte = Int(host_port.as_bytes()[index])
+        if byte < 48 or byte > 57:
+            return True
+        port = port * 10 + byte - 48
+        if port > 65535:
+            return True
+    return False
+
+
+def ping_url_host_error(host_port: String) -> String:
+    if host_port.startswith("["):
+        return ""
+    var separator = host_port.find(":")
+    var host = String(host_port[byte=:separator]) if separator >= 0 else host_port
+    if host.find("%") >= 0:
+        var decoded = decode_url_host(host)
+        if not decoded:
+            return "invalid international domain name"
+        host = decoded.value()
+    if not valid_url_host(host):
+        return "invalid international domain name"
+    host = url_numeric_host_compatibility(host)
+    if host_ends_in_number(host) and not valid_ipv4_host(host):
+        return "invalid IPv4 address"
     return ""
 
 

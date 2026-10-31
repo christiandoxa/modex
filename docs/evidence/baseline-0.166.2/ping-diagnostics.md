@@ -36,24 +36,28 @@ made. `tests/test_ping_diagnostics_01662.py` covers both boundaries against the
 pinned oracle.
 
 An isolated synthetic differential exposed a precedence mismatch for an
-unsupported `--base-url` scheme. Modex now checks the base URL after option
-syntax and before model validation. Split and attached FTP URLs match Prodex
-0.166.2. Empty, missing, and malformed schemes also match, including Prodex's
-`: relative URL without a base` detail. The checker trims surrounding C0/space
-and removes TAB before scheme classification. Differential controls cover
-surrounding CR/LF, embedded CR/LF in the HTTPS scheme, a removable TAB in the
-HTTPS scheme, and special-scheme normalization of `http:///v1`; these match the
-oracle and leave synthetic homes untouched. The operation remains guarded and
-no provider request is made.
+unsupported `--base-url` scheme. Modex now checks URL scheme and authority
+policy after option syntax and before model validation. Split and attached FTP
+URLs match Prodex 0.166.2. Empty, missing, and malformed schemes also match,
+including Prodex's `: relative URL without a base` detail. Empty hosts return
+`: empty host`; malformed, negative, and out-of-range ports return
+`: invalid port number`. Nonempty credentials, query, and fragment URLs return
+Prodex's generic base-URL error. Empty userinfo markers and empty ports remain
+accepted. Surrounding C0/space and CR/LF, embedded CR/LF scheme controls, TAB
+removal, backslash and slash normalization, and special-scheme controls match
+the oracle. Valid ASCII, IPv4, IPv6, and `bücher.example` controls reach model
+validation. `test_base_url_scheme_precedence_matches_release_without_mutation`
+and `test_base_url_host_port_and_policy_precedence_matches_release` cover these
+cases in isolated homes; the operation remains guarded and makes no provider
+request.
 
-This is not full URL validation. With an invalid model, Prodex reports
-`: empty host` for `https://` and `https://?x`, and `: invalid port number` for
-`https://example.test:abc/v1`; Modex reaches model validation. Prodex also
-rejects credential, query, and fragment URLs before model validation, while
-Modex reaches model validation. The differential test records these mismatches
-in `test_unimplemented_url_validation_mismatches_remain_visible`. Mojo 1.2.0's
-standard library has no URL or UTS #46 IDNA parser, so no full URL, host,
-credential, query, fragment, or IDNA parity is claimed.
+The validator reuses Modex's authority checks but does not implement full
+WHATWG URL or UTS #46 processing. Known remaining IDNA mismatches are recorded
+in `test_unimplemented_uts46_host_validation_remains_visible`: Prodex rejects
+LRM, bidi, private-use, noncharacter, tag, C1, and joiner host probes before
+model validation, while Modex reaches the model error. This does not establish
+full host or IDNA parity. The ping operation remains guarded and makes no
+provider request.
 
 Probe constraints for any future implementation: Reqwest accepts empty
 userinfo markers (`https://@example.test/` and `https://:@example.test/`) but
@@ -61,8 +65,9 @@ rejects nonempty credentials, including `https://@user@example.test/`.
 Invalid IPv4 and IDNA hosts are diagnosed before credential-policy errors.
 IDNA probes rejected U+200E LRM, U+202A bidi embedding, U+E000 private-use,
 U+FDD0 noncharacter, U+E0001 tag, U+0080 C1 control, and U+200C joiner scalars
-in host labels. Empty-userinfo, invalid host, and IDNA probes remain outside
-the differential test. Prodex trims surrounding C0/space and removes TAB from
-URLs; the tested preprocessing controls match, while full URL parity remains
-unverified. The ping operation remains guarded; valid-looking arguments reach
-the existing guard without a provider request or state change.
+in host labels. Empty-userinfo markers and common host/port errors are covered
+by the focused differential tests; the UTS #46 scalar probes remain visible
+mismatches. Prodex trims surrounding C0/space and removes TAB from URLs; the
+tested preprocessing controls match, while full URL parity remains unverified.
+The ping operation remains guarded; valid-looking arguments reach the existing
+guard without a provider request or state change.

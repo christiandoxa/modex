@@ -186,6 +186,13 @@ class PingDiagnostics01662Tests(unittest.TestCase):
             ("URL CR scheme control", ("--base-url", "ht\rps://example.test/v1"), "", base_error),
             ("normalized special URL control", ("--base-url", "http:///v1"), "", model_error),
             ("normalized HTTPS special URL control", ("--base-url", "https:///v1"), "", model_error),
+            ("HTTPS without slashes control", ("--base-url", "https:example.test/v1"), "", model_error),
+            ("HTTPS with one slash control", ("--base-url", "https:/example.test/v1"), "", model_error),
+            ("HTTPS with extra slashes control", ("--base-url", "https:////example.test/v1"), "", model_error),
+            ("backslash authority control", ("--base-url", "https:\\\\example.test\\v1"), "", model_error),
+            ("empty userinfo control", ("--base-url", "https://@example.test/v1"), "", model_error),
+            ("empty password userinfo control", ("--base-url", "https://:@example.test/v1"), "", model_error),
+            ("valid IDNA control", ("--base-url", "https://bücher.example/v1"), "", model_error),
         ):
             arguments = ["ping", "openai", *base_args, "--model", model]
             with self.subTest(label=label):
@@ -201,17 +208,31 @@ class PingDiagnostics01662Tests(unittest.TestCase):
                                  (1, b"", expected))
                 self.assertEqual((reference_changes, actual_changes), ([], []))
 
-    def test_unimplemented_url_validation_mismatches_remain_visible(self):
+    def test_base_url_host_port_and_policy_precedence_matches_release(self):
         base_error = (
             b"Error: ping upstream base URL must be an http(s) URL with host and no "
             b"credentials, query, or fragment\n"
         )
+        empty_host_error = base_error[:-1] + b": empty host\n"
+        invalid_port_error = base_error[:-1] + b": invalid port number\n"
+        invalid_ipv4_error = base_error[:-1] + b": invalid IPv4 address\n"
+        invalid_idna_error = base_error[:-1] + b": invalid international domain name\n"
         model_error = b"Error: --model must be nonempty and contain no control characters\n"
         cases = (
-            ("empty host", "https://", base_error[:-1] + b": empty host\n"),
-            ("query without host", "https://?x", base_error[:-1] + b": empty host\n"),
-            ("invalid port", "https://example.test:abc/v1", base_error[:-1] + b": invalid port number\n"),
+            ("empty host", "https://", empty_host_error),
+            ("query with empty host", "https://?x", empty_host_error),
+            ("empty host with port", "https://:443/v1", empty_host_error),
+            ("text port", "https://example.test:abc/v1", invalid_port_error),
+            ("negative port", "https://example.test:-1/v1", invalid_port_error),
+            ("overflow port", "https://example.test:65536/v1", invalid_port_error),
+            ("IPv6 text port", "https://[::1]:abc/v1", invalid_port_error),
+            ("invalid IPv4", "https://999.1.1.1/v1", invalid_ipv4_error),
+            ("space in hostname", "https://bad host/v1", invalid_idna_error),
+            ("empty port", "https://example.test:/v1", model_error),
+            ("maximum port", "https://example.test:65535/v1", model_error),
             ("credentials", "https://user:pass@example.test/v1", base_error),
+            ("empty username nonempty password", "https://:pass@example.test/v1", base_error),
+            ("encoded credentials", "https://%40@example.test/v1", base_error),
             ("query", "https://example.test/v1?q=x", base_error),
             ("fragment", "https://example.test/v1#x", base_error),
         )
@@ -226,6 +247,36 @@ class PingDiagnostics01662Tests(unittest.TestCase):
                 )
                 self.assertEqual((reference.returncode, reference.stdout, reference.stderr),
                                  (1, b"", expected_reference))
+                self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
+                                 (1, b"", expected_reference))
+                self.assertEqual((reference_changes, actual_changes), ([], []))
+
+    def test_unimplemented_uts46_host_validation_remains_visible(self):
+        base_error = (
+            b"Error: ping upstream base URL must be an http(s) URL with host and no "
+            b"credentials, query, or fragment: invalid international domain name\n"
+        )
+        model_error = b"Error: --model must be nonempty and contain no control characters\n"
+        cases = (
+            ("LRM", "https://a\u200eb.example/v1"),
+            ("bidi embedding", "https://a\u202ab.example/v1"),
+            ("private use", "https://a\ue000b.example/v1"),
+            ("noncharacter", "https://a\ufdd0b.example/v1"),
+            ("tag", "https://a\U000e0001b.example/v1"),
+            ("C1 control", "https://a\u0080b.example/v1"),
+            ("joiner", "https://a\u200cb.example/v1"),
+        )
+        for label, base_url in cases:
+            arguments = ["ping", "openai", "--base-url", base_url, "--model", ""]
+            with self.subTest(label=label):
+                reference, reference_changes = isolated_run(
+                    ORACLE, arguments, "prodex", "ping-idna-gap-oracle"
+                )
+                actual, actual_changes = isolated_run(
+                    MODEX, arguments, "modex", "ping-idna-gap-modex"
+                )
+                self.assertEqual((reference.returncode, reference.stdout, reference.stderr),
+                                 (1, b"", base_error))
                 self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
                                  (1, b"", model_error))
                 self.assertEqual((reference_changes, actual_changes), ([], []))

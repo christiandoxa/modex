@@ -211,17 +211,17 @@ synthetic homes. A follow-up differential added truncated `--help` spellings
 at both the group and `openai` level; Modex now returns the release's suggestion
 and `--help` usage while preserving accepted options and error precedence.
 First invalid `ping openai` arguments, missing option values, duplicate
-options, and model-value diagnostics also match. An isolated differential
-found that Prodex validates an FTP `--base-url` before an empty model; Modex
-now matches that precedence for split and attached options. Empty, missing,
-and malformed schemes match the oracle's `relative URL without a base` detail.
-Surrounding C0/space and CR/LF, embedded CR/LF scheme controls, removable TAB,
-and `http:///v1` normalization controls also match. Known gaps remain for
-scheme-valid URLs with empty hosts, invalid ports, credentials, queries, or
-fragments: Prodex reports the base-URL error while Modex reaches model
-validation. Full URL and IDNA parity remain unverified. The operation remains
-guarded; all probes use synthetic homes and make no provider request. Exact
-cases are recorded in `docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
+options, and model-value diagnostics also match. Modex now matches Prodex's
+base-URL precedence for unsupported and malformed schemes, empty hosts,
+invalid ports, nonempty credentials, queries, and fragments. Empty ports and
+empty userinfo markers remain accepted. Differential controls cover surrounding
+C0/space and CR/LF, embedded CR/LF scheme controls, removable TAB, slash and
+backslash normalization, common IPv4/IPv6 authorities, and a valid IDNA domain.
+Full UTS #46 validation remains open: selected LRM, bidi, private-use,
+noncharacter, tag, C1, and joiner host probes still reach model validation in
+Modex while Prodex rejects them. The operation remains guarded; all probes use
+synthetic homes and make no provider request. Exact cases are recorded in
+`docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
 
 `doctor --install` now has active 0.166.2 process coverage for the empty-tool
 inventory, no-install Playwright probing, managed-root path safety, and

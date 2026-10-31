@@ -1258,10 +1258,12 @@
       "implementation": "src/main.mojo; src/modex/doctor_install.mojo; src/modex/inspection_cli.mojo",
       "tests": [
         "tests/test_doctor_install_01660.py",
+        "tests/test_doctor_install_01662.py",
         "tests/test_inspection_cli_01660.py"
       ],
       "evidence": [
         "docs/evidence/baseline-0.166.0/doctor-install.md",
+        "docs/evidence/baseline-0.166.2/doctor-install.md",
         "docs/evidence/baseline-0.439.2/reference-verification.json"
       ],
       "status": "IN_PROGRESS",
@@ -1275,7 +1277,8 @@
       },
       "blockers": [
         "Non-host platforms remain unverified or unsupported by the pinned official compiler; see docs/capabilities.json.",
-        "Only the exact install-only invocation and selected help/argument cases are implemented. Other diagnostics, quota/runtime checks, redacted bundles, policy suggestions, and repairs remain unimplemented. Interactive rendering, managed Caveman integrity validation, and process-tree timeout cleanup remain incomplete; see docs/evidence/baseline-0.166.0/doctor-install.md."
+        "Only the exact install-only invocation and selected help/argument cases are implemented. Other diagnostics, quota/runtime checks, redacted bundles, policy suggestions, and repairs remain unimplemented. Interactive rendering, managed Caveman integrity validation, and process-tree timeout cleanup remain incomplete; see docs/evidence/baseline-0.166.0/doctor-install.md.",
+        "On Codebase Memory doctor --install, active daemon output over the 64 KiB capture limit is accepted by Prodex after truncation but reported invalid by Modex; an empty managed-root RTK status also differs. These Linux x86-64 cases remain recorded in docs/evidence/baseline-0.166.2/doctor-install.md."
       ]
     },
     {

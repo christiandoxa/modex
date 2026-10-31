@@ -11,6 +11,7 @@ from .sha256 import hash_file
 from .sessions import escape_terminal_controls
 from .super_launch import (
     _dry_run_probe_environment,
+    _dry_run_codebase_version_supported,
     _executable_path,
     _is_legacy_codex,
     _is_prodex_wrapper,
@@ -170,6 +171,60 @@ def _doctor_probe_binary(binary: String, command: String, args: List[String], su
     return "ok (" + line + ")"
 
 
+def _doctor_strict_first_line(output: CapturedProcessOutput) raises -> String:
+    var stdout = String(from_utf8=Span(output.stdout))
+    var stderr = String(from_utf8=Span(output.stderr))
+    for line in stdout.split("\n"):
+        var trimmed = trim_text(line)
+        if trimmed:
+            return trimmed
+    for line in stderr.split("\n"):
+        var trimmed = trim_text(line)
+        if trimmed:
+            return trimmed
+    return "available"
+
+
+def _doctor_codebase_memory_status(binary: String, version_args: List[String]) -> String:
+    try:
+        var version = capture_with_env(
+            binary,
+            version_args,
+            _dry_run_probe_environment(),
+            "codebase-memory-mcp health check",
+            5000,
+            65536,
+            argv0=binary,
+        )
+        if not version.status.exit_code or version.status.exit_code.value() != 0:
+            return "invalid"
+        var version_line = _doctor_strict_first_line(version)
+        if not _dry_run_codebase_version_supported(version_line):
+            return "invalid"
+
+        var daemon = capture_with_env(
+            binary,
+            [String("daemon"), "status"],
+            _dry_run_probe_environment(),
+            "codebase-memory-mcp health check",
+            5000,
+            65536,
+            argv0=binary,
+        )
+        var daemon_line = _doctor_strict_first_line(daemon)
+        var daemon_success = False
+        if daemon.status.exit_code and daemon.status.exit_code.value() == 0:
+            daemon_success = True
+        if not daemon_line.startswith("daemon: not running") and not (
+            daemon_success and daemon_line.startswith("daemon: active")
+        ):
+            return "invalid"
+        var display_version = escape_terminal_controls(redact_log_text(version_line))
+        return _doctor_installed_status(binary, display_version)
+    except:
+        return "invalid"
+
+
 def _doctor_probe(command: String, args: List[String], success: String = "", include_codex_home: Bool = False) -> String:
     return _doctor_probe_binary(_doctor_resolve(command), command, args, success, include_codex_home)
 
@@ -202,12 +257,16 @@ def _doctor_optional_command_status(command: String, args: List[String]) -> Stri
                 return "invalid"
             if command == "rtk":
                 return _doctor_probe_binary(binary, command, args, reported_path=binary)
+            if command == "codebase-memory-mcp":
+                return _doctor_codebase_memory_status(binary, args)
             return _doctor_probe_binary(binary, command, args)
     var binary = _doctor_resolve(command)
     if not binary:
         return "missing"
     if command == "rtk":
         return _doctor_probe_binary(binary, command, args, reported_path=binary)
+    if command == "codebase-memory-mcp":
+        return _doctor_codebase_memory_status(binary, args)
     return _doctor_probe_binary(binary, command, args)
 
 

@@ -91,11 +91,17 @@ installations; a working-directory decoy remains unexecuted. Modex escapes
 terminal controls and redacts synthetic credential-like values in version and
 path output. An empty `PRODEX_OPTIMIZERS_HOME` still reports `invalid` in
 Prodex and `missing` in Modex, while neither executes the working-directory
-fixture. Codebase Memory version-only probes remain a documented mismatch:
-Modex says `ok` without the daemon coordination check that makes the oracle say
-`invalid`, a known false-green gap. Old Playwright MCP versions now report
-`invalid` and unrecognized versions report `missing`, matching 0.166.2. This
-does not establish full doctor parity; see
+fixture. The previous Codebase Memory version-only false-green is fixed:
+Codebase Memory now requires a supported version and the pinned `daemon status`
+contract before it reports installed identity. Active and initially stopped
+daemon states match across managed and PATH fixtures. A
+reproducible bounded-output gap remains: if daemon output exceeds 64 KiB after
+an active first line, Prodex truncates it and accepts the prefix, while Modex's
+capture rejects it and reports `invalid`. For an empty
+`PRODEX_OPTIMIZERS_HOME`, Prodex still reports `rtk: invalid` while Modex reports
+`rtk: missing`; neither executes the working-directory fixture. Old Playwright
+MCP versions report `invalid` and unrecognized versions report `missing`,
+matching 0.166.2. These cases do not establish full doctor parity; see
 `docs/evidence/baseline-0.166.2/doctor-install.md`.
 
 The 0.166.2 `session list --profile main` comparison also confirms that the

@@ -29,17 +29,30 @@ use the existing 512 MiB file-size limit; larger binaries are reported invalid.
 RTK candidates with an unrecognized version line, an unsupported old version,
 invalid UTF-8, no output, or a nonzero probe exit remain `invalid`, matching the
 release. A recognized but too-old Playwright MCP version reports `invalid`,
-while an unrecognized version reports `missing`, matching the release. A
-separate Codebase mismatch remains open: a synthetic managed
-`codebase-memory-mcp` executable that prints `codebase-memory-mcp 0.12.1` is
-reported as `ok` by Modex, while Prodex reports `invalid` because the release
-also checks daemon coordination. Modex does not claim that coordination is
-healthy; the `ok` result is a known false-green gap.
+while an unrecognized version reports `missing`, matching the release.
 
-One status difference remains visible: for `PRODEX_OPTIMIZERS_HOME=""`,
+Codebase Memory now follows Prodex's health sequence: a supported version must
+pass before the `daemon status` probe runs, and both probes have 5-second and
+64 KiB-per-stream limits. A successful `daemon: active` result and a
+`daemon: not running` result (including a nonzero exit) report the installed
+version, path, and digest. Old, failed, empty, or invalid-UTF-8 version probes
+and malformed, failed, or invalid-UTF-8 daemon probes report `invalid`;
+unsupported versions never invoke the daemon. Synthetic process comparisons
+cover both managed and PATH installations, exact version-floor cases, stdout
+and stderr, synthetic environment isolation (including `XDG_CONFIG_HOME`), and
+redaction of version and daemon output. A managed symlink escaping its root and
+a working-directory decoy are not executed.
+
+One output-size difference remains: when `daemon status` writes over 64 KiB
+after an active first line, Prodex truncates the captured output and accepts
+that line, while Modex's shared process capture rejects output over its limit
+and reports `invalid`. The regression records this conservative mismatch.
+
+Another status difference remains visible: for `PRODEX_OPTIMIZERS_HOME=""`,
 Prodex reports `rtk: invalid` while Modex reports `rtk: missing`. Both avoid
 executing the working-directory fixture. The regression is asserted explicitly
-and does not count as exact parity.
+and does not count as exact parity. Neither remaining difference qualifies as
+full `doctor --install` parity.
 
 `tests/test_doctor_install_01662.py` is included in the active Fast and Full
 test lanes. The historical 0.166.1 `doctor --install` suite remains separately

@@ -142,8 +142,22 @@ def main() raises:
     except:
         empty_beta_port_rejected = True
     assert_true(empty_beta_port_rejected)
+    for beta_url in [
+        "http://8.8.8.8:1234\\beta",
+        "http://127.0.0.1:1234\\@attacker/beta",
+        "http://127%5c1:1234/beta",
+        "http://127.0.0.1:1234\\beta?token=synthetic",
+    ]:
+        var rejected_beta_url = False
+        try:
+            _ = deepseek_runtime_route(None, Optional[String]("true"), Optional[String](beta_url))
+        except:
+            rejected_beta_url = True
+        assert_true(rejected_beta_url)
     for url in ["http://127.0.0.1/v1", "http://127.1:/v1", "http://127.1:80/v1"]:
         assert_equal(local_rewrite_upstream(url), (String("127.0.0.1:80"), String("/v1/chat/completions")))
+    assert_equal(local_rewrite_upstream("http://127.0.0.1:1234\\v1"), (String("127.0.0.1:1234"), String("/v1/chat/completions")))
+    assert_equal(local_rewrite_upstream("http://127.0.0.1:1234\\v1/../other")[1], "/other/chat/completions")
     assert_equal(local_rewrite_upstream("http://127%2e1:1234/v1")[0], "127.0.0.1:1234")
     for url in ["http://[::1]/v1", "http://[::1]:/v1", "http://[::1]:80/v1", "http://[::01]/v1", "http://[0:0::1]/v1", "http://[0:0:0:0:0:0:0:1]/v1", "http://[::0.0.0.1]/v1"]:
         assert_equal(local_rewrite_upstream(url), (String("[::1]:80"), String("/v1/chat/completions")))
@@ -160,6 +174,7 @@ def main() raises:
             rejected_unicode_host = True
         assert_true(rejected_unicode_host)
     assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/v1"), (String("127.0.0.1:1234"), String("/anthropic/v1/messages")))
+    assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234\\v1"), (String("127.0.0.1:1234"), String("/v1/anthropic/v1/messages")))
     assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/proxy/v1" )[1], "/proxy/anthropic/v1/messages")
     assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/beta")[1], "/anthropic/v1/messages")
     assert_equal(local_rewrite_anthropic_messages_upstream("http://127.0.0.1:1234/anthropic")[1], "/anthropic/v1/messages")
@@ -198,7 +213,14 @@ def main() raises:
     ]:
         assert_equal(local_rewrite_upstream("http://127.0.0.1:1234" + path)[1], target)
     assert_equal(local_rewrite_upstream("http://[::1]:1234/../../other"), (String("[::1]:1234"), String("/other/chat/completions")))
-    for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://192.0.2.1/v1", "http://localhost:1", "http://localhost/v1", "http://[::]/v1", "http://[::2]/v1", "http://[1::]/v1", "http://[::ffff:127.0.0.1]/v1", "http://[::1%25lo]/v1", "http://[::1]extra/v1", "http://127.0.0.1:0", "http://user@127.0.0.1/v1", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://user:secret@127.0.0.1:1/v1/../other", "http://user%3Asecret%40127.0.0.1:1/v1/../other", "http://128%2e0%2e0%2e1:1", "http://127.0.0.1%3a80:1", "http://127%2f1:1", "http://127%5c1:1", "http://127%401:1", "http://127%252e1:1", "http://127%001:1", "http://127%0d1:1", "http://127%7f1:1", "http://127%ff1:1", "http://127%xx1:1", "http://127.0.0.1:1/v1/../other?secret", "http://127.0.0.1:1/v1/../other#fragment", "http://127.0.0.1:1\\v1/../other", "http://127.0.0.1 :1/v1", "http://127.0.0.1: 1/v1", "http://127.0.0.1:1/v1/line\nbreak", "http://127.0.0.1:1/v1/\x7f"]:
+    for url in ["http://8.8.8.8:1\\v1", "http://127.0.0.1:1\\@attacker/v1", "http://127.0.0.1:1\\v1?secret", "http://127.0.0.1:1\\v1#fragment"]:
+        var rejected_backslash_authority = False
+        try:
+            _ = local_rewrite_upstream(url)
+        except:
+            rejected_backslash_authority = True
+        assert_true(rejected_backslash_authority)
+    for url in ["https://127.0.0.1:1", "http://192.0.2.1:1", "http://192.0.2.1/v1", "http://localhost:1", "http://localhost/v1", "http://[::]/v1", "http://[::2]/v1", "http://[1::]/v1", "http://[::ffff:127.0.0.1]/v1", "http://[::1%25lo]/v1", "http://[::1]extra/v1", "http://127.0.0.1:0", "http://user@127.0.0.1/v1", "http://user@127.0.0.1:1", "http://127.0.0.1:1?secret", "http://user:secret@127.0.0.1:1/v1/../other", "http://user%3Asecret%40127.0.0.1:1/v1/../other", "http://128%2e0%2e0%2e1:1", "http://127.0.0.1%3a80:1", "http://127%2f1:1", "http://127%5c1:1", "http://127%401:1", "http://127%252e1:1", "http://127%001:1", "http://127%0d1:1", "http://127%7f1:1", "http://127%ff1:1", "http://127%xx1:1", "http://127.0.0.1:1/v1/../other?secret", "http://127.0.0.1:1/v1/../other#fragment", "http://127.0.0.1 :1/v1", "http://127.0.0.1: 1/v1", "http://127.0.0.1:1/v1/line\nbreak", "http://127.0.0.1:1/v1/\x7f"]:
         var rejected = False
         try:
             _ = local_rewrite_upstream(url)

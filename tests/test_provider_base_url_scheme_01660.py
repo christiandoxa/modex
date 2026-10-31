@@ -35,6 +35,109 @@ class ProviderBaseUrlScheme01660Tests(unittest.TestCase):
 
         self.assertEqual(observations[0], observations[1])
 
+    def test_backslash_path_separator_matches_active_release(self):
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary,
+                    [{"model": "deepseek-chat", "input": "synthetic backslash path"}],
+                    [buffered_reply()],
+                    latest_version="0.166.0",
+                    base_path="\\v1",
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
+                self.assertEqual([request["path"] for request in upstream], ["/v1/chat/completions"])
+                self.assertEqual(upstream[0]["headers"]["authorization"],
+                                 "Bearer synthetic-provider-key")
+
+    def test_backslash_path_separator_preserves_anthropic_route(self):
+        reply = {"status": 200, "content_type": "application/json", "body": (
+            b'{"id":"msg_synthetic","type":"message","role":"assistant",'
+            b'"model":"deepseek-chat","content":[{"type":"text","text":"synthetic reply"}],'
+            b'"stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}'
+        )}
+        turn = {"model": "deepseek-chat", "input": "synthetic", "stream": False,
+                "tools": [{"type": "web_search_preview"}]}
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, [turn], [reply], base_path="\\v1", latest_version="0.166.0",
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
+                self.assertEqual([request["path"] for request in upstream], ["/v1/anthropic/v1/messages"])
+                self.assertEqual(upstream[0]["headers"]["x-api-key"], "synthetic-provider-key")
+
+    def test_strict_beta_backslash_path_matches_active_release(self):
+        shared_config = (
+            "[deepseek]\n"
+            "strict_tools = true\n"
+            'beta_base_url = "http://127.0.0.1:{upstream_port}\\\\beta"\n'
+        )
+        turn = {
+            "model": "deepseek-chat", "input": "synthetic strict beta path",
+            "tools": [{"type": "function", "name": "lookup", "parameters": {
+                "type": "object", "properties": {"query": {"type": "string"}},
+            }}],
+        }
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, [turn], [buffered_reply()], latest_version="0.166.0",
+                    shared_config=shared_config,
+                )
+                self.assertEqual([response["status"] for response in responses], [200])
+                self.assertEqual([request["path"] for request in upstream], ["/beta/chat/completions"])
+                self.assertEqual(upstream[0]["headers"]["authorization"],
+                                 "Bearer synthetic-provider-key")
+
+    def test_backslash_path_does_not_weaken_loopback_or_credential_guards(self):
+        for host in ("8.8.8.8", "127.0.0.1\\@attacker"):
+            with self.subTest(host=host):
+                try:
+                    observe_turns(
+                        MODEX,
+                        [{"model": "deepseek-chat", "input": "synthetic rejected host"}],
+                        [buffered_reply()],
+                        latest_version="0.166.0",
+                        base_host=host,
+                        base_path="\\v1",
+                    )
+                except AssertionError as error:
+                    status, _, stderr, _, upstream = error.args[0]
+                    self.assertNotEqual(status, 0)
+                    self.assertTrue(b"loopback" in stderr.lower()
+                                    or b"credential-free" in stderr.lower())
+                    self.assertEqual(upstream, [])
+                else:
+                    self.fail(f"Modex accepted unsafe authority {host!r}")
+
+    def test_strict_beta_backslash_keeps_loopback_and_credential_guards(self):
+        unsafe_beta_urls = (
+            'http://8.8.8.8:{upstream_port}\\\\beta',
+            'http://127.0.0.1:{upstream_port}\\\\@attacker/beta',
+        )
+        for beta_url in unsafe_beta_urls:
+            shared_config = (
+                "[deepseek]\nstrict_tools = true\n"
+                f'beta_base_url = "{beta_url}"\n'
+            )
+            with self.subTest(beta_url=beta_url):
+                try:
+                    observe_turns(
+                        MODEX,
+                        [{"model": "deepseek-chat", "input": "synthetic rejected beta URL"}],
+                        [buffered_reply()], latest_version="0.166.0",
+                        shared_config=shared_config,
+                    )
+                except AssertionError as error:
+                    status, _, stderr, _, upstream = error.args[0]
+                    self.assertNotEqual(status, 0)
+                    self.assertTrue(b"loopback" in stderr.lower()
+                                    or b"credential-free" in stderr.lower())
+                    self.assertEqual(upstream, [])
+                else:
+                    self.fail(f"Modex accepted unsafe beta URL {beta_url!r}")
+
     def test_spaces_in_loopback_upstream_paths_are_percent_encoded(self):
         cases = (
             ("/v1/hello world", "/v1/hello%20world/chat/completions"),

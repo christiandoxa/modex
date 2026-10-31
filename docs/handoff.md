@@ -1,5 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The local relay accepts the tested backslash path separator used by the
+0.166.0 HTTP URL parser while retaining numeric-loopback and credential checks.
+Chat, Messages, and strict-beta cases are documented in
+`docs/evidence/baseline-0.166.0/provider-backslash-path.md`.
+
 An isolated session-table comparison confirms that Modex escapes terminal
 controls in synthetic titles while 0.166.0 emits them raw. This safer output
 difference remains open; see `docs/evidence/baseline-0.166.0/session-output-matrix.md`.

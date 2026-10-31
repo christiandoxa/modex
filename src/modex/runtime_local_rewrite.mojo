@@ -52,6 +52,14 @@ def _ipv6_loopback_literal(host: String) -> Bool:
     return True
 
 
+def _url_path_start(value: String) -> Int:
+    var slash = value.find("/")
+    var backslash = value.find("\\")
+    if backslash >= 0 and (slash < 0 or backslash < slash):
+        return backslash
+    return slash
+
+
 def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
     if not url.lower().startswith("http://") or "@" in url or "?" in url or "#" in url:
         raise Error("this Modex gateway requires a credential-free numeric loopback HTTP upstream URL")
@@ -59,7 +67,7 @@ def local_rewrite_upstream(url: String) raises -> Tuple[String, String]:
         if byte < 32 or byte == 127:
             raise Error("invalid --base-url")
     var remaining = String(url[byte=7:])
-    var slash = remaining.find("/")
+    var slash = _url_path_start(remaining)
     var address = String(remaining[byte=:slash]) if slash >= 0 else remaining
     var path = String(remaining[byte=slash:]) if slash >= 0 else String()
     if address.startswith("["):
@@ -92,7 +100,7 @@ def local_rewrite_anthropic_messages_upstream(url: String) raises -> Tuple[Strin
     var route = local_rewrite_upstream(url)
     var address = route[0]
     var remaining = String(url[byte=7:])
-    var slash = remaining.find("/")
+    var slash = _url_path_start(remaining)
     var path = String(remaining[byte=slash:]) if slash >= 0 else String()
     while path.endswith("/"):
         var shorter = String(path[byte=:path.byte_length() - 1])

@@ -105,9 +105,6 @@ def observe_turns(
         root = Path(temporary)
         for name in ("home", "state", "shared", "work"):
             (root / name).mkdir(mode=0o700)
-        if shared_config is not None:
-            (root / "shared/config.toml").write_text(shared_config)
-            (root / "shared/config.toml").chmod(0o600)
         (root / "state/update-check.json").write_text(
             json.dumps({"source": "GitHub", "latest_version": latest_version,
                         "checked_at": 4102444800}, separators=(",", ":"))
@@ -142,6 +139,12 @@ def observe_turns(
         server_context = (serving(response_fixtures, base_port, upstream_ipv6)
                           if base_port or upstream_ipv6 else serving(response_fixtures))
         with server_context as server:
+            if shared_config is not None:
+                config_path = root / "shared/config.toml"
+                config_path.write_text(
+                    shared_config.replace("{upstream_port}", str(server.server_port))
+                )
+                config_path.chmod(0o600)
             for response in server.responses:
                 headers = response.get("response_headers")
                 if headers:

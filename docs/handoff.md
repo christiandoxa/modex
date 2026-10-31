@@ -237,9 +237,13 @@ Offline `logout` diagnostics now retain the 0.166.2 usage prefix after accepted
 profile/positional arguments and report their mutual-exclusion error. Split
 repeated profile options defer to later unknown flags and malformed help values;
 attached repeats retain duplicate-option precedence, and valid help still
-precedes the profile/name conflict. Isolated process cases match with no
-filesystem mutations. Valid logout calls remain guarded and no account
-operation was tested; see
+precedes the profile/name conflict. The parser also reports a following unknown
+option when `--profile` has no value, lets malformed `--help=value` outrank
+that missing value, preserves the different malformed-help usage for attached
+versus separated profile values, and reports the profile/name conflict when
+the name follows `--`. Added isolated process cases match with no filesystem
+mutations. Valid logout calls remain guarded and no account operation was
+tested; see
 `docs/evidence/baseline-0.166.2/logout-diagnostics.md`.
 
 Four buffered provider metadata cases, including preservation of a local tag,

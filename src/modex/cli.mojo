@@ -424,6 +424,7 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
         help_index = len(args)
 
     var profile_seen = False
+    var profile_attached_seen = False
     var profile_duplicate = False
     var profile_repeat_before_help = False
     var positional_seen = False
@@ -448,6 +449,15 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
                     profile_repeat_before_help = True
                     index += 1
                     continue
+                if has_help_value and index + 1 == help_index:
+                    index += 1
+                    continue
+                if index + 1 < help_index:
+                    var following = String(args[index + 1])
+                    var following_name = argument_name(following)
+                    if following != "--" and following_name != "--profile" and following_name != "-p":
+                        index += 1
+                        continue
                 raise session_cli_error("a value is required for '--profile <NAME>' but none was supplied")
             if profile_seen:
                 profile_duplicate = True
@@ -464,6 +474,7 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
                 raise session_cli_error("the argument '--profile <NAME>' cannot be used multiple times", usage)
             profile_after_positional = positional_seen
             profile_seen = True
+            profile_attached_seen = True
             prefix_usage = executable + " logout --profile <NAME>" + (" <NAME>" if positional_seen else " [NAME]")
             index += 1
             continue
@@ -478,16 +489,16 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
                 raise session_cli_error("the argument '--profile <NAME>' cannot be used multiple times", usage)
             raise session_cli_error("unexpected argument '" + argument + "' found", usage)
         positional_seen = True
+        if profile_seen:
+            positional_after_profile = True
         if not literal:
-            if profile_seen:
-                positional_after_profile = True
             if not profile_duplicate:
                 prefix_usage = executable + " logout " + ("--profile <NAME> " if profile_seen else "") + "<NAME>"
         index += 1
 
     if has_help_value:
         var help_usage = executable + " logout --help [NAME]"
-        if profile_duplicate or profile_repeat_before_help or positional_after_profile or profile_after_positional:
+        if profile_attached_seen or profile_duplicate or profile_repeat_before_help or positional_after_profile or profile_after_positional:
             help_usage = executable + " logout --help <NAME|--profile <NAME>>"
         raise session_cli_error(
             "unexpected value '" + help_value + "' for '--help' found; no more were expected",

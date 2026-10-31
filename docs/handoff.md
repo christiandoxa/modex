@@ -80,6 +80,13 @@ An isolated session-table comparison confirms that Modex escapes terminal
 controls in synthetic titles while 0.166.0 emits them raw. This safer output
 difference remains open; see `docs/evidence/baseline-0.166.0/session-output-matrix.md`.
 
+The connected `session list --query` path now has an active 0.166.0 aggregate
+regression for all 2,794 Unicode 17 `Case_Ignorable` scalars in contextual
+Greek-sigma casing. Both isolated processes select the same synthetic session;
+this adds a bounded query check and does not qualify managed state, all Unicode
+lowercase mappings, or full session parity. See
+`docs/evidence/baseline-0.166.0/session-query-case-ignorable.md`.
+
 Selected login help routes and parser diagnostics now match 0.166.0 in isolated
 process checks. Login execution remains guarded; see
 `docs/evidence/baseline-0.166.0/login-help.md`.

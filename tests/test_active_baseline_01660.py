@@ -352,6 +352,60 @@ class ActiveBaseline01660Tests(unittest.TestCase):
         self.assertIn("home/.prodex/update-check.lock", observations[0][3])
         self.assertEqual(observations[1][3], ["home/.prodex"])
 
+    def test_session_query_case_ignorable_sigma_matches_active_release(self):
+        data = Path(__file__).parent / "fixtures/unicode17/DerivedCoreProperties.txt"
+        self.assertEqual(
+            hashlib.sha256(data.read_bytes()).hexdigest(),
+            "24c7fed1195c482faaefd5c1e7eb821c5ee1fb6de07ecdbaa64b56a99da22c08",
+        )
+        codepoints = []
+        for line in data.read_text().splitlines():
+            content = line.split("#", 1)[0].strip()
+            if not content:
+                continue
+            bounds, property_name = (part.strip() for part in content.split(";", 1))
+            if property_name != "Case_Ignorable":
+                continue
+            endpoints = bounds.split("..")
+            codepoints.extend(range(int(endpoints[0], 16), int(endpoints[-1], 16) + 1))
+        self.assertEqual(len(codepoints), 2794)
+
+        title = "".join("AΣ" + chr(codepoint) + "B." for codepoint in codepoints)
+        query = "".join("aσ" + chr(codepoint) + "b." for codepoint in codepoints)
+        self.assertNotIn("\0", query)
+        observations = []
+        for binary, argv0 in ((ORACLE, "prodex"), (MODEX, "modex")):
+            with tempfile.TemporaryDirectory(prefix="modex-active-session-query-") as directory:
+                root = Path(directory)
+                (root / "home").mkdir(mode=0o700)
+                (root / "workspace").mkdir()
+                sessions = root / "home/.codex/sessions/2026/10/31"
+                sessions.mkdir(parents=True)
+                session = sessions / "rollout-synthetic.jsonl"
+                session.write_text(json.dumps({
+                    "type": "session_meta",
+                    "payload": {"id": "synthetic-session", "thread_name": title},
+                }, ensure_ascii=False) + "\n")
+                before = session.read_bytes()
+                result = subprocess.run(
+                    sandbox_command(
+                        binary,
+                        root,
+                        ["session", "list", "--query", query, "--id-only"],
+                        argv0=argv0,
+                    ),
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    timeout=10,
+                    check=False,
+                )
+                self.assertEqual((result.returncode, result.stdout, result.stderr),
+                                 (0, b"synthetic-session\n", b""))
+                self.assertEqual(session.read_bytes(), before)
+                observations.append((result.returncode, result.stdout, result.stderr))
+
+        self.assertEqual(observations[0], observations[1])
+
     def test_super_help_and_selected_parser_cases_match_active_release(self):
         cases = (
             ("help", ("super", "--help"), 0),

@@ -14,7 +14,7 @@ class DefaultPort01660Tests(unittest.TestCase):
     def setUpClass(cls):
         require_isolated_environment()
         if not MODEX.is_file() or not ORACLE.is_file():
-            raise AssertionError("Build Modex and set PRODEX_ORACLE")
+            raise AssertionError("Build Modex and set PRODEX_ORACLE_01660")
         if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("The Prodex oracle does not match 0.166.0")
 

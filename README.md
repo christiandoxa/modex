@@ -1,7 +1,7 @@
 # Modex
 
-Modex is a new Mojo implementation targeting officially released Prodex 0.166.0
-(`9f69e1835808f478f59f12a3ae3fa88027d896a4`). It is under development and does
+Modex is a new Mojo implementation targeting officially released Prodex 0.166.1
+(`4951b813ca308fb0ba7148dbc6d6aeb74b93cd32`). It is under development and does
 not yet provide feature parity. Version output, development session inspection
 and detached `log last` snapshots are connected to the production CLI.
 An explicit clean-home DeepSeek `super ... exec` slice now launches Codex
@@ -39,8 +39,8 @@ Tests require Python 3.14 or later, including its standard `compression.zstd`
 module. The test suite includes native Mojo unit checks and isolated differential
 checks against the official Linux release. Download the active oracle and its
 `SHA256SUMS` outside the repository; set `PRODEX_ORACLE` to its absolute path.
-The 0.165.1 and 0.439.x comparisons remain historical and use their own pinned
-binaries, including `PRODEX_ORACLE_01651`, `PRODEX_ORACLE_04392`, and
+The 0.166.0, 0.165.1 and 0.439.x comparisons remain historical and use their own pinned
+binaries, including `PRODEX_ORACLE_01660`, `PRODEX_ORACLE_01651`, `PRODEX_ORACLE_04392`, and
 `PRODEX_ORACLE_04395` overrides. The harness checks the pinned SHA-256 before using each
 oracle. `bubblewrap` is a test
 prerequisite for filesystem/network isolation, never a product dependency.

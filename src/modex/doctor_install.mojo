@@ -13,6 +13,8 @@ from .super_launch import (
     _is_legacy_codex,
     _is_prodex_wrapper,
     _managed_tool_present,
+    _node_major_supported,
+    _optional_tool_version_status,
     _path_candidates,
 )
 from .text import trim_text, unsigned_value, wrap_text
@@ -139,10 +141,79 @@ def _doctor_version_row(name: String, command: String) -> Tuple[String, String]:
     return (name, _doctor_probe(command, [String("--version")]))
 
 
-def _doctor_caveman_status() -> String:
-    if _managed_tool_present("caveman"):
-        # shortcut: report presence only; add manifest/version validation before claiming installed.
-        return "degraded (managed Caveman found; integrity validation is unavailable)"
+def _doctor_optional_command_status(command: String, args: List[String]) -> String:
+    if not _doctor_resolve(command):
+        return "missing"
+    return _doctor_probe(command, args)
+
+
+def _doctor_node_supports_playwright() -> Bool:
+    var node = _doctor_resolve("node")
+    if not node:
+        return False
+    var probe: CapturedProcessOutput
+    try:
+        probe = capture_with_env(
+            node, [String("--version")], _doctor_probe_environment(False),
+            "Node.js health check", 5000, 65536, argv0="node",
+        )
+    except:
+        return False
+    if not probe.status.exit_code or probe.status.exit_code.value() != 0:
+        return False
+    try:
+        _ = String(from_utf8=Span(probe.stdout))
+        _ = String(from_utf8=Span(probe.stderr))
+    except:
+        return False
+    var version = _doctor_first_line(probe.stdout)
+    if not version:
+        version = _doctor_first_line(probe.stderr)
+    return _node_major_supported(version)
+
+
+def _doctor_playwright_status() -> String:
+    if not _doctor_node_supports_playwright():
+        return "missing"
+    var npx = _doctor_resolve("npx")
+    if not npx:
+        return "missing"
+    # --no-install keeps this diagnostic from fetching a package.
+    var probe: CapturedProcessOutput
+    try:
+        probe = capture_with_env(
+            npx,
+            [String("--no-install"), "@playwright/mcp", "--version"],
+            _doctor_probe_environment(False),
+            "playwright-mcp health check",
+            5000,
+            65536,
+            argv0="npx",
+        )
+    except:
+        return "missing"
+    if not probe.status.exit_code or probe.status.exit_code.value() != 0:
+        return "missing"
+    try:
+        _ = String(from_utf8=Span(probe.stdout))
+        _ = String(from_utf8=Span(probe.stderr))
+    except:
+        return "missing"
+    var line = _doctor_first_line(probe.stdout)
+    if not line:
+        line = _doctor_first_line(probe.stderr)
+    if not line:
+        return "missing"
+    var version_status = _optional_tool_version_status(line, False)
+    if not version_status.startswith("resolved "):
+        return version_status if version_status else "missing (unrecognized Playwright MCP version)"
+    return "ok (" + line + ")"
+
+
+def _doctor_ponytail_status() -> String:
+    if _managed_tool_present("ponytail"):
+        # shortcut: report presence only; add plugin-tree validation before claiming installed.
+        return "degraded (managed Ponytail found; plugin-tree validation is unavailable)"
     return String("missing")
 
 
@@ -210,11 +281,12 @@ def run_doctor_install() raises:
     rows.append(_doctor_version_row("Kiro CLI", kiro))
 
     rows.append(_doctor_version_row("Antigravity CLI", _command_override("PRODEX_AGY_BIN", "agy")))
-    rows.append(_doctor_version_row("RTK", "rtk"))
     rows.append(_doctor_version_row("Node.js", "node"))
     rows.append(_doctor_version_row("npx", "npx"))
-    rows.append(("codebase-memory-mcp", _doctor_probe("codebase-memory-mcp", [String("--help")], "ok (available)")))
-    rows.append(("Caveman", _doctor_caveman_status()))
+    rows.append(("rtk", _doctor_optional_command_status("rtk", [String("--version")])))
+    rows.append(("codebase-memory-mcp", _doctor_optional_command_status("codebase-memory-mcp", [String("--version")])))
+    rows.append(("playwright-mcp", _doctor_playwright_status()))
+    rows.append(("ponytail", _doctor_ponytail_status()))
 
     var root = app_root()
     rows.append(("Prodex home", escape_terminal_controls(redact_log_text(root))))

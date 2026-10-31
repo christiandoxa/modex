@@ -1,10 +1,12 @@
 # Verified gaps
 
-The active target is official Prodex 0.166.0 at
-`9f69e1835808f478f59f12a3ae3fa88027d896a4`. Complete parity remains
+The active target is official Prodex 0.166.1 at
+`4951b813ca308fb0ba7148dbc6d6aeb74b93cd32`. Complete parity remains
 unfinished, the inventory is incomplete, and all six release qualifications
 remain BLOCKED. Current-target observations are tracked in
-`docs/handoff.md` and `docs/evidence/baseline-0.166.0/`.
+`docs/handoff.md` and `docs/evidence/baseline-0.166.1/`. The observations
+below retain their original release provenance and do not by themselves
+establish behavior in 0.166.1.
 
 For an absent app root, Modex now matches the Prodex 0.166.0 `profile list`
 empty panel and exit code in the tested writable-home case without creating
@@ -32,8 +34,8 @@ this safety difference is not parity. See
 `docs/evidence/baseline-0.166.0/session-json-invalid-utf8.md`.
 
 The remaining entries preserve their original release provenance. Most are
-observations against 0.165.1 or 0.439.x and do not establish 0.166.0 behavior
-unless the entry names that release explicitly.
+observations against 0.166.0, 0.165.1 or 0.439.x and do not establish
+0.166.1 behavior without a current-release comparison.
 
 For a streamed DeepSeek response whose ID appears only in the prefetched
 prefix, Prodex 0.165.1 and 0.439.2 can replay stored conversation history
@@ -114,7 +116,7 @@ have not been verified. See
 `docs/evidence/baseline-0.165.1/super-exec-reasoning-effort.md`.
 
 Codex 0.166.0 also has a hidden `--experimental-json` alias for its JSONL
-`--json` output option. The active release forwards that alias through Super;
+`--json` output option. The 0.166.0 release forwards that alias through Super;
 Modex keeps it guarded, as its current launcher injects
 `--dangerously-bypass-approvals-and-sandbox`. The manual comparison uses only a
 synthetic Codex client and direct Codex help/parser checks; actual JSONL output
@@ -123,8 +125,10 @@ is unverified. See
 
 DeepSeek Super dry-run supports the guarded exec path and selected missing-tool,
 Node-only, RTK, Codebase Memory, and selected Playwright environments. Managed
-Caveman or Ponytail installations still fail closed. Playwright readiness runs
-the locally resolved `npx --no-install` package probe; Node probe timeout and
+Ponytail installations still fail closed. In the 0.166.1 target Caveman is
+retired; the dry-run path ignores its existing managed files. Playwright
+readiness checks Node before the locally resolved `npx --no-install` package
+probe; Node probe timeout and
 spawn diagnostics omit release paths, and some path cases and descendant
 cleanup remain unqualified.
 Managed Codebase Memory symlink escapes are rejected before

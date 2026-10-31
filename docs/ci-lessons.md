@@ -1,9 +1,10 @@
 # CI lessons
 
-The active parity target is Prodex 0.166.0. The run reports below preserve
-their original checkpoint context; earlier 0.439.x references are historical
-regression inputs, not the active target. For current routing and requirements,
-see `docs/ci.md` and `docs/baseline.json`.
+The active parity target is Prodex 0.166.1 as of 2026-10-31. The run reports
+below predate that retarget and preserve their original checkpoint context;
+their 0.166.0 results and earlier 0.439.x references are historical regression
+inputs, not 0.166.1 evidence. For current routing and requirements, see
+`docs/ci.md` and `docs/baseline.json`.
 
 Fast run [40823584604](https://github.com/christiandoxa/modex/actions/runs/40823584604)
 on `aa377d6` passed the production build and native unit suite, then failed at

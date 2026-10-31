@@ -21,6 +21,9 @@ def main() raises:
         var executable = String(arguments[0])
         if npx_probe:
             config = home + "/.npx-version-fixture"
+            if exists(home + "/.npx-probe-marker-enabled"):
+                with open(home + "/.npx-probe-invoked", "w") as file:
+                    file.write("synthetic npx probe")
         if executable.find("/outside/codebase-memory-mcp") >= 0:
             with open(home + "/.codebase-probe-invoked", "w") as file:
                 file.write("managed symlink target was executed")

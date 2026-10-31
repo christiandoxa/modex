@@ -1,5 +1,7 @@
 # Inspection CLI unknown short-option usage
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 Verified against the checksum-pinned Prodex 0.166.0 Linux oracle
 (`349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d09735`). In
 `info --json -V --help` and `status --interval=60 -V --help`, Prodex reports

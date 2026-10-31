@@ -1,4 +1,4 @@
-"""Compare streamed DeepSeek function calls with Prodex 0.166.0."""
+"""Manually compare streamed DeepSeek calls with historical Prodex 0.166.0."""
 
 import hashlib
 import json
@@ -114,9 +114,9 @@ class DeepSeekToolStream01660Tests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError("Build Modex first")
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-            raise AssertionError("PRODEX_ORACLE must identify the verified 0.166.0 release")
+            raise AssertionError("PRODEX_ORACLE_01660 must identify the verified 0.166.0 release")
 
-    def test_fragmented_function_call_stream_matches_active_release(self):
+    def test_fragmented_function_call_stream_matches_historical_release(self):
         turn = {
             "model": "deepseek-chat",
             "input": "synthetic streamed tool",

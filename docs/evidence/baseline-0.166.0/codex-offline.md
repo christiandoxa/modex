@@ -1,5 +1,7 @@
 # Codex 0.166.0 isolated 401 comparison
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 ## Current comparison
 
 The same two focused cases passed in 21.029 seconds using the Modex production

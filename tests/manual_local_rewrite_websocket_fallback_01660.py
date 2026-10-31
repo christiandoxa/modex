@@ -1,4 +1,4 @@
-"""Manually compare WebSocket fallback connection reuse with active Prodex 0.166.0."""
+"""Manually compare WebSocket fallback with historical Prodex 0.166.0."""
 
 import hashlib
 import os

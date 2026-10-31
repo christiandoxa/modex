@@ -13,10 +13,10 @@ from session_oracle import sandbox_command
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEX = Path(os.environ.get("MODEX_BINARY", ROOT / "build/modex"))
+REFERENCE_CACHE = Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
 ORACLE = Path(os.environ.get(
-    "PRODEX_ORACLE",
-    Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
-    / "oracles/0.166.0/prodex-x86_64-unknown-linux-gnu",
+    "PRODEX_ORACLE_01660",
+    REFERENCE_CACHE / "oracles/0.166.0/prodex-x86_64-unknown-linux-gnu",
 ))
 ORACLE_SHA256 = "349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d09735"
 
@@ -80,9 +80,14 @@ def safer_modex_output(reference):
 PANEL_FIELDS = (
     b"Codex CLI:", b"Codex auth:", b"Claude Code:", b"Gemini CLI:",
     b"GitHub Copilot CLI:", b"Kiro CLI:", b"Antigravity CLI:", b"RTK:",
-    b"Node.js:", b"npx:", b"codebase-memory-mcp:", b"Caveman:",
-    b"Prodex home:", b"Shared CODEX_HOME:",
+    b"rtk:", b"Node.js:", b"npx:", b"codebase-memory-mcp:", b"Caveman:",
+    b"playwright-mcp:", b"ponytail:", b"Prodex home:", b"Shared CODEX_HOME:",
 )
+
+INVENTORY_01661_CHANGES = {
+    b"RTK:", b"rtk:", b"codebase-memory-mcp:", b"Caveman:",
+    b"playwright-mcp:", b"ponytail:",
+}
 
 
 def without_panel_fields(output, excluded):
@@ -102,8 +107,21 @@ def without_panel_fields(output, excluded):
     return b"\n".join(rows) + (b"\n" if output.endswith(b"\n") else b"")
 
 
+def without_01661_inventory_changes(output, excluded=()):
+    # 0.166.1 replaces this tool inventory; all other 0.166.0 rows stay compared.
+    return without_panel_fields(output, set(excluded) | INVENTORY_01661_CHANGES)
+
+
 def unwrapped_output(output):
     return b"".join(line.strip() for line in output.splitlines())
+
+
+def panel_value(output, label):
+    prefix = label.encode() + b":"
+    rows = [line for line in output.splitlines() if line.startswith(prefix)]
+    if len(rows) != 1:
+        raise AssertionError(f"expected one {label} panel row, found {len(rows)}")
+    return rows[0].split(b":", 1)[1].strip()
 
 
 def run_doctor(binary, root, environment, arguments=("--install",)):
@@ -134,7 +152,7 @@ class DoctorInstall01660Tests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError("Build Modex first")
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-            raise AssertionError("PRODEX_ORACLE must identify the verified 0.166.0 release")
+            raise AssertionError("PRODEX_ORACLE_01660 must identify the verified 0.166.0 release")
 
     def test_resolves_and_probes_only_synthetic_path_commands(self):
         with tempfile.TemporaryDirectory(prefix="modex-doctor-install-01660-") as raw:
@@ -186,11 +204,18 @@ class DoctorInstall01660Tests(unittest.TestCase):
             modex_probes = set(probe_log.read_text().splitlines())
 
             self.assertEqual((baseline.returncode, modex.returncode), (0, 0))
+            self.assertEqual(panel_value(baseline.stdout, "RTK"), b"ok (synthetic rtk 7.8.9)")
+            self.assertEqual(panel_value(baseline.stdout, "codebase-memory-mcp"), b"ok (available)")
+            self.assertEqual(panel_value(baseline.stdout, "Caveman"), b"missing")
+            self.assertEqual(panel_value(modex.stdout, "rtk"), b"ok (synthetic rtk 7.8.9)")
+            self.assertEqual(panel_value(modex.stdout, "codebase-memory-mcp"), b"ok (available)")
+            self.assertEqual(panel_value(modex.stdout, "playwright-mcp"), b"missing")
+            self.assertEqual(panel_value(modex.stdout, "ponytail"), b"missing")
             safer_output = safer_modex_output(baseline.stdout)
             excluded_path_rows = {b"Prodex home:", b"Shared CODEX_HOME:"}
             self.assertEqual(
-                without_panel_fields(safer_output, excluded_path_rows),
-                without_panel_fields(modex.stdout, excluded_path_rows),
+                without_01661_inventory_changes(safer_output, excluded_path_rows),
+                without_01661_inventory_changes(modex.stdout, excluded_path_rows),
             )
             self.assertEqual(modex.stderr, baseline.stderr)
             self.assertIn(b"warn (exit exit status: 7)", modex.stdout)
@@ -204,6 +229,14 @@ class DoctorInstall01660Tests(unittest.TestCase):
             self.assertIn(b"token=<redacted>", unwrapped_output(modex.stdout))
             self.assertNotIn(b"\x1b", modex.stdout)
             self.assertNotIn(b"\x07", modex.stdout)
+            self.assertIn(b"rtk:", modex.stdout)
+            self.assertIn(b"ok (synthetic rtk 7.8.9)", modex.stdout)
+            self.assertIn(b"codebase-memory-mcp:", modex.stdout)
+            self.assertIn(b"ok (available)", modex.stdout)
+            self.assertIn(b"playwright-mcp:", modex.stdout)
+            self.assertIn(b"ponytail:", modex.stdout)
+            self.assertNotIn(b"RTK:", modex.stdout)
+            self.assertNotIn(b"Caveman:", modex.stdout)
             expected_probes = {
                 "codex\t--version\tpresent\tpresent\tset\tset\tset\tset",
                 "codex\tlogin status\tpresent\tpresent\tset\tset\tset\tset",
@@ -218,13 +251,21 @@ class DoctorInstall01660Tests(unittest.TestCase):
                 "codebase-memory-mcp\t--help\tpresent\tpresent\tset\tset\tset\tset",
             }
             self.assertEqual(baseline_probes, expected_probes)
-            expected_modex_probes = set()
-            for line in expected_probes:
-                fields = line.split("\t")
-                fields[2:4] = ["absent", "absent"]
-                fields[4:] = ["set" if fields[0] == "codex" else "unset"] + ["unset"] * 3
-                expected_modex_probes.add("\t".join(fields))
+            expected_modex_probes = {
+                "codex\t--version\tabsent\tabsent\tset\tunset\tunset\tunset",
+                "codex\tlogin status\tabsent\tabsent\tset\tunset\tunset\tunset",
+                "explicit-claude\t--version\tabsent\tabsent\tunset\tunset\tunset\tunset",
+                "gemini\t--version\tabsent\tabsent\tunset\tunset\tunset\tunset",
+                "copilot\t--version\tabsent\tabsent\tunset\tunset\tunset\tunset",
+                "kiro-cli\t--version\tabsent\tabsent\tunset\tunset\tunset\tunset",
+                "agy\t--version\tabsent\tabsent\tunset\tunset\tunset\tunset",
+                "rtk\t--version\tabsent\tabsent\tunset\tunset\tunset\tunset",
+                "node\t--version\tabsent\tabsent\tunset\tunset\tunset\tunset",
+                "npx\t--version\tabsent\tabsent\tunset\tunset\tunset\tunset",
+                "codebase-memory-mcp\t--version\tabsent\tabsent\tunset\tunset\tunset\tunset",
+            }
             self.assertEqual(modex_probes, expected_modex_probes)
+            self.assertFalse(any("--no-install @playwright/mcp" in line for line in modex_probes))
             self.assertFalse(Path(baseline_environment["PRODEX_HOME"]).exists())
             self.assertFalse(Path(baseline_environment["PRODEX_SHARED_CODEX_HOME"]).exists())
             self.assertFalse((home / ".codex").exists())
@@ -236,10 +277,9 @@ class DoctorInstall01660Tests(unittest.TestCase):
                 MODEX, root, command_environment(root, "")
             )
             self.assertEqual(presence.returncode, 0)
-            self.assertIn(
-                b"Caveman:             degraded (managed Caveman found; integrity validation is unavailable)",
-                presence.stdout,
-            )
+            self.assertNotIn(b"Caveman:", presence.stdout)
+            self.assertEqual(panel_value(presence.stdout, "ponytail"), b"missing")
+            self.assertTrue(managed_caveman.is_dir())
 
     def test_missing_commands_are_checked_and_reported_without_state_creation(self):
         with tempfile.TemporaryDirectory(prefix="modex-doctor-install-missing-01660-") as raw:
@@ -252,14 +292,29 @@ class DoctorInstall01660Tests(unittest.TestCase):
             modex = run_doctor(MODEX, root, command_environment(root, ""))
 
             self.assertEqual((baseline.returncode, modex.returncode), (0, 0))
+            self.assertEqual(
+                panel_value(baseline.stdout, "RTK"),
+                b"missing (failed to start rtk)",
+            )
+            self.assertEqual(panel_value(baseline.stdout, "Caveman"), b"missing")
+            self.assertEqual(panel_value(modex.stdout, "rtk"), b"missing")
+            self.assertEqual(panel_value(modex.stdout, "codebase-memory-mcp"), b"missing")
+            self.assertEqual(panel_value(modex.stdout, "playwright-mcp"), b"missing")
+            self.assertEqual(panel_value(modex.stdout, "ponytail"), b"missing")
             excluded_path_rows = {b"Prodex home:", b"Shared CODEX_HOME:"}
             self.assertEqual(
-                without_panel_fields(safer_modex_output(baseline.stdout), excluded_path_rows),
-                without_panel_fields(modex.stdout, excluded_path_rows),
+                without_01661_inventory_changes(
+                    safer_modex_output(baseline.stdout), excluded_path_rows
+                ),
+                without_01661_inventory_changes(modex.stdout, excluded_path_rows),
             )
             self.assertEqual(modex.stderr, baseline.stderr)
             self.assertIn(b"Codex CLI:           missing (failed to start codex)", modex.stdout)
-            self.assertIn(b"Caveman:             missing", modex.stdout)
+            self.assertIn(b"rtk:", modex.stdout)
+            self.assertIn(b"codebase-memory-mcp:", modex.stdout)
+            self.assertIn(b"playwright-mcp:", modex.stdout)
+            self.assertIn(b"ponytail:", modex.stdout)
+            self.assertNotIn(b"Caveman:", modex.stdout)
             self.assertNotIn(b"synthetic-prodex-path-secret", modex.stdout)
             self.assertNotIn(b"synthetic-shared-path-secret", modex.stdout)
             self.assertNotIn(b"synthetic-optimizer-path-secret", modex.stdout)
@@ -310,8 +365,14 @@ class DoctorInstall01660Tests(unittest.TestCase):
                     (modex_plain.stdout, modex_plain.stderr),
                 )
                 self.assertEqual(
-                    (modex_combined.stdout, modex_combined.stderr),
-                    (baseline_combined.stdout, baseline_combined.stderr),
+                    (
+                        without_01661_inventory_changes(modex_combined.stdout),
+                        modex_combined.stderr,
+                    ),
+                    (
+                        without_01661_inventory_changes(baseline_combined.stdout),
+                        baseline_combined.stderr,
+                    ),
                 )
                 self.assertEqual(list(home.iterdir()), [])
 
@@ -411,8 +472,10 @@ class DoctorInstall01660Tests(unittest.TestCase):
                 b"Codex CLI:", b"Prodex home:", b"Shared CODEX_HOME:",
             }
             self.assertEqual(
-                without_panel_fields(safer_modex_output(baseline.stdout), excluded_path_rows),
-                without_panel_fields(modex.stdout, excluded_path_rows),
+                without_01661_inventory_changes(
+                    safer_modex_output(baseline.stdout), excluded_path_rows
+                ),
+                without_01661_inventory_changes(modex.stdout, excluded_path_rows),
             )
             self.assertEqual(modex.stderr, baseline.stderr)
             self.assertIn(b"Codex CLI:", modex.stdout)
@@ -451,8 +514,10 @@ class DoctorInstall01660Tests(unittest.TestCase):
             self.assertEqual((baseline.returncode, modex.returncode), (0, 0))
             excluded_path_rows = {b"Prodex home:", b"Shared CODEX_HOME:"}
             self.assertEqual(
-                without_panel_fields(safer_modex_output(baseline.stdout), excluded_path_rows),
-                without_panel_fields(modex.stdout, excluded_path_rows),
+                without_01661_inventory_changes(
+                    safer_modex_output(baseline.stdout), excluded_path_rows
+                ),
+                without_01661_inventory_changes(modex.stdout, excluded_path_rows),
             )
             self.assertEqual(modex.stderr, baseline.stderr)
             self.assertIn(b"Node.js:             missing (node output exceeded the limit)", modex.stdout)

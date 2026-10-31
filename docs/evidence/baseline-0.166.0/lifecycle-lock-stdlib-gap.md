@@ -1,5 +1,7 @@
 # Lifecycle lock interface gap
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 This is a Linux-only lock-family characterization for the pinned Prodex 0.166.0
 reference at `9f69e1835808f478f59f12a3ae3fa88027d896a4`. It is not a Modex
 parity claim.

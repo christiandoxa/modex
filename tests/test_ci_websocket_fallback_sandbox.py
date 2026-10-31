@@ -1,4 +1,4 @@
-"""Exercise the bwrap launcher and active-release WebSocket comparison."""
+"""Exercise bwrap isolation and the historical 0.166.0 WebSocket comparison."""
 
 import os
 from pathlib import Path
@@ -149,10 +149,10 @@ print("temporary input isolation: PASS")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("temporary input isolation: PASS", result.stdout)
 
-    def test_active_01660_manual_websocket_comparison_runs_in_bwrap(self):
+    def test_historical_01660_manual_websocket_comparison_runs_in_bwrap(self):
         oracle = os.environ.get("PRODEX_ORACLE")
         if not oracle:
-            raise AssertionError("Fast CI must resolve the active 0.166.0 oracle before this check")
+            raise AssertionError("CI must route the verified historical 0.166.0 oracle before this check")
         environment = {
             "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
             "BWRAP": str(self.bwrap),

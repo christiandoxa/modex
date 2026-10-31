@@ -1,5 +1,7 @@
 # Empty profile-list slice on Prodex 0.166.0
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 The verified active 0.166.0 Linux x86-64 oracle returns the exact empty-profile
 panel when `HOME/.prodex` is absent. Modex now matches its output and exit code
 for that case. Modex checks the app-root directory entry without creating it,

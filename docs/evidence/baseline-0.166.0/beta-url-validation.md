@@ -1,5 +1,7 @@
 # Strict beta URL validation
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 The 0.166.0 Linux release accepts `http://127.0.0.1:/beta` and normalizes the
 empty port to 80. Modex's strict-tools policy rejects an explicitly empty port
 as malformed. The generic loopback parser still accepts it and remains

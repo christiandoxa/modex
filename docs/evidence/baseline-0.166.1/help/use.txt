@@ -1,0 +1,7 @@
+Set the active profile used by commands that omit --profile.
+
+Usage: prodex use [OPTIONS]
+
+Options:
+  -p, --profile <NAME>  Profile name. If omitted, prodex uses the active profile
+  -h, --help            Print help

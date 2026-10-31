@@ -1,0 +1,11 @@
+Remove one profile entry or every profile entry and optionally delete managed homes
+
+Usage: prodex profile remove [OPTIONS] [NAME]
+
+Arguments:
+  [NAME]  Name of the profile to remove
+
+Options:
+      --all          Remove every configured profile
+      --delete-home  Also delete the managed CODEX_HOME directory from disk
+  -h, --help         Print help

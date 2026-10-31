@@ -1,4 +1,22 @@
-# Current work: Prodex 0.166.0 parity and CI
+# Current work: Prodex 0.166.1 parity and CI
+
+The active reference is Prodex 0.166.1 at
+`4951b813ca308fb0ba7148dbc6d6aeb74b93cd32`. Its release retires Caveman,
+adds optional-tool health checks, strengthens managed executable confinement,
+and applies the Node.js 18 minimum to Playwright checks. The implementation
+and differential coverage for these changes are in progress. Observations
+below were captured against earlier releases and do not establish 0.166.1
+parity. All six target qualifications remain open.
+
+The Linux x86-64 release binary and checksum manifest were verified against
+the official 0.166.1 release. The active oracle and help inventory now use
+that release; 0.166.0 and older references are explicitly historical. Focused
+real-process comparisons cover Caveman selection, Playwright's Node preflight,
+Doctor's four automatic-tool rows, and the hook initialization identity.
+Managed Ponytail integrity validation and removal of generated legacy Caveman
+overlay content remain incomplete. This evidence does not establish parity.
+
+# Historical work: Prodex 0.166.0 parity and CI
 
 The official historical release workflow artifacts for 0.439.2 and 0.439.5
 were recovered with authenticated read access and both Linux binary digests

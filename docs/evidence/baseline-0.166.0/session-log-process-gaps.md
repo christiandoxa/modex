@@ -1,5 +1,7 @@
 # Active 0.166.0 session and log process gaps
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 The pinned source is Prodex 0.166.0 at
 `9f69e1835808f478f59f12a3ae3fa88027d896a4`. Process checks use the verified
 Linux oracle with SHA-256

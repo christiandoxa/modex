@@ -21,7 +21,7 @@ from .paths import app_root, ensure_app_root, shared_root
 from .process_spawn import CapturedProcessOutput, capture_with_env, inherited_environment, spawn_with_env, spawn_with_env_stdio, terminate_child_gracefully, wait_or_kill
 from .provider_deepseek_transport import deepseek_request_headers
 from .runtime_local_rewrite import deepseek_runtime_route, local_rewrite_upstream, local_rewrite_worker_count, serve_local_rewrite
-from .sessions import read_private_state_file
+from .sessions import escape_terminal_controls, read_private_state_file
 from .sha256 import hash_file
 from .text import ascii_lower, cli_width, is_whitespace, section_header, trim_text, unsigned_value, wrap_text
 from .toml import TOMLDocument, TOML_BOOLEAN, TOML_STRING, TOML_TABLE
@@ -819,6 +819,51 @@ def _dry_run_playwright_status(binary: String) -> String:
     return status^ if status else unavailable^
 
 
+def _node_major_supported(line: String) -> Bool:
+    var start = 0
+    while start < line.byte_length() and line.as_bytes()[start] == 118:
+        start += 1
+    var end = line.find(".")
+    if end < 0:
+        end = line.byte_length()
+    if start > end:
+        return False
+    try:
+        return unsigned_value(String(line[byte=start:end])) >= UInt64(18)
+    except:
+        return False
+
+
+def _dry_run_playwright_node_status(node: String, npx: String) -> String:
+    if not node:
+        return "skipped (Node.js 18+ was not found on PATH)"
+    var probe: CapturedProcessOutput
+    try:
+        probe = capture_with_env(node, [String("--version")], _dry_run_probe_environment(), "Node.js health check", 5000, 65536, argv0=node)
+    except:
+        return "skipped (Node.js health check failed)"
+    if not probe.status.exit_code or probe.status.exit_code.value() != 0:
+        return "skipped (Node.js version check exited with exit status: " + String(_child_exit_code(probe.status)) + ")"
+    try:
+        _ = String(from_utf8=Span(probe.stdout))
+    except:
+        return "skipped (probe stdout was not UTF-8)"
+    try:
+        _ = String(from_utf8=Span(probe.stderr))
+    except:
+        return "skipped (probe stderr was not UTF-8)"
+    var line = _dry_run_probe_first_line(probe.stdout)
+    if not line:
+        line = _dry_run_probe_first_line(probe.stderr)
+    if not line:
+        line = "available"
+    if not _node_major_supported(line):
+        return "skipped (Node.js 18+ is required; found " + escape_terminal_controls(redact_log_text(line)) + ")"
+    if not npx:
+        return "skipped (npx was not found on PATH)"
+    return _dry_run_playwright_status(npx)
+
+
 def _dry_run_ponytail_node_status(binary: String) -> String:
     var probe: CapturedProcessOutput
     try:
@@ -835,27 +880,20 @@ def _dry_run_ponytail_node_status(binary: String) -> String:
 
 
 def _dry_run_optional_tool_statuses() raises -> Tuple[String, String, String, String]:
-    var present = _managed_tool_present("caveman")
     var node = _first_regular_path("node")
     var npx = _first_regular_path("npx")
-    present = present or _managed_tool_present("ponytail")
-    if present:
+    if _managed_tool_present("ponytail"):
         raise Error("Super dry-run cannot report installed optional tools yet")
     var rtk_status = _dry_run_rtk_status()
     var codebase_status = _dry_run_codebase_status()
-    var playwright_status = String("skipped (Node.js 18+ was not found on PATH)")
+    var playwright_status = _dry_run_playwright_node_status(node, npx)
     var ponytail_status = String("Node.js was not found on PATH")
-    if node and npx:
-        playwright_status = _dry_run_playwright_status(npx)
-    elif node:
-        playwright_status = "skipped (npx was not found on PATH)"
     if node:
         ponytail_status = _dry_run_ponytail_node_status(node)
     return rtk_status^, codebase_status^, playwright_status^, ponytail_status^
 
 
 def _print_dry_run_optional_tools(rtk_status: String, codebase_status: String, playwright_status: String, ponytail_status: String):
-    var caveman_missing = "Caveman 2.3.1+ was not found under a managed optional-tool root; latest stable reference is 4.0.1"
     print("Optional tools:")
     if rtk_status.startswith("resolved "):
         print("  rtk: " + rtk_status)
@@ -863,7 +901,6 @@ def _print_dry_run_optional_tools(rtk_status: String, codebase_status: String, p
         print("  codebase-memory-mcp: " + codebase_status)
     if playwright_status.startswith("resolved "):
         print("  playwright-mcp: " + playwright_status)
-    print("  caveman: skipped (" + caveman_missing + ")")
     if not rtk_status.startswith("resolved "):
         print("  rtk: " + rtk_status)
     if not codebase_status.startswith("resolved "):

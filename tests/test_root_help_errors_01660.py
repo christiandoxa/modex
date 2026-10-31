@@ -1,4 +1,4 @@
-"""Compare unknown root help operands with the active 0.166.0 release."""
+"""Compare unknown root help operands with historical Prodex 0.166.0."""
 
 import hashlib
 import os
@@ -11,7 +11,7 @@ from test_root_help import isolated_run
 ROOT = Path(__file__).resolve().parents[1]
 MODEX = Path(os.environ.get("MODEX_BINARY", ROOT / "build/modex"))
 ORACLE = Path(os.environ.get(
-    "PRODEX_ORACLE",
+    "PRODEX_ORACLE_01660",
     Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
     / "oracles/0.166.0/prodex-x86_64-unknown-linux-gnu",
 ))
@@ -24,7 +24,7 @@ class RootHelpErrors01660Tests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError("Build Modex first with make build")
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-            raise AssertionError("PRODEX_ORACLE must identify the verified 0.166.0 Linux release")
+            raise AssertionError("PRODEX_ORACLE_01660 must identify the verified 0.166.0 Linux release")
 
     def test_unknown_help_operand_matches_release_without_mutations(self):
         cases = (

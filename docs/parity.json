@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
+  "baseline_commit": "4951b813ca308fb0ba7148dbc6d6aeb74b93cd32",
   "inventory_complete": false,
   "counting_policy": "Initial coarse contracts are not the final denominator. Each contract retains all applicable platform obligations. PASS requires reproducible evidence; compile-only, mock-only and unverified results never count. No full parity percentage until inventory completion.",
   "inventory_history": [
@@ -151,6 +151,14 @@
     {
       "date": "2026-10-30",
       "change": "Retargeted to official Prodex 0.166.0. Preserved prior contracts, traces, evidence and all six release targets; the inventory remains incomplete and no historical observation is promoted to current-target parity."
+    },
+    {
+      "date": "2026-10-31",
+      "change": "Retargeted the incomplete inventory to official Prodex 0.166.1 at 4951b813ca308fb0ba7148dbc6d6aeb74b93cd32 after independently verifying the Git tag, release SHA256SUMS, release manifest, and Linux oracle. Preserved the 81 contracts, all six release targets, and every status; 0.166.0 and older comparisons remain historical and establish no 0.166.1 parity."
+    },
+    {
+      "date": "2026-10-31",
+      "change": "Captured 35 CLI help routes from the checksum-verified 0.166.1 Linux oracle with 326 option mentions, no stderr, and no observed state mutations. This is release-specific discovery evidence only; it does not verify source traces, runtime behavior, parity, or change any contract status."
     }
   ],
   "contracts": [
@@ -4663,9 +4671,9 @@
       ]
     }
   ],
-  "previous_baseline_commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
-  "baseline_version": "0.166.0",
-  "evidence_policy": "Per-contract traces retain their listed source commits. Historical 0.165.1 and 0.439.x observations do not establish 0.166.0 behavior; every contract and all six targets require current-target verification.",
+  "previous_baseline_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
+  "baseline_version": "0.166.1",
+  "evidence_policy": "Per-contract traces retain their listed source commits. Historical 0.166.0, 0.165.1 and 0.439.x observations do not establish 0.166.1 behavior; every contract and all six targets require current-target verification.",
   "release_qualification": {
     "x86_64-unknown-linux-gnu": {
       "status": "BLOCKED",
@@ -4718,33 +4726,39 @@
   },
   "historical_baselines": [
     {
+      "version": "0.166.0",
+      "commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
+      "evidence": "docs/evidence/baseline-0.166.0/reference-verification.json",
+      "role": "Previous release; historical regression only; not 0.166.1 evidence."
+    },
+    {
       "version": "0.439.2",
       "commit": "72b77478a5198fc5da6b4d2253137f9cdbf43be9",
       "evidence": "docs/evidence/baseline-0.439.2/reference-verification.json",
-      "role": "Historical regression only; not 0.166.0 evidence."
+      "role": "Historical regression only; not 0.166.1 evidence."
     },
     {
       "version": "0.439.5",
       "commit": "ac9aad08f25d6dc8cda96463ce2045b40f35f510",
       "evidence": "docs/evidence/baseline-0.439.5/reference-verification.json",
-      "role": "Historical regression only; not 0.166.0 evidence."
+      "role": "Historical regression only; not 0.166.1 evidence."
     },
     {
       "version": "0.439.1",
       "commit": "81c1a01933bc33f536a24452c3fd72c3f8d0b1f3",
       "evidence": "docs/evidence/baseline-0.439.1/reference-verification.json",
-      "role": "Historical regression only; not 0.166.0 evidence."
+      "role": "Historical regression only; not 0.166.1 evidence."
     },
     {
       "version": "0.439.0",
       "commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
-      "role": "Historical regression only; not 0.166.0 evidence."
+      "role": "Historical regression only; not 0.166.1 evidence."
     },
     {
       "version": "0.165.1",
       "commit": "10ae15b5d1806302b60f051e4e6fec788044f4c2",
       "evidence": "docs/evidence/baseline-0.165.1/reference-verification.json",
-      "role": "Historical regression only; not 0.166.0 evidence."
+      "role": "Historical regression only; not 0.166.1 evidence."
     }
   ]
 }

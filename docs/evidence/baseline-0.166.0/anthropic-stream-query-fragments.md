@@ -1,5 +1,7 @@
 # Anthropic search query stream fragments (Prodex 0.166.0)
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 At pinned source `9f69e1835808f478f59f12a3ae3fa88027d896a4`, the reader in
 `crates/prodex-app/src/runtime_launch/proxy_startup/anthropic_messages_sse_reader.rs`
 initializes web-search input from a nonempty object and appends every

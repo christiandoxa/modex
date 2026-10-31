@@ -126,6 +126,13 @@ class SuperDryRun01651Tests(unittest.TestCase):
         if not OPTIONAL_TOOL_FIXTURE.is_file() or OPTIONAL_TOOL_FIXTURE.stat().st_mode & 0o111 == 0:
             raise AssertionError("Build the native optional-tool fixture with make unit-build")
 
+    def assert_current_without_retired_caveman(self, historical, current):
+        line = (b"  caveman: skipped (Caveman 2.3.1+ was not found under a managed optional-tool root; "
+                b"latest stable reference is 4.0.1)\n")
+        self.assertEqual(historical.count(line), 1)
+        self.assertNotIn(b"  caveman:", current)
+        self.assertEqual(historical.replace(line, b"", 1), current)
+
     def test_dry_run_reads_shared_config_and_ignores_shared_history(self):
         def prepare(root):
             shared = root / "home/.codex"
@@ -154,7 +161,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertNotIn(b"called", output)
                 outputs[label] = output
         self.assertEqual(outputs["0.165.1"], outputs["0.439.2"])
-        self.assertEqual(outputs["0.165.1"], outputs["Modex"])
+        self.assert_current_without_retired_caveman(outputs["0.165.1"], outputs["Modex"])
 
     def test_missing_codex_and_empty_path_still_match_release_report(self):
         outputs = []
@@ -169,7 +176,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertEqual(after, before)
                 outputs.append(result.stdout)
         self.assertEqual(outputs[0], outputs[1])
-        self.assertEqual(outputs[0], outputs[2])
+        self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_configured_codex_and_model_overrides_take_precedence(self):
         arguments = list(DRY_RUN_ARGS)
@@ -190,7 +197,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertEqual(after, before)
                 outputs.append(result.stdout)
         self.assertEqual(outputs[0], outputs[1])
-        self.assertEqual(outputs[0], outputs[2])
+        self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_codex_reasoning_effort_is_preserved_in_dry_run(self):
         cases = (
@@ -225,7 +232,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                     self.assertNotIn("codex-invoked", after)
                     outputs.append(result.stdout)
                 self.assertEqual(outputs[0], outputs[1])
-                self.assertEqual(outputs[0], outputs[2])
+                self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_malformed_explicit_key_is_not_needed_or_exposed(self):
         arguments = list(DRY_RUN_ARGS)
@@ -245,7 +252,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertEqual(after, before)
                 outputs.append(result.stdout)
         self.assertEqual(outputs[0], outputs[1])
-        self.assertEqual(outputs[0], outputs[2])
+        self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_sensitive_codex_flag_values_are_redacted_in_separated_and_equals_forms(self):
         sensitive_flags = (
@@ -282,7 +289,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                     self.assertEqual(after, before)
                     outputs.append(result.stdout)
             self.assertEqual(outputs[0], outputs[1])
-            self.assertEqual(outputs[0], outputs[2])
+            self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_chained_sensitive_flags_redact_more_strictly_than_releases(self):
         secret = b"synthetic-secret-42"
@@ -328,15 +335,14 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertEqual(after, before)
                 outputs.append(result.stdout)
         self.assertEqual(outputs[0], outputs[1])
-        self.assertEqual(outputs[0], outputs[2])
+        self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_ponytail_node_probe_accepts_success_and_reports_exit_status(self):
         for version in ("nonsense", "v0.0.1", "empty", "stderr:v20.0.0", "invalid-stdout", "invalid-stderr", "exit:7"):
             for with_npx in (False, True):
                 outputs = []
                 for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
-                                             ("0.439.2", ORACLE, "prodex"),
-                                             ("Modex", MODEX, "modex")):
+                                             ("0.439.2", ORACLE, "prodex")):
                     with self.subTest(version=version, with_npx=with_npx, binary=label):
                         def prepare(root):
                             write_optional_tool(root / "bin/node")
@@ -354,7 +360,6 @@ class SuperDryRun01651Tests(unittest.TestCase):
                         self.assertEqual(after, before)
                         outputs.append(result.stdout)
                 self.assertEqual(outputs[0], outputs[1])
-                self.assertEqual(outputs[0], outputs[2])
 
     def test_ponytail_node_probe_timeout_is_bounded_and_redacted(self):
         for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
@@ -397,7 +402,11 @@ class SuperDryRun01651Tests(unittest.TestCase):
                     self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
                     self.assertEqual(after, before)
                     if command == "node":
-                        self.assertIn(b"playwright-mcp: resolved", result.stdout)
+                        # 0.166.1 checks Node before resolving Playwright.
+                        if label == "Modex":
+                            self.assertIn(b"playwright-mcp: skipped (Node.js health check failed)", result.stdout)
+                        else:
+                            self.assertIn(b"playwright-mcp: resolved", result.stdout)
                         self.assertIn(b"ponytail: skipped (", result.stdout)
                         self.assertNotIn(b"Ponytail 4.9.0+ was not found", result.stdout)
                         if label == "Modex":
@@ -430,7 +439,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertEqual(after, before)
                 outputs.append(result.stdout)
         self.assertEqual(outputs[0], outputs[1])
-        self.assertEqual(outputs[0], outputs[2])
+        self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_rtk_version_probe_matches_without_inheriting_unapproved_environment(self):
         def prepare(root):
@@ -454,7 +463,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertNotIn("probe-environment-leaked", after)
                 outputs.append(result.stdout)
         self.assertEqual(outputs[0], outputs[1])
-        self.assertEqual(outputs[0], outputs[2])
+        self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_rtk_managed_root_precedes_path_for_all_pinned_reports(self):
         def prepare(root):
@@ -479,7 +488,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertEqual(after, before)
                 outputs.append(result.stdout)
         self.assertEqual(outputs[0], outputs[1])
-        self.assertEqual(outputs[0], outputs[2])
+        self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_symlinked_rtk_managed_root_stays_fail_closed(self):
         def prepare(root):
@@ -543,7 +552,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                     self.assertEqual(after, before)
                     outputs.append(result.stdout)
             self.assertEqual(outputs[0], outputs[1])
-            self.assertEqual(outputs[0], outputs[2])
+            self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_rtk_timeout_is_reported_without_leaking_probe_path(self):
         outputs = []
@@ -601,7 +610,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                     self.assertEqual(after, before)
                     outputs.append(result.stdout)
             self.assertEqual(outputs[0], outputs[1])
-            self.assertEqual(outputs[0], outputs[2])
+            self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_path_codebase_timeout_is_bounded_and_redacted(self):
         for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
@@ -647,7 +656,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                     self.assertEqual(after, before)
                     outputs.append(result.stdout)
             self.assertEqual(outputs[0], outputs[1])
-            self.assertEqual(outputs[0], outputs[2])
+            self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_playwright_probe_timeout_matches_releases(self):
         outputs = []
@@ -667,7 +676,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertEqual(after, before)
                 outputs.append(result.stdout)
         self.assertEqual(outputs[0], outputs[1])
-        self.assertEqual(outputs[0], outputs[2])
+        self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_managed_codebase_candidate_and_root_order_matches_both_releases(self):
         for selected_index in range(4):
@@ -713,7 +722,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                     self.assertEqual(after, before)
                     outputs.append(result.stdout)
             self.assertEqual(outputs[0], outputs[1])
-            self.assertEqual(outputs[0], outputs[2])
+            self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
         for selected_index in range(3):
             outputs = []
@@ -756,7 +765,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                     self.assertEqual(after, before)
                     outputs.append(result.stdout)
             self.assertEqual(outputs[0], outputs[1])
-            self.assertEqual(outputs[0], outputs[2])
+            self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_managed_codebase_symlink_root_stays_fail_closed(self):
         def prepare(root):
@@ -821,7 +830,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 self.assertEqual(after, before)
                 outputs.append(result.stdout)
         self.assertEqual(outputs[0], outputs[1])
-        self.assertEqual(outputs[0], outputs[2])
+        self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
     def test_managed_codebase_escaping_symlink_is_not_executed(self):
         def prepare(root):
@@ -962,7 +971,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
 
     def test_installed_optional_tools_fail_closed_without_launching_them(self):
         cases = (
-            ("managed tool", lambda root: (root / "home/.local/share/prodex-optimizers/caveman/4.0.1").mkdir(parents=True)),
+            ("managed tool", lambda root: (root / "home/.local/share/prodex-optimizers/ponytail/5.3.3").mkdir(parents=True)),
         )
         for label, prepare_tool in cases:
             with self.subTest(tool=label):

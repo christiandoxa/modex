@@ -76,9 +76,23 @@ rm -- "$EVIDENCE_DIR/reference-source-active.txt"
 "$PYTHON" scripts/ci/reference.py identity active >"$EVIDENCE_DIR/reference.json"
 export MODEX_REFERENCE_VERSION="$("$PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag"])' "$EVIDENCE_DIR/reference.json")"
 run_logged build-input-check "$PYTHON" scripts/ci/check-build-inputs.py
-run_logged focused-build make build
-run_logged websocket-fallback-sandbox "$PYTHON" scripts/ci/run-unittest.py test_ci_websocket_fallback_sandbox.py
-run_logged focused-python-active env -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01660.py test_root_help_errors_01660.py test_login_help_01660.py test_redeem_help_01660.py test_inspection_cli_01660.py test_gateway_default_01660.py test_anthropic_stream_01660.py test_anthropic_custom_tool_calls_01660.py test_anthropic_missing_message_content_01660.py test_anthropic_parent_shutdown_01660.py test_deepseek_reasoning_01660.py test_provider_metadata_01660.py test_deepseek_stream_ids_01660.py test_deepseek_catalog_01660.py test_guardian_api_key_01660.py test_deepseek_messages_route_01660.py test_deepseek_session_history_01660.py test_policy_capacity_01660.py test_local_compact_gap_01660.py test_provider_policy_codex_01660.py test_provider_passthrough_01660.py test_provider_shapes_01660.py test_provider_base_url_scheme_01660.py test_provider_base_url_authority_01660.py test_super_cli_01660.py test_super_launch_01660.py test_runtime_broker_startup_01660_oracle.py test_profile_list_empty_01660.py test_current_empty_profile_01660.py test_session_outputs_01660.py test_doctor_install_01660.py
+run_logged focused-build make build unit
+run_logged focused-python-active env -u PRODEX_ORACLE_01660 -u PRODEX_GATEWAY_ORACLE_01660 -u MODEX_REFERENCE_01660_DIR -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01661.py test_hook_identity_01661.py test_doctor_install_01661.py test_playwright_node_01661.py test_caveman_retirement_01661.py
+if ! "$PYTHON" scripts/ci/reference.py oracle 0.166.0 >"$EVIDENCE_DIR/oracle-path-01660.txt" 2>"$EVIDENCE_DIR/reference-01660.log"; then
+    cat "$EVIDENCE_DIR/reference-01660.log" >&2
+    exit 1
+fi
+export PRODEX_ORACLE_01660="$(cat "$EVIDENCE_DIR/oracle-path-01660.txt")"
+export PRODEX_GATEWAY_ORACLE_01660="$PRODEX_ORACLE_01660"
+rm -- "$EVIDENCE_DIR/oracle-path-01660.txt"
+if ! "$PYTHON" scripts/ci/reference.py source 0.166.0 >"$EVIDENCE_DIR/reference-source-01660.txt" 2>"$EVIDENCE_DIR/reference-source-01660.log"; then
+    cat "$EVIDENCE_DIR/reference-source-01660.log" >&2
+    exit 1
+fi
+export MODEX_REFERENCE_01660_DIR="$(cat "$EVIDENCE_DIR/reference-source-01660.txt")"
+rm -- "$EVIDENCE_DIR/reference-source-01660.txt"
+run_logged historical-websocket-fallback-sandbox-01660 env PRODEX_ORACLE="$PRODEX_ORACLE_01660" PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE_01660" MODEX_REFERENCE_DIR="$MODEX_REFERENCE_01660_DIR" MODEX_REFERENCE_VERSION=0.166.0 "$PYTHON" scripts/ci/run-unittest.py test_ci_websocket_fallback_sandbox.py
+run_logged historical-python-01660 env PRODEX_ORACLE="$PRODEX_ORACLE_01660" PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE_01660" MODEX_REFERENCE_DIR="$MODEX_REFERENCE_01660_DIR" MODEX_REFERENCE_VERSION=0.166.0 "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01660.py test_root_help_errors_01660.py test_login_help_01660.py test_redeem_help_01660.py test_inspection_cli_01660.py test_gateway_default_01660.py test_anthropic_stream_01660.py test_anthropic_custom_tool_calls_01660.py test_anthropic_missing_message_content_01660.py test_anthropic_parent_shutdown_01660.py test_deepseek_reasoning_01660.py test_provider_metadata_01660.py test_deepseek_stream_ids_01660.py test_deepseek_catalog_01660.py test_guardian_api_key_01660.py test_deepseek_messages_route_01660.py test_deepseek_session_history_01660.py test_policy_capacity_01660.py test_local_compact_gap_01660.py test_provider_policy_codex_01660.py test_provider_passthrough_01660.py test_provider_shapes_01660.py test_provider_base_url_scheme_01660.py test_provider_base_url_authority_01660.py test_super_cli_01660.py test_super_launch_01660.py test_runtime_broker_startup_01660_oracle.py test_profile_list_empty_01660.py test_current_empty_profile_01660.py test_session_outputs_01660.py test_doctor_install_01660.py
 CI_REQUIRED_BLOCKED=0
 HISTORICAL_04392_READY=1
 if ! PRODEX_ORACLE_04392="${PRODEX_ORACLE_04392:-}" "$PYTHON" scripts/ci/reference.py oracle 0.439.2 >"$EVIDENCE_DIR/oracle-path-04392.txt" 2>"$EVIDENCE_DIR/reference-04392.log"; then

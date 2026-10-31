@@ -1,5 +1,7 @@
 # DeepSeek streamed text-item IDs
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 Reference: official Prodex 0.166.0, commit
 `9f69e1835808f478f59f12a3ae3fa88027d896a4`. The verified Linux x86-64
 oracle SHA-256 is

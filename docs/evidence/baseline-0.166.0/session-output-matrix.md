@@ -1,5 +1,7 @@
 # Session output comparisons
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 `tests/test_session_outputs_01660.py` runs the existing session-output fixture
 against the checksum-verified Prodex 0.166.0 Linux binary and Modex. Selected
 cases compare populated listings, filters, JSON metadata, archived children,

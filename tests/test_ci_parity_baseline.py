@@ -16,6 +16,17 @@ spec.loader.exec_module(verdict)
 
 
 class ParityBaselineTests(unittest.TestCase):
+    def test_checked_in_inventory_tracks_the_active_release_and_all_targets(self):
+        baseline = json.loads((ROOT / "docs/baseline.json").read_text(encoding="utf-8"))
+        parity = json.loads((ROOT / "docs/parity.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(baseline["reference"]["tag"], "0.166.1")
+        self.assertEqual(baseline["reference"]["commit"], parity["baseline_commit"])
+        self.assertFalse(parity["inventory_complete"])
+        self.assertEqual(set(baseline["reference"]["release_targets"]), verdict.REQUIRED_TARGETS)
+        self.assertEqual(baseline["previous_reference"]["tag"], "0.166.0")
+        self.assertIn("historical regression only", baseline["previous_reference"]["historical_role"])
+
     def run_verdict(self, *, inventory_commit="current", trace_commit="current", verified=True, contract_status="PASS"):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

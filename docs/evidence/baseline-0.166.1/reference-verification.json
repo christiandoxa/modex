@@ -1,0 +1,20 @@
+{
+  "version": "0.166.1",
+  "commit": "4951b813ca308fb0ba7148dbc6d6aeb74b93cd32",
+  "checked_at": "2026-10-31",
+  "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.166.1",
+  "tag_verification": "The official release API names 0.166.1 and targets this commit; an isolated bare Git fetch of refs/tags/0.166.1 resolves to the same commit.",
+  "sha256sums_sha256": "2abb8f2854fdc369a06286d55508d0bdf2a1324bd79d78f6015f6e24137b3e60",
+  "linux_oracle_sha256": "d9c3232ca504548c473ad06e4be001bb307256e00d35f888676e9512c62e4c3a",
+  "release_manifest_sha256": "0eefd8ad05aafbd0e34d4194dbd6b4fc2d4f7c242bbeec541d41e5d9c6c86646",
+  "verification": "Downloaded official SHA256SUMS, release-manifest.json, and the Linux x86-64 binary. SHA256SUMS and the Linux binary hashes match the official GitHub release API digests; the Linux binary also matches its SHA256SUMS entry. All six binary SHA256SUMS entries match the official GitHub release API digests; only the Linux binary was downloaded and executed. In an isolated HOME it reports prodex 0.166.1.",
+  "release_asset_sha256": {
+    "prodex-x86_64-unknown-linux-gnu": "d9c3232ca504548c473ad06e4be001bb307256e00d35f888676e9512c62e4c3a",
+    "prodex-aarch64-unknown-linux-gnu": "84513737771840aedd99536d97fa0c619a859b3f42845513ea7cd262fafa5462",
+    "prodex-x86_64-apple-darwin": "363a407ec8fb5a297c4efc4bcea4f7e09810ae38d558caa2fd86ad59a10a3db1",
+    "prodex-aarch64-apple-darwin": "2df1f7222cb55a74ce902453181d25fc2d86fd0885133df27bd8ea1557590e38",
+    "prodex-x86_64-pc-windows-msvc.exe": "4eaa9319cd094ae3a69f6698d93c4d8aef7e4a80cc5620c5596fa1f3e55865a2",
+    "prodex-aarch64-pc-windows-msvc.exe": "96e294dcc2af6cf13e1f16bf555e80e2ae35f778e3a4647efff49911b4f6c14e"
+  },
+  "qualification": "Release identity is verified; these observations do not establish Modex parity or qualification on any target."
+}

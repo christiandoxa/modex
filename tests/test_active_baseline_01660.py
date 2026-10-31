@@ -1,4 +1,4 @@
-"""Process checks against the official 0.166.0 active release."""
+"""Historical process checks against the official 0.166.0 release."""
 
 import base64
 import hashlib
@@ -15,7 +15,7 @@ from session_oracle import sandbox_command
 ROOT = Path(__file__).resolve().parents[1]
 MODEX = Path(os.environ.get("MODEX_BINARY", ROOT / "build/modex"))
 ORACLE = Path(os.environ.get(
-    "PRODEX_ORACLE",
+    "PRODEX_ORACLE_01660",
     Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
     / "oracles/0.166.0/prodex-x86_64-unknown-linux-gnu",
 ))
@@ -64,7 +64,7 @@ class ActiveBaseline01660Tests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError("Build Modex first")
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-            raise AssertionError("PRODEX_ORACLE must identify the verified 0.166.0 release")
+            raise AssertionError("PRODEX_ORACLE_01660 must identify the verified 0.166.0 release")
 
     def test_version_identity_without_state_changes(self):
         for binary, expected in ((ORACLE, b"prodex 0.166.0\n"), (MODEX, b"modex 0.1.0-dev\n")):
@@ -85,7 +85,7 @@ class ActiveBaseline01660Tests(unittest.TestCase):
     def test_super_hook_initialize_uses_active_identity(self):
         from test_super_launch import SuperLaunchTests
 
-        for binary in (ORACLE, MODEX):
+        for binary, expected_version in ((ORACLE, "0.166.0"), (MODEX, "0.166.1")):
             with self.subTest(binary=str(binary)):
                 result, records, upstream, state = SuperLaunchTests().run_launch(
                     binary=binary, scenario="buffered",
@@ -95,7 +95,7 @@ class ActiveBaseline01660Tests(unittest.TestCase):
                 self.assertEqual(state["leftovers"], [])
                 identity = [record["params"]["clientInfo"] for record in records
                             if record.get("kind") == "request" and record.get("method") == "initialize"]
-                self.assertEqual(identity, [{"name": "prodex-hook-trust", "version": "0.166.0"}])
+                self.assertEqual(identity, [{"name": "prodex-hook-trust", "version": expected_version}])
 
     def test_log_last_matches_synthetic_transcript_and_runtime_events(self):
         from test_logs import session_fixture

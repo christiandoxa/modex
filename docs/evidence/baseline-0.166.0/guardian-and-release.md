@@ -1,5 +1,7 @@
 # Prodex 0.166.0 Guardian and release reference checks
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 The official tag resolves to `9f69e1835808f478f59f12a3ae3fa88027d896a4`.
 The following checks were run in an isolated checkout of that commit, with a
 synthetic HOME and local fixture endpoints. They characterize Prodex; they do

@@ -8,12 +8,12 @@ import subprocess
 import tempfile
 
 from session_oracle import sandbox_command
-from test_active_baseline_01660 import ORACLE, ORACLE_SHA256, ROOT
+from test_active_baseline_01661 import ORACLE, ORACLE_SHA256, ROOT
 
 
-ACTIVE_VERSION = "0.166.0"
-ACTIVE_COMMIT = "9f69e1835808f478f59f12a3ae3fa88027d896a4"
-ACTIVE_EVIDENCE = "docs/evidence/baseline-0.166.0/reference-verification.json"
+ACTIVE_VERSION = "0.166.1"
+ACTIVE_COMMIT = "4951b813ca308fb0ba7148dbc6d6aeb74b93cd32"
+ACTIVE_EVIDENCE = "docs/evidence/baseline-0.166.1/reference-verification.json"
 HIDDEN = ("__super-expose", "__runtime-broker", "__mcp-jsonl-bridge", "__sub-agent-exec")
 
 
@@ -36,16 +36,16 @@ def main():
     if (baseline.get("tag"), baseline.get("commit"), baseline.get("evidence")) != (
         ACTIVE_VERSION, ACTIVE_COMMIT, ACTIVE_EVIDENCE,
     ):
-        raise SystemExit("The active baseline is not the pinned Prodex 0.166.0 capture target")
+        raise SystemExit("The active baseline is not the pinned Prodex 0.166.1 capture target")
     if (evidence.get("version"), evidence.get("commit"), evidence.get("linux_oracle_sha256")) != (
         ACTIVE_VERSION, ACTIVE_COMMIT, ORACLE_SHA256,
     ):
-        raise SystemExit("The Prodex 0.166.0 reference evidence does not match the pinned capture identity")
+        raise SystemExit("The Prodex 0.166.1 reference evidence does not match the pinned capture identity")
     if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-        raise SystemExit("PRODEX_ORACLE must identify the checksum-verified Prodex 0.166.0 Linux release")
+        raise SystemExit("PRODEX_ORACLE must identify the checksum-verified Prodex 0.166.1 Linux release")
 
-    output = ROOT / "docs/evidence/baseline-0.166.0/help"
-    inventory_path = ROOT / "docs/cli-inventory-0.166.0.json"
+    output = ROOT / "docs/evidence/baseline-0.166.1/help"
+    inventory_path = ROOT / "docs/cli-inventory-0.166.1.json"
     output.mkdir(parents=True, exist_ok=True)
     queue = [(), *((command,) for command in HIDDEN), ("super", "expose"), ("s",)]
     captured = set()

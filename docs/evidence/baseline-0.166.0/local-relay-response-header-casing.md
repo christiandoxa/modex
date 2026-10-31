@@ -1,5 +1,7 @@
 # Local relay response header casing (Prodex 0.166.0)
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 Reference: official Prodex 0.166.0 at
 `9f69e1835808f478f59f12a3ae3fa88027d896a4`. Source was acquired by
 `scripts/ci/reference.py source active` into the verified isolated snapshot at

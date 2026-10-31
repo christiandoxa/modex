@@ -1,0 +1,6 @@
+Usage: prodex __sub-agent-exec --config <PATH> --task-file <PATH>
+
+Options:
+      --config <PATH>     Temporary, secret-free child launch configuration
+      --task-file <PATH>  File containing the exact delegated task
+  -h, --help              Print help

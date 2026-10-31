@@ -105,7 +105,7 @@ class RealCodexRouteComparisonTests(unittest.TestCase):
         if sha256_file(CODEX) != CODEX_SHA256:
             raise AssertionError("CODEX_BINARY must identify the verified Codex 0.166.0 executable")
         if not ORACLE.is_file() or sha256_file(ORACLE) != ORACLE_SHA256:
-            raise AssertionError("PRODEX_ORACLE must identify the verified Prodex 0.166.0 executable")
+            raise AssertionError("PRODEX_ORACLE_01660 must identify the verified Prodex 0.166.0 executable")
         cls.root = tempfile.TemporaryDirectory(prefix="modex-real-codex-auth-", dir="/tmp")
         cls.root_path = Path(cls.root.name)
         node = (NODE_BIN / "node").resolve(strict=True)

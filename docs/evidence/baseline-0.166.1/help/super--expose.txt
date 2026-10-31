@@ -1,0 +1,93 @@
+Usage: prodex __super-expose [OPTIONS] [MODE] [CODEX_ARG]...
+
+Arguments:
+  [MODE]          MCP surface to expose. Exec mode exposes only the direct OS exec tool [default: full] [possible values: full, exec]
+  [CODEX_ARG]...  Arguments passed through to `codex` after Prodex's generated options
+
+Options:
+      --listen <ADDR>
+          Loopback address for the local MCP endpoint [default: 127.0.0.1:0]
+      --no-tunnel
+          Keep the endpoint local. This is the default and remains accepted for 0.429.x compatibility
+      --tunnel
+          Public tunnel compatibility flag. The lean 0.430 expose surface is local-only
+      --openai-tunnel-id <ID>
+          Pre-created OpenAI Secure MCP Tunnel id. Supplying it enables the official tunnel client
+      --name <NAME>
+          Optional display name for this workspace endpoint
+  -p, --profile <NAME>
+          Starting profile for the run. If omitted, prodex uses the active profile
+      --auto-rotate
+          Allow eligible pre-commit rotation. This is the default behavior
+      --no-auto-rotate
+          Keep the selected profile fixed and fail instead of rotating
+      --auto-redeem
+          Allow Prodex to redeem one earned reset credit automatically when all configured OpenAI/Codex profiles are weekly-exhausted
+      --skip-quota-check
+          Skip the preflight quota gate before launching codex
+      --full-access
+          Compatibility flag. Super already starts Codex with launch-time full access
+      --dry-run
+          Print resolved launch diagnostics without starting Codex
+      --base-url <URL>
+          Override the upstream ChatGPT base URL used for quota preflight and the runtime proxy
+      --no-proxy
+          Disable system and environment proxy settings for upstream OpenAI/quota HTTP requests
+      --presidio
+          Enable Presidio request-body and WebSocket text redaction without prompting. Unsupported by native Kiro and Antigravity CLIs
+      --no-presidio
+          Disable Presidio redaction and skip the interactive opt-in prompt
+      --sub-agent
+          Enable Codex sub-agent support for this Super launch
+      --no-sub-agent
+          Disable Codex sub-agent support for this Super launch
+      --sub-agent-provider <PROVIDER>
+          Provider used by sub-agents. Detail flags require explicit sub-agent
+      --sub-agent-model <MODEL>
+          Model used by sub-agents. Any nonempty model id is accepted
+      --sub-agent-model-reasoning-effort <EFFORT>
+          Reasoning effort used by the sub-agent model
+      --sub-agent-url <URL>
+          Local HTTP(S) endpoint used by sub-agents
+      --sub-agent-max-concurrency <VALUE>
+          Maximum number of child sub-agent processes active at once (1-64)
+      --tool <TOOL>
+          Add an optional tool to the default Super tool set
+      --require-tool <TOOL>
+          Require an optional tool; launch fails before the TUI if it is missing or invalid
+      --url <URL>
+          Route Codex directly to a local OpenAI-compatible /v1 endpoint
+      --provider <PROVIDER>
+          External provider preset to use through Codex/Super
+      --cli <CLI>
+          Compatibility native CLI. Prodex 0.430 retains Antigravity (agy) only [possible values: agy]
+      --api-key <KEY>
+          API key for --provider. Prefer the provider-specific environment variable for shells/history
+      --model <MODEL>
+          Model id to use with Codex, --url, or --provider [alias: --local-model]
+      --context-window <TOKENS>
+          Context window advertised to Codex when using --url or --provider [alias: --local-context-window]
+      --auto-compact-token-limit <TOKENS>
+          Auto-compact threshold advertised to Codex when using --url or --provider [alias: --local-auto-compact-token-limit]
+      --web-search <MODE>
+          Override Codex hosted web search mode: disabled, cached, indexed, or live [possible values: disabled, cached, indexed, live]
+      --rollout-budget-tokens <TOKENS>
+          Enable Codex rollout token-budget reminders with this total token limit
+      --rollout-budget-reminders <TOKENS>
+          Remaining-token thresholds for rollout budget reminders. Defaults to 75%,50%,25% of the limit
+      --rollout-budget-sampling-weight <WEIGHT>
+          Sampling token weight used by Codex rollout budget accounting
+      --rollout-budget-prefill-weight <WEIGHT>
+          Prefill token weight used by Codex rollout budget accounting
+      --current-time-reminder
+          Enable Codex current-time reminders
+      --current-time-reminder-interval <REQUESTS>
+          Model-request interval for Codex current-time reminders
+      --current-time-clock-source <SOURCE>
+          Clock source for Codex current-time reminders [possible values: system, external]
+      --respect-system-proxy
+          Enable Codex auth clients to respect the OS system proxy when upstream Codex supports it
+      --no-respect-system-proxy
+          Disable Codex auth system-proxy routing even when the profile config enables it
+  -h, --help
+          Print help

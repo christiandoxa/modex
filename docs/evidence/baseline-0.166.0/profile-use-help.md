@@ -1,5 +1,7 @@
 # Top-level profile use help
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 The top-level `use` command now exposes selected help and parser diagnostics
 from the verified Prodex 0.166.0 Linux release. The active process test covers
 long and short help, `help use`, a custom executable name, and selected

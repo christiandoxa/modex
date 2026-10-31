@@ -1,5 +1,7 @@
 # Guarded `--experimental-json` Super argument
 
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
 The checksum-pinned official Codex 0.166.0 Linux x86-64 binary is
 `b8a11fedf24b2dfb59a70c9e52b030f9a508dcd49cd2dd0d41956f4c785156b8`.
 Its direct `codex exec --help` documents `--json` as JSONL event output but

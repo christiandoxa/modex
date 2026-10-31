@@ -1,0 +1,12 @@
+Send a minimal application request through the OpenAI/Codex runtime path.
+
+Usage: prodex ping openai [OPTIONS]
+
+Options:
+  -p, --profile <NAME>  Probe only this OpenAI profile; omitted probes every configured eligible OpenAI profile
+      --model <MODEL>   Model passed through to the normal Codex request path
+      --effort <LEVEL>  Reasoning effort passed through to the normal Codex request path
+      --base-url <URL>  Override the ChatGPT backend base URL used by the normal OpenAI request path
+      --no-proxy        Bypass proxy environment variables for the normal OpenAI request path
+      --json            Emit one stable JSON result instead of human-readable output
+  -h, --help            Print help

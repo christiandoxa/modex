@@ -56,7 +56,7 @@ def search_events(initial_input, fragments, stop_before_fragments=False):
 
 def verify_oracle_context():
     if not ORACLE.is_absolute() or not ORACLE.is_file():
-        raise AssertionError("PRODEX_ORACLE must be an absolute path to the 0.166.0 release binary")
+        raise AssertionError("PRODEX_ORACLE_01660 must be an absolute path to the 0.166.0 release binary")
     if hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
         raise AssertionError("The Prodex oracle does not match pinned release 0.166.0")
     if os.stat("/tmp").st_uid != os.geteuid() or not any(

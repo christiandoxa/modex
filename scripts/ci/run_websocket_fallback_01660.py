@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the active-release WebSocket fallback probe in private namespaces."""
+"""Run the historical 0.166.0 WebSocket fallback comparison in private namespaces."""
 
 import os
 from pathlib import Path

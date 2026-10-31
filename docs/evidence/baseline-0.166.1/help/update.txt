@@ -1,0 +1,6 @@
+Update Prodex from the latest verified GitHub release binary.
+
+Usage: prodex update
+
+Options:
+  -h, --help  Print help

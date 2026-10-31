@@ -1,6 +1,8 @@
-# Active and historical version pin audit
+# Historical version pin audit
 
-The active upstream target is Prodex 0.166.0 at
+> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+
+At the time of this audit the upstream target was Prodex 0.166.0 at
 `9f69e1835808f478f59f12a3ae3fa88027d896a4`. Installed Prodex and Codex
 versions depend on the host and can change independently of this target.
 The official, checksum-verified 0.166.0 Linux test oracle is selected

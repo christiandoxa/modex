@@ -12,7 +12,7 @@ import unittest
 
 
 MODEX = Path(os.environ.get("MODEX_BINARY", ""))
-ORACLE = Path(os.environ.get("PRODEX_ORACLE", ""))
+ORACLE = Path(os.environ.get("PRODEX_ORACLE_01660", ""))
 CODEX = Path(os.environ.get("CODEX_BINARY", ""))
 ORACLE_SHA256 = "349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d09735"
 CODEX_SHA256 = "b8a11fedf24b2dfb59a70c9e52b030f9a508dcd49cd2dd0d41956f4c785156b8"

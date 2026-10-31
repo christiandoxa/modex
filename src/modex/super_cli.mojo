@@ -253,7 +253,7 @@ def _has_url_control(value: String) -> Bool:
 def _known_optional_tool(value: String) -> Bool:
     var tool = ascii_lower(trim_text(value))
     return tool in [
-        "caveman", "rtk", "codebase-memory-mcp", "codebase-memory", "cbm",
+        "rtk", "codebase-memory-mcp", "codebase-memory", "cbm",
         "playwright", "playwright-mcp", "ponytail", "presidio",
     ]
 

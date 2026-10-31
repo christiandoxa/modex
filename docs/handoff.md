@@ -208,6 +208,11 @@ standard-library compile probes and safety rationale are recorded in
 `docs/evidence/baseline-0.166.2/secure-app-root-permission-repair.md`. No
 production shortcut was added.
 
+The `login --profile --bad --help` parser path now treats the unknown option
+as the profile value, matching 0.166.2's read-only help output. Known help and
+profile options still require a value before them. This does not implement
+login or profile lookup; see `tests/test_login_help_01662.py`.
+
 Offline `logout` diagnostics now match 0.166.2 for the tested malformed
 options and excess arguments. Valid logout calls remain guarded and no account
 operation was tested; see `docs/evidence/baseline-0.166.2/logout-diagnostics.md`.

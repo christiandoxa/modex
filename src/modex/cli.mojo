@@ -372,7 +372,19 @@ def login_help_requested(args: List[String], executable: String) raises -> Bool:
                     "the argument '--profile <NAME>' cannot be used multiple times",
                     usage,
                 )
-            if index + 1 >= len(args) or args[index + 1] == "--" or args[index + 1].startswith("--"):
+            if index + 1 >= len(args):
+                raise session_cli_error("a value is required for '--profile <NAME>' but none was supplied")
+            var next = String(args[index + 1])
+            if next.startswith("--help="):
+                raise session_cli_error(
+                    "unexpected value '" + String(next[byte=7:]) + "' for '--help' found; no more were expected",
+                    executable + " login --help [PROFILE_OR_LOGIN_ARG]...",
+                )
+            var help_cluster = next.startswith("-h") and not next.startswith("--")
+            if help_cluster:
+                for character in next[byte=1:].codepoints():
+                    if Int(character) != 104: help_cluster = False
+            if next in ["--", "--profile", "--help", "-p"] or next.startswith("--profile=") or help_cluster:
                 raise session_cli_error("a value is required for '--profile <NAME>' but none was supplied")
             profile_seen = True
             index += 2

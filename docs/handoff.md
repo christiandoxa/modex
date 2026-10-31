@@ -58,6 +58,13 @@ the focused test. The actual ping operation and other argument combinations
 remain unimplemented or unverified; see
 `docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
 
+`doctor --install` now has active 0.166.2 process coverage for the empty-tool
+inventory, no-install Playwright probing, and managed-root path safety under
+synthetic homes and network isolation. The inventory matches exactly; an empty
+`PRODEX_OPTIMIZERS_HOME` still reports `invalid` in Prodex and `missing` in
+Modex, while neither probes the working directory. This does not establish
+full doctor parity; see `docs/evidence/baseline-0.166.2/doctor-install.md`.
+
 The 0.166.2 `session list --profile main` comparison also confirms that the
 release recovers a corrupt primary `state.json` from a valid private
 `state.json.last-good`, rewrites both state files, and returns the bound

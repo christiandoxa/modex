@@ -21,6 +21,16 @@ without creating state. This is a static help slice only; expose runtime and
 launcher execution remain unsupported and the six-target denominator is
 unchanged. See `docs/evidence/baseline-0.166.2/super-expose-help.md`.
 
+Pinned 0.166.2 differential coverage for `session list` and `session current`
+confirms matching compressed archived-parent discovery, nested child ancestry,
+compound `.jsonl.zst.json` filename handling, `--parent-only` filtering, and
+`--resume-command` ID output.
+The existing inspection path had no demonstrated mismatch, so this slice adds
+an active regression instead of an unneeded production refactor. The test is
+registered in the active fast and full CI suites. Native TUI root-resume
+selection remains unimplemented behind the guarded Super launcher; see
+`docs/evidence/baseline-0.166.2/session-inspection-list.md`.
+
 # Historical work: Prodex 0.166.1 parity and CI
 
 The historical reference was Prodex 0.166.1 at

@@ -15,6 +15,12 @@ controls and all fixture files were preserved; this is a documented mismatch,
 not a completed resume implementation. See
 `docs/evidence/baseline-0.166.2/session-root-resume.md`.
 
+The hidden `__super-expose` help and public `super expose` / `s expose` help
+routes now match the 0.166.2 Linux oracle, including custom executable names,
+without creating state. This is a static help slice only; expose runtime and
+launcher execution remain unsupported and the six-target denominator is
+unchanged. See `docs/evidence/baseline-0.166.2/super-expose-help.md`.
+
 # Historical work: Prodex 0.166.1 parity and CI
 
 The historical reference was Prodex 0.166.1 at

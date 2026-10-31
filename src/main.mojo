@@ -14,7 +14,7 @@ from modex.profile_cli import parse_profile_help_arguments, profile_help, profil
 from modex.root_help import login_help, logout_help, logout_usage, mcp_jsonl_bridge_help, ping_help, ping_openai_help, quota_help, quota_short_help, redeem_help, root_help, run_help, runtime_broker_help, sub_agent_exec_help, update_help
 from modex.sessions import inspect_sessions, resolve_session_id_from_store, session_resume_has_no_profile_source
 from modex.super_cli import parse_super_arguments, run_super
-from modex.super_help import super_help
+from modex.super_help import super_expose_help, super_help
 from modex.super_launch import run_local_rewrite_child
 from modex.text import cli_width, status_panel
 
@@ -303,6 +303,20 @@ def main():
             ):
                 print(run_help(executable), end="")
                 return
+    if len(args) >= 4 and (args[1] == "super" or args[1] == "s") and args[2] == "expose" and (
+        args[3] == "--help" or args[3] == "-h"
+    ):
+        var parts = args[0].split("/")
+        print(super_expose_help(String(parts[len(parts) - 1])), end="")
+        return
+    if len(args) >= 3 and args[1] == "help" and args[2] == "__super-expose" and len(args) == 3:
+        var parts = args[0].split("/")
+        print(super_expose_help(String(parts[len(parts) - 1])), end="")
+        return
+    if len(args) >= 3 and args[1] == "__super-expose" and (args[2] == "--help" or args[2] == "-h"):
+        var parts = args[0].split("/")
+        print(super_expose_help(String(parts[len(parts) - 1])), end="")
+        return
     if len(args) >= 3 and args[1] == "help" and (args[2] == "super" or args[2] == "s"):
         var parts = args[0].split("/")
         var executable = String(parts[len(parts) - 1])

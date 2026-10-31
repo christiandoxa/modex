@@ -78,7 +78,7 @@ rm -- "$EVIDENCE_DIR/reference-source-active.txt"
 export MODEX_REFERENCE_VERSION="$("$PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag"])' "$EVIDENCE_DIR/reference.json")"
 run_logged build-input-check "$PYTHON" scripts/ci/check-build-inputs.py
 run_logged focused-build make build unit
-run_logged focused-python-active env -u PRODEX_ORACLE_01661 -u PRODEX_GATEWAY_ORACLE_01661 -u MODEX_REFERENCE_01661_DIR -u PRODEX_ORACLE_01660 -u PRODEX_GATEWAY_ORACLE_01660 -u MODEX_REFERENCE_01660_DIR -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01662.py test_hook_identity_01662.py test_sub_agent_exec_help_01662.py test_sub_agent_exec_diagnostics_01662.py
+run_logged focused-python-active env -u PRODEX_ORACLE_01661 -u PRODEX_GATEWAY_ORACLE_01661 -u MODEX_REFERENCE_01661_DIR -u PRODEX_ORACLE_01660 -u PRODEX_GATEWAY_ORACLE_01660 -u MODEX_REFERENCE_01660_DIR -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01662.py test_hook_identity_01662.py test_sub_agent_exec_help_01662.py test_sub_agent_exec_diagnostics_01662.py test_super_expose_help_01662.py
 if ! "$PYTHON" scripts/ci/reference.py oracle 0.166.1 >"$EVIDENCE_DIR/oracle-path-01661.txt" 2>"$EVIDENCE_DIR/reference-01661.log"; then
     cat "$EVIDENCE_DIR/reference-01661.log" >&2
     exit 1

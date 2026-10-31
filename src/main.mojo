@@ -1,7 +1,7 @@
 from std.collections import List
 from std.sys import argv, exit, stderr
 
-from modex.cli import argument_name, login_help_requested, logout_help_requested, mcp_jsonl_bridge_help_requested, parse_ping_openai_options, parse_session_options, parse_sub_agent_exec_arguments, parse_update_help_arguments, ping_group_unknown_argument, ping_openai_model_invalid, quota_help_requested, redeem_help_requested, runtime_broker_help_requested, session_cli_error, session_help, unrecognized_subcommand
+from modex.cli import argument_name, login_help_requested, logout_help_requested, mcp_jsonl_bridge_help_requested, parse_ping_openai_options, parse_session_options, parse_sub_agent_exec_arguments, parse_update_help_arguments, ping_group_unknown_argument, ping_openai_base_url_error, ping_openai_model_invalid, quota_help_requested, redeem_help_requested, runtime_broker_help_requested, session_cli_error, session_help, unrecognized_subcommand
 from modex.doctor_install import run_doctor_install
 from modex.gateway_cli import GatewayOptions, gateway_help, parse_gateway_arguments, run_gateway
 from modex.inspection_cli import doctor_install_requested, inspection_help, inspection_help_requested, inspection_usage
@@ -125,6 +125,11 @@ def main():
         except error:
             print(error, file=stderr, end="")
             exit(2)
+            return
+        var base_url_error = ping_openai_base_url_error(args)
+        if base_url_error.byte_length() > 0:
+            print(base_url_error, file=stderr)
+            exit(1)
             return
         if ping_openai_model_invalid(args):
             print("Error: --model must be nonempty and contain no control characters", file=stderr)

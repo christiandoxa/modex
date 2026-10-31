@@ -200,20 +200,18 @@ unknown flags, and invalid subcommands, with no filesystem mutation in
 synthetic homes. A follow-up differential added truncated `--help` spellings
 at both the group and `openai` level; Modex now returns the release's suggestion
 and `--help` usage while preserving accepted options and error precedence.
-First invalid `ping openai` arguments, missing option values, and duplicate
-options also match. A synthetic differential found an unresolved
-semantic precedence gap: `ping openai --base-url ftp://example.test/v1 --model
-''` reports Prodex's base-URL error, while Modex reports its model error.
-Further oracle probes show why a local approximation is unsafe: Reqwest accepts
-empty userinfo markers (`@host` and `:@host`), but treats `@user@host` as
-nonempty credentials; it also rejects IDNA disallowed scalars such as LRM,
-bidi embedding controls, private-use characters, noncharacters, and tags.
-Mojo 1.2.0's standard library has no URL/UTS #46 parser, and the operation is
-still guarded, so no incomplete production URL validator was retained. The
-earlier empty/whitespace/control-model checks and parser precedence remain
-covered; no provider request or state mutation is involved. Exact probes and
-the current limitation are recorded in
-`docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
+First invalid `ping openai` arguments, missing option values, duplicate
+options, and model-value diagnostics also match. An isolated differential
+found that Prodex validates an FTP `--base-url` before an empty model; Modex
+now matches that precedence for split and attached options. Empty, missing,
+and malformed schemes match the oracle's `relative URL without a base` detail.
+Surrounding C0/space and CR/LF, embedded CR/LF scheme controls, removable TAB,
+and `http:///v1` normalization controls also match. Known gaps remain for
+scheme-valid URLs with empty hosts, invalid ports, credentials, queries, or
+fragments: Prodex reports the base-URL error while Modex reaches model
+validation. Full URL and IDNA parity remain unverified. The operation remains
+guarded; all probes use synthetic homes and make no provider request. Exact
+cases are recorded in `docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
 
 `doctor --install` now has active 0.166.2 process coverage for the empty-tool
 inventory, no-install Playwright probing, managed-root path safety, and

@@ -1,5 +1,6 @@
 from std.collections import List, Optional
 
+from .log_operational import valid_scheme
 from .sessions import SessionOptions
 from .text import trim_text, unsigned_value
 
@@ -399,6 +400,42 @@ def ping_openai_model_invalid(args: List[String]) -> Bool:
             return False
         index += 1
     return False
+
+
+# shortcut: only classifies URL schemes, use a standard parser when Mojo's standard library provides one.
+def ping_openai_base_url_error(args: List[String]) -> String:
+    var index = 3
+    while index < len(args):
+        var argument = String(args[index])
+        var value = String()
+        var found = False
+        if argument == "--base-url" and index + 1 < len(args):
+            value = String(args[index + 1])
+            found = True
+        elif argument.startswith("--base-url="):
+            value = String(argument[byte=11:])
+            found = True
+        if found:
+            var start = 0
+            var end = value.byte_length()
+            while start < end and Int(value.as_bytes()[start]) <= 32:
+                start += 1
+            while end > start and Int(value.as_bytes()[end - 1]) <= 32:
+                end -= 1
+            var normalized = String(value[byte=start:end]).replace("\t", "")
+            var colon = normalized.find(":")
+            var message = "Error: ping upstream base URL must be an http(s) URL with host and no credentials, query, or fragment"
+            if colon <= 0:
+                return message + ": relative URL without a base"
+            if not valid_scheme(normalized, colon):
+                for byte in String(normalized[byte=:colon]).as_bytes():
+                    if byte == 10 or byte == 13:
+                        return message
+                return message + ": relative URL without a base"
+            var scheme = String(normalized[byte=:colon]).lower()
+            return message if scheme != "http" and scheme != "https" else ""
+        index += 1
+    return ""
 
 
 def login_help_requested(args: List[String], executable: String) raises -> Bool:

@@ -160,23 +160,69 @@ class PingDiagnostics01662Tests(unittest.TestCase):
                              (1, b"", b"Error: this Modex development build has not implemented the requested command\n"))
             self.assertEqual(changes, [])
 
-    def test_base_url_precedence_mismatch_and_valid_url_control_are_visible(self):
+    def test_base_url_scheme_precedence_matches_release_without_mutation(self):
         base_error = (
             b"Error: ping upstream base URL must be an http(s) URL with host and no "
             b"credentials, query, or fragment\n"
         )
+        relative_error = base_error[:-1] + b": relative URL without a base\n"
         model_error = b"Error: --model must be nonempty and contain no control characters\n"
-        for label, base_url, expected_reference in (
-            ("invalid URL", "ftp://example.test/v1", base_error),
-            ("valid URL control", "https://example.test/v1", model_error),
+        for label, base_args, model, expected in (
+            ("invalid scheme before empty model", ("--base-url", "ftp://example.test/v1"), "", base_error),
+            ("attached invalid scheme before valid model", ("--base-url=ftp://example.test/v1",), "gpt-4.1", base_error),
+            ("empty URL before empty model", ("--base-url", ""), "", relative_error),
+            ("missing scheme before empty model", ("--base-url", "example.test/v1"), "", relative_error),
+            ("network path before empty model", ("--base-url", "//example.test/v1"), "", relative_error),
+            ("relative path before empty model", ("--base-url", "/v1"), "", relative_error),
+            ("malformed scheme before empty model", ("--base-url", "1https://example.test/v1"), "", relative_error),
+            ("malformed punctuation scheme before empty model", ("--base-url", "ht_tp://example.test/v1"), "", relative_error),
+            ("scheme with space before empty model", ("--base-url", "ht tp://example.test/v1"), "", relative_error),
+            ("spaces only before empty model", ("--base-url", "   "), "", relative_error),
+            ("valid URL control", ("--base-url", "https://example.test/v1"), "", model_error),
+            ("surrounding URL whitespace control", ("--base-url", " https://example.test/v1 "), "", model_error),
+            ("surrounding CR LF control", ("--base-url", "\r\nhttps://example.test/v1\r\n"), "", model_error),
+            ("URL TAB removal control", ("--base-url", "ht\ttps://example.test/v1"), "", model_error),
+            ("URL LF scheme control", ("--base-url", "ht\nps://example.test/v1"), "", base_error),
+            ("URL CR scheme control", ("--base-url", "ht\rps://example.test/v1"), "", base_error),
+            ("normalized special URL control", ("--base-url", "http:///v1"), "", model_error),
+            ("normalized HTTPS special URL control", ("--base-url", "https:///v1"), "", model_error),
         ):
-            arguments = ["ping", "openai", "--base-url", base_url, "--model", ""]
+            arguments = ["ping", "openai", *base_args, "--model", model]
             with self.subTest(label=label):
                 reference, reference_changes = isolated_run(
                     ORACLE, arguments, "prodex", "ping-url-precedence-oracle"
                 )
                 actual, actual_changes = isolated_run(
                     MODEX, arguments, "modex", "ping-url-precedence-modex"
+                )
+                self.assertEqual((reference.returncode, reference.stdout, reference.stderr),
+                                 (1, b"", expected))
+                self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
+                                 (1, b"", expected))
+                self.assertEqual((reference_changes, actual_changes), ([], []))
+
+    def test_unimplemented_url_validation_mismatches_remain_visible(self):
+        base_error = (
+            b"Error: ping upstream base URL must be an http(s) URL with host and no "
+            b"credentials, query, or fragment\n"
+        )
+        model_error = b"Error: --model must be nonempty and contain no control characters\n"
+        cases = (
+            ("empty host", "https://", base_error[:-1] + b": empty host\n"),
+            ("query without host", "https://?x", base_error[:-1] + b": empty host\n"),
+            ("invalid port", "https://example.test:abc/v1", base_error[:-1] + b": invalid port number\n"),
+            ("credentials", "https://user:pass@example.test/v1", base_error),
+            ("query", "https://example.test/v1?q=x", base_error),
+            ("fragment", "https://example.test/v1#x", base_error),
+        )
+        for label, base_url, expected_reference in cases:
+            arguments = ["ping", "openai", "--base-url", base_url, "--model", ""]
+            with self.subTest(label=label):
+                reference, reference_changes = isolated_run(
+                    ORACLE, arguments, "prodex", "ping-url-gap-oracle"
+                )
+                actual, actual_changes = isolated_run(
+                    MODEX, arguments, "modex", "ping-url-gap-modex"
                 )
                 self.assertEqual((reference.returncode, reference.stdout, reference.stderr),
                                  (1, b"", expected_reference))

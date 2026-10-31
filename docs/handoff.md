@@ -15,6 +15,12 @@ array and boolean names, custom nested names, and an MCP result control. This
 also covers six selected `arguments`/`input`/nested-argument precedence cases.
 This is selected request-shape evidence, not full provider parity.
 
+The historical Anthropic SSE ordering corpus also runs against the verified
+0.166.2 oracle in the loopback-only namespace. Three process tests compare
+interleaved search results, partial errors, stop-reason handling, and selected
+configuration precedence. These cases do not establish complete streaming or
+provider parity.
+
 On 2026-11-01, locally recovered official historical 0.439.2 and 0.439.5
 workflow artifacts matched their pinned hashes. Selected historical lanes
 passed across isolated invocations, but nested Bubblewrap prevented one combined

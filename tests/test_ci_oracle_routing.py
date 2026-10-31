@@ -86,6 +86,18 @@ class CIOracleRoutingTests(unittest.TestCase):
                     script,
                 )
 
+    def test_anthropic_stream_active_comparison_runs_in_loopback_namespace(self):
+        test_source = (ROOT / "tests/test_anthropic_stream_01662.py").read_text(encoding="utf-8")
+        wrapper = (ROOT / "scripts/ci/run_provider_upstream_pool_01662.py").read_text(encoding="utf-8")
+        self.assertIn("require_isolated_environment()", test_source)
+        self.assertIn('"test_anthropic_stream_01662.py"', wrapper)
+        self.assertIn("bwrap_command(", wrapper)
+        for script_path in (ROOT / "scripts/ci/run-fast.sh", ROOT / "scripts/ci/run-full.sh"):
+            with self.subTest(script=script_path.name):
+                script = script_path.read_text(encoding="utf-8")
+                self.assertNotIn("test_anthropic_stream_01662.py", unittest_files_for_lane(script, "focused-python-active"))
+                self.assertIn('run_logged active-provider-upstream-pool-loopback-01662 "$PYTHON" scripts/ci/run_provider_upstream_pool_01662.py', script)
+
     def test_provider_framing_suite_uses_active_oracle_and_active_ci_lane(self):
         environment = {
             **os.environ,

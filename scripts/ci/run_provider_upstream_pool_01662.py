@@ -30,7 +30,7 @@ def main():
     driver = r'''import subprocess, sys
 raise SystemExit(subprocess.run(
     [sys.executable, "scripts/ci/run-unittest.py", "test_provider_upstream_pool_01662.py",
-     "test_provider_request_projection_01662.py"],
+     "test_provider_request_projection_01662.py", "test_anthropic_stream_01662.py"],
     check=False,
 ).returncode)
 '''

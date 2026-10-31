@@ -149,7 +149,7 @@ class DoctorInstall01661Tests(unittest.TestCase):
             result = run_doctor(MODEX, root, env)
 
             self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
-            self.assertEqual(panel_value(result.stdout, "rtk"), b"missing")
+            self.assertEqual(panel_value(result.stdout, "rtk"), b"invalid")
             self.assertFalse(
                 marker.exists(),
                 "an empty managed-root override must not turn the working directory into a probe root",

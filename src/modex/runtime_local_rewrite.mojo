@@ -1219,18 +1219,27 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
                         break
                 if websocket_upgrade:
                     var reusable = connection.keep_alive
-                    var connection_headers = 0
-                    var upgrade_headers = 0
+                    var saw_connection_header = False
+                    var first_connection_value = String()
+                    var saw_upgrade_header = False
+                    var first_upgrade_value = String()
                     for header in request.headers:
                         var name = String(header[0]).lower()
+                        var value = String(header[1]).lower()
                         if name == "connection":
-                            connection_headers += 1
-                        elif name == "upgrade":
-                            upgrade_headers += 1
-                            if String(header[1]).lower() != "websocket":
+                            if saw_connection_header and value != first_connection_value:
                                 reusable = False
-                    if connection_headers > 1 or upgrade_headers > 1:
-                        reusable = False
+                            if not saw_connection_header:
+                                first_connection_value = value
+                                saw_connection_header = True
+                        elif name == "upgrade":
+                            if value != "websocket":
+                                reusable = False
+                            if saw_upgrade_header and value != first_upgrade_value:
+                                reusable = False
+                            if not saw_upgrade_header:
+                                first_upgrade_value = value
+                                saw_upgrade_header = True
                     if not reusable:
                         connection.keep_alive = False
                     _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback", not reusable)

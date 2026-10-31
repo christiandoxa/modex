@@ -70,7 +70,15 @@ class CIOracleRoutingTests(unittest.TestCase):
                 script = script_path.read_text(encoding="utf-8")
                 active_tests = unittest_files_for_lane(script, "focused-python-active")
                 self.assertIn("test_provider_framing_01662.py", active_tests)
+                self.assertIn("test_provider_passthrough_01662.py", active_tests)
                 self.assertIn("test_provider_relay_01662.py", active_tests)
+                self.assertIn(
+                    "active-local-relay-websocket-fallback-01662", script,
+                )
+                self.assertIn(
+                    "test_local_relay_websocket_fallback_01662.py",
+                    (ROOT / "scripts/ci/run_local_relay_websocket_fallback_01662.py").read_text(encoding="utf-8"),
+                )
                 for line in script.splitlines():
                     if line.lstrip().startswith("run_logged historical-") and "scripts/ci/run-unittest.py" in line:
                         self.assertNotIn("test_provider_framing_01662.py", line)
@@ -203,6 +211,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_hook_identity_01662.py", active_tests)
         self.assertIn("test_sub_agent_exec_help_01662.py", active_tests)
         self.assertIn("test_super_expose_help_01662.py", active_tests)
+        self.assertIn("test_super_debug_escaping_01662.py", active_tests)
         self.assertIn("test_sub_agent_exec_diagnostics_01662.py", active_tests)
         self.assertIn("test_session_inspection_01662.py", active_tests)
         self.assertIn("test_log_cli_01662.py", active_tests)
@@ -374,6 +383,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_hook_identity_01662.py", active_tests)
         self.assertIn("test_sub_agent_exec_help_01662.py", active_tests)
         self.assertIn("test_super_expose_help_01662.py", active_tests)
+        self.assertIn("test_super_debug_escaping_01662.py", active_tests)
         self.assertIn("test_sub_agent_exec_diagnostics_01662.py", active_tests)
         self.assertIn("test_session_inspection_01662.py", active_tests)
         self.assertIn("test_log_cli_01662.py", active_tests)

@@ -8,6 +8,17 @@ implementation and isolated differential evidence. Session ownership and
 fail-closed ancestry checks must be preserved. All six platform qualifications
 remain open; earlier evidence does not establish 0.166.2 parity.
 
+Invalid Super provider and reasoning-effort diagnostics now escape seven
+additional Unicode scalars observed in the active release: U+00A0, U+202F,
+U+0378, U+2063, U+FE0F, U+E000, and U+FFF9. Eighteen isolated value/caller
+comparisons match exact 0.166.2 output and create no state; U+200E and printable
+`é` preserve existing behavior. This is selected Linux x86-64 parser evidence,
+not full Rust Unicode `Debug`, Super runtime, or six-target parity. The curated
+printability list remains incomplete. The regression is registered in both
+Fast and Full active-baseline suites. See
+`docs/evidence/baseline-0.166.2/super-debug-escaping.md` and
+`tests/test_super_debug_escaping_01662.py`.
+
 The connected session parser now matches selected 0.166.2 error precedence
 when a malformed attached switch/help value or unknown argument immediately
 follows a duplicate value option. Unknown-argument usage retains earlier
@@ -6427,3 +6438,24 @@ production build, native buffered-provider test, real-process comparison,
 on Linux x86-64. Other response shapes, all six release targets, and broader
 provider parity remain unqualified. See
 `docs/evidence/baseline-0.439.2/provider-buffered-choice-history.md`.
+
+## Active 0.166.2 local relay WebSocket duplicate headers (2026-10-31)
+
+The local relay now keeps an HTTP/1.1 connection reusable after a captured 426
+WebSocket fallback when repeated `Connection` or `Upgrade` values are
+identical, matching Prodex 0.166.2 for duplicate `Connection: keep-alive` and
+`Upgrade: websocket` fields. The request must already have unambiguous fixed
+length framing. Conflicting repeated values still close in Modex, and
+conflicting Content-Length fields remain fail-closed; the release accepts the
+tested conflicting Connection/Upgrade follow-ups and returns 400 after the
+tested conflicting Content-Length body. Requests without Content-Length and
+chunked WebSocket requests also remain fail-closed in Modex; the release
+processes the no-length follow-up and returns 400 after parsing unconsumed
+chunk bytes, respectively. These are recorded differences, not parity passes.
+
+The production build and focused comparison passed on Linux x86-64. The
+comparison uses a rootless network namespace with loopback only, no default
+route, Bubblewrap namespace isolation and private tmpfs, synthetic credentials
+and a loopback upstream. CI routing, dependency import audit and test census
+passed. See
+`docs/evidence/baseline-0.166.2/local-relay-websocket-identical-duplicates.md`.

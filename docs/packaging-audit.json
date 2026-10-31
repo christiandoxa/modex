@@ -2,7 +2,7 @@
   "schema_version": 1,
   "baseline_commit": "433aad44bb249d5c25a231a6b06c2fa522a39a1f",
   "baseline_version": "0.439.0",
-  "evidence_policy": "Historical packaging audit against Prodex 0.439.0; this does not establish 0.166.0 packaging parity.",
+  "evidence_policy": "Historical packaging audit against Prodex 0.439.0; this does not establish 0.166.2 packaging parity.",
   "audited_at": "2026-10-24",
   "findings": [
     {

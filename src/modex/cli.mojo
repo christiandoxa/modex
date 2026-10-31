@@ -59,6 +59,52 @@ def parse_update_help_arguments(args: List[String], executable: String) raises -
     return False
 
 
+def login_help_requested(args: List[String], executable: String) raises -> Bool:
+    var usage = executable + " login [OPTIONS] [PROFILE_OR_LOGIN_ARG]..."
+    var profile_seen = False
+    var index = 2
+    while index < len(args):
+        var argument = args[index]
+        if argument == "--help":
+            return True
+        if argument.startswith("--help="):
+            raise session_cli_error(
+                "unexpected value '" + String(argument[byte=7:]) + "' for '--help' found; no more were expected",
+                executable + " login --help [PROFILE_OR_LOGIN_ARG]...",
+            )
+        if argument.startswith("-h") and not argument.startswith("--"):
+            var help_cluster = True
+            for character in argument[byte=1:].codepoints():
+                if Int(character) != 104:
+                    help_cluster = False
+            if help_cluster:
+                return True
+        if argument == "--":
+            return False
+        if argument == "--profile" or argument == "-p":
+            if profile_seen:
+                raise session_cli_error(
+                    "the argument '--profile <NAME>' cannot be used multiple times",
+                    usage,
+                )
+            if index + 1 >= len(args) or args[index + 1] == "--" or args[index + 1].startswith("--"):
+                raise session_cli_error("a value is required for '--profile <NAME>' but none was supplied")
+            profile_seen = True
+            index += 2
+            continue
+        if argument.startswith("--profile="):
+            if profile_seen:
+                raise session_cli_error(
+                    "the argument '--profile <NAME>' cannot be used multiple times",
+                    usage,
+                )
+            profile_seen = True
+            index += 1
+            continue
+        return False
+    return False
+
+
 def logout_help_requested(args: List[String], executable: String) raises -> Bool:
     var usage = executable + " logout [OPTIONS] [NAME]"
     var help_index = -1

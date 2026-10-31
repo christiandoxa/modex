@@ -2,6 +2,35 @@ def update_help(executable: String) -> String:
     return "Update Prodex from the latest verified GitHub release binary.\n\nUsage: " + executable + " update\n\nOptions:\n  -h, --help  Print help\n"
 
 
+def login_help(executable: String) -> String:
+    return String("""Run provider login flows, using Prodex profiles where supported.
+
+Usage: prodex login [OPTIONS] [PROFILE_OR_LOGIN_ARG]...
+
+Arguments:
+  [PROFILE_OR_LOGIN_ARG]...  Optional profile name first, followed by login-method flags or provider arguments
+
+Options:
+  -p, --profile <NAME>  Existing profile to log into. If omitted, prodex creates or reuses a profile by workspace identity
+  -h, --help            Print help
+
+Examples:
+  prodex login
+  prodex login main
+  prodex login --profile main
+  prodex login --device-auth
+  prodex login --with-claude
+  prodex login --with-antigravity
+
+Notes:
+  A leading non-option argument selects the profile; `status` remains Codex login status.
+  Use --profile when selecting a profile literally named `status`.
+  OpenAI/Codex, Claude, and API-key login paths create or update Prodex profiles.
+  Google Gemini OAuth profiles are unsupported; native Gemini CLI / Vertex AI compatibility is retired. Use a Gemini API key with `prodex s gemini`; native Antigravity remains available through `prodex s gemini --cli agy`.
+  Antigravity login delegates to `agy auth login` and does not create a Prodex profile.
+""").replace("Usage: prodex ", "Usage: " + executable + " ")
+
+
 def logout_usage(executable: String) -> String:
     return executable + " logout [OPTIONS] [NAME]"
 

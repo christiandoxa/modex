@@ -1,5 +1,9 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Selected login help routes and parser diagnostics now match 0.166.0 in isolated
+process checks. Login execution remains guarded; see
+`docs/evidence/baseline-0.166.0/login-help.md`.
+
 Hosted Fast CI run `41150466289` on `b41e117` passed 172 active 0.166.0
 tests, 121 historical 0.165.1 tests, and independent checks. It failed closed
 because the required historical 0.439.2 and 0.439.5 oracle assets were

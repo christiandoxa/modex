@@ -242,6 +242,13 @@ def _doctor_managed_candidate_is_file(candidate: String) -> Bool:
 
 
 def _doctor_optional_command_status(command: String, args: List[String]) -> String:
+    # An explicit empty managed root resolves to cwd in Prodex; inspect the candidate but never run it.
+    if (
+        command == "rtk"
+        and getenv("PRODEX_OPTIMIZERS_HOME", "\0") == ""
+        and _doctor_managed_candidate_is_file("./rtk")
+    ):
+        return "invalid"
     for root in _managed_optimizer_roots():
         var candidates = List[String]()
         if command == "codebase-memory-mcp":

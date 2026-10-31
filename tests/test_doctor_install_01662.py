@@ -362,7 +362,7 @@ class DoctorInstall01662Tests(unittest.TestCase):
                 results.append((result.returncode, normalized(root, result.stdout), result.stderr))
         self.assertEqual(results[0], results[1])
 
-    def test_empty_managed_root_does_not_turn_working_directory_into_probe_path(self):
+    def test_empty_managed_root_rejects_cwd_candidate_without_running_it(self):
         with tempfile.TemporaryDirectory(prefix="doctor-install-empty-root-01662-") as raw:
             root = Path(raw)
             home = root / "home"
@@ -378,14 +378,49 @@ class DoctorInstall01662Tests(unittest.TestCase):
             )
             env = environment(root, empty_path)
             env["PRODEX_OPTIMIZERS_HOME"] = ""
+            before = paths(root)
 
             reference = run_doctor(ORACLE, root, env)
             actual = run_doctor(MODEX, root, env)
 
-            self.assertEqual((reference.returncode, actual.returncode), (0, 0))
+            self.assertEqual((reference.returncode, reference.stderr), (0, b""))
+            self.assertEqual((actual.returncode, normalized(root, actual.stdout), actual.stderr),
+                             (0, normalized(root, reference.stdout), b""))
             self.assertEqual(panel_value(reference.stdout, "rtk"), b"invalid")
-            self.assertEqual(panel_value(actual.stdout, "rtk"), b"missing")
+            self.assertEqual(panel_value(actual.stdout, "rtk"), b"invalid")
             self.assertFalse(marker.exists())
+            self.assertFalse((home / ".codex").exists())
+            self.assertEqual(paths(root), before)
+
+    def test_empty_managed_root_without_cwd_candidate_falls_through_to_path(self):
+        with tempfile.TemporaryDirectory(prefix="doctor-install-empty-root-path-01662-") as raw:
+            root = Path(raw)
+            home = root / "home"
+            workspace = root / "workspace"
+            bindir = root / "bin"
+            managed = root / "managed-tools"
+            for directory in (home, workspace, bindir, managed):
+                directory.mkdir(mode=0o700)
+            probe_log = root / "rtk-runs.log"
+            add_probe(
+                bindir,
+                "rtk",
+                f"printf 'invoked\\n' >> {shlex.quote(str(probe_log))}\n"
+                "printf 'rtk 1.0.0\\n'\n",
+            )
+            env = environment(root, bindir)
+            env["PRODEX_OPTIMIZERS_HOME"] = ""
+
+            reference = run_doctor(ORACLE, root, env)
+            self.assertEqual((reference.returncode, reference.stderr), (0, b""))
+            self.assertTrue(panel_value(reference.stdout, "rtk").startswith(b"installed, version="))
+            self.assertEqual(probe_log.read_text(encoding="utf-8").splitlines(), ["invoked"])
+
+            actual = run_doctor(MODEX, root, env)
+            self.assertEqual((actual.returncode, normalized(root, actual.stdout), actual.stderr),
+                             (0, normalized(root, reference.stdout), b""))
+            self.assertEqual(probe_log.read_text(encoding="utf-8").splitlines(), ["invoked", "invoked"])
+            self.assertFalse((workspace / "rtk").exists())
             self.assertFalse((home / ".codex").exists())
 
     def test_playwright_is_no_install_and_escaping_ponytail_is_not_run(self):

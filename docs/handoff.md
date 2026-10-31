@@ -102,19 +102,18 @@ installed RTK/Playwright version-path-digest reporting under synthetic homes
 and network isolation. Exact panel comparisons cover managed and PATH RTK
 installations; a working-directory decoy remains unexecuted. Modex escapes
 terminal controls and redacts synthetic credential-like values in version and
-path output. An empty `PRODEX_OPTIMIZERS_HOME` still reports `invalid` in
-Prodex and `missing` in Modex, while neither executes the working-directory
-fixture. The previous Codebase Memory version-only false-green is fixed:
+path output. An explicitly empty `PRODEX_OPTIMIZERS_HOME` now matches the
+tested oracle precedence: a cwd `rtk` candidate is rejected from metadata only
+without execution, while absence of that candidate still allows a synthetic
+PATH RTK to pass. The previous Codebase Memory version-only false-green is fixed:
 Codebase Memory now requires a supported version and the pinned `daemon status`
 contract before it reports installed identity. Active and initially stopped
 daemon states match across managed and PATH fixtures. A
 reproducible bounded-output gap remains: if daemon output exceeds 64 KiB after
 an active first line, Prodex truncates it and accepts the prefix, while Modex's
-capture rejects it and reports `invalid`. For an empty
-`PRODEX_OPTIMIZERS_HOME`, Prodex still reports `rtk: invalid` while Modex reports
-`rtk: missing`; neither executes the working-directory fixture. Old Playwright
-MCP versions report `invalid` and unrecognized versions report `missing`,
-matching 0.166.2. These cases do not establish full doctor parity; see
+capture rejects it and reports `invalid`. Old Playwright MCP versions report
+`invalid` and unrecognized versions report `missing`, matching 0.166.2. These
+cases do not establish full doctor parity; see
 `docs/evidence/baseline-0.166.2/doctor-install.md`.
 
 The selected provider relay catalog routes, same-connection reuse after

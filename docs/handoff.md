@@ -8,6 +8,14 @@ requires authentication, so availability to a clean hosted runner is not
 established and its missing-reference gates remain blocked. See
 `docs/evidence/baseline-0.166.0/historical-artifact-recovery.md`.
 
+Super now preserves a Codex child’s Unix signal exit status (`128 + signal`),
+matching Prodex 0.166.0. The previous runtime return path converted every
+signal exit to 1. A real-process SIGTERM comparison returns 143 from both
+launchers, with an ordinary exit-seven control also returning 7; the synthetic
+child makes no provider request. Approval and sandbox arguments are unchanged.
+This process result is verified on Linux x86-64 only; see
+`docs/evidence/baseline-0.166.0/super-signal-exit-status.md`.
+
 Hosted Fast CI run `41162879487` on `fe24cf1` passed 201 active 0.166.0
 tests, 53 independent relay tests, 121 historical 0.165.1 tests, and helper
 and width checks. The overall run failed closed because the required

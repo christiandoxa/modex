@@ -1132,7 +1132,7 @@ def _exec(binary: String, child_path: String, argv0: String, home: String, model
             raise
         _ = wait_or_kill(relay, 1)
         input.set_input_only()
-        return result.exit_code.value() if result.exit_code else 1
+        return _child_exit_code(result)
     except:
         _ = wait_or_kill(relay, 1)
         input.set_input_only()

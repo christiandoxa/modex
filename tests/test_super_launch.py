@@ -118,6 +118,7 @@ save({"kind":"launch","pid":os.getpid(),"mode":home.stat().st_mode & 0o777,"args
       "environment":{key:os.environ.get(key) for key in ("CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT","PRODEX_RUNTIME_LOCAL_KEY","PRODEX_RUNTIME_LOCAL_KEYS_JSON","PRODEX_RUNTIME_LOCAL_CLIENT_TOKEN","CODEX_SANDBOX_SENTINEL",*provider_secret_env_names)}})
 (home/"sessions"/"synthetic-session.jsonl").write_text('{"synthetic":true}\n')
 scenario = os.environ["MODEX_LAUNCH_SCENARIO"]
+if scenario == "signal-term": os.kill(os.getpid(), signal.SIGTERM)
 if scenario in ("client-auth-reject", "client-auth-stale"):
     import socket
     target = urlsplit(config["model_providers.prodex-deepseek.base_url"] + "/responses")

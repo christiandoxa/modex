@@ -84,6 +84,12 @@ match 0.166.2 through real synthetic launch and loopback relay processes.
 This does not qualify streaming, other provider shapes, or full provider
 parity; see `docs/evidence/baseline-0.166.2/provider-buffered-metadata.md`.
 
+Five synthetic provider request and response-shape comparisons now pass
+against the 0.166.2 oracle, including buffered requests, streamed events, and
+combo retry controls. The test reuses the historical corpus with the active
+oracle and does not qualify untested provider behavior; see
+`docs/evidence/baseline-0.166.2/provider-shapes.md`.
+
 # Historical work: Prodex 0.166.1 parity and CI
 
 The historical reference was Prodex 0.166.1 at

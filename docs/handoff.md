@@ -45,12 +45,16 @@ leave the synthetic home unchanged. See
 The connected quota help parser now matches selected offline 0.166.2
 diagnostics: malformed `--help=value` precedes a pending split value, and
 errors after accepted options retain the release's full option-group usage.
-Invalid attached values still take precedence. Six parser cases and three help
-controls run in isolated, network-free homes with no filesystem changes; a
-historical 0.439.2 help guard covers the three quota help routes. Quota
-execution remains guarded. `quota --profile=` still reaches a stateful
-Prodex lookup that creates lifecycle/housekeeping locks, so Modex does not
-fake that result or bypass those locks. See
+Invalid attached values still take precedence. A generated 60-case parser
+matrix also covers malformed attached boolean options after each quota
+value-taking switch, with and without an earlier accepted option; two ordinary
+missing-value cases guard the adjacent behavior. All 71 active parser/help
+comparisons exit before execution and leave isolated homes unchanged; a
+historical 0.439.2 help guard covers the three quota help routes. Three
+Modex-only valid-option checks also confirm quota execution stops at the
+no-state guard; they are not parity evidence. `quota --profile=` still reaches
+a stateful Prodex lookup that creates lifecycle/housekeeping locks, so Modex
+does not fake that result or bypass those locks. See
 `docs/evidence/baseline-0.166.2/quota-cli-diagnostics.md`.
 
 The connected `redeem` parser now matches selected offline 0.166.2 diagnostics

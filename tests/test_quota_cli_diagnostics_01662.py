@@ -8,6 +8,7 @@ import unittest
 
 from session_oracle import sandbox_command
 from test_active_baseline_01662 import MODEX, ORACLE, ORACLE_SHA256
+from test_root_help import isolated_run
 
 
 OPTION_GROUP = (
@@ -83,6 +84,50 @@ class QuotaCliDiagnostics01662Tests(unittest.TestCase):
                 with self.subTest(arguments=arguments):
                     self.assertEqual(outputs[0], (2, b"", expected_stderr.encode()))
                     self.assertEqual(outputs[1], outputs[0])
+
+    def test_attached_boolean_values_outrank_pending_value_options(self):
+        value_options = ("--profile", "-p", "--auth", "--provider", "--base-url")
+        boolean_options = (
+            "--all=true", "--detail=true", "--raw=true", "--watch=true", "--once=true", "--all=",
+        )
+        for prefix in ((), ("--once",)):
+            for value_option in value_options:
+                for boolean_option in boolean_options:
+                    arguments = ["quota", *prefix, value_option, boolean_option]
+                    with self.subTest(arguments=arguments):
+                        baseline, baseline_created = isolated_run(ORACLE, arguments, "prodex", "quota-oracle")
+                        actual, actual_created = isolated_run(MODEX, arguments, "prodex", "quota-modex")
+                        self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+                        self.assertIn(b"unexpected value '", baseline.stderr)
+                        self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
+                                         (baseline.returncode, baseline.stdout, baseline.stderr))
+                        self.assertEqual((baseline_created, actual_created), ([], []))
+
+        for arguments in (
+            ["quota", "--profile", "--detail"],
+            ["quota", "--profile", "--detail", "--help"],
+        ):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(ORACLE, arguments, "prodex", "quota-control-oracle")
+                actual, actual_created = isolated_run(MODEX, arguments, "prodex", "quota-control-modex")
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (actual.returncode, actual.stdout, actual.stderr))
+                self.assertIn(b"a value is required for '--profile <NAME>'", baseline.stderr)
+                self.assertEqual((baseline_created, actual_created), ([], []))
+
+    def test_valid_quota_options_stay_behind_the_no_state_guard(self):
+        for arguments in (
+            ["quota", "--all"],
+            ["quota", "--profile", "synthetic", "--once"],
+            ["quota", "--provider", "deepseek"],
+        ):
+            with self.subTest(arguments=arguments):
+                actual, created = isolated_run(MODEX, arguments, "prodex", "quota-execution-guard")
+                self.assertEqual(
+                    (actual.returncode, actual.stdout, actual.stderr),
+                    (1, b"", b"Error: this Modex development build has not implemented the requested command\n"),
+                )
+                self.assertEqual(created, [])
 
     def test_release_help_controls_stay_outside_quota_execution(self):
         with tempfile.TemporaryDirectory(prefix="modex-quota-help-control-01662-") as directory:

@@ -795,13 +795,7 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
             short_profile_value = True
 
         if not takes_value and len(pieces) == 2:
-            var error_usage = usage + " " + quota_option_label(canonical)
-            if seen:
-                error_usage = usage + " <" + quota_option_group() + ">"
-            raise session_cli_error(
-                "unexpected value '" + String(pieces[1]) + "' for '" + canonical + "' found; no more were expected",
-                error_usage,
-            )
+            raise quota_option_attached_value_error(String(pieces[1]), canonical, executable, seen)
         if takes_value:
             if len(pieces) == 2 or short_profile_value:
                 pass
@@ -814,8 +808,13 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
                         "a value is required for '" + quota_option_label(canonical) + "' but none was supplied"
                     )
                 if args[index].startswith("-") and args[index] != "-":
-                    var next_name = argument_name(args[index])
+                    var next_argument = String(args[index])
+                    var next_name = argument_name(next_argument)
                     if next_name == "-p" or (next_name.startswith("--") and String(next_name[byte=2:]) in choices):
+                        var next_pieces = next_argument.split("=", maxsplit=1)
+                        var next_takes_value = next_name == "--profile" or next_name == "--auth" or next_name == "--provider" or next_name == "--base-url" or next_name == "-p"
+                        if len(next_pieces) == 2 and not next_takes_value:
+                            raise quota_option_attached_value_error(String(next_pieces[1]), next_name, executable, seen)
                         raise session_cli_error(
                             "a value is required for '" + quota_option_label(canonical) + "' but none was supplied"
                         )
@@ -839,6 +838,18 @@ def quota_help_value_error(value: String, executable: String, seen: List[String]
         usage += " <" + quota_option_group() + ">"
     return session_cli_error(
         "unexpected value '" + value + "' for '--help' found; no more were expected",
+        usage,
+    )
+
+
+def quota_option_attached_value_error(value: String, name: String, executable: String, seen: List[String]) -> Error:
+    var usage = executable + " quota"
+    if seen:
+        usage += " <" + quota_option_group() + ">"
+    else:
+        usage += " " + quota_option_label(name)
+    return session_cli_error(
+        "unexpected value '" + value + "' for '" + name + "' found; no more were expected",
         usage,
     )
 

@@ -6505,3 +6505,23 @@ import audit, Python syntax check, and diff check passed. This qualifies only
 the selected cases on Linux x86-64; broader provider behavior and all six
 release targets remain unqualified. See
 `docs/evidence/baseline-0.166.2/provider-stream-namespace-fallback.md`.
+
+## Active 0.166.2 Gateway config classification (2026-10-31)
+
+Gateway's profileless config preflight now compares the root
+`model_provider` to `prodex-deepseek` without ASCII case sensitivity and
+preserves whitespace significance. When the value is anything else, including
+an ordinary provider, an empty string, or a non-string TOML value, the pinned
+release returns the no-active-profile diagnostic even with an explicit
+`--provider deepseek`; Modex now matches it. The existing DeepSeek no-proxy
+failure and security guards are unchanged.
+
+Ten real-process configurations passed exact exit/stdout/stderr comparison in
+Bubblewrap `--unshare-all` network namespaces using only synthetic homes and
+configs. No API key was supplied. The production build, complete native unit
+run, focused comparison, 74-file production import audit, and test-census
+ownership check passed on Linux x86-64. This qualifies only failed-startup
+classification; it does not qualify successful startup, filesystem
+lock/housekeeping parity, profile recovery, other gateway providers, or the
+other five targets. See
+`docs/evidence/baseline-0.166.2/gateway-config-classification.md`.

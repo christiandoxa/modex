@@ -887,6 +887,14 @@ Modex-only existing-state control remains fail closed; it does not establish
 parity for populated profile state. See
 `docs/evidence/baseline-0.165.1/gateway-config-classification.md`.
 
+A separate 0.166.2 network-isolated comparison now covers ten root
+`model_provider` values with explicit `--provider deepseek`. It verifies
+case-insensitive exact matching of `prodex-deepseek`, significant surrounding
+whitespace, and the release's no-profile error for ordinary, empty, and
+wrong-typed values. This selected classification does not qualify profile
+selection, recovery, successful Gateway startup, or lifecycle effects. See
+`docs/evidence/baseline-0.166.2/gateway-config-classification.md`.
+
 Both startup cases still omit real runtime/profile lifecycle locks and
 housekeeping side effects. `docs/evidence/gateway-mismatch.json` records exact
 baseline and Modex deltas with overall FAIL. The tests assert that this

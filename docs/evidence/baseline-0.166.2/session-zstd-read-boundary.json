@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "baseline": {
+    "product": "Prodex",
+    "version": "0.166.2",
+    "commit": "b1201b5244ff85fce7fc54c3f7607f2e3bdcf4a7",
+    "oracle_sha256": "e31b8e281583d12b8db1abc5bc9185c4d297d7c40954770ca19dbb8e83567f00"
+  },
+  "modex": {
+    "source_commit": "7a1616541625ad4f097b6f27984d20faea359af9",
+    "binary_sha256": "1909dabc89216abc41ad16591d1d6b80960a75f02eac9df3174cdc3c2931a35e",
+    "compiler": "Mojo 1.2.0 (2016d0cd)",
+    "target": "x86_64-unknown-linux-gnu"
+  },
+  "test_runtime": "Python 3.16.0a1 standard library compression.zstd",
+  "reproduce": "PYTHONPATH=tests python3 -m unittest test_session_inspection_01662.SessionInspection01662Tests.test_compressed_checksum_matches_at_8k_read_boundary",
+  "command": [
+    "session",
+    "list",
+    "--json"
+  ],
+  "fixture": "Isolated HOME with the existing synthetic rollout fixture; no credentials or network access.",
+  "scope": "The selected 8,191/8,192/8,193 decoded-byte boundary for a checksummed compressed file whose first JSON line is not session metadata. This does not establish broader compressed-session parity.",
+  "cases": [
+    {
+      "case": "invalid-first-line-8191-checksum",
+      "decoded_input_bytes": 8191,
+      "input_description": "Zstandard frame for b'{}\\n' plus x bytes, with the final checksum byte toggled",
+      "compressed_input_bytes": 25,
+      "compressed_input_sha256": "794a106f9165c59c415f6638641695ddc3c02df6ee7e6c90152fd53e7d8c098b",
+      "prodex_0_166_2": {
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Restored data doesn't match checksum\n"
+      },
+      "modex": {
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Restored data doesn't match checksum\n"
+      },
+      "result": "MATCH"
+    },
+    {
+      "case": "invalid-first-line-8192-checksum",
+      "decoded_input_bytes": 8192,
+      "input_description": "Zstandard frame for b'{}\\n' plus x bytes, with the final checksum byte toggled",
+      "compressed_input_bytes": 25,
+      "compressed_input_sha256": "400f70fdec4e3f3ecb45ab2b8f550f84d6274519c774d808ca91aed70673a88a",
+      "prodex_0_166_2": {
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Restored data doesn't match checksum\n"
+      },
+      "modex": {
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/rollout-019a1234-5678-7123-8123-0123456789ab.jsonl.zst: Restored data doesn't match checksum\n"
+      },
+      "result": "MATCH"
+    },
+    {
+      "case": "invalid-first-line-8193-checksum",
+      "decoded_input_bytes": 8193,
+      "input_description": "Zstandard frame for b'{}\\n' plus x bytes, with the final checksum byte toggled",
+      "compressed_input_bytes": 25,
+      "compressed_input_sha256": "3fa34e168cd2d48c1a60aecc993c53fbd0dc1e00bd47bd3d151c2b5e694d72c4",
+      "prodex_0_166_2": {
+        "exit_code": 0,
+        "stdout": "[]\n",
+        "stderr": ""
+      },
+      "modex": {
+        "exit_code": 0,
+        "stdout": "[]\n",
+        "stderr": ""
+      },
+      "result": "MATCH"
+    }
+  ]
+}

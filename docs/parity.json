@@ -1024,7 +1024,8 @@
         "tests/test_session_query_04395.py",
         "tests/test_session_json_whitespace_04395.py",
         "tests/test_session_query_01651.py",
-        "tests/test_session_report_01651.py"
+        "tests/test_session_report_01651.py",
+        "tests/test_session_inspection_01662.py"
       ],
       "evidence": [
         "docs/evidence/session-tests.txt",
@@ -1050,7 +1051,8 @@
         "docs/evidence/baseline-0.439.2/reference-verification.json",
         "docs/evidence/baseline-0.165.1/session-query-unicode.md",
         "docs/evidence/baseline-0.165.1/session-paths.md",
-        "docs/evidence/baseline-0.165.1/session-profile-filter.md"
+        "docs/evidence/baseline-0.165.1/session-profile-filter.md",
+        "docs/evidence/baseline-0.166.2/session-zstd-read-boundary.json"
       ],
       "status": "IN_PROGRESS",
       "platform_status": {

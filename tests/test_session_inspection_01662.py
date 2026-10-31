@@ -2,11 +2,15 @@
 
 import hashlib
 import json
+from pathlib import Path
+import tempfile
 import unittest
 
 from compression import zstd
 
+from capture_session_zstd import install_case, observe
 from test_active_baseline_01662 import MODEX, ORACLE, ORACLE_SHA256
+from session_oracle import SESSION_ID, fixture
 from test_sessions import compare_outputs
 
 
@@ -103,6 +107,36 @@ class SessionInspection01662Tests(unittest.TestCase):
             baseline,
             (f"prodex run {CHILD_ID}\nprodex run {COMPOUND_ID}\nprodex run {PARENT_ID}\n").encode(),
         )
+
+    def test_compressed_checksum_matches_at_8k_read_boundary(self):
+        checksum_error = (
+            "Error: failed to read session <FIXTURE_ROOT>/home/.codex/sessions/2026/10/24/"
+            f"rollout-{SESSION_ID}.jsonl.zst: Restored data doesn't match checksum\n"
+        )
+        cases = (
+            ("invalid-first-line-8191-checksum", {
+                "exit_code": 1, "stdout": "", "stderr": checksum_error,
+            }),
+            ("invalid-first-line-8192-checksum", {
+                "exit_code": 1, "stdout": "", "stderr": checksum_error,
+            }),
+            ("invalid-first-line-8193-checksum", {
+                "exit_code": 0, "stdout": "[]\n", "stderr": "",
+            }),
+        )
+        with tempfile.TemporaryDirectory(prefix="modex-01662-zstd-boundary-") as directory:
+            parent = Path(directory)
+            for case, expected in cases:
+                observations = {}
+                for name, binary in (("prodex01662", ORACLE), ("modex", MODEX)):
+                    root = parent / f"{case}-{name}"
+                    root.mkdir()
+                    fixture(root)
+                    install_case(root, case)
+                    observations[name] = observe(binary, root)
+                with self.subTest(case=case):
+                    self.assertEqual(observations["prodex01662"], expected)
+                    self.assertEqual(observations["modex"], observations["prodex01662"])
 
 
 if __name__ == "__main__":

@@ -57,6 +57,15 @@ registered in the active fast and full CI suites. Native TUI root-resume
 selection remains unimplemented behind the guarded Super launcher; see
 `docs/evidence/baseline-0.166.2/session-inspection-list.md`.
 
+The checksum-verified 0.166.2 binary and Modex match on synthetic compressed
+session inputs with 8,191, 8,192, and 8,193 decoded bytes. The first two report
+the checksum failure; the 8,193-byte input returns an empty list. The capture
+records both outputs and the pinned oracle identity in
+`docs/evidence/baseline-0.166.2/session-zstd-read-boundary.json`; the focused
+active-baseline test reproduces the cases. This covers one 8 KiB read boundary
+on Linux x86-64 and does not establish general compressed-session parity or
+the other five release targets. `SESSION-LIST` remains `IN_PROGRESS`.
+
 Offline `ping` group diagnostics now match 0.166.2 for a missing subcommand,
 unknown flags, and invalid subcommands, with no filesystem mutation in
 synthetic homes. First invalid `ping openai` arguments, missing option values,

@@ -1,5 +1,13 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+A manual offline `doctor --install` comparison against the pinned real Codex
+0.166.0 executable and Prodex oracle passed on Linux x86-64. Direct Codex
+version and unauthenticated status probes, Doctor panel rows, synthetic-key
+redaction, and known no-state checks passed in a private loopback-only
+namespace. The check did not invoke Super, run a Codex turn, or contact a
+provider. Other targets and broader Doctor parity remain unverified; see
+`docs/evidence/baseline-0.166.0/doctor-install.md`.
+
 Same-origin redirect paths and queries now encode tested spaces like 0.166.0.
 Query apostrophes encode as `%27`; path apostrophes and existing percent
 escapes stay unchanged. Authority spaces, raw controls, and credential-bearing

@@ -65,3 +65,51 @@ invalid tail-byte values, duplicate tail-byte options, and false-valued
 `--runtime`/`--quota` flags before running probes. Modex rejects the tested
 cases with matching diagnostics, including selected attached and separated
 option orderings.
+
+## Manual real-Codex offline check
+
+On 2026-10-31, `tests/manual_doctor_codex_offline_01660.py -v` passed one test
+against the pinned Linux x86-64 Prodex 0.166.0 oracle and Codex 0.166.0
+executable. Modex was built from worktree commit `fe24cf1` (binary SHA-256
+`093e8bf388ab34b8eed51212d7f899dd44bbdaceca610d1b8d014e8d4c1307c0`). The
+oracle SHA-256 was
+`349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d09735`; the
+Codex executable SHA-256 was
+`b8a11fedf24b2dfb59a70c9e52b030f9a508dcd49cd2dd0d41956f4c785156b8`.
+
+The direct Codex probes returned `codex-cli 0.166.0` on stdout and `Not logged
+in` on stderr with exit status 1. The real Codex CLI version and auth rows then
+matched in the Prodex and Modex `doctor --install` panels, as did the remaining
+panel rows after removing their intentionally different home-path rows. The
+isolated Codex home contained only temporary helper scratch files; the harness
+checks for auth, profile, session, history, config, and application-home state.
+It also checks that neither panel exposes the synthetic API key.
+
+The check ran with empty synthetic `HOME` and `CODEX_HOME` directories, a
+private `/tmp` tmpfs, loopback only, and no IPv4 or IPv6 default route. It
+invokes `doctor --install` only; it does not invoke Super, start a Codex turn,
+perform account login, or contact a provider. This qualifies only the tested
+Linux x86-64 offline Doctor path, not interactive rendering, other release
+targets, or broader Doctor parity.
+
+Reproduce after building Modex and obtaining the checksum-pinned oracle and
+Codex executables:
+
+```sh
+MODEX_BINARY=/path/to/build/modex \
+PRODEX_ORACLE=/path/to/prodex-0.166.0/prodex-x86_64-unknown-linux-gnu \
+CODEX_BINARY=/path/to/codex-0.166.0/codex-x86_64-unknown-linux-musl \
+timeout 120s unshare -Urnm sh -eu -c '
+  mount --make-rprivate / &&
+  mount -t tmpfs -o mode=1777 tmpfs /tmp &&
+  ip link set lo up &&
+  mkdir -m 700 /tmp/home /tmp/work /tmp/codex-home &&
+  exec env -i \
+    HOME=/tmp/home TMPDIR=/tmp/work CODEX_HOME=/tmp/codex-home \
+    PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+    MODEX_BINARY="$MODEX_BINARY" PRODEX_ORACLE="$PRODEX_ORACLE" \
+    CODEX_BINARY="$CODEX_BINARY" MODEX_DOCTOR_CODEX_NETNS=1 \
+    PYTHONPATH=tests \
+    python3 tests/manual_doctor_codex_offline_01660.py -v
+'
+```

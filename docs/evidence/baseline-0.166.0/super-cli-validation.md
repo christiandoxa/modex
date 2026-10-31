@@ -71,6 +71,13 @@ differences remain explicit and are not counted as parity. A Modex process
 check confirms that an accepted space-padded URL still reaches the existing
 Super startup guard without creating state; no sub-agent request is sent.
 
+Super's invalid reasoning-effort diagnostic now escapes the tested U+200B and
+U+2066 format characters in its Rust-style `got` value, matching the active
+release. The process regression also checks that ESC and U+001F stay escaped
+and that parser errors create no state. The original value field may still
+contain these non-ASCII characters, as it does in the reference; this qualifies
+only the selected debug-value ranges, not full Unicode `Debug` formatting.
+
 Final checks from the detached worktree:
 
 - `make BUILD_DIR=build build` — passed with existing unused-variable warnings.

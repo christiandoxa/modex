@@ -140,6 +140,26 @@ class SuperCli01660Tests(unittest.TestCase):
                                  (baseline.returncode, baseline.stdout, baseline.stderr))
                 self.assertNotIn(guard_error, modex.stderr)
 
+    def test_reasoning_effort_debug_escapes_controls_and_format_characters(self):
+        cases = (
+            ("\x1b[31m", br'got "\u{1b}[31m"'),
+            ("\x1f", br'got "\u{1f}"'),
+            ("\u200b", br'got "\u{200b}"'),
+            ("\u2066", br'got "\u{2066}"'),
+        )
+        for value, escaped in cases:
+            arguments = ("super", "--sub-agent-model-reasoning-effort", value)
+            with self.subTest(value=repr(value)):
+                baseline, baseline_mutated = isolated_run(ORACLE, arguments)
+                modex, modex_mutated = isolated_run(MODEX, arguments)
+                self.assertEqual(baseline.returncode, 2)
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (baseline.returncode, baseline.stdout,
+                                  normalize_super_cli_executable(baseline.stderr)))
+                self.assertIn(escaped, modex.stderr)
+                self.assertFalse(baseline_mutated)
+                self.assertFalse(modex_mutated)
+
     def test_valid_gemini_agy_control_reaches_executable_lookup(self):
         arguments = ("super", "--cli", "agy", "--provider", "gemini")
         baseline, _ = isolated_run(ORACLE, arguments)

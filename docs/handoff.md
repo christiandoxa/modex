@@ -1,5 +1,9 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Selected Super invalid-reasoning diagnostics now escape tested zero-width and
+bidirectional controls as 0.166.0 does. Full Unicode debug formatting remains
+unqualified; see `docs/evidence/baseline-0.166.0/super-cli-validation.md`.
+
 The local relay accepts the tested literal `@` in slash-delimited upstream
 paths while continuing to reject authority credentials and ambiguous backslash
 forms. Strict beta policy remains unchanged; see

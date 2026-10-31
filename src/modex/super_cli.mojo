@@ -87,7 +87,7 @@ def _hex_codepoint(value: Int) -> String:
 
 
 def _debug_quoted(value: String) -> String:
-    # shortcut: non-ASCII nonprintables remain literal; add a version-pinned table for full Rust Debug Unicode parity.
+    # shortcut: escape tested zero-width and bidi controls; add a Unicode table before claiming full Rust Debug parity.
     var output = String("\"")
     for character in value.codepoints():
         var code = Int(character)
@@ -98,6 +98,8 @@ def _debug_quoted(value: String) -> String:
         elif code == 34: output += "\\\""
         elif code == 92: output += "\\\\"
         elif code < 32 or 127 <= code <= 159:
+            output += "\\u{" + _hex_codepoint(code) + "}"
+        elif code in [0x200B, 0x200C, 0x200D, 0x200E, 0x200F] or 0x2066 <= code <= 0x2069:
             output += "\\u{" + _hex_codepoint(code) + "}"
         else:
             output += chr(code)

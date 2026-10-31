@@ -1,11 +1,64 @@
 """Pin selected provider relay routes and bodyless framing to Prodex 0.166.2."""
 
 import hashlib
+import textwrap
 import unittest
 
 from test_active_baseline_01662 import MODEX, ORACLE, ORACLE_SHA256
 from test_deepseek_continuation import observe_turns
+from test_super_launch import CODEX
 import test_provider_passthrough_01660 as historical
+
+
+def _route_wire_client(path, method, body):
+    script = CODEX[:CODEX.index("passthrough = scenario")] + textwrap.dedent(f'''\
+        import socket
+        target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
+        path = {path!r}
+        method = {method!r}
+        body = bytes.fromhex({body.hex()!r})
+        request = (f"{{method}} {{path}} HTTP/1.1\\r\\nHost: {{target.hostname}}:{{target.port}}\\r\\n"
+                   f"Authorization: {{authorization}}\\r\\nContent-Type: application/json\\r\\n"
+                   f"Content-Length: {{len(body)}}\\r\\nConnection: close\\r\\n\\r\\n").encode() + body
+        connection = socket.create_connection((target.hostname, target.port), timeout=5)
+        connection.settimeout(2)
+        connection.sendall(request)
+        wire = bytearray()
+        eof = False
+        timed_out = False
+        while True:
+            try:
+                chunk = connection.recv(65536)
+            except TimeoutError:
+                timed_out = True
+                break
+            if not chunk:
+                eof = True
+                break
+            wire.extend(chunk)
+        connection.close()
+        save({{"kind": "wire-response", "wire": bytes(wire).hex(), "eof": eof,
+              "timed_out": timed_out}})
+        print("synthetic-wire-complete")
+        raise SystemExit(0)
+    ''')
+    return script
+
+
+def _route_wire(binary, path, method="GET", body=b""):
+    return historical.observe_response_wire(
+        binary,
+        {"status": 200, "content_type": "application/json", "body": b"unused"},
+        client_script=_route_wire_client(path, method, body),
+    )
+
+
+def _response_header_lines(wire):
+    head, separator, _ = wire.partition(b"\r\n\r\n")
+    if not separator:
+        raise AssertionError(f"response has no header terminator: {wire!r}")
+    return [(name.decode("ascii"), value.decode("ascii").strip())
+            for name, value in (line.split(b":", 1) for line in head.split(b"\r\n")[1:])]
 
 
 class ProviderRelay01662Tests(unittest.TestCase):
@@ -48,6 +101,30 @@ class ProviderRelay01662Tests(unittest.TestCase):
             self.assertEqual([(row["status"], bytes.fromhex(row["body"])) for row in responses], [(200, body)])
             observed.append((upstream[0]["path"], upstream[0]["body"], responses[0]["body"]))
         self.assertEqual(observed[0], observed[1])
+
+    def test_local_provider_error_routes_preserve_oracle_wire_header_casing(self):
+        cases = (
+            ("/v1/unknown", "GET", b"", 404),
+            ("/v1/%zz", "GET", b"", 400),
+            ("/v1/responses", "POST", b"{", 502),
+        )
+        for path, method, body, expected_status in cases:
+            observed = []
+            for binary in (ORACLE, MODEX):
+                with self.subTest(path=path, binary=str(binary)):
+                    upstream, wire, eof, timed_out = _route_wire(binary, path, method, body)
+                    self.assertEqual(upstream, [], "local errors must not reach the provider")
+                    self.assertTrue(eof, "the local error response should close its client socket")
+                    self.assertFalse(timed_out)
+                    head, separator, response_body = wire.partition(b"\r\n\r\n")
+                    self.assertTrue(separator)
+                    status = int(head.split(b" ", 2)[1])
+                    headers = _response_header_lines(wire)
+                    self.assertEqual(status, expected_status)
+                    content_type = "application/json" if expected_status != 502 else "text/plain; charset=utf-8"
+                    self.assertIn(("Content-Type", content_type), headers)
+                    observed.append((status, [row for row in headers if row[0].lower() != "date"], response_body))
+            self.assertEqual(observed[0], observed[1])
 
 
 if __name__ == "__main__":

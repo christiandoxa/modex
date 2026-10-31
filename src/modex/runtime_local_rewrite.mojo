@@ -278,7 +278,7 @@ def _timeout(name: String, fallback: UInt64) raises -> UInt64:
 
 
 def _reply(mut connection: LoopbackHTTPConnection, status: Int, message: String, graceful_close: Bool = False) raises:
-    connection.respond(status, [("content-type", "text/plain; charset=utf-8")], _bytes(message), 30000, False, False, graceful_close)
+    connection.respond(status, [("Content-Type", "text/plain; charset=utf-8")], _bytes(message), 30000, False, False, graceful_close)
 
 
 def _write_event(mut connection: LoopbackHTTPConnection, event: String) raises:
@@ -305,12 +305,12 @@ def _stream_history(exchange: DeepSeekExchange) -> String:
 
 
 def _route_error(mut connection: LoopbackHTTPConnection) raises:
-    connection.respond(404, [("content-type", "application/json"), ("cache-control", "no-store"), ("x-content-type-options", "nosniff")], _bytes('{"error":{"code":"unsupported_provider_route","message":"provider route is not supported"}}'), 30000)
+    connection.respond(404, [("Content-Type", "application/json"), ("cache-control", "no-store"), ("x-content-type-options", "nosniff")], _bytes('{"error":{"code":"unsupported_provider_route","message":"provider route is not supported"}}'), 30000)
 
 
 def _invalid_request_target(mut connection: LoopbackHTTPConnection) raises:
     connection.respond(400, [
-        ("content-type", "application/json"), ("cache-control", "no-store"),
+        ("Content-Type", "application/json"), ("cache-control", "no-store"),
         ("x-content-type-options", "nosniff"),
     ], _bytes('{"error":{"code":"invalid_request_target","message":"request target is invalid"}}'), 30000)
 

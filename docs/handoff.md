@@ -163,6 +163,11 @@ the request body and query through a custom `/tenant/api/v9` provider base path.
 This adds focused wire regressions; provider coverage remains incomplete and
 all six target qualifications stay open. See
 `docs/evidence/baseline-0.166.2/provider-relay-routes-bodyless.md`.
+Raw error-wire comparisons also now match the release's `Content-Type` casing
+for unsupported routes, invalid targets, and malformed Responses requests; all
+three return matching statuses and bodies without reaching the provider. This
+closes only these Linux x86-64 header differences; broader provider coverage and
+all six target qualifications remain open.
 
 The 0.166.2 `session list --profile main` comparison also confirms that the
 release recovers a corrupt primary `state.json` from a valid private

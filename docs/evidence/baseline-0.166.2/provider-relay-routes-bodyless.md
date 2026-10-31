@@ -8,18 +8,22 @@ query and method forwarding, a custom `/tenant/api/v9` base path, synthetic
 upstream error bodies, same-connection reuse after bodyless SSE 204/304
 responses, and raw bodyless 204/304/205 Responses wire framing. Synthetic peers
 bind only to `127.0.0.1`; credentials, provider traffic, and external network
-access are not used.
+access are not used. It also checks raw local-error wires for an unsupported
+route (404), invalid request target (400), and malformed Responses request
+(502).
 
-On 2026-10-31, all four comparisons passed inside Bubblewrap's private
+On 2026-10-31, the original four comparisons passed inside Bubblewrap's private
 filesystem namespace, sharing a fresh outer `unshare -Urn` network namespace
 with only loopback enabled and no default IPv4 or IPv6 route. Modex was built
 from `1d6e659d939d42a500ac6a34f5f1f19e56bd5e1d`. The custom-path comparison
 confirms that a synthetic `POST /models?trace=synthetic` forwards its body,
 query, and configured bearer key to `/tenant/api/v9/models?trace=synthetic`.
-The focused relay comparison took 9.032 seconds. This is Linux x86-64
-regression evidence, not complete
-provider-relay parity; other routes, transport behavior, platforms, and the
-six-target denominator remain unqualified.
+The five-test relay module passed after the header-casing fix in the worktree
+based on `d85850c`. All three local-error cases now match the release's exact
+`Content-Type` spelling, status, remaining headers, and body, without upstream
+dispatch. This is Linux x86-64 regression evidence, not complete provider-relay
+parity; other routes, transport behavior, platforms, and the six-target
+denominator remain unqualified.
 
 The earlier three-comparison capture recorded Modex commit
 `d69f6b332f7e187019c1972f06a9f7007e68a5ac`. Its equivalent after the Modex

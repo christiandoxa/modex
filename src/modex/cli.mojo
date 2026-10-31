@@ -176,6 +176,33 @@ def mcp_jsonl_bridge_help_requested(args: List[String], executable: String) rais
     return False
 
 
+def runtime_broker_help_requested(args: List[String], executable: String) raises -> Bool:
+    var usage = executable + " __runtime-broker"
+    var index = 2
+    while index < len(args):
+        var argument = String(args[index])
+        if argument == "--":
+            if index + 1 >= len(args):
+                return False
+            index += 1
+            raise session_cli_error(
+                "unexpected argument '" + String(args[index]) + "' found",
+                usage,
+            )
+        if argument == "--help":
+            return True
+        if argument.startswith("--help="):
+            raise session_cli_error(
+                "unexpected value '" + String(argument[byte=7:]) + "' for '--help' found; no more were expected",
+                usage + " --help",
+            )
+        if argument.startswith("-h") and not argument.startswith("--"):
+            return True
+        var name = argument_name(argument)
+        raise session_cli_error("unexpected argument '" + name + "' found", usage)
+    return False
+
+
 def login_help_requested(args: List[String], executable: String) raises -> Bool:
     var usage = executable + " login [OPTIONS] [PROFILE_OR_LOGIN_ARG]..."
     var profile_seen = False

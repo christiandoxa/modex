@@ -21,6 +21,13 @@ without creating state. This is a static help slice only; expose runtime and
 launcher execution remain unsupported and the six-target denominator is
 unchanged. See `docs/evidence/baseline-0.166.2/super-expose-help.md`.
 
+The hidden `__runtime-broker` help parser now matches tested 0.166.2 short-help
+clusters, help ordering, and invalid-argument diagnostics. Its no-argument
+runtime entry and a trailing `--` remain behind Modex's unsupported-command
+guard; tokens following `--` remain parser errors, and no broker startup was
+added. See
+`docs/evidence/baseline-0.166.2/runtime-broker-help-precedence.md`.
+
 The hidden `__mcp-jsonl-bridge` pre-command parser now matches tested 0.166.2
 help short-cluster and ordering behavior, including errors when an unknown
 option precedes help. Positional commands still stop at Modex's existing

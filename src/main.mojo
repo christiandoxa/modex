@@ -121,6 +121,17 @@ def main():
         var executable_parts = args[0].split("/")
         print(ping_help(String(executable_parts[len(executable_parts) - 1])), end="")
         return
+    if len(args) >= 2 and args[1] == "ping":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        if len(args) == 2 or (len(args) == 3 and args[2] == "--"):
+            print(ping_help(executable), file=stderr, end="")
+            exit(2)
+            return
+        if args[2].startswith("-") and args[2] != "-" and args[2] != "--":
+            print(session_cli_error("unexpected argument '" + argument_name(args[2]) + "' found", executable + " ping <COMMAND>"), file=stderr, end="")
+            exit(2)
+            return
     if len(args) >= 3 and args[1] == "help" and args[2] == "ping":
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])

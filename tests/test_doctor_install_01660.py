@@ -117,11 +117,18 @@ def unwrapped_output(output):
 
 
 def panel_value(output, label):
+    lines = output.splitlines()
     prefix = label.encode() + b":"
-    rows = [line for line in output.splitlines() if line.startswith(prefix)]
+    rows = [index for index, line in enumerate(lines) if line.startswith(prefix)]
     if len(rows) != 1:
         raise AssertionError(f"expected one {label} panel row, found {len(rows)}")
-    return rows[0].split(b":", 1)[1].strip()
+    index = rows[0]
+    value = [lines[index].split(b":", 1)[1].strip()]
+    for line in lines[index + 1:]:
+        if not line.startswith(b" "):
+            break
+        value.append(line.strip())
+    return b" ".join(value)
 
 
 def run_doctor(binary, root, environment, arguments=("--install",)):
@@ -207,7 +214,9 @@ class DoctorInstall01660Tests(unittest.TestCase):
             self.assertEqual(panel_value(baseline.stdout, "RTK"), b"ok (synthetic rtk 7.8.9)")
             self.assertEqual(panel_value(baseline.stdout, "codebase-memory-mcp"), b"ok (available)")
             self.assertEqual(panel_value(baseline.stdout, "Caveman"), b"missing")
-            self.assertTrue(panel_value(modex.stdout, "rtk").startswith(b"installed, version=synthetic rtk 7.8.9, path="))
+            rtk_status = panel_value(modex.stdout, "rtk")
+            self.assertTrue(rtk_status.startswith(b"installed, version=synthetic rtk 7.8.9, path="))
+            self.assertIn(b", digest=", rtk_status)
             self.assertEqual(panel_value(modex.stdout, "codebase-memory-mcp"), b"ok (available)")
             self.assertEqual(panel_value(modex.stdout, "playwright-mcp"), b"missing")
             self.assertEqual(panel_value(modex.stdout, "ponytail"), b"missing")
@@ -230,7 +239,6 @@ class DoctorInstall01660Tests(unittest.TestCase):
             self.assertNotIn(b"\x1b", modex.stdout)
             self.assertNotIn(b"\x07", modex.stdout)
             self.assertIn(b"rtk:", modex.stdout)
-            self.assertIn(b"installed, version=synthetic rtk 7.8.9, path=", modex.stdout)
             self.assertIn(b"codebase-memory-mcp:", modex.stdout)
             self.assertIn(b"ok (available)", modex.stdout)
             self.assertIn(b"playwright-mcp:", modex.stdout)

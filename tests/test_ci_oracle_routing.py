@@ -189,6 +189,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_runtime_broker_help_precedence_01662.py", active_tests)
 
         self.assertIn("test_session_state_recovery_01662.py", active_tests)
+        self.assertIn("test_provider_metadata_01662.py", active_tests)
         self.assertFalse(any("01661" in test for test in unittest_files_for_lane(script, "focused-python-active")))
         self.assertLess(active_suite, historical_01661)
         self.assertLess(historical_01661_source, historical_01661_suite)
@@ -351,6 +352,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_runtime_broker_help_precedence_01662.py", active_tests)
 
         self.assertIn("test_session_state_recovery_01662.py", active_tests)
+        self.assertIn("test_provider_metadata_01662.py", active_tests)
         self.assertFalse(any("01661" in test for test in unittest_files_for_lane(script, "focused-python-active")))
         self.assertLess(active_suite, historical_01661)
         self.assertLess(historical_01661_source, historical_01661_suite)

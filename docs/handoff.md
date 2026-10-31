@@ -79,6 +79,11 @@ Offline `logout` diagnostics now match 0.166.2 for the tested malformed
 options and excess arguments. Valid logout calls remain guarded and no account
 operation was tested; see `docs/evidence/baseline-0.166.2/logout-diagnostics.md`.
 
+Four buffered provider metadata cases, including preservation of a local tag,
+match 0.166.2 through real synthetic launch and loopback relay processes.
+This does not qualify streaming, other provider shapes, or full provider
+parity; see `docs/evidence/baseline-0.166.2/provider-buffered-metadata.md`.
+
 # Historical work: Prodex 0.166.1 parity and CI
 
 The historical reference was Prodex 0.166.1 at

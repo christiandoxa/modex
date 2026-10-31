@@ -20,6 +20,18 @@ ORACLE = Path(os.environ.get(
 ORACLE_SHA256 = "349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d09735"
 
 
+def map_executable(output, oracle_argv0, modex_argv0):
+    output = output.replace(
+        b"Usage: " + oracle_argv0.encode() + b" ",
+        b"Usage: " + modex_argv0.encode() + b" ",
+        1,
+    )
+    return output.replace(
+        b"\n  " + oracle_argv0.encode() + b" ",
+        b"\n  " + modex_argv0.encode() + b" ",
+    )
+
+
 class InspectionCli01660Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -27,6 +39,49 @@ class InspectionCli01660Tests(unittest.TestCase):
             raise AssertionError("Build Modex first")
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("PRODEX_ORACLE must identify the verified 0.166.0 Linux release")
+
+    def test_nested_inspection_help_routes_match_without_state(self):
+        for command in ("current", "info", "status", "doctor"):
+            with self.subTest(command=command):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, ["help", command], "prodex", "01660-nested-inspection-help-oracle"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, ["help", command], "modex", "01660-nested-inspection-help-modex"
+                )
+                expected_stdout = map_executable(baseline.stdout, "prodex", "modex")
+                self.assertEqual((baseline.returncode, baseline.stderr), (0, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (0, expected_stdout, b""))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
+        baseline, baseline_created = isolated_run(
+            ORACLE, ["help", "info"], "custom-prodex", "01660-nested-inspection-help-custom-oracle"
+        )
+        modex, modex_created = isolated_run(
+            MODEX, ["help", "info"], "custom-modex", "01660-nested-inspection-help-custom-modex"
+        )
+        expected_stdout = map_executable(baseline.stdout, "custom-prodex", "custom-modex")
+        self.assertEqual((baseline.returncode, baseline.stderr), (0, b""))
+        self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                         (0, expected_stdout, b""))
+        self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_nested_inspection_help_rejects_trailing_operands_without_state(self):
+        for command in ("current", "info", "status", "doctor"):
+            with self.subTest(command=command):
+                arguments = ["help", command, "extra"]
+                baseline, baseline_created = isolated_run(
+                    ORACLE, arguments, "prodex", "01660-nested-inspection-error-oracle"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, arguments, "modex", "01660-nested-inspection-error-modex"
+                )
+                expected_stderr = baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex ", 1)
+                self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
 
     def test_unknown_short_option_keeps_full_usage_after_seen_options(self):
         for arguments in (

@@ -1,5 +1,9 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Nested help for `current`, `info`, `status`, and `doctor` now matches selected
+0.166.0 routes and trailing-operand errors. See
+`docs/evidence/baseline-0.166.0/inspection-nested-help.md`.
+
 Selected `run` help routes now match the 0.166.0 oracle in isolated checks.
 Other help placements and actual `run` execution remain unimplemented; see
 `docs/evidence/baseline-0.166.0/run-help.md`.

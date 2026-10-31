@@ -166,6 +166,20 @@ def main():
             print(message, file=stderr, end="")
             exit(2)
             return
+    if len(args) >= 3 and args[1] == "help" and (
+        args[2] == "current" or args[2] == "info" or args[2] == "status" or args[2] == "doctor"
+    ):
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        if len(args) > 3:
+            print(session_cli_error(
+                "unrecognized subcommand '" + args[3] + "'",
+                inspection_usage(args[2], executable),
+            ), file=stderr, end="")
+            exit(2)
+            return
+        print(inspection_help(args[2], executable), end="")
+        return
     if len(args) >= 3 and args[1] == "help" and args[2] == "update":
         var executable_parts = args[0].split("/")
         var executable = String(executable_parts[len(executable_parts) - 1])

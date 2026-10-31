@@ -1,7 +1,7 @@
 from std.collections import List
 from std.sys import argv, exit, stderr
 
-from modex.cli import argument_name, login_help_requested, logout_help_requested, parse_session_options, parse_sub_agent_exec_arguments, parse_update_help_arguments, quota_help_requested, redeem_help_requested, session_cli_error, session_help
+from modex.cli import argument_name, login_help_requested, logout_help_requested, parse_session_options, parse_sub_agent_exec_arguments, parse_update_help_arguments, quota_help_requested, redeem_help_requested, session_cli_error, session_help, unrecognized_subcommand
 from modex.doctor_install import run_doctor_install
 from modex.gateway_cli import GatewayOptions, gateway_help, parse_gateway_arguments, run_gateway
 from modex.inspection_cli import doctor_install_requested, inspection_help, inspection_help_requested, inspection_usage
@@ -130,6 +130,11 @@ def main():
             return
         if args[2].startswith("-") and args[2] != "-" and args[2] != "--":
             print(session_cli_error("unexpected argument '" + argument_name(args[2]) + "' found", executable + " ping <COMMAND>"), file=stderr, end="")
+            exit(2)
+            return
+        var command = args[3] if args[2] == "--" else args[2]
+        if command != "openai" and command != "help":
+            print(unrecognized_subcommand(command, executable + " ping", [String("openai"), "help"]), file=stderr, end="")
             exit(2)
             return
     if len(args) >= 3 and args[1] == "help" and args[2] == "ping":

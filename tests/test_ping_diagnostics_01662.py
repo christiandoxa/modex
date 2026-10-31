@@ -15,9 +15,11 @@ class PingDiagnostics01662Tests(unittest.TestCase):
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
             raise AssertionError("PRODEX_ORACLE must identify the verified Prodex 0.166.2 release")
 
-    def test_missing_command_and_unknown_flags_match_without_mutation(self):
+    def test_missing_and_invalid_commands_match_without_mutation(self):
         for arguments in (("ping",), ("ping", "--"), ("ping", "--bogus"),
-                          ("ping", "--bogus=value"), ("ping", "-xyz")):
+                          ("ping", "--bogus=value"), ("ping", "-xyz"), ("ping", "nope"),
+                          ("ping", "banana"), ("ping", "opena"), ("ping", "-"),
+                          ("ping", "--", "bogus"), ("ping", "--", "--help")):
             with self.subTest(arguments=arguments):
                 reference, reference_changes = isolated_run(ORACLE, list(arguments), "modex", "ping-oracle")
                 actual, actual_changes = isolated_run(MODEX, list(arguments), "modex", "ping-modex")

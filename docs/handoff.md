@@ -32,7 +32,8 @@ selection remains unimplemented behind the guarded Super launcher; see
 `docs/evidence/baseline-0.166.2/session-inspection-list.md`.
 
 Offline `ping` group diagnostics now match 0.166.2 for a missing subcommand
-and unknown flags, with no filesystem mutation in synthetic homes. The actual
+unknown flags, and invalid subcommands, with no filesystem mutation in
+synthetic homes. The actual
 ping operation and other argument combinations remain unimplemented or
 unverified; see `docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
 

@@ -27,10 +27,12 @@ compiled Modex executable through their production Super launchers. A
 synthetic Codex HTTP client completes the hook-trust handshake and sends one
 request to the local relay; the synthetic loopback provider returns
 `policy_capacity_unavailable` with HTTP 503. Both processes return that exact
-status and body to the client, perform one upstream POST, use the active
-`prodex-hook-trust` client version, leave no profile overlay entries, and do not
-print the synthetic provider key. The Codex client in this test is a fixture,
-not the real Codex binary.
+status and body to the client and perform one upstream POST. Prodex 0.166.0
+identifies itself as `0.166.0`; Modex identifies itself as its current target,
+`0.166.1`. The test checks each identity against its executable, then compares
+the 503 status, content type, and body across both processes. Both runs leave no
+profile overlay entries and do not print the synthetic provider key. The Codex
+client in this test is a fixture, not the real Codex binary.
 
 `make build` and the four focused active-baseline tests passed on Linux
 x86-64. The process differential ran in a rootless user, mount and network
@@ -54,7 +56,7 @@ cd "$MODEX_WORKSPACE"
 exec env -i HOME=/tmp/home TMPDIR=/tmp/work PATH=/usr/local/bin:/usr/bin:/bin \
   LANG=C.UTF-8 PYTHONDONTWRITEBYTECODE=1 \
   MODEX_BINARY="$MODEX_WORKSPACE/build/modex" \
-  PRODEX_ORACLE="$PRODEX_ORACLE" PYTHONPATH=tests \
+  PRODEX_ORACLE="$PRODEX_ORACLE" PRODEX_ORACLE_01660="$PRODEX_ORACLE" PYTHONPATH=tests \
   python3 scripts/ci/run-unittest.py \
     test_policy_capacity_01660.py test_provider_policy_codex_01660.py
 NS

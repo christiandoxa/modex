@@ -21,7 +21,7 @@ class ProviderPolicyCodex01660Tests(unittest.TestCase):
         from test_super_launch import SuperLaunchTests
 
         observations = []
-        for binary in (ORACLE, MODEX):
+        for binary, expected_version in ((ORACLE, "0.166.0"), (MODEX, "0.166.1")):
             with self.subTest(binary="Prodex" if binary == ORACLE else "Modex"):
                 result, records, upstream, state = SuperLaunchTests().run_launch(
                     binary=binary,
@@ -39,13 +39,17 @@ class ProviderPolicyCodex01660Tests(unittest.TestCase):
                 self.assertEqual(response["status"], 503)
                 self.assertEqual(response["headers"]["content-type"], "application/json")
                 self.assertEqual(bytes.fromhex(response["body"]), POLICY_BODY)
-                self.assertEqual(initialize, [{"name": "prodex-hook-trust", "version": "0.166.0"}])
+                self.assertEqual(
+                    initialize,
+                    [{"name": "prodex-hook-trust", "version": expected_version}],
+                )
                 self.assertEqual(state["leftovers"], [])
                 self.assertNotIn(b"synthetic-provider-key", result.stdout + result.stderr)
                 observations.append((
                     response["status"], response["headers"]["content-type"], response["body"],
                 ))
 
+        self.assertEqual(len(observations), 2, "both 503 observations must complete")
         self.assertEqual(observations[0], observations[1])
 
 

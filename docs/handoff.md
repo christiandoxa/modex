@@ -1,5 +1,13 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The official historical release workflow artifacts for 0.439.2 and 0.439.5
+were recovered with authenticated read access and both Linux binary digests
+match their existing pins. A two-test historical session regression passed
+using the recovered references in isolated synthetic state. The artifact API
+requires authentication, so availability to a clean hosted runner is not
+established and its missing-reference gates remain blocked. See
+`docs/evidence/baseline-0.166.0/historical-artifact-recovery.md`.
+
 Hosted Fast CI run `41162879487` on `fe24cf1` passed 201 active 0.166.0
 tests, 53 independent relay tests, 121 historical 0.165.1 tests, and helper
 and width checks. The overall run failed closed because the required

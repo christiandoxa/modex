@@ -18,6 +18,14 @@ shortcut was added. A checksum-pinned isolated regression records the output
 and filesystem effects; see
 `docs/evidence/baseline-0.166.2/profile-list-existing-empty-root.md`.
 
+Profile parser usage diagnostics now match 0.166.2 after recognized options
+and positionals: a later unexpected flag includes the accepted prefix in the
+usage line. Fifteen isolated inputs cover add, export, import, remove, and use,
+including incomplete option values, with no filesystem changes. This qualifies
+parser failures only; successful profile operations and their lifecycle
+behavior remain outside this slice. See
+`docs/evidence/baseline-0.166.2/profile-parser-diagnostics.md`.
+
 An isolated synthetic comparison confirms that Prodex resolves a parent-owned
 V2 worker to its root and fails closed when the parent is missing. Modex still
 stops at its unsupported Super startup guard before native resume. Root and V1

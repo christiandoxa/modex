@@ -280,6 +280,23 @@ def _profile_usage(command: String, executable: String) -> String:
     return prefix + " <COMMAND>"
 
 
+def _profile_parsed_usage(command: String, executable: String, seen: List[String], positional_count: Int) -> String:
+    var usage = executable + " profile " + command
+    var included = List[String]()
+    for name in seen:
+        if name in included: continue
+        usage += " " + _profile_option_label(name)
+        included.append(name)
+    if command == "add" or command == "import":
+        usage += " <NAME>" if command == "add" else " <PATH_OR_SOURCE>"
+    elif command == "export":
+        usage += " <PATH>" if positional_count else " [PATH]"
+    elif command == "import-current" or command == "remove":
+        var positional = "NAME"
+        usage += " <" + positional + ">" if positional_count else " [" + positional + "]"
+    return usage
+
+
 def _profile_option_label(name: String) -> String:
     if name == "--codex-home" or name == "--copy-from": return name + " <PATH>"
     if name == "--profile" or name == "--name": return name + " <NAME>"
@@ -310,7 +327,7 @@ def _profile_missing_value(name: String) -> Error:
     return session_cli_error("a value is required for '" + _profile_option_label(name) + "' but none was supplied")
 
 
-def _profile_unexpected_argument(argument: String, command: String, executable: String, literal: Bool = False) -> Error:
+def _profile_unexpected_argument(argument: String, command: String, executable: String, literal: Bool, seen: List[String], positional_count: Int) -> Error:
     var displayed = argument
     var is_flag = argument.startswith("-") and argument != "-" and not literal
     if is_flag:
@@ -318,7 +335,10 @@ def _profile_unexpected_argument(argument: String, command: String, executable: 
     var message = "unexpected argument '" + displayed + "' found"
     if is_flag and _profile_has_positionals(command):
         message += "\n\n  tip: to pass '" + displayed + "' as a value, use '-- " + displayed + "'"
-    return session_cli_error(message, _profile_usage(command, executable))
+    var usage = _profile_usage(command, executable)
+    if is_flag and (seen or positional_count > 0):
+        usage = _profile_parsed_usage(command, executable, seen, positional_count)
+    return session_cli_error(message, usage)
 
 
 def _profile_unknown_subcommand(command: String, executable: String) -> Error:
@@ -409,7 +429,7 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
     if command == "help":
         return _parse_profile_help_alias(args, cursor + 1, executable)
     if command.startswith("-"):
-        raise _profile_unexpected_argument(command, "", executable)
+        raise _profile_unexpected_argument(command, "", executable, False, List[String](), 0)
     if not _profile_known_command(command):
         raise _profile_unknown_subcommand(command, executable)
 
@@ -449,7 +469,8 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
         var takes_value = not literal and _profile_value_option(command, name)
         var switch = not literal and _profile_switch_option(command, name)
         if not literal and not takes_value and not switch and argument.startswith("-") and argument != "-":
-            raise _profile_unexpected_argument(argument, command, executable)
+            raise _profile_unexpected_argument(argument, command, executable, False, seen, len(positionals))
+        var record_option = True
         if takes_value or switch:
             if name in seen and not (command == "export" and name == "--profile"):
                 raise _profile_duplicate(name, command, executable)
@@ -471,17 +492,20 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
                         value = String(args[cursor])
                         if not value:
                             raise _profile_missing_value(name)
+                    else:
+                        record_option = False
             elif has_inline_value:
                 var unexpected_value = String(argument.split("=", maxsplit=1)[1])
                 var usage = executable + " profile " + command + " " + name
                 if command == "add": usage += " <NAME>"
                 elif command == "remove": usage += " [NAME]"
                 raise session_cli_error("unexpected value '" + unexpected_value + "' for '" + name + "' found; no more were expected", usage)
-            seen.append(name)
+            if record_option:
+                seen.append(name)
         else:
             var maximum = 1 if (command == "add" or command == "import" or command == "import-current" or command == "export" or command == "remove") else 0
             if len(positionals) >= maximum:
-                raise _profile_unexpected_argument(argument, command, executable, literal)
+                raise _profile_unexpected_argument(argument, command, executable, literal, seen, len(positionals))
             positionals.append(argument)
         cursor += 1
 

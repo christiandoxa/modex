@@ -13,6 +13,9 @@ the official 0.166.1 release. The active oracle and help inventory now use
 that release; 0.166.0 and older references are explicitly historical. Focused
 real-process comparisons cover Caveman selection, Playwright's Node preflight,
 Doctor's four automatic-tool rows, and the hook initialization identity.
+Doctor's Kiro version probe now compares the 2.37.0 release fixture across its
+preferred launcher, legacy fallback, and explicit override; Kiro runtime
+compatibility remains unimplemented.
 Managed Ponytail integrity validation and removal of generated legacy Caveman
 overlay content remain incomplete. This evidence does not establish parity.
 

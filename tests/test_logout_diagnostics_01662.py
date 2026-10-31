@@ -18,7 +18,22 @@ class LogoutDiagnostics01662Tests(unittest.TestCase):
     def test_invalid_arguments_match_without_mutations(self):
         for tail in (("--bogus",), ("-x",), ("--profile",), ("-p",),
                      ("--profile", "synthetic", "--profile", "other"),
-                     ("synthetic", "other"), ("--", "synthetic", "other")):
+                     ("synthetic", "other"), ("--", "synthetic", "other"),
+                     ("--profile", "synthetic", "--bogus"),
+                     ("synthetic", "--bogus"),
+                     ("--profile", "synthetic", "other", "--bogus"),
+                     ("synthetic", "--profile", "main", "--bogus"),
+                     ("--profile", "synthetic", "--profile", "--bogus"),
+                     ("--profile", "synthetic", "--profile", "other", "--bogus"),
+                     ("--profile", "synthetic", "--profile", "other", "--help"),
+                     ("--profile", "synthetic", "--profile", "--help"),
+                     ("--profile", "synthetic", "--profile", "other", "--help=bad"),
+                     ("--profile", "synthetic", "--profile", "--help=bad"),
+                     ("--profile", "synthetic", "-p=other", "--help=bad"),
+                     ("--profile=synthetic", "-pother", "--bogus"),
+                     ("--profile", "synthetic", "other"),
+                     ("synthetic", "--profile", "other"),
+                     ("--profile", "synthetic", "other", "--help=bad")):
             arguments = ["logout", *tail]
             with self.subTest(arguments=arguments):
                 reference, before = isolated_run(ORACLE, arguments, "modex", "logout-oracle")
@@ -34,6 +49,17 @@ class LogoutDiagnostics01662Tests(unittest.TestCase):
             self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
                              (1, b"", b"Error: this Modex development build has not implemented the requested command\n"))
             self.assertEqual(changes, [])
+
+    def test_help_precedes_profile_name_conflicts(self):
+        for tail in (("--profile", "synthetic", "name", "--help"),
+                     ("synthetic", "--profile", "main", "--help")):
+            with self.subTest(tail=tail):
+                reference, before = isolated_run(ORACLE, ["logout", *tail], "modex", "logout-help-oracle")
+                actual, after = isolated_run(MODEX, ["logout", *tail], "modex", "logout-help-modex")
+                self.assertEqual((reference.returncode, reference.stderr), (0, b""))
+                self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
+                                 (reference.returncode, reference.stdout, reference.stderr))
+                self.assertEqual((before, after), ([], []))
 
 
 if __name__ == "__main__":

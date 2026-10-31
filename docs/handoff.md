@@ -233,9 +233,14 @@ as the profile value, matching 0.166.2's read-only help output. Known help and
 profile options still require a value before them. This does not implement
 login or profile lookup; see `tests/test_login_help_01662.py`.
 
-Offline `logout` diagnostics now match 0.166.2 for the tested malformed
-options and excess arguments. Valid logout calls remain guarded and no account
-operation was tested; see `docs/evidence/baseline-0.166.2/logout-diagnostics.md`.
+Offline `logout` diagnostics now retain the 0.166.2 usage prefix after accepted
+profile/positional arguments and report their mutual-exclusion error. Split
+repeated profile options defer to later unknown flags and malformed help values;
+attached repeats retain duplicate-option precedence, and valid help still
+precedes the profile/name conflict. Isolated process cases match with no
+filesystem mutations. Valid logout calls remain guarded and no account
+operation was tested; see
+`docs/evidence/baseline-0.166.2/logout-diagnostics.md`.
 
 Four buffered provider metadata cases, including preservation of a local tag,
 match 0.166.2 through real synthetic launch and loopback relay processes.

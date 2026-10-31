@@ -424,27 +424,47 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
         help_index = len(args)
 
     var profile_seen = False
+    var profile_duplicate = False
+    var profile_repeat_before_help = False
     var positional_seen = False
+    var positional_after_profile = False
+    var profile_after_positional = False
+    var prefix_usage = usage
     literal = False
     var index = 2
     while index < help_index:
         var argument = args[index]
         if not literal and argument == "--":
             literal = True
+            prefix_usage = usage
             index += 1
             continue
         if not literal and (argument == "--profile" or argument == "-p"):
-            if profile_seen:
-                raise session_cli_error("the argument '--profile <NAME>' cannot be used multiple times", usage)
             if index + 1 >= help_index or (args[index + 1].startswith("-") and args[index + 1] != "-"):
+                if profile_seen and index + 1 < help_index:
+                    index += 1
+                    continue
+                if profile_seen and has_help_value:
+                    profile_repeat_before_help = True
+                    index += 1
+                    continue
                 raise session_cli_error("a value is required for '--profile <NAME>' but none was supplied")
+            if profile_seen:
+                profile_duplicate = True
+                prefix_usage = usage
+                index += 2
+                continue
+            profile_after_positional = positional_seen
             profile_seen = True
+            prefix_usage = executable + " logout --profile <NAME>" + (" <NAME>" if positional_seen else " [NAME]")
             index += 2
             continue
         if not literal and (argument.startswith("--profile=") or (argument.startswith("-p") and not argument.startswith("--") and argument != "-p")):
             if profile_seen:
                 raise session_cli_error("the argument '--profile <NAME>' cannot be used multiple times", usage)
+            profile_after_positional = positional_seen
             profile_seen = True
+            prefix_usage = executable + " logout --profile <NAME>" + (" <NAME>" if positional_seen else " [NAME]")
             index += 1
             continue
         if not literal and argument.startswith("-") and argument != "-":
@@ -452,18 +472,42 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
             var message = "unexpected argument '" + name + "' found"
             if name.startswith("-"):
                 message += "\n\n  tip: to pass '" + name + "' as a value, use '-- " + name + "'"
-            raise session_cli_error(message, usage)
+            raise session_cli_error(message, prefix_usage)
         if positional_seen:
+            if profile_duplicate:
+                raise session_cli_error("the argument '--profile <NAME>' cannot be used multiple times", usage)
             raise session_cli_error("unexpected argument '" + argument + "' found", usage)
         positional_seen = True
+        if not literal:
+            if profile_seen:
+                positional_after_profile = True
+            if not profile_duplicate:
+                prefix_usage = executable + " logout " + ("--profile <NAME> " if profile_seen else "") + "<NAME>"
         index += 1
 
     if has_help_value:
+        var help_usage = executable + " logout --help [NAME]"
+        if profile_duplicate or profile_repeat_before_help or positional_after_profile or profile_after_positional:
+            help_usage = executable + " logout --help <NAME|--profile <NAME>>"
         raise session_cli_error(
             "unexpected value '" + help_value + "' for '--help' found; no more were expected",
-            executable + " logout --help [NAME]",
+            help_usage,
         )
-    return help_index < len(args)
+    if profile_duplicate:
+        raise session_cli_error("the argument '--profile <NAME>' cannot be used multiple times", usage)
+    if help_index < len(args):
+        return True
+    if positional_after_profile:
+        raise session_cli_error(
+            "the argument '--profile <NAME>' cannot be used with '[NAME]'",
+            executable + " logout --profile <NAME> [NAME]",
+        )
+    if profile_after_positional:
+        raise session_cli_error(
+            "the argument '[NAME]' cannot be used with '--profile <NAME>'",
+            executable + " logout <NAME>",
+        )
+    return False
 
 
 def redeem_error_usage(executable: String, options: List[String], profile_seen: Bool) -> String:

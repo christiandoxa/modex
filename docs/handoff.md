@@ -1,5 +1,11 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Hosted Fast CI run `41162879487` on `fe24cf1` passed 201 active 0.166.0
+tests, 53 independent relay tests, 121 historical 0.165.1 tests, and helper
+and width checks. The overall run failed closed because the required
+historical 0.439.2 and 0.439.5 oracles were unavailable; dependent lanes
+remain blocked. This run does not validate later commits or establish parity.
+
 A manual offline `doctor --install` comparison against the pinned real Codex
 0.166.0 executable and Prodex oracle passed on Linux x86-64. Direct Codex
 version and unauthenticated status probes, Doctor panel rows, synthetic-key

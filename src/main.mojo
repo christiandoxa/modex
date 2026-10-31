@@ -115,6 +115,17 @@ def main():
         if args[3] == "--help" or args[3].startswith("-h"):
             print(ping_openai_help(executable), end="")
             return
+        var argument = args[3]
+        var literal = argument == "--"
+        if argument == "--" and len(args) > 4:
+            argument = args[4]
+        elif argument == "--":
+            argument = String()
+        var name = argument if literal else argument_name(argument)
+        if argument and (literal or name not in [String("-p"), "--profile", "--model", "--effort", "--base-url", "--no-proxy", "--json"]):
+            print(session_cli_error("unexpected argument '" + name + "' found", executable + " ping openai [OPTIONS]"), file=stderr, end="")
+            exit(2)
+            return
     if len(args) >= 3 and args[1] == "ping" and (
         args[2] == "--help" or args[2].startswith("-h")
     ):

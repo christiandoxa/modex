@@ -78,6 +78,28 @@ and that parser errors create no state. The original value field may still
 contain these non-ASCII characters, as it does in the reference; this qualifies
 only the selected debug-value ranges, not full Unicode `Debug` formatting.
 
+The active oracle also escapes U+00AD, U+034F, U+061C, U+115F, U+1160,
+U+17B4, U+180E, U+202A, U+2060, U+FE00, and U+FEFF in that `got` value.
+Modex now escapes those observed characters and leaves printable `é` and `月`
+unchanged. The test compares real Prodex and Modex parser errors in isolated
+homes with no state changes; it does not claim full Rust Unicode `Debug`
+formatting parity.
+
+Validation on Linux x86-64:
+
+- `make BUILD_DIR=/tmp/modex-compat-166-build build` — passed with existing unused-variable warnings.
+- Focused process test passed against the checksum-verified oracle:
+
+  ```sh
+  MODEX_BINARY=/path/to/modex \
+  PRODEX_ORACLE=/path/to/prodex-0.166.0/prodex-x86_64-unknown-linux-gnu \
+  PYTHONPATH=tests python3 -m unittest -v \
+    test_super_cli_01660.SuperCli01660Tests.test_reasoning_effort_debug_escapes_controls_and_format_characters
+  ```
+
+  The test runs each parser invocation in `bwrap --unshare-all` with a
+  synthetic home and checks that neither binary creates state.
+
 Final checks from the detached worktree:
 
 - `make BUILD_DIR=build build` — passed with existing unused-variable warnings.

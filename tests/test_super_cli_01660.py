@@ -144,8 +144,21 @@ class SuperCli01660Tests(unittest.TestCase):
         cases = (
             ("\x1b[31m", br'got "\u{1b}[31m"'),
             ("\x1f", br'got "\u{1f}"'),
+            ("é", 'got "é"'.encode()),
+            ("月", 'got "月"'.encode()),
+            ("\u00ad", br'got "\u{ad}"'),
+            ("\u034f", br'got "\u{34f}"'),
+            ("\u061c", br'got "\u{61c}"'),
+            ("\u115f", br'got "\u{115f}"'),
+            ("\u1160", br'got "\u{1160}"'),
+            ("\u17b4", br'got "\u{17b4}"'),
+            ("\u180e", br'got "\u{180e}"'),
             ("\u200b", br'got "\u{200b}"'),
             ("\u2066", br'got "\u{2066}"'),
+            ("\u202a", br'got "\u{202a}"'),
+            ("\u2060", br'got "\u{2060}"'),
+            ("\ufe00", br'got "\u{fe00}"'),
+            ("\ufeff", br'got "\u{feff}"'),
         )
         for value, escaped in cases:
             arguments = ("super", "--sub-agent-model-reasoning-effort", value)

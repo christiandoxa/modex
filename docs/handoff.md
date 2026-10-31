@@ -1,5 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Strict beta URL validation now applies to environment-supplied values as well
+as configured values and rejects an explicitly empty port. The active release
+accepts that spelling; the stricter Modex behavior and tests are recorded in
+`docs/evidence/baseline-0.166.0/beta-url-validation.md`.
+
 The `current` command now renders the tested no-active-profile panel for an
 absent app root under the conservative owner/mode guard. Existing roots remain
 guarded; release lock and housekeeping side effects are not reproduced. See

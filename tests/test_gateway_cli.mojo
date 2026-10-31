@@ -1,7 +1,7 @@
 from std.collections import List
 from std.testing import assert_equal, assert_true
 
-from modex.runtime_local_rewrite import _binding_response_id, _continuation_identity_valid, _history, _namespace, _response_headers, local_rewrite_anthropic_messages_upstream, local_rewrite_upstream
+from modex.runtime_local_rewrite import _binding_response_id, _continuation_identity_valid, _history, _namespace, _response_headers, deepseek_runtime_route, local_rewrite_anthropic_messages_upstream, local_rewrite_upstream
 from modex.gateway_cli import gateway_help, parse_gateway_arguments
 from modex.json import JsonDocument, quote_json
 from modex.loopback_http import _request_authority, normalize_loopback_ipv4_host
@@ -130,6 +130,18 @@ def main() raises:
     var streaming_content_type = _response_headers([("content-type", "application/json"), ("content-type", "application/problem+json")], False)
     assert_equal(streaming_content_type, List[Tuple[String, String]](copy=[("content-type", "application/json"), ("content-type", "application/problem+json")]))
     assert_equal(local_rewrite_upstream("http://127.0.0.1:1234/v1/")[1], "/v1/chat/completions")
+    var ipv4_beta_route = deepseek_runtime_route(None, Optional[String]("true"), Optional[String]("http://127.0.0.1:1234/beta"))
+    assert_true(ipv4_beta_route[0])
+    assert_equal(ipv4_beta_route[1], "127.0.0.1:1234")
+    var ipv6_beta_route = deepseek_runtime_route(None, Optional[String]("true"), Optional[String]("http://[::1]:1234/beta"))
+    assert_true(ipv6_beta_route[0])
+    assert_equal(ipv6_beta_route[1], "[::1]:1234")
+    var empty_beta_port_rejected = False
+    try:
+        _ = deepseek_runtime_route(None, Optional[String]("true"), Optional[String]("http://127.0.0.1:/beta"))
+    except:
+        empty_beta_port_rejected = True
+    assert_true(empty_beta_port_rejected)
     for url in ["http://127.0.0.1/v1", "http://127.1:/v1", "http://127.1:80/v1"]:
         assert_equal(local_rewrite_upstream(url), (String("127.0.0.1:80"), String("/v1/chat/completions")))
     assert_equal(local_rewrite_upstream("http://127%2e1:1234/v1")[0], "127.0.0.1:1234")

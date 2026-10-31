@@ -168,7 +168,8 @@ def _validate_deepseek_beta_url(value: String, name: String = "PRODEX_DEEPSEEK_B
         if found >= 0 and found < authority_end:
             authority_end = found
     var authority = String(value[byte=authority_start:authority_end])
-    if authority.find("@") >= 0 or not valid_url_authority(authority) or not _valid_deepseek_beta_host(authority):
+    # Reject a trailing colon before the HTTP parser defaults it to port 80.
+    if authority.find("@") >= 0 or authority.endswith(":") or not valid_url_authority(authority) or not _valid_deepseek_beta_host(authority):
         raise Error(invalid)
 
 
@@ -256,8 +257,7 @@ def deepseek_runtime_route(configured_mode: Optional[String] = None, configured_
         return False, String(), String(), _web_search_mode(configured_mode)
     if not configured_beta and beta_value == "\x00":
         raise Error("strict tools require PRODEX_DEEPSEEK_BETA_BASE_URL to be a numeric loopback HTTP URL")
-    if configured_beta:
-        _validate_deepseek_beta_url(beta_value, beta_name)
+    _validate_deepseek_beta_url(beta_value, beta_name)
     var route = (String(), String())
     try:
         route = local_rewrite_upstream(beta_value)

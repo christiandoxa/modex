@@ -113,6 +113,16 @@ CLI parser evidence. File-backed/live log behavior, secure app-root repair,
 and the other five targets remain unqualified. See
 `docs/evidence/baseline-0.166.2/log-cli-diagnostics.md`.
 
+## Native session root-resume prototype review (2026-11-01)
+
+An isolated filesystem-backed prototype reproduced selected 0.166.2 root
+selection and ancestry diagnostics, but was not integrated. SQLite-only
+lookup, parent metadata fallback, filename matching, bounded allocation, and
+race-safe traversal remain unresolved. The existing Super startup guard still
+prevents managed resume, and spawned Codex arguments remain unverified. See
+`docs/evidence/session-root-resume-01662-prototype.md` for the test scope and
+prototype limitations.
+
 `session current` diagnostics now defer an empty split `--cwd ""` error to a
 following unknown flag or positional, and to malformed attached flag values,
 matching the pinned 0.166.2 CLI. Valid following options and other empty/missing

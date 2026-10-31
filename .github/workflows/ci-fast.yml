@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: modex-fast-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   linux-x86_64:

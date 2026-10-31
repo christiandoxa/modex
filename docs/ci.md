@@ -1,10 +1,13 @@
 # CI and local reproduction
 
 GitHub Actions runs the fast checks on pushes to `main`, pull requests, and
-manual dispatch. Full validation runs weekly or on manual dispatch; a full
-40-character `source_sha` selects an exact commit and its run is not cancelled
-by later pushes. A separate manually dispatched parity-completeness workflow
-fails while any contract, required platform, or release qualification is open.
+manual dispatch. Fast CI groups by ref: pull-request updates cancel stale runs,
+while a new `main` push leaves an active run to finish and replaces only the
+single pending run with the latest commit. Full validation runs weekly or on
+manual dispatch; a full 40-character `source_sha` selects an exact commit and
+its run is not cancelled by later pushes. A separate manually dispatched
+parity-completeness workflow fails while any contract, required platform, or
+release qualification is open.
 Engineering CI passing is not a parity verdict.
 
 The initial supported CI host is Linux x86-64. The bootstrap installs the

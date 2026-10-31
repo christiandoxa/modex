@@ -34,6 +34,20 @@ def shell_command_after(lines, start, needle):
 
 
 class FastWorkflowHelperTests(unittest.TestCase):
+    def test_main_pushes_do_not_cancel_an_in_progress_fast_run(self):
+        concurrency = WORKFLOW.split("\nconcurrency:\n", 1)[1].split(
+            "\njobs:\n", 1
+        )[0]
+
+        self.assertIn(
+            "group: modex-fast-${{ github.workflow }}-${{ github.ref }}",
+            concurrency,
+        )
+        self.assertIn(
+            "cancel-in-progress: ${{ github.event_name == 'pull_request' }}",
+            concurrency,
+        )
+
     def test_helper_tests_run_in_independent_two_shard_job_exactly_once(self):
         helper_job = WORKFLOW.split("  ci-helper-tests:\n", 1)[1].split(
             "\n  artifact-consumer:", 1

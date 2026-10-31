@@ -1,5 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The local relay distinguishes an absent redirect Location from a present empty
+value and follows the latter to the current URL, as tested against 0.166.0.
+Same-origin checks and the redirect cap remain in place; see
+`docs/evidence/baseline-0.166.0/provider-redirect-authority.md`.
+
 Selected hidden `__runtime-broker` help routes now match 0.166.0; runtime
 broker startup remains unimplemented. See
 `docs/evidence/baseline-0.166.0/runtime-broker-help.md`.

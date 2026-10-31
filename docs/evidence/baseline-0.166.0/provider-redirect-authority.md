@@ -64,3 +64,27 @@ synthetic loopback providers; neither used external provider traffic.
 This comparison qualifies only the tested numeric-loopback redirect spellings
 and bounded redirect case on Linux x86-64. It does not qualify other redirect
 host encodings, targets, or complete provider parity.
+
+## Empty relative redirect references
+
+The pinned local-rewrite path sends through the shared async `reqwest::Client`
+in `crates/prodex-app/src/runtime_launch/proxy_startup/local_rewrite_transport.rs`;
+the client builder keeps its default redirect policy. A present empty
+`Location` therefore resolves to the current URL, while a missing `Location`
+does not redirect. Modex previously used an empty string for both cases and
+stopped before its existing empty-reference resolver could run.
+
+The redirect header lookup now keeps presence separate from its value. The
+empty reference still passes through the same loopback authority and port
+check, and the existing redirect cap remains in force. The active process test
+compares empty, query-only, and fragment-only references with a missing-header
+control. Both products retry an empty reference as GET to the same loopback
+path with the configured synthetic bearer key; the missing-header case stays
+302. Eleven repeated empty references still stop after eleven upstream
+requests with 502. The existing redirect authority test continues to cover
+same-origin spelling, encoded delimiters, external origins, and the cap.
+
+The focused tests use the checksum-pinned oracle and synthetic loopback
+provider in a private bubblewrap network namespace with isolated HOME and
+temporary storage. They make no external provider request and do not relax the
+credential, origin, or redirect-count checks.

@@ -427,6 +427,53 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                 self.assertEqual([response["status"] for response in responses], [502])
                 self.assertEqual(bytes.fromhex(responses[0]["body"]), b"upstream request failed")
 
+    def test_empty_location_redirects_reuse_current_url_only_when_header_is_present(self):
+        turn = [{"model": "deepseek-chat", "input": "synthetic relative redirect"}]
+        current = "/v1/chat/completions"
+        cases = (
+            ("missing", None, [("POST", current)], 302),
+            ("empty", "", [("POST", current), ("GET", current)], 200),
+            ("query", "?synthetic=query", [("POST", current), ("GET", current + "?synthetic=query")], 200),
+            ("fragment", "#synthetic-fragment", [("POST", current), ("GET", current)], 200),
+        )
+        for label, location, expected_requests, expected_status in cases:
+            redirect = {"status": 302, "content_type": "text/plain", "body": b"discarded"}
+            if location is not None:
+                redirect["response_headers"] = [("Location", location)]
+            observations = []
+            for binary in (ORACLE, MODEX):
+                with self.subTest(case=label, binary=str(binary)):
+                    upstream, responses = observe_turns(
+                        binary, turn, [redirect, buffered_reply(91)], latest_version="0.166.0",
+                    )
+                    requests = [(row["method"], row["path"]) for row in upstream]
+                    self.assertEqual(requests, expected_requests)
+                    self.assertEqual([row["status"] for row in responses], [expected_status])
+                    self.assertEqual([row["headers"]["authorization"] for row in upstream],
+                                     ["Bearer synthetic-provider-key"] * len(expected_requests))
+                    observations.append((requests, [row["status"] for row in responses]))
+            self.assertEqual(observations[0], observations[1])
+
+    def test_empty_location_redirect_loop_keeps_the_existing_cap(self):
+        current = "/v1/chat/completions"
+        redirects = [
+            {"status": 302, "content_type": "text/plain", "body": b"discarded",
+             "response_headers": [("Location", "")]}
+            for _ in range(11)
+        ]
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, [{"model": "deepseek-chat", "input": "synthetic bounded redirect"}],
+                    redirects, latest_version="0.166.0",
+                )
+                self.assertEqual([(row["method"], row["path"]) for row in upstream],
+                                 [("POST", current)] + [("GET", current)] * 10)
+                self.assertEqual([row["headers"]["authorization"] for row in upstream],
+                                 ["Bearer synthetic-provider-key"] * 11)
+                self.assertEqual([row["status"] for row in responses], [502])
+                self.assertEqual(bytes.fromhex(responses[0]["body"]), b"upstream request failed")
+
     def test_root_provider_aliases_match_active_route_plan(self):
         turns = [
             {"model": "deepseek-chat", "input": "synthetic root responses POST",

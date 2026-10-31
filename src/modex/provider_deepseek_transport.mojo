@@ -299,11 +299,11 @@ def _deepseek_redirect_status(status: Int) -> Bool:
     return status in [301, 302, 303, 307, 308]
 
 
-def _deepseek_redirect_location(headers: List[Tuple[String, String]]) -> String:
+def _deepseek_redirect_location(headers: List[Tuple[String, String]]) -> Tuple[Bool, String]:
     for name, value in headers:
         if name.lower() == "location":
-            return value
-    return String()
+            return (True, value)
+    return (False, String())
 
 
 def _deepseek_canonical_redirect_authority(authority: String) raises -> String:
@@ -490,9 +490,9 @@ def deepseek_open_redirectable_stream(
     var followed_redirects = 0
     while _deepseek_redirect_status(stream.status):
         var location = _deepseek_redirect_location(stream.headers)
-        if not location:
+        if not location[0]:
             break
-        var redirect = _deepseek_redirect_target(address, redirect_path, location)
+        var redirect = _deepseek_redirect_target(address, redirect_path, location[1])
         if not redirect[0]:
             break
         if followed_redirects >= DEEPSEEK_MAX_REDIRECTS:

@@ -39,7 +39,7 @@ def parse_update_help_arguments(args: List[String], executable: String) raises -
             index += 1
             continue
 
-        var name = argument_name(argument)
+        var name = argument if literal else argument_name(argument)
         if not literal and name == "--help" and argument.startswith("--help="):
             var value = String(argument[byte=7:])
             raise session_cli_error(

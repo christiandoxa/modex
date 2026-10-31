@@ -123,6 +123,13 @@ prevents managed resume, and spawned Codex arguments remain unverified. See
 `docs/evidence/session-root-resume-01662-prototype.md` for the test scope and
 prototype limitations.
 
+## Active 0.166.2 update literal diagnostics (2026-11-01)
+
+The `update` parser now preserves an entire unexpected argument after `--`,
+including attached `=value` text. Four synthetic, isolated diagnostics match
+the 0.166.2 process without state changes; the historical 0.165.1 parser
+regression also passes. Actual updates and other platforms are not qualified.
+
 `session current` diagnostics now defer an empty split `--cwd ""` error to a
 following unknown flag or positional, and to malformed attached flag values,
 matching the pinned 0.166.2 CLI. Valid following options and other empty/missing

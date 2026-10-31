@@ -381,7 +381,7 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
         if not literal and argument == "--":
             literal = True
     if help_index < 0:
-        return False
+        help_index = len(args)
 
     var profile_seen = False
     var positional_seen = False
@@ -423,7 +423,7 @@ def logout_help_requested(args: List[String], executable: String) raises -> Bool
             "unexpected value '" + help_value + "' for '--help' found; no more were expected",
             executable + " logout --help [NAME]",
         )
-    return True
+    return help_index < len(args)
 
 
 def redeem_help_requested(args: List[String], executable: String) raises -> Bool:

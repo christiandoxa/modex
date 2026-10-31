@@ -183,6 +183,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_sub_agent_exec_diagnostics_01662.py", active_tests)
         self.assertIn("test_session_inspection_01662.py", active_tests)
         self.assertIn("test_ping_diagnostics_01662.py", active_tests)
+        self.assertIn("test_logout_diagnostics_01662.py", active_tests)
         self.assertIn("test_mcp_jsonl_bridge_help_precedence_01662.py", active_tests)
         self.assertIn("test_runtime_broker_help_precedence_01662.py", active_tests)
 
@@ -343,6 +344,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("test_sub_agent_exec_diagnostics_01662.py", active_tests)
         self.assertIn("test_session_inspection_01662.py", active_tests)
         self.assertIn("test_ping_diagnostics_01662.py", active_tests)
+        self.assertIn("test_logout_diagnostics_01662.py", active_tests)
         self.assertIn("test_mcp_jsonl_bridge_help_precedence_01662.py", active_tests)
         self.assertIn("test_runtime_broker_help_precedence_01662.py", active_tests)
 

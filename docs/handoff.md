@@ -65,6 +65,10 @@ checksum-pinned regression captures this mismatch in
 `tests/test_session_state_recovery_01662.py`; recovery remains unimplemented.
 See `docs/evidence/baseline-0.166.2/session-state-recovery.md`.
 
+Offline `logout` diagnostics now match 0.166.2 for the tested malformed
+options and excess arguments. Valid logout calls remain guarded and no account
+operation was tested; see `docs/evidence/baseline-0.166.2/logout-diagnostics.md`.
+
 # Historical work: Prodex 0.166.1 parity and CI
 
 The historical reference was Prodex 0.166.1 at

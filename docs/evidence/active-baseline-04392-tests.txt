@@ -1,4 +1,5 @@
-Prodex 0.439.2 active baseline and combined runtime checkpoint
+Historical checkpoint: Prodex 0.439.2 and combined runtime tests
+The active target is Prodex 0.166.0; results below are historical only.
 
 Reference: 72b77478a5198fc5da6b4d2253137f9cdbf43be9
 Linux oracle SHA-256: a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e

@@ -1,11 +1,12 @@
 # Active and historical version pin audit
 
 The active upstream target is Prodex 0.166.0 at
-`9f69e1835808f478f59f12a3ae3fa88027d896a4`. The installed executable reports
-`prodex 0.165.1`; the installed Codex CLI reports `codex-cli 0.165.0`. Neither
-installed program establishes 0.166.0 parity. The official, checksum-verified
-0.166.0 Linux oracle is cached separately and reports `prodex 0.166.0`.
-Modex's own product version remains `modex 0.1.0-dev`.
+`9f69e1835808f478f59f12a3ae3fa88027d896a4`. Installed Prodex and Codex
+versions depend on the host and can change independently of this target.
+The official, checksum-verified 0.166.0 Linux test oracle is selected
+separately and reports `prodex 0.166.0`. Modex's own product version remains
+`modex 0.1.0-dev`; neither an installed version nor an oracle version alone
+establishes parity.
 
 The old selection was not caused by the installed executable: `AGENTS.md`,
 `README.md`, `docs/baseline.json`, `docs/parity.json` and `docs/ci.md` named

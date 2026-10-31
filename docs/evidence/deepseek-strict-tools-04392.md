@@ -1,6 +1,7 @@
 # DeepSeek strict-tools and beta-route slice
 
-The frozen reference is Prodex 0.439.2 commit
+This is historical regression evidence; the active target is Prodex 0.166.0.
+The reference for this observation is Prodex 0.439.2 commit
 `72b77478a5198fc5da6b4d2253137f9cdbf43be9`; the verified Linux oracle SHA-256
 is `a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`.
 This evidence covers the strict function-tool setting, schema normalization,

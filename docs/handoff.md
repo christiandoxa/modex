@@ -8,6 +8,13 @@ implementation and isolated differential evidence. Session ownership and
 fail-closed ancestry checks must be preserved. All six platform qualifications
 remain open; earlier evidence does not establish 0.166.2 parity.
 
+Managed Ponytail integrity validation remains unavailable. A proposed
+read-only implementation was not integrated because the available directory
+and process APIs did not establish bounded listing or descendant cleanup, and
+the prototype needed stronger file-identity and aggregate-size checks. The
+existing degraded status remains in place. See
+`docs/evidence/baseline-0.166.2/ponytail-integrity-safety-blocker.md`.
+
 Live broker log reading remains guarded. An isolated 0.166.2 prototype
 rejected five synthetic invalid-identity or capability fixtures, but its
 snapshot/cursor output did not match the release. Independent review also

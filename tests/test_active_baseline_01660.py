@@ -44,10 +44,7 @@ def isolated_super_cli(binary, arguments, argv0):
 
 
 def normalize_super_cli_executable(output):
-    output = output.replace(b"Usage: prodex ", b"Usage: modex ")
-    for command in (b"super", b"run", b"doctor", b"login"):
-        output = output.replace(b"prodex " + command, b"modex " + command)
-    return output
+    return output.replace(b"Usage: prodex ", b"Usage: modex ")
 
 
 def normalize_use_executable(output, baseline_executable, executable):

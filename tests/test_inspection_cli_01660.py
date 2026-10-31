@@ -21,14 +21,10 @@ ORACLE_SHA256 = "349f6ca8cd437297d2d0c59ca0c1385cd91992de41e65be8e97934a471d0973
 
 
 def map_executable(output, oracle_argv0, modex_argv0):
-    output = output.replace(
+    return output.replace(
         b"Usage: " + oracle_argv0.encode() + b" ",
         b"Usage: " + modex_argv0.encode() + b" ",
         1,
-    )
-    return output.replace(
-        b"\n  " + oracle_argv0.encode() + b" ",
-        b"\n  " + modex_argv0.encode() + b" ",
     )
 
 

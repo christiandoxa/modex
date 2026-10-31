@@ -37,11 +37,21 @@ registered in the active fast and full CI suites. Native TUI root-resume
 selection remains unimplemented behind the guarded Super launcher; see
 `docs/evidence/baseline-0.166.2/session-inspection-list.md`.
 
-Offline `ping` group diagnostics now match 0.166.2 for a missing subcommand
+Offline `ping` group diagnostics now match 0.166.2 for a missing subcommand,
 unknown flags, and invalid subcommands, with no filesystem mutation in
 synthetic homes. The actual
 ping operation and other argument combinations remain unimplemented or
 unverified; see `docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
+
+The 0.166.2 `session list --profile main` comparison also confirms that the
+release recovers a corrupt primary `state.json` from a valid private
+`state.json.last-good`, rewrites both state files, and returns the bound
+synthetic session. Modex remains fail-closed and preserves both files because
+Mojo 1.2.0 lacks a `flock`-compatible standard-library lock; unlocked recovery
+could race profile lifecycle updates and select stale ownership. A
+checksum-pinned regression captures this mismatch in
+`tests/test_session_state_recovery_01662.py`; recovery remains unimplemented.
+See `docs/evidence/baseline-0.166.2/session-state-recovery.md`.
 
 # Historical work: Prodex 0.166.1 parity and CI
 

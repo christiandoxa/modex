@@ -515,6 +515,25 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                     ])
                     self.assertEqual([response["status"] for response in responses], [expected_status])
 
+    def test_redirect_query_apostrophe_encoding_preserves_path_and_escapes(self):
+        request = [{"model": "deepseek-chat", "input": "synthetic query encoding"}]
+        redirect = {"status": 302, "content_type": "text/plain", "body": b"discarded",
+                    "response_headers": [
+                        ("Location", "http://127.0.0.1:{upstream_port}/v1/part'one%20two?label=three'four%20five"),
+                    ]}
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, responses = observe_turns(
+                    binary, request, [redirect, buffered_reply(97)], latest_version="0.166.0",
+                )
+                self.assertEqual([(row["method"], row["path"]) for row in upstream], [
+                    ("POST", "/v1/chat/completions"),
+                    ("GET", "/v1/part'one%20two?label=three%27four%20five"),
+                ])
+                self.assertEqual([row["headers"]["authorization"] for row in upstream],
+                                 ["Bearer " + SYNTHETIC_API_KEY] * 2)
+                self.assertEqual([response["status"] for response in responses], [200])
+
     def test_root_provider_aliases_match_active_route_plan(self):
         turns = [
             {"model": "deepseek-chat", "input": "synthetic root responses POST",

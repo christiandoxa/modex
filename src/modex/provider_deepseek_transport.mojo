@@ -443,7 +443,7 @@ def _deepseek_redirect_target(address: String, current: String, location: String
     if not path_part.startswith("/"):
         return False, String()
     var target = _deepseek_normalize_redirect_path(_deepseek_encode_redirect_component(path_part))
-    target += _deepseek_encode_redirect_component(query_part)
+    target += _deepseek_encode_redirect_component(query_part).replace("'", "%27")
     if target.byte_length() == 0 or target.byte_length() > HTTP_HEADER_LIMIT or not target.startswith("/"):
         return False, String()
     return True, target

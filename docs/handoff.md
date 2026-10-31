@@ -1,8 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
-Same-origin redirect paths and queries now encode tested spaces like 0.166.0;
-authority spaces, raw controls, and credential-bearing redirects remain
-rejected. See `docs/evidence/baseline-0.166.0/provider-redirect-path-spaces.md`.
+Same-origin redirect paths and queries now encode tested spaces like 0.166.0.
+Query apostrophes encode as `%27`; path apostrophes and existing percent
+escapes stay unchanged. Authority spaces, raw controls, and credential-bearing
+redirects remain rejected. See
+`docs/evidence/baseline-0.166.0/provider-redirect-path-spaces.md`.
 
 Selected hidden `__mcp-jsonl-bridge` help routes now match 0.166.0; bridge
 execution remains unimplemented because the pinned stdlib cannot reproduce

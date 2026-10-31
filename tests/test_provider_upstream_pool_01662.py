@@ -4,6 +4,8 @@ from contextlib import contextmanager
 import hashlib
 import json
 from pathlib import Path
+import select
+import socket
 import socketserver
 import subprocess
 import sys
@@ -175,6 +177,35 @@ print("synthetic-pool-responses-retry-complete")
 raise SystemExit(0)
 '''
 
+SSE_POOL_CLIENT = CODEX_PREFIX + r'''
+import http.client, json, socket
+SSE_COMPLETION_SIGNAL_PORT = 0
+target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
+connection = http.client.HTTPConnection(target.hostname, target.port, timeout=8)
+def send(value, close):
+    body = json.dumps(value,separators=(",", ":")).encode()
+    headers = {"Content-Type":"application/json", "Authorization":authorization}
+    if close: headers["Connection"] = "close"
+    connection.request("POST", "/v1/responses", body, headers)
+    response = connection.getresponse()
+    payload = response.read()
+    return {"status":response.status, "content_type":response.getheader("Content-Type"),
+            "body":payload.hex()}
+first = send({"model":"deepseek-chat", "input":"synthetic streaming request", "stream":True}, False)
+with socket.create_connection(("127.0.0.1", SSE_COMPLETION_SIGNAL_PORT), timeout=5) as signal:
+    signal.sendall((f"GET /__synthetic_sse_complete__ HTTP/1.1\r\nHost: 127.0.0.1:{SSE_COMPLETION_SIGNAL_PORT}\r\nConnection: close\r\n\r\n").encode())
+    signal_ack = http.client.HTTPResponse(signal)
+    signal_ack.begin()
+    signal_ack.read()
+    if signal_ack.status != 204:
+        raise RuntimeError(f"upstream did not accept the downstream completion signal: {signal_ack.status}")
+second = send({"model":"deepseek-chat", "input":"synthetic buffered request"}, True)
+connection.close()
+save({"kind":"pool-sse", "responses":[first,second]})
+print("synthetic-pool-sse-complete")
+raise SystemExit(0)
+'''
+
 AUTH_SCHEME_CLIENT = CODEX_PREFIX + r'''
 import http.client
 target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
@@ -264,6 +295,15 @@ def _response(status, body, headers=()):
     return b"".join(fields)
 
 
+def _chunked_response(body, trailer=b"X-Synthetic-Trailer: drained\r\n"):
+    return (
+        b"HTTP/1.1 200 Synthetic\r\nContent-Type: text/event-stream\r\n"
+        b"Transfer-Encoding: chunked\r\nConnection: keep-alive\r\n\r\n"
+        + f"{len(body):x};synthetic=yes\r\n".encode("ascii")
+        + body + b"\r\n0\r\n" + trailer + b"\r\n"
+    )
+
+
 class RawPeer(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
     daemon_threads = True
@@ -276,7 +316,15 @@ class RawPeer(socketserver.ThreadingTCPServer):
         self.release_after = 0
         self.hold_first = False
         self.close_first_after_delay = False
+        self.split_first_reply_at = 0
         self.barrier_timed_out = False
+        self.wait_for_downstream_completion = False
+        self.wait_for_first_peer_close = False
+        self.downstream_completion_signaled = False
+        self.completion_signaled_before_release = False
+        self.first_peer_closed_before_release = False
+        self.first_peer_reused_before_release = False
+        self.peer_close_wait_timed_out = False
         self._lock = threading.Lock()
         self._condition = threading.Condition(self._lock)
         super().__init__(("127.0.0.1", 0), RawPeerHandler)
@@ -294,6 +342,34 @@ class RawPeer(socketserver.ThreadingTCPServer):
     def wait_closed(self, port, timeout=3):
         with self._condition:
             return self._condition.wait_for(lambda: port in self.closed_ports, timeout)
+
+    def wait_for_completion_and_peer_close(self, peer, timeout=5):
+        deadline = time.monotonic() + timeout
+        with self._condition:
+            if not self._condition.wait_for(
+                lambda: self.downstream_completion_signaled,
+                max(0.0, deadline - time.monotonic()),
+            ):
+                self.barrier_timed_out = True
+                return False
+            self.completion_signaled_before_release = True
+        if not self.wait_for_first_peer_close:
+            return False
+        while time.monotonic() < deadline:
+            readable, _, _ = select.select([peer], [], [], min(0.05, max(0.0, deadline - time.monotonic())))
+            if not readable:
+                continue
+            try:
+                peeked = peer.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
+            except OSError:
+                peeked = b""
+            if not peeked:
+                self.first_peer_closed_before_release = True
+                return True
+            self.first_peer_reused_before_release = True
+            return False
+        self.peer_close_wait_timed_out = True
+        return False
 
 
 class RawPeerHandler(socketserver.BaseRequestHandler):
@@ -319,6 +395,14 @@ class RawPeerHandler(socketserver.BaseRequestHandler):
                 if len(body) != length:
                     return
                 method, path, _version = request_line.decode("ascii").strip().split(" ", 2)
+                if path == "/__synthetic_sse_complete__":
+                    self.request.sendall(
+                        b"HTTP/1.1 204 Synthetic\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                    )
+                    with self.server._condition:
+                        self.server.downstream_completion_signaled = True
+                        self.server._condition.notify_all()
+                    return
                 with self.server._condition:
                     self.server.records.append({
                         "method": method,
@@ -340,7 +424,15 @@ class RawPeerHandler(socketserver.BaseRequestHandler):
                 close_after = False
                 if isinstance(reply, tuple):
                     reply, close_after = reply
-                self.request.sendall(reply)
+                if request_count == 1 and self.server.split_first_reply_at > 0:
+                    split = self.server.split_first_reply_at
+                    self.request.sendall(reply[:split])
+                    if self.server.wait_for_downstream_completion:
+                        if self.server.wait_for_completion_and_peer_close(self.request):
+                            return
+                    self.request.sendall(reply[split:])
+                else:
+                    self.request.sendall(reply)
                 if self.server.hold_first and request_count == 1:
                     try:
                         if self.request.recv(1) == b"":
@@ -377,6 +469,9 @@ def serving(server):
 
 
 def _run(binary, upstream_port, *, client_script=POOL_CLIENT, client_kind="pool-redirect", api_keys=None):
+    marker = "SSE_COMPLETION_SIGNAL_PORT = 0"
+    if marker in client_script:
+        client_script = client_script.replace(marker, f"SSE_COMPLETION_SIGNAL_PORT = {upstream_port}", 1)
     with tempfile.TemporaryDirectory(prefix="modex-upstream-pool-01662-") as directory:
         root = Path(directory)
         for name in ("home", "state", "shared", "work"):
@@ -616,6 +711,112 @@ class ProviderUpstreamPoolOwnership01662Tests(unittest.TestCase):
         self.assertEqual([row["headers"].get(b"authorization") for row in records], [
             b"Bearer " + SYNTHETIC_API_KEY.encode(), b"Bearer " + SYNTHETIC_API_KEY.encode(),
         ])
+
+    def test_completed_translated_sse_drains_chunk_trailer_and_reuses_socket(self):
+        sse = (
+            b'data: {"id":"chatcmpl-synthetic","choices":[{"delta":{"content":"synthetic reply"},"finish_reason":null}]}\n\n'
+            b'data: {"id":"chatcmpl-synthetic","choices":[{"delta":{},"finish_reason":"stop"}]}\n\n'
+            b"data: [DONE]\n\n"
+            b'data: {"id":"late-malicious","choices":[]}\n\n'
+        )
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream = RawPeer([
+                    _chunked_response(sse),
+                    _response(200, DEEPSEEK_CHAT_REPLY, (("Content-Type", "application/json"),)),
+                ])
+                with serving(upstream):
+                    capture = _run(
+                        binary, upstream.server_address[1],
+                        client_script=SSE_POOL_CLIENT, client_kind="pool-sse",
+                    )
+                    records = list(upstream.records)
+                self.assertEqual([row["status"] for row in capture["responses"]], [200, 200])
+                first_body = bytes.fromhex(capture["responses"][0]["body"])
+                self.assertIn(b"event: response.completed", first_body)
+                self.assertNotIn(b"late-malicious", first_body)
+                self.assertEqual(len(records), 2)
+                self.assertEqual(records[0]["client_port"], records[1]["client_port"])
+                self.assertEqual(records[1]["headers"].get(b"authorization"),
+                                 b"Bearer " + SYNTHETIC_API_KEY.encode())
+                if binary == MODEX:
+                    self.assertTrue(upstream.wait_closed(records[-1]["client_port"]))
+
+    def test_completed_sse_over_budget_single_chunk_is_discarded(self):
+        sse = (
+            b'data: {"id":"chatcmpl-synthetic","choices":[{"delta":{"content":"synthetic reply"},"finish_reason":null}]}\n\n'
+            b'data: {"id":"chatcmpl-synthetic","choices":[{"delta":{},"finish_reason":"stop"}]}\n\n'
+            b"data: [DONE]\n\n"
+            b'data: {"id":"late-malicious","choices":[{"delta":{"content":"'
+            + b"x" * (80 * 1024)
+            + b'"},"finish_reason":null}]}\n\n'
+        )
+        self.assertGreater(len(sse), 65536)
+        done_end = sse.index(b"data: [DONE]\n\n") + len(b"data: [DONE]\n\n")
+        self.assertLess(done_end, 8192, "[DONE] must land in the first 8 KiB of the single chunk")
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream = RawPeer([
+                    _chunked_response(sse),
+                    _response(200, DEEPSEEK_CHAT_REPLY, (("Content-Type", "application/json"),)),
+                ])
+                with serving(upstream):
+                    capture = _run(
+                        binary, upstream.server_address[1],
+                        client_script=SSE_POOL_CLIENT, client_kind="pool-sse",
+                    )
+                    records = list(upstream.records)
+                self.assertEqual([row["status"] for row in capture["responses"]], [200, 200])
+                first_body = bytes.fromhex(capture["responses"][0]["body"])
+                self.assertIn(b"event: response.completed", first_body)
+                self.assertNotIn(b"late-malicious", first_body)
+                self.assertEqual(len(records), 2)
+                if binary == MODEX:
+                    self.assertNotEqual(
+                        records[0]["client_port"], records[1]["client_port"],
+                        "a translated SSE chunk beyond the drain budget must not be pooled",
+                    )
+
+    def test_completed_sse_does_not_wait_for_missing_chunk_framing_or_reuse_it(self):
+        sse = (
+            b'data: {"id":"chatcmpl-synthetic","choices":[{"delta":{"content":"synthetic reply"},"finish_reason":null}]}\n\n'
+            b'data: {"id":"chatcmpl-synthetic","choices":[{"delta":{},"finish_reason":"stop"}]}\n\n'
+            b"data: [DONE]\n\n"
+        )
+        incomplete = (
+            b"HTTP/1.1 200 Synthetic\r\nContent-Type: text/event-stream\r\n"
+            b"Transfer-Encoding: chunked\r\nConnection: keep-alive\r\n\r\n"
+            + f"{len(sse):x}\r\n".encode("ascii") + sse
+            + b"\r\n0\r\nX-Synthetic-Trailer: delayed\r\n\r\n"
+        )
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream = RawPeer([
+                    incomplete,
+                    _response(200, DEEPSEEK_CHAT_REPLY, (("Content-Type", "application/json"),)),
+                ])
+                upstream.split_first_reply_at = incomplete.index(b"\r\n0\r\n")
+                upstream.wait_for_downstream_completion = True
+                upstream.wait_for_first_peer_close = binary == MODEX
+                with serving(upstream):
+                    capture = _run(
+                        binary, upstream.server_address[1],
+                        client_script=SSE_POOL_CLIENT, client_kind="pool-sse",
+                    )
+                    records = list(upstream.records)
+                self.assertEqual([row["status"] for row in capture["responses"]], [200, 200])
+                self.assertTrue(upstream.completion_signaled_before_release,
+                                "release the missing framing only after the downstream SSE completes")
+                self.assertEqual(len(records), 2)
+                if binary == MODEX:
+                    self.assertFalse(upstream.barrier_timed_out,
+                                     "downstream completion is the barrier, not a timed delay")
+                    self.assertTrue(upstream.first_peer_closed_before_release,
+                                    "incomplete upstream framing must close before the server releases it")
+                    self.assertFalse(upstream.peer_close_wait_timed_out,
+                                     "the close wait is only a deadlock guard")
+                    self.assertNotEqual(records[0]["client_port"], records[1]["client_port"],
+                                        "incomplete framing must be discarded, not pooled")
 
     def test_buffered_responses_final_error_is_drained_and_reusable(self):
         upstream = RawPeer([

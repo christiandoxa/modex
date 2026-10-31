@@ -862,6 +862,7 @@ struct LoopbackHTTPStream(Movable):
     var idle_timeout_ms: UInt64
     var idle_deadline: Float64
     var lookahead_deadline: Float64
+    var nonblocking_read: Bool
 
     def __init__(
         out self,
@@ -912,6 +913,7 @@ struct LoopbackHTTPStream(Movable):
         self.idle_timeout_ms = idle_timeout_ms
         self.idle_deadline = 0.0
         self.lookahead_deadline = 0.0
+        self.nonblocking_read = False
         if max_body_bytes < 0 or max_body_bytes > 4 * 1024 * 1024 or connect_timeout_ms == 0 or request_timeout_ms == 0 or idle_timeout_ms == 0:
             raise Error("invalid or unsupported HTTP stream limits")
 
@@ -1002,6 +1004,33 @@ struct LoopbackHTTPStream(Movable):
         self.fd = -1
         return reusable
 
+    def drain_available_response(mut self, unread_body_bytes: Int, body_limit: Int = 65536, wire_limit: Int = 131072) -> Bool:
+        # shortcut: cap post-completion drain at 64 KiB / 128 KiB; increase only with provider fixtures.
+        if self.fd < 0 or self.done or not self.pool_eligible or not self.response_persistent:
+            return False
+        if unread_body_bytes < 0 or unread_body_bytes > body_limit or body_limit <= 0 or wire_limit <= 0:
+            return False
+        var original_body_limit = self.max_body_bytes
+        var original_wire_limit = self.max_wire_bytes
+        var remaining_body_budget = body_limit - unread_body_bytes
+        var bounded_body_limit = self.body_bytes + remaining_body_budget
+        var bounded_wire_limit = self.wire_bytes + wire_limit
+        if original_body_limit < 0 or bounded_body_limit < original_body_limit:
+            self.max_body_bytes = bounded_body_limit
+        if original_wire_limit < 0 or bounded_wire_limit < original_wire_limit:
+            self.max_wire_bytes = bounded_wire_limit
+        self.nonblocking_read = True
+        var drained = True
+        try:
+            while not self.done:
+                _ = self.read_chunk()
+        except:
+            drained = False
+        self.nonblocking_read = False
+        self.max_body_bytes = original_body_limit
+        self.max_wire_bytes = original_wire_limit
+        return drained and self.done and self.response_persistent and len(self.buffer) == 0
+
     def __deinit__(deinit self):
         self.close()
 
@@ -1036,9 +1065,12 @@ struct LoopbackHTTPStream(Movable):
                 self.phase = 6
                 return
             var e = get_errno()
-            if e != ErrNo.EAGAIN and e != ErrNo.EINTR:
+            if e == ErrNo.EAGAIN or e == ErrNo.EINTR:
+                if self.nonblocking_read:
+                    raise Error("loopback HTTP read would block")
+                sleep(0.001)
+            else:
                 raise Error("loopback HTTP stream read failed")
-            sleep(0.001)
 
     def _read_head(mut self) raises:
         var end = _header_end_from(self.buffer, self.header_scan)
@@ -1192,6 +1224,8 @@ struct LoopbackHTTPStream(Movable):
                     if self.phase == 6:
                         raise Error("truncated chunked HTTP response")
                     var take = min(8192, min(len(self.buffer), self.remaining))
+                    if self.max_body_bytes >= 0 and take > self.max_body_bytes - self.body_bytes:
+                        raise Error("oversized chunked HTTP response")
                     var out = List[UInt8]()
                     for i in range(take):
                         out.append(self.buffer[i])
@@ -1232,7 +1266,7 @@ struct LoopbackHTTPStream(Movable):
                         self.close()
                     return List[UInt8]()
         except error:
-            if String(error) != "loopback HTTP lookahead elapsed":
+            if String(error) != "loopback HTTP lookahead elapsed" and String(error) != "loopback HTTP read would block":
                 self.close()
             raise
 

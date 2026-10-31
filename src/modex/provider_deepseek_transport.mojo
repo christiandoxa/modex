@@ -620,6 +620,13 @@ struct DeepSeekExchange(Movable):
                 )
         self.http.close()
 
+    def finish_completed_stream(mut self):
+        var allow_reuse = False
+        if not self.native_messages and self.reader.assembler.saw_done and self.upstream_pool and self.pool_credential_scope >= 0:
+            var unread_body_bytes = max(0, len(self.pending) - self.pending_offset)
+            allow_reuse = self.http.drain_available_response(unread_body_bytes)
+        self._finish(allow_reuse)
+
     def read_body(mut self, allow_reuse: Bool = False) raises -> List[UInt8]:
         if self.read_mode == 2:
             self._finish()
@@ -739,7 +746,7 @@ struct DeepSeekExchange(Movable):
                         raise Error("DeepSeek event reader made no progress")
                     self.pending_offset += result[0]
                     if self.reader.done:
-                        self._finish()
+                        self.done = True
                     if result[1] or self.done:
                         return result[1].copy()
                     continue

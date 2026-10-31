@@ -1185,6 +1185,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             connection.continue_after_incomplete_stream()
         else:
             connection.finish_stream(30000, include_head_terminal_chunk=True)
+            exchange.finish_completed_stream()
     except:
         exchange.close()
         connection.close()

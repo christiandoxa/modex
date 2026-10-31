@@ -20,16 +20,29 @@ live-log parity evidence. The synthetic fixture is in
 
 The local provider runtime now retains at most one idle upstream socket per
 runtime, scoped by validated loopback endpoint, credential, and authentication
-scheme. It reuses only
-fully consumed, self-delimited buffered or passthrough responses; translated
-SSE remains unpooled when HTTP framing may be incomplete. Fourteen isolated cases
-cover key rotation, authentication schemes, native Messages redirects,
-concurrent checkout, incomplete framing, cancellation, redirect ownership,
-stale peers, and shutdown. The idle timeout, capped at 30
+scheme. It reuses fully consumed, self-delimited buffered and passthrough
+responses. Ordinary translated Responses SSE can also reuse a persistent
+socket after `[DONE]` when a nonblocking drain completes HTTP framing within a
+64 KiB additional body and 128 KiB additional wire budget; the downstream
+terminal chunk is sent before the drain. Post-`[DONE]` bytes are discarded,
+and incomplete, delayed, close-delimited, malformed, cancelled, or over-budget
+responses are closed without waiting. Native Messages SSE remains unpooled.
+Seventeen isolated cases cover chunked framing and trailers, a delayed
+terminator, rejection of an over-64-KiB single SSE chunk with `[DONE]` in its
+first 8 KiB, late-event suppression, key rotation, authentication schemes,
+native Messages redirects, concurrent checkout, cancellation, redirect
+ownership, stale peers, and shutdown. The idle timeout, capped at 30
 seconds, is a lazy reuse cutoff; an idle descriptor is closed on the next
 checkout, eviction, or shutdown. A peer may close after the checkout probe;
-failed requests are not replayed. This is selected Linux x86-64 evidence, not
-full provider or six-target parity. See
+failed requests are not replayed. The active shape, passthrough, and framing
+suites passed 32 tests, and two historical controls preserved prompt completion
+and cancellation. The delayed-trailer regression releases its missing terminator
+only after a synthetic client signal confirms the downstream terminal chunk was
+consumed; Modex closes the upstream socket before release. The bounded wait is
+only a deadlock guard. Security-relevant pool checks reject cross-port redirects,
+separate credential and authentication-scheme scopes, suppress post-`[DONE]`
+data, and close without replay after truncation or cancellation. This is selected
+Linux x86-64 evidence, not full provider or six-target parity. See
 `docs/evidence/baseline-0.166.2/provider-upstream-pool.md`.
 
 DeepSeek chat streaming now retains the last nonempty string

@@ -67,6 +67,10 @@ def normalize_root(stdout, root):
 
 class SessionProfile04392Tests(unittest.TestCase):
     @classmethod
+    def release_oracles(cls):
+        return (ORACLE_01651, test_cli.ORACLE)
+
+    @classmethod
     def setUpClass(cls):
         test_cli.CliTests.setUpClass()
         for binary, expected in (
@@ -83,7 +87,7 @@ class SessionProfile04392Tests(unittest.TestCase):
             ["session", "list", "--json", "--profile", "missing"],
             ["session", "list", "--id-only", "--query", "main"],
         )
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             outputs = {}
             for label, binary in (("reference", reference), ("modex", test_cli.MODEX)):
                 with tempfile.TemporaryDirectory(prefix="modex-session-profile-04392-") as directory:
@@ -124,7 +128,7 @@ class SessionProfile04392Tests(unittest.TestCase):
             ["session", "list", "--json", "--profile", ""],
             ["session", "list", "--json", "--profile", "main"],
         )
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             for label, profile_name, expected_profile in cases:
                 with tempfile.TemporaryDirectory(prefix="modex-session-empty-id-04392-") as directory:
                     root = Path(directory)
@@ -159,7 +163,7 @@ class SessionProfile04392Tests(unittest.TestCase):
         second_id = "archived-" + "x" * 56
         all_outputs = {}
 
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             for case in ("absent", "empty", "multiple-unicode"):
                 outputs = {}
                 for label, binary in (("reference", reference), ("modex", test_cli.MODEX)):
@@ -227,7 +231,7 @@ class SessionProfile04392Tests(unittest.TestCase):
                 self.assertEqual(outputs["modex"], outputs["reference"], case)
                 all_outputs[(reference, case)] = outputs["modex"]
 
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             self.assertNotIn("  profile:", all_outputs[(reference, "absent")])
             self.assertTrue(all_outputs[(reference, "empty")].endswith("  profile: "))
             multiple = all_outputs[(reference, "multiple-unicode")]
@@ -254,7 +258,7 @@ class SessionProfile04392Tests(unittest.TestCase):
         escaped_name = "Résumé界e\u0301" + "".join(f"\\x{code:02x}" for code in controls) + "終🚀"
         release_outputs = []
 
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             outputs = {}
             for label, binary in (("reference", reference), ("modex", test_cli.MODEX)):
                 with tempfile.TemporaryDirectory(prefix="modex-session-profile-controls-") as directory:
@@ -284,7 +288,8 @@ class SessionProfile04392Tests(unittest.TestCase):
                 self.assertNotIn(chr(code).encode(), outputs["modex"].replace(b"\n", b""))
             release_outputs.append(outputs["reference"])
 
-        self.assertEqual(release_outputs[0], release_outputs[1])
+        if len(release_outputs) > 1:
+            self.assertEqual(release_outputs[0], release_outputs[1])
 
     def test_binding_retention_identity_and_conflict_match_both_releases(self):
         now = int(time.time())
@@ -306,7 +311,7 @@ class SessionProfile04392Tests(unittest.TestCase):
                 profiles={},
             ), CONFLICT_PROFILE),
         )
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             for label, state, expected_profile in cases:
                 outputs = []
                 for binary in (reference, test_cli.MODEX):
@@ -325,7 +330,7 @@ class SessionProfile04392Tests(unittest.TestCase):
     def test_binding_cap_ties_keep_last_2048_session_ids(self):
         bound_at = int(time.time())
         for larger_ids, expected_profile in ((2047, "main"), (2048, None)):
-            for reference in (ORACLE_01651, test_cli.ORACLE):
+            for reference in self.release_oracles():
                 outputs = []
                 with tempfile.TemporaryDirectory(prefix="modex-session-binding-cap-04392-") as directory:
                     root = Path(directory)
@@ -350,7 +355,7 @@ class SessionProfile04392Tests(unittest.TestCase):
 
     def test_duplicate_binding_keys_use_the_final_value(self):
         bound_at = int(time.time())
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             outputs = []
             with tempfile.TemporaryDirectory(prefix="modex-session-binding-duplicate-04392-") as directory:
                 root = Path(directory)
@@ -383,7 +388,7 @@ class SessionProfile04392Tests(unittest.TestCase):
     def test_16384_binding_maps_and_profiles_complete_through_production_cli(self):
         count = 16_384
         bound_at = int(time.time())
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             with tempfile.TemporaryDirectory(prefix="modex-session-binding-stress-04392-") as directory:
                 root = Path(directory)
                 fixture(root)
@@ -431,7 +436,7 @@ class SessionProfile04392Tests(unittest.TestCase):
     def test_2048_session_reports_use_the_retained_profile_index(self):
         count = 2048
         bound_at = int(time.time())
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             with tempfile.TemporaryDirectory(prefix="modex-session-profile-index-04392-") as directory:
                 root = Path(directory)
                 work = fixture(root)
@@ -465,7 +470,7 @@ class SessionProfile04392Tests(unittest.TestCase):
                 self.assertTrue(all(report["profile"] == "main" for report in reports))
 
     def test_invalid_primary_keeps_backup_recovery_fail_closed_without_modex_writes(self):
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             observations = {}
             for label, binary in (("reference", reference), ("modex", test_cli.MODEX)):
                 with tempfile.TemporaryDirectory(prefix="modex-session-backup-04392-") as directory:
@@ -507,7 +512,7 @@ class SessionProfile04392Tests(unittest.TestCase):
             ))
 
     def test_unsafe_state_paths_fail_closed(self):
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             for link_target in ("live", "missing"):
                 observations = {}
                 with tempfile.TemporaryDirectory(prefix="modex-session-state-link-04392-") as directory:
@@ -545,7 +550,7 @@ class SessionProfile04392Tests(unittest.TestCase):
                     self.assertNotEqual(observations["modex"].stderr, b"")
 
     def test_world_readable_single_link_state_inside_private_root_matches_releases(self):
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             with tempfile.TemporaryDirectory(prefix="modex-session-state-mode-04392-") as directory:
                 root = Path(directory)
                 fixture(root)
@@ -566,7 +571,7 @@ class SessionProfile04392Tests(unittest.TestCase):
     def test_writable_and_publicly_hardlinked_state_remain_fail_closed(self):
         cases = (("group-writable", 0o620, False), ("other-writable", 0o602, False),
                  ("public-hardlink", 0o644, True))
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             for label, mode, hardlink in cases:
                 with self.subTest(reference=reference.name, case=label), tempfile.TemporaryDirectory(
                     prefix="modex-session-state-mode-04392-"
@@ -594,7 +599,7 @@ class SessionProfile04392Tests(unittest.TestCase):
                         self.assertEqual(alias.read_bytes(), state_bytes)
 
     def test_private_hardlinked_state_matches_both_releases_without_mutation(self):
-        for reference in (ORACLE_01651, test_cli.ORACLE):
+        for reference in self.release_oracles():
             outputs = []
             for binary in (reference, test_cli.MODEX):
                 with tempfile.TemporaryDirectory(prefix="modex-session-state-hardlink-04392-") as directory:

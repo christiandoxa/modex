@@ -108,6 +108,16 @@ parser failures only; successful profile operations and their lifecycle
 behavior remain outside this slice. See
 `docs/evidence/baseline-0.166.2/profile-parser-diagnostics.md`.
 
+Profile-bound `session list` now has a separate 15-case active 0.166.2 lane.
+Eleven isolated output/control comparisons cover profile filters, binding
+identity and retention, large state maps, duplicate keys, Unicode display, and
+up to 2,048 synthetic reports. Four additional checks preserve visible
+fail-closed or recovery behavior for concurrent replacement and unsafe state;
+they are not counted as parity. The active cases pass on Linux x86-64 and run
+in both Fast and Full CI. Lifecycle mutations, locked recovery, and the other
+five release targets remain outside this qualification. See
+`docs/evidence/baseline-0.166.2/session-profile-inspection.md`.
+
 An isolated synthetic comparison confirms that Prodex resolves a parent-owned
 V2 worker to its root and fails closed when the parent is missing. Modex still
 stops at its unsupported Super startup guard before native resume. Root and V1

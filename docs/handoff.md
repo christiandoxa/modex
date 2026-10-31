@@ -164,6 +164,11 @@ including selected input shapes, nesting limits, long model values, and route
 controls. This is bounded evidence, not full compaction or provider parity;
 see `docs/evidence/baseline-0.166.2/local-compact.md`.
 
+Two Guardian metadata controls on the DeepSeek API-key route pass against
+0.166.2, including a synthetic quota retry. They do not qualify the separate
+profile-backed reviewer affinity or cookie routing; see
+`docs/evidence/baseline-0.166.2/guardian-api-key-scope.md`.
+
 # Historical work: Prodex 0.166.1 parity and CI
 
 The historical reference was Prodex 0.166.1 at

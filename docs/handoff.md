@@ -1,5 +1,9 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Selected hidden `__mcp-jsonl-bridge` help routes now match 0.166.0; bridge
+execution remains unimplemented. See
+`docs/evidence/baseline-0.166.0/mcp-jsonl-bridge-help.md`.
+
 The local relay distinguishes an absent redirect Location from a present empty
 value and follows the latter to the current URL, as tested against 0.166.0.
 Same-origin checks and the redirect cap remain in place; see

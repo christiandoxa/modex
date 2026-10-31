@@ -116,6 +116,37 @@ class RootHelpErrors01660Tests(unittest.TestCase):
         )
         self.assertEqual(created, [])
 
+    def test_hidden_mcp_jsonl_bridge_help_matches_without_mutations(self):
+        cases = (
+            (("help", "__mcp-jsonl-bridge"), "prodex", "modex", 0),
+            (("__mcp-jsonl-bridge", "--help"), "prodex", "modex", 0),
+            (("__mcp-jsonl-bridge", "-h", "ignored"), "custom-prodex", "custom-modex", 0),
+            (("help", "__mcp-jsonl-bridge", "extra"), "prodex", "modex", 2),
+            (("__mcp-jsonl-bridge", "--help=bad"), "prodex", "modex", 2),
+        )
+        for arguments, oracle_argv0, modex_argv0, expected_status in cases:
+            with self.subTest(arguments=arguments, argv0=oracle_argv0):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), oracle_argv0, "01660-mcp-bridge-oracle"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), modex_argv0, "01660-mcp-bridge-modex"
+                )
+                expected_stdout = baseline.stdout.replace(
+                    b"Usage: " + oracle_argv0.encode() + b" ",
+                    b"Usage: " + modex_argv0.encode() + b" ",
+                    1,
+                )
+                expected_stderr = baseline.stderr.replace(
+                    b"Usage: " + oracle_argv0.encode() + b" ",
+                    b"Usage: " + modex_argv0.encode() + b" ",
+                    1,
+                )
+                self.assertEqual(baseline.returncode, expected_status)
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (expected_status, expected_stdout, expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
     def test_run_help_routes_match_release_without_starting_runtime(self):
         cases = (
             (("run", "--help"), "prodex", "modex"),

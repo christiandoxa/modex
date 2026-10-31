@@ -11,7 +11,7 @@ from modex.log_upstream_follow import follow_upstream
 from modex.log_stream import follow_stream
 from modex.paths import app_root_is_absent
 from modex.profile_cli import parse_profile_help_arguments, profile_help, profile_list_empty_panel, profile_short_help, top_level_profile_use_help
-from modex.root_help import login_help, logout_help, logout_usage, ping_help, ping_openai_help, quota_help, quota_short_help, redeem_help, root_help, run_help, runtime_broker_help, update_help
+from modex.root_help import login_help, logout_help, logout_usage, mcp_jsonl_bridge_help, ping_help, ping_openai_help, quota_help, quota_short_help, redeem_help, root_help, run_help, runtime_broker_help, update_help
 from modex.sessions import inspect_sessions, resolve_session_id_from_store, session_resume_has_no_profile_source
 from modex.super_cli import parse_super_arguments, run_super
 from modex.super_help import super_help
@@ -378,6 +378,15 @@ def main():
             return
         print(runtime_broker_help(executable), end="")
         return
+    if len(args) >= 3 and args[1] == "help" and args[2] == "__mcp-jsonl-bridge":
+        var parts = args[0].split("/")
+        var executable = String(parts[len(parts) - 1])
+        if len(args) > 3:
+            print(session_cli_error("unrecognized subcommand '" + args[3] + "'", executable + " __mcp-jsonl-bridge <COMMAND> [ARGS]..."), file=stderr, end="")
+            exit(2)
+            return
+        print(mcp_jsonl_bridge_help(executable), end="")
+        return
     if len(args) >= 3 and args[1] == "help" and args[2] == "log":
         if len(args) == 3:
             var rewritten: List[String] = [args[0], "log", "--help"]
@@ -428,6 +437,19 @@ def main():
             print(session_cli_error(
                 "unexpected value '" + String(args[2][byte=7:]) + "' for '--help' found; no more were expected",
                 executable + " __runtime-broker --help",
+            ), file=stderr, end="")
+            exit(2)
+            return
+    if len(args) >= 3 and args[1] == "__mcp-jsonl-bridge":
+        var parts = args[0].split("/")
+        var executable = String(parts[len(parts) - 1])
+        if args[2] == "--help" or args[2] == "-h":
+            print(mcp_jsonl_bridge_help(executable), end="")
+            return
+        if args[2].startswith("--help="):
+            print(session_cli_error(
+                "unexpected value '" + String(args[2][byte=7:]) + "' for '--help' found; no more were expected",
+                executable + " __mcp-jsonl-bridge --help <COMMAND> [ARGS]...",
             ), file=stderr, end="")
             exit(2)
             return

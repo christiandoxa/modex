@@ -100,6 +100,12 @@ combo retry controls. The test reuses the historical corpus with the active
 oracle and does not qualify untested provider behavior; see
 `docs/evidence/baseline-0.166.2/provider-shapes.md`.
 
+A synthetic Super comparison confirms that the 0.166.2 oracle and Modex
+forward a `policy_capacity_unavailable` HTTP 503 with its original content
+type and body, without replaying the upstream request. This is one guarded
+process path, not full provider or rotation parity; see
+`docs/evidence/baseline-0.166.2/policy-capacity-synthetic-codex.md`.
+
 # Historical work: Prodex 0.166.1 parity and CI
 
 The historical reference was Prodex 0.166.1 at

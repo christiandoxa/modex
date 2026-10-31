@@ -146,6 +146,11 @@ requests, pass against the 0.166.2 oracle. These do not establish general
 streaming, connection ownership, or provider parity; see
 `docs/evidence/baseline-0.166.2/deepseek-stream-item-ids.md`.
 
+Four local-compaction process comparisons pass against the 0.166.2 oracle,
+including selected input shapes, nesting limits, long model values, and route
+controls. This is bounded evidence, not full compaction or provider parity;
+see `docs/evidence/baseline-0.166.2/local-compact.md`.
+
 # Historical work: Prodex 0.166.1 parity and CI
 
 The historical reference was Prodex 0.166.1 at

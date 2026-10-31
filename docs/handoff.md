@@ -8,6 +8,12 @@ implementation and isolated differential evidence. Session ownership and
 fail-closed ancestry checks must be preserved. All six platform qualifications
 remain open; earlier evidence does not establish 0.166.2 parity.
 
+DeepSeek request projection now preserves first-present tool-name precedence
+when a primary `name` is malformed, rather than falling through to a later
+alias. Isolated 0.166.2 comparisons cover absent, empty, null, numeric, object,
+array and boolean names, custom nested names, and an MCP result control. This
+is selected request-shape evidence, not full provider parity.
+
 On 2026-11-01, locally recovered official historical 0.439.2 and 0.439.5
 workflow artifacts matched their pinned hashes. Selected historical lanes
 passed across isolated invocations, but nested Bubblewrap prevented one combined

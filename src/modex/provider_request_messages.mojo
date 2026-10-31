@@ -241,8 +241,13 @@ def _map_item(doc: JsonDocument, item: Int, mut mapped: List[String]):
         return
     if kind == "function_call" or kind == "mcp_call" or kind == "custom_tool_call" or kind == "local_shell_call":
         var call_id = _mapped_call_id(doc, item)
-        var name = _first_string(doc, item, ["name", "tool_name"])
-        if not name: name = _first_string(doc, doc.get(item, "function"), ["name"])
+        var name_node = doc.get(item, "name")
+        if name_node < 0: name_node = doc.get(item, "tool_name")
+        if name_node < 0 and kind != "custom_tool_call": name_node = doc.get(doc.get(item, "function"), "name")
+        var name = doc.string(name_node)
+        if not name:
+            mapped.append('{"role":"assistant","content":""}')
+            return
         if kind == "custom_tool_call":
             var input = doc.get(item, "input")
             var input_text = String()

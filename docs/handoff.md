@@ -55,11 +55,17 @@ all boolean options, and multi-option controls for malformed help usage. A
 lone split value option now omits the option group from `--help=value` usage,
 matching the pinned CLI; attached values and other accepted options retain it.
 This brings the active parser/help comparison count to 95. A historical
-0.439.2 help guard covers the three quota help routes. Three Modex-only
-valid-option checks also confirm quota execution stops at the no-state guard;
-they are not parity evidence. `quota --profile=` still reaches a stateful
-Prodex lookup that creates lifecycle/housekeeping locks, so Modex does not fake
-that result or bypass those locks. See
+0.439.2 help guard covers the three quota help routes. A further 62-case
+regression matches repeated split-value precedence and follow-on arguments:
+malformed attached help, unknown flags and post-separator positionals retain
+their release ordering; a later recognized option surfaces the original
+duplicate before later errors. Attached boolean errors, missing values, plain
+help, and duplicate controls preserve their observed precedence. This brings
+the active parser/help comparison count to 157.
+Three Modex-only valid-option checks also confirm quota execution stops at the
+no-state guard; they are not parity evidence. `quota --profile=` still reaches
+a stateful Prodex lookup that creates lifecycle/housekeeping locks, so Modex
+does not fake that result or bypass those locks. See
 `docs/evidence/baseline-0.166.2/quota-cli-diagnostics.md`.
 
 The connected `redeem` parser now matches selected offline 0.166.2 diagnostics

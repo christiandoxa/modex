@@ -30,13 +30,25 @@ The pending-value control still retains the group, as in
 `--profile NAME --provider --help=value`. Every case checks exact status,
 stdout, stderr, and absence of filesystem changes against the release.
 
+A 62-case regression now matches precedence after repeated split value
+options, including `--profile`/`-p`, `--auth`, `--provider`, and `--base-url`.
+Malformed `--help=value` immediately after a duplicate wins; a subsequent
+recognized option surfaces the original duplicate first. Unknown options and
+positionals still win. Unknown-option usage is generic for unsuggested options
+and boolean suggestions, and uses the suggested syntax for value options.
+Missing values, attached boolean errors, later duplicate
+options, plain help, attached duplicates, and separator-tail arguments retain
+their observed precedence. The cases compare exact status/output and leave
+isolated homes unchanged.
+
 The synthetic homes contain no profiles or credentials, and the sandbox has no
 network. The suite is registered in Fast and Full CI. The separate
 `test_quota_help_history_04392.py` preserves the three historical help routes
 against Prodex 0.439.2 (`a545b602bddfbbc2b4455d8dd7e97263e9c49747fa9d1d6b94011e73971d2a5e`).
 
-Verified on 2026-10-31 with `make build` and the active quota diagnostic suite;
-all five test methods passed on Linux x86-64. The focused test command was:
+Verified on 2026-10-31 with `make build`, the active quota diagnostic suite,
+`python3 scripts/ci/check-product-dependencies.py`, and `git diff --check`; all
+seven test methods passed on Linux x86-64. The focused test command was:
 
 ```sh
 PRODEX_ORACLE=/path/to/prodex-0.166.2 \

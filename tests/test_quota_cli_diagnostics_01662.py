@@ -78,6 +78,27 @@ HELP_USAGE_FORMS = (
     (("--once", "--provider", "synthetic"), True),
 )
 
+REPEATED_SPLIT_VALUES = (
+    ("--profile split", ("--profile", "first", "--profile", "second")),
+    ("-p split", ("-p", "first", "-p", "second")),
+    ("profile attached then split", ("--profile=first", "--profile", "second")),
+    ("profile alias split", ("--profile", "first", "-p", "second")),
+    ("--auth split", ("--auth", "first", "--auth", "second")),
+    ("--provider split", ("--provider", "first", "--provider", "second")),
+    (
+        "--base-url split",
+        ("--base-url", "http://first.invalid", "--base-url", "http://second.invalid"),
+    ),
+)
+
+REPEATED_SPLIT_BASES = (
+    ("profile", ("--profile", "first", "--profile", "second"), "--profile <NAME>"),
+    ("profile alias", ("-p", "first", "-p", "second"), "--profile <NAME>"),
+    ("auth", ("--auth", "first", "--auth", "second"), "--auth <AUTH>"),
+    ("provider", ("--provider", "first", "--provider", "second"), "--provider <PROVIDER>"),
+    ("base-url", ("--base-url", "http://first.invalid", "--base-url", "http://second.invalid"), "--base-url <URL>"),
+)
+
 
 class QuotaCliDiagnostics01662Tests(unittest.TestCase):
     @classmethod
@@ -159,6 +180,116 @@ class QuotaCliDiagnostics01662Tests(unittest.TestCase):
                 self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr), (2, b"", expected))
                 self.assertEqual((actual.returncode, actual.stdout, actual.stderr), (2, b"", expected))
                 self.assertEqual((baseline_created, actual_created), ([], []))
+
+    def test_repeated_split_value_precedence_and_separator(self):
+        help_error = (
+            "error: unexpected value 'synthetic' for '--help' found; no more were expected\n\n"
+            "Usage: modex quota --help "
+            + OPTION_GROUP
+            + "\n\nFor more information, try '--help'.\n"
+        ).encode()
+        duplicate_profile = (
+            "error: the argument '--profile <NAME>' cannot be used multiple times\n\n"
+            "Usage: modex quota [OPTIONS]\n\nFor more information, try '--help'.\n"
+        ).encode()
+        duplicate_once = (
+            "error: the argument '--once' cannot be used multiple times\n\n"
+            "Usage: modex quota [OPTIONS]\n\nFor more information, try '--help'.\n"
+        ).encode()
+        invalid_attached_boolean = (
+            "error: unexpected value 'true' for '--all' found; no more were expected\n\n"
+            "Usage: modex quota "
+            + OPTION_GROUP
+            + "\n\nFor more information, try '--help'.\n"
+        ).encode()
+        unexpected_after_separator = (
+            "error: unexpected argument '--help=synthetic' found\n\n"
+            "Usage: modex quota [OPTIONS]\n\nFor more information, try '--help'.\n"
+        ).encode()
+        cases = [
+            ("repeated split option before malformed help", ["quota", "--profile", "a", "--profile", "b", "--help=synthetic"], help_error),
+            ("attached then repeated split option before malformed help", ["quota", "--profile=a", "--profile", "b", "--help=synthetic"], help_error),
+            ("repeated split option before plain help", ["quota", "--profile", "a", "--profile", "b", "--help"], duplicate_profile),
+            ("repeated split option before pending value", ["quota", "--profile", "a", "--profile", "b", "--provider", "--help=synthetic"], duplicate_profile),
+            ("pending value after deferred duplicate", ["quota", "--profile", "a", "--profile", "b", "--provider", "--unknown"], duplicate_profile),
+            ("attached duplicate remains immediate", ["quota", "--profile=a", "--profile=b", "--help=synthetic"], duplicate_profile),
+            ("boolean duplicate remains immediate", ["quota", "--once", "--once", "--help=synthetic"], duplicate_once),
+            ("attached boolean still precedes deferred duplicate", ["quota", "--profile", "a", "--profile", "b", "--all=true"], invalid_attached_boolean),
+            ("unknown positional still precedes duplicate", ["quota", "--profile", "a", "--profile", "b", "extra"], "error: unexpected argument 'extra' found\n\nUsage: modex quota [OPTIONS]\n\nFor more information, try '--help'.\n".encode()),
+            ("separator makes following help a positional argument", ["quota", "--profile", "a", "--profile", "b", "--", "--help=synthetic"], unexpected_after_separator),
+        ]
+        for label, arguments, expected_stderr in cases:
+            baseline, baseline_created = isolated_run(ORACLE, arguments, "modex", f"quota-repeat-{label}-oracle")
+            actual, actual_created = isolated_run(MODEX, arguments, "modex", f"quota-repeat-{label}-modex")
+            with self.subTest(case=label):
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr), (2, b"", expected_stderr))
+                self.assertEqual((actual.returncode, actual.stdout, actual.stderr), (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, actual_created), ([], []))
+
+        for label, prefix in REPEATED_SPLIT_VALUES:
+            arguments = ["quota", *prefix, "--help=synthetic"]
+            baseline, baseline_created = isolated_run(ORACLE, arguments, "modex", f"quota-repeat-{label}-oracle")
+            actual, actual_created = isolated_run(MODEX, arguments, "modex", f"quota-repeat-{label}-modex")
+            with self.subTest(case=label):
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr), (2, b"", help_error))
+                self.assertEqual((actual.returncode, actual.stdout, actual.stderr), (2, b"", help_error))
+                self.assertEqual((baseline_created, actual_created), ([], []))
+
+    def test_following_argument_precedence_after_repeated_split_values(self):
+        follow_ons = (
+            ("unknown attached", ("--unknown=x",), "unknown"),
+            ("unknown with other suggestion", ("--watc=x",), "unknown-suggestion"),
+            ("unknown suggesting seen profile", ("--profilee=x",), "profile-suggestion"),
+            ("attached boolean error", ("--all=x",), "attached-boolean"),
+            ("missing split value", ("--base-url",), "duplicate"),
+            ("valid boolean then malformed help", ("--once", "--help=synthetic"), "duplicate"),
+            ("valid value then malformed help", ("--provider", "synthetic", "--help=synthetic"), "duplicate"),
+            ("later boolean duplicate", ("--once", "--once", "--help=synthetic"), "duplicate"),
+            (
+                "later value duplicate",
+                ("--provider", "first", "--provider", "second", "--help=synthetic"),
+                "duplicate",
+            ),
+        )
+        for base_label, prefix, duplicate_label in REPEATED_SPLIT_BASES:
+            duplicate_error = (
+                f"error: the argument '{duplicate_label}' cannot be used multiple times\n\n"
+                "Usage: modex quota [OPTIONS]\n\nFor more information, try '--help'.\n"
+            ).encode()
+            for index, (label, suffix, kind) in enumerate(follow_ons):
+                arguments = ["quota", *prefix, *suffix]
+                if kind == "duplicate":
+                    expected_stderr = duplicate_error
+                elif kind == "attached-boolean":
+                    expected_stderr = (
+                        "error: unexpected value 'x' for '--all' found; no more were expected\n\n"
+                        "Usage: modex quota "
+                        + OPTION_GROUP
+                        + "\n\nFor more information, try '--help'.\n"
+                    ).encode()
+                elif kind == "profile-suggestion":
+                    expected_stderr = (
+                        "error: unexpected argument '--profilee' found\n\n"
+                        "  tip: a similar argument exists: '--profile'\n\n"
+                        "Usage: modex quota --profile <NAME>\n\nFor more information, try '--help'.\n"
+                    ).encode()
+                else:
+                    suggestion = "\n\n  tip: a similar argument exists: '--watch'" if kind == "unknown-suggestion" else ""
+                    name = "--watc" if kind == "unknown-suggestion" else "--profilee" if kind == "profile-suggestion" else "--unknown"
+                    expected_stderr = (
+                        f"error: unexpected argument '{name}' found{suggestion}\n\n"
+                        "Usage: modex quota [OPTIONS]\n\nFor more information, try '--help'.\n"
+                    ).encode()
+                baseline, baseline_created = isolated_run(
+                    ORACLE, arguments, "modex", f"quota-follow-{base_label}-{index}-oracle"
+                )
+                actual, actual_created = isolated_run(
+                    MODEX, arguments, "modex", f"quota-follow-{base_label}-{index}-modex"
+                )
+                with self.subTest(base=base_label, suffix=label):
+                    self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr), (2, b"", expected_stderr))
+                    self.assertEqual((actual.returncode, actual.stdout, actual.stderr), (2, b"", expected_stderr))
+                    self.assertEqual((baseline_created, actual_created), ([], []))
 
     def test_valid_quota_options_stay_behind_the_no_state_guard(self):
         for arguments in (

@@ -755,6 +755,7 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
     var choices: List[String] = ["profile", "all", "auth", "provider", "detail", "raw", "watch", "once", "base-url", "help"]
     var seen = List[String]()
     var only_split_value = False
+    var repeated_split_value = String()
     literal = False
     var index = 2
     while index < help_index:
@@ -783,12 +784,18 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
                     suggestion = "--" + matches[len(matches) - 1]
                     detail += "\n\n  tip: a similar argument exists: '" + suggestion + "'"
             var error_usage = String(usage)
-            for option in seen:
-                error_usage += " " + quota_option_label(option)
-            if suggestion and suggestion not in seen:
-                error_usage += " " + quota_option_label(suggestion)
-            if error_usage == usage:
-                error_usage += " [OPTIONS]"
+            if repeated_split_value:
+                if suggestion == "--profile" or suggestion == "--auth" or suggestion == "--provider" or suggestion == "--base-url":
+                    error_usage += " " + quota_option_label(suggestion)
+                else:
+                    error_usage += " [OPTIONS]"
+            else:
+                for option in seen:
+                    error_usage += " " + quota_option_label(option)
+                if suggestion and suggestion not in seen:
+                    error_usage += " " + quota_option_label(suggestion)
+                if error_usage == usage:
+                    error_usage += " [OPTIONS]"
             raise session_cli_error(detail, error_usage)
 
         if argument.startswith("-p") and not argument.startswith("--") and argument != "-p":
@@ -804,6 +811,12 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
             else:
                 split_value = True
                 index += 1
+                if repeated_split_value and index >= help_index:
+                    raise quota_duplicate_option_error(repeated_split_value, executable)
+                if repeated_split_value and index < help_index:
+                    var next_value = String(args[index])
+                    if next_value.startswith("-") and next_value != "-":
+                        raise quota_duplicate_option_error(repeated_split_value, executable)
                 if index >= help_index:
                     if has_help_value:
                         raise quota_help_value_error(help_value, executable, seen)
@@ -822,18 +835,32 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
                             "a value is required for '" + quota_option_label(canonical) + "' but none was supplied"
                         )
                     continue
+        if repeated_split_value:
+            raise quota_duplicate_option_error(repeated_split_value, executable)
         if canonical in seen:
-            raise session_cli_error(
-                "the argument '" + quota_option_label(canonical) + "' cannot be used multiple times",
-                usage + " [OPTIONS]",
-            )
-        only_split_value = len(seen) == 0 and split_value
-        seen.append(canonical)
+            if split_value:
+                if not repeated_split_value:
+                    repeated_split_value = canonical
+                only_split_value = False
+            else:
+                raise quota_duplicate_option_error(canonical, executable)
+        else:
+            only_split_value = len(seen) == 0 and split_value
+            seen.append(canonical)
         index += 1
 
     if has_help_value:
         raise quota_help_value_error(help_value, executable, seen, only_split_value)
+    if repeated_split_value:
+        raise quota_duplicate_option_error(repeated_split_value, executable)
     return help_mode
+
+
+def quota_duplicate_option_error(name: String, executable: String) -> Error:
+    return session_cli_error(
+        "the argument '" + quota_option_label(name) + "' cannot be used multiple times",
+        executable + " quota [OPTIONS]",
+    )
 
 
 def quota_help_value_error(value: String, executable: String, seen: List[String], omit_option_group: Bool = False) -> Error:

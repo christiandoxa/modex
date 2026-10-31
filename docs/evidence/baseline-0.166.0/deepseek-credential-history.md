@@ -1,6 +1,6 @@
 # DeepSeek tool history and credential ownership
 
-> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.0 as active describe the original capture.
 
 This change closes the tested local relay leak where stored function-call
 history was included in a later tool-output request handled by another API key.

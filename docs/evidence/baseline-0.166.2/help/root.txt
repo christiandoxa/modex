@@ -1,0 +1,42 @@
+Manage multiple Codex account profiles with profile-local auth and shared Codex state.
+
+Usage: prodex <COMMAND>
+
+Commands:
+  profile  Add, inspect, remove, and activate managed profiles.
+  use      Set the active profile used by commands that omit --profile.
+  current  Show the active profile and its CODEX_HOME details.
+  info     Summarize Prodex version, profiles, runtime policy, logs, and secret backend.
+  status   Monitor profiles, quota resets, token efficiency, and Prodex resource usage.
+  log      Follow redacted Prodex runtime logs.
+  session  Inspect shared Codex session metadata.
+  doctor   Inspect local state, Codex resolution, quota readiness, and runtime logs.
+  login    Run provider login flows, using Prodex profiles where supported.
+  logout   Run codex logout for the selected or active profile.
+  update   Update Prodex from the latest verified GitHub release binary.
+  quota    Inspect live quota for one profile or the whole profile pool.
+  redeem   Redeem one reset credit manually for a named OpenAI/Codex profile.
+  ping     Send lightweight prompt checks through ready profiles.
+  run      Run codex through prodex with quota preflight and eligible pre-commit rotation.
+  super    YOLO shortcut for the Super tool stack with opt-in Presidio. [alias: s]
+  gateway  Run a lean OpenAI-compatible provider gateway.
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+
+Tips:
+  Bare `prodex` invocation defaults to `prodex run`.
+  Use `prodex status` for the live quota, token, and resource dashboard.
+  Use `prodex quota` for the detailed live quota view across profiles.
+  Use `prodex <command> -h` to see every parameter for that command.
+
+Examples:
+  prodex
+  prodex exec "review this repo"
+  prodex profile list
+  prodex status
+  prodex quota
+  prodex redeem main
+  prodex run --profile main

@@ -1,9 +1,9 @@
 # Historical oracle recovery from official workflow artifacts
 
-> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.0 as active describe the original capture.
 
-Prodex 0.166.1 is the active target. The following recovered binaries are
-only for historical regression tests; they do not establish 0.166.1 parity.
+Prodex 0.166.2 is the active target. The following recovered binaries are
+only for historical regression tests; they do not establish 0.166.2 parity.
 
 The official `christiandoxa/prodex` Actions API reports these successful
 standalone release runs and retained `x86_64-unknown-linux-gnu` artifacts:

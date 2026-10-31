@@ -1,6 +1,6 @@
 # Active 0.166.0 WebSocket fallback CI sandbox
 
-> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.0 as active describe the original capture.
 
 The Fast and Full CI scripts schedule
 `LocalRewriteWebSocketFallback01660Tests.test_pipeline_reuses_only_complete_client_framing`

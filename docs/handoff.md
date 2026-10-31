@@ -1,6 +1,23 @@
-# Current work: Prodex 0.166.1 parity and CI
+# Current work: Prodex 0.166.2 parity and CI
 
-The active reference is Prodex 0.166.1 at
+The active reference is Prodex 0.166.2 at
+`b1201b5244ff85fce7fc54c3f7607f2e3bdcf4a7`. Its release changes native
+parent-owned worker resume, ancestry validation, recovery cursors, and
+compressed session name matching. These behaviors require current-release
+implementation and isolated differential evidence. Session ownership and
+fail-closed ancestry checks must be preserved. All six platform qualifications
+remain open; earlier evidence does not establish 0.166.2 parity.
+
+An isolated synthetic comparison confirms that Prodex resolves a parent-owned
+V2 worker to its root and fails closed when the parent is missing. Modex still
+stops at its unsupported Super startup guard before native resume. Root and V1
+controls and all fixture files were preserved; this is a documented mismatch,
+not a completed resume implementation. See
+`docs/evidence/baseline-0.166.2/session-root-resume.md`.
+
+# Historical work: Prodex 0.166.1 parity and CI
+
+The historical reference was Prodex 0.166.1 at
 `4951b813ca308fb0ba7148dbc6d6aeb74b93cd32`. Its release retires Caveman,
 adds optional-tool health checks, strengthens managed executable confinement,
 and applies the Node.js 18 minimum to Playwright checks. The implementation
@@ -9,8 +26,8 @@ below were captured against earlier releases and do not establish 0.166.1
 parity. All six target qualifications remain open.
 
 The Linux x86-64 release binary and checksum manifest were verified against
-the official 0.166.1 release. The active oracle and help inventory now use
-that release; 0.166.0 and older references are explicitly historical. Focused
+the official 0.166.1 release. The oracle and help inventory used
+that release; all such evidence is historical. Focused
 real-process comparisons cover Caveman selection, Playwright's Node preflight,
 Doctor's four automatic-tool rows, and the hook initialization identity.
 Doctor's Kiro version probe now compares the 2.37.0 release fixture across its
@@ -18,12 +35,12 @@ preferred launcher, legacy fallback, and explicit override; Kiro runtime
 compatibility remains unimplemented.
 Managed Ponytail integrity validation and removal of generated legacy Caveman
 overlay content remain incomplete. This evidence does not establish parity.
-The hidden `__sub-agent-exec` help route now matches the active 0.166.1
+The hidden `__sub-agent-exec` help route matched the 0.166.1
 inventory for direct `--help`/`-h` and `help __sub-agent-exec` invocations; the
 helper's runtime remains unimplemented. See
 `docs/evidence/baseline-0.166.1/sub-agent-exec-help.md`.
 
-The active 0.166.1 real-process repeat-launch check confirms that the release
+The historical 0.166.1 real-process repeat-launch check confirms that the release
 starts the synthetic Codex child twice and preserves shared history and session
 data. Modex starts it once, then fails closed on the second invocation while
 leaving that data intact and cleaning the temporary overlay. This remains a

@@ -11,7 +11,7 @@ from test_super_dry_run_01651 import OPTIONAL_TOOL_FIXTURE, run_dry_run, write_o
 ROOT = Path(__file__).resolve().parents[1]
 MODEX = Path(os.environ.get("MODEX_BINARY", ROOT / "build/modex"))
 ORACLE = Path(os.environ.get(
-    "PRODEX_ORACLE",
+    "PRODEX_ORACLE_01661",
     Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
     / "oracles/0.166.1/prodex-x86_64-unknown-linux-gnu",
 ))
@@ -24,7 +24,7 @@ class PlaywrightNode01661Tests(unittest.TestCase):
         if not MODEX.is_file() or not OPTIONAL_TOOL_FIXTURE.is_file():
             raise AssertionError("Build Modex and the native optional-tool fixture first")
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-            raise AssertionError("PRODEX_ORACLE must identify the verified 0.166.1 Linux release")
+            raise AssertionError("PRODEX_ORACLE_01661 must identify the verified 0.166.1 Linux release")
 
     def test_node_version_is_checked_before_the_package_probe(self):
         cases = (

@@ -27,7 +27,7 @@ class AppServerRpc04392Tests(unittest.TestCase):
             observed.append(requests[0])
         self.assertEqual(observed, [
             {"name": "prodex-hook-trust", "version": "0.439.2"},
-            {"name": "prodex-hook-trust", "version": "0.166.1"},
+            {"name": "prodex-hook-trust", "version": "0.166.2"},
         ])
 
 

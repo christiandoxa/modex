@@ -1,0 +1,14 @@
+List shared Codex sessions
+
+Usage: prodex session list [OPTIONS]
+
+Options:
+      --json               Emit machine-readable JSON
+      --id-only            Print only full session ids, one per line
+      --resume-command     Print a resume command for each matching session
+      --profile <NAME>     Show only sessions attached to this profile binding
+      --query <TEXT>       Show only sessions whose id, thread name, cwd, profile, or path contains this text
+      --limit <N>          Limit the number of sessions shown after sorting newest first
+      --include-subagents  Include spawned subagent sessions. This is the default; kept for compatibility
+      --parent-only        Show only resumable parent sessions
+  -h, --help               Print help

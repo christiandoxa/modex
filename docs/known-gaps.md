@@ -1,12 +1,12 @@
 # Verified gaps
 
-The active target is official Prodex 0.166.1 at
-`4951b813ca308fb0ba7148dbc6d6aeb74b93cd32`. Complete parity remains
+The active target is official Prodex 0.166.2 at
+`b1201b5244ff85fce7fc54c3f7607f2e3bdcf4a7`. Complete parity remains
 unfinished, the inventory is incomplete, and all six release qualifications
 remain BLOCKED. Current-target observations are tracked in
-`docs/handoff.md` and `docs/evidence/baseline-0.166.1/`. The observations
+`docs/handoff.md` and `docs/evidence/baseline-0.166.2/`. The observations
 below retain their original release provenance and do not by themselves
-establish behavior in 0.166.1.
+establish behavior in 0.166.2.
 
 For an absent app root, Modex now matches the Prodex 0.166.0 `profile list`
 empty panel and exit code in the tested writable-home case without creating
@@ -35,7 +35,7 @@ this safety difference is not parity. See
 
 The remaining entries preserve their original release provenance. Most are
 observations against 0.166.0, 0.165.1 or 0.439.x and do not establish
-0.166.1 behavior without a current-release comparison.
+0.166.2 behavior without a current-release comparison.
 
 For a streamed DeepSeek response whose ID appears only in the prefetched
 prefix, Prodex 0.165.1 and 0.439.2 can replay stored conversation history
@@ -125,7 +125,7 @@ is unverified. See
 
 DeepSeek Super dry-run supports the guarded exec path and selected missing-tool,
 Node-only, RTK, Codebase Memory, and selected Playwright environments. Managed
-Ponytail installations still fail closed. In the 0.166.1 target Caveman is
+Ponytail installations still fail closed. In 0.166.1 Caveman was
 retired; the dry-run path ignores its existing managed files. Playwright
 readiness checks Node before the locally resolved `npx --no-install` package
 probe; Node probe timeout and

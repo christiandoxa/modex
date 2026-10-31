@@ -1,6 +1,6 @@
 # MCP JSONL bridge process-tree cleanup gap
 
-> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.0 as active describe the original capture.
 
 ## Reference behavior
 

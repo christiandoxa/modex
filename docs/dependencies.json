@@ -272,7 +272,7 @@
       "docs/evidence/checkpoint5-dependencies.txt"
     ]
   },
-  "runtime_recovery_foundation": "NativeRecoveryRetry and owned-thread/goal wire policy have native assertions and 407 pinned Mojo policy differential vectors. Accepted mutations do not become progress. Monitor, owned transport, affinity release, ambiguous outcome handling and mutation dispatch are unconnected; no live recovery PASS is claimed. Checkpoint 13 adds explicitly unconnected 0.439.2 quota signal eligibility and 1,600 then-current source comparisons; the old 407 wire-policy checks retain 0.439.1 provenance. Neither is 0.166.1 evidence. No account pool, WebSocket, transport/recovery owner or new dependency is added.",
+  "runtime_recovery_foundation": "NativeRecoveryRetry and owned-thread/goal wire policy have native assertions and 407 pinned Mojo policy differential vectors. Accepted mutations do not become progress. Monitor, owned transport, affinity release, ambiguous outcome handling and mutation dispatch are unconnected; no live recovery PASS is claimed. Checkpoint 13 adds explicitly unconnected 0.439.2 quota signal eligibility and 1,600 then-current source comparisons; the old 407 wire-policy checks retain 0.439.1 provenance. Neither is 0.166.2 evidence. No account pool, WebSocket, transport/recovery owner or new dependency is added.",
   "native_super_evidence": [
     "docs/evidence/native-super-reference.json",
     "docs/evidence/native-super-data-plane.json",
@@ -400,12 +400,12 @@
       "docs/evidence/checkpoint12-dependencies.txt"
     ]
   },
-  "baseline_commit": "4951b813ca308fb0ba7148dbc6d6aeb74b93cd32",
-  "baseline_version": "0.166.1",
-  "previous_baseline_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
-  "previous_baseline_version": "0.166.0",
-  "active_reference_evidence": "docs/evidence/baseline-0.166.1/reference-verification.json",
-  "previous_reference_evidence": "docs/evidence/baseline-0.166.0/reference-verification.json",
+  "baseline_commit": "b1201b5244ff85fce7fc54c3f7607f2e3bdcf4a7",
+  "baseline_version": "0.166.2",
+  "previous_baseline_commit": "4951b813ca308fb0ba7148dbc6d6aeb74b93cd32",
+  "previous_baseline_version": "0.166.1",
+  "active_reference_evidence": "docs/evidence/baseline-0.166.2/reference-verification.json",
+  "previous_reference_evidence": "docs/evidence/baseline-0.166.1/reference-verification.json",
   "checkpoint13_dependency_audit": {
     "new_application_dependencies": [],
     "new_native_bindings": [],
@@ -429,7 +429,7 @@
       "docs/evidence/checkpoint14-dependencies.txt"
     ]
   },
-  "baseline_evidence_policy": "Each description and artifact retains its original version; 0.166.0, 0.165.1 and 0.439.x observations are historical and do not automatically verify 0.166.1 behavior.",
+  "baseline_evidence_policy": "Each description and artifact retains its original version; 0.166.1, 0.166.0, 0.165.1 and 0.439.x observations are historical and do not automatically verify 0.166.2 behavior.",
   "continuation_binding_foundation": {
     "implementation": "In-process DeepSeek relay hashes credential and endpoint identity, remembers accepted response/session/turn bindings with bounded in-memory maps, and validates them before subsequent dispatch. The passthrough SSE observer validates JSON incrementally with existing Mojo standard-library and local helpers.",
     "new_application_dependencies": [],

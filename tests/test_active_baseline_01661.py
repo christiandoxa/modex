@@ -11,7 +11,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 MODEX = Path(os.environ.get("MODEX_BINARY", ROOT / "build/modex"))
 ORACLE = Path(os.environ.get(
-    "PRODEX_ORACLE",
+    "PRODEX_ORACLE_01661",
     Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
     / "oracles/0.166.1/prodex-x86_64-unknown-linux-gnu",
 ))
@@ -24,7 +24,7 @@ class ActiveBaseline01661Tests(unittest.TestCase):
         if not MODEX.is_file():
             raise AssertionError("Build Modex first")
         if not ORACLE.is_file() or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256:
-            raise AssertionError("PRODEX_ORACLE must identify the verified 0.166.1 release")
+            raise AssertionError("PRODEX_ORACLE_01661 must identify the verified 0.166.1 release")
 
     def test_version_identity_without_home_mutations(self):
         for binary, expected in ((ORACLE, b"prodex 0.166.1\n"), (MODEX, b"modex 0.1.0-dev\n")):

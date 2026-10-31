@@ -65,6 +65,7 @@ cat "$EVIDENCE_DIR/reference-active.log"
 echo 'active reference oracle: PASS' | tee -a "$EVIDENCE_DIR/summary.txt"
 export PRODEX_ORACLE="$(cat "$EVIDENCE_DIR/oracle-path-active.txt")"
 export PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE"
+export PRODEX_ORACLE_01662="$PRODEX_ORACLE"
 rm -- "$EVIDENCE_DIR/oracle-path-active.txt"
 if ! "$PYTHON" scripts/ci/reference.py source active >"$EVIDENCE_DIR/reference-source-active.txt" 2>"$EVIDENCE_DIR/reference-source-active.log"; then
     cat "$EVIDENCE_DIR/reference-source-active.log" >&2
@@ -77,7 +78,22 @@ rm -- "$EVIDENCE_DIR/reference-source-active.txt"
 export MODEX_REFERENCE_VERSION="$("$PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag"])' "$EVIDENCE_DIR/reference.json")"
 run_logged build-input-check "$PYTHON" scripts/ci/check-build-inputs.py
 run_logged focused-build make build unit
-run_logged focused-python-active env -u PRODEX_ORACLE_01660 -u PRODEX_GATEWAY_ORACLE_01660 -u MODEX_REFERENCE_01660_DIR -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01661.py test_hook_identity_01661.py test_doctor_install_01661.py test_kiro_cli_2370_01661.py test_playwright_node_01661.py test_caveman_retirement_01661.py test_sub_agent_exec_help_01661.py test_super_repeat_launch_01661.py test_super_empty_managed_root_01661.py
+run_logged focused-python-active env -u PRODEX_ORACLE_01661 -u PRODEX_GATEWAY_ORACLE_01661 -u MODEX_REFERENCE_01661_DIR -u PRODEX_ORACLE_01660 -u PRODEX_GATEWAY_ORACLE_01660 -u MODEX_REFERENCE_01660_DIR -u PRODEX_ORACLE_04392 -u PRODEX_GATEWAY_ORACLE_04392 -u MODEX_REFERENCE_04392_DIR "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01662.py test_hook_identity_01662.py test_sub_agent_exec_help_01662.py test_sub_agent_exec_diagnostics_01662.py
+if ! "$PYTHON" scripts/ci/reference.py oracle 0.166.1 >"$EVIDENCE_DIR/oracle-path-01661.txt" 2>"$EVIDENCE_DIR/reference-01661.log"; then
+    cat "$EVIDENCE_DIR/reference-01661.log" >&2
+    exit 1
+fi
+export PRODEX_ORACLE_01661="$(cat "$EVIDENCE_DIR/oracle-path-01661.txt")"
+export PRODEX_GATEWAY_ORACLE_01661="$PRODEX_ORACLE_01661"
+rm -- "$EVIDENCE_DIR/oracle-path-01661.txt"
+if ! "$PYTHON" scripts/ci/reference.py source 0.166.1 >"$EVIDENCE_DIR/reference-source-01661.txt" 2>"$EVIDENCE_DIR/reference-source-01661.log"; then
+    cat "$EVIDENCE_DIR/reference-source-01661.log" >&2
+    exit 1
+fi
+export MODEX_REFERENCE_01661_DIR="$(cat "$EVIDENCE_DIR/reference-source-01661.txt")"
+cat "$EVIDENCE_DIR/reference-source-01661.log"
+rm -- "$EVIDENCE_DIR/reference-source-01661.txt"
+run_logged historical-python-01661 env PRODEX_ORACLE="$PRODEX_ORACLE_01661" PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE_01661" MODEX_REFERENCE_DIR="$MODEX_REFERENCE_01661_DIR" MODEX_REFERENCE_VERSION=0.166.1 "$PYTHON" scripts/ci/run-unittest.py test_active_baseline_01661.py test_hook_identity_01661.py test_doctor_install_01661.py test_kiro_cli_2370_01661.py test_playwright_node_01661.py test_caveman_retirement_01661.py test_sub_agent_exec_help_01661.py test_super_repeat_launch_01661.py test_super_empty_managed_root_01661.py
 if ! "$PYTHON" scripts/ci/reference.py oracle 0.166.0 >"$EVIDENCE_DIR/oracle-path-01660.txt" 2>"$EVIDENCE_DIR/reference-01660.log"; then
     cat "$EVIDENCE_DIR/reference-01660.log" >&2
     exit 1

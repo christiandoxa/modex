@@ -1,6 +1,6 @@
 # Offline redeem help routes (Prodex 0.166.0)
 
-> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.0 as active describe the original capture.
 
 In pinned source, `crates/prodex-cli/src/lib.rs::Commands::Redeem` supplies the
 static help through `cli_after_help(CliHelpKind::Redeem)`. Dispatch reaches

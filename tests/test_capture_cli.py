@@ -29,10 +29,10 @@ class CaptureCliTests(unittest.TestCase):
         self.oracle_sha256 = hashlib.sha256(self.oracle.read_bytes()).hexdigest()
         self.write_reference(self.oracle_sha256)
 
-        self.historical_inventory = self.root / "docs/cli-inventory-0.166.0.json"
+        self.historical_inventory = self.root / "docs/cli-inventory-0.166.1.json"
         self.historical_inventory.parent.mkdir(parents=True, exist_ok=True)
         self.historical_inventory.write_bytes(b"historical inventory")
-        self.historical_help = self.root / "docs/evidence/baseline-0.166.0/help/root.txt"
+        self.historical_help = self.root / "docs/evidence/baseline-0.166.1/help/root.txt"
         self.historical_help.parent.mkdir(parents=True, exist_ok=True)
         self.historical_help.write_bytes(b"historical help")
 
@@ -72,18 +72,18 @@ class CaptureCliTests(unittest.TestCase):
              contextlib.redirect_stdout(io.StringIO()):
             capture_cli.main()
 
-        active_inventory = self.root / "docs/cli-inventory-0.166.1.json"
-        active_help = self.root / "docs/evidence/baseline-0.166.1/help/root.txt"
+        active_inventory = self.root / "docs/cli-inventory-0.166.2.json"
+        active_help = self.root / "docs/evidence/baseline-0.166.2/help/root.txt"
         self.assertTrue(active_inventory.is_file())
         self.assertEqual(active_help.read_bytes(), b"Usage: prodex\n")
         inventory_text = active_inventory.read_text(encoding="utf-8")
         inventory = json.loads(inventory_text)
-        self.assertEqual(inventory["baseline_version"], "0.166.1")
+        self.assertEqual(inventory["baseline_version"], "0.166.2")
         self.assertEqual(inventory["baseline_commit"], capture_cli.ACTIVE_COMMIT)
         self.assertEqual(inventory["oracle_sha256"], self.oracle_sha256)
         self.assertEqual(
             inventory["commands"][0]["fixture"],
-            "docs/evidence/baseline-0.166.1/help/root.txt",
+            "docs/evidence/baseline-0.166.2/help/root.txt",
         )
         self.assertEqual(len(captured_binaries), 7)
         self.assertTrue(all(binary == self.oracle for binary in captured_binaries))
@@ -105,21 +105,21 @@ class CaptureCliTests(unittest.TestCase):
 
         sandbox.assert_not_called()
         run.assert_not_called()
-        self.assertFalse((self.root / "docs/cli-inventory-0.166.1.json").exists())
+        self.assertFalse((self.root / "docs/cli-inventory-0.166.2.json").exists())
         self.assertEqual(self.historical_inventory.read_bytes(), b"historical inventory")
 
     def test_import_uses_active_oracle_override(self):
         environment = {
             **os.environ,
             "PYTHONPATH": str(ROOT / "tests"),
-            "PRODEX_ORACLE": "/synthetic/active-01661",
+            "PRODEX_ORACLE": "/synthetic/active-01662",
             "PRODEX_ORACLE_04392": "/synthetic/historical-04392",
         }
         result = subprocess.run(
             [sys.executable, "-c", "import capture_cli; print(capture_cli.ORACLE)"],
             cwd=ROOT, env=environment, capture_output=True, text=True, check=True,
         )
-        self.assertEqual(result.stdout.strip(), "/synthetic/active-01661")
+        self.assertEqual(result.stdout.strip(), "/synthetic/active-01662")
 
     def test_checked_in_active_digest_matches_reference_evidence(self):
         baseline = json.loads((ROOT / "docs/baseline.json").read_text(encoding="utf-8"))["reference"]

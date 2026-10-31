@@ -467,18 +467,19 @@
     "all non-host build/link/run targets"
   ],
   "compiler_diagnostic": "The installed compiler emits a nonfatal Crashpad handler discovery warning. It is preserved in raw evidence; all positive programs compile and run with exit 0.",
-  "baseline_commit": "4951b813ca308fb0ba7148dbc6d6aeb74b93cd32",
+  "baseline_commit": "b1201b5244ff85fce7fc54c3f7607f2e3bdcf4a7",
   "evidence_policy": "Each probe retains its original version and commit. Changing the baseline does not requalify behavior, compiler targets, or any release status.",
-  "baseline_version": "0.166.1",
-  "previous_baseline_commit": "9f69e1835808f478f59f12a3ae3fa88027d896a4",
-  "previous_baseline_version": "0.166.0",
+  "baseline_version": "0.166.2",
+  "previous_baseline_commit": "4951b813ca308fb0ba7148dbc6d6aeb74b93cd32",
+  "previous_baseline_version": "0.166.1",
   "target_evidence": [
-    "docs/evidence/baseline-0.166.1/reference-verification.json"
+    "docs/evidence/baseline-0.166.2/reference-verification.json"
   ],
   "historical_target_evidence": [
+    "docs/evidence/baseline-0.166.1/reference-verification.json",
     "docs/evidence/baseline-0.166.0/reference-verification.json",
     "docs/evidence/baseline-0.439.2/reference-verification.json",
     "docs/evidence/baseline-0.439.5/reference-verification.json"
   ],
-  "parity_note": "The capability probes retain their original version-specific evidence; this 0.166.1 reference identity does not establish 0.166.1 behavioral parity, and prior 0.166.0 observations are historical."
+  "parity_note": "The capability probes retain their original version-specific evidence; this 0.166.2 reference identity does not establish 0.166.2 behavioral parity, and prior 0.166.1 and 0.166.0 observations are historical."
 }

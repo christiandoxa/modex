@@ -59,6 +59,97 @@ def parse_update_help_arguments(args: List[String], executable: String) raises -
     return False
 
 
+def parse_sub_agent_exec_arguments(args: List[String], executable: String) raises -> Bool:
+    var usage = executable + " __sub-agent-exec --config <PATH> --task-file <PATH>"
+    var config_seen = False
+    var task_file_seen = False
+    var literal = False
+    var index = 2
+    while index < len(args):
+        var argument = String(args[index])
+        if not literal and argument == "--help":
+            return True
+        if not literal and argument.startswith("--help="):
+            raise session_cli_error(
+                "unexpected value '" + String(argument[byte=7:]) + "' for '--help' found; no more were expected",
+                usage + " --help",
+            )
+        if not literal and argument.startswith("-h") and not argument.startswith("--"):
+            return True
+        if not literal and argument == "--":
+            literal = True
+            index += 1
+            continue
+
+        var name = argument_name(argument)
+        if not literal and (name == "--config" or name == "--task-file"):
+            var value_missing = False
+            var consume_next = False
+            var defer_to_next = False
+            if argument.startswith(name + "="):
+                value_missing = argument.byte_length() == name.byte_length() + 1
+            elif index + 1 >= len(args):
+                value_missing = True
+            else:
+                var next = String(args[index + 1])
+                if next == "":
+                    value_missing = True
+                elif next == "-":
+                    consume_next = True
+                elif next == "--" or next == "--config" or next == "--task-file" or next == "--help" or next.startswith("--help="):
+                    value_missing = True
+                elif next.startswith("-h") and not next.startswith("--"):
+                    value_missing = True
+                elif next.startswith("-"):
+                    defer_to_next = True
+                else:
+                    consume_next = True
+
+            if defer_to_next:
+                index += 1
+                continue
+
+            var option = "--config <PATH>" if name == "--config" else String("--task-file <PATH>")
+            if value_missing:
+                raise session_cli_error("a value is required for '" + option + "' but none was supplied")
+            if consume_next:
+                index += 1
+            if name == "--config":
+                if config_seen:
+                    raise session_cli_error("the argument '" + option + "' cannot be used multiple times", usage)
+                config_seen = True
+            else:
+                if task_file_seen:
+                    raise session_cli_error("the argument '" + option + "' cannot be used multiple times", usage)
+                task_file_seen = True
+            index += 1
+            continue
+
+        var flag = not literal and argument.startswith("-") and argument != "-"
+        var unknown = argument_name(argument) if flag else argument
+        var detail = String("unexpected argument '") + unknown + "' found"
+        if flag and unknown.startswith("--"):
+            var choices = List[String]()
+            choices.append("config")
+            choices.append("task-file")
+            var matches = similar_names(String(unknown[byte=2:]), choices)
+            if matches:
+                detail += "\n\n  tip: a similar argument exists: '--" + matches[len(matches) - 1] + "'"
+        raise session_cli_error(detail, usage)
+
+    var missing = String()
+    if not config_seen:
+        missing += "  --config <PATH>\n"
+    if not task_file_seen:
+        missing += "  --task-file <PATH>\n"
+    if missing:
+        raise session_cli_error(
+            "the following required arguments were not provided:\n" + String(missing[byte=0:missing.byte_length() - 1]),
+            usage,
+        )
+    return False
+
+
 def login_help_requested(args: List[String], executable: String) raises -> Bool:
     var usage = executable + " login [OPTIONS] [PROFILE_OR_LOGIN_ARG]..."
     var profile_seen = False

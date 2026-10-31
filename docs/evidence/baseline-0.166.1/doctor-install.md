@@ -1,5 +1,7 @@
 # Doctor install inventory against Prodex 0.166.1
 
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.1 as active describe the original capture.
+
 The reference is the official `0.166.1` tag at commit
 `4951b813ca308fb0ba7148dbc6d6aeb74b93cd32`. Its official `SHA256SUMS` asset
 has SHA-256 `2abb8f2854fdc369a06286d55508d0bdf2a1324bd79d78f6015f6e24137b3e60`;

@@ -1,6 +1,6 @@
 # Invalid UTF-8 in JSON session files
 
-> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.0 as active describe the original capture.
 
 Prodex 0.166.0 at `9f69e1835808f478f59f12a3ae3fa88027d896a4` reads `.json`
 session files through `crates/prodex-session-store/src/session_file.rs::read_session_file_to_string`.

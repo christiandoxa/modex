@@ -56,7 +56,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         environment = {
             **os.environ,
             "PYTHONPATH": str(ROOT / "tests"),
-            "PRODEX_ORACLE": "/synthetic/oracle-01661",
+            "PRODEX_ORACLE": "/synthetic/oracle-01662",
             "PRODEX_ORACLE_04392": "/synthetic/oracle-04392",
             "PRODEX_ORACLE_01651": "/synthetic/oracle-01651",
         }
@@ -66,21 +66,23 @@ class CIOracleRoutingTests(unittest.TestCase):
         )
         self.assertEqual(result.stdout.splitlines(), ["/synthetic/oracle-04392", "/synthetic/oracle-01651"])
 
-    def test_cli_and_01660_fixtures_use_their_explicit_release_environment(self):
+    def test_cli_and_01661_and_01660_fixtures_use_explicit_release_environments(self):
         environment = {
             **os.environ,
             "PYTHONPATH": str(ROOT / "tests"),
-            "PRODEX_ORACLE": "/synthetic/oracle-01661",
+            "PRODEX_ORACLE": "/synthetic/oracle-01662",
+            "PRODEX_ORACLE_01661": "/synthetic/oracle-01661",
             "PRODEX_ORACLE_01660": "/synthetic/oracle-01660",
             "PRODEX_ORACLE_04392": "/synthetic/oracle-04392",
         }
-        program = "import test_cli, test_active_baseline_01660 as active, test_super_launch_01660 as super_launch, test_login_help_01660 as login_help, test_inspection_cli_01660 as inspection, test_root_help_errors_01660 as root_help; print(test_cli.ORACLE); print(active.ORACLE); print(super_launch.ORACLE); print(login_help.ORACLE); print(inspection.ORACLE); print(root_help.ORACLE)"
+        program = "import test_cli, test_active_baseline_01661 as previous, test_active_baseline_01660 as active, test_super_launch_01660 as super_launch, test_login_help_01660 as login_help, test_inspection_cli_01660 as inspection, test_root_help_errors_01660 as root_help; print(test_cli.ORACLE); print(previous.ORACLE); print(active.ORACLE); print(super_launch.ORACLE); print(login_help.ORACLE); print(inspection.ORACLE); print(root_help.ORACLE)"
         result = subprocess.run(
             [sys.executable, "-c", program],
             cwd=ROOT, env=environment, capture_output=True, text=True, check=True,
         )
         self.assertEqual(result.stdout.splitlines(), [
             "/synthetic/oracle-04392",
+            "/synthetic/oracle-01661",
             "/synthetic/oracle-01660",
             "/synthetic/oracle-01660",
             "/synthetic/oracle-01660",
@@ -90,15 +92,18 @@ class CIOracleRoutingTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="modex-01660-oracle-cache-") as temporary:
             cache_environment = dict(environment)
+            cache_environment.pop("PRODEX_ORACLE_01661")
             cache_environment.pop("PRODEX_ORACLE_01660")
             cache_environment["MODEX_REFERENCE_CACHE"] = temporary
             cached = subprocess.run(
                 [sys.executable, "-c", program],
                 cwd=ROOT, env=cache_environment, capture_output=True, text=True, check=True,
             )
+            expected_01661 = str(Path(temporary) / "oracles/0.166.1/prodex-x86_64-unknown-linux-gnu")
             expected = str(Path(temporary) / "oracles/0.166.0/prodex-x86_64-unknown-linux-gnu")
             self.assertEqual(cached.stdout.splitlines(), [
                 "/synthetic/oracle-04392",
+                expected_01661,
                 expected,
                 expected,
                 expected,
@@ -151,10 +156,13 @@ class CIOracleRoutingTests(unittest.TestCase):
     def test_fast_ci_keeps_active_and_historical_release_suites_ordered(self):
         script = (ROOT / "scripts/ci/run-fast.sh").read_text(encoding="utf-8")
         active = script.index("reference.py oracle active")
+        historical_01661 = script.index("reference.py oracle 0.166.1")
         historical_01660 = script.index("reference.py oracle 0.166.0")
         historical_04392 = script.index("reference.py oracle 0.439.2")
         historical_01651 = script.index("reference.py oracle 0.165.1")
         historical_01660_source = script.index("reference.py source 0.166.0")
+        historical_01661_source = script.index("reference.py source 0.166.1")
+        historical_01661_suite = script.index("run_logged historical-python-01661 env ")
         historical_websocket = script.index("run_logged historical-websocket-fallback-sandbox-01660")
         historical_01660_suite = script.index("run_logged historical-python-01660 env ")
         historical_01660_tests = script[historical_01660_suite:script.index("\n", historical_01660_suite)]
@@ -168,14 +176,20 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(active, active_suite)
         self.assertLess(active_source, active_suite)
         active_tests = script[active_suite:script.index("\n", active_suite)]
-        self.assertIn("test_active_baseline_01661.py", active_tests)
-        self.assertIn("test_doctor_install_01661.py", active_tests)
-        self.assertIn("test_playwright_node_01661.py", active_tests)
-        self.assertIn("test_caveman_retirement_01661.py", active_tests)
-        self.assertIn("test_sub_agent_exec_help_01661.py", active_tests)
-        self.assertIn("test_super_repeat_launch_01661.py", active_tests)
-        self.assertFalse(any("01660" in test for test in unittest_files_for_lane(script, "focused-python-active")))
-        self.assertLess(active_suite, historical_01660)
+        self.assertIn("test_active_baseline_01662.py", active_tests)
+        self.assertIn("test_hook_identity_01662.py", active_tests)
+        self.assertIn("test_sub_agent_exec_help_01662.py", active_tests)
+        self.assertIn("test_sub_agent_exec_diagnostics_01662.py", active_tests)
+        self.assertFalse(any("01661" in test for test in unittest_files_for_lane(script, "focused-python-active")))
+        self.assertLess(active_suite, historical_01661)
+        self.assertLess(historical_01661_source, historical_01661_suite)
+        self.assertLess(historical_01661, historical_01661_suite)
+        historical_01661_tests = script[historical_01661_suite:script.index("\n", historical_01661_suite)]
+        self.assertIn("test_active_baseline_01661.py", historical_01661_tests)
+        self.assertIn("test_hook_identity_01661.py", historical_01661_tests)
+        self.assertIn("test_sub_agent_exec_help_01661.py", historical_01661_tests)
+        self.assertIn('env PRODEX_ORACLE="$PRODEX_ORACLE_01661" PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE_01661"', historical_01661_tests)
+        self.assertLess(historical_01661_suite, historical_01660)
         self.assertLess(historical_01660_source, historical_01660_suite)
         self.assertLess(historical_01660, historical_01660_suite)
         self.assertLess(historical_01660_source, historical_websocket)
@@ -293,10 +307,13 @@ class CIOracleRoutingTests(unittest.TestCase):
     def test_full_ci_keeps_active_and_historical_release_suites_ordered(self):
         script = (ROOT / "scripts/ci/run-full.sh").read_text(encoding="utf-8")
         active = script.index("reference.py oracle active")
+        historical_01661 = script.index("reference.py oracle 0.166.1")
         historical_01660 = script.index("reference.py oracle 0.166.0")
         historical_04392 = script.index("reference.py oracle 0.439.2")
         historical_01651 = script.index("reference.py oracle 0.165.1")
         historical_01660_source = script.index("reference.py source 0.166.0")
+        historical_01661_source = script.index("reference.py source 0.166.1")
+        historical_01661_suite = script.index("run_logged historical-python-01661 env ")
         historical_websocket = script.index("run_logged historical-websocket-fallback-sandbox-01660")
         historical_01660_suite = script.index("run_logged historical-python-01660 env ")
         historical_01660_tests = script[historical_01660_suite:script.index("\n", historical_01660_suite)]
@@ -312,14 +329,20 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(script.index("run_logged build-input-check"), script.index("run_logged focused-build make build"))
         self.assertLess(script.index("run_logged focused-build make build unit"), active_suite)
         active_tests = script[active_suite:script.index("\n", active_suite)]
-        self.assertIn("test_active_baseline_01661.py", active_tests)
-        self.assertIn("test_doctor_install_01661.py", active_tests)
-        self.assertIn("test_playwright_node_01661.py", active_tests)
-        self.assertIn("test_caveman_retirement_01661.py", active_tests)
-        self.assertIn("test_sub_agent_exec_help_01661.py", active_tests)
-        self.assertIn("test_super_repeat_launch_01661.py", active_tests)
-        self.assertFalse(any("01660" in test for test in unittest_files_for_lane(script, "focused-python-active")))
-        self.assertLess(active_suite, historical_01660)
+        self.assertIn("test_active_baseline_01662.py", active_tests)
+        self.assertIn("test_hook_identity_01662.py", active_tests)
+        self.assertIn("test_sub_agent_exec_help_01662.py", active_tests)
+        self.assertIn("test_sub_agent_exec_diagnostics_01662.py", active_tests)
+        self.assertFalse(any("01661" in test for test in unittest_files_for_lane(script, "focused-python-active")))
+        self.assertLess(active_suite, historical_01661)
+        self.assertLess(historical_01661_source, historical_01661_suite)
+        self.assertLess(historical_01661, historical_01661_suite)
+        historical_01661_tests = script[historical_01661_suite:script.index("\n", historical_01661_suite)]
+        self.assertIn("test_active_baseline_01661.py", historical_01661_tests)
+        self.assertIn("test_hook_identity_01661.py", historical_01661_tests)
+        self.assertIn("test_sub_agent_exec_help_01661.py", historical_01661_tests)
+        self.assertIn('env PRODEX_ORACLE="$PRODEX_ORACLE_01661" PRODEX_GATEWAY_ORACLE="$PRODEX_ORACLE_01661"', historical_01661_tests)
+        self.assertLess(historical_01661_suite, historical_01660)
         self.assertLess(historical_01660_source, historical_01660_suite)
         self.assertLess(historical_01660, historical_01660_suite)
         self.assertLess(historical_01660_source, historical_websocket)
@@ -595,12 +618,13 @@ class CIOracleRoutingTests(unittest.TestCase):
             )
             ensure_bwrap.chmod(0o755)
 
-            active_oracle = temp / "oracle-01661"
+            active_oracle = temp / "oracle-01662"
+            historical_01661_oracle = temp / "oracle-01661"
             historical_01660_oracle = temp / "oracle-01660"
             historical_04392_oracle = temp / "oracle-04392"
             historical_oracle = temp / "oracle-01651"
             later_historical_oracle = temp / "oracle-04395"
-            for path in (active_oracle, historical_01660_oracle, historical_04392_oracle, historical_oracle, later_historical_oracle):
+            for path in (active_oracle, historical_01661_oracle, historical_01660_oracle, historical_04392_oracle, historical_oracle, later_historical_oracle):
                 path.write_bytes(b"synthetic test oracle")
                 path.chmod(0o755)
             events = temp / "events.log"
@@ -612,22 +636,27 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "if [[ \"${1-}\" == --version ]]; then echo 'Python 3.14.10'; exit 0; fi\n"
                 "if [[ \"${1-}\" == scripts/ci/reference.py ]]; then\n"
                 "  case \"${2-}:${3-}\" in\n"
+                "    oracle:0.166.1) printf 'reference\\toracle 0.166.1\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_HISTORICAL_01661_ORACLE\" ;;\n"
                 "    oracle:0.166.0) printf 'reference\\toracle 0.166.0\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_HISTORICAL_01660_ORACLE\" ;;\n"
-                "    oracle:active) printf 'reference\\toracle active\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_ACTIVE\" == 1 ]]; then echo 'synthetic missing Prodex 0.166.1 oracle' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_ACTIVE_ORACLE\" ;;\n"
+                "    oracle:active) printf 'reference\\toracle active\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_ACTIVE\" == 1 ]]; then echo 'synthetic missing Prodex 0.166.2 oracle' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_ACTIVE_ORACLE\" ;;\n"
                 "    oracle:0.439.2) printf 'reference\\toracle 0.439.2\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_04392_ORACLE\" == 1 ]]; then echo 'synthetic missing historical Prodex 0.439.2 oracle' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_HISTORICAL_04392_ORACLE\" ;;\n"
                 "    oracle:0.165.1) printf 'reference\\toracle 0.165.1\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_HISTORICAL_ORACLE\" ;;\n"
                 "    oracle:0.439.5) printf 'reference\\toracle 0.439.5\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_04395_ORACLE\" == 1 ]]; then echo 'synthetic missing historical Prodex 0.439.5 oracle' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_LATER_HISTORICAL_ORACLE\" ;;\n"
                 "    source:active) printf 'reference\\tsource active\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_SOURCE_ACTIVE\" ;;\n"
+                "    source:0.166.1) printf 'reference\\tsource 0.166.1\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_SOURCE_01661\" ;;\n"
                 "    source:0.166.0) printf 'reference\\tsource 0.166.0\\n' >>\"$FAKE_LOG\"; printf '%s\\n' \"$FAKE_SOURCE_01660\" ;;\n"
                 "    source:0.439.2) printf 'reference\\tsource 0.439.2\\n' >>\"$FAKE_LOG\"; if [[ \"$FAKE_MISSING_04392_SOURCE\" == 1 ]]; then echo 'synthetic missing historical Prodex 0.439.2 source' >&2; exit 1; fi; printf '%s\\n' \"$FAKE_SOURCE_04392\" ;;\n"
                 "    source:*) printf '%s\\n' \"$FAKE_SOURCE_ACTIVE\" ;;\n"
-                "    identity:active) printf '{\"tag\":\"0.166.1\"}\\n' ;;\n"
+                "    identity:active) printf '{\"tag\":\"0.166.2\"}\\n' ;;\n"
                 "    *) echo \"unexpected synthetic reference request: $*\" >&2; exit 2 ;;\n"
                 "  esac\n"
                 "  exit 0\n"
                 "fi\n"
-                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && (\" $* \" == *' test_active_baseline_01661.py '* || \" $* \" == *' test_doctor_install_01661.py '* || \" $* \" == *' test_playwright_node_01661.py '* || \" $* \" == *' test_caveman_retirement_01661.py '* || \" $* \" == *' test_sub_agent_exec_help_01661.py '*) ]]; then\n"
+                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && (\" $* \" == *' test_active_baseline_01662.py '* || \" $* \" == *' test_hook_identity_01662.py '* || \" $* \" == *' test_sub_agent_exec_help_01662.py '* || \" $* \" == *' test_sub_agent_exec_diagnostics_01662.py '*) ]]; then\n"
                 "  printf 'active-test\\t%s\\t%s\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE-}\" \"${PRODEX_ORACLE_01660-}\" \"${PRODEX_GATEWAY_ORACLE-}\" \"${PRODEX_GATEWAY_ORACLE_01660-}\" \"${MODEX_REFERENCE_DIR-}\" >>\"$FAKE_LOG\"\n"
+                "fi\n"
+                "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_active_baseline_01661.py '* ]]; then\n"
+                "  printf 'historical-01661-test\\t%s\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE-}\" \"${PRODEX_GATEWAY_ORACLE-}\" \"${MODEX_REFERENCE_DIR-}\" \"${PRODEX_ORACLE_01661-}\" >>\"$FAKE_LOG\"\n"
                 "fi\n"
                 "if [[ \"${1-}\" == scripts/ci/run-unittest.py && \" $* \" == *' test_active_baseline_01660.py '* ]]; then\n"
                 "  printf 'historical-01660-test\\t%s\\t%s\\t%s\\t%s\\t%s\\n' \"${PRODEX_ORACLE-}\" \"${PRODEX_GATEWAY_ORACLE-}\" \"${MODEX_REFERENCE_DIR-}\" \"${PRODEX_ORACLE_01660-}\" \"${MODEX_REFERENCE_01660_DIR-}\" >>\"$FAKE_LOG\"\n"
@@ -679,11 +708,13 @@ class CIOracleRoutingTests(unittest.TestCase):
                 "TMPDIR": str(temp / "tmp"),
                 "FAKE_BWRAP": str(fake_bwrap),
                 "FAKE_ACTIVE_ORACLE": str(active_oracle),
+                "FAKE_HISTORICAL_01661_ORACLE": str(historical_01661_oracle),
                 "FAKE_HISTORICAL_01660_ORACLE": str(historical_01660_oracle),
                 "FAKE_HISTORICAL_04392_ORACLE": str(historical_04392_oracle),
                 "FAKE_HISTORICAL_ORACLE": str(historical_oracle),
                 "FAKE_LATER_HISTORICAL_ORACLE": str(later_historical_oracle),
-                "FAKE_SOURCE_ACTIVE": str(temp / "reference-source-01661"),
+                "FAKE_SOURCE_ACTIVE": str(temp / "reference-source-01662"),
+                "FAKE_SOURCE_01661": str(temp / "reference-source-01661"),
                 "FAKE_SOURCE_01660": str(temp / "reference-source-01660"),
                 "FAKE_SOURCE_04392": str(temp / "reference-source-04392"),
                 "FAKE_LOG": str(events),
@@ -716,6 +747,7 @@ class CIOracleRoutingTests(unittest.TestCase):
                 events.read_text(encoding="utf-8").splitlines(),
                 summary,
                 str(active_oracle),
+                str(historical_01661_oracle),
                 str(historical_01660_oracle),
                 str(historical_04392_oracle),
                 str(historical_oracle),
@@ -747,7 +779,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         result, events, summary, *_ = self.run_fast_with_fake_tools(missing_active=True)
 
         self.assertNotEqual(result.returncode, 0, result.stdout)
-        self.assertIn("synthetic missing Prodex 0.166.1 oracle", result.stdout)
+        self.assertIn("synthetic missing Prodex 0.166.2 oracle", result.stdout)
         active_reference = events.index("reference\toracle active")
         build_input_check = events.index("call\tscripts/ci/check-build-inputs.py")
         self.assertTrue(any(event.startswith("make\tbuild unit\t") for event in events))
@@ -755,6 +787,7 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(build_input_check, build_index)
         self.assertLess(build_index, active_reference)
         self.assertFalse(any(event.startswith("active-test\t") for event in events))
+        self.assertFalse(any(event.startswith("historical-01661-test\t") for event in events))
         self.assertFalse(any(event.startswith("historical-01660-test\t") for event in events))
         self.assertFalse(any(event.startswith("historical-04392-test\t") for event in events))
         self.assertFalse(any(event.startswith("historical-test\t") for event in events))
@@ -936,12 +969,16 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertIn("Full CI checks passed.", result.stdout)
 
     def test_active_and_historical_suites_receive_their_pinned_oracles(self):
-        (result, events, summary, active_oracle_path, historical_01660_oracle_path,
+        (result, events, summary, active_oracle_path, historical_01661_oracle_path,
+         historical_01660_oracle_path,
          historical_04392_oracle_path, historical_01651_oracle_path) = self.run_fast_with_fake_tools(missing_active=False)
 
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertTrue(any(event.startswith("active-test\t") for event in events), f"events={events!r}; output={result.stdout}")
         active = next(event for event in events if event.startswith("active-test\t"))
+        historical_01661 = next(
+            event for event in events if event.startswith("historical-01661-test\t")
+        )
         historical_01660 = next(
             event for event in events if event.startswith("historical-01660-test\t")
         )
@@ -960,7 +997,11 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertEqual(active_environment[2], "")
         self.assertEqual(active_environment[3], active_oracle_path)
         self.assertEqual(active_environment[4], "")
-        self.assertTrue(active_environment[5].endswith("reference-source-01661"))
+        self.assertTrue(active_environment[5].endswith("reference-source-01662"))
+        historical_01661_environment = historical_01661.split("\t")
+        self.assertEqual(historical_01661_environment[1:3], [historical_01661_oracle_path] * 2)
+        self.assertTrue(historical_01661_environment[3].endswith("reference-source-01661"))
+        self.assertEqual(historical_01661_environment[4], historical_01661_oracle_path)
         historical_01660_environment = historical_01660.split("\t")
         self.assertEqual(historical_01660_environment[1:3], [historical_01660_oracle_path] * 2)
         self.assertTrue(historical_01660_environment[3].endswith("reference-source-01660"))
@@ -981,7 +1022,7 @@ class CIOracleRoutingTests(unittest.TestCase):
             active_oracle_path,
             historical_04392_oracle_path,
         ])
-        self.assertTrue(historical_04392_environment[5].endswith("reference-source-01661"))
+        self.assertTrue(historical_04392_environment[5].endswith("reference-source-01662"))
         self.assertTrue(historical_04392_environment[6].endswith("reference-source-04392"))
         cross_release_environment = cross_release.split("\t")
         self.assertEqual(cross_release_environment[1:5], [
@@ -997,6 +1038,8 @@ class CIOracleRoutingTests(unittest.TestCase):
         self.assertLess(events.index("reference\toracle active"), active_test_index)
         self.assertLess(events.index("reference\tsource active"), active_test_index)
         self.assertLess(events.index("reference\toracle active"), events.index(active))
+        self.assertLess(events.index(active), events.index("reference\toracle 0.166.1"))
+        self.assertLess(events.index("reference\toracle 0.166.1"), events.index(historical_01661))
         self.assertLess(events.index("reference\toracle 0.166.0"), events.index(historical_01660))
         self.assertLess(events.index("reference\tsource 0.166.0"), events.index(historical_01660))
         self.assertLess(events.index("reference\toracle 0.166.0"), events.index(historical_websocket))

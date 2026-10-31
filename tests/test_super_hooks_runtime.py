@@ -90,7 +90,7 @@ def current_requests(app_server):
         identity = requests[0]["params"]["clientInfo"]
         if identity != {"name": "prodex-hook-trust", "version": "0.439.2"}:
             raise AssertionError("historical fixture identity changed")
-        identity["version"] = "0.166.1"
+        identity["version"] = "0.166.2"
     return requests
 
 

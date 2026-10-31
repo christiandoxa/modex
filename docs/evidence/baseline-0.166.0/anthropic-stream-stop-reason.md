@@ -1,6 +1,6 @@
 # Anthropic stream stop-reason handling (Prodex 0.166.0)
 
-> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.0 as active describe the original capture.
 
 The pinned reference is official Prodex 0.166.0 at source commit
 `9f69e1835808f478f59f12a3ae3fa88027d896a4`. Its verified Linux x86-64

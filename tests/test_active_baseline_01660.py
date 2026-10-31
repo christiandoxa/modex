@@ -85,7 +85,7 @@ class ActiveBaseline01660Tests(unittest.TestCase):
     def test_super_hook_initialize_uses_active_identity(self):
         from test_super_launch import SuperLaunchTests
 
-        for binary, expected_version in ((ORACLE, "0.166.0"), (MODEX, "0.166.1")):
+        for binary, expected_version in ((ORACLE, "0.166.0"), (MODEX, "0.166.2")):
             with self.subTest(binary=str(binary)):
                 result, records, upstream, state = SuperLaunchTests().run_launch(
                     binary=binary, scenario="buffered",

@@ -19,13 +19,27 @@ class ParityBaselineTests(unittest.TestCase):
     def test_checked_in_inventory_tracks_the_active_release_and_all_targets(self):
         baseline = json.loads((ROOT / "docs/baseline.json").read_text(encoding="utf-8"))
         parity = json.loads((ROOT / "docs/parity.json").read_text(encoding="utf-8"))
+        capabilities = json.loads((ROOT / "docs/capabilities.json").read_text(encoding="utf-8"))
+        dependencies = json.loads((ROOT / "docs/dependencies.json").read_text(encoding="utf-8"))
 
-        self.assertEqual(baseline["reference"]["tag"], "0.166.1")
+        self.assertEqual(baseline["reference"]["tag"], "0.166.2")
+        self.assertEqual(baseline["reference"]["commit"], "b1201b5244ff85fce7fc54c3f7607f2e3bdcf4a7")
         self.assertEqual(baseline["reference"]["commit"], parity["baseline_commit"])
+        self.assertEqual(parity["baseline_version"], "0.166.2")
+        for metadata in (capabilities, dependencies):
+            self.assertEqual(metadata["baseline_version"], "0.166.2")
+            self.assertEqual(metadata["baseline_commit"], parity["baseline_commit"])
         self.assertFalse(parity["inventory_complete"])
         self.assertEqual(set(baseline["reference"]["release_targets"]), verdict.REQUIRED_TARGETS)
-        self.assertEqual(baseline["previous_reference"]["tag"], "0.166.0")
+        self.assertEqual(set(parity["release_qualification"]), verdict.REQUIRED_TARGETS)
+        self.assertTrue(all(
+            parity["release_qualification"][target]["status"] == "BLOCKED"
+            for target in verdict.REQUIRED_TARGETS
+        ))
+        self.assertEqual(baseline["previous_reference"]["tag"], "0.166.1")
         self.assertIn("historical regression only", baseline["previous_reference"]["historical_role"])
+        self.assertIn("docs/evidence/baseline-0.166.1/reference-verification.json", capabilities["historical_target_evidence"])
+        self.assertEqual(dependencies["previous_reference_evidence"], "docs/evidence/baseline-0.166.1/reference-verification.json")
 
     def run_verdict(self, *, inventory_commit="current", trace_commit="current", verified=True, contract_status="PASS"):
         with tempfile.TemporaryDirectory() as directory:

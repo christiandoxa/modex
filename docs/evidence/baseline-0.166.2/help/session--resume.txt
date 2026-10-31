@@ -1,0 +1,9 @@
+Resume a shared Codex session by unique partial or full id
+
+Usage: prodex session resume <ID>
+
+Arguments:
+  <ID>  Unique full or partial shared Codex session id
+
+Options:
+  -h, --help  Print help

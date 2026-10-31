@@ -1,6 +1,6 @@
 # Anthropic namespace tools
 
-> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.0 as active describe the original capture.
 
 The native Anthropic preflight now passes namespace tools to the shared
 Responses mapper, which validates and flattens their function entries before

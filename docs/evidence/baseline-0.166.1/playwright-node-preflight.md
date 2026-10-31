@@ -1,5 +1,7 @@
 # Playwright Node.js preflight
 
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.1 as active describe the original capture.
+
 Prodex 0.166.1 at `4951b813ca308fb0ba7148dbc6d6aeb74b93cd32` checks
 the Node.js major version before probing `@playwright/mcp`, including in the
 Super optional-tool plan. The source in

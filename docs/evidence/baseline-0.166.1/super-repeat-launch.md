@@ -1,5 +1,7 @@
 # Repeated Super launch characterization
 
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.1 as active describe the original capture.
+
 `tests/test_super_repeat_launch_01661.py` runs a real Super launch against the
 checksum-pinned Prodex 0.166.1 Linux binary and Modex. Both use an isolated
 temporary home, a synthetic Codex child, a synthetic provider key, and a

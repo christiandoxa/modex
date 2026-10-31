@@ -1,0 +1,67 @@
+{
+  "cases": {
+    "missing-parent": {
+      "modex": {
+        "exit_code": 1,
+        "fixture_unchanged": true,
+        "stderr": "Error: Super startup is not implemented: secure temporary overlays, Smart Context initialization, and Codex launch supervision remain unavailable\n",
+        "stdout": ""
+      },
+      "prodex_0_166_2": {
+        "exit_code": 1,
+        "fixture_unchanged": true,
+        "stderr": "Error: session parent metadata is missing; restore the parent session before resuming\n",
+        "stdout": ""
+      }
+    },
+    "root": {
+      "modex": {
+        "exit_code": 1,
+        "fixture_unchanged": true,
+        "stderr": "Error: Super startup is not implemented: secure temporary overlays, Smart Context initialization, and Codex launch supervision remain unavailable\n",
+        "stdout": ""
+      },
+      "prodex_0_166_2": {
+        "exit_code": 1,
+        "fixture_unchanged": true,
+        "stderr": "Error: no active profile selected and no Codex-compatible profiles are available; use `prodex use --profile <name>` or pass --profile\n",
+        "stdout": ""
+      }
+    },
+    "v1-child": {
+      "modex": {
+        "exit_code": 1,
+        "fixture_unchanged": true,
+        "stderr": "Error: Super startup is not implemented: secure temporary overlays, Smart Context initialization, and Codex launch supervision remain unavailable\n",
+        "stdout": ""
+      },
+      "prodex_0_166_2": {
+        "exit_code": 1,
+        "fixture_unchanged": true,
+        "stderr": "Error: no active profile selected and no Codex-compatible profiles are available; use `prodex use --profile <name>` or pass --profile\n",
+        "stdout": ""
+      }
+    },
+    "v2-child": {
+      "modex": {
+        "exit_code": 1,
+        "fixture_unchanged": true,
+        "stderr": "Error: Super startup is not implemented: secure temporary overlays, Smart Context initialization, and Codex launch supervision remain unavailable\n",
+        "stdout": ""
+      },
+      "prodex_0_166_2": {
+        "exit_code": 1,
+        "fixture_unchanged": true,
+        "stderr": "Prodex launch: resuming parent-owned sub-agent through root session 01900000-0000-7000-8000-000000000710...\nError: no active profile selected and no Codex-compatible profiles are available; use `prodex use --profile <name>` or pass --profile\n",
+        "stdout": ""
+      }
+    }
+  },
+  "isolation": "bubblewrap network namespace, synthetic HOME/Prodex/Codex roots, no Codex binary or credentials",
+  "modex_binary": "build/modex",
+  "reference": {
+    "binary_sha256": "e31b8e281583d12b8db1abc5bc9185c4d297d7c40954770ca19dbb8e83567f00",
+    "source_commit": "b1201b5244ff85fce7fc54c3f7607f2e3bdcf4a7",
+    "version": "0.166.2"
+  }
+}

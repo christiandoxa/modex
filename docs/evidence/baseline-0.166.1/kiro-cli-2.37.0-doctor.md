@@ -1,5 +1,7 @@
 # Kiro CLI 2.37.0 Doctor probe
 
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.1 as active describe the original capture.
+
 Prodex 0.166.1's `doctor --install` calls `kiro_bin()` with `--version`.
 `crates/prodex-app/src/lib.rs` selects `PRODEX_KIRO_BIN` when set, otherwise
 prefers `kiro-cli-chat`, falls back to `kiro-cli`, and defaults to

@@ -1,0 +1,26 @@
+{
+  "version": "0.166.2",
+  "commit": "b1201b5244ff85fce7fc54c3f7607f2e3bdcf4a7",
+  "checked_at": "2026-10-31",
+  "release_url": "https://github.com/christiandoxa/prodex/releases/tag/0.166.2",
+  "tag_verification": "The official release API names 0.166.2 and targets this commit; refs/tags/0.166.2 resolves to the same commit.",
+  "sha256sums_sha256": "acb1e7735cf36c8b5fef49e2f33f52f9def5ec4e1c021cd038eebeabe32f4731",
+  "linux_oracle_sha256": "e31b8e281583d12b8db1abc5bc9185c4d297d7c40954770ca19dbb8e83567f00",
+  "release_manifest_sha256": "3975097bb240dcb52499cf47377f5fd75d1e669ae0480a997703289811f16b15",
+  "verification": "GitHub release API SHA-256 digests for all 12 published assets match the official SHA256SUMS entries where listed; SHA256SUMS matches its API digest. sha256sum verified the downloaded SHA256SUMS, release-manifest.json, and Linux x86-64 binary. The isolated Linux binary reports prodex 0.166.2. Only the Linux binary was downloaded and executed; the other five target binaries were not executed.",
+  "release_asset_sha256": {
+    "install.ps1": "c0c405a263054ecc13e326463c8a8efb04fae9b25ed8288e40807cec845e49de",
+    "install.sh": "b88563e24d7a3715b860ddf042cc906e12c862fae632deebcf1d14d8ae0850ba",
+    "prodex-aarch64-apple-darwin": "c9f7733a37fc2e05a62a07126d6f7e1cc1ace31595ce81240708656072e2eb4a",
+    "prodex-aarch64-pc-windows-msvc.exe": "57b49ca372deb9d19ffb3c0cd4bc33c448ec44f3487bbd55ad38e8c094b1a498",
+    "prodex-aarch64-unknown-linux-gnu": "6b3f75356b857ed3c3a8d9f45d726de90197f0a473716f43d5e4334530abf810",
+    "prodex-x86_64-apple-darwin": "f26fd4d8013ce71315e1e951e60e5a70689874a00d0b475123a782e07dadf9a4",
+    "prodex-x86_64-pc-windows-msvc.exe": "fba95b88a9c3fe55aa5881dfa26ef52e9d7ad62f4b772cb4a43b1b9ae3802e0e",
+    "prodex-x86_64-unknown-linux-gnu": "e31b8e281583d12b8db1abc5bc9185c4d297d7c40954770ca19dbb8e83567f00",
+    "release-manifest.json": "3975097bb240dcb52499cf47377f5fd75d1e669ae0480a997703289811f16b15",
+    "release-manifest.tsv": "cf78f2c0add34df0b9c90f8269a379892330568124e160c6b2151cfa462a0025",
+    "release-sbom.spdx.json": "5481ee0d51e50306a6ea6b2f99e2b12976dab79c90ba77dd34563febfabb1f95",
+    "SHA256SUMS": "acb1e7735cf36c8b5fef49e2f33f52f9def5ec4e1c021cd038eebeabe32f4731"
+  },
+  "qualification": "Release identity is verified; these observations do not establish Modex parity or qualification on any target."
+}

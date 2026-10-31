@@ -1,6 +1,6 @@
 # Policy-capacity HTTP 503 through the active Super process
 
-> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.0 as active describe the original capture.
 
 This check covers Modex's connected `super --provider deepseek` API-key route
 with one synthetic key. It does not verify Prodex's separate profile-backed

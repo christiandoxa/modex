@@ -1,7 +1,7 @@
 # Modex
 
-Modex is a new Mojo implementation targeting officially released Prodex 0.166.1
-(`4951b813ca308fb0ba7148dbc6d6aeb74b93cd32`). It is under development and does
+Modex is a new Mojo implementation targeting officially released Prodex 0.166.2
+(`b1201b5244ff85fce7fc54c3f7607f2e3bdcf4a7`). It is under development and does
 not yet provide feature parity. Version output, development session inspection
 and detached `log last` snapshots are connected to the production CLI.
 An explicit clean-home DeepSeek `super ... exec` slice now launches Codex

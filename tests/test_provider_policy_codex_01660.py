@@ -21,7 +21,7 @@ class ProviderPolicyCodex01660Tests(unittest.TestCase):
         from test_super_launch import SuperLaunchTests
 
         observations = []
-        for binary, expected_version in ((ORACLE, "0.166.0"), (MODEX, "0.166.1")):
+        for binary, expected_version in ((ORACLE, "0.166.0"), (MODEX, "0.166.2")):
             with self.subTest(binary="Prodex" if binary == ORACLE else "Modex"):
                 result, records, upstream, state = SuperLaunchTests().run_launch(
                     binary=binary,

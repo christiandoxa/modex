@@ -1,5 +1,7 @@
 # Super hook initialization identity
 
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.1 as active describe the original capture.
+
 Prodex 0.166.1 at `4951b813ca308fb0ba7148dbc6d6aeb74b93cd32` identifies
 its hook-trust app-server client with the release package version in
 `crates/prodex-app/src/runtime_tools/hook_trust.rs`. Modex previously sent

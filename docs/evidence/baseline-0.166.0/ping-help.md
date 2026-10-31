@@ -1,6 +1,6 @@
 # Ping command help on Prodex 0.166.0
 
-> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.0 as active describe the original capture.
 
 Selected read-only help routes for the top-level `ping` command match the
 verified 0.166.0 Linux release. Coverage includes group help, `ping help`,

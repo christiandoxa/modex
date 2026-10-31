@@ -8,8 +8,8 @@
   interop, external implementation helpers, or Prodex runtime delegation.
 - Python standard library is allowed only in separate complex test harnesses.
   Production builds must not depend on Python test code or code generation.
-- The active reference is officially released Prodex 0.166.1 at
-  `4951b813ca308fb0ba7148dbc6d6aeb74b93cd32`. Prodex 0.166.0, 0.165.1 and
+- The active reference is officially released Prodex 0.166.2 at
+  `b1201b5244ff85fce7fc54c3f7607f2e3bdcf4a7`. Prodex 0.166.1, 0.166.0, 0.165.1 and
   0.439.x are historical regression references only. Inspect Git objects or
   an isolated snapshot outside this repository. Never modify the Prodex repository.
 - Keep all six baseline release targets in the parity denominator. Unsupported

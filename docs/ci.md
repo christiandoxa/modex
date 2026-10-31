@@ -46,7 +46,7 @@ CI run [41120572378](https://github.com/christiandoxa/modex/actions/runs/4112057
 passed the sandbox module on commit `37c7812`; the overall run failed closed
 because historical 0.439.2 and 0.439.5 oracle assets were unavailable.
 
-The reference helper obtains the active 0.166.1 release and the
+The reference helper obtains the active 0.166.2 release and the
 explicitly historical source snapshots outside the repository, verifies release and
 source identities, and accepts `MODEX_REFERENCE_CACHE` for its cache location.
 If a successful official tag lookup returns no refs, source acquisition may
@@ -54,26 +54,27 @@ fetch only the previously pinned commit and verifies its complete Git tree.
 Moved or malformed tags and lookup errors still fail. This recovers source
 only: oracle acquisition still requires the pinned release bytes, so missing
 release assets keep reference-dependent CI fail-closed.
-`PRODEX_ORACLE` selects the active 0.166.1 executable; its SHA-256 must match
+`PRODEX_ORACLE` selects the active 0.166.2 executable; its SHA-256 must match
 the pinned release. Historical oracle tests use `PRODEX_ORACLE_01660`, `PRODEX_ORACLE_01651`,
-`PRODEX_ORACLE_04392`, and `PRODEX_ORACLE_04395`; their results are not
-0.166.1 acceptance evidence. Full CI retains the pinned 0.439.1 source
+`PRODEX_ORACLE_01661`, `PRODEX_ORACLE_04392`, and `PRODEX_ORACLE_04395`; their results are not
+0.166.2 acceptance evidence. Full CI retains the pinned 0.439.1 source
 snapshot for regression-only source checks. Missing required
 reference assets fail CI. Tests use synthetic credentials and loopback peers.
 Required sandbox or reference checks fail if their prerequisites are missing;
 a skip is not a pass.
 
 `python3 tests/capture_cli.py` uses the checksum-pinned active `PRODEX_ORACLE`
-and writes `docs/cli-inventory-0.166.1.json` with help fixtures under
-`docs/evidence/baseline-0.166.1/help/`. It leaves the historical
-`docs/cli-inventory.json` and `docs/evidence/baseline/help/` untouched. Help
+and writes `docs/cli-inventory-0.166.2.json` with help fixtures under
+`docs/evidence/baseline-0.166.2/help/`. It leaves the historical
+`docs/cli-inventory-0.166.1.json`, `docs/cli-inventory.json`, and
+`docs/evidence/baseline/help/` untouched. Help
 output is discovery evidence only; source tracing and behavior comparisons are
 still required.
 
 On 2026-10-30 the historical 0.439.2 tag lookup returned no ref and its
 official SHA256SUMS URL returned HTTP 404. A clean hosted runner without the
 previously verified historical bytes therefore cannot run that regression
-lane; acquisition fails closed. Active 0.166.1 tests run first, and the
+lane; acquisition fails closed. Active 0.166.2 tests run first, and the
 historical failure is reported separately as blocked. This does not make
 0.439.2 the active target or count the missing regression lane as passed.
 When the 0.439.2 oracle or source is unavailable, CI attempts independent
@@ -98,7 +99,7 @@ then runs its independent helper and width-memory checks before failing. Full
 CI marks those comparisons and the complete suite blocked, then runs available
 source checks, native units, width-memory checks, platform probes, and
 capability probes before failing. Missing historical bytes never count as a
-pass or change the active 0.166.1 target.
+pass or change the active 0.166.2 target.
 
 Native unit programs compile with bounded parallelism; set `MODEX_UNIT_JOBS`
 to override the default of four. Reuse requires a fingerprint of the Mojo

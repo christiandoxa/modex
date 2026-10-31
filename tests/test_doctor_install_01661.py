@@ -14,7 +14,7 @@ from session_oracle import sandbox_command
 ROOT = Path(__file__).resolve().parents[1]
 MODEX = Path(os.environ.get("MODEX_BINARY", ROOT / "build/modex"))
 ORACLE = Path(os.environ.get(
-    "PRODEX_ORACLE",
+    "PRODEX_ORACLE_01661",
     Path(os.environ.get("MODEX_REFERENCE_CACHE", Path.home() / ".cache/modex"))
     / "oracles/0.166.1/prodex-x86_64-unknown-linux-gnu",
 ))
@@ -80,7 +80,7 @@ class DoctorInstall01661Tests(unittest.TestCase):
             not ORACLE.is_file()
             or hashlib.sha256(ORACLE.read_bytes()).hexdigest() != ORACLE_SHA256
         ):
-            raise AssertionError("PRODEX_ORACLE must identify the verified 0.166.1 release")
+            raise AssertionError("PRODEX_ORACLE_01661 must identify the verified 0.166.1 release")
         with tempfile.TemporaryDirectory(prefix="modex-doctor-version-01661-") as raw:
             root = Path(raw)
             home = root / "home"
@@ -94,7 +94,7 @@ class DoctorInstall01661Tests(unittest.TestCase):
                 capture_output=True, text=True, timeout=10, check=False,
             )
             if (version.returncode, version.stdout, version.stderr) != (0, ORACLE_VERSION, ""):
-                raise AssertionError("PRODEX_ORACLE must report the verified 0.166.1 release")
+                raise AssertionError("PRODEX_ORACLE_01661 must report the verified 0.166.1 release")
             if list(home.iterdir()):
                 raise AssertionError("Prodex --version created state in the isolated home")
 

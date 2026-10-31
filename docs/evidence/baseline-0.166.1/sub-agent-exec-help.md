@@ -1,5 +1,7 @@
 # Hidden sub-agent helper help
 
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.1 as active describe the original capture.
+
 Prodex 0.166.1 exposes `__sub-agent-exec` help in its active CLI inventory.
 The checksum-pinned oracle prints the captured
 `help/__sub-agent-exec.txt` contents for direct `--help`, direct `-h`, and

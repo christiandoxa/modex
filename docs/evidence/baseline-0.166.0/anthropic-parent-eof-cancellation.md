@@ -1,6 +1,6 @@
 # Anthropic parent-EOF cancellation after a stream failure
 
-> Historical evidence: the active target is Prodex 0.166.1. References to 0.166.0 as active describe the original capture.
+> Historical evidence: the active target is Prodex 0.166.2. References to 0.166.0 as active describe the original capture.
 
 ## Original combined case is characterization-only
 

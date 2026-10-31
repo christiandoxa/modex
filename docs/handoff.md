@@ -137,9 +137,11 @@ establish full doctor parity; see
 The selected provider relay catalog routes, same-connection reuse after
 bodyless SSE 204/304 responses, and raw bodyless 204/304/205 Responses framing
 match the checksum-pinned 0.166.2 Linux oracle through synthetic loopback
-peers inside a private network namespace. This adds focused wire regressions;
-provider coverage remains incomplete and all six target qualifications stay
-open. See `docs/evidence/baseline-0.166.2/provider-relay-routes-bodyless.md`.
+peers inside a private network namespace. The production relay also preserves
+the request body and query through a custom `/tenant/api/v9` provider base path.
+This adds focused wire regressions; provider coverage remains incomplete and
+all six target qualifications stay open. See
+`docs/evidence/baseline-0.166.2/provider-relay-routes-bodyless.md`.
 
 The 0.166.2 `session list --profile main` comparison also confirms that the
 release recovers a corrupt primary `state.json` from a valid private

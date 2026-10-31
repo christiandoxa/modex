@@ -4,23 +4,27 @@
 comparisons from the relay harness and binds both sides to the checksum-pinned
 Prodex 0.166.2 Linux x86-64 oracle (`e31b8e281583d12b8db1abc5bc9185c4d297d7c40954770ca19dbb8e83567f00`).
 It covers the `/models` and `/v1/models` catalog aliases, selected model lookup,
-query and method forwarding, synthetic upstream error bodies, same-connection
-reuse after bodyless SSE 204/304 responses, and raw bodyless 204/304/205
-Responses wire framing. Synthetic peers bind only to `127.0.0.1`; credentials,
-provider traffic, and external network access are not used.
+query and method forwarding, a custom `/tenant/api/v9` base path, synthetic
+upstream error bodies, same-connection reuse after bodyless SSE 204/304
+responses, and raw bodyless 204/304/205 Responses wire framing. Synthetic peers
+bind only to `127.0.0.1`; credentials, provider traffic, and external network
+access are not used.
 
-On 2026-10-31, all three comparisons passed inside Bubblewrap's private
+On 2026-10-31, all four comparisons passed inside Bubblewrap's private
 filesystem namespace, sharing a fresh outer `unshare -Urn` network namespace
 with only loopback enabled and no default IPv4 or IPv6 route. Modex was built
-from `d69f6b332f7e187019c1972f06a9f7007e68a5ac`. The focused comparison took
-9.744 seconds. This is Linux x86-64 regression evidence, not complete
+from `1d6e659d939d42a500ac6a34f5f1f19e56bd5e1d`. The custom-path comparison
+confirms that a synthetic `POST /models?trace=synthetic` forwards its body,
+query, and configured bearer key to `/tenant/api/v9/models?trace=synthetic`.
+The focused relay comparison took 9.032 seconds. This is Linux x86-64
+regression evidence, not complete
 provider-relay parity; other routes, transport behavior, platforms, and the
 six-target denominator remain unqualified.
 
-The cited hash preserves the source provenance recorded when this capture was
-made. After the Modex history rewrite, its equivalent commit is
-`f7bfcaf0ac5441266225a9b7c9880c664427f918`; the two commits have identical
-trees, subjects, and timestamps.
+The earlier three-comparison capture recorded Modex commit
+`d69f6b332f7e187019c1972f06a9f7007e68a5ac`. Its equivalent after the Modex
+history rewrite is `f7bfcaf0ac5441266225a9b7c9880c664427f918`; the two
+commits have identical trees, subjects, and timestamps.
 
 To reproduce from the repository root, export the verified active oracle and
 the built Modex path, then run the existing WebSocket fallback sandbox helper

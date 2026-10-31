@@ -201,6 +201,15 @@ type and body, without replaying the upstream request. This is one guarded
 process path, not full provider or rotation parity; see
 `docs/evidence/baseline-0.166.2/policy-capacity-synthetic-codex.md`.
 
+The 0.166.2 active lane now also pins the synthetic API-key policy-capacity
+retry matrix through the production relay. It covers two-key and single-key
+503 handling, combo-model retry ordering, overload rotation with unrelated
+metadata, and the corresponding native Anthropic Messages key controls. All
+six comparisons pass with synthetic keys and loopback-only peers. This
+qualifies only these API-key paths; profile-backed rotation, session affinity,
+other response classes, and the remaining targets stay open. See
+`docs/evidence/baseline-0.166.2/provider-policy-capacity-rotation.md`.
+
 Two synthetic streamed-item identity comparisons, including concurrent
 requests, pass against the 0.166.2 oracle. These do not establish general
 streaming, connection ownership, or provider parity; see

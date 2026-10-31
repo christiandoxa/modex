@@ -10,10 +10,15 @@ both static help forms without entering quota execution.
 compares the checksum-verified Linux x86-64 oracle with Modex in isolated
 filesystem, HOME, and network namespaces. It covers both help layouts, custom
 `argv0`, value options before help, help precedence, duplicate or malformed
-options before help, and the built-in help alias. The Modex-only non-help
-control confirms that `quota --profile synthetic-profile` stays behind the
-existing unimplemented-command guard and creates no files. No quota endpoint,
-credential, or account login is used.
+options before help, and the built-in help alias. The quota parser also checks
+malformed non-help invocations before the unimplemented runtime guard; the
+separate `test_quota_invalid_options_fail_before_execution` comparison covers
+unknown options, unexpected boolean values, missing values, duplicates, and
+option precedence. These cases exit before quota execution and create no
+files. Representative valid synthetic combinations using `--profile`, `--all`,
+`--provider`, `--detail`, `--raw`, `--once`, and `--base-url` still reach the
+guard without creating files. No quota endpoint, credential, or account login
+is used.
 
 Reproduce after building Modex:
 
@@ -21,8 +26,10 @@ Reproduce after building Modex:
 PYTHONPATH=tests MODEX_BINARY=build/modex \
 PRODEX_ORACLE="$HOME/.cache/modex/oracles/0.166.0/prodex-x86_64-unknown-linux-gnu" \
 python3 -m unittest -v \
-  test_root_help_errors_01660.RootHelpErrors01660Tests.test_quota_help_matches_release_without_quota_execution
+  test_root_help_errors_01660.RootHelpErrors01660Tests.test_quota_help_matches_release_without_quota_execution \
+  test_root_help_errors_01660.RootHelpErrors01660Tests.test_quota_invalid_options_fail_before_execution
 ```
 
-This qualifies only quota help parsing and rendering on Linux x86-64. Quota
-execution and the other five release targets remain unqualified.
+This qualifies only quota help and selected malformed-argument handling on
+Linux x86-64. Valid quota execution and the other five release targets remain
+unqualified.

@@ -149,8 +149,6 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
         if not literal and argument == "--":
             literal = True
     if help_index < 0:
-        if not literal:
-            return String()
         help_index = len(args)
 
     var choices: List[String] = ["profile", "all", "auth", "provider", "detail", "raw", "watch", "once", "base-url", "help"]

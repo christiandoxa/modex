@@ -1,5 +1,9 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Quota now validates selected malformed invocations before reaching the existing
+unimplemented runtime guard. Valid synthetic options still reach that guard;
+see `docs/evidence/baseline-0.166.0/quota-help.md`.
+
 The DeepSeek relay supports the tested `/messages` and `/v1/messages` routes,
 including buffered errors, streaming, key retry and continuation binding. It
 strips caller credentials and cookies that the reference forwards. Retryable

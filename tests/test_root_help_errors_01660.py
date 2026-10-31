@@ -250,15 +250,46 @@ class RootHelpErrors01660Tests(unittest.TestCase):
                                  (2, b"", expected_stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
-        modex, created = isolated_run(
-            MODEX, ["quota", "--profile", "synthetic-profile"], "modex",
-            "01660-quota-runtime-guard",
+        for arguments in (
+            ("quota", "--profile", "synthetic-profile"),
+            ("quota", "--all", "--provider", "deepseek", "--detail", "--once"),
+            ("quota", "--raw", "--profile", "synthetic-profile"),
+            ("quota", "--all", "--provider", "local", "--base-url", "http://127.0.0.1:8131/v1", "--once"),
+        ):
+            with self.subTest(valid_runtime_options=arguments):
+                modex, created = isolated_run(
+                    MODEX, list(arguments), "modex", "01660-quota-runtime-guard",
+                )
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (1, b"", b"Error: this Modex development build has not implemented the requested command\n"),
+                )
+                self.assertEqual(created, [])
+
+    def test_quota_invalid_options_fail_before_execution(self):
+        cases = (
+            ("quota", "--unknown"),
+            ("quota", "--all=yes"),
+            ("quota", "--profile"),
+            ("quota", "--profile", "--all"),
+            ("quota", "--watch=false"),
+            ("quota", "--base-url"),
+            ("quota", "--profile", "synthetic", "--profile", "other"),
+            ("quota", "--profile", "synthetic", "--unknown"),
         )
-        self.assertEqual(
-            (modex.returncode, modex.stdout, modex.stderr),
-            (1, b"", b"Error: this Modex development build has not implemented the requested command\n"),
-        )
-        self.assertEqual(created, [])
+        for arguments in cases:
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "prodex", "01660-quota-invalid-oracle"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "modex", "01660-quota-invalid-modex"
+                )
+                expected_stderr = baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex ", 1)
+                self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (2, b"", expected_stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
 
 
 if __name__ == "__main__":

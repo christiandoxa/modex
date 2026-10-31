@@ -45,11 +45,26 @@ including Prodex's `: relative URL without a base` detail. Empty hosts return
 Prodex's generic base-URL error. Empty userinfo markers and empty ports remain
 accepted. Surrounding C0/space and CR/LF, embedded CR/LF scheme controls, TAB
 removal, backslash and slash normalization, and special-scheme controls match
-the oracle. Valid ASCII, IPv4, IPv6, and `bücher.example` controls reach model
-validation. `test_base_url_scheme_precedence_matches_release_without_mutation`
-and `test_base_url_host_port_and_policy_precedence_matches_release` cover these
+the oracle. CR/LF embedded in a host is removed by URL preprocessing, while
+CR/LF in the scheme keeps the generic base-URL diagnostic. Malformed bracketed
+IPv6 literals return `invalid IPv6 address`. Host diagnostics also take
+precedence over malformed ports: malformed IPv6, IDNA, and IPv4 hosts retain
+their host-specific errors, while a valid IPv6 host with a malformed or
+out-of-range port returns `invalid port number`. Valid ASCII, IPv4, IPv6, and
+`bücher.example` controls reach model validation.
+`test_base_url_scheme_precedence_matches_release_without_mutation` and
+`test_base_url_host_port_and_policy_precedence_matches_release` cover these
 cases in isolated homes; the operation remains guarded and makes no provider
 request.
+
+On 2026-10-31, `rtk make build` and all 11 methods in
+`PYTHONPATH=tests rtk python3 -m unittest test_ping_diagnostics_01662 -v`
+passed on Linux x86-64. The differential suite used the checksum-verified
+Prodex 0.166.2 oracle (SHA-256
+`e31b8e281583d12b8db1abc5bc9185c4d297d7c40954770ca19dbb8e83567f00`); each
+process ran with an isolated synthetic home and no provider traffic. These
+results cover only the listed offline ping diagnostics and do not establish
+full URL, IDNA, ping operation, or cross-target parity.
 
 The validator reuses Modex's authority checks but does not implement full
 WHATWG URL or UTS #46 processing. Known remaining IDNA mismatches are recorded

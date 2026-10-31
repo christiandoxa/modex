@@ -213,10 +213,16 @@ and `--help` usage while preserving accepted options and error precedence.
 First invalid `ping openai` arguments, missing option values, duplicate
 options, and model-value diagnostics also match. Modex now matches Prodex's
 base-URL precedence for unsupported and malformed schemes, empty hosts,
-invalid ports, nonempty credentials, queries, and fragments. Empty ports and
-empty userinfo markers remain accepted. Differential controls cover surrounding
-C0/space and CR/LF, embedded CR/LF scheme controls, removable TAB, slash and
-backslash normalization, common IPv4/IPv6 authorities, and a valid IDNA domain.
+invalid ports, nonempty credentials, queries, and fragments. Invalid IPv6,
+IDNA, and IPv4 host diagnostics precede malformed-port errors; malformed
+bracketed IPv6 literals retain the specific IPv6 diagnostic, and valid IPv6
+with invalid ports returns the port diagnostic. Empty ports and empty userinfo
+markers remain accepted. Differential controls cover surrounding C0/space and
+CR/LF, embedded CR/LF scheme controls, CR/LF removal in hosts, removable TAB,
+slash and backslash normalization, common IPv4/IPv6 authorities, and a valid
+IDNA domain. The 0.166.2 ping suite and `rtk make build` passed on Linux
+x86-64; exact cases and the pinned oracle digest are recorded in
+`docs/evidence/baseline-0.166.2/ping-diagnostics.md`.
 Full UTS #46 validation remains open: selected LRM, bidi, private-use,
 noncharacter, tag, C1, and joiner host probes still reach model validation in
 Modex while Prodex rejects them. The operation remains guarded; all probes use
@@ -335,6 +341,16 @@ against the 0.166.2 oracle, including buffered requests, streamed events, and
 combo retry controls. The test reuses the historical corpus with the active
 oracle and does not qualify untested provider behavior; see
 `docs/evidence/baseline-0.166.2/provider-shapes.md`.
+
+Twenty selected passthrough and redirect cases from the historical provider
+suite now run against the verified 0.166.2 oracle in both Fast and Full CI.
+The wrapper asserts its exact inherited test set and switches its synthetic
+update-check marker to 0.166.2 while leaving the historical suite's default
+unchanged. The malformed-SSE oracle mismatch is excluded from parity here;
+the active provider-shapes test separately requires bounded Modex failure and
+records the oracle's open downstream stream. These comparisons found no
+production mismatch and do not establish full provider or six-target parity.
+See `docs/evidence/baseline-0.166.2/provider-passthrough.md`.
 
 Focused raw-peer comparisons also match for close-delimited JSON, a 103
 informational response before a final response, chunked framing with a trailer,

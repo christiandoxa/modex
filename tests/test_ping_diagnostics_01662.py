@@ -181,6 +181,8 @@ class PingDiagnostics01662Tests(unittest.TestCase):
             ("valid URL control", ("--base-url", "https://example.test/v1"), "", model_error),
             ("surrounding URL whitespace control", ("--base-url", " https://example.test/v1 "), "", model_error),
             ("surrounding CR LF control", ("--base-url", "\r\nhttps://example.test/v1\r\n"), "", model_error),
+            ("LF in hostname control", ("--base-url", "https://a\nb.example/x"), "", model_error),
+            ("CR in hostname control", ("--base-url", "https://a\rb.example/x"), "", model_error),
             ("URL TAB removal control", ("--base-url", "ht\ttps://example.test/v1"), "", model_error),
             ("URL LF scheme control", ("--base-url", "ht\nps://example.test/v1"), "", base_error),
             ("URL CR scheme control", ("--base-url", "ht\rps://example.test/v1"), "", base_error),
@@ -217,6 +219,7 @@ class PingDiagnostics01662Tests(unittest.TestCase):
         invalid_port_error = base_error[:-1] + b": invalid port number\n"
         invalid_ipv4_error = base_error[:-1] + b": invalid IPv4 address\n"
         invalid_idna_error = base_error[:-1] + b": invalid international domain name\n"
+        invalid_ipv6_error = base_error[:-1] + b": invalid IPv6 address\n"
         model_error = b"Error: --model must be nonempty and contain no control characters\n"
         cases = (
             ("empty host", "https://", empty_host_error),
@@ -225,9 +228,21 @@ class PingDiagnostics01662Tests(unittest.TestCase):
             ("text port", "https://example.test:abc/v1", invalid_port_error),
             ("negative port", "https://example.test:-1/v1", invalid_port_error),
             ("overflow port", "https://example.test:65536/v1", invalid_port_error),
-            ("IPv6 text port", "https://[::1]:abc/v1", invalid_port_error),
+            ("valid IPv6 text port", "https://[::1]:abc/v1", invalid_port_error),
+            ("valid IPv6 overflow port", "https://[::1]:999999/x", invalid_port_error),
+            ("invalid IPv6 hex", "https://[::g]/x", invalid_ipv6_error),
+            ("invalid IPv6 text port", "https://[::g]:abc/x", invalid_ipv6_error),
+            ("invalid IPv6 overflow port", "https://[::g]:999999/x", invalid_ipv6_error),
+            ("empty IPv6 text port", "https://[]:abc/x", invalid_ipv6_error),
+            ("missing IPv6 bracket", "https://[::1", invalid_ipv6_error),
+            ("text after IPv6 bracket", "https://[::1]x/x", invalid_ipv6_error),
+            ("valid IPv6", "https://[::1]/x", model_error),
+            ("valid IPv6 with port", "https://[::1]:443/x", model_error),
             ("invalid IPv4", "https://999.1.1.1/v1", invalid_ipv4_error),
+            ("invalid IPv4 with text port", "https://999.1.1.1:abc/x", invalid_ipv4_error),
             ("space in hostname", "https://bad host/v1", invalid_idna_error),
+            ("invalid hostname with text port", "https://bad host:abc/x", invalid_idna_error),
+            ("invalid percent host with text port", "https://%zz:abc/x", invalid_idna_error),
             ("empty port", "https://example.test:/v1", model_error),
             ("maximum port", "https://example.test:65535/v1", model_error),
             ("credentials", "https://user:pass@example.test/v1", base_error),

@@ -1,6 +1,6 @@
 from std.collections import List, Optional
 
-from .log_operational import decode_url_host, host_ends_in_number, url_numeric_host_compatibility, valid_ipv4_host, valid_scheme, valid_url_authority, valid_url_host
+from .log_operational import decode_url_host, host_ends_in_number, url_numeric_host_compatibility, valid_ipv4_host, valid_ipv6_literal, valid_scheme, valid_url_authority, valid_url_host
 from .sessions import SessionOptions
 from .text import trim_text, unsigned_value
 
@@ -436,7 +436,9 @@ def ping_openai_base_url_error(args: List[String]) -> String:
             if scheme != "http" and scheme != "https":
                 return message
 
-            var rest = String(normalized[byte=colon + 1:]).replace("\\", "/")
+            # URL parsing removes CR/LF from the post-scheme input. Keep the
+            # scheme check above on the original bytes to preserve its diagnostic.
+            var rest = String(normalized[byte=colon + 1:]).replace("\\", "/").replace("\r", "").replace("\n", "")
             var authority_start = 0
             while authority_start < rest.byte_length() and rest.as_bytes()[authority_start] == 47:
                 authority_start += 1
@@ -455,11 +457,11 @@ def ping_openai_base_url_error(args: List[String]) -> String:
 
             if ping_url_host_empty(host_port):
                 return message + ": empty host"
-            if ping_url_port_invalid(host_port):
-                return message + ": invalid port number"
             var host_error = ping_url_host_error(host_port)
             if host_error:
                 return message + ": " + host_error
+            if ping_url_port_invalid(host_port):
+                return message + ": invalid port number"
             if not valid_url_authority(host_port):
                 return message
             if (at >= 0 and userinfo and userinfo != ":") or normalized.find("?") >= 0 or normalized.find("#") >= 0:
@@ -503,6 +505,11 @@ def ping_url_port_invalid(host_port: String) -> Bool:
 
 def ping_url_host_error(host_port: String) -> String:
     if host_port.startswith("["):
+        var close = host_port.find("]")
+        if close <= 1 or not valid_ipv6_literal(String(host_port[byte=1:close])):
+            return "invalid IPv6 address"
+        if close + 1 < host_port.byte_length() and host_port.as_bytes()[close + 1] != 58:
+            return "invalid IPv6 address"
         return ""
     var separator = host_port.find(":")
     var host = String(host_port[byte=:separator]) if separator >= 0 else host_port

@@ -17,6 +17,7 @@ from test_super_launch import CODEX
 
 
 WIRE_READ_TIMEOUT_SECONDS = 1.5
+TEST_VERSION = "0.166.0"
 
 
 REUSE_CLIENT = CODEX[:CODEX.index("passthrough = scenario")] + r'''
@@ -142,7 +143,7 @@ def observe_same_connection(binary, status):
         for name in ("home", "state", "shared", "work"):
             (root / name).mkdir(mode=0o700)
         (root / "state/update-check.json").write_text(
-            json.dumps({"source": "GitHub", "latest_version": "0.166.0",
+            json.dumps({"source": "GitHub", "latest_version": TEST_VERSION,
                         "checked_at": 4102444800}, separators=(",", ":"))
         )
         codex = root / "codex"
@@ -181,7 +182,7 @@ def observe_response_wire(binary, reply, *, request_close=False, pipeline_second
         for name in ("home", "state", "shared", "work"):
             (root / name).mkdir(mode=0o700)
         (root / "state/update-check.json").write_text(
-            json.dumps({"source": "GitHub", "latest_version": "0.166.0",
+            json.dumps({"source": "GitHub", "latest_version": TEST_VERSION,
                         "checked_at": 4102444800}, separators=(",", ":"))
         )
         codex = root / "codex"
@@ -292,7 +293,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
             for binary in (ORACLE, MODEX):
                 with self.subTest(route=route, binary=str(binary)):
                     upstream, responses = observe_turns(
-                        binary, turns, replies, latest_version="0.166.0",
+                        binary, turns, replies, latest_version=TEST_VERSION,
                     )
                     self.assertEqual(len(upstream), len(turns), "metadata handling must never replay a POST")
                     self.assertEqual([row["status"] for row in responses], [status] * len(turns))
@@ -339,7 +340,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
             for binary in (ORACLE, MODEX):
                 with self.subTest(route=route_name, binary=str(binary)):
                     upstream, responses = observe_turns(
-                        binary, turns, replies, latest_version="0.166.0",
+                        binary, turns, replies, latest_version=TEST_VERSION,
                     )
                     self.assertEqual(len(upstream), len(values))
                     self.assertEqual([row["method"] for row in upstream], ["POST"] * len(values))
@@ -372,7 +373,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         for binary in (ORACLE, MODEX):
             with self.subTest(binary=str(binary)):
                 upstream, responses = observe_turns(
-                    binary, request, [reply], latest_version="0.166.0",
+                    binary, request, [reply], latest_version=TEST_VERSION,
                 )
                 self.assertEqual(len(upstream), 1)
                 self.assertEqual(responses[0]["status"], 503)
@@ -402,7 +403,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
             for binary in (ORACLE, MODEX):
                 with self.subTest(binary=str(binary), base_host=base_host):
                     upstream, responses = observe_turns(
-                        binary, request, [redirect, final], latest_version="0.166.0",
+                        binary, request, [redirect, final], latest_version=TEST_VERSION,
                         base_host=base_host, upstream_ipv6=ipv6,
                     )
                     self.assertEqual([response["status"] for response in responses], [200])
@@ -431,7 +432,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                         "response_headers": [("Location", location), ("Content-Type", "text/plain")]}
             with self.subTest(rejected_location=location):
                 upstream, responses = observe_turns(
-                    MODEX, request, [redirect], latest_version="0.166.0",
+                    MODEX, request, [redirect], latest_version=TEST_VERSION,
                     base_host="[::1]", upstream_ipv6=True,
                 )
                 self.assertEqual([(row["method"], row["path"]) for row in upstream], [
@@ -457,7 +458,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                         "response_headers": [("Location", location), ("Content-Type", "text/plain")]}
             with self.subTest(rejected_encoded_location=location):
                 upstream, responses = observe_turns(
-                    MODEX, request, [redirect], latest_version="0.166.0",
+                    MODEX, request, [redirect], latest_version=TEST_VERSION,
                     base_host="127.0.0.1",
                 )
                 self.assertEqual([(row["method"], row["path"]) for row in upstream], [
@@ -473,7 +474,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         for binary in (ORACLE, MODEX):
             with self.subTest(binary=str(binary), bounded=True):
                 upstream, responses = observe_turns(
-                    binary, request, redirects, latest_version="0.166.0",
+                    binary, request, redirects, latest_version=TEST_VERSION,
                     base_host="[::1]", upstream_ipv6=True,
                 )
                 self.assertEqual(len(upstream), 11)
@@ -497,7 +498,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
             for binary in (ORACLE, MODEX):
                 with self.subTest(case=label, binary=str(binary)):
                     upstream, responses = observe_turns(
-                        binary, turn, [redirect, buffered_reply(91)], latest_version="0.166.0",
+                        binary, turn, [redirect, buffered_reply(91)], latest_version=TEST_VERSION,
                     )
                     requests = [(row["method"], row["path"]) for row in upstream]
                     self.assertEqual(requests, expected_requests)
@@ -518,7 +519,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
             with self.subTest(binary=str(binary)):
                 upstream, responses = observe_turns(
                     binary, [{"model": "deepseek-chat", "input": "synthetic bounded redirect"}],
-                    redirects, latest_version="0.166.0",
+                    redirects, latest_version=TEST_VERSION,
                 )
                 self.assertEqual([(row["method"], row["path"]) for row in upstream],
                                  [("POST", current)] + [("GET", current)] * 10)
@@ -537,7 +538,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         for binary in (ORACLE, MODEX):
             with self.subTest(binary=str(binary)):
                 upstream, responses = observe_turns(
-                    binary, request, [redirect, reply], latest_version="0.166.0",
+                    binary, request, [redirect, reply], latest_version=TEST_VERSION,
                 )
                 self.assertEqual([(row["method"], row["path"]) for row in upstream], [
                     ("POST", "/v1/chat/completions"),
@@ -561,7 +562,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
             for binary in binaries:
                 with self.subTest(binary=str(binary), rejected_location=label):
                     upstream, responses = observe_turns(
-                        binary, request, [reply], latest_version="0.166.0",
+                        binary, request, [reply], latest_version=TEST_VERSION,
                     )
                     self.assertEqual([(row["method"], row["path"]) for row in upstream], [
                         ("POST", "/v1/chat/completions"),
@@ -577,7 +578,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         for binary in (ORACLE, MODEX):
             with self.subTest(binary=str(binary)):
                 upstream, responses = observe_turns(
-                    binary, request, [redirect, buffered_reply(97)], latest_version="0.166.0",
+                    binary, request, [redirect, buffered_reply(97)], latest_version=TEST_VERSION,
                 )
                 self.assertEqual([(row["method"], row["path"]) for row in upstream], [
                     ("POST", "/v1/chat/completions"),
@@ -609,7 +610,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         for binary in (ORACLE, MODEX):
             with self.subTest(binary=str(binary)):
                 upstream, responses = observe_turns(
-                    binary, turns, replies, latest_version="0.166.0",
+                    binary, turns, replies, latest_version=TEST_VERSION,
                 )
                 self.assertEqual(len(upstream), 4)
                 self.assertEqual([row["status"] for row in responses], [200, 200, 200, 200, 404, 404, 400])
@@ -654,7 +655,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         for binary in (ORACLE, MODEX):
             with self.subTest(binary=str(binary)):
                 upstream, responses = observe_turns(
-                    binary, [dict(turn) for turn in turns], replies, latest_version="0.166.0",
+                    binary, [dict(turn) for turn in turns], replies, latest_version=TEST_VERSION,
                 )
                 self.assertEqual([row["status"] for row in responses], [200, 200, 200, 200, 404, 429, 503, 200])
                 self.assertEqual([(row["method"], row["path"]) for row in upstream], [
@@ -693,10 +694,10 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         turn = [{"_method": "GET", "_path": "/models",
                  "_headers": {"Authorization": "Bearer synthetic-invalid-token"}}]
         oracle_upstream, oracle_responses = observe_turns(
-            ORACLE, turn, [], latest_version="0.166.0",
+            ORACLE, turn, [], latest_version=TEST_VERSION,
         )
         modex_upstream, modex_responses = observe_turns(
-            MODEX, turn, [], latest_version="0.166.0",
+            MODEX, turn, [], latest_version=TEST_VERSION,
         )
         self.assertEqual(oracle_upstream, [])
         self.assertEqual(modex_upstream, [])
@@ -721,7 +722,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                 with self.subTest(binary=str(binary), route=turn["_path"]):
                     with patch.object(UpstreamHandler, "do_CONNECT", UpstreamHandler.do_POST, create=True):
                         upstream, responses = observe_turns(
-                            binary, [turn], [reply], latest_version="0.166.0",
+                            binary, [turn], [reply], latest_version=TEST_VERSION,
                         )
                     self.assertEqual(len(upstream), 1)
                     self.assertEqual(upstream[0]["method"], "CONNECT")
@@ -734,7 +735,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
             MODEX,
             [{"_method": "CONNECT", "_path": "/models", "_raw_body": "",
               "_headers": {"Authorization": "Bearer synthetic-invalid-token"}}],
-            [], latest_version="0.166.0",
+            [], latest_version=TEST_VERSION,
         )
         self.assertEqual(denied_upstream, [])
         self.assertEqual(denied_responses[0]["status"], 401)
@@ -758,7 +759,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                 with self.subTest(binary=str(binary), route=turn["_path"]):
                     with patch.object(UpstreamHandler, "do_CONNECT", UpstreamHandler.do_POST, create=True):
                         upstream, responses = observe_turns(
-                            binary, [turn], [success], latest_version="0.166.0",
+                            binary, [turn], [success], latest_version=TEST_VERSION,
                         )
                     self.assertEqual(len(upstream), 1)
                     self.assertEqual(upstream[0]["method"], "CONNECT")
@@ -773,7 +774,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         turn = [{"_method": "CONNECT", "_path": "/models", "_raw_body": ""}]
         with patch.object(UpstreamHandler, "do_CONNECT", UpstreamHandler.do_POST, create=True):
             upgrade_upstream, upgrade_responses = observe_turns(
-                MODEX, turn, [upgrade], latest_version="0.166.0",
+                MODEX, turn, [upgrade], latest_version=TEST_VERSION,
             )
         self.assertEqual(len(upgrade_upstream), 1)
         self.assertEqual(upgrade_responses[0]["status"], 502)
@@ -830,10 +831,10 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                     "_path": "/responses",
                     "_headers": {"Authorization": "Bearer synthetic-invalid-token"}}]
         oracle_upstream, oracle_responses = observe_turns(
-            ORACLE, invalid, [buffered_reply()], latest_version="0.166.0",
+            ORACLE, invalid, [buffered_reply()], latest_version=TEST_VERSION,
         )
         modex_upstream, modex_responses = observe_turns(
-            MODEX, invalid, [buffered_reply()], latest_version="0.166.0",
+            MODEX, invalid, [buffered_reply()], latest_version=TEST_VERSION,
         )
         self.assertEqual([row["status"] for row in oracle_responses], [200])
         self.assertEqual(len(oracle_upstream), 1)
@@ -850,7 +851,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
         replies = [buffered_reply(0, created=42), buffered_reply(1, created=43)]
         for binary in (ORACLE, MODEX):
             with self.subTest(binding_binary=str(binary)):
-                upstream, responses = observe_turns(binary, turns, replies, latest_version="0.166.0")
+                upstream, responses = observe_turns(binary, turns, replies, latest_version=TEST_VERSION)
                 self.assertEqual([row["status"] for row in responses], [200, 503])
                 self.assertEqual(len(upstream), 1, "bound follow-up must remain blocked before provider dispatch")
 
@@ -890,7 +891,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
             for binary in (ORACLE, MODEX):
                 with self.subTest(route=name, binary=str(binary)):
                     posts, responses = observe_turns(
-                        binary, [request], [reply], latest_version="0.166.0",
+                        binary, [request], [reply], latest_version=TEST_VERSION,
                     )
                     self.assertEqual(len(posts), 1)
                     self.assertEqual([response["status"] for response in responses], [status])
@@ -933,7 +934,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
             for binary in (ORACLE, MODEX):
                 with self.subTest(order=name, binary=str(binary)):
                     posts, responses = observe_turns(
-                        binary, [turn], [reply], latest_version="0.166.0",
+                        binary, [turn], [reply], latest_version=TEST_VERSION,
                     )
                     self.assertEqual(len(posts), 1)
                     self.assertEqual([response["status"] for response in responses], [200])
@@ -992,7 +993,7 @@ class ProviderBufferedMetadata01660Tests(unittest.TestCase):
                     upstream, responses = observe_turns(
                         binary,
                         [{"model": "deepseek-chat", "messages": [], "_path": "/v1/chat/completions"}],
-                        [reply], latest_version="0.166.0",
+                        [reply], latest_version=TEST_VERSION,
                     )
                     self.assertEqual(len(upstream), 1)
                     self.assertEqual(responses[0]["status"], status)

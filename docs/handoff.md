@@ -1,5 +1,15 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+Hosted Fast CI run `41158255923` on `76209c9` passed 195 active 0.166.0
+tests, 53 independent relay tests, 121 historical 0.165.1 tests, and the
+helper and width checks. It failed closed because required historical 0.439.2
+and 0.439.5 references were unavailable; their dependent lanes were blocked.
+This is not a complete CI or parity pass and does not validate later commits.
+
+Selected profile remove/export conflict diagnostics now preserve 0.166.0
+option order and preceding flags. Stateful operations remain guarded; see
+`docs/evidence/baseline-0.166.0/profile-cli-conflict-usage-order.md`.
+
 Nested help for `current`, `info`, `status`, and `doctor` now matches selected
 0.166.0 routes and trailing-operand errors. See
 `docs/evidence/baseline-0.166.0/inspection-nested-help.md`.

@@ -339,11 +339,26 @@ def _profile_missing_required(command: String, executable: String, seen: List[St
     return session_cli_error("the following required arguments were not provided:\n  " + positional, usage)
 
 
-def _profile_conflict(left: String, right: String, command: String, executable: String, positional: String = "") -> Error:
-    var usage = executable + " profile " + command + " " + left
+def _profile_conflict(left: String, right: String, command: String, executable: String, seen: List[String], positional: String = "") -> Error:
+    var conflict_left = left
+    var conflict_right = right
+    var option_conflict = right != "[NAME]"
+    if option_conflict:
+        for name in seen:
+            if name == left or name == right:
+                conflict_left = name
+                conflict_right = right if name == left else left
+                break
+    var usage = executable + " profile " + command
+    var written = List[String]()
+    for name in seen:
+        if option_conflict and name == conflict_right: continue
+        if name in written: continue
+        usage += " " + _profile_option_label(name)
+        written.append(name)
     if positional:
         usage += " " + positional
-    return session_cli_error("the argument '" + left + "' cannot be used with '" + right + "'", usage)
+    return session_cli_error("the argument '" + conflict_left + "' cannot be used with '" + conflict_right + "'", usage)
 
 
 def _profile_help_value_error(argument: String, command: String, executable: String) -> Error:
@@ -476,9 +491,9 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
         raise _profile_missing_required(command, executable, seen, "<PATH_OR_SOURCE>")
     if command == "remove":
         if "--all" in seen and positionals:
-            raise _profile_conflict("--all", "[NAME]", command, executable, "[NAME]")
+            raise _profile_conflict("--all", "[NAME]", command, executable, seen, "[NAME]")
         if "--all" not in seen and not positionals:
             raise _profile_missing_required(command, executable, seen, "<NAME>")
     if command == "export" and "--password-protect" in seen and "--no-password" in seen:
-        raise _profile_conflict("--password-protect", "--no-password", command, executable, "[PATH]")
+        raise _profile_conflict("--password-protect", "--no-password", command, executable, seen, "[PATH]")
     return ProfileHelpRequest(command, False, False)

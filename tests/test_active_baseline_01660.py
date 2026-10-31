@@ -463,6 +463,26 @@ class ActiveBaseline01660Tests(unittest.TestCase):
                                  (baseline.returncode, baseline.stdout, baseline.stderr))
                 self.assertEqual((baseline_created, modex_created), ([], []))
 
+    def test_profile_conflict_diagnostics_preserve_option_order_and_usage_flags(self):
+        cases = (
+            ("profile", "remove", "--delete-home", "--all", "synthetic"),
+            ("profile", "remove", "--all", "--delete-home", "synthetic"),
+            ("profile", "export", "--no-password", "--password-protect"),
+            ("profile", "export", "--password-protect", "--no-password"),
+            ("profile", "export", "-p", "synthetic-one", "--no-password",
+             "-p", "synthetic-two", "--password-protect"),
+        )
+        for arguments in cases:
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_super_cli(ORACLE, arguments, "prodex")
+                modex, modex_created = isolated_super_cli(MODEX, arguments, "modex")
+                self.assertEqual((baseline.returncode, baseline.stdout), (2, b""))
+                self.assertEqual(
+                    (modex.returncode, modex.stdout, modex.stderr),
+                    (2, b"", baseline.stderr.replace(b"prodex profile", b"modex profile")),
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+
     def test_top_level_use_help_and_invalid_help_order_match_without_state_changes(self):
         cases = (
             (("use", "--help"), 0),

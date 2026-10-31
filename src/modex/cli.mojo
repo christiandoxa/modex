@@ -754,6 +754,7 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
 
     var choices: List[String] = ["profile", "all", "auth", "provider", "detail", "raw", "watch", "once", "base-url", "help"]
     var seen = List[String]()
+    var only_split_value = False
     literal = False
     var index = 2
     while index < help_index:
@@ -770,6 +771,7 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
         var canonical = name
         var takes_value = name == "--profile" or name == "--auth" or name == "--provider" or name == "--base-url" or name == "-p"
         var short_profile_value = False
+        var split_value = False
         if name == "-p":
             canonical = "--profile"
         elif not name.startswith("--") or String(name[byte=2:]) not in choices:
@@ -800,6 +802,7 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
             if len(pieces) == 2 or short_profile_value:
                 pass
             else:
+                split_value = True
                 index += 1
                 if index >= help_index:
                     if has_help_value:
@@ -824,17 +827,18 @@ def quota_help_requested(args: List[String], executable: String) raises -> Strin
                 "the argument '" + quota_option_label(canonical) + "' cannot be used multiple times",
                 usage + " [OPTIONS]",
             )
+        only_split_value = len(seen) == 0 and split_value
         seen.append(canonical)
         index += 1
 
     if has_help_value:
-        raise quota_help_value_error(help_value, executable, seen)
+        raise quota_help_value_error(help_value, executable, seen, only_split_value)
     return help_mode
 
 
-def quota_help_value_error(value: String, executable: String, seen: List[String]) -> Error:
+def quota_help_value_error(value: String, executable: String, seen: List[String], omit_option_group: Bool = False) -> Error:
     var usage = executable + " quota --help"
-    if seen:
+    if seen and not omit_option_group:
         usage += " <" + quota_option_group() + ">"
     return session_cli_error(
         "unexpected value '" + value + "' for '--help' found; no more were expected",

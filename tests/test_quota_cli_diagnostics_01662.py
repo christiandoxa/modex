@@ -51,6 +51,33 @@ CASES = (
 
 HELP_CONTROLS = (["quota", "--help"], ["quota", "-h"], ["help", "quota"])
 
+HELP_USAGE_FORMS = (
+    (("--profile", "synthetic"), False),
+    (("--profile=synthetic",), True),
+    (("--profile=",), True),
+    (("-p", "synthetic"), False),
+    (("-psynthetic",), True),
+    (("-p=synthetic",), True),
+    (("--auth", "synthetic"), False),
+    (("--auth=synthetic",), True),
+    (("--provider", "synthetic"), False),
+    (("--provider=synthetic",), True),
+    (("--base-url", "http://synthetic.invalid"), False),
+    (("--base-url=http://synthetic.invalid",), True),
+    (("--profile",), False),
+    (("-p",), False),
+    (("--auth",), False),
+    (("--provider",), False),
+    (("--base-url",), False),
+    (("--all",), True),
+    (("--detail",), True),
+    (("--raw",), True),
+    (("--watch",), True),
+    (("--once",), True),
+    (("--profile", "synthetic", "--once"), True),
+    (("--once", "--provider", "synthetic"), True),
+)
+
 
 class QuotaCliDiagnostics01662Tests(unittest.TestCase):
     @classmethod
@@ -113,6 +140,24 @@ class QuotaCliDiagnostics01662Tests(unittest.TestCase):
                 self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
                                  (actual.returncode, actual.stdout, actual.stderr))
                 self.assertIn(b"a value is required for '--profile <NAME>'", baseline.stderr)
+                self.assertEqual((baseline_created, actual_created), ([], []))
+
+    def test_malformed_help_usage_matches_attached_and_split_option_forms(self):
+        for index, (prefix, option_group) in enumerate(HELP_USAGE_FORMS):
+            arguments = ["quota", *prefix, "--help=synthetic"]
+            baseline, baseline_created = isolated_run(ORACLE, arguments, "modex", f"quota-help-form-{index}-oracle")
+            actual, actual_created = isolated_run(MODEX, arguments, "modex", f"quota-help-form-{index}-modex")
+            usage = "Usage: modex quota --help"
+            if option_group:
+                usage += " " + OPTION_GROUP
+            expected = (
+                "error: unexpected value 'synthetic' for '--help' found; no more were expected\n\n"
+                + usage
+                + "\n\nFor more information, try '--help'.\n"
+            ).encode()
+            with self.subTest(arguments=arguments):
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr), (2, b"", expected))
+                self.assertEqual((actual.returncode, actual.stdout, actual.stderr), (2, b"", expected))
                 self.assertEqual((baseline_created, actual_created), ([], []))
 
     def test_valid_quota_options_stay_behind_the_no_state_guard(self):

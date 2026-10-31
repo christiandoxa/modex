@@ -49,12 +49,17 @@ Invalid attached values still take precedence. A generated 60-case parser
 matrix also covers malformed attached boolean options after each quota
 value-taking switch, with and without an earlier accepted option; two ordinary
 missing-value cases guard the adjacent behavior. All 71 active parser/help
-comparisons exit before execution and leave isolated homes unchanged; a
-historical 0.439.2 help guard covers the three quota help routes. Three
-Modex-only valid-option checks also confirm quota execution stops at the
-no-state guard; they are not parity evidence. `quota --profile=` still reaches
-a stateful Prodex lookup that creates lifecycle/housekeeping locks, so Modex
-does not fake that result or bypass those locks. See
+comparisons exit before execution and leave isolated homes unchanged. A new
+24-case matrix covers attached and split forms of every quota value option,
+all boolean options, and multi-option controls for malformed help usage. A
+lone split value option now omits the option group from `--help=value` usage,
+matching the pinned CLI; attached values and other accepted options retain it.
+This brings the active parser/help comparison count to 95. A historical
+0.439.2 help guard covers the three quota help routes. Three Modex-only
+valid-option checks also confirm quota execution stops at the no-state guard;
+they are not parity evidence. `quota --profile=` still reaches a stateful
+Prodex lookup that creates lifecycle/housekeeping locks, so Modex does not fake
+that result or bypass those locks. See
 `docs/evidence/baseline-0.166.2/quota-cli-diagnostics.md`.
 
 The connected `redeem` parser now matches selected offline 0.166.2 diagnostics

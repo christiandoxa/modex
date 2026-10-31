@@ -25,3 +25,29 @@ values without control characters still reach Modex's guarded operation error;
 the operation remains unimplemented and no provider request or state change is
 made. `tests/test_ping_diagnostics_01662.py` covers both boundaries against the
 pinned oracle.
+
+An additional synthetic comparison found an unresolved semantic precedence
+mismatch. With `ping openai --base-url ftp://example.test/v1 --model ''`,
+Prodex 0.166.2 exits 1 with
+`Error: ping upstream base URL must be an http(s) URL with host and no credentials, query, or fragment`,
+while Modex exits 1 with
+`Error: --model must be nonempty and contain no control characters`. Both
+processes leave the isolated home untouched. The pinned oracle is the
+checksum-verified 0.166.2 binary described above; no production change was
+retained because Mojo 1.2.0's standard library provides no URL or UTS #46 IDNA
+parser, and hand-parsing has security and compatibility edge cases.
+`test_base_url_precedence_mismatch_and_valid_url_control_are_visible` records
+this mismatch and a valid-URL control against the pinned binary; both use an
+empty model, so neither invokes provider code.
+
+Probe constraints for any future implementation: Reqwest accepts empty
+userinfo markers (`https://@example.test/` and `https://:@example.test/`) but
+rejects nonempty credentials, including `https://@user@example.test/`.
+Invalid IPv4 and IDNA hosts are diagnosed before credential-policy errors.
+IDNA probes rejected U+200E LRM, U+202A bidi embedding, U+E000 private-use,
+U+FDD0 noncharacter, U+E0001 tag, U+0080 C1 control, and U+200C joiner scalars
+in host labels. Prodex also normalizes special schemes such as `http:///v1`
+before validation, trims surrounding C0/space, and removes TAB from URLs.
+These cases are not covered by the existing ping differential test, and no
+full URL parity claim is made. The ping operation remains guarded; valid-looking
+arguments reach the existing guard without a provider request or state change.

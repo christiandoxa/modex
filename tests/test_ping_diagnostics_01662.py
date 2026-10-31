@@ -142,6 +142,30 @@ class PingDiagnostics01662Tests(unittest.TestCase):
                              (1, b"", b"Error: this Modex development build has not implemented the requested command\n"))
             self.assertEqual(changes, [])
 
+    def test_base_url_precedence_mismatch_and_valid_url_control_are_visible(self):
+        base_error = (
+            b"Error: ping upstream base URL must be an http(s) URL with host and no "
+            b"credentials, query, or fragment\n"
+        )
+        model_error = b"Error: --model must be nonempty and contain no control characters\n"
+        for label, base_url, expected_reference in (
+            ("invalid URL", "ftp://example.test/v1", base_error),
+            ("valid URL control", "https://example.test/v1", model_error),
+        ):
+            arguments = ["ping", "openai", "--base-url", base_url, "--model", ""]
+            with self.subTest(label=label):
+                reference, reference_changes = isolated_run(
+                    ORACLE, arguments, "prodex", "ping-url-precedence-oracle"
+                )
+                actual, actual_changes = isolated_run(
+                    MODEX, arguments, "modex", "ping-url-precedence-modex"
+                )
+                self.assertEqual((reference.returncode, reference.stdout, reference.stderr),
+                                 (1, b"", expected_reference))
+                self.assertEqual((actual.returncode, actual.stdout, actual.stderr),
+                                 (1, b"", model_error))
+                self.assertEqual((reference_changes, actual_changes), ([], []))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,8 +1,10 @@
 # Current work: Prodex 0.166.0 parity and CI
 
 Selected hidden `__mcp-jsonl-bridge` help routes now match 0.166.0; bridge
-execution remains unimplemented. See
-`docs/evidence/baseline-0.166.0/mcp-jsonl-bridge-help.md`.
+execution remains unimplemented because the pinned stdlib cannot reproduce
+the release's process-group cleanup. See
+`docs/evidence/baseline-0.166.0/mcp-jsonl-bridge-help.md` and
+`docs/evidence/baseline-0.166.0/mcp-bridge-process-tree-gap.md`.
 
 The local relay distinguishes an absent redirect Location from a present empty
 value and follows the latter to the current URL, as tested against 0.166.0.

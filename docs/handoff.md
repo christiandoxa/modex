@@ -108,6 +108,12 @@ combo retry controls. The test reuses the historical corpus with the active
 oracle and does not qualify untested provider behavior; see
 `docs/evidence/baseline-0.166.2/provider-shapes.md`.
 
+Focused raw-peer comparisons also match for close-delimited JSON, a 103
+informational response before a final response, chunked framing with a trailer,
+and a truncated fixed-length body. This found no production mismatch and does
+not establish general provider transport parity; see
+`docs/evidence/baseline-0.166.2/provider-relay-framing.md`.
+
 A synthetic Super comparison confirms that the 0.166.2 oracle and Modex
 forward a `policy_capacity_unavailable` HTTP 503 with its original content
 type and body, without replaying the upstream request. This is one guarded

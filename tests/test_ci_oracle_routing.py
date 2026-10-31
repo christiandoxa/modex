@@ -52,6 +52,28 @@ def test_uses_04392_cli_fixture(test_name):
 
 
 class CIOracleRoutingTests(unittest.TestCase):
+    def test_provider_framing_suite_uses_active_oracle_and_active_ci_lane(self):
+        environment = {
+            **os.environ,
+            "PYTHONPATH": str(ROOT / "tests"),
+            "PRODEX_ORACLE": "/synthetic/active-oracle-01662",
+            "PRODEX_ORACLE_01660": "/synthetic/historical-oracle-01660",
+        }
+        result = subprocess.run(
+            [sys.executable, "-c", "import test_provider_framing_01662 as suite; print(suite.ORACLE)"],
+            cwd=ROOT, env=environment, capture_output=True, text=True, check=True,
+        )
+        self.assertEqual(result.stdout.splitlines(), ["/synthetic/active-oracle-01662"])
+
+        for script_path in (ROOT / "scripts/ci/run-fast.sh", ROOT / "scripts/ci/run-full.sh"):
+            with self.subTest(script=script_path.name):
+                script = script_path.read_text(encoding="utf-8")
+                active_tests = unittest_files_for_lane(script, "focused-python-active")
+                self.assertIn("test_provider_framing_01662.py", active_tests)
+                for line in script.splitlines():
+                    if line.lstrip().startswith("run_logged historical-") and "scripts/ci/run-unittest.py" in line:
+                        self.assertNotIn("test_provider_framing_01662.py", line)
+
     def test_anthropic_token_limit_suite_uses_both_oracle_overrides(self):
         environment = {
             **os.environ,

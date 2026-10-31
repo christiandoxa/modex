@@ -43,10 +43,21 @@ and stderr, synthetic environment isolation (including `XDG_CONFIG_HOME`), and
 redaction of version and daemon output. A managed symlink escaping its root and
 a working-directory decoy are not executed.
 
-One output-size difference remains: when `daemon status` writes over 64 KiB
-after an active first line, Prodex truncates the captured output and accepts
-that line, while Modex's shared process capture rejects output over its limit
-and reports `invalid`. The regression records this conservative mismatch.
+For `daemon status`, Modex now retains at most 64 KiB per output channel while
+draining the complete streams and validating UTF-8 incrementally through EOF.
+The existing 5-second deadline and exit status remain in force, and the
+shared-capture default still rejects over-limit output for other callers. A
+synthetic active result over 64 KiB with a three-byte character split across
+read calls matches the oracle exactly. A fully valid character split by the
+raw 64 KiB retained-prefix boundary reports `invalid` in both implementations.
+
+There is one deliberate safety difference: Prodex accepts an active first line
+when invalid UTF-8 appears after the 64 KiB prefix; Modex drains and validates
+the suffix and reports `invalid`. The isolated regression records this oracle
+behavior and asserts the stricter Modex result. Native capture checks also
+cover valid 2-, 3- and 4-byte sequences split across reads, malformed and
+incomplete tails, nonzero exit, timeout, and unchanged default overflow
+rejection.
 
 An explicitly empty `PRODEX_OPTIMIZERS_HOME` now matches the oracle's candidate
 precedence. When a synthetic `./rtk` file exists, Modex inspects only its path
@@ -55,7 +66,7 @@ absent, both Prodex and Modex fall through to a synthetic `PATH` RTK, execute
 that fixture, and report the same installed version, path, and digest. The
 regressions assert both outcomes under isolated homes and no network access.
 
-The bounded-output difference above remains open; these cases do not establish
+The invalid-tail safety difference above remains; these cases do not establish
 full `doctor --install` parity.
 
 `tests/test_doctor_install_01662.py` is included in the active Fast and Full

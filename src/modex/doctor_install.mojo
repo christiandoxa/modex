@@ -210,6 +210,7 @@ def _doctor_codebase_memory_status(binary: String, version_args: List[String]) -
             5000,
             65536,
             argv0=binary,
+            truncate_output=True,
         )
         var daemon_line = _doctor_strict_first_line(daemon)
         var daemon_success = False

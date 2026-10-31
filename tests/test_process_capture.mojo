@@ -22,7 +22,60 @@ def main() raises:
     assert_equal(result.status.exit_code.value(), 7)
     assert_equal(String(from_utf8=Span(result.stdout)), String("o") * 100000)
     assert_equal(String(from_utf8=Span(result.stderr)), String("e") * 100000)
+    var prefix = capture_with_env(
+        child,
+        [String("exit-seven")],
+        environment,
+        "synthetic probe",
+        1000,
+        1024,
+        truncate_output=True,
+    )
+    assert_equal(prefix.status.exit_code.value(), 7)
+    assert_equal(String(from_utf8=Span(prefix.stdout)), String("o") * 1024)
+    assert_equal(String(from_utf8=Span(prefix.stderr)), String("e") * 1024)
+    var split = capture_with_env(
+        child,
+        [String("split-valid")],
+        environment,
+        "synthetic probe",
+        1000,
+        32768,
+        truncate_output=True,
+    )
+    assert_equal(len(split.stdout), 32768)
+    _ = String(from_utf8=Span(split.stdout))
     var failed = False
+    try:
+        var ignored = capture_with_env(
+            child,
+            [String("invalid-tail")],
+            environment,
+            "synthetic probe",
+            1000,
+            1024,
+            truncate_output=True,
+        )
+    except error:
+        assert_equal(String(error), "synthetic probe output was not valid UTF-8")
+        failed = True
+    assert_true(failed)
+    failed = False
+    try:
+        var ignored = capture_with_env(
+            child,
+            [String("incomplete-tail")],
+            environment,
+            "synthetic probe",
+            1000,
+            1024,
+            truncate_output=True,
+        )
+    except error:
+        assert_equal(String(error), "synthetic probe output was not valid UTF-8")
+        failed = True
+    assert_true(failed)
+    failed = False
     try:
         var ignored = capture_with_env(child, [String("large")], environment, "synthetic probe", 1000, 1024)
     except error:
@@ -32,7 +85,15 @@ def main() raises:
     failed = False
     var started = perf_counter()
     try:
-        var ignored = capture_with_env(child, [String("hold")], environment, "synthetic probe", 40)
+        var ignored = capture_with_env(
+            child,
+            [String("hold-after-large")],
+            environment,
+            "synthetic probe",
+            40,
+            1024,
+            truncate_output=True,
+        )
     except error:
         assert_equal(String(error), "synthetic probe timed out")
         failed = True

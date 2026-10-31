@@ -120,12 +120,18 @@ without execution, while absence of that candidate still allows a synthetic
 PATH RTK to pass. The previous Codebase Memory version-only false-green is fixed:
 Codebase Memory now requires a supported version and the pinned `daemon status`
 contract before it reports installed identity. Active and initially stopped
-daemon states match across managed and PATH fixtures. A
-reproducible bounded-output gap remains: if daemon output exceeds 64 KiB after
-an active first line, Prodex truncates it and accepts the prefix, while Modex's
-capture rejects it and reports `invalid`. Old Playwright MCP versions report
-`invalid` and unrecognized versions report `missing`, matching 0.166.2. These
-cases do not establish full doctor parity; see
+daemon states match across managed and PATH fixtures. The >64 KiB daemon
+output gap is closed for valid output: Modex retains a bounded prefix while it
+drains both channels and validates the full UTF-8 streams through EOF. The
+0.166.2 comparison matches oversized active output with a 3-byte character
+split across a read boundary; native capture checks cover 2-, 3- and 4-byte
+splits, timeout, exit status, over-limit defaults and incomplete EOF sequences.
+A deliberate safety divergence remains: Prodex 0.166.2 accepts an active
+prefix with invalid UTF-8 bytes after the 64 KiB limit, while Modex reports
+`invalid`. Both report `invalid` when a valid codepoint is cut by the 64 KiB
+retained-prefix boundary. Old Playwright MCP versions report `invalid` and
+unrecognized versions report `missing`, matching 0.166.2. These cases do not
+establish full doctor parity; see
 `docs/evidence/baseline-0.166.2/doctor-install.md`.
 
 The selected provider relay catalog routes, same-connection reuse after

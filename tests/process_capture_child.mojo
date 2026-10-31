@@ -23,6 +23,59 @@ def main() raises:
     if arguments[1] == "large":
         output.write_bytes((String("x") * 1048577).as_bytes())
         return
+    if arguments[1] == "split-valid":
+        output.write_bytes((String("x") * 8191).as_bytes())
+        var lead = List[UInt8]()
+        lead.append(0xC2)
+        output.write_bytes(Span(lead))
+        sleep(0.02)
+        var tail = List[UInt8]()
+        tail.append(0xA2)
+        output.write_bytes(Span(tail))
+        output.write_bytes((String("x") * 8190).as_bytes())
+        lead = List[UInt8]()
+        lead.append(0xE2)
+        output.write_bytes(Span(lead))
+        sleep(0.02)
+        tail = List[UInt8]()
+        tail.append(0x82)
+        tail.append(0xAC)
+        output.write_bytes(Span(tail))
+        output.write_bytes((String("x") * 8189).as_bytes())
+        lead = List[UInt8]()
+        lead.append(0xF0)
+        output.write_bytes(Span(lead))
+        sleep(0.02)
+        tail = List[UInt8]()
+        tail.append(0x90)
+        output.write_bytes(Span(tail))
+        sleep(0.02)
+        tail = List[UInt8]()
+        tail.append(0x80)
+        output.write_bytes(Span(tail))
+        sleep(0.02)
+        tail = List[UInt8]()
+        tail.append(0x80)
+        output.write_bytes(Span(tail))
+        output.write_bytes((String("x") * 8189).as_bytes())
+        output.write_bytes((String("x") * 100000).as_bytes())
+        return
+    if arguments[1] == "invalid-tail":
+        output.write_bytes((String("x") * 100000).as_bytes())
+        var invalid = List[UInt8]()
+        invalid.append(0xFF)
+        output.write_bytes(Span(invalid))
+        return
+    if arguments[1] == "incomplete-tail":
+        output.write_bytes((String("x") * 100000).as_bytes())
+        var incomplete = List[UInt8]()
+        incomplete.append(0xF0)
+        output.write_bytes(Span(incomplete))
+        return
+    if arguments[1] == "hold-after-large":
+        output.write_bytes((String("x") * 100000).as_bytes())
+        sleep(30.0)
+        return
     output.write_bytes((String("o") * 100000).as_bytes())
     error.write_bytes((String("e") * 100000).as_bytes())
     if arguments[1] == "exit-seven":

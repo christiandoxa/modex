@@ -22,14 +22,14 @@ def environment(root, path):
     }
 
 
-def run_doctor(binary, root, env, extra_binds=()):
+def run_doctor(binary, root, env, extra_binds=(), extra_binaries=()):
     shell = Path("/bin/sh").resolve()
     command = sandbox_command(
         binary,
         root,
         ["doctor", "--install"],
         environment=env,
-        extra_binaries=(shell,),
+        extra_binaries=(shell, *extra_binaries),
     )
     separator = command.index("--")
     for source, destination in extra_binds:
@@ -774,8 +774,90 @@ class DoctorInstall01662Tests(unittest.TestCase):
             self.assertEqual(paths(root), before)
             self.assertFalse((home / ".codex").exists())
 
-    def test_codebase_memory_over_cap_output_remains_fail_closed(self):
+    def test_codebase_memory_large_output_matches_oracle_with_split_utf8(self):
         with tempfile.TemporaryDirectory(prefix="doctor-install-codebase-output-limit-01662-") as raw:
+            root = Path(raw)
+            home = root / "home"
+            workspace = root / "workspace"
+            bindir = root / "bin"
+            managed = root / "managed-tools"
+            for directory in (home, workspace, bindir, managed):
+                directory.mkdir(mode=0o700)
+            probe_log = root / "codebase-arguments.log"
+            probe_log.write_text("", encoding="utf-8")
+            active = "daemon: active (permanent)"
+            spaces_before_split = 8191 - len(active.encode())
+            spaces_to_cap = 65536 - 8194
+            read_split = (
+                f"printf '%s%{spaces_before_split}s\\342' {shlex.quote(active)} ''\n"
+                "/bin/sleep 0.05\n"
+                f"printf '\\202\\254%{spaces_to_cap}s\\n' ''\n"
+            )
+            cap_split = (
+                f"printf '%s%{65535 - len(active.encode())}s\\342' {shlex.quote(active)} ''\n"
+                "printf '\\202\\254\\n'\n"
+            )
+            probe_path = add_probe(
+                bindir,
+                "codebase-memory-mcp",
+                codebase_probe(
+                    probe_log,
+                    root / "probe-environment-leaked",
+                    "printf '%s\\n' 'codebase-memory-mcp 0.12.1'\n",
+                    0,
+                    read_split,
+                    0,
+                ),
+            )
+            env = environment(root, bindir)
+            env["PRODEX_OPTIMIZERS_HOME"] = str(managed)
+            before = paths(root)
+
+            sleep = Path("/bin/sleep").resolve()
+            extra_binds = ((sleep, "/bin/sleep"),)
+            extra_binaries = (sleep,)
+            for daemon_body, expected in (
+                (read_split, b"installed, version="),
+                (cap_split, b"invalid"),
+            ):
+                probe_path.write_text(
+                    "#!/bin/sh\n"
+                    + codebase_probe(
+                        probe_log,
+                        root / "probe-environment-leaked",
+                        "printf '%s\\n' 'codebase-memory-mcp 0.12.1'\n",
+                        0,
+                        daemon_body,
+                        0,
+                    ),
+                    encoding="utf-8",
+                )
+                probe_path.chmod(0o700)
+                probe_log.write_text("", encoding="utf-8")
+                reference = run_doctor(ORACLE, root, env, extra_binds, extra_binaries)
+                reference_calls = probe_log.read_text(encoding="utf-8").splitlines()
+                probe_log.write_text("", encoding="utf-8")
+                actual = run_doctor(MODEX, root, env, extra_binds, extra_binaries)
+
+                self.assertEqual((reference.returncode, reference.stderr), (0, b""))
+                self.assertEqual((actual.returncode, actual.stderr), (0, b""))
+                reference_value = panel_value(reference.stdout, "codebase-memory-mcp")
+                actual_value = panel_value(actual.stdout, "codebase-memory-mcp")
+                self.assertTrue(reference_value.startswith(expected))
+                self.assertEqual(actual_value, reference_value)
+                self.assertEqual(normalized(root, actual.stdout), normalized(root, reference.stdout))
+                self.assertEqual(reference_calls, ["--version", "daemon status"])
+                self.assertEqual(
+                    probe_log.read_text(encoding="utf-8").splitlines(),
+                    ["--version", "daemon status"],
+                )
+                self.assertLess(len(reference.stdout), 10000)
+                self.assertLess(len(actual.stdout), 10000)
+                self.assertEqual(paths(root), before)
+                self.assertFalse((home / ".codex").exists())
+
+    def test_codebase_memory_rejects_invalid_utf8_after_output_cap(self):
+        with tempfile.TemporaryDirectory(prefix="doctor-install-codebase-invalid-tail-01662-") as raw:
             root = Path(raw)
             home = root / "home"
             workspace = root / "workspace"
@@ -793,7 +875,7 @@ class DoctorInstall01662Tests(unittest.TestCase):
                     root / "probe-environment-leaked",
                     "printf '%s\\n' 'codebase-memory-mcp 0.12.1'\n",
                     0,
-                    "printf '%s%70000s\\n' 'daemon: active (permanent)' ''\n",
+                    "printf '%s%70000s\\n' 'daemon: active (permanent)' ''\nprintf '\\377\\n'\n",
                     0,
                 ),
             )
@@ -808,6 +890,7 @@ class DoctorInstall01662Tests(unittest.TestCase):
 
             self.assertEqual((reference.returncode, reference.stderr), (0, b""))
             self.assertEqual((actual.returncode, actual.stderr), (0, b""))
+            # 0.166.2 accepts this truncated prefix; Modex validates the full stream.
             self.assertTrue(
                 panel_value(reference.stdout, "codebase-memory-mcp").startswith(b"installed, version=")
             )
@@ -817,8 +900,6 @@ class DoctorInstall01662Tests(unittest.TestCase):
                 probe_log.read_text(encoding="utf-8").splitlines(),
                 ["--version", "daemon status"],
             )
-            self.assertLess(len(reference.stdout), 10000)
-            self.assertLess(len(actual.stdout), 10000)
             self.assertEqual(paths(root), before)
             self.assertFalse((home / ".codex").exists())
 

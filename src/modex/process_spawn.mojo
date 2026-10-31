@@ -238,7 +238,49 @@ struct CapturedProcessOutput(Movable):
     var stderr: List[UInt8]
 
 
-def _capture_read(fd: Int32, mut output: List[UInt8], mut eof: Bool, max_bytes: Int, label: String) raises -> Bool:
+struct _CaptureUtf8:
+    var remaining: Int
+    var codepoint: Int
+    var minimum: Int
+
+    def __init__(out self):
+        self.remaining = 0
+        self.codepoint = 0
+        self.minimum = 0
+
+    def consume(mut self, byte: UInt8, label: String) raises:
+        var value = Int(byte)
+        if self.remaining > 0:
+            if value < 128 or value > 191:
+                raise Error(label + " output was not valid UTF-8")
+            self.codepoint = self.codepoint * 64 + value - 128
+            self.remaining -= 1
+            if self.remaining == 0:
+                if self.codepoint < self.minimum or self.codepoint > 0x10FFFF or 0xD800 <= self.codepoint <= 0xDFFF:
+                    raise Error(label + " output was not valid UTF-8")
+        elif value < 128:
+            return
+        elif 194 <= value <= 223:
+            self.remaining = 1
+            self.codepoint = value - 192
+            self.minimum = 128
+        elif 224 <= value <= 239:
+            self.remaining = 2
+            self.codepoint = value - 224
+            self.minimum = 2048
+        elif 240 <= value <= 244:
+            self.remaining = 3
+            self.codepoint = value - 240
+            self.minimum = 65536
+        else:
+            raise Error(label + " output was not valid UTF-8")
+
+    def finish(self, label: String) raises:
+        if self.remaining > 0:
+            raise Error(label + " output was not valid UTF-8")
+
+
+def _capture_read(fd: Int32, mut output: List[UInt8], mut eof: Bool, max_bytes: Int, label: String, mut utf8: _CaptureUtf8, truncate_output: Bool) raises -> Bool:
     if eof:
         return False
     var bytes = List[UInt8](length=8192, fill=0)
@@ -251,16 +293,22 @@ def _capture_read(fd: Int32, mut output: List[UInt8], mut eof: Bool, max_bytes: 
         if error == ErrNo.EAGAIN or error == ErrNo.EINTR:
             return False
         raise Error("failed to read " + label + " output")
-    if count > max_bytes - len(output):
+    if truncate_output:
+        for index in range(count):
+            utf8.consume(bytes[index], label)
+    if count > max_bytes - len(output) and not truncate_output:
         raise Error(label + " output exceeded the limit")
-    for index in range(count):
+    var captured = min(count, max_bytes - len(output))
+    for index in range(captured):
         output.append(bytes[index])
     eof = count == 0
+    if eof and truncate_output:
+        utf8.finish(label)
     return count > 0
 
 
-def capture_with_env(path: String, args: List[String], environment: List[String], label: String, timeout_ms: UInt64 = 15000, max_output_bytes: Int = 1048576, argv0: String = "") raises -> CapturedProcessOutput:
-    """Capture both child channels fairly with null stdin and fixed resource limits."""
+def capture_with_env(path: String, args: List[String], environment: List[String], label: String, timeout_ms: UInt64 = 15000, max_output_bytes: Int = 1048576, argv0: String = "", truncate_output: Bool = False) raises -> CapturedProcessOutput:
+    """Capture both channels fairly; truncation still validates complete UTF-8 streams."""
     if timeout_ms == 0 or max_output_bytes < 0:
         raise Error("invalid process capture limits")
     var input = Pipe()
@@ -280,11 +328,13 @@ def capture_with_env(path: String, args: List[String], environment: List[String]
         var stderr = List[UInt8]()
         var stdout_eof = False
         var stderr_eof = False
+        var stdout_utf8 = _CaptureUtf8()
+        var stderr_utf8 = _CaptureUtf8()
         var deadline = perf_counter() + Float64(timeout_ms) / 1000.0
         var close_deadline = 0.0
         while True:
-            var progress = _capture_read(output.fd_in.value().value, stdout, stdout_eof, max_output_bytes, label)
-            progress = _capture_read(error_output.fd_in.value().value, stderr, stderr_eof, max_output_bytes, label) or progress
+            var progress = _capture_read(output.fd_in.value().value, stdout, stdout_eof, max_output_bytes, label, stdout_utf8, truncate_output)
+            progress = _capture_read(error_output.fd_in.value().value, stderr, stderr_eof, max_output_bytes, label, stderr_utf8, truncate_output) or progress
             var status = child.poll()
             if status.has_exited():
                 if stdout_eof and stderr_eof:

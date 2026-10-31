@@ -268,6 +268,8 @@ def deepseek_request_headers(headers: List[Tuple[String, String]], api_key: Stri
         if connection_tokens.get(normalized):
             skip = True
         skip = skip or normalized.startswith("sec-websocket-") or normalized.startswith("x-prodex-internal-")
+        if anthropic_messages and normalized == "cookie":
+            skip = True
         for local_name in ["connection", "content-length", "host", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade", "authorization", "chatgpt-account-id"]:
             skip = skip or normalized == local_name
         if anthropic_messages and normalized in ["x-api-key", "anthropic-version"]:
@@ -441,18 +443,19 @@ def deepseek_open_redirectable_stream(
     request_field_limit: Int,
     cancel_fd: Int32,
     request_connection_close: Bool = True,
+    include_content_length: Bool = True,
 ) raises -> LoopbackHTTPStream:
     var outgoing_headers = headers.copy()
     var outgoing_body = body^
     var outgoing_method = request_method
     var redirect_path = path
-    var include_content_length = True
+    var outgoing_content_length = include_content_length
     var stream = LoopbackHTTPStream(
         address, redirect_path, outgoing_headers, outgoing_body, connect_timeout_ms,
         request_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd,
         allow_unbounded_body, outgoing_method, request_header_limit,
         request_field_limit, cancel_fd, request_connection_close,
-        include_content_length,
+        outgoing_content_length,
     )
     var request_deadline = stream.request_deadline
     var followed_redirects = 0
@@ -470,7 +473,7 @@ def deepseek_open_redirectable_stream(
             outgoing_method = "GET"
             outgoing_body.clear()
             outgoing_headers = _deepseek_drop_body_headers(outgoing_headers)
-            include_content_length = False
+            outgoing_content_length = False
         redirect_path = redirect[1]
         stream.close()
         var remaining = request_deadline - perf_counter()
@@ -484,7 +487,7 @@ def deepseek_open_redirectable_stream(
             remaining_timeout_ms, idle_timeout_ms, max_body_bytes, downstream_fd,
             allow_unbounded_body, outgoing_method, request_header_limit,
             request_field_limit, cancel_fd, request_connection_close,
-            include_content_length,
+            outgoing_content_length,
         )
         followed_redirects += 1
     return stream^

@@ -94,11 +94,9 @@ For the tested CONNECT model request, the release sends authority-form while
 Modex's shared outbound transport sends origin-form. Both connect only to the
 configured loopback upstream; this method-format difference remains open.
 
-A separate active-process inventory observed that Prodex accepts `/messages`
-and `/v1/messages`, forwarding both to the synthetic `/anthropic/v1/messages`
-upstream; Modex still returns 404 for both message paths. Both processes
-returned 404 for the tested `/embeddings` and `/v1/embeddings` requests. These
-paths require separate handlers and are not part of this alias fix.
+The Messages route is covered separately in `local-relay-messages-routes.md`.
+Both processes returned 404 for the tested `/embeddings` and `/v1/embeddings`
+requests.
 
 This evidence does not establish behavior for other release targets or full
 provider parity; the six-release denominator is unchanged.

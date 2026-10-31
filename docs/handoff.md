@@ -1,5 +1,11 @@
 # Current work: Prodex 0.166.0 parity and CI
 
+The DeepSeek relay supports the tested `/messages` and `/v1/messages` routes,
+including buffered errors, streaming, key retry and continuation binding. It
+strips caller credentials and cookies that the reference forwards. Retryable
+provider errors may result in duplicate upstream work; see
+`docs/evidence/baseline-0.166.0/local-relay-messages-routes.md`.
+
 Strict beta URL validation now applies to environment-supplied values as well
 as configured values and rejects an explicitly empty port. The active release
 accepts that spelling; the stricter Modex behavior and tests are recorded in

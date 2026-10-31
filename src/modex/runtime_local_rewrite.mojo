@@ -21,7 +21,7 @@ from .log_operational import decode_url_host, valid_ipv6_literal, valid_url_auth
 from .provider_deepseek_transport import DeepSeekExchange, deepseek_event_stream, deepseek_model_retry_available, deepseek_request_headers, deepseek_request_model_attempts, deepseek_retryable_api_key_response, deepseek_retryable_model_response
 from .provider_conversations import ProviderConversationStore
 from .provider_anthropic_messages import anthropic_auto_chat_fallback_safe, anthropic_request_incompatible, anthropic_search_filters_conflict, deepseek_anthropic_messages_body
-from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_chat_completions_stream
+from .provider_passthrough import DEEPSEEK_PASSTHROUGH_MAX_BODY_BYTES, deepseek_chat_completions_path, deepseek_passthrough_stream
 from .provider_rate_limits import deepseek_codex_rate_limit_headers
 from .provider_request import translate_deepseek_request
 from .provider_request_params import request_format
@@ -807,6 +807,68 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             ("x-prodex-compact-reason", "local-policy"),
         ], _bytes(body), 30000)
         return
+    if target == "/v1/messages":
+        var key_count = state_ptr[].api_key_count()
+        var key_start = state_ptr[].next_api_key_start()
+        var api_key_index = key_start
+        var stream: LoopbackHTTPStream
+        var prebuffered_error = List[UInt8]()
+        try:
+            stream = deepseek_passthrough_stream(
+                messages_address,
+                messages_path,
+                state_ptr[].api_key_at(api_key_index),
+                request.headers.copy(),
+                request.body.copy(),
+                connect_ms,
+                120000,
+                idle_ms,
+                connection.fd,
+                request.method,
+                request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT,
+                request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT,
+                cancel_fd=state_ptr[].cancel_read_fd,
+                anthropic_messages=True,
+            )
+        except:
+            _reply(connection, 502, "upstream request failed")
+            return
+        for attempt_index in range(key_count):
+            prebuffered_error = List[UInt8]()
+            if attempt_index > 0:
+                api_key_index = (key_start + attempt_index) % key_count
+                try:
+                    stream = deepseek_passthrough_stream(
+                        messages_address,
+                        messages_path,
+                        state_ptr[].api_key_at(api_key_index),
+                        request.headers.copy(),
+                        request.body.copy(),
+                        connect_ms,
+                        120000,
+                        idle_ms,
+                        connection.fd,
+                        request.method,
+                        request_header_limit=HTTP_OUTBOUND_REQUEST_HEADER_LIMIT,
+                        request_field_limit=HTTP_MAX_REQUEST_FIELD_LIMIT,
+                        cancel_fd=state_ptr[].cancel_read_fd,
+                        anthropic_messages=True,
+                    )
+                except:
+                    _reply(connection, 502, "upstream request failed")
+                    return
+            if stream.status >= 400 and attempt_index + 1 < key_count:
+                try:
+                    prebuffered_error = stream.read_buffered()
+                except:
+                    _reply(connection, 502, "upstream request failed")
+                    return
+                if deepseek_retryable_api_key_response(stream.status, prebuffered_error, attempt_index, key_count):
+                    stream.close()
+                    continue
+            break
+        _passthrough_response(connection, stream, state_ptr, api_key_index, prebuffered_error)
+        return
     if target != "/v1/chat/completions" and target != "/v1/responses" and not models_route:
         _route_error(connection)
         return
@@ -837,7 +899,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
         var stream: LoopbackHTTPStream
         var prebuffered_error = List[UInt8]()
         try:
-            stream = deepseek_chat_completions_stream(
+            stream = deepseek_passthrough_stream(
                 address,
                 upstream_path,
                 state_ptr[].api_key_at(key_index),
@@ -860,7 +922,7 @@ def _serve(mut connection: LoopbackHTTPConnection, request: LoopbackHTTPRequest,
             if attempt_index > 0:
                 key_index = (key_start + attempt_index) % key_count
                 try:
-                    stream = deepseek_chat_completions_stream(
+                    stream = deepseek_passthrough_stream(
                         address,
                         upstream_path,
                         state_ptr[].api_key_at(key_index),
@@ -1177,7 +1239,7 @@ def _serve_connection(mut connection: LoopbackHTTPConnection, address: String, p
                     _reply(connection, 426, "provider adapter requires HTTPS Responses transport fallback", not reusable)
                 else:
                     var route = String(request.target.split("?", maxsplit=1)[0])
-                    if route in ["/responses", "/responses/compact", "/chat/completions"]:
+                    if route in ["/responses", "/responses/compact", "/chat/completions", "/messages"]:
                         var query = request.target.find("?")
                         request.target = "/v1" + route + (String(request.target[byte=query:]) if query >= 0 else String())
                     _serve(connection, request, address, path, messages_address, messages_path, request_id, state_ptr, connect_ms, idle_ms, lookahead_ms, allow_local_file_access, strict_tools, beta_address, beta_path, web_search_mode)

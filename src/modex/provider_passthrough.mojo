@@ -1,4 +1,4 @@
-"""Native DeepSeek Chat Completions passthrough transport."""
+"""Native DeepSeek API passthrough transport."""
 
 from std.collections import List
 
@@ -16,7 +16,7 @@ def deepseek_chat_completions_path(base_path: String, target: String) -> String:
     return base_path
 
 
-def deepseek_chat_completions_stream(
+def deepseek_passthrough_stream(
     address: String,
     path: String,
     api_key: String,
@@ -30,11 +30,13 @@ def deepseek_chat_completions_stream(
     request_header_limit: Int = HTTP_HEADER_LIMIT,
     request_field_limit: Int = HTTP_HEADER_LIMIT,
     cancel_fd: Int32 = -1,
+    anthropic_messages: Bool = False,
 ) raises -> LoopbackHTTPStream:
+    var include_content_length = not anthropic_messages or len(body) > 0 or (request_method != "GET" and request_method != "HEAD")
     var stream = deepseek_open_redirectable_stream(
         address,
         path,
-        deepseek_request_headers(headers, api_key, passthrough=True),
+        deepseek_request_headers(headers, api_key, passthrough=not anthropic_messages, anthropic_messages=anthropic_messages),
         body^,
         connect_timeout_ms,
         request_timeout_ms,
@@ -47,6 +49,7 @@ def deepseek_chat_completions_stream(
         request_field_limit,
         cancel_fd,
         False,
+        include_content_length,
     )
     # The frozen passthrough streams SSE on 2xx/3xx, and buffers non-SSE.
     # Keep >=400 rejection in the send path, before response dispatch; a

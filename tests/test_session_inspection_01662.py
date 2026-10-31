@@ -86,6 +86,20 @@ def install_typed_metadata_conflict(root):
     path.write_text(json.dumps(record) + "\n", encoding="utf-8")
 
 
+def install_tied_duplicate_ids(root):
+    sessions = root / "home/.codex/sessions"
+    for path in sessions.rglob("*"):
+        if path.is_file():
+            path.unlink()
+    for name, title in (("a.jsonl", "First path"), ("z.json", "Second path")):
+        record = {
+            "timestamp": "2026-10-24T01:00:00Z",
+            "type": "session_meta",
+            "payload": {"id": "duplicate-id", "thread_name": title},
+        }
+        (sessions / name).write_text(json.dumps(record) + "\n", encoding="utf-8")
+
+
 class SessionInspection01662Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -161,6 +175,28 @@ class SessionInspection01662Tests(unittest.TestCase):
         )
         self.assertEqual(modex, baseline)
         self.assertEqual(baseline, [])
+
+    def test_compressed_path_queries_and_current_projection(self):
+        for arguments in (
+            ["session", "list", "--json", "--query", f"rollout-{CHILD_ID}.jsonl.zst"],
+            ["session", "current", "--json", "--query", f"rollout-{CHILD_ID}.jsonl.zst"],
+        ):
+            with self.subTest(arguments=arguments):
+                baseline, modex = compare_outputs(arguments, install_fixture, reference=ORACLE)
+                self.assertEqual(modex, baseline)
+                self.assertEqual([report["id"] for report in baseline], [CHILD_ID])
+
+    def test_duplicate_ids_keep_path_order_for_equal_timestamps(self):
+        baseline, modex = compare_outputs(
+            ["session", "list", "--json"],
+            install_tied_duplicate_ids,
+            reference=ORACLE,
+        )
+        self.assertEqual(modex, baseline)
+        self.assertEqual(
+            [(report["id"], report["thread_name"], report["path"].rsplit("/", 1)[-1]) for report in baseline],
+            [("duplicate-id", "First path", "a.jsonl"), ("duplicate-id", "Second path", "z.json")],
+        )
 
     def test_compressed_checksum_matches_at_8k_read_boundary(self):
         checksum_error = (

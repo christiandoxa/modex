@@ -63,9 +63,11 @@ confirms matching compressed archived-parent discovery, nested child ancestry,
 compound `.jsonl.zst.json` filename handling, `--parent-only` filtering, and
 `--resume-command` ID output. It also covers typed metadata fallback across
 session ID, title, cwd, provider, and parent fields through list, current, and
-parent-only outputs.
+parent-only outputs. Additional cases now confirm compressed filename queries
+through list/current and stable path ordering for duplicate IDs with equal
+timestamps.
 The existing inspection path had no demonstrated mismatch, so this slice adds
-an active regression instead of an unneeded production refactor. The test is
+active regressions instead of an unneeded production refactor. The test is
 registered in the active fast and full CI suites. Native TUI root-resume
 selection remains unimplemented behind the guarded Super launcher; see
 `docs/evidence/baseline-0.166.2/session-inspection-list.md`.

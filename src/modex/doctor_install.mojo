@@ -1,7 +1,8 @@
 """Read-only installation prerequisite checks for doctor --install."""
 
 from std.collections import List, Span
-from std.os import getenv
+from std.os import getenv, lstat
+from std.os.path import realpath
 
 from .log_redaction import redact_log_text
 from .paths import app_root, shared_root
@@ -12,6 +13,9 @@ from .super_launch import (
     _executable_path,
     _is_legacy_codex,
     _is_prodex_wrapper,
+    _managed_codebase_candidates,
+    _managed_optimizer_binary,
+    _managed_optimizer_roots,
     _managed_tool_present,
     _node_major_supported,
     _optional_tool_version_status,
@@ -105,8 +109,7 @@ def _doctor_first_line(bytes: List[UInt8]) -> String:
     return String()
 
 
-def _doctor_probe(command: String, args: List[String], success: String = "", include_codex_home: Bool = False) -> String:
-    var binary = _doctor_resolve(command)
+def _doctor_probe_binary(binary: String, command: String, args: List[String], success: String = "", include_codex_home: Bool = False) -> String:
     if not binary:
         return "missing (" + escape_terminal_controls(redact_log_text("failed to start " + command)) + ")"
     var output: CapturedProcessOutput
@@ -137,14 +140,41 @@ def _doctor_probe(command: String, args: List[String], success: String = "", inc
     return "ok (" + line + ")"
 
 
+def _doctor_probe(command: String, args: List[String], success: String = "", include_codex_home: Bool = False) -> String:
+    return _doctor_probe_binary(_doctor_resolve(command), command, args, success, include_codex_home)
+
+
 def _doctor_version_row(name: String, command: String) -> Tuple[String, String]:
     return (name, _doctor_probe(command, [String("--version")]))
 
 
+def _doctor_managed_candidate_is_file(candidate: String) -> Bool:
+    try:
+        var resolved = realpath(candidate)
+        return lstat(resolved).st_mode & 0o170000 == 0o100000
+    except:
+        return False
+
+
 def _doctor_optional_command_status(command: String, args: List[String]) -> String:
-    if not _doctor_resolve(command):
+    for root in _managed_optimizer_roots():
+        var candidates = List[String]()
+        if command == "codebase-memory-mcp":
+            candidates = _managed_codebase_candidates(root)
+        else:
+            var managed_root = root if root else "."
+            candidates.append(managed_root + "/" + command)
+        for candidate in candidates:
+            if not _doctor_managed_candidate_is_file(candidate):
+                continue
+            var binary = _managed_optimizer_binary(root, candidate)
+            if not binary:
+                return "invalid"
+            return _doctor_probe_binary(binary, command, args)
+    var binary = _doctor_resolve(command)
+    if not binary:
         return "missing"
-    return _doctor_probe(command, args)
+    return _doctor_probe_binary(binary, command, args)
 
 
 def _doctor_node_supports_playwright() -> Bool:

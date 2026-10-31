@@ -39,13 +39,16 @@ def environment(root, path):
     }
 
 
-def run_doctor(binary, root, env):
+def run_doctor(binary, root, env, extra_binds=()):
     system_tools = (Path("/bin/sh").resolve(),)
     command = sandbox_command(
         binary, root, ["doctor", "--install"], environment=env,
         extra_binaries=system_tools,
     )
     separator = command.index("--")
+    for source, destination in extra_binds:
+        command[separator:separator] = ["--bind", str(source), destination]
+        separator += 3
     command[separator:separator] = ["--ro-bind", str(system_tools[0]), "/bin/sh"]
     return subprocess.run(
         command, stdin=subprocess.DEVNULL, capture_output=True,
@@ -58,6 +61,14 @@ def add_probe(directory, name, body):
     path.write_text("#!/bin/sh\n" + body)
     path.chmod(0o700)
     return path
+
+
+def panel_value(output, label):
+    prefix = label.encode() + b":"
+    rows = [line for line in output.splitlines() if line.startswith(prefix)]
+    if len(rows) != 1:
+        raise AssertionError(f"expected one {label} panel row, found {len(rows)}")
+    return rows[0].split(b":", 1)[1].strip()
 
 
 class DoctorInstall01661Tests(unittest.TestCase):
@@ -111,6 +122,185 @@ class DoctorInstall01661Tests(unittest.TestCase):
             self.assertNotIn(b"Caveman:", modex.stdout)
             self.assertNotIn(b"synthetic-provider-key", modex.stdout)
             self.assertEqual(list((root / "home").iterdir()), [])
+
+    def test_empty_managed_optimizer_home_does_not_probe_current_directory(self):
+        with tempfile.TemporaryDirectory(prefix="modex-doctor-empty-root-01661-") as raw:
+            root = Path(raw)
+            home = root / "home"
+            workspace = root / "workspace"
+            empty_path = root / "empty-path"
+            for directory in (home, workspace, empty_path):
+                directory.mkdir(mode=0o700)
+            marker = root / "cwd-rtk-executed"
+            add_probe(
+                workspace,
+                "rtk",
+                f"printf 'executed\\n' > {shlex.quote(str(marker))}\n"
+                "printf 'rtk 1.1.0\\n'\n",
+            )
+            env = environment(root, str(empty_path))
+            env["PRODEX_OPTIMIZERS_HOME"] = ""
+
+            baseline = run_doctor(ORACLE, root, env)
+            self.assertEqual(baseline.returncode, 0, baseline.stderr.decode(errors="replace"))
+            self.assertEqual(panel_value(baseline.stdout, "rtk"), b"invalid")
+            self.assertFalse(marker.exists())
+
+            result = run_doctor(MODEX, root, env)
+
+            self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+            self.assertEqual(panel_value(result.stdout, "rtk"), b"missing")
+            self.assertFalse(
+                marker.exists(),
+                "an empty managed-root override must not turn the working directory into a probe root",
+            )
+
+    def test_empty_xdg_data_home_does_not_add_root_level_managed_directory(self):
+        with tempfile.TemporaryDirectory(prefix="modex-doctor-empty-xdg-01661-") as raw:
+            root = Path(raw)
+            home = root / "home"
+            workspace = root / "workspace"
+            empty_path = root / "empty-path"
+            xdg_root = root / "absolute-xdg-tools"
+            for directory in (home, workspace, empty_path, xdg_root):
+                directory.mkdir(mode=0o700)
+            marker = root / "empty-xdg-rtk-executed"
+            add_probe(
+                xdg_root,
+                "rtk",
+                f"printf 'executed\\n' > {shlex.quote(str(marker))}\n"
+                "printf 'rtk 1.1.0\\n'\n",
+            )
+            env = environment(root, str(empty_path))
+            env.pop("PRODEX_OPTIMIZERS_HOME")
+            env["XDG_DATA_HOME"] = ""
+            binds = ((xdg_root, "/prodex-optimizers"),)
+
+            baseline = run_doctor(ORACLE, root, env, extra_binds=binds)
+            self.assertEqual(baseline.returncode, 0, baseline.stderr.decode(errors="replace"))
+            self.assertEqual(panel_value(baseline.stdout, "rtk"), b"missing")
+            self.assertFalse(marker.exists())
+
+            result = run_doctor(MODEX, root, env, extra_binds=binds)
+
+            self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+            self.assertEqual(panel_value(result.stdout, "rtk"), b"missing")
+            self.assertFalse(marker.exists(), "an empty XDG value must not create a root-level probe root")
+
+    def test_trailing_slash_explicit_managed_root_symlink_is_rejected(self):
+        with tempfile.TemporaryDirectory(prefix="modex-doctor-root-slash-01661-") as raw:
+            root = Path(raw)
+            home = root / "home"
+            workspace = root / "workspace"
+            target = root / "outside-managed-root"
+            empty_path = root / "empty-path"
+            for directory in (home, workspace, target, empty_path):
+                directory.mkdir(mode=0o700)
+            marker = root / "rtk-executed"
+            add_probe(
+                target,
+                "rtk",
+                f"printf 'executed\\n' > {shlex.quote(str(marker))}\n"
+                "printf 'rtk 1.1.0\\n'\n",
+            )
+            override = root / "managed-root-link"
+            override.symlink_to(target, target_is_directory=True)
+            env = environment(root, str(empty_path))
+            env["PRODEX_OPTIMIZERS_HOME"] = str(override) + "/"
+
+            baseline = run_doctor(ORACLE, root, env)
+            self.assertEqual(baseline.returncode, 0, baseline.stderr.decode(errors="replace"))
+            self.assertEqual(panel_value(baseline.stdout, "rtk"), b"installed, version=rtk 1.1.0,")
+            self.assertTrue(marker.exists(), "the reference fixture confirms the trailing-slash case")
+            marker.unlink()
+
+            result = run_doctor(MODEX, root, env)
+
+            self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+            self.assertEqual(panel_value(result.stdout, "rtk"), b"invalid")
+            self.assertFalse(marker.exists(), "Doctor must reject a symlinked explicit root before probing")
+
+    def test_dot_components_do_not_hide_symlinked_managed_root_components(self):
+        cases = (("dot", "/."), ("parent", "/.."))
+        for label, suffix in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory(
+                prefix="modex-doctor-root-dot-01661-"
+            ) as raw:
+                root = Path(raw)
+                home = root / "home"
+                workspace = root / "workspace"
+                target = root / "outside-managed-root"
+                empty_path = root / "empty-path"
+                for directory in (home, workspace, target, empty_path):
+                    directory.mkdir(mode=0o700)
+                alias_target = target
+                if suffix == "/..":
+                    alias_target = target / "child"
+                    alias_target.mkdir(mode=0o700)
+                marker = root / "rtk-executed"
+                add_probe(
+                    target,
+                    "rtk",
+                    f"printf 'executed\\n' > {shlex.quote(str(marker))}\n"
+                    "printf 'rtk 1.1.0\\n'\n",
+                )
+                override = root / "managed-root-link"
+                override.symlink_to(alias_target, target_is_directory=True)
+                env = environment(root, str(empty_path))
+                env["PRODEX_OPTIMIZERS_HOME"] = str(override) + suffix
+
+                baseline = run_doctor(ORACLE, root, env)
+                self.assertEqual(baseline.returncode, 0, baseline.stderr.decode(errors="replace"))
+                self.assertTrue(panel_value(baseline.stdout, "rtk").startswith(b"installed"))
+                self.assertTrue(marker.exists(), "the reference fixture confirms the dot-component case")
+                marker.unlink()
+
+                result = run_doctor(MODEX, root, env)
+
+                self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+                self.assertEqual(panel_value(result.stdout, "rtk"), b"invalid")
+                self.assertFalse(marker.exists(), "a symlink path component must not reach the probe")
+
+    def test_managed_probe_rejects_other_principal_write_access(self):
+        cases = (
+            ("private root", 0o700, 0o700, 0o700, b"ok (rtk 1.1.0)", True),
+            ("writable root", 0o700, 0o777, 0o700, b"invalid", False),
+            ("writable ancestor", 0o777, 0o700, 0o700, b"invalid", False),
+            ("writable executable", 0o700, 0o700, 0o777, b"invalid", False),
+            ("setuid executable", 0o700, 0o700, 0o4700, b"invalid", False),
+            ("setgid executable", 0o700, 0o700, 0o2700, b"invalid", False),
+        )
+        for label, parent_mode, root_mode, executable_mode, expected, should_run in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory(
+                prefix="modex-doctor-managed-permissions-01661-"
+            ) as raw:
+                root = Path(raw)
+                home = root / "home"
+                workspace = root / "workspace"
+                parent = root / "managed-parent"
+                managed = parent / "managed-tools"
+                for directory in (home, workspace, parent, managed):
+                    directory.mkdir(mode=0o700)
+                parent.chmod(parent_mode)
+                managed.chmod(root_mode)
+                marker = root / "rtk-executed"
+                executable = add_probe(
+                    managed,
+                    "rtk",
+                    f"printf 'executed\\n' > {shlex.quote(str(marker))}\n"
+                    "printf 'rtk 1.1.0\\n'\n",
+                )
+                executable.chmod(executable_mode)
+                if executable_mode & 0o6000:
+                    self.assertEqual(executable.stat().st_mode & 0o6000, executable_mode & 0o6000)
+                env = environment(root, str(managed))
+                env["PRODEX_OPTIMIZERS_HOME"] = str(managed)
+
+                result = run_doctor(MODEX, root, env)
+
+                self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+                self.assertEqual(panel_value(result.stdout, "rtk"), expected)
+                self.assertEqual(marker.exists(), should_run)
 
     def test_playwright_probe_is_no_install_and_managed_ponytail_is_not_executed(self):
         with tempfile.TemporaryDirectory(prefix="modex-doctor-install-safe-01661-") as raw:
@@ -171,6 +361,51 @@ class DoctorInstall01661Tests(unittest.TestCase):
             self.assertFalse(marker.exists(), "Doctor must not execute an escaping managed tool")
             self.assertFalse((home / ".codex").exists())
             self.assertNotIn(b"synthetic-provider-key", result.stdout)
+
+    def test_escaping_managed_optional_commands_are_not_probed(self):
+        with tempfile.TemporaryDirectory(prefix="modex-doctor-managed-escape-01661-") as raw:
+            root = Path(raw)
+            home = root / "home"
+            workspace = root / "workspace"
+            managed = root / "managed-tools"
+            for directory in (home, workspace, managed):
+                directory.mkdir(mode=0o700)
+
+            markers = {}
+            for command, script, version in (
+                ("rtk", "outside-rtk", "rtk 1.1.0"),
+                (
+                    "codebase-memory-mcp",
+                    "outside-codebase-memory-mcp",
+                    "codebase-memory-mcp 0.9.1",
+                ),
+            ):
+                marker = root / f"{command}-executed"
+                outside = add_probe(
+                    root,
+                    script,
+                    f"printf 'executed\\n' > {shlex.quote(str(marker))}\n"
+                    f"printf '{version}\\n'\n",
+                )
+                (managed / command).symlink_to(outside)
+                markers[command] = marker
+
+            env = environment(root, str(managed))
+            baseline = run_doctor(ORACLE, root, env)
+            self.assertEqual(baseline.returncode, 0, baseline.stderr.decode(errors="replace"))
+            for command in markers:
+                self.assertEqual(panel_value(baseline.stdout, command), b"invalid")
+            self.assertFalse(any(marker.exists() for marker in markers.values()))
+
+            result = run_doctor(MODEX, root, env)
+
+            self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+            for command in markers:
+                self.assertEqual(panel_value(result.stdout, command), b"invalid")
+            self.assertFalse(
+                any(marker.exists() for marker in markers.values()),
+                "Doctor must not probe an optional command that escapes its managed root",
+            )
 
     def test_playwright_rejects_old_and_unrecognized_versions(self):
         cases = (

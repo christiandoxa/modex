@@ -512,12 +512,112 @@ def _environment_value(environment: List[String], name: String) -> String:
 def _managed_optimizer_roots() -> List[String]:
     var roots = List[String]()
     var configured = getenv("PRODEX_OPTIMIZERS_HOME", "\0")
-    if configured != "\0": roots.append(configured)
+    if configured != "\0" and configured: roots.append(configured)
     var xdg = getenv("XDG_DATA_HOME", "\0")
-    if xdg != "\0": roots.append(xdg + "/prodex-optimizers")
+    if xdg != "\0" and xdg: roots.append(xdg + "/prodex-optimizers")
     var home = getenv("HOME", "")
     if home: roots.append(home + "/.local/share/prodex-optimizers")
     return roots^
+
+
+def _managed_optimizer_root_path(root: String) -> String:
+    if not root:
+        return String()
+    var path = root
+    if not path.startswith("/"):
+        try:
+            path = String(cwd()) + "/" + root
+        except:
+            return String()
+    var current = String("/")
+    try:
+        if lstat(current).st_mode & 0o170000 != 0o040000:
+            return String()
+    except:
+        return String()
+    for component in path.split("/"):
+        if not component or component == ".":
+            continue
+        if component == "..":
+            if current != "/":
+                var slash = current.rfind("/")
+                current = String(current[byte=:slash]) if slash > 0 else "/"
+            continue
+        if current.endswith("/"):
+            current += component
+        else:
+            current += "/" + component
+        try:
+            if lstat(current).st_mode & 0o170000 != 0o040000:
+                return String()
+        except:
+            return String()
+    try:
+        var resolved = realpath(current)
+        if resolved != current:
+            return String()
+        return resolved^
+    except:
+        return String()
+
+
+def _managed_optimizer_directories_are_safe(path: String, root: String) -> Bool:
+    var current = String("/")
+    try:
+        var info = lstat(current)
+        if info.st_mode & 0o170000 != 0o040000:
+            return False
+        if info.st_uid != 0 and info.st_uid != getuid():
+            return False
+        if info.st_mode & 0o022 != 0 and (root == "/" or info.st_mode & 0o1000 == 0):
+            return False
+    except:
+        return False
+    for component in path.split("/"):
+        if not component:
+            continue
+        if current.endswith("/"):
+            current += component
+        else:
+            current += "/" + component
+        try:
+            var info = lstat(current)
+            if info.st_mode & 0o170000 != 0o040000:
+                return False
+            if info.st_uid != 0 and info.st_uid != getuid():
+                return False
+            # Sticky ancestors protect child names; the managed root itself must stay private.
+            if info.st_mode & 0o022 != 0 and (current == root or info.st_mode & 0o1000 == 0):
+                return False
+        except:
+            return False
+    return True
+
+
+def _managed_optimizer_binary(root: String, candidate: String) -> String:
+    var resolved_root = _managed_optimizer_root_path(root)
+    if not resolved_root:
+        return String()
+    try:
+        # shortcut: path-based spawn leaves a same-user replacement race; use descriptor execution when stdlib supports it.
+        var binary = realpath(candidate)
+        var info = lstat(binary)
+        if info.st_mode & 0o170000 != 0o100000 or info.st_mode & 0o111 == 0:
+            return String()
+        if info.st_mode & 0o6000 != 0 or info.st_mode & 0o022 != 0:
+            return String()
+        if info.st_uid != 0 and info.st_uid != getuid():
+            return String()
+        var prefix = resolved_root if resolved_root.endswith("/") else resolved_root + "/"
+        if not binary.startswith(prefix):
+            return String()
+        var slash = binary.rfind("/")
+        var parent = String(binary[byte=:slash]) if slash > 0 else "/"
+        if not _managed_optimizer_directories_are_safe(parent, resolved_root):
+            return String()
+        return binary^
+    except:
+        return String()
 
 
 def _first_regular_path(command: String) -> String:
@@ -556,17 +656,10 @@ def _dry_run_rtk_binary() raises -> String:
     for root in _managed_optimizer_roots():
         var candidate = _executable_path(root + "/rtk")
         if candidate:
-            try:
-                var info = lstat(root)
-                if info.st_mode & 0o170000 != 0o040000:
-                    raise Error("invalid managed optimizer root")
-                var resolved_root = realpath(root)
-                var prefix = resolved_root if resolved_root.endswith("/") else resolved_root + "/"
-                if not candidate.startswith(prefix):
-                    raise Error("managed RTK command escapes its root")
-            except:
+            var binary = _managed_optimizer_binary(root, candidate)
+            if not binary:
                 raise Error("Super dry-run cannot report installed optional tools yet")
-            return candidate^
+            return binary^
     for candidate in _path_candidates("rtk", getenv("PATH", "\0")):
         var resolved = _executable_path(candidate)
         if resolved:
@@ -701,16 +794,16 @@ def _dry_run_codebase_status() raises -> String:
                 var info = lstat(resolved)
                 if info.st_mode & 0o170000 != 0o100000:
                     continue
-                var root_path = root if root else "."
-                var root_info = lstat(root_path)
-                if root_info.st_mode & 0o170000 != 0o040000:
+                var resolved_root = _managed_optimizer_root_path(root)
+                if not resolved_root:
                     return "skipped (managed Codebase Memory root is not a real directory)"
-                var resolved_root = realpath(root_path)
                 var prefix = resolved_root if resolved_root.endswith("/") else resolved_root + "/"
-                # Do not execute a managed symlink target until containment is known.
                 if not resolved.startswith(prefix):
                     return "skipped (managed codebase-memory-mcp command escapes its root)"
-                binary = resolved^
+                var safe_binary = _managed_optimizer_binary(root, candidate)
+                if not safe_binary:
+                    return "skipped (managed codebase-memory-mcp root or executable is unsafe)"
+                binary = safe_binary^
             except:
                 return "skipped (managed codebase-memory-mcp health check failed)"
             if binary:

@@ -28,6 +28,40 @@ execution and session maintenance with advisory locks that Mojo 1.2.0 does not
 expose; append-only history by itself would not make shared session access
 safe. See `docs/evidence/baseline-0.166.1/super-repeat-launch.md`.
 
+Doctor now resolves RTK and Codebase Memory from managed optimizer roots before
+PATH and checks that each managed root is a real directory, the executable
+stays inside it, all path directories and the executable are owned by the
+current user or root, and file/directory modes do not allow writes from other
+principals. Sticky shared ancestors are allowed, but a sticky managed root is
+not. For a normal real root, a real-oracle process test puts
+escaping command symlinks on PATH and in the root; both Prodex 0.166.1 and
+Modex report them invalid without running the marker executables.
+
+Two explicit-root edge cases differ safely from Prodex: an empty
+`PRODEX_OPTIMIZERS_HOME` makes the release report `invalid` without executing a
+cwd `./rtk`, while Modex skips the blank root and reports `missing`; a
+trailing-slash override pointing at a symlink makes the release run the target
+RTK and report it installed, while Modex rejects the symlink root and does not
+run the target. Prodex also follows and runs explicit symlink roots ending in
+`/.` and `/..`; Modex detects the symlink component before canonicalization
+and does not probe it. A blank `XDG_DATA_HOME` does not add `/prodex-optimizers`
+as a managed root. The shared managed-binary guard now covers Doctor and Super
+dry-run RTK/Codebase probes, including writable binaries and setuid/setgid
+executables. Unlike Prodex 0.165.1 and 0.439.2, Modex skips a synthetic
+Codebase Memory tool under a group-writable `0770` managed root; the release
+oracles report it resolved. Modex also rejects non-executable managed
+candidates before spawn, where the releases report an execution failure. The
+component walk rejects symlinked operating-system ancestors
+too, so valid macOS roots reached through `/tmp` or `/var` aliases may fail
+closed; this behavior is unverified on non-Linux targets. PATH fallback
+integrity and the remaining optional-tool health checks are incomplete. The
+pre-spawn path check is not
+atomic: a concurrent process with the same user ID and write access to the
+managed path can replace the executable between validation and `posix_spawnp`;
+the pinned Mojo standard library has no descriptor-pinned exec path. Mode
+checks do not inspect ACL policy separately.
+See `docs/evidence/baseline-0.166.1/doctor-install.md`.
+
 # Historical work: Prodex 0.166.0 parity and CI
 
 The official historical release workflow artifacts for 0.439.2 and 0.439.5

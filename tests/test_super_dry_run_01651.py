@@ -61,6 +61,15 @@ def write_optional_tool(path):
     path.chmod(0o700)
 
 
+def make_private_directory(path, boundary):
+    path.relative_to(boundary)
+    path.mkdir(parents=True, exist_ok=True)
+    current = path
+    while current != boundary:
+        current.chmod(0o700)
+        current = current.parent
+
+
 def write_rtk_version(root, version, *, managed=False):
     name = ".rtk-managed-version-fixture" if managed else ".rtk-version-fixture"
     path = root / "home" / name
@@ -75,7 +84,7 @@ def write_codebase_version(root, binary, version):
 
 
 def run_dry_run(binary, argv0, prepare=None, *, arguments=DRY_RUN_ARGS,
-                include_codex=True, environment=None, extra_binaries=(), timeout=15):
+                include_codex=True, environment=None, extra_binaries=(), extra_binds=(), timeout=15):
     with tempfile.TemporaryDirectory(prefix="modex-super-dry-run-") as directory:
         root = Path(directory)
         (root / "home").mkdir(mode=0o700)
@@ -90,19 +99,25 @@ def run_dry_run(binary, argv0, prepare=None, *, arguments=DRY_RUN_ARGS,
             prepare(root)
         extra_environment = environment(root) if callable(environment) else (environment or {})
         before = snapshot(root)
+        binds = extra_binds(root) if callable(extra_binds) else extra_binds
+        command = sandbox_command(
+            binary,
+            root,
+            list(arguments),
+            argv0=argv0,
+            environment={
+                "PATH": str(binary_dir) if include_codex else "",
+                "CODEX_INVOKED_MARKER": str(root / "codex-invoked"),
+                **extra_environment,
+            },
+            extra_binaries=extra_binaries,
+        )
+        separator = command.index("--")
+        for source, destination in binds:
+            command[separator:separator] = ["--bind", str(source), destination]
+            separator += 3
         result = subprocess.run(
-            sandbox_command(
-                binary,
-                root,
-                list(arguments),
-                argv0=argv0,
-                environment={
-                    "PATH": str(binary_dir) if include_codex else "",
-                    "CODEX_INVOKED_MARKER": str(root / "codex-invoked"),
-                    **extra_environment,
-                },
-                extra_binaries=extra_binaries,
-            ),
+            command,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -468,7 +483,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
     def test_rtk_managed_root_precedes_path_for_all_pinned_reports(self):
         def prepare(root):
             managed = root / "home/.local/share/prodex-optimizers"
-            managed.mkdir(parents=True, mode=0o700)
+            make_private_directory(managed, root)
             write_optional_tool(managed / "rtk")
             write_optional_tool(root / "bin/rtk")
             write_rtk_version(root, "rtk 0.45.9", managed=True)
@@ -482,11 +497,12 @@ class SuperDryRun01651Tests(unittest.TestCase):
                 result, before, after = run_dry_run(
                     binary, argv0, prepare, extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
                 )
+                outputs.append(result.stdout)
                 self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
                 self.assertIn(b"rtk 0.45.9 is too old", result.stdout)
                 self.assertNotIn(b"rtk 1.1.0 is too old", result.stdout)
                 self.assertEqual(after, before)
-                outputs.append(result.stdout)
+        self.assertEqual(len(outputs), 3, "every release and Modex process should produce output")
         self.assertEqual(outputs[0], outputs[1])
         self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
@@ -696,7 +712,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                         stop = 1 if selected_index == 0 else len(candidates)
                         for index in range(selected_index, stop):
                             candidate = candidates[index]
-                            candidate.parent.mkdir(parents=True, exist_ok=True)
+                            make_private_directory(candidate.parent, root)
                             write_optional_tool(candidate)
                             write_codebase_version(
                                 root,
@@ -716,11 +732,12 @@ class SuperDryRun01651Tests(unittest.TestCase):
                         },
                         extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
                     )
+                    outputs.append(result.stdout)
                     self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
                     self.assertIn(b"lacks shared daemon coordination", result.stdout)
                     self.assertNotIn(b"resolved (activation deferred until launch)", result.stdout)
                     self.assertEqual(after, before)
-                    outputs.append(result.stdout)
+            self.assertEqual(len(outputs), 3, "every release and Modex process should produce output")
             self.assertEqual(outputs[0], outputs[1])
             self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
@@ -738,7 +755,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
                         )
                         for index in range(selected_index, len(managed_roots)):
                             candidate = managed_roots[index] / "codebase-memory-mcp"
-                            candidate.parent.mkdir(parents=True, exist_ok=True)
+                            make_private_directory(candidate.parent, root)
                             write_optional_tool(candidate)
                             write_codebase_version(
                                 root,
@@ -759,13 +776,49 @@ class SuperDryRun01651Tests(unittest.TestCase):
                         },
                         extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
                     )
+                    outputs.append(result.stdout)
                     self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
                     self.assertIn(b"lacks shared daemon coordination", result.stdout)
                     self.assertNotIn(b"resolved (activation deferred until launch)", result.stdout)
                     self.assertEqual(after, before)
-                    outputs.append(result.stdout)
+            self.assertEqual(len(outputs), 3, "every release and Modex process should produce output")
             self.assertEqual(outputs[0], outputs[1])
             self.assert_current_without_retired_caveman(outputs[0], outputs[2])
+
+    def test_group_writable_managed_codebase_root_is_intentionally_skipped(self):
+        def prepare(root):
+            managed = root / "home/managed-optimizers"
+            make_private_directory(managed, root)
+            managed.chmod(0o770)
+            binary = managed / "codebase-memory-mcp"
+            write_optional_tool(binary)
+            write_codebase_version(root, binary, "codebase-memory-mcp 0.12.1")
+
+        reports = {}
+        for label, binary, argv0 in (("0.165.1", ORACLE_01651, "prodex"),
+                                     ("0.439.2", ORACLE, "prodex"),
+                                     ("Modex", MODEX, "modex")):
+            with self.subTest(binary=label):
+                result, before, after = run_dry_run(
+                    binary,
+                    argv0,
+                    prepare,
+                    environment=lambda root: {
+                        "PRODEX_OPTIMIZERS_HOME": str(root / "home/managed-optimizers"),
+                    },
+                    extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
+                self.assertEqual(after, before)
+                reports[label] = next(
+                    line for line in result.stdout.splitlines()
+                    if b"codebase-memory-mcp:" in line
+                )
+
+        self.assertEqual(len(reports), 3, "every release and Modex process should report Codebase Memory")
+        for label in ("0.165.1", "0.439.2"):
+            self.assertIn(b"resolved (activation deferred until launch)", reports[label])
+        self.assertIn(b"managed codebase-memory-mcp root or executable is unsafe", reports["Modex"])
 
     def test_managed_codebase_symlink_root_stays_fail_closed(self):
         def prepare(root):
@@ -806,7 +859,7 @@ class SuperDryRun01651Tests(unittest.TestCase):
         def prepare(root):
             managed = root / "home/managed-optimizers"
             target = managed / "versions/codebase-memory-mcp"
-            target.parent.mkdir(parents=True, exist_ok=True)
+            make_private_directory(target.parent, root)
             write_optional_tool(target)
             (managed / "codebase-memory-mcp").symlink_to(target)
             write_codebase_version(root, target, "codebase-memory-mcp 0.12.1")
@@ -825,10 +878,11 @@ class SuperDryRun01651Tests(unittest.TestCase):
                     },
                     extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
                 )
+                outputs.append(result.stdout)
                 self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
                 self.assertIn(b"codebase-memory-mcp: resolved (activation deferred until launch)", result.stdout)
                 self.assertEqual(after, before)
-                outputs.append(result.stdout)
+        self.assertEqual(len(outputs), 3, "every release and Modex process should produce output")
         self.assertEqual(outputs[0], outputs[1])
         self.assert_current_without_retired_caveman(outputs[0], outputs[2])
 
@@ -875,16 +929,16 @@ class SuperDryRun01651Tests(unittest.TestCase):
         self.assertEqual(after, before)
         self.assertNotIn("home/.codebase-probe-invoked", after)
 
-    def test_managed_codebase_first_non_executable_candidate_shadows_fallbacks(self):
+    def test_managed_codebase_first_non_executable_candidate_is_rejected_before_fallbacks(self):
         def prepare(root):
             managed = root / "home/managed-optimizers"
             checkout = managed / "codebase-memory-mcp"
             first = checkout / "codebase-memory-mcp"
-            first.parent.mkdir(parents=True, exist_ok=True)
+            make_private_directory(first.parent, root)
             write_optional_tool(first)
             first.chmod(0o600)
             fallback = checkout / "build/c/codebase-memory-mcp"
-            fallback.parent.mkdir(parents=True, exist_ok=True)
+            make_private_directory(fallback.parent, root)
             write_optional_tool(fallback)
             write_optional_tool(root / "bin/codebase-memory-mcp")
 
@@ -918,7 +972,8 @@ class SuperDryRun01651Tests(unittest.TestCase):
             extra_binaries=(OPTIONAL_TOOL_FIXTURE,),
         )
         self.assertEqual((result.returncode, result.stderr), (0, b""), result.stderr)
-        self.assertIn(b"codebase-memory-mcp health check failed", result.stdout)
+        # Modex rejects the non-executable candidate before Prodex's failed spawn attempt.
+        self.assertIn(b"managed codebase-memory-mcp root or executable is unsafe", result.stdout)
         self.assertNotIn(b"resolved (activation deferred until launch)", result.stdout)
         self.assertNotIn(TEMP_ROOT_PREFIX, result.stdout)
         self.assertEqual(after, before)

@@ -403,7 +403,11 @@ struct LoopbackHTTPConnection(Movable):
             var continue_version = "HTTP/1.1"
             if use_request_version_for_continue:
                 continue_version = head.version
-            _send_all(self.fd, _bytes(continue_version + " 100 Continue\r\n\r\n"), deadline)
+            var continue_head = continue_version + " 100 Continue\r\n"
+            if self.include_default_response_headers:
+                # RFC 9110 forbids Content-Length on informational responses.
+                continue_head += "Server: tiny-http (Rust)\r\nDate: " + format_http_date(_realtime_nanoseconds() // 1_000_000_000) + "\r\n"
+            _send_all(self.fd, _bytes(continue_head + "\r\n"), deadline)
             self.expect_continue_sent = True
         if upgrade_body:
             while True:

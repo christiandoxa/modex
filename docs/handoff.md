@@ -215,6 +215,15 @@ three return matching statuses and bodies without reaching the provider. This
 closes only these Linux x86-64 header differences; broader provider coverage and
 all six target qualifications remain open.
 
+The production relay now includes the 0.166.2 `Server` and `Date` fields on a
+valid `100 Continue` response. A bounded real Super/client exchange waits for
+that interim response before sending its synthetic provider request body; both
+releases then dispatch one identical loopback POST and return HTTP 200. The
+release also emits `Content-Length: 0` on the 1xx response, which Modex omits
+because RFC 9110 forbids Content-Length there. This covers one HTTP/1.1
+expectation case, not all request versions or expectation/framing combinations.
+See `docs/evidence/baseline-0.166.2/provider-expect-continue.md`.
+
 The 0.166.2 `session list --profile main` comparison also confirms that the
 release recovers a corrupt primary `state.json` from a valid private
 `state.json.last-good`, rewrites both state files, and returns the bound

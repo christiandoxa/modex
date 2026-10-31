@@ -53,6 +53,49 @@ def _route_wire(binary, path, method="GET", body=b""):
     )
 
 
+def _expect_continue_wire_client(body):
+    return CODEX[:CODEX.index("passthrough = scenario")] + textwrap.dedent(f'''\
+        import socket
+        target = urlsplit(config["model_providers.prodex-deepseek.base_url"])
+        body = bytes.fromhex({body.hex()!r})
+        request = (f"POST /v1/chat/completions HTTP/1.1\\r\\nHost: {{target.hostname}}:{{target.port}}\\r\\n"
+                   f"Authorization: {{authorization}}\\r\\nContent-Type: application/json\\r\\n"
+                   f"Expect: 100-continue\\r\\nContent-Length: {{len(body)}}\\r\\nConnection: close\\r\\n\\r\\n").encode()
+        connection = socket.create_connection((target.hostname, target.port), timeout=3)
+        connection.settimeout(2)
+        connection.sendall(request)
+        wire = bytearray()
+        head = bytearray()
+        while b"\\r\\n\\r\\n" not in head:
+            chunk = connection.recv(4096)
+            if not chunk:
+                break
+            head.extend(chunk)
+        if b"\\r\\n\\r\\n" in head:
+            first, _, remainder = bytes(head).partition(b"\\r\\n\\r\\n")
+            wire.extend(first + b"\\r\\n\\r\\n" + remainder)
+            if int(first.split(b" ", 2)[1]) == 100:
+                connection.sendall(body)
+        eof = False
+        timed_out = False
+        while True:
+            try:
+                chunk = connection.recv(65536)
+            except TimeoutError:
+                timed_out = True
+                break
+            if not chunk:
+                eof = True
+                break
+            wire.extend(chunk)
+        connection.close()
+        save({{"kind": "wire-response", "wire": bytes(wire).hex(), "eof": eof,
+              "timed_out": timed_out}})
+        print("synthetic-wire-complete")
+        raise SystemExit(0)
+    ''')
+
+
 def _response_header_lines(wire):
     head, separator, _ = wire.partition(b"\r\n\r\n")
     if not separator:
@@ -125,6 +168,38 @@ class ProviderRelay01662Tests(unittest.TestCase):
                     self.assertIn(("Content-Type", content_type), headers)
                     observed.append((status, [row for row in headers if row[0].lower() != "date"], response_body))
             self.assertEqual(observed[0], observed[1])
+
+    def test_expect_continue_interim_defaults_match_without_release_content_length(self):
+        body = b'{"model":"deepseek-chat","messages":[]}'
+        reply = {"status": 200, "content_type": "application/json", "body": b'{"id":"synthetic"}'}
+        client = _expect_continue_wire_client(body)
+        for binary in (ORACLE, MODEX):
+            with self.subTest(binary=str(binary)):
+                upstream, wire, eof, timed_out = historical.observe_response_wire(
+                    binary, reply, client_script=client,
+                )
+                self.assertEqual(len(upstream), 1)
+                self.assertEqual(upstream[0]["body"], body)
+                self.assertTrue(eof)
+                self.assertFalse(timed_out)
+                interim, separator, final = wire.partition(b"\r\n\r\n")
+                self.assertTrue(separator)
+                self.assertEqual(interim.split(b" ", 2)[:2], [b"HTTP/1.1", b"100"])
+                headers = _response_header_lines(wire)
+                self.assertEqual(headers[0], ("Server", "tiny-http (Rust)"))
+                self.assertEqual(headers[1][0], "Date")
+                self.assertRegex(
+                    headers[1][1],
+                    r"^[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT$",
+                )
+                if binary == ORACLE:
+                    self.assertEqual(headers[2], ("Content-Length", "0"))
+                else:
+                    self.assertNotIn("content-length", [name.lower() for name, _ in headers])
+                final_head, final_separator, final_body = final.partition(b"\r\n\r\n")
+                self.assertTrue(final_separator)
+                self.assertTrue(final_head.startswith(b"HTTP/1.1 200 OK\r\n"))
+                self.assertEqual(final_body, b'{"id":"synthetic"}')
 
 
 if __name__ == "__main__":

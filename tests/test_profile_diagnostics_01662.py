@@ -93,11 +93,34 @@ class ProfileDiagnostics01662Tests(unittest.TestCase):
             ("import-current", "--insecure", "--insecure=true"),
             ("remove", "--all", "--all=true"),
             ("remove", "--delete-home", "--delete-home=true"),
-            # Non-switch prefixes retain the narrower usage line from Clap.
+            ("add", "--activate", "--insecure=true"),
+            ("export", "--password-protect", "--no-password=true"),
+            ("import", "--activate", "--insecure=true"),
+            ("remove", "--all", "--delete-home=true"),
+            ("add", "--activate", "synthetic", "--insecure=true"),
+            # A single split value option or positional alone retains the narrower usage line.
             ("add", "--codex-home", "/synthetic/home", "--activate=true"),
+            ("add", "--copy-from", "/synthetic/source", "--insecure=true"),
             ("import", "--name", "synthetic", "--activate=true"),
             ("remove", "synthetic", "--all=true"),
             ("export", "--profile", "synthetic", "--password-protect=true"),
+            ("export", "-p", "synthetic", "--no-password=true"),
+            ("add", "--codex-home", "/synthetic/home", "synthetic", "--activate=true"),
+            ("import", "source", "--name", "synthetic", "--activate=true"),
+            ("export", "--profile", "synthetic", "/synthetic/export", "--password-protect=true"),
+            ("export", "/synthetic/export", "--profile", "synthetic", "--password-protect=true"),
+            ("add", "--codex-home", "/synthetic/home", "--copy-from", "/synthetic/source", "--activate=true"),
+            ("add", "--copy-from", "/synthetic/source", "--codex-home", "/synthetic/home", "--activate=true"),
+            # Attached value options and repeated export filters use the full option group.
+            ("add", "--codex-home=/synthetic/home", "--activate=true"),
+            ("add", "--copy-from=/synthetic/source", "--insecure=true"),
+            ("add", "synthetic", "--codex-home=/synthetic/home", "--activate=true"),
+            ("import", "--name=synthetic", "--activate=true"),
+            ("import", "source", "--name=synthetic", "--activate=true"),
+            ("export", "--profile=synthetic", "--password-protect=true"),
+            ("export", "-psynthetic", "--no-password=true"),
+            ("export", "-p=synthetic", "--no-password=true"),
+            ("export", "--profile", "one", "-p", "two", "--password-protect=true"),
         )
         for arguments in cases:
             with self.subTest(arguments=arguments):

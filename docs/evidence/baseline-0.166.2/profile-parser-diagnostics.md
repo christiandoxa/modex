@@ -26,6 +26,10 @@ synthetic home and workspace unchanged. These inputs fail before profile
 operations run; this does not qualify successful profile management,
 lifecycle locks, or the other five release targets.
 
+Twenty-two further comparisons cover inline value options, repeated export
+filters, and multi-argument prefixes before a malformed switch. They also
+retain controls for single split values and lone positionals.
+
 Verified on 2026-11-01 with:
 
 ```sh

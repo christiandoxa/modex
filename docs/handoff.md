@@ -141,7 +141,9 @@ URLs. Full mapping, normalization, and broader ContextJ behavior remain open;
 NFC composition can also change the character preceding ZWJ. The encoded
 A-label `xn--11b2er09f` is another confirmed gap: 0.166.2 rejects it while
 Modex accepts its host. The existing ZWNJ behavior and security checks are
-unchanged.
+unchanged. A separate partial A-label decoder was withheld after review found
+that it mishandled UTS #46 Unicode dot separators and did not establish
+canonical A-label validation.
 
 ## Active 0.166.2 login profile diagnostics (2026-11-01)
 
@@ -226,6 +228,11 @@ remove, and use with no filesystem changes. This qualifies parser failures only;
 successful profile operations and their lifecycle behavior remain outside this
 slice. See
 `docs/evidence/baseline-0.166.2/profile-parser-diagnostics.md`.
+
+Additional 0.166.2 comparisons cover attached value options and multi-argument
+prefixes before malformed switches. Their usage retains the full option group;
+single split values and lone positionals retain narrower usage in the tested
+cases.
 
 Profile-bound `session list` now has a separate 15-case active 0.166.2 lane.
 Eleven isolated output/control comparisons cover profile filters, binding

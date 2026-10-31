@@ -350,10 +350,13 @@ def _profile_duplicate(name: String, command: String, executable: String) -> Err
     return session_cli_error("the argument '" + _profile_option_label(name) + "' cannot be used multiple times", _profile_usage(command, executable))
 
 
-def _profile_switch_value_usage(name: String, command: String, executable: String, seen: List[String]) -> String:
+def _profile_switch_value_usage(name: String, command: String, executable: String, seen: List[String], positionals: List[String], has_inline_value_option: Bool) -> String:
     var usage = executable + " profile " + command
+    # Clap groups the usage after a switch, inline value, or multi-argument prefix.
+    var group_options = has_inline_value_option or len(seen) + len(positionals) > 1
     for previous in seen:
-        if not _profile_switch_option(command, previous): continue
+        if _profile_switch_option(command, previous): group_options = True
+    if group_options:
         if command == "add": return usage + " <NAME|--codex-home <PATH>|--copy-from <PATH>|--copy-current|--activate|--insecure>"
         if command == "export": return usage + " <--profile <NAME>|PATH|--password-protect|--no-password>"
         if command == "import": return usage + " <PATH_OR_SOURCE|--name <NAME>|--activate|--insecure>"
@@ -454,6 +457,7 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
     var seen = List[String]()
     var positionals = List[String]()
     var literal = False
+    var has_inline_value_option = False
     while cursor < len(args):
         var argument = String(args[cursor])
         if not literal and argument == "--":
@@ -491,7 +495,7 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
         if takes_value or switch:
             if switch and has_inline_value:
                 var unexpected_value = String(argument.split("=", maxsplit=1)[1])
-                var usage = _profile_switch_value_usage(name, command, executable, seen)
+                var usage = _profile_switch_value_usage(name, command, executable, seen, positionals, has_inline_value_option)
                 raise session_cli_error("unexpected value '" + unexpected_value + "' for '" + name + "' found; no more were expected", usage)
             if name in seen and not (command == "export" and name == "--profile"):
                 raise _profile_duplicate(name, command, executable)
@@ -516,6 +520,8 @@ def parse_profile_help_arguments(args: List[String], index: Int, executable: Str
                     else:
                         record_option = False
             if record_option:
+                if takes_value and has_inline_value:
+                    has_inline_value_option = True
                 seen.append(name)
         else:
             var maximum = 1 if (command == "add" or command == "import" or command == "import-current" or command == "export" or command == "remove") else 0

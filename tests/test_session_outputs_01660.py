@@ -294,3 +294,43 @@ class SessionOutputs01660Tests(test_sessions.SessionOutputTests):
                 else:
                     self.assertNotIn(b"\x1b", result.stderr)
                     self.assertIn(b"\\x1b[31m", result.stderr)
+
+    def test_plain_table_escapes_terminal_controls_in_untrusted_title(self):
+        title = "\x1b[31mN\nX"
+        outputs = {}
+        for label, binary, argv0 in (
+            ("oracle", ORACLE, "prodex"),
+            ("modex", MODEX, "modex"),
+        ):
+            with tempfile.TemporaryDirectory(prefix="modex-session-table-controls-") as directory:
+                root = Path(directory)
+                (root / "home").mkdir(mode=0o700)
+                (root / "workspace").mkdir()
+                session = root / "home/.codex/sessions/2026/10/24/rollout-synthetic.jsonl"
+                session.parent.mkdir(parents=True)
+                session.write_text(json.dumps({
+                    "timestamp": "2026-10-24T01:02:03Z",
+                    "type": "session_meta",
+                    "payload": {"id": "synthetic-id", "thread_name": title},
+                }) + "\n")
+                before = session.read_bytes()
+                result = subprocess.run(
+                    test_sessions.sandbox_command(
+                        binary,
+                        root,
+                        ["session", "list"],
+                        argv0=argv0,
+                        environment={"PRODEX_TERM_COLUMNS": "120"},
+                    ),
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    timeout=10,
+                    check=False,
+                )
+                self.assertEqual((result.returncode, result.stderr), (0, b""))
+                self.assertEqual(session.read_bytes(), before)
+                outputs[label] = result.stdout.replace(str(root).encode(), b"<FIXTURE_ROOT>")
+
+        self.assertIn(b"\x1b[31mN\nX", outputs["oracle"])
+        self.assertIn(b"\\x1b[31mN\\x0aX", outputs["modex"])
+        self.assertNotIn(b"\x1b", outputs["modex"])

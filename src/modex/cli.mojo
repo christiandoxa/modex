@@ -203,6 +203,119 @@ def runtime_broker_help_requested(args: List[String], executable: String) raises
     return False
 
 
+def _ping_option_name(name: String) -> String:
+    return "--profile" if name == "-p" else name
+
+
+def _ping_option_label(name: String) -> String:
+    if name == "--profile": return name + " <NAME>"
+    if name == "--model": return name + " <MODEL>"
+    if name == "--effort": return name + " <LEVEL>"
+    if name == "--base-url": return name + " <URL>"
+    return name
+
+
+def _ping_option_error_usage(usage: String, seen: List[String]) -> String:
+    if len(seen) != 1:
+        return usage + " [OPTIONS]"
+    return usage + " " + _ping_option_label(seen[0])
+
+
+def _ping_unknown_argument(argument: String, usage: String, seen: List[String]) -> Error:
+    var flag = argument.startswith("-") and argument != "-"
+    var unknown = argument_name(argument) if flag else argument
+    var message = "unexpected argument '" + unknown + "' found"
+    if flag and unknown.startswith("--"):
+        var choices: List[String] = ["profile", "model", "effort", "base-url", "no-proxy", "json"]
+        var candidates = similar_names(String(unknown[byte=2:]), choices)
+        if candidates:
+            message += "\n\n  tip: a similar argument exists: '--" + candidates[len(candidates) - 1] + "'"
+    var error_usage = usage + " [OPTIONS]"
+    if flag:
+        error_usage = _ping_option_error_usage(usage, seen)
+    return session_cli_error(message, error_usage)
+
+
+def parse_ping_openai_options(args: List[String], executable: String) raises -> Bool:
+    """Validate ping option syntax without entering the guarded provider path."""
+    var usage = executable + " ping openai"
+    var value_options: List[String] = ["--profile", "--model", "--effort", "--base-url"]
+    var boolean_options: List[String] = ["--no-proxy", "--json"]
+    var all_options = value_options.copy()
+    all_options.extend(boolean_options.copy())
+    var seen = List[String]()
+    var literal = False
+    var index = 3
+    while index < len(args):
+        var argument = String(args[index])
+        if not literal and argument == "--":
+            literal = True
+            index += 1
+            continue
+        if literal:
+            raise session_cli_error("unexpected argument '" + argument + "' found", usage + " [OPTIONS]")
+        if argument == "--help" or (argument.startswith("-h") and not argument.startswith("--")):
+            return True
+        if argument.startswith("--help="):
+            raise session_cli_error(
+                "unexpected value '" + String(argument[byte=7:]) + "' for '--help' found; no more were expected",
+                usage + " --help",
+            )
+
+        var option = _ping_option_name(argument_name(argument))
+        var attached = argument.startswith(argument_name(argument) + "=")
+        var value = String()
+        if attached:
+            value = String(argument.split("=", maxsplit=1)[1])
+        elif option == "--profile" and argument.startswith("-p") and argument.byte_length() > 2:
+            attached = True
+            value = String(argument[byte=2:])
+
+        if option in value_options:
+            if not attached:
+                if index + 1 >= len(args):
+                    raise session_cli_error("a value is required for '" + _ping_option_label(option) + "' but none was supplied")
+                var next = String(args[index + 1])
+                var next_name = _ping_option_name(argument_name(next))
+                var next_is_help = next == "--help" or next.startswith("--help=") or (next.startswith("-h") and not next.startswith("--"))
+                if next == "--" or next_is_help or next_name in all_options:
+                    raise session_cli_error("a value is required for '" + _ping_option_label(option) + "' but none was supplied")
+                if next.startswith("-") and next != "-":
+                    raise _ping_unknown_argument(next, usage, seen)
+                index += 1
+            if option in seen:
+                raise session_cli_error(
+                    "the argument '" + _ping_option_label(option) + "' cannot be used multiple times",
+                    usage + " [OPTIONS]",
+                )
+            seen.append(option)
+        elif option in boolean_options:
+            if attached:
+                var value_usage = usage + " " + option
+                if option in seen:
+                    var labels = List[String]()
+                    for candidate in all_options:
+                        labels.append(_ping_option_label(candidate))
+                    value_usage = usage + " <" + "|".join(labels) + ">"
+                raise session_cli_error(
+                    "unexpected value '" + value + "' for '" + option + "' found; no more were expected",
+                    value_usage,
+                )
+            if option in seen:
+                raise session_cli_error(
+                    "the argument '" + option + "' cannot be used multiple times",
+                    usage + " [OPTIONS]",
+                )
+            seen.append(option)
+        else:
+            # Keep the existing first-argument diagnostic path authoritative.
+            if index == 3:
+                return False
+            raise _ping_unknown_argument(argument, usage, seen)
+        index += 1
+    return False
+
+
 def login_help_requested(args: List[String], executable: String) raises -> Bool:
     var usage = executable + " login [OPTIONS] [PROFILE_OR_LOGIN_ARG]..."
     var profile_seen = False

@@ -1,7 +1,7 @@
 from std.collections import List
 from std.sys import argv, exit, stderr
 
-from modex.cli import argument_name, login_help_requested, logout_help_requested, mcp_jsonl_bridge_help_requested, parse_session_options, parse_sub_agent_exec_arguments, parse_update_help_arguments, quota_help_requested, redeem_help_requested, runtime_broker_help_requested, session_cli_error, session_help, unrecognized_subcommand
+from modex.cli import argument_name, login_help_requested, logout_help_requested, mcp_jsonl_bridge_help_requested, parse_ping_openai_options, parse_session_options, parse_sub_agent_exec_arguments, parse_update_help_arguments, quota_help_requested, redeem_help_requested, runtime_broker_help_requested, session_cli_error, session_help, unrecognized_subcommand
 from modex.doctor_install import run_doctor_install
 from modex.gateway_cli import GatewayOptions, gateway_help, parse_gateway_arguments, run_gateway
 from modex.inspection_cli import doctor_install_requested, inspection_help, inspection_help_requested, inspection_usage
@@ -115,17 +115,29 @@ def main():
         if args[3] == "--help" or args[3].startswith("-h"):
             print(ping_openai_help(executable), end="")
             return
-        var argument = args[3]
-        var literal = argument == "--"
-        if argument == "--" and len(args) > 4:
-            argument = args[4]
-        elif argument == "--":
-            argument = String()
-        var name = argument if literal else argument_name(argument)
-        if argument and (literal or name not in [String("-p"), "--profile", "--model", "--effort", "--base-url", "--no-proxy", "--json"]):
-            print(session_cli_error("unexpected argument '" + name + "' found", executable + " ping openai [OPTIONS]"), file=stderr, end="")
+    if len(args) >= 3 and args[1] == "ping" and args[2] == "openai":
+        var executable_parts = args[0].split("/")
+        var executable = String(executable_parts[len(executable_parts) - 1])
+        try:
+            if parse_ping_openai_options(args, executable):
+                print(ping_openai_help(executable), end="")
+                return
+        except error:
+            print(error, file=stderr, end="")
             exit(2)
             return
+        if len(args) > 3:
+            var argument = args[3]
+            var literal = argument == "--"
+            if argument == "--" and len(args) > 4:
+                argument = args[4]
+            elif argument == "--":
+                argument = String()
+            var name = argument if literal else argument_name(argument)
+            if argument and (literal or name not in [String("-p"), "--profile", "--model", "--effort", "--base-url", "--no-proxy", "--json"]):
+                print(session_cli_error("unexpected argument '" + name + "' found", executable + " ping openai [OPTIONS]"), file=stderr, end="")
+                exit(2)
+                return
     if len(args) >= 3 and args[1] == "ping" and (
         args[2] == "--help" or args[2].startswith("-h")
     ):

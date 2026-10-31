@@ -28,10 +28,14 @@ not a completed resume implementation. See
 The hidden `__super-expose` help and public `super expose` / `s expose` help
 routes now match the 0.166.2 Linux oracle, including custom executable names.
 Tested malformed pre-MODE option diagnostics also match without creating state.
-Valid expose execution remains behind the Super startup guard. Semantic value
-validation still differs for `__super-expose --tool one --help`: Prodex rejects
-the unknown tool before help, while Modex prints help; the focused test records
-this mismatch. The six-target denominator is unchanged. See
+Optional `--tool` and `--require-tool` values now match tested 0.166.2
+validation precedence, including attached values, invalid repeated values,
+help-first ordering, MODE and argument-terminator handling, malformed-help and
+unknown-option precedence, accepted tool aliases, and ANSI/OSC stripping
+without leaking a synthetic secret sentinel. Valid expose execution remains
+behind the Super startup guard; other semantic option values remain
+unqualified.
+The six-target denominator is unchanged. See
 `docs/evidence/baseline-0.166.2/super-expose-help.md`.
 
 The hidden `__runtime-broker` help parser now matches tested 0.166.2 short-help

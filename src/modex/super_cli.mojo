@@ -109,16 +109,26 @@ def _expose_unknown_argument(argument: String, usage: String) -> Error:
     )
 
 
+def _validate_pending_expose_tool(pending: Bool, name: String, value: String) raises:
+    if pending:
+        _ = _validate_value(name, value, True)
+
+
 def parse_super_expose_diagnostics(args: List[String], executable: String, start: Int) raises -> Bool:
     """Match pre-MODE expose CLI errors without entering the guarded launcher."""
     var seen = List[String]()
+    var pending_invalid_tool = False
+    var invalid_tool_name = String()
+    var invalid_tool_value = String()
     var generic_usage = executable + " __super-expose [OPTIONS] [MODE] [CODEX_ARG]..."
     var index = start
     while index < len(args):
         var argument = String(args[index])
         if argument == "--":
+            _validate_pending_expose_tool(pending_invalid_tool, invalid_tool_name, invalid_tool_value)
             return False
         if argument == "--help" or (argument.startswith("-h") and not argument.startswith("--")):
+            _validate_pending_expose_tool(pending_invalid_tool, invalid_tool_name, invalid_tool_value)
             return True
         if argument.startswith("--help="):
             var rendered_help = List[String]()
@@ -144,6 +154,7 @@ def parse_super_expose_diagnostics(args: List[String], executable: String, start
         if not takes_value and not switch:
             if argument.startswith("-") and argument != "-":
                 raise _expose_unknown_argument(argument, _expose_error_usage(executable, seen))
+            _validate_pending_expose_tool(pending_invalid_tool, invalid_tool_name, invalid_tool_value)
             return False
 
         var attached = argument.startswith(name + "=") or argument.startswith("-p=") or short_profile_value
@@ -155,6 +166,12 @@ def parse_super_expose_diagnostics(args: List[String], executable: String, start
                 "unexpected value '" + value + "' for '" + name + "' found; no more were expected",
                 _expose_error_usage(executable, value_seen),
             )
+        if attached and (name == "--tool" or name == "--require-tool"):
+            var value = String(argument[byte=name.byte_length() + 1:])
+            if not _known_optional_tool(value) and not pending_invalid_tool:
+                pending_invalid_tool = True
+                invalid_tool_name = name
+                invalid_tool_value = value
         if takes_value and not attached:
             if index + 1 >= len(args):
                 if name in ["--listen", "--openai-tunnel-id", "--name"]:
@@ -171,6 +188,11 @@ def parse_super_expose_diagnostics(args: List[String], executable: String, start
                 raise _missing_value_error(name)
             if next.startswith("-") and next != "-":
                 raise _expose_unknown_argument(next, _expose_error_usage(executable, seen))
+            if name == "--tool" or name == "--require-tool":
+                if not _known_optional_tool(next) and not pending_invalid_tool:
+                    pending_invalid_tool = True
+                    invalid_tool_name = name
+                    invalid_tool_value = next
             index += 1
         if name in seen and not _expose_repeatable_option(name):
             raise session_cli_error(
@@ -179,6 +201,7 @@ def parse_super_expose_diagnostics(args: List[String], executable: String, start
             )
         seen.append(name)
         index += 1
+    _validate_pending_expose_tool(pending_invalid_tool, invalid_tool_name, invalid_tool_value)
     return False
 
 
@@ -407,7 +430,8 @@ def _validate_value(name: String, value: String, clap_diagnostic: Bool) raises -
             clap_diagnostic,
         )
     if (name == "--tool" or name == "--require-tool") and not _known_optional_tool(value):
-        raise _typed_value_error(name, value, "unknown optional tool " + value, clap_diagnostic)
+        var diagnostic_value = _clap_value(value) if clap_diagnostic else value
+        raise _typed_value_error(name, diagnostic_value, "unknown optional tool " + diagnostic_value, clap_diagnostic)
     if name == "--sub-agent-max-concurrency":
         var parsed_value = trim_text(value)
         if parsed_value == "default": return parsed_value^

@@ -123,20 +123,114 @@ class SuperExposeHelp01662Tests(unittest.TestCase):
                              (0, baseline.stdout.replace(b"Usage: prodex ", b"Usage: modex ", 1), b""))
             self.assertEqual((baseline_created, modex_created), ([], []))
 
-    def test_invalid_optional_tool_semantics_remain_unimplemented(self):
-        arguments = ["__super-expose", "--tool", "one", "--help"]
+    def test_optional_tool_values_are_checked_before_help(self):
+        cases = (
+            (("__super-expose", "--tool", "one", "--help"), "--tool", "one"),
+            (("__super-expose", "--tool=one", "--help"), "--tool", "one"),
+            (("__super-expose", "--require-tool", "one", "--help"), "--require-tool", "one"),
+            (("__super-expose", "--require-tool=one", "--help"), "--require-tool", "one"),
+            (("__super-expose", "--tool", "one", "--tool", "rtk", "--help"), "--tool", "one"),
+            (("__super-expose", "--tool", "rtk", "--tool", "one", "--help"), "--tool", "one"),
+            (("super", "expose", "--tool", "one", "--help"), "--tool", "one"),
+            (("__super-expose", "--help", "--tool", "one"), None, None),
+            (("__super-expose", "--require-tool", "rtk", "--help"), None, None),
+            (("__super-expose", "--tool", "RTK", "--help"), None, None),
+            (("__super-expose", "--tool", " RTK ", "--help"), None, None),
+            (("__super-expose", "--tool", "rtk", "--tool", "playwright-mcp", "--help"), None, None),
+        )
+        for index, (arguments, invalid_option, invalid_value) in enumerate(cases):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "prodex", f"01662-super-expose-tool-oracle-{index}"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "modex", f"01662-super-expose-tool-modex-{index}"
+                )
+                self.assertEqual((baseline_created, modex_created), ([], []))
+                if invalid_option:
+                    expected = (
+                        f"error: invalid value '{invalid_value}' for '{invalid_option} <TOOL>': "
+                        f"unknown optional tool {invalid_value}\n\nFor more information, try '--help'.\n"
+                    ).encode()
+                    self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                     (2, b"", expected))
+                    self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                     (baseline.returncode, baseline.stdout, baseline.stderr))
+                else:
+                    self.assertEqual((baseline.returncode, baseline.stderr), (0, b""))
+                    self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                     (0, baseline.stdout.replace(b"Usage: prodex ", b"Usage: modex ", 1), b""))
+
+    def test_invalid_tool_diagnostic_strips_terminal_sequences_and_hidden_text(self):
+        hidden = "SYNTHETIC_SECRET_SENTINEL"
+        arguments = [
+            "__super-expose", "--tool",
+            "syn\x1b]52;c;" + hidden + "\x07value", "--help",
+        ]
         baseline, baseline_created = isolated_run(
-            ORACLE, arguments, "prodex", "01662-super-expose-invalid-tool-oracle"
+            ORACLE, arguments, "prodex", "01662-super-expose-tool-ansi-oracle"
         )
         modex, modex_created = isolated_run(
-            MODEX, arguments, "modex", "01662-super-expose-invalid-tool-modex"
+            MODEX, arguments, "modex", "01662-super-expose-tool-ansi-modex"
         )
-        self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
-                         (2, b"", b"error: invalid value 'one' for '--tool <TOOL>': unknown optional tool one\n\nFor more information, try '--help'.\n"))
-        self.assertEqual(modex.returncode, 0)
-        self.assertTrue(modex.stdout.startswith(b"Usage: modex __super-expose"))
-        self.assertEqual(modex.stderr, b"")
+        expected = (
+            b"error: invalid value 'synvalue' for '--tool <TOOL>': "
+            b"unknown optional tool synvalue\n\nFor more information, try '--help'.\n"
+        )
+        self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr), (2, b"", expected))
+        self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                         (baseline.returncode, baseline.stdout, baseline.stderr))
         self.assertEqual((baseline_created, modex_created), ([], []))
+        self.assertNotIn(b"\x1b", modex.stdout + modex.stderr)
+        self.assertNotIn(hidden.encode(), modex.stdout + modex.stderr)
+
+    def test_expose_syntax_errors_precede_pending_tool_validation(self):
+        cases = (
+            ("--help=invalid", "unexpected value 'invalid' for '--help'"),
+            ("--bogus", "unexpected argument '--bogus' found"),
+        )
+        for index, (following, expected_error) in enumerate(cases):
+            arguments = ["__super-expose", "--tool", "one", following]
+            if following == "--bogus":
+                arguments.append("--help")
+            baseline, baseline_created = isolated_run(
+                ORACLE, arguments, "prodex", f"01662-super-expose-tool-syntax-oracle-{index}"
+            )
+            modex, modex_created = isolated_run(
+                MODEX, arguments, "modex", f"01662-super-expose-tool-syntax-modex-{index}"
+            )
+            expected_stderr = baseline.stderr.replace(b"Usage: prodex ", b"Usage: modex ", 1)
+            self.assertEqual(baseline.returncode, 2)
+            self.assertIn(expected_error.encode(), baseline.stderr)
+            self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                             (baseline.returncode, baseline.stdout, expected_stderr))
+            self.assertEqual((baseline_created, modex_created), ([], []))
+
+    def test_invalid_tool_is_checked_before_mode_or_argument_terminator(self):
+        cases = (
+            ("__super-expose", "--tool", "one", "exec"),
+            ("__super-expose", "--tool", "one", "--"),
+            ("__super-expose", "--tool=one", "--", "exec"),
+            ("super", "expose", "--tool", "one", "exec"),
+            ("super", "expose", "--tool", "one", "--", "exec"),
+        )
+        expected = (
+            b"error: invalid value 'one' for '--tool <TOOL>': "
+            b"unknown optional tool one\n\nFor more information, try '--help'.\n"
+        )
+        for index, arguments in enumerate(cases):
+            with self.subTest(arguments=arguments):
+                baseline, baseline_created = isolated_run(
+                    ORACLE, list(arguments), "prodex", f"01662-super-expose-tool-mode-oracle-{index}"
+                )
+                modex, modex_created = isolated_run(
+                    MODEX, list(arguments), "modex", f"01662-super-expose-tool-mode-modex-{index}"
+                )
+                self.assertEqual((baseline.returncode, baseline.stdout, baseline.stderr),
+                                 (2, b"", expected))
+                self.assertEqual((modex.returncode, modex.stdout, modex.stderr),
+                                 (baseline.returncode, baseline.stdout, baseline.stderr))
+                self.assertEqual((baseline_created, modex_created), ([], []))
 
     def test_valid_public_expose_remains_guarded(self):
         guarded, guarded_created = isolated_run(
